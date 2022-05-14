@@ -536,16 +536,16 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 }
 
 bool VoxelGraphRuntime::try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const {
-	auto it = _program.user_port_to_expanded_port.find(port);
-	if (it != _program.user_port_to_expanded_port.end()) {
-		port = it->second;
+	auto port_it = _program.user_port_to_expanded_port.find(port);
+	if (port_it != _program.user_port_to_expanded_port.end()) {
+		port = port_it->second;
 	}
-	const uint16_t *aptr = _program.output_port_addresses.getptr(port);
-	if (aptr == nullptr) {
+	auto aptr_it = _program.output_port_addresses.find(port);
+	if (aptr_it == _program.output_port_addresses.end()) {
 		// This port did not take part of the compiled result
 		return false;
 	}
-	out_address = *aptr;
+	out_address = aptr_it->second;
 	return true;
 }
 

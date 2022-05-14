@@ -562,10 +562,10 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 			} else {
 				ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
-				const uint16_t *aptr = _program.output_port_addresses.getptr(src_port);
+				auto address_it = _program.output_port_addresses.find(src_port);
 				// Previous node ports must have been registered
-				CRASH_COND(aptr == nullptr);
-				a = *aptr;
+				CRASH_COND(address_it == _program.output_port_addresses.end());
+				a = address_it->second;
 
 				// Register dependency
 				auto it = node_id_to_dependency_graph.find(src_port.node_id);
@@ -651,11 +651,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			}
 
 			{
-				const uint16_t *aptr = _program.output_port_addresses.getptr(ProgramGraph::PortLocation{ node_id, 0 });
+				auto address_it = _program.output_port_addresses.find(ProgramGraph::PortLocation{ node_id, 0 });
 				// Previous node ports must have been registered
-				CRASH_COND(aptr == nullptr);
+				CRASH_COND(address_it == _program.output_port_addresses.end());
 				OutputInfo &output_info = _program.outputs[_program.outputs_count];
-				output_info.buffer_address = *aptr;
+				output_info.buffer_address = address_it->second;
 				output_info.dependency_graph_node_index = dg_node_index;
 				output_info.node_id = node_id;
 				++_program.outputs_count;
@@ -664,9 +664,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			// Add fake user for output ports so they can pass the local users check in optimizations
 			for (unsigned int j = 0; j < type.outputs.size(); ++j) {
 				const ProgramGraph::PortLocation loc{ node_id, j };
-				const uint16_t *aptr = _program.output_port_addresses.getptr(loc);
-				CRASH_COND(aptr == nullptr);
-				BufferSpec &bs = _program.buffer_specs[*aptr];
+				auto address_it = _program.output_port_addresses.find(loc);
+				CRASH_COND(address_it == _program.output_port_addresses.end());
+				BufferSpec &bs = _program.buffer_specs[address_it->second];
 				// Not expecting existing users on that port
 				ERR_FAIL_COND_V(bs.users_count != 0, CompilationResult());
 				++bs.users_count;

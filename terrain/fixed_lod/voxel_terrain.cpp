@@ -376,8 +376,8 @@ void VoxelTerrain::set_block_enter_notification_enabled(bool enable) {
 	_block_enter_notification_enabled = enable;
 
 	if (enable == false) {
-		for (auto elm = _loading_blocks.begin(); elm < _loading_blocks.end(); ++elm) {
-			LoadingBlock &lb = elm->value;
+		for (auto it = _loading_blocks.begin(); it != _loading_blocks.end(); ++it) {
+			LoadingBlock &lb = it->second;
 			lb.viewers_to_notify.clear();
 		}
 	}
@@ -472,9 +472,9 @@ void VoxelTerrain::view_data_block(Vector3i bpos, uint32_t viewer_id, bool requi
 
 	if (block == nullptr) {
 		// The block isn't loaded
-		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
+		auto loading_block_it = _loading_blocks.find(bpos);
 
-		if (loading_block == nullptr) {
+		if (loading_block_it == _loading_blocks.end()) {
 			// First viewer to request it
 			LoadingBlock new_loading_block;
 			new_loading_block.viewers.add();
@@ -484,15 +484,16 @@ void VoxelTerrain::view_data_block(Vector3i bpos, uint32_t viewer_id, bool requi
 			}
 
 			// Schedule a loading request
-			_loading_blocks.insert(bpos, new_loading_block);
+			_loading_blocks.insert({ bpos, new_loading_block });
 			_blocks_pending_load.push_back(bpos);
 
 		} else {
 			// More viewers
-			loading_block->viewers.add();
+			LoadingBlock &loading_block = loading_block_it->second;
+			loading_block.viewers.add();
 
 			if (require_notification) {
-				loading_block->viewers_to_notify.push_back(viewer_id);
+				loading_block.viewers_to_notify.push_back(viewer_id);
 			}
 		}
 
@@ -546,18 +547,19 @@ void VoxelTerrain::unview_data_block(Vector3i bpos) {
 
 	if (block == nullptr) {
 		// The block isn't loaded
-		LoadingBlock *loading_block = _loading_blocks.getptr(bpos);
-		if (loading_block == nullptr) {
+		auto loading_block_it = _loading_blocks.find(bpos);
+		if (loading_block_it == _loading_blocks.end()) {
 			ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
 			// Not expected, but fine I guess
 			return;
 		}
 
-		loading_block->viewers.remove();
+		LoadingBlock &loading_block = loading_block_it->second;
+		loading_block.viewers.remove();
 
-		if (loading_block->viewers.get() == 0) {
+		if (loading_block.viewers.get() == 0) {
 			// No longer want to load it
-			_loading_blocks.erase(bpos);
+			_loading_blocks.erase(loading_block_it);
 
 			// TODO Do we really need that vector after all?
 			for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
@@ -774,7 +776,7 @@ void VoxelTerrain::generate_block_async(Vector3i block_position) {
 		// Already exists
 		return;
 	}
-	if (_loading_blocks.has(block_position)) {
+	if (_loading_blocks.find(block_position) != _loading_blocks.end()) {
 		// Already loading
 		return;
 	}
@@ -798,7 +800,7 @@ void VoxelTerrain::generate_block_async(Vector3i block_position) {
 
 	// Schedule a loading request
 	// TODO This could also end up loading from stream
-	_loading_blocks.insert(block_position, new_loading_block);
+	_loading_blocks.insert({ block_position, new_loading_block });
 	_blocks_pending_load.push_back(block_position);
 }
 
@@ -1278,20 +1280,20 @@ void VoxelTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
 
 	LoadingBlock loading_block;
 	{
-		LoadingBlock *loading_block_ptr = _loading_blocks.getptr(block_pos);
+		auto loading_block_it = _loading_blocks.find(block_pos);
 
-		if (loading_block_ptr == nullptr) {
+		if (loading_block_it == _loading_blocks.end()) {
 			// That block was not requested or is no longer needed, drop it.
 			++_stats.dropped_block_loads;
 			return;
 		}
 
 		// Using move semantics because it can contain an allocated vector
-		loading_block = std::move(*loading_block_ptr);
-	}
+		loading_block = std::move(loading_block_it->second);
 
-	// Now we got the block. If we still have to drop it, the cause will be an error.
-	_loading_blocks.erase(block_pos);
+		// Now we got the block. If we still have to drop it, the cause will be an error.
+		_loading_blocks.erase(loading_block_it);
+	}
 
 	CRASH_COND(ob.voxels == nullptr);
 

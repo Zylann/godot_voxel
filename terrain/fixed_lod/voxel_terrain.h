@@ -253,7 +253,7 @@ private:
 	};
 
 	// Blocks currently being loaded.
-	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
+	std::unordered_map<Vector3i, LoadingBlock> _loading_blocks;
 	// Blocks that should be loaded on the next process call.
 	// The order in that list does not matter.
 	std::vector<Vector3i> _blocks_pending_load;

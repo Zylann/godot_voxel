@@ -5,6 +5,7 @@
 #include "../../util/span.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_runtime.h"
+
 #include <core/variant/variant.h>
 
 namespace zylann::voxel {

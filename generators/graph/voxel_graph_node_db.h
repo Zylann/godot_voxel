@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_NODE_DB_H
 
 #include "../../util/expression_parser.h"
+#include "../../util/godot/funcs.h" // For String hash
 #include "voxel_generator_graph.h"
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_shader_generator.h"
@@ -57,8 +58,8 @@ public:
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Param> params;
-		HashMap<String, uint32_t> param_name_to_index;
-		HashMap<String, uint32_t> input_name_to_index;
+		std::unordered_map<String, uint32_t> param_name_to_index;
+		std::unordered_map<String, uint32_t> input_name_to_index;
 		CompileFunc compile_func = nullptr;
 		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
 		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
@@ -95,7 +96,7 @@ public:
 
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;
-	HashMap<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
+	std::unordered_map<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
 	std::vector<ExpressionParser::Function> _expression_functions;
 };
 

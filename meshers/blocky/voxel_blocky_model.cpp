@@ -5,6 +5,8 @@
 #include "voxel_blocky_library.h"
 #include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 
+#include <unordered_map>
+
 namespace zylann::voxel {
 
 VoxelBlockyModel::VoxelBlockyModel() :
@@ -329,8 +331,8 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 		// PackedVector2Array::Read uvs_read = uvs.read();
 		// PackedFloat32Array::Read tangents_read = tangents.read();
 
-		FixedArray<HashMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
-		HashMap<int, int> added_regular_indices;
+		FixedArray<std::unordered_map<int, int>, Cube::SIDE_COUNT> added_side_indices;
+		std::unordered_map<int, int> added_regular_indices;
 		FixedArray<Vector3f, 3> tri_positions;
 
 		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
@@ -366,9 +368,10 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices[i + j];
-					const int *existing_dst_index = added_side_indices[side].getptr(src_index);
+					std::unordered_map<int, int> &added_indices = added_side_indices[side];
+					auto existing_dst_index_it = added_indices.find(src_index);
 
-					if (existing_dst_index == nullptr) {
+					if (existing_dst_index_it == added_indices.end()) {
 						// Add new vertex
 
 						model.side_indices[side].push_back(next_side_index);
@@ -393,12 +396,12 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							}
 						}
 
-						added_side_indices[side].insert(src_index, next_side_index);
+						added_indices.insert({ src_index, next_side_index });
 						++next_side_index;
 
 					} else {
 						// Vertex was already added, just add index referencing it
-						model.side_indices[side].push_back(*existing_dst_index);
+						model.side_indices[side].push_back(existing_dst_index_it->second);
 					}
 				}
 
@@ -409,9 +412,9 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 				for (int j = 0; j < 3; ++j) {
 					int src_index = indices[i + j];
-					const int *existing_dst_index = added_regular_indices.getptr(src_index);
+					auto existing_dst_index_it = added_regular_indices.find(src_index);
 
-					if (existing_dst_index == nullptr) {
+					if (existing_dst_index_it == added_regular_indices.end()) {
 						model.indices.push_back(next_regular_index);
 						model.positions.push_back(tri_positions[j]);
 						model.normals.push_back(to_vec3f(normals[indices[i + j]]));
@@ -435,11 +438,11 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							}
 						}
 
-						added_regular_indices.insert(src_index, next_regular_index);
+						added_regular_indices.insert({ src_index, next_regular_index });
 						++next_regular_index;
 
 					} else {
-						model.indices.push_back(*existing_dst_index);
+						model.indices.push_back(existing_dst_index_it->second);
 					}
 				}
 			}

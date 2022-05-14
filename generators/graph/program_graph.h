@@ -2,8 +2,10 @@
 #define ZN_PROGRAM_GRAPH_H
 
 #include "../../util/non_copyable.h"
+
 #include <core/math/vector2.h>
 #include <core/templates/hashfuncs.h>
+
 #include <string>
 #include <string_view>
 #include <unordered_map>

@@ -66,26 +66,24 @@ void test_box3i_intersects() {
 void test_box3i_for_inner_outline() {
 	const Box3i box(-1, 2, 3, 8, 6, 5);
 
-	HashMap<Vector3i, bool, Vector3iHasher> expected_coords;
+	std::unordered_map<Vector3i, bool> expected_coords;
 	const Box3i inner_box = box.padded(-1);
 	box.for_each_cell([&expected_coords, inner_box](Vector3i pos) {
 		if (!inner_box.contains(pos)) {
-			expected_coords.set(pos, false);
+			expected_coords.insert({ pos, false });
 		}
 	});
 
 	box.for_inner_outline([&expected_coords](Vector3i pos) {
-		bool *b = expected_coords.getptr(pos);
-		ZYLANN_TEST_ASSERT_MSG(b != nullptr, "Position must be on the inner outline");
-		ZYLANN_TEST_ASSERT_MSG(*b == false, "Position must be unique");
-		*b = true;
+		auto it = expected_coords.find(pos);
+		ZYLANN_TEST_ASSERT_MSG(it != expected_coords.end(), "Position must be on the inner outline");
+		ZYLANN_TEST_ASSERT_MSG(it->second == false, "Position must be unique");
+		it->second = true;
 	});
 
-	const Vector3i *key = nullptr;
-	while ((key = expected_coords.next(key))) {
-		const bool *v = expected_coords.getptr(*key);
-		ZYLANN_TEST_ASSERT(v != nullptr);
-		ZYLANN_TEST_ASSERT_MSG(*v, "All expected coordinates must have been found");
+	for (auto it = expected_coords.begin(); it != expected_coords.end(); ++it) {
+		const bool v = it->second;
+		ZYLANN_TEST_ASSERT_MSG(v, "All expected coordinates must have been found");
 	}
 }
 

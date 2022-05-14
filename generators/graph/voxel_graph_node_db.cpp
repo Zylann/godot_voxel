@@ -2163,11 +2163,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
-		_type_name_to_id.insert(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
+		_type_name_to_id.insert({ t.name, (VoxelGeneratorGraph::NodeTypeID)i });
 
 		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
-			t.param_name_to_index.insert(p.name, param_index);
+			t.param_name_to_index.insert({ p.name, param_index });
 			p.index = param_index;
 
 			switch (p.type) {
@@ -2195,7 +2195,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
-			t.input_name_to_index.insert(p.name, input_index);
+			t.input_name_to_index.insert({ p.name, input_index });
 		}
 
 		if (t.expression_func != nullptr) {
@@ -2255,11 +2255,11 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 
 bool VoxelGraphNodeDB::try_get_type_id_from_name(
 		const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
-	const VoxelGeneratorGraph::NodeTypeID *p = _type_name_to_id.getptr(name);
-	if (p == nullptr) {
+	auto it = _type_name_to_id.find(name);
+	if (it == _type_name_to_id.end()) {
 		return false;
 	}
-	out_type_id = *p;
+	out_type_id = it->second;
 	return true;
 }
 
@@ -2267,11 +2267,11 @@ bool VoxelGraphNodeDB::try_get_param_index_from_name(
 		uint32_t type_id, const String &name, uint32_t &out_param_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
-	const uint32_t *p = t.param_name_to_index.getptr(name);
-	if (p == nullptr) {
+	auto it = t.param_name_to_index.find(name);
+	if (it == t.param_name_to_index.end()) {
 		return false;
 	}
-	out_param_index = *p;
+	out_param_index = it->second;
 	return true;
 }
 
@@ -2279,11 +2279,11 @@ bool VoxelGraphNodeDB::try_get_input_index_from_name(
 		uint32_t type_id, const String &name, uint32_t &out_input_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
-	const uint32_t *p = t.input_name_to_index.getptr(name);
-	if (p == nullptr) {
+	auto it = t.input_name_to_index.find(name);
+	if (it == t.input_name_to_index.end()) {
 		return false;
 	}
-	out_input_index = *p;
+	out_input_index = it->second;
 	return true;
 }
 

@@ -1580,7 +1580,7 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	root->set_transform(get_transform());
 	root->set_name("VoxelInstancerRoot");
 
-	HashMap<Ref<Mesh>, Ref<Mesh>, RefHasher<Mesh>> mesh_copies;
+	std::unordered_map<Ref<Mesh>, Ref<Mesh>> mesh_copies;
 
 	// For each layer
 	const int *layer_key = nullptr;
@@ -1607,13 +1607,13 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 				ERR_CONTINUE(src_mesh.is_null());
 
 				// Duplicating the meshes because often they don't get saved even with `FLAG_BUNDLE_RESOURCES`
-				Ref<Mesh> *mesh_copy_ptr = mesh_copies.getptr(src_mesh);
+				auto mesh_copy_it = mesh_copies.find(src_mesh);
 				Ref<Mesh> mesh_copy;
-				if (mesh_copy_ptr == nullptr) {
+				if (mesh_copy_it == mesh_copies.end()) {
 					mesh_copy = src_mesh->duplicate();
-					mesh_copies.insert(src_mesh, mesh_copy);
+					mesh_copies.insert({ src_mesh, mesh_copy });
 				} else {
-					mesh_copy = *mesh_copy_ptr;
+					mesh_copy = mesh_copy_it->second;
 				}
 
 				Ref<MultiMesh> multimesh_copy = multimesh->duplicate();

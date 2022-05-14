@@ -6,7 +6,9 @@
 #include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/mesh.h>
 #include <scene/resources/multimesh.h>
+#include <map>
 #include <sstream>
+#include <unordered_map>
 
 namespace zylann {
 
@@ -126,25 +128,26 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 		int count = 0;
 	};
 
-	// TODO Maybe use a Map actually, so we can have a comparator with floating error
-	HashMap<Vector3, Dupe> vertex_to_dupe;
-	HashMap<int, int> src_index_to_dst_index;
+	// Using a map so we can have a comparator with floating error
+	std::map<Vector3, Dupe> vertex_to_dupe;
+	std::unordered_map<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
 	{
 		//const Vector3 *src_positions_read = src_positions.ptr();
 		//const Vector3 *src_normals_read = src_normals.ptr();
 		for (int i = 0; i < src_positions.size(); ++i) {
 			const Vector3 pos = src_positions[i];
-			Dupe *dptr = vertex_to_dupe.getptr(pos);
-			if (dptr == nullptr) {
-				vertex_to_dupe.insert(pos, Dupe());
+			auto dupe_it = vertex_to_dupe.find(pos);
+			if (dupe_it == vertex_to_dupe.end()) {
+				vertex_to_dupe.insert({ pos, Dupe() });
 			} else {
-				if (dptr->count == 0) {
-					dptr->dst_index = dst_positions.size();
+				Dupe &dupe = dupe_it->second;
+				if (dupe.count == 0) {
+					dupe.dst_index = dst_positions.size();
 					dst_positions.push_back(pos + src_normals[i] * 0.05);
 				}
-				++dptr->count;
-				src_index_to_dst_index.insert(i, dptr->dst_index);
+				++dupe.count;
+				src_index_to_dst_index.insert({ i, dupe.dst_index });
 			}
 		}
 	}
@@ -156,20 +159,22 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 			const int vi0 = src_indices[i];
 			const int vi1 = src_indices[i + 1];
 			const int vi2 = src_indices[i + 2];
-			const int *v0ptr = src_index_to_dst_index.getptr(vi0);
-			const int *v1ptr = src_index_to_dst_index.getptr(vi1);
-			const int *v2ptr = src_index_to_dst_index.getptr(vi2);
-			if (v0ptr != nullptr && v1ptr != nullptr) {
-				dst_indices.push_back(*v0ptr);
-				dst_indices.push_back(*v1ptr);
+
+			auto v0_it = src_index_to_dst_index.find(vi0);
+			auto v1_it = src_index_to_dst_index.find(vi1);
+			auto v2_it = src_index_to_dst_index.find(vi2);
+
+			if (v0_it != src_index_to_dst_index.end() && v1_it != src_index_to_dst_index.end()) {
+				dst_indices.push_back(v0_it->second);
+				dst_indices.push_back(v1_it->second);
 			}
-			if (v1ptr != nullptr && v2ptr != nullptr) {
-				dst_indices.push_back(*v1ptr);
-				dst_indices.push_back(*v2ptr);
+			if (v1_it != src_index_to_dst_index.end() && v2_it != src_index_to_dst_index.end()) {
+				dst_indices.push_back(v1_it->second);
+				dst_indices.push_back(v2_it->second);
 			}
-			if (v2ptr != nullptr && v0ptr != nullptr) {
-				dst_indices.push_back(*v2ptr);
-				dst_indices.push_back(*v0ptr);
+			if (v2_it != src_index_to_dst_index.end() && v0_it != src_index_to_dst_index.end()) {
+				dst_indices.push_back(v2_it->second);
+				dst_indices.push_back(v0_it->second);
 			}
 		}
 	}

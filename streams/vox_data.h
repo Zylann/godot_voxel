@@ -2,6 +2,7 @@
 #define VOX_DATA_H
 
 #include "../util/fixed_array.h"
+#include "../util/godot/funcs.h"
 #include "../util/math/color8.h"
 #include "../util/math/vector3i.h"
 #include "../util/memory.h"
@@ -10,15 +11,6 @@
 #include <core/string/ustring.h>
 #include <unordered_map>
 #include <vector>
-
-namespace std {
-template <>
-struct hash<String> {
-	size_t operator()(const String &v) const {
-		return v.hash();
-	}
-};
-} // namespace std
 
 namespace zylann::voxel::magica {
 
