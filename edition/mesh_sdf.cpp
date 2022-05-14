@@ -564,8 +564,9 @@ void partition_triangles(
 		}
 	}
 
-	// DEBUG
+#ifdef DEBUG_ENABLED
 	{
+		// Make sure all triangles are picked up
 		std::vector<const Triangle *> checked_triangles;
 		for (const Chunk &chunk : chunk_grid.chunks) {
 			for (const Triangle *t : chunk.triangles) {
@@ -583,6 +584,7 @@ void partition_triangles(
 		}
 		ZN_ASSERT(checked_triangles.size() == triangles.size());
 	}
+#endif
 }
 
 /*
