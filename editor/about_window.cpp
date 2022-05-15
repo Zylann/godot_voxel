@@ -200,7 +200,9 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"stackdump.eth\n"
 						"Snowminx (Gamerfiend)\n"
 						"Skyquakers\n"
-						"MadMartian\n";
+						"MadMartian\n"
+						"Luiz Felipe Warmling Amadeu (Amad3eu)\n"
+						"Trevor Schara (trevjs)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
@@ -297,12 +299,6 @@ void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
 }
 
-void VoxelAboutWindow::_bind_methods() {
-	// ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
-	// ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
-	// 		&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_third_party_list_item_selected"), &VoxelAboutWindow::_on_third_party_list_item_selected);
-}
+void VoxelAboutWindow::_bind_methods() {}
 
 } // namespace zylann::voxel
