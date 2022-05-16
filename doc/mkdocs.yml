@@ -29,7 +29,7 @@ nav:
   - 'module_development.md'
   - 'changelog.md'
   - '___.md'
-  - 'API':
+  - 'Scripting API':
     # <generated_class_list>
     - api/FastNoiseLite.md
     - api/FastNoiseLiteGradient.md
