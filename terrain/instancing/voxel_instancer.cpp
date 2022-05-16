@@ -1405,7 +1405,7 @@ void VoxelInstancer::on_body_removed(Vector3i data_block_position, unsigned int 
 void VoxelInstancer::on_scene_instance_removed(Vector3i data_block_position, unsigned int render_block_index, int instance_index) {
 	Block *block = _blocks[render_block_index];
 	CRASH_COND(block == nullptr);
-	ERR_FAIL_INDEX(instance_index, block->bodies.size());
+	ERR_FAIL_INDEX(instance_index, block->scene_instances.size());
 
 	// Unregister the scene instance
 	int instance_count = block->scene_instances.size();
