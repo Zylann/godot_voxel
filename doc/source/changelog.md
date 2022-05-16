@@ -59,6 +59,7 @@ Godot 4 is required from this version.
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
+    - `VoxelInstancer`: fix errors when removing scene instances
     - `VoxelToolTerrain`: `run_blocky_random_tick` no longer snaps area borders to chunk borders in unintuitive ways
     - `VoxelStreamScript`: fix voxel data not getting retrieved when `BLOCK_FOUND` is returned
 

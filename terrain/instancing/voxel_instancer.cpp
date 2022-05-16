@@ -1470,7 +1470,7 @@ void VoxelInstancer::on_body_removed(
 
 	// Unregister the body
 	unsigned int body_count = block.bodies.size();
-	unsigned int last_instance_index = --body_count;
+	const unsigned int last_instance_index = --body_count;
 	VoxelInstancerRigidBody *moved_body = block.bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
 		moved_body->set_instance_index(instance_index);
@@ -1487,11 +1487,11 @@ void VoxelInstancer::on_body_removed(
 void VoxelInstancer::on_scene_instance_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.bodies.size());
+	ERR_FAIL_INDEX(instance_index, block.scene_instances.size());
 
 	// Unregister the scene instance
 	unsigned int instance_count = block.scene_instances.size();
-	unsigned int last_instance_index = --instance_count;
+	const unsigned int last_instance_index = --instance_count;
 	SceneInstance moved_instance = block.scene_instances[last_instance_index];
 	if (instance_index != last_instance_index) {
 		ERR_FAIL_COND(moved_instance.component == nullptr);
