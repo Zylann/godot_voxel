@@ -8,6 +8,9 @@
 #include "../util/godot/direct_static_body.h"
 #include "../util/ref_count.h"
 #include "../util/span.h"
+
+#include <scene/resources/world_3d.h>
+
 #include <atomic>
 
 class Node3D;

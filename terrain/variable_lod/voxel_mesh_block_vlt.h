@@ -36,6 +36,7 @@ public:
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();
 
+	void set_world(Ref<World3D> p_world);
 	void set_visible(bool visible);
 	bool update_fading(float speed);
 

@@ -102,6 +102,19 @@ void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMesh
 	}
 }
 
+void VoxelMeshBlockVLT::set_world(Ref<World3D> p_world) {
+	if (_world != p_world) {
+		_world = p_world;
+
+		// To update world. I replaced visibility by presence in world because Godot 3 culling performance is horrible
+		_set_visible(_visible && _parent_visible);
+
+		if (_static_body.is_valid()) {
+			_static_body.set_world(*p_world);
+		}
+	}
+}
+
 void VoxelMeshBlockVLT::set_visible(bool visible) {
 	if (_visible == visible) {
 		return;
