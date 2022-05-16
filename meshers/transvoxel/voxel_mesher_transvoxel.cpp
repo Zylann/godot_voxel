@@ -217,7 +217,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		fill_surface_arrays(regular_arrays, s_mesh_arrays);
 	}
 
-	output.surfaces.push_back(regular_arrays);
+	output.surfaces.push_back({ regular_arrays });
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		ZN_PROFILE_SCOPE();
@@ -233,7 +233,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 		Array transition_arrays;
 		fill_surface_arrays(transition_arrays, s_mesh_arrays);
-		output.transition_surfaces[dir].push_back(transition_arrays);
+		output.transition_surfaces[dir].push_back({ transition_arrays });
 	}
 
 	// const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;

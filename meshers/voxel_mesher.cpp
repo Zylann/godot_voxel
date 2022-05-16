@@ -20,20 +20,28 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Materi
 
 	int surface_index = 0;
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
-		Array surface = output.surfaces[i];
-		if (surface.is_empty()) {
+		Output::Surface &surface = output.surfaces[i];
+		Array &arrays = surface.arrays;
+
+		if (arrays.is_empty()) {
 			continue;
 		}
 
-		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(surface)) {
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
 			continue;
 		}
 
-		mesh->add_surface_from_arrays(output.primitive_type, surface, Array(), Dictionary(), output.mesh_flags);
+		Ref<Material> material;
 		if (int(i) < materials.size()) {
-			mesh->surface_set_material(surface_index, materials[i]);
+			material = materials[i];
 		}
+		if (material.is_null()) {
+			material = get_material_by_index(i);
+		}
+
+		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);
+		mesh->surface_set_material(surface_index, material);
 		++surface_index;
 	}
 
@@ -57,6 +65,11 @@ void VoxelMesher::set_padding(int minimum, int maximum) {
 	CRASH_COND(maximum < 0);
 	_minimum_padding = minimum;
 	_maximum_padding = maximum;
+}
+
+Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
+	// May be implemented in some meshers
+	return Ref<Material>();
 }
 
 void VoxelMesher::_bind_methods() {

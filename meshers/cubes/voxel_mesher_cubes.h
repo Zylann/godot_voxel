@@ -61,6 +61,9 @@ public:
 		return true;
 	}
 
+	void set_material_by_index(Materials id, Ref<Material> material);
+	Ref<Material> get_material_by_index(unsigned int i) const override;
+
 	// Structs
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
@@ -98,10 +101,15 @@ public:
 		}
 	};
 
-protected:
+private:
+	void _b_set_opaque_material(Ref<Material> material);
+	Ref<Material> _b_get_opaque_material() const;
+
+	void _b_set_transparent_material(Ref<Material> material);
+	Ref<Material> _b_get_transparent_material() const;
+
 	static void _bind_methods();
 
-private:
 	struct Parameters {
 		ColorMode color_mode = COLOR_RAW;
 		Ref<VoxelColorPalette> palette;
@@ -118,6 +126,8 @@ private:
 	// Parameters
 	Parameters _parameters;
 	RWLock _parameters_lock;
+
+	FixedArray<Ref<Material>, MATERIAL_COUNT> _materials;
 
 	// Work cache
 	static thread_local Cache _cache;

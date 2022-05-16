@@ -33,6 +33,10 @@ public:
 		return _mesh_state;
 	}
 
+	void set_material_override(Ref<Material> material) {
+		_mesh_instance.set_material_override(material);
+	}
+
 private:
 	MeshState _mesh_state = MESH_NEVER_UPDATED;
 };

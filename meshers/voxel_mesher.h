@@ -35,9 +35,12 @@ public:
 	};
 
 	struct Output {
-		// Each surface correspond to a different material
-		std::vector<Array> surfaces;
-		FixedArray<std::vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
+		struct Surface {
+			Array arrays;
+		};
+		// Each surface correspond to a different material and can be empty.
+		std::vector<Surface> surfaces;
+		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		unsigned int mesh_flags = 0;
 		Ref<Image> atlas_image;
@@ -71,6 +74,10 @@ public:
 	virtual bool supports_lod() const {
 		return true;
 	}
+
+	// Some meshers can provide materials themselves. These will be used for corresponding surfaces. Returns null if the
+	// index does not have a material assigned. If not provided here, a default material may be used.
+	virtual Ref<Material> get_material_by_index(unsigned int i) const;
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}

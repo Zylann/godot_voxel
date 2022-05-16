@@ -170,20 +170,26 @@ void VoxelBlockyLibrary::bake() {
 
 	// This is the only place we modify the data.
 
+	_indexed_materials.clear();
+	VoxelBlockyModel::MaterialIndexer materials{ _indexed_materials };
+
 	_baked_data.models.resize(_voxel_types.size());
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
 		Ref<VoxelBlockyModel> config = _voxel_types[i];
 		if (config.is_valid()) {
-			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size, _bake_tangents);
+			_voxel_types[i]->bake(_baked_data.models[i], _atlas_size, _bake_tangents, materials);
 		} else {
 			_baked_data.models[i].clear();
 		}
 	}
 
+	_baked_data.indexed_materials_count = _indexed_materials.size();
+
 	generate_side_culling_matrix();
 
 	uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
-	ZN_PRINT_VERBOSE(format("Took {} us to bake VoxelLibrary", time_spent));
+	ZN_PRINT_VERBOSE(
+			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size()));
 }
 
 void VoxelBlockyLibrary::generate_side_culling_matrix() {
@@ -212,7 +218,7 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 
 	CRASH_COND(_voxel_types.size() != _baked_data.models.size());
 
-	// Gather patterns
+	// Gather patterns for each model
 	for (uint16_t type_id = 0; type_id < _voxel_types.size(); ++type_id) {
 		if (_voxel_types[type_id].is_null()) {
 			continue;
@@ -221,58 +227,65 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 		VoxelBlockyModel::BakedData &model_data = _baked_data.models[type_id];
 		model_data.contributes_to_ao = true;
 
+		// For each side
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
-			const std::vector<Vector3f> &positions = model_data.model.side_positions[side];
-			const std::vector<int> &indices = model_data.model.side_indices[side];
-			ERR_FAIL_COND(indices.size() % 3 != 0);
-
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
 
-			for (unsigned int j = 0; j < indices.size(); j += 3) {
-				const Vector3f va = positions[indices[j]];
-				const Vector3f vb = positions[indices[j + 1]];
-				const Vector3f vc = positions[indices[j + 2]];
+			// For each surface (they are all combined for simplicity, though it is also a limitation)
+			for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
+				const VoxelBlockyModel::BakedData::Surface &surface = model_data.model.surfaces[surface_index];
 
-				// Convert 3D vertices into 2D
-				Vector2f a, b, c;
-				switch (side) {
-					case Cube::SIDE_NEGATIVE_X:
-					case Cube::SIDE_POSITIVE_X:
-						a = Vector2f(va.y, va.z);
-						b = Vector2f(vb.y, vb.z);
-						c = Vector2f(vc.y, vc.z);
-						break;
+				const std::vector<Vector3f> &positions = surface.side_positions[side];
+				const std::vector<int> &indices = surface.side_indices[side];
+				ERR_FAIL_COND(indices.size() % 3 != 0);
 
-					case Cube::SIDE_NEGATIVE_Y:
-					case Cube::SIDE_POSITIVE_Y:
-						a = Vector2f(va.x, va.z);
-						b = Vector2f(vb.x, vb.z);
-						c = Vector2f(vc.x, vc.z);
-						break;
+				// For each triangle
+				for (unsigned int j = 0; j < indices.size(); j += 3) {
+					const Vector3f va = positions[indices[j]];
+					const Vector3f vb = positions[indices[j + 1]];
+					const Vector3f vc = positions[indices[j + 2]];
 
-					case Cube::SIDE_NEGATIVE_Z:
-					case Cube::SIDE_POSITIVE_Z:
-						a = Vector2f(va.x, va.y);
-						b = Vector2f(vb.x, vb.y);
-						c = Vector2f(vc.x, vc.y);
-						break;
+					// Convert 3D vertices into 2D
+					Vector2f a, b, c;
+					switch (side) {
+						case Cube::SIDE_NEGATIVE_X:
+						case Cube::SIDE_POSITIVE_X:
+							a = Vector2f(va.y, va.z);
+							b = Vector2f(vb.y, vb.z);
+							c = Vector2f(vc.y, vc.z);
+							break;
 
-					default:
-						CRASH_NOW();
-				}
+						case Cube::SIDE_NEGATIVE_Y:
+						case Cube::SIDE_POSITIVE_Y:
+							a = Vector2f(va.x, va.z);
+							b = Vector2f(vb.x, vb.z);
+							c = Vector2f(vc.x, vc.z);
+							break;
 
-				a *= RASTER_SIZE;
-				b *= RASTER_SIZE;
-				c *= RASTER_SIZE;
+						case Cube::SIDE_NEGATIVE_Z:
+						case Cube::SIDE_POSITIVE_Z:
+							a = Vector2f(va.x, va.y);
+							b = Vector2f(vb.x, vb.y);
+							c = Vector2f(vc.x, vc.y);
+							break;
 
-				// Rasterize pattern
-				rasterize_triangle_barycentric(a, b, c, [&bitmap](unsigned int x, unsigned int y) {
-					if (x >= RASTER_SIZE || y >= RASTER_SIZE) {
-						return;
+						default:
+							CRASH_NOW();
 					}
-					const unsigned int i = x + y * RASTER_SIZE;
-					bitmap.set(i);
-				});
+
+					a *= RASTER_SIZE;
+					b *= RASTER_SIZE;
+					c *= RASTER_SIZE;
+
+					// Rasterize pattern
+					rasterize_triangle_barycentric(a, b, c, [&bitmap](unsigned int x, unsigned int y) {
+						if (x >= RASTER_SIZE || y >= RASTER_SIZE) {
+							return;
+						}
+						const unsigned int i = x + y * RASTER_SIZE;
+						bitmap.set(i);
+					});
+				}
 			}
 
 			// Find if the same pattern already exists
@@ -396,6 +409,11 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 	print_line("");*/
 }
 
+Ref<Material> VoxelBlockyLibrary::get_material_by_index(unsigned int index) const {
+	ERR_FAIL_INDEX_V(index, _indexed_materials.size(), Ref<Material>());
+	return _indexed_materials[index];
+}
+
 Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel(unsigned int id) {
 	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<VoxelBlockyModel>());
 	return _voxel_types[id];
@@ -405,6 +423,15 @@ Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel_by_name(StringName name) 
 	int id = get_voxel_index_from_name(name);
 	ERR_FAIL_COND_V(id == -1, Ref<VoxelBlockyModel>());
 	return _voxel_types[id];
+}
+
+TypedArray<Material> VoxelBlockyLibrary::_b_get_materials() const {
+	TypedArray<Material> materials;
+	materials.resize(_indexed_materials.size());
+	for (size_t i = 0; i < _indexed_materials.size(); ++i) {
+		materials[i] = _indexed_materials[i];
+	}
+	return materials;
 }
 
 void VoxelBlockyLibrary::_bind_methods() {
@@ -424,6 +451,8 @@ void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_by_name", "name"), &VoxelBlockyLibrary::_b_get_voxel_by_name);
 
 	ClassDB::bind_method(D_METHOD("bake"), &VoxelBlockyLibrary::bake);
+
+	ClassDB::bind_method(D_METHOD("get_materials"), &VoxelBlockyLibrary::_b_get_materials);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "voxel_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),

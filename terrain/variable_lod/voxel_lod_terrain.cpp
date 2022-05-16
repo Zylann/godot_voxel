@@ -27,21 +27,22 @@ namespace zylann::voxel {
 
 namespace {
 
-Ref<ArrayMesh> build_mesh(
-		Span<const Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material) {
 	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 
 	unsigned int surface_index = 0;
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		Array surface = surfaces[i];
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		Array arrays = surface.arrays;
 
-		if (surface.is_empty()) {
+		if (arrays.is_empty()) {
 			continue;
 		}
 
-		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(surface)) {
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -51,7 +52,7 @@ Ref<ArrayMesh> build_mesh(
 
 		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
 		// the same)
-		mesh->add_surface_from_arrays(primitive, surface, Array(), Dictionary(), flags);
+		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
 		mesh->surface_set_material(surface_index, material);
 		// No multi-material supported yet
 		++surface_index;
@@ -1434,7 +1435,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
 			// TODO The mesh could come from an edited region!
 			// We would have to know if specific voxels got edited, or different from the generator
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
 
 		// Lazy initialization
@@ -1474,7 +1475,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-			Ref<ArrayMesh> transition_mesh = build_mesh(to_span_const(mesh_data.transition_surfaces[dir]),
+			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
 					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
 			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
@@ -1485,8 +1486,15 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	if (has_collision) {
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-			block->set_collision_mesh(to_span_const(mesh_data.surfaces), get_tree()->is_debugging_collisions_hint(),
-					this, _collision_margin);
+			static thread_local std::vector<Array> tls_collidable_surfaces;
+			std::vector<Array> &collidable_surfaces = tls_collidable_surfaces;
+			collidable_surfaces.clear();
+			for (unsigned int i = 0; i < mesh_data.surfaces.size(); ++i) {
+				collidable_surfaces.push_back(mesh_data.surfaces[i].arrays);
+			}
+			block->set_collision_mesh(
+					to_span(collidable_surfaces), get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
 			block->last_collider_update_time = now;
@@ -1502,7 +1510,10 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			// The caller providing `mesh_data` doesnt use `mesh_data` later so we could have moved the vector,
 			// but at the moment it's passed with `const` so that isn't possible. Indeed we are only going to read the
 			// data, but `const` also means the structure holding it is read-only as well.
-			block->deferred_collider_data = mesh_data.surfaces;
+			block->deferred_collider_data.resize(mesh_data.surfaces.size());
+			for (size_t i = 0; i < mesh_data.surfaces.size(); ++i) {
+				block->deferred_collider_data[i] = mesh_data.surfaces[i].arrays;
+			}
 		}
 	}
 

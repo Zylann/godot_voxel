@@ -1520,7 +1520,9 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	}
 
 	// surfaces[material][array_type], for now single material
-	output.surfaces.push_back(surface);
+	Output::Surface output_surface;
+	output_surface.arrays = surface;
+	output.surfaces.push_back(output_surface);
 
 	if (params.mesh_mode == MESH_NORMAL) {
 		output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;

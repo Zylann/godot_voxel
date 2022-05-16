@@ -897,8 +897,10 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	for (unsigned int material_index = 0; material_index < MATERIAL_COUNT; ++material_index) {
 		const Arrays &arrays = cache.arrays_per_material[material_index];
 
+		Output::Surface surface;
+
 		if (arrays.positions.size() != 0) {
-			Array mesh_arrays;
+			Array &mesh_arrays = surface.arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
 			{
@@ -926,12 +928,13 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				}
 			}
 
-			output.surfaces.push_back(mesh_arrays);
-
-		} else {
-			// Empty
-			output.surfaces.push_back(Array());
+			//surface.collision_enabled = (material_index == MATERIAL_OPAQUE);
 		}
+		//  else {
+		// 	// Empty
+		// }
+
+		output.surfaces.push_back(surface);
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
@@ -1005,6 +1008,31 @@ int VoxelMesherCubes::get_used_channels_mask() const {
 	return (1 << VoxelBufferInternal::CHANNEL_COLOR);
 }
 
+void VoxelMesherCubes::set_material_by_index(Materials id, Ref<Material> material) {
+	_materials[id] = material;
+}
+
+Ref<Material> VoxelMesherCubes::get_material_by_index(unsigned int i) const {
+	ERR_FAIL_INDEX_V(i, _materials.size(), Ref<Material>());
+	return _materials[i];
+}
+
+void VoxelMesherCubes::_b_set_opaque_material(Ref<Material> material) {
+	set_material_by_index(MATERIAL_OPAQUE, material);
+}
+
+Ref<Material> VoxelMesherCubes::_b_get_opaque_material() const {
+	return get_material_by_index(MATERIAL_OPAQUE);
+}
+
+void VoxelMesherCubes::_b_set_transparent_material(Ref<Material> material) {
+	set_material_by_index(MATERIAL_TRANSPARENT, material);
+}
+
+Ref<Material> VoxelMesherCubes::_b_get_transparent_material() const {
+	return get_material_by_index(MATERIAL_TRANSPARENT);
+}
+
 void VoxelMesherCubes::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_greedy_meshing_enabled", "enable"), &VoxelMesherCubes::set_greedy_meshing_enabled);
@@ -1016,6 +1044,15 @@ void VoxelMesherCubes::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_color_mode", "mode"), &VoxelMesherCubes::set_color_mode);
 	ClassDB::bind_method(D_METHOD("get_color_mode"), &VoxelMesherCubes::get_color_mode);
 
+	ClassDB::bind_method(D_METHOD("set_material_by_index", "id", "material"), &VoxelMesherCubes::set_material_by_index);
+
+	ClassDB::bind_method(D_METHOD("_get_opaque_material"), &VoxelMesherCubes::_b_get_opaque_material);
+	ClassDB::bind_method(D_METHOD("_set_opaque_material", "material"), &VoxelMesherCubes::_b_set_opaque_material);
+
+	ClassDB::bind_method(D_METHOD("_get_transparent_material"), &VoxelMesherCubes::_b_get_transparent_material);
+	ClassDB::bind_method(
+			D_METHOD("_set_transparent_material", "material"), &VoxelMesherCubes::_b_set_transparent_material);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "greedy_meshing_enabled"), "set_greedy_meshing_enabled",
 			"is_greedy_meshing_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_mode", PROPERTY_HINT_ENUM, "Raw,MesherPalette,ShaderPalette"),
@@ -1023,6 +1060,12 @@ void VoxelMesherCubes::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelColorPalette::get_class_static()),
 			"set_palette", "get_palette");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+			"_set_opaque_material", "_get_opaque_material");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE,
+						 Material::get_class_static()),
+			"_set_transparent_material", "_get_transparent_material");
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);
 	BIND_ENUM_CONSTANT(MATERIAL_TRANSPARENT);
