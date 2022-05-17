@@ -2,6 +2,7 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "voxel_instance_library_item.h"
+#include <map>
 
 namespace zylann::voxel {
 
@@ -30,11 +31,12 @@ public:
 	const VoxelInstanceLibraryItem *get_item_const(int id) const;
 	VoxelInstanceLibraryItem *get_item(int id);
 
+	// f(int item_id, VoxelInstanceLibraryItem &item)
 	template <typename F>
 	void for_each_item(F f) {
-		for (Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
-			CRASH_COND(E->value().is_null());
-			f(E->key(), **E->value());
+		for (auto it = _items.begin(); it != _items.end(); ++it) {
+			ZN_ASSERT(it->second.is_valid());
+			f(it->first, **it->second);
 		}
 	}
 
@@ -42,7 +44,7 @@ public:
 	void remove_listener(IListener *listener);
 
 protected:
-	Ref<VoxelInstanceLibraryItem> _b_get_item(int id);
+	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -55,8 +57,8 @@ private:
 	static void _bind_methods();
 
 	// ID => Item
-	// Using a Map keeps items ordered, so the last item has highest ID
-	Map<int, Ref<VoxelInstanceLibraryItem>> _items;
+	// Using a map keeps items ordered, so the last item has highest ID
+	std::map<int, Ref<VoxelInstanceLibraryItem>> _items;
 
 	std::vector<IListener *> _listeners;
 };

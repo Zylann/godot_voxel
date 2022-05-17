@@ -9,6 +9,7 @@
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
 
+#include <map>
 #include <unordered_set>
 
 namespace zylann {
@@ -140,7 +141,7 @@ struct VoxelLodTerrainUpdateData {
 		// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 		// Not using a pointer because Map storage is stable.
 		// TODO Optimization: could be replaced with a grid data structure
-		Map<Vector3i, OctreeItem> lod_octrees;
+		std::map<Vector3i, OctreeItem> lod_octrees;
 		Box3i last_octree_region_box;
 		Vector3i local_viewer_pos_previous_octree_update;
 		bool had_blocked_octree_nodes_previous_update = false;

@@ -9,35 +9,38 @@
 namespace zylann::voxel {
 
 VoxelInstanceLibrary::~VoxelInstanceLibrary() {
-	for_each_item([this](int id, VoxelInstanceLibraryItem &item) { item.remove_listener(this, id); });
+	for_each_item([this](int id, VoxelInstanceLibraryItem &item) { //
+		item.remove_listener(this, id);
+	});
 }
 
 int VoxelInstanceLibrary::get_next_available_id() {
-	if (_items.is_empty()) {
+	if (_items.empty()) {
 		return 1;
 	} else {
-		return _items.back()->key() + 1;
+		// Get highest key and increment it
+		return _items.rbegin()->first + 1;
 	}
 }
 
 void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItem> item) {
-	ERR_FAIL_COND(_items.has(id));
+	ERR_FAIL_COND_MSG(_items.find(id) != _items.end(), "An item with the same ID is already registered");
 	ERR_FAIL_COND(id < 0 || id >= MAX_ID);
 	ERR_FAIL_COND(item.is_null());
-	_items.insert(id, item);
+	_items.insert({ id, item });
 	item->add_listener(this, id);
 	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
 	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::remove_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
-	ERR_FAIL_COND(E == nullptr);
-	Ref<VoxelInstanceLibraryItem> item = E->value();
+	auto it = _items.find(id);
+	ERR_FAIL_COND_MSG(it == _items.end(), "Cannot remove unregistered item");
+	Ref<VoxelInstanceLibraryItem> item = it->second;
 	if (item.is_valid()) {
 		item->remove_listener(this, id);
 	}
-	_items.erase(E);
+	_items.erase(it);
 	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 	notify_property_list_changed();
 }
@@ -51,11 +54,11 @@ void VoxelInstanceLibrary::clear() {
 }
 
 int VoxelInstanceLibrary::find_item_by_name(String name) const {
-	for (Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
-		const Ref<VoxelInstanceLibraryItem> &item = E->value();
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		const Ref<VoxelInstanceLibraryItem> &item = it->second;
 		ERR_FAIL_COND_V(item.is_null(), -1);
 		if (item->get_name() == name) {
-			return E->key();
+			return it->first;
 		}
 	}
 	return -1;
@@ -65,19 +68,19 @@ int VoxelInstanceLibrary::get_item_count() const {
 	return _items.size();
 }
 
-Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::_b_get_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
+Ref<VoxelInstanceLibraryItem> VoxelInstanceLibrary::_b_get_item(int id) const {
+	auto it = _items.find(id);
 	Ref<VoxelInstanceLibraryItem> item;
-	if (E != nullptr) {
-		item = E->value();
+	if (it != _items.end()) {
+		item = it->second;
 	}
 	return item;
 }
 
 VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item(int id) {
-	Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
-	if (E != nullptr) {
-		Ref<VoxelInstanceLibraryItem> &item = E->value();
+	auto it = _items.find(id);
+	if (it != _items.end()) {
+		Ref<VoxelInstanceLibraryItem> &item = it->second;
 		ERR_FAIL_COND_V(item.is_null(), nullptr);
 		return *item;
 	}
@@ -85,9 +88,9 @@ VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item(int id) {
 }
 
 const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_const(int id) const {
-	const Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
-	if (E != nullptr) {
-		const Ref<VoxelInstanceLibraryItem> &item = E->value();
+	auto it = _items.find(id);
+	if (it != _items.end()) {
+		const Ref<VoxelInstanceLibraryItem> &item = it->second;
 		ERR_FAIL_COND_V(item.is_null(), nullptr);
 		return *item;
 	}
@@ -125,20 +128,20 @@ bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value
 		Ref<VoxelInstanceLibraryItem> item = p_value;
 		ERR_FAIL_COND_V_MSG(item.is_null(), false, "Setting a null item is not allowed");
 
-		Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
+		auto it = _items.find(id);
 
-		if (E == nullptr) {
+		if (it == _items.end()) {
 			add_item(id, item);
 
 		} else {
 			// Replace
-			if (E->value() != item) {
-				Ref<VoxelInstanceLibraryItem> old_item = E->value();
+			if (it->second != item) {
+				Ref<VoxelInstanceLibraryItem> old_item = it->second;
 				if (old_item.is_valid()) {
 					old_item->remove_listener(this, id);
 					notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 				}
-				E->value() = item;
+				it->second = item;
 				item->add_listener(this, id);
 				notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
 			}
@@ -153,9 +156,9 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 	const String name = p_name;
 	if (name.begins_with("item_")) {
 		const int id = name.substr(5).to_int();
-		const Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.find(id);
-		if (E != nullptr) {
-			r_ret = E->value();
+		auto it = _items.find(id);
+		if (it != _items.end()) {
+			r_ret = it->second;
 			return true;
 		}
 	}
@@ -163,8 +166,8 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 }
 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
-	for (Map<int, Ref<VoxelInstanceLibraryItem>>::Element *E = _items.front(); E != nullptr; E = E->next()) {
-		const String name = "item_" + itos(E->key());
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		const String name = "item_" + itos(it->first);
 		p_list->push_back(PropertyInfo(Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibraryItem"));
 	}
 }

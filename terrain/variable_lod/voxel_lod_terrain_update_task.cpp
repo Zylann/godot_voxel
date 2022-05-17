@@ -397,13 +397,13 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 			unsigned int lod_count;
 
 			void operator()(const Vector3i &pos) {
-				Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.find(pos);
-				if (E == nullptr) {
+				std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.find(pos);
+				if (it == state.lod_octrees.end()) {
 					return;
 				}
 
-				VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
-				const Vector3i block_pos_maxlod = E->key();
+				VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
+				const Vector3i block_pos_maxlod = it->first;
 
 				const unsigned int last_lod_index = lod_count - 1;
 
@@ -413,7 +413,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 				CleanOctreeAction a{ state, block_pos_maxlod << last_lod_index };
 				item.octree.clear(a);
 
-				state.lod_octrees.erase(E);
+				state.lod_octrees.erase(it);
 
 				// Unload last lod from here, as it may extend a bit further than the others.
 				// Other LODs are unloaded earlier using a sliding region.
@@ -429,14 +429,14 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 
 			void operator()(const Vector3i &pos) {
 				// That's a new cell we are entering, shouldn't be anything there
-				CRASH_COND(state.lod_octrees.has(pos));
+				CRASH_COND(state.lod_octrees.find(pos) != state.lod_octrees.end());
 
 				// Create new octree
 				// TODO Use ObjectPool to store them, deletion won't be cheap
-				Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E =
-						state.lod_octrees.insert(pos, VoxelLodTerrainUpdateData::OctreeItem());
-				CRASH_COND(E == nullptr);
-				VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+				std::pair<std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator, bool> p =
+						state.lod_octrees.insert({ pos, VoxelLodTerrainUpdateData::OctreeItem() });
+				CRASH_COND(p.second == false);
+				VoxelLodTerrainUpdateData::OctreeItem &item = p.first->second;
 				LodOctree::NoDestroyAction nda;
 				item.octree.create(lod_count, nda);
 			}
@@ -824,8 +824,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	unsigned int blocked_octree_nodes = 0;
 
 	// TODO Maintain a vector to make iteration faster?
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
-			E = E->next()) {
+	for (auto octree_it = state.lod_octrees.begin(); octree_it != state.lod_octrees.end(); ++octree_it) {
 		ZN_PROFILE_SCOPE();
 
 		struct OctreeActions {
@@ -969,7 +968,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			}
 		};
 
-		const Vector3i block_pos_maxlod = E->key();
+		const Vector3i block_pos_maxlod = octree_it->first;
 		const Vector3i block_offset_lod0 = block_pos_maxlod << (settings.lod_count - 1);
 		const Vector3 relative_viewer_pos = p_viewer_pos - Vector3(mesh_block_size * block_offset_lod0);
 
@@ -983,7 +982,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			lod_distance_octree_space, //
 			relative_viewer_pos / octree_leaf_node_size
 		};
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+		VoxelLodTerrainUpdateData::OctreeItem &item = octree_it->second;
 		item.octree.update(octree_actions);
 
 		blocked_octree_nodes += octree_actions.blocked_count;

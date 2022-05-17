@@ -57,7 +57,7 @@ void VoxelVoxMeshImporter::get_import_options(const String &p_path, List<ImportO
 }
 
 bool VoxelVoxMeshImporter::get_option_visibility(
-		const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const {
+		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
 	return true;
 }
 
@@ -216,7 +216,7 @@ bool make_single_voxel_grid(
 }
 
 Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_save_path,
-		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
+		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
 	//
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];

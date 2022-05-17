@@ -433,9 +433,10 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 
 	// Reset LOD octrees
 	LodOctree::NoDestroyAction nda;
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
-			E = E->next()) {
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+
+	for (std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.begin();
+			it != state.lod_octrees.end(); ++it) {
+		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
 		item.octree.create(lod_count, nda);
 	}
 
@@ -498,10 +499,10 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 	if (block.fading_state != fading_state) {
 		if (block.fading_state == VoxelMeshBlockVLT::FADING_NONE) {
-			Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
 			// Must not have duplicates
-			ERR_FAIL_COND(fading_blocks.has(block.position));
-			fading_blocks.insert(block.position, &block);
+			ERR_FAIL_COND(fading_blocks.find(block.position) != fading_blocks.end());
+			fading_blocks.insert({ block.position, &block });
 		}
 		block.fading_state = fading_state;
 		block.fading_progress = initial_progress;
@@ -812,9 +813,9 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
 	LodOctree::NoDestroyAction nda;
 
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = _update_data->state.lod_octrees.front(); E;
-			E = E->next()) {
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+	std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
 		item.octree.create(p_lod_count, nda);
 	}
 
@@ -1584,24 +1585,23 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
 	for (unsigned int lod_index = 0; lod_index < _fading_blocks_per_lod.size(); ++lod_index) {
-		Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+		std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+		std::map<Vector3i, VoxelMeshBlockVLT *>::iterator it = fading_blocks.begin();
 
-		Map<Vector3i, VoxelMeshBlockVLT *>::Element *e = fading_blocks.front();
-
-		while (e != nullptr) {
-			VoxelMeshBlockVLT *block = e->value();
+		while (it != fading_blocks.end()) {
+			VoxelMeshBlockVLT *block = it->second;
+			ZN_ASSERT(block != nullptr);
 			// The collection of fading blocks must only contain fading blocks
 			ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
 
 			const bool finished = block->update_fading(speed);
 
 			if (finished) {
-				Map<Vector3i, VoxelMeshBlockVLT *>::Element *next = e->next();
-				fading_blocks.erase(e);
-				e = next;
+				// `erase` returns the next iterator
+				it = fading_blocks.erase(it);
 
 			} else {
-				e = e->next();
+				++it;
 			}
 		}
 	}
@@ -1928,11 +1928,11 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 Array VoxelLodTerrain::debug_get_octree_positions() const {
 	_update_data->wait_for_end_of_task();
 	Array positions;
-	const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	const std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
 	positions.resize(octrees.size());
 	int i = 0;
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = octrees.front(); e; e = e->next()) {
-		positions[i++] = e->key();
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		positions[i++] = it->first;
 	}
 	return positions;
 }
@@ -1992,15 +1992,15 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 
 	_update_data->wait_for_end_of_task();
 
-	const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	const std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
 
 	Array forest_data;
 
-	for (const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = octrees.front(); e; e = e->next()) {
-		const LodOctree &octree = e->value().octree;
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		const LodOctree &octree = it->second.octree;
 		const LodOctree::Node *root = octree.get_root();
 		Array root_data;
-		const Vector3i octree_pos = e->key();
+		const Vector3i octree_pos = it->first;
 		L::read_node(octree, root, octree_pos, get_lod_count() - 1, _update_data->state, root_data);
 		forest_data.append(octree_pos);
 		forest_data.append(root_data);
@@ -2033,9 +2033,9 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_octree_bounds_gizmos) {
 		const int octree_size = 1 << LodOctree::get_octree_size_po2(get_mesh_block_size_pow2(), get_lod_count());
 		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
-		for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = state.lod_octrees.front(); e;
-				e = e->next()) {
-			const Transform3D local_transform(local_octree_basis, e->key() * octree_size);
+
+		for (auto it = state.lod_octrees.begin(); it != state.lod_octrees.end(); ++it) {
+			const Transform3D local_transform(local_octree_basis, it->first * octree_size);
 			dr.draw_box(parent_transform * local_transform, DebugColors::ID_OCTREE_BOUNDS);
 		}
 	}
@@ -2044,6 +2044,7 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_volume_bounds_gizmos) {
 		const Box3i bounds_in_voxels = get_voxel_bounds();
 		const float bounds_in_voxels_len = Vector3(bounds_in_voxels.size).length();
+
 		if (bounds_in_voxels_len < 10000) {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
@@ -2058,11 +2059,11 @@ void VoxelLodTerrain::update_gizmos() {
 		// That can be expensive to draw
 		const int mesh_block_size = get_mesh_block_size();
 		const float lod_count_f = lod_count;
-		for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = state.lod_octrees.front(); e;
-				e = e->next()) {
-			const LodOctree &octree = e->value().octree;
 
-			const Vector3i block_pos_maxlod = e->key();
+		for (auto it = state.lod_octrees.begin(); it != state.lod_octrees.end(); ++it) {
+			const LodOctree &octree = it->second.octree;
+
+			const Vector3i block_pos_maxlod = it->first;
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 
 			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform, lod_count_f](

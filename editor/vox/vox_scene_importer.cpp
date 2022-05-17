@@ -61,7 +61,7 @@ void VoxelVoxSceneImporter::get_import_options(
 }
 
 bool VoxelVoxSceneImporter::get_option_visibility(
-		const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const {
+		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
 	return true;
 }
 
@@ -237,7 +237,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 // }
 
 Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p_save_path,
-		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
+		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
 	ZN_PROFILE_SCOPE();
 
