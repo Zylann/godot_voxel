@@ -529,7 +529,9 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
 		const VoxelBlockyLibrary::BakedData &library_baked_data = params.library->get_baked_data();
 
-		material_count = library_baked_data.indexed_materials_count;
+		// There must be at least one "material" in case none of them are assigned.
+		// This will produce a single surface, which will be rendered with a default material.
+		material_count = math::max(library_baked_data.indexed_materials_count, 1u);
 
 		if (arrays_per_material.size() < material_count) {
 			arrays_per_material.resize(material_count);
