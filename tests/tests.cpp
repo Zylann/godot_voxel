@@ -2071,13 +2071,13 @@ void test_voxel_mesher_cubes() {
 	const unsigned int transparent_surface_index = VoxelMesherCubes::MATERIAL_TRANSPARENT;
 
 	ZYLANN_TEST_ASSERT(output.surfaces.size() == 2);
-	ZYLANN_TEST_ASSERT(output.surfaces[0].size() > 0);
-	ZYLANN_TEST_ASSERT(output.surfaces[1].size() > 0);
+	ZYLANN_TEST_ASSERT(output.surfaces[0].arrays.size() > 0);
+	ZYLANN_TEST_ASSERT(output.surfaces[1].arrays.size() > 0);
 
-	const PackedVector3Array surface0_vertices = output.surfaces[opaque_surface_index][Mesh::ARRAY_VERTEX];
+	const PackedVector3Array surface0_vertices = output.surfaces[opaque_surface_index].arrays[Mesh::ARRAY_VERTEX];
 	const unsigned int surface0_vertices_count = surface0_vertices.size();
 
-	const PackedVector3Array surface1_vertices = output.surfaces[transparent_surface_index][Mesh::ARRAY_VERTEX];
+	const PackedVector3Array surface1_vertices = output.surfaces[transparent_surface_index].arrays[Mesh::ARRAY_VERTEX];
 	const unsigned int surface1_vertices_count = surface1_vertices.size();
 
 	// println("Surface0:");
