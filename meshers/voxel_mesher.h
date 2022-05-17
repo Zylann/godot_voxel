@@ -31,7 +31,11 @@ public:
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
 		// Not initialized because it confused GCC.
-		int lod; // = 0;
+		uint8_t lod; // = 0;
+		// If true, collision information is required.
+		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
+		// but in other setups it can be different and will be returned in `collision_surface`.
+		bool collision_hint = false;
 	};
 
 	struct Output {
@@ -42,7 +46,14 @@ public:
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-		unsigned int mesh_flags = 0;
+		uint32_t mesh_flags = 0;
+
+		struct CollisionSurface {
+			std::vector<Vector3f> positions;
+			std::vector<int> indices;
+		};
+		CollisionSurface collision_surface;
+
 		Ref<Image> atlas_image;
 	};
 

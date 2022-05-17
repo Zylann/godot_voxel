@@ -1,4 +1,5 @@
 #include "funcs.h"
+#include "../math/conv.h"
 #include "../profiling.h"
 
 #include <core/config/engine.h>
@@ -55,7 +56,7 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 		return Ref<ConcavePolygonShape3D>();
 	}
 
-	//copy the points into it
+	// Deindex surfaces into a single one
 	unsigned int face_points_offset = 0;
 	for (unsigned int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
@@ -90,6 +91,39 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 		}
 
 		face_points_offset += indices.size();
+	}
+
+	Ref<ConcavePolygonShape3D> shape;
+	{
+		ZN_PROFILE_SCOPE_NAMED("Godot shape");
+		shape.instantiate();
+		shape->set_faces(face_points);
+	}
+	return shape;
+}
+
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> positions, Span<const int> indices) {
+	ZN_PROFILE_SCOPE();
+
+	PackedVector3Array face_points;
+
+	if (indices.size() < 3) {
+		return Ref<ConcavePolygonShape3D>();
+	}
+
+	face_points.resize(indices.size());
+
+	ERR_FAIL_COND_V(positions.size() < 3, Ref<ConcavePolygonShape3D>());
+	ERR_FAIL_COND_V(indices.size() < 3, Ref<ConcavePolygonShape3D>());
+	ERR_FAIL_COND_V(indices.size() % 3 != 0, Ref<ConcavePolygonShape3D>());
+
+	// Deindex mesh
+	{
+		Vector3 *w = face_points.ptrw();
+		for (unsigned int ii = 0; ii < indices.size(); ++ii) {
+			const int index = indices[ii];
+			w[ii] = to_vec3(positions[index]);
+		}
 	}
 
 	Ref<ConcavePolygonShape3D> shape;

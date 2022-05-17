@@ -51,6 +51,11 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 		const int index = name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
 		set_material_override(index, p_value);
 		return true;
+
+	} else if (name.begins_with("collision_enabled_")) {
+		const int index = name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+		set_mesh_collision_enabled(index, p_value);
+		return true;
 	}
 
 	return false;
@@ -71,6 +76,11 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 	} else if (name.begins_with("material_override_")) {
 		const int index = name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
 		r_ret = get_material_override(index);
+		return true;
+
+	} else if (name.begins_with("collision_enabled_")) {
+		const int index = name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+		r_ret = is_mesh_collision_enabled(index);
 		return true;
 	}
 
@@ -103,13 +113,13 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 					PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()));
 		}
 
-		// p_list->push_back(
-		// 		PropertyInfo(Variant::NIL, "Surface collision", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_GROUP));
+		p_list->push_back(PropertyInfo(
+				Variant::NIL, "Mesh collision", PROPERTY_HINT_NONE, "collision_enabled_", PROPERTY_USAGE_GROUP));
 
-		// for (unsigned int i = 0; i < _surface_count; ++i) {
-		// 	p_list->push_back(PropertyInfo(Variant::OBJECT, String("collision_enabled_{0}").format(varray(i)),
-		// 			PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()));
-		// }
+		for (unsigned int i = 0; i < _surface_count; ++i) {
+			p_list->push_back(PropertyInfo(Variant::OBJECT, String("collision_enabled_{0}").format(varray(i)),
+					PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()));
+		}
 	}
 }
 
@@ -129,13 +139,31 @@ void VoxelBlockyModel::set_color(Color color) {
 }
 
 void VoxelBlockyModel::set_material_override(int index, Ref<Material> material) {
-	ERR_FAIL_INDEX(index, _surface_count);
+	// TODO Can't check for `_surface_count` instead, because there is no guarantee about the order in which Godot will
+	// set properties when loading the resource. The mesh could be set later, so we can't know the number of surfaces.
+	ERR_FAIL_INDEX(index, int(_surface_params.size()));
 	_surface_params[index].material_override = material;
 }
 
 Ref<Material> VoxelBlockyModel::get_material_override(int index) const {
-	ERR_FAIL_INDEX_V(index, _surface_count, Ref<Material>());
+	// TODO Can't check for `_surface_count` instead, because there is no guarantee about the order in which Godot will
+	// set properties when loading the resource. The mesh could be set later, so we can't know the number of surfaces.
+	ERR_FAIL_INDEX_V(index, int(_surface_params.size()), Ref<Material>());
 	return _surface_params[index].material_override;
+}
+
+void VoxelBlockyModel::set_mesh_collision_enabled(int surface_index, bool enabled) {
+	// TODO Can't check for `_surface_count` instead, because there is no guarantee about the order in which Godot will
+	// set properties when loading the resource. The mesh could be set later, so we can't know the number of surfaces.
+	ERR_FAIL_INDEX(surface_index, int(_surface_params.size()));
+	_surface_params[surface_index].collision_enabled = enabled;
+}
+
+bool VoxelBlockyModel::is_mesh_collision_enabled(int surface_index) const {
+	// TODO Can't check for `_surface_count` instead, because there is no guarantee about the order in which Godot will
+	// set properties when loading the resource. The mesh could be set later, so we can't know the number of surfaces.
+	ERR_FAIL_INDEX_V(surface_index, int(_surface_params.size()), false);
+	return _surface_params[surface_index].collision_enabled;
 }
 
 void VoxelBlockyModel::set_transparent(bool t) {
@@ -616,6 +644,11 @@ void VoxelBlockyModel::_b_set_collision_aabbs(Array array) {
 	}
 }
 
+// void ortho_simplify(Span<const Vector3f> vertices, Span<const int> indices, std::vector<int> &output) {
+// TODO Optimization: implement mesh simplification based on axis-aligned triangles.
+// It could be very effective on mesh collisions with the blocky mesher.
+// }
+
 void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_voxel_name", "name"), &VoxelBlockyModel::set_voxel_name);
 	ClassDB::bind_method(D_METHOD("get_voxel_name"), &VoxelBlockyModel::get_voxel_name);
@@ -645,6 +678,10 @@ void VoxelBlockyModel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_custom_mesh", "type"), &VoxelBlockyModel::set_custom_mesh);
 	ClassDB::bind_method(D_METHOD("get_custom_mesh"), &VoxelBlockyModel::get_custom_mesh);
+
+	ClassDB::bind_method(D_METHOD("set_mesh_collision_enabled", "surface_index", "enabled"),
+			&VoxelBlockyModel::set_mesh_collision_enabled);
+	ClassDB::bind_method(D_METHOD("is_mesh_collision_enabled"), &VoxelBlockyModel::is_mesh_collision_enabled);
 
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &VoxelBlockyModel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &VoxelBlockyModel::_b_get_collision_aabbs);

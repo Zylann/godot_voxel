@@ -62,6 +62,7 @@ public:
 		unsigned int data_blocks_count = 0;
 		Vector3i render_block_position;
 		uint8_t lod = 0;
+		bool collision_hint = false;
 	};
 
 	struct VolumeCallbacks {

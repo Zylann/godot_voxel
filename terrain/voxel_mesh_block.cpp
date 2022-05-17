@@ -134,11 +134,24 @@ void VoxelMeshBlock::set_collision_mesh(
 		drop_collision();
 		return;
 	}
+	Ref<Shape3D> shape = create_concave_polygon_shape(surface_arrays);
+	set_collision_shape(shape, debug_collision, node, margin);
+}
 
+void VoxelMeshBlock::set_collision_mesh(
+		Span<const Vector3f> positions, Span<const int> indices, bool debug_collision, Node3D *node, float margin) {
+	if (positions.size() == 0) {
+		drop_collision();
+		return;
+	}
+	Ref<Shape3D> shape = create_concave_polygon_shape(positions, indices);
+	set_collision_shape(shape, debug_collision, node, margin);
+}
+
+void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin) {
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND_MSG(node->get_world_3d() != _world, "Physics body and attached node must be from the same world");
 
-	Ref<Shape3D> shape = create_concave_polygon_shape(surface_arrays);
 	if (shape.is_null()) {
 		drop_collision();
 		return;

@@ -31,6 +31,7 @@ public:
 	uint8_t lod;
 	uint8_t blocks_count;
 	uint8_t data_block_size;
+	bool collision_hint;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelDataLodMap> data;

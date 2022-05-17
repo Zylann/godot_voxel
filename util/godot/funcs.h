@@ -22,6 +22,7 @@ bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(const Mesh &mesh);
 
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> positions, Span<const int> indices);
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);

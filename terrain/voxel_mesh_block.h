@@ -47,6 +47,9 @@ public:
 	// Collisions
 
 	void set_collision_mesh(Span<const Array> surface_arrays, bool debug_collision, Node3D *node, float margin);
+	void set_collision_mesh(
+			Span<const Vector3f> positions, Span<const int> indices, bool debug_collision, Node3D *node, float margin);
+	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin);
 	void set_collision_layer(int layer);
 	void set_collision_mask(int mask);
 	void set_collision_margin(float margin);

@@ -276,6 +276,7 @@ void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &i
 	task->blocks_count = input.data_blocks_count;
 	task->position = input.render_block_position;
 	task->lod = input.lod;
+	task->collision_hint = input.collision_hint;
 	task->meshing_dependency = volume.meshing_dependency;
 	task->data_block_size = volume.data_block_size;
 

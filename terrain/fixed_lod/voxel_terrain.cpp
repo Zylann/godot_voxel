@@ -1378,6 +1378,7 @@ void VoxelTerrain::process_meshing() {
 			VoxelServer::BlockMeshInput mesh_request;
 			mesh_request.render_block_position = mesh_block_pos;
 			mesh_request.lod = 0;
+			mesh_request.collision_hint = _generate_collisions;
 			//mesh_request.data_blocks_count = data_box.size.volume();
 
 			// This iteration order is specifically chosen to match VoxelServer and threaded access
@@ -1439,7 +1440,9 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 
 	Ref<ArrayMesh> mesh;
 
-	std::vector<Array> collidable_surfaces;
+	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
+	const bool use_render_mesh_as_collider = gen_collisions && ob.surfaces.collision_surface.positions.size() == 0;
+	std::vector<Array> render_surfaces;
 
 	int gd_surface_index = 0;
 	for (unsigned int surface_index = 0; surface_index < ob.surfaces.surfaces.size(); ++surface_index) {
@@ -1454,7 +1457,9 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 			continue;
 		}
 
-		collidable_surfaces.push_back(arrays);
+		if (use_render_mesh_as_collider) {
+			render_surfaces.push_back(arrays);
+		}
 
 		if (mesh.is_null()) {
 			mesh.instantiate();
@@ -1470,7 +1475,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 
 	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
-		collidable_surfaces.clear();
+		render_surfaces.clear();
 	}
 
 	if (_instancer != nullptr) {
@@ -1486,18 +1491,28 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		}
 	}
 
-	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
-
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
+
 	if (_material_override.is_valid()) {
 		block->set_material_override(_material_override);
 	}
+
 	if (gen_collisions) {
-		block->set_collision_mesh(to_span_const(collidable_surfaces), get_tree()->is_debugging_collisions_hint(), this,
-				_collision_margin);
+		const bool debug_collisions = get_tree()->is_debugging_collisions_hint();
+		const VoxelMesher::Output::CollisionSurface &collision_surface = ob.surfaces.collision_surface;
+
+		if (use_render_mesh_as_collider) {
+			block->set_collision_mesh(to_span(render_surfaces), debug_collisions, this, _collision_margin);
+
+		} else {
+			block->set_collision_mesh(to_span(collision_surface.positions), to_span(collision_surface.indices),
+					debug_collisions, this, _collision_margin);
+		}
+
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
 	}
+
 	block->set_visible(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
