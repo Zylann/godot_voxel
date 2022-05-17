@@ -43,7 +43,7 @@ public:
 			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
 			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
 
-			int material_id = -1;
+			uint32_t material_id = 0;
 			bool collision_enabled = true;
 
 			void clear() {

@@ -351,7 +351,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 	VoxelBlockyModel::BakedData::Model &model = baked_data.model;
 
-	if (mesh->get_surface_count() > VoxelBlockyModel::BakedData::Model::MAX_SURFACES) {
+	if (mesh->get_surface_count() > int(VoxelBlockyModel::BakedData::Model::MAX_SURFACES)) {
 		ZN_PRINT_WARNING(format("Mesh has more than {} surfaces, extra surfaces will not be baked.",
 				VoxelBlockyModel::BakedData::Model::MAX_SURFACES));
 	}
@@ -434,7 +434,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 		if (material.is_valid()) {
 			surface.material_id = materials.get_or_create_index(material);
 		} else {
-			surface.material_id = -1;
+			surface.material_id = 0;
 		}
 
 		// PackedInt32Array::Read indices_read = indices.read();
