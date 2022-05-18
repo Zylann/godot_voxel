@@ -35,8 +35,8 @@ void VoxelGeneratorGraph::clear() {
 	}
 }
 
-ProgramGraph::Node *create_node_internal(
-		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id) {
+ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position,
+		uint32_t id, bool create_default_instances) {
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(type_id);
 
 	ProgramGraph::Node *node = graph.create_node(type_id, id);
@@ -48,8 +48,16 @@ ProgramGraph::Node *create_node_internal(
 
 	node->params.resize(type.params.size());
 	for (size_t i = 0; i < type.params.size(); ++i) {
-		node->params[i] = type.params[i].default_value;
+		const VoxelGraphNodeDB::Param &param = type.params[i];
+
+		if (param.class_name.is_empty()) {
+			node->params[i] = param.default_value;
+
+		} else if (param.default_value_func != nullptr && create_default_instances) {
+			node->params[i] = param.default_value_func();
+		}
 	}
+
 	for (size_t i = 0; i < type.inputs.size(); ++i) {
 		node->default_inputs[i] = type.inputs[i].default_value;
 	}
@@ -59,8 +67,19 @@ ProgramGraph::Node *create_node_internal(
 
 uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
 	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton().is_valid_type_id(type_id), ProgramGraph::NULL_ID);
-	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id);
+	const ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id, true);
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
+	// Register resources if any were created by default
+	for (const Variant &v : node->params) {
+		if (!v.is_null()) {
+			Ref<Resource> res = v;
+			if (res.is_valid()) {
+				register_subresource(**res);
+			} else {
+				ZN_PRINT_WARNING("Non-resource object found in node parameter");
+			}
+		}
+	}
 	return node->id;
 }
 
@@ -1520,7 +1539,8 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		const Vector2 gui_position = node_data["gui_position"];
 		VoxelGeneratorGraph::NodeTypeID type_id;
 		ERR_FAIL_COND_V(!type_db.try_get_type_id_from_name(type_name, type_id), false);
-		ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id);
+		// Don't create default param values, they will be assigned from serialized data
+		ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id, false);
 		ERR_FAIL_COND_V(node == nullptr, false);
 
 		const Variant *param_key = nullptr;

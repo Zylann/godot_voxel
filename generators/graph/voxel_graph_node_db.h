@@ -21,9 +21,12 @@ public:
 		Port(String p_name, float p_default_value) : name(p_name), default_value(p_default_value) {}
 	};
 
+	typedef Variant (*DefaultValueFactory)();
+
 	struct Param {
 		String name;
 		Variant default_value;
+		DefaultValueFactory default_value_func;
 		Variant::Type type;
 		String class_name;
 		uint32_t index = -1;
@@ -34,7 +37,8 @@ public:
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}
 
-		Param(String p_name, String p_class_name) : name(p_name), type(Variant::OBJECT), class_name(p_class_name) {}
+		Param(String p_name, String p_class_name, DefaultValueFactory dvf) :
+				name(p_name), default_value_func(dvf), type(Variant::OBJECT), class_name(p_class_name) {}
 	};
 
 	enum Category {

@@ -49,7 +49,8 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 
 static ProgramGraph::Node &create_node(
 		ProgramGraph &graph, const VoxelGraphNodeDB &db, VoxelGeneratorGraph::NodeTypeID node_type_id) {
-	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID);
+	// Not creating default sub-resources here, there are no use cases where we use such nodes.
+	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID, false);
 	CRASH_COND(node == nullptr);
 	return *node;
 }
