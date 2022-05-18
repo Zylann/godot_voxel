@@ -63,7 +63,7 @@ public:
 		};
 
 		struct Model {
-			static const uint32_t MAX_SURFACES = 2;
+			static constexpr uint32_t MAX_SURFACES = 2;
 
 			// A model can have up to 2 materials.
 			// If more is needed or profiling tells better, we could change it to a vector?
