@@ -24,6 +24,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
     - `VoxelGeneratorGraph`: editor: replace existing connection if dragging from/to an input port having one already
+    - `VoxelGeneratorGraph`: editor: creating noise and curve nodes now auto-create their resource instead of coming up null
     - `VoxelGeneratorGraph`: added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
     - `VoxelGeneratorGraph`: added math expression node
     - `VoxelGeneratorGraph`: added Pow and Powi nodes
