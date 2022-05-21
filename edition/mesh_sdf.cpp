@@ -45,8 +45,8 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 		const Vector3f &p_v0, const Vector3f &p_v1, const Vector3f &p_v2) {
 	const Vector3f e1 = p_v1 - p_v0;
 	const Vector3f e2 = p_v2 - p_v0;
-	const Vector3f h = p_dir.cross(e2);
-	const float a = e1.dot(h);
+	const Vector3f h = math::cross(p_dir, e2);
+	const float a = math::dot(e1, h);
 
 	if (Math::abs(a) < 0.00001f) {
 		return { TriangleIntersectionResult::PARALLEL, -1 };
@@ -55,15 +55,15 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 	const float f = 1.0f / a;
 
 	const Vector3f s = p_from - p_v0;
-	const float u = f * s.dot(h);
+	const float u = f * math::dot(s, h);
 
 	if ((u < 0.0f) || (u > 1.0f)) {
 		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
 	}
 
-	const Vector3f q = s.cross(e1);
+	const Vector3f q = math::cross(s, e1);
 
-	const float v = f * p_dir.dot(q);
+	const float v = f * math::dot(p_dir, q);
 
 	if ((v < 0.0f) || (u + v > 1.0f)) {
 		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
@@ -71,7 +71,7 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 
 	// At this stage we can compute t to find out where
 	// the intersection point is on the line.
-	const float t = f * e2.dot(q);
+	const float t = f * math::dot(e2, q);
 
 	if (t > 0.00001f) { // ray intersection
 		//r_res = p_from + p_dir * t;
@@ -134,7 +134,7 @@ TriangleIntersectionResult ray_intersects_triangle2(const Vector3f &p_from, cons
 }
 
 inline Vector3f get_normal(const Triangle &t) {
-	return t.v13.cross(t.v1 - t.v2).normalized();
+	return math::cross(t.v13, math::normalized(t.v1 - t.v2));
 }
 
 // const Triangle *raycast(Span<const Triangle> triangles, Vector3f ray_position, Vector3f ray_dir) {
@@ -264,7 +264,7 @@ bool find_sdf_sign_with_raycast(
 	//ZN_PROFILE_SCOPE();
 
 	const Vector3f ref_center = (ref_triangle.v1 + ref_triangle.v2 + ref_triangle.v3) / 3.f;
-	const Vector3f ray_dir = (ref_center - ray_position).normalized();
+	const Vector3f ray_dir = math::normalized(ref_center - ray_position);
 
 #ifdef ZN_MESH_SDF_DEBUG_BATCH
 	DDD::draw_line(ray_position, ray_position + ray_dir * 10.f, Color(0, 1, 0));
@@ -283,14 +283,14 @@ bool find_sdf_sign_with_raycast(
 		if (s_tri_not_found_error == false) {
 			s_tri_not_found_error = true;
 			ZN_PRINT_VERBOSE(
-					format("Could not find triangle by raycast, dp: {}", get_normal(ref_triangle).dot(ray_dir)));
+					format("Could not find triangle by raycast, dp: {}", math::dot(get_normal(ref_triangle), ray_dir)));
 		}
 #endif
 		return false;
 	}
 
 	const Vector3f triangle_normal = get_normal(*selected_triangle);
-	const float dp = triangle_normal.dot(ray_dir);
+	const float dp = math::dot(triangle_normal, ray_dir);
 	// Same direction (+): we are inside, sign is negative
 	// Opposite direction (-): we are outside, sign is positive
 	out_sign = dp < 0.f ? 1 : -1;
@@ -626,26 +626,26 @@ float get_distance_to_triangle_squared(const Vector3f v1, const Vector3f v2, con
 float get_distance_to_triangle_squared_precalc(const Triangle &t, const Vector3f p) {
 	// https://iquilezles.org/articles/triangledistance/
 
+	using namespace math;
+
 	const Vector3f p1 = p - t.v1;
 	const Vector3f p2 = p - t.v2;
 	const Vector3f p3 = p - t.v3;
 
 	const float det = //
-			math::sign_nonzero(t.v21_cross_nor.dot(p1)) + //
-			math::sign_nonzero(t.v32_cross_nor.dot(p2)) + //
-			math::sign_nonzero(t.v13_cross_nor.dot(p3));
+			sign_nonzero(dot(t.v21_cross_nor, p1)) + //
+			sign_nonzero(dot(t.v32_cross_nor, p2)) + //
+			sign_nonzero(dot(t.v13_cross_nor, p3));
 
 	if (det < 2.f) {
 		// Outside of the prism: get distance to closest edge
-		return math::min(
-				math::min( //
-						(t.v21 * math::clamp(t.v21.dot(p1) * t.inv_v21_length_squared, 0.f, 1.f) - p1).length_squared(),
-						(t.v32 * math::clamp(t.v32.dot(p2) * t.inv_v32_length_squared, 0.f, 1.f) - p2)
-								.length_squared()),
-				(t.v13 * math::clamp(t.v13.dot(p3) * t.inv_v13_length_squared, 0.f, 1.f) - p3).length_squared());
+		return min(min( //
+						   length_squared(t.v21 * clamp(dot(t.v21, p1) * t.inv_v21_length_squared, 0.f, 1.f) - p1),
+						   length_squared(t.v32 * clamp(dot(t.v32, p2) * t.inv_v32_length_squared, 0.f, 1.f) - p2)),
+				length_squared(t.v13 * clamp(dot(t.v13, p3) * t.inv_v13_length_squared, 0.f, 1.f) - p3));
 	} else {
 		// Inside the prism: get distance to plane
-		return math::squared(t.nor.dot(p1)) * t.inv_nor_length_squared;
+		return squared(dot(t.nor, p1)) * t.inv_nor_length_squared;
 	}
 }
 
@@ -656,14 +656,14 @@ void precalc_triangles(Span<Triangle> triangles) {
 		t.v21 = t.v2 - t.v1;
 		t.v32 = t.v3 - t.v2;
 		t.v13 = t.v1 - t.v3;
-		t.nor = t.v21.cross(t.v13);
-		t.v21_cross_nor = t.v21.cross(t.nor);
-		t.v32_cross_nor = t.v32.cross(t.nor);
-		t.v13_cross_nor = t.v13.cross(t.nor);
-		t.inv_v21_length_squared = 1.f / t.v21.length_squared();
-		t.inv_v32_length_squared = 1.f / t.v32.length_squared();
-		t.inv_v13_length_squared = 1.f / t.v13.length_squared();
-		t.inv_nor_length_squared = 1.f / t.nor.length_squared();
+		t.nor = math::cross(t.v21, t.v13);
+		t.v21_cross_nor = math::cross(t.v21, t.nor);
+		t.v32_cross_nor = math::cross(t.v32, t.nor);
+		t.v13_cross_nor = math::cross(t.v13, t.nor);
+		t.inv_v21_length_squared = 1.f / math::length_squared(t.v21);
+		t.inv_v32_length_squared = 1.f / math::length_squared(t.v32);
+		t.inv_v13_length_squared = 1.f / math::length_squared(t.v13);
+		t.inv_nor_length_squared = 1.f / math::length_squared(t.nor);
 	}
 }
 
@@ -732,9 +732,9 @@ float get_mesh_signed_distance_at(const Vector3f pos, Span<const Triangle> trian
 	//} else {
 	//	normal = (p_point1 - p_point2).cross(p_point1 - p_point3);
 	//}
-	const float plane_d = plane_normal.dot(ct.v1);
+	const float plane_d = math::dot(plane_normal, ct.v1);
 
-	if (plane_normal.dot(pos) > plane_d) {
+	if (math::dot(plane_normal, pos) > plane_d) {
 		return d;
 	}
 	return -d;
@@ -780,9 +780,9 @@ float get_mesh_signed_distance_at(const Vector3f pos, const ChunkGrid &chunk_gri
 	//} else {
 	//	normal = (p_point1 - p_point2).cross(p_point1 - p_point3);
 	//}
-	const float plane_d = plane_normal.dot(closest_tri->v1);
+	const float plane_d = math::dot(plane_normal, closest_tri->v1);
 
-	if (plane_normal.dot(pos) > plane_d) {
+	if (math::dot(plane_normal, pos) > plane_d) {
 		return d;
 	}
 	return -d;
@@ -843,7 +843,7 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	const unsigned int node_size_cells = 1 << node_size_po2;
 
 	const Vector3i node_grid_size = math::ceildiv(res, node_size_cells) + Vector3i(1, 1, 1);
-	const float node_size = node_size_cells * cell_size.length();
+	const float node_size = node_size_cells * math::length(cell_size);
 	const float node_subdiv_threshold = 0.6f * node_size;
 
 	std::vector<float> node_grid;
@@ -1445,7 +1445,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 	dds[0b001] = cell_size.z;
 	dds[0b101] = Math::sqrt(math::squared(cell_size.x) + math::squared(cell_size.z));
 	dds[0b011] = Math::sqrt(math::squared(cell_size.y) + math::squared(cell_size.z));
-	dds[0b111] = cell_size.length();
+	dds[0b111] = math::length(cell_size);
 
 	std::vector<Seed> seeds1;
 

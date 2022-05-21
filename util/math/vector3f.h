@@ -34,53 +34,6 @@ struct Vector3f {
 
 	Vector3f(float p_x, float p_y, float p_z) : x(p_x), y(p_y), z(p_z) {}
 
-	inline float length_squared() const {
-		return x * x + y * y + z * z;
-	}
-
-	inline float length() const {
-		return Math::sqrt(length_squared());
-	}
-
-	inline float distance_squared_to(const Vector3f &p_to) const {
-		return (p_to - *this).length_squared();
-	}
-
-	inline Vector3f cross(const Vector3f &p_with) const {
-		const Vector3f ret( //
-				(y * p_with.z) - (z * p_with.y), //
-				(z * p_with.x) - (x * p_with.z), //
-				(x * p_with.y) - (y * p_with.x));
-		return ret;
-	}
-
-	inline float dot(const Vector3f &p_with) const {
-		return x * p_with.x + y * p_with.y + z * p_with.z;
-	}
-
-	inline void normalize() {
-		const float lengthsq = length_squared();
-		if (lengthsq == 0) {
-			x = y = z = 0;
-		} else {
-			const float length = Math::sqrt(lengthsq);
-			x /= length;
-			y /= length;
-			z /= length;
-		}
-	}
-
-	inline Vector3f normalized() const {
-		Vector3f v = *this;
-		v.normalize();
-		return v;
-	}
-
-	bool is_normalized() const {
-		// use length_squared() instead of length() to avoid sqrt(), makes it more stringent.
-		return Math::is_equal_approx(length_squared(), 1, float(UNIT_EPSILON));
-	}
-
 	inline const float &operator[](const unsigned int p_axis) const {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(p_axis < AXIS_COUNT);
@@ -214,8 +167,47 @@ inline bool has_nan(const Vector3f &v) {
 	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
 }
 
+inline float length_squared(const Vector3f v) {
+	return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+inline float length(const Vector3f &v) {
+	return Math::sqrt(length_squared(v));
+}
+
+inline float distance_squared(const Vector3f &a, const Vector3f &b) {
+	return length_squared(b - a);
+}
+
+inline Vector3f cross(const Vector3f &a, const Vector3f &b) {
+	const Vector3f ret( //
+			(a.y * b.z) - (a.z * b.y), //
+			(a.z * b.x) - (a.x * b.z), //
+			(a.x * b.y) - (a.y * b.x));
+	return ret;
+}
+
+inline float dot(const Vector3f &a, const Vector3f &b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+inline Vector3f normalized(const Vector3f &v) {
+	const float lengthsq = length_squared(v);
+	if (lengthsq == 0) {
+		return Vector3f();
+	} else {
+		const float length = Math::sqrt(lengthsq);
+		return v / length;
+	}
+}
+
+inline bool is_normalized(const Vector3f &v) {
+	// use length_squared() instead of length() to avoid sqrt(), makes it more stringent.
+	return Math::is_equal_approx(length_squared(v), 1, float(UNIT_EPSILON));
+}
+
 inline float distance(const Vector3f &a, const Vector3f &b) {
-	return Math::sqrt(a.distance_squared_to(b));
+	return Math::sqrt(distance_squared(a, b));
 }
 
 } // namespace math

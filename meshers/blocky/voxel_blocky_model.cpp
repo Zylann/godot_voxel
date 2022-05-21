@@ -468,7 +468,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 				tangent[0] = t[0];
 				tangent[1] = t[1];
 				tangent[2] = t[2];
-				tangent[3] = (bt.dot(to_vec3f(normals[indices[i]]).cross(t))) < 0 ? -1.0f : 1.0f;
+				tangent[3] = (math::dot(bt, math::cross(to_vec3f(normals[indices[i]]), t))) < 0 ? -1.0f : 1.0f;
 			}
 
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {

@@ -92,7 +92,7 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) 
 }
 
 inline Vector3f normalized_not_null(Vector3f n) {
-	const float lengthsq = n.length_squared();
+	const float lengthsq = math::length_squared(n);
 	if (lengthsq == 0) {
 		return Vector3f(0, 1, 0);
 	} else {

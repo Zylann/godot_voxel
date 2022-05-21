@@ -18,6 +18,10 @@ inline bool has_nan(const Vector3 &v) {
 	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
 }
 
+inline bool is_normalized(const Vector3 &v) {
+	return v.is_normalized();
+}
+
 } // namespace zylann::math
 
 #endif // ZN_VECTOR3_H

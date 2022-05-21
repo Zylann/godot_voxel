@@ -257,7 +257,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 
 							if (bake_occlusion) {
 								for (unsigned int i = 0; i < vertex_count; ++i) {
-									Vector3f vertex_pos = side_positions[i];
+									const Vector3f vertex_pos = side_positions[i];
 
 									// General purpose occlusion colouring.
 									// TODO Optimize for cubes
@@ -271,7 +271,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 													static_cast<float>(shaded_corner[corner]);
 											//float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
 											float k = 1.f -
-													Cube::g_corner_position[corner].distance_squared_to(vertex_pos);
+													math::distance_squared(Cube::g_corner_position[corner], vertex_pos);
 											if (k < 0.0) {
 												k = 0.0;
 											}

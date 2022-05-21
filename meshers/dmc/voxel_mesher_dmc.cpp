@@ -127,7 +127,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 		float interpolated_value = math::interpolate_trilinear(v0, v1, v2, v3, v4, v5, v6, v7, positions_ratio[i]);
 
-		float gradient_magnitude = value.gradient.length();
+		float gradient_magnitude = math::length(value.gradient);
 		if (gradient_magnitude < FLT_EPSILON) {
 			gradient_magnitude = 1.0;
 		}
@@ -1039,26 +1039,22 @@ void DualGridGenerator::node_proc(OctreeNode *node) {
 inline Vector3f interpolate(const Vector3f &v0, const Vector3f &v1, const HermiteValue &val0, const HermiteValue &val1,
 		Vector3f &out_normal) {
 	if (Math::abs(val0.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
-		out_normal = val0.gradient;
-		out_normal.normalize();
+		out_normal = math::normalized(val0.gradient);
 		return v0;
 	}
 
 	if (Math::abs(val1.sdf - SURFACE_ISO_LEVEL) <= FLT_EPSILON) {
-		out_normal = val1.gradient;
-		out_normal.normalize();
+		out_normal = math::normalized(val1.gradient);
 		return v1;
 	}
 
 	if (Math::abs(val1.sdf - val0.sdf) <= FLT_EPSILON) {
-		out_normal = val0.gradient;
-		out_normal.normalize();
+		out_normal = math::normalized(val0.gradient);
 		return v0;
 	}
 
 	float mu = (SURFACE_ISO_LEVEL - val0.sdf) / (val1.sdf - val0.sdf);
-	out_normal = val0.gradient + mu * (val1.gradient - val0.gradient);
-	out_normal.normalize();
+	out_normal = math::normalized(val0.gradient + mu * (val1.gradient - val0.gradient));
 
 	return v0 + mu * (v1 - v0);
 }
@@ -1101,16 +1097,16 @@ void polygonize_cell_marching_squares(const Vector3f *cube_corners, const Hermit
 	HermiteValue inner_val;
 
 	inner_val = values[0]; // mSrc->getValueAndGradient(intersection_points[0]);
-	intersection_normals[0] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+	intersection_normals[0] = math::normalized(inner_val.gradient); // * (inner_val.value + 1.0);
 
 	inner_val = values[1]; // mSrc->getValueAndGradient(intersection_points[2]);
-	intersection_normals[2] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+	intersection_normals[2] = math::normalized(inner_val.gradient); // * (inner_val.value + 1.0);
 
 	inner_val = values[2]; // mSrc->getValueAndGradient(intersection_points[4]);
-	intersection_normals[4] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+	intersection_normals[4] = math::normalized(inner_val.gradient); // * (inner_val.value + 1.0);
 
 	inner_val = values[3]; // mSrc->getValueAndGradient(intersection_points[6]);
-	intersection_normals[6] = inner_val.gradient.normalized(); // * (inner_val.value + 1.0);
+	intersection_normals[6] = math::normalized(inner_val.gradient); // * (inner_val.value + 1.0);
 
 	if (edge & 1) {
 		intersection_points[1] = interpolate(cube_corners[corner_map[0]], cube_corners[corner_map[1]], values[0],
