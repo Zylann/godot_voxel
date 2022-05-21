@@ -240,6 +240,9 @@ public:
 	uint32_t get_volume_id() const override {
 		return _volume_id;
 	}
+	std::shared_ptr<StreamingDependency> get_streaming_dependency() const override {
+		return _streaming_dependency;
+	}
 
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	void get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const;

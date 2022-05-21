@@ -1,4 +1,5 @@
 #include "../../edition/voxel_tool.h"
+#include "../../server/save_block_data_task.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
@@ -1238,7 +1239,15 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	}
 
 	const int volume_id = _parent->get_volume_id();
-	VoxelServer::get_singleton().request_instance_block_save(volume_id, std::move(data), data_grid_pos, lod_index);
+
+	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
+	ZN_ASSERT(stream_dependency != nullptr);
+
+	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+			volume_id, data_grid_pos, lod_index, data_block_size, std::move(data), stream_dependency));
+
+	// No priority data, saving doesnt need sorting
+	VoxelServer::get_singleton().push_async_io_task(task);
 }
 
 void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform,

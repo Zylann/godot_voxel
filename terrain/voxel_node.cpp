@@ -46,6 +46,11 @@ uint32_t VoxelNode::get_volume_id() const {
 	return 0;
 }
 
+std::shared_ptr<StreamingDependency> VoxelNode::get_streaming_dependency() const {
+	CRASH_NOW_MSG("Not implemented");
+	return nullptr;
+}
+
 Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 	CRASH_NOW_MSG("Not implemented");
 	return Ref<VoxelTool>();

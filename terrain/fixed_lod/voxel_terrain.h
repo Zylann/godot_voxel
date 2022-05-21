@@ -140,6 +140,10 @@ public:
 		return _volume_id;
 	}
 
+	std::shared_ptr<StreamingDependency> get_streaming_dependency() const override {
+		return _streaming_dependency;
+	}
+
 protected:
 	void _notification(int p_what);
 
@@ -263,6 +267,10 @@ private:
 	Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;
 	Ref<VoxelGenerator> _generator;
+
+	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	std::shared_ptr<StreamingDependency> _streaming_dependency;
+	std::shared_ptr<MeshingDependency> _meshing_dependency;
 
 	bool _generate_collisions = true;
 	unsigned int _collision_layer = 1;

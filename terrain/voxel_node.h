@@ -3,6 +3,7 @@
 
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
+#include "../server/streaming_dependency.h"
 #include "../streams/voxel_stream.h"
 
 #include <scene/3d/node_3d.h>
@@ -38,6 +39,7 @@ public:
 	virtual void remesh_all_blocks();
 
 	virtual uint32_t get_volume_id() const;
+	virtual std::shared_ptr<StreamingDependency> get_streaming_dependency() const;
 
 	virtual Ref<VoxelTool> get_voxel_tool();
 

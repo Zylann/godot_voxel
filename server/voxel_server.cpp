@@ -18,17 +18,17 @@ namespace zylann::voxel {
 VoxelServer *g_voxel_server = nullptr;
 
 VoxelServer &VoxelServer::get_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
+	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Accessing singleton while it's null");
 	return *g_voxel_server;
 }
 
 void VoxelServer::create_singleton() {
-	CRASH_COND_MSG(g_voxel_server != nullptr, "Creating singleton twice");
+	ZN_ASSERT_MSG(g_voxel_server == nullptr, "Creating singleton twice");
 	g_voxel_server = memnew(VoxelServer);
 }
 
 void VoxelServer::destroy_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Destroying singleton twice");
+	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Destroying singleton twice");
 	memdelete(g_voxel_server);
 	g_voxel_server = nullptr;
 }
@@ -143,85 +143,8 @@ uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
 	Volume volume;
 	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
+	// volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	return _world.volumes.create(volume);
-}
-
-void VoxelServer::set_volume_transform(uint32_t volume_id, Transform3D t) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.transform = t;
-}
-
-void VoxelServer::set_volume_render_block_size(uint32_t volume_id, uint32_t block_size) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.render_block_size = block_size;
-}
-
-void VoxelServer::set_volume_data_block_size(uint32_t volume_id, uint32_t block_size) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.data_block_size = block_size;
-}
-
-void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.stream = stream;
-
-	// Commit a new dependency to process requests with
-	if (volume.stream_dependency != nullptr) {
-		volume.stream_dependency->valid = false;
-	}
-
-	volume.stream_dependency = make_shared_instance<StreamingDependency>();
-	volume.stream_dependency->generator = volume.generator;
-	volume.stream_dependency->stream = volume.stream;
-}
-
-void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.generator = generator;
-
-	// Commit a new dependency to process requests with
-	if (volume.stream_dependency != nullptr) {
-		volume.stream_dependency->valid = false;
-	}
-
-	volume.stream_dependency = make_shared_instance<StreamingDependency>();
-	volume.stream_dependency->generator = volume.generator;
-	volume.stream_dependency->stream = volume.stream;
-
-	if (volume.meshing_dependency != nullptr) {
-		volume.meshing_dependency->valid = false;
-	}
-
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
-}
-
-void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.mesher = mesher;
-
-	if (volume.meshing_dependency != nullptr) {
-		volume.meshing_dependency->valid = false;
-	}
-
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
-}
-
-void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.octree_lod_distance = lod_distance;
-}
-
-void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
 }
 
 VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_id) const {
@@ -229,168 +152,7 @@ VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_i
 	return volume.callbacks;
 }
 
-static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
-	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
-}
-
-void VoxelServer::init_priority_dependency(
-		PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
-	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
-	const float block_radius = (block_size << lod) / 2;
-	dep.shared = _world.shared_priority_dependency;
-	dep.world_position = volume.transform.xform(voxel_pos);
-	const float transformed_block_radius =
-			volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
-
-	switch (volume.type) {
-		case VOLUME_SPARSE_GRID:
-			// Distance beyond which no field of view can overlap the block.
-			// Doubling block radius to account for an extra margin of blocks,
-			// since they are used to provide neighbors when meshing
-			dep.drop_distance_squared = math::squared(
-					_world.shared_priority_dependency->highest_view_distance + 2.f * transformed_block_radius);
-			break;
-
-		case VOLUME_SPARSE_OCTREE:
-			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
-			// This does not depend on viewer's view distance, but on LOD precision instead.
-			dep.drop_distance_squared = math::squared(2.f * transformed_block_radius *
-					get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
-			break;
-
-		default:
-			CRASH_NOW_MSG("Unexpected type");
-			break;
-	}
-}
-
-void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &input) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
-	ERR_FAIL_COND(volume.meshing_dependency->mesher.is_null());
-	ERR_FAIL_COND(volume.data_block_size > 255);
-
-	MeshBlockTask *task = memnew(MeshBlockTask);
-	task->volume_id = volume_id;
-	task->blocks = input.data_blocks;
-	task->blocks_count = input.data_blocks_count;
-	task->position = input.render_block_position;
-	task->lod = input.lod;
-	task->collision_hint = input.collision_hint;
-	task->meshing_dependency = volume.meshing_dependency;
-	task->data_block_size = volume.data_block_size;
-
-	init_priority_dependency(
-			task->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
-
-	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream_dependency == nullptr);
-	ERR_FAIL_COND(volume.data_block_size > 255);
-
-	if (volume.stream_dependency->stream.is_valid()) {
-		PriorityDependency priority_dependency;
-		init_priority_dependency(priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod, volume.data_block_size,
-				request_instances, volume.stream_dependency, priority_dependency));
-
-		_streaming_thread_pool.enqueue(task);
-
-	} else {
-		// Directly generate the block without checking the stream
-		ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
-
-		GenerateBlockTask *task = memnew(GenerateBlockTask);
-		task->volume_id = volume_id;
-		task->position = block_pos;
-		task->lod = lod;
-		task->block_size = volume.data_block_size;
-		task->stream_dependency = volume.stream_dependency;
-
-		init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-		_general_thread_pool.enqueue(task);
-	}
-}
-
-void VoxelServer::request_block_generate(
-		uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker) {
-	//
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
-
-	GenerateBlockTask *task = memnew(GenerateBlockTask);
-	task->volume_id = volume_id;
-	task->position = block_pos;
-	task->lod = lod;
-	task->block_size = volume.data_block_size;
-	task->stream_dependency = volume.stream_dependency;
-	task->tracker = tracker;
-	task->drop_beyond_max_distance = false;
-
-	init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
-	ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", volume_id));
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
-	task->volume_id = volume_id;
-	task->stream_dependency = volume.stream_dependency;
-
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_voxel_block_save(
-		uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod) {
-	//
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	SaveBlockDataTask *task = memnew(
-			SaveBlockDataTask(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	_streaming_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_instance_block_save(
-		uint32_t volume_id, UniquePtr<InstanceBlockData> instances, Vector3i block_pos, int lod) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	SaveBlockDataTask *task = memnew(SaveBlockDataTask(
-			volume_id, block_pos, lod, volume.data_block_size, std::move(instances), volume.stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	_streaming_thread_pool.enqueue(task);
-}
-
 void VoxelServer::remove_volume(uint32_t volume_id) {
-	{
-		Volume &volume = _world.volumes.get(volume_id);
-		if (volume.stream_dependency != nullptr) {
-			volume.stream_dependency->valid = false;
-		}
-		if (volume.meshing_dependency != nullptr) {
-			volume.meshing_dependency->valid = false;
-		}
-	}
-
 	_world.volumes.destroy(volume_id);
 	// TODO How to cancel meshing tasks?
 
