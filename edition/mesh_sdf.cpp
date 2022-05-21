@@ -631,9 +631,9 @@ float get_distance_to_triangle_squared_precalc(const Triangle &t, const Vector3f
 	const Vector3f p3 = p - t.v3;
 
 	const float det = //
-			math::sign(t.v21_cross_nor.dot(p1)) + //
-			math::sign(t.v32_cross_nor.dot(p2)) + //
-			math::sign(t.v13_cross_nor.dot(p3));
+			math::sign_nonzero(t.v21_cross_nor.dot(p1)) + //
+			math::sign_nonzero(t.v32_cross_nor.dot(p2)) + //
+			math::sign_nonzero(t.v13_cross_nor.dot(p3));
 
 	if (det < 2.f) {
 		// Outside of the prism: get distance to closest edge
