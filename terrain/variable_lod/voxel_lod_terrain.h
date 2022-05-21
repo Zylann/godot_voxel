@@ -225,6 +225,10 @@ public:
 	bool is_showing_octree_gizmos() const {
 		return _show_octree_node_gizmos;
 	}
+	void set_show_octree_bounds_gizmos(bool enable);
+	bool is_showing_octree_bounds_gizmos() const {
+		return _show_octree_bounds_gizmos;
+	}
 
 	TypedArray<String> get_configuration_warnings() const override;
 

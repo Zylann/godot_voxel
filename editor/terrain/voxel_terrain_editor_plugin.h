@@ -38,6 +38,7 @@ private:
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
 		MENU_STREAM_FOLLOW_CAMERA,
+		MENU_SHOW_OCTREE_BOUNDS,
 		MENU_SHOW_OCTREE_NODES,
 		MENU_ABOUT
 	};
@@ -48,6 +49,7 @@ private:
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
 	bool _show_octree_nodes = false;
+	bool _show_octree_bounds = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
