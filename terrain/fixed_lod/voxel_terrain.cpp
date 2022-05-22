@@ -1472,48 +1472,45 @@ void VoxelTerrain::process_meshing() {
 			}
 #endif
 
-			VoxelServer::BlockMeshInput mesh_request;
-			mesh_request.render_block_position = mesh_block_pos;
-			mesh_request.lod = 0;
-			mesh_request.collision_hint = _generate_collisions;
-			//mesh_request.data_blocks_count = data_box.size.volume();
+			//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
+			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
+			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
+			task->volume_id = _volume_id;
+			task->position = mesh_block_pos;
+			task->lod = 0;
+			task->meshing_dependency = _meshing_dependency;
+			task->data_block_size = get_data_block_size();
+			task->collision_hint = _generate_collisions;
 
 			// This iteration order is specifically chosen to match VoxelServer and threaded access
-			data_box.for_each_cell_zxy([this, &mesh_request](Vector3i data_block_pos) {
+			task->blocks_count = 0;
+			data_box.for_each_cell_zxy([this, task](Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
 				if (data_block != nullptr) {
-					mesh_request.data_blocks[mesh_request.data_blocks_count] = data_block->get_voxels_shared();
+					task->blocks[task->blocks_count] = data_block->get_voxels_shared();
 				}
-				++mesh_request.data_blocks_count;
+				++task->blocks_count;
 			});
 
 #ifdef DEBUG_ENABLED
 			{
 				unsigned int count = 0;
-				for (unsigned int i = 0; i < mesh_request.data_blocks_count; ++i) {
-					if (mesh_request.data_blocks[i] != nullptr) {
+				for (unsigned int i = 0; i < task->blocks_count; ++i) {
+					if (task->blocks[i] != nullptr) {
 						++count;
 					}
 				}
 				// Blocks that were in the list must have been scheduled because we have data for them!
-				ERR_CONTINUE(count == 0);
+				if (count == 0) {
+					ZN_PRINT_ERROR("Unexpected empty block list in meshing block task");
+					ZN_DELETE(task);
+					continue;
+				}
 			}
 #endif
 
-			//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
-			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
-			task->volume_id = _volume_id;
-			task->blocks = mesh_request.data_blocks;
-			task->blocks_count = mesh_request.data_blocks_count;
-			task->position = mesh_request.render_block_position;
-			task->lod = mesh_request.lod;
-			task->meshing_dependency = _meshing_dependency;
-			task->data_block_size = get_data_block_size();
-			//task->data = data;
-
-			init_sparse_grid_priority_dependency(task->priority_dependency, mesh_request.render_block_position,
-					get_mesh_block_size(), shared_viewers_data, volume_transform);
+			init_sparse_grid_priority_dependency(task->priority_dependency, task->position, get_mesh_block_size(),
+					shared_viewers_data, volume_transform);
 
 			VoxelServer::get_singleton().push_async_task(task);
 

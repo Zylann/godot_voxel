@@ -1,7 +1,7 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "../../server/voxel_server.h"
+#include "../../server/meshing_dependency.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../util/godot/funcs.h"
 #include "../voxel_data_block_enter_info.h"

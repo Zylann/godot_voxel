@@ -10,9 +10,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "meshing_dependency.h"
 #include "priority_dependency.h"
-#include "streaming_dependency.h"
 
 #include <memory>
 
@@ -54,15 +52,6 @@ public:
 		bool max_lod_hint;
 		// Blocks with this flag set should not be ignored
 		bool initial_load;
-	};
-
-	struct BlockMeshInput {
-		// Moore area ordered by forward XYZ iteration
-		FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> data_blocks;
-		unsigned int data_blocks_count = 0;
-		Vector3i render_block_position;
-		uint8_t lod = 0;
-		bool collision_hint = false;
 	};
 
 	struct VolumeCallbacks {

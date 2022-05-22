@@ -1142,33 +1142,6 @@ void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
 	}
 }
 
-static void request_block_mesh(uint32_t volume_id, const VoxelServer::BlockMeshInput &input,
-		std::shared_ptr<MeshingDependency> meshing_dependency,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
-		unsigned int mesh_block_size, const Transform3D &volume_transform, float lod_distance,
-		BufferedTaskScheduler &task_scheduler, const std::shared_ptr<VoxelDataLodMap> &data) {
-	//
-	ERR_FAIL_COND(meshing_dependency == nullptr);
-	ERR_FAIL_COND(meshing_dependency->mesher.is_null());
-	ERR_FAIL_COND(data_block_size > 255);
-
-	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	MeshBlockTask *task = memnew(MeshBlockTask);
-	task->volume_id = volume_id;
-	task->blocks = input.data_blocks;
-	task->blocks_count = input.data_blocks_count;
-	task->position = input.render_block_position;
-	task->lod = input.lod;
-	task->meshing_dependency = meshing_dependency;
-	task->data_block_size = data_block_size;
-	task->data = data;
-
-	init_sparse_octree_priority_dependency(task->priority_dependency, input.render_block_position, input.lod,
-			mesh_block_size, shared_viewers_data, volume_transform, lod_distance);
-
-	task_scheduler.push_main_task(task);
-}
-
 static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> &data_ptr,
 		std::shared_ptr<MeshingDependency> meshing_dependency,
@@ -1200,9 +1173,18 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			ERR_CONTINUE(mesh_block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
-			VoxelServer::BlockMeshInput mesh_request;
-			mesh_request.render_block_position = mesh_block_pos;
-			mesh_request.lod = lod_index;
+			// VoxelServer::BlockMeshInput mesh_request;
+			// mesh_request.render_block_position = mesh_block_pos;
+			// mesh_request.lod = lod_index;
+
+			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
+			MeshBlockTask *task = memnew(MeshBlockTask);
+			task->volume_id = volume_id;
+			task->position = mesh_block_pos;
+			task->lod = lod_index;
+			task->meshing_dependency = meshing_dependency;
+			task->data_block_size = data_block_size;
+			task->data = data_ptr;
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_block_pos, Vector3iUtil::create(render_to_data_factor))
@@ -1214,18 +1196,21 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			// Iteration order matters for thread access.
 			// The array also implicitely encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
-			data_box.for_each_cell_zxy([&mesh_request, &data_lod](Vector3i data_block_pos) {
+			task->blocks_count = 0;
+			data_box.for_each_cell_zxy([task, &data_lod](Vector3i data_block_pos) {
 				const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
 				// The block can actually be null on some occasions. Not sure yet if it's that bad
 				//CRASH_COND(nblock == nullptr);
 				if (nblock != nullptr) {
-					mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels_shared();
+					task->blocks[task->blocks_count] = nblock->get_voxels_shared();
 				}
-				++mesh_request.data_blocks_count;
+				++task->blocks_count;
 			});
 
-			request_block_mesh(volume_id, mesh_request, meshing_dependency, shared_viewers_data, data_block_size,
-					mesh_block_size, volume_transform, settings.lod_distance, task_scheduler, data_ptr);
+			init_sparse_octree_priority_dependency(task->priority_dependency, task->position, task->lod,
+					mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
+
+			task_scheduler.push_main_task(task);
 
 			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		}

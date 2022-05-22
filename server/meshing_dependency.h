@@ -3,6 +3,7 @@
 
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
+#include "../util/memory.h"
 
 namespace zylann::voxel {
 
@@ -19,7 +20,7 @@ struct MeshingDependency {
 		if (ref != nullptr) {
 			ref->valid = false;
 		}
-		ref = make_unique_instance<MeshingDependency>();
+		ref = make_shared_instance<MeshingDependency>();
 		ref->mesher = mesher;
 		ref->generator = generator;
 		ref->valid = true;
