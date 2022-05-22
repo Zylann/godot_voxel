@@ -49,6 +49,7 @@ Godot 4 is required from this version.
     - `VoxelMesherBlocky`: materials are now unlimited and specified in each model, either as overrides or directly from mesh (You still need to consider draw calls when using many materials)
     - `VoxelMesherBlocky`: each model can have up to 2 materials (aka surfaces)
     - `VoxelMesherBlocky`: mesh collisions: added support for specifying which surfaces have collision
+    - `VoxelBoxMover`: added basic support for stair climbing
 
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
