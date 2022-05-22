@@ -70,7 +70,7 @@ VoxelTerrain::VoxelTerrain() {
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton().add_volume(callbacks, VoxelServer::VOLUME_SPARSE_GRID);
+	_volume_id = VoxelServer::get_singleton().add_volume(callbacks);
 
 	// TODO Can't setup a default mesher anymore due to a Godot 4 warning...
 	// For ease of use in editor

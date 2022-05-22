@@ -138,12 +138,10 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
-	CRASH_COND(!callbacks.check_callbacks());
+uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks) {
+	ZN_ASSERT(callbacks.check_callbacks());
 	Volume volume;
-	volume.type = type;
 	volume.callbacks = callbacks;
-	// volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	return _world.volumes.create(volume);
 }
 

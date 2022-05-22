@@ -93,11 +93,6 @@ public:
 		int network_peer_id = -1;
 	};
 
-	enum VolumeType { //
-		VOLUME_SPARSE_GRID,
-		VOLUME_SPARSE_OCTREE
-	};
-
 	static VoxelServer &get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
@@ -105,7 +100,7 @@ public:
 	VoxelServer();
 	~VoxelServer();
 
-	uint32_t add_volume(VolumeCallbacks callbacks, VolumeType type);
+	uint32_t add_volume(VolumeCallbacks callbacks);
 	VolumeCallbacks get_volume_callbacks(uint32_t volume_id) const;
 
 	void remove_volume(uint32_t volume_id);
@@ -209,7 +204,6 @@ private:
 	//   then a new instance is created and old references are left to "die out".
 
 	struct Volume {
-		VolumeType type;
 		VolumeCallbacks callbacks;
 	};
 

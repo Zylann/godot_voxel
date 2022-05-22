@@ -178,7 +178,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton().add_volume(callbacks, VoxelServer::VOLUME_SPARSE_OCTREE);
+	_volume_id = VoxelServer::get_singleton().add_volume(callbacks);
 	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
