@@ -14,10 +14,6 @@
 
 #include <memory>
 
-namespace zylann {
-class AsyncDependencyTracker;
-}
-
 namespace zylann::voxel {
 
 // Access point for asynchronous voxel processing APIs.
