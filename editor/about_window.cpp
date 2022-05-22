@@ -203,7 +203,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"MadMartian\n"
 						"Luiz Felipe Warmling Amadeu (Amad3eu)\n"
 						"Trevor Schara (trevjs)\n"
-						"Raphaël Duchaîne (duchainer)\n";
+						"Raphaël Duchaîne (duchainer)\n"
+						"Ryan Roden-Corrent (rcorre)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
