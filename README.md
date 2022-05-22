@@ -79,5 +79,6 @@ Skyquakers
 MadMartian
 Luiz Felipe Warmling Amadeu (Amad3eu)
 Trevor Schara (trevjs)
+Raphaël Duchaîne (duchainer)
 ```
 
