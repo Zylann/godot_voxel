@@ -137,7 +137,7 @@ Look at how the brick textures are blended together on the top right sphere.
 
 ![Triplanar mapping image](https://docs.godotengine.org/en/3.1/_images/spatial_material25.png)
 
-Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/spatial_material.html?highlight=triplanar%20#triplanar-mapping).
+Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#triplanar-mapping).
 
 It is also possible to choose a different texture for the 3 axes.
 
