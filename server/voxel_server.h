@@ -78,12 +78,17 @@ public:
 		int network_peer_id = -1;
 	};
 
-	static VoxelServer &get_singleton();
-	static void create_singleton();
-	static void destroy_singleton();
+	struct ThreadsConfig {
+		int thread_count_minimum = 1;
+		// How many threads below available count on the CPU should we set as limit
+		int thread_count_margin_below_max = 1;
+		// Portion of available CPU threads to attempt using
+		float thread_count_ratio_over_max = 0.5;
+	};
 
-	VoxelServer();
-	~VoxelServer();
+	static VoxelServer &get_singleton();
+	static void create_singleton(ThreadsConfig threads_config);
+	static void destroy_singleton();
 
 	uint32_t add_volume(VolumeCallbacks callbacks);
 	VolumeCallbacks get_volume_callbacks(uint32_t volume_id) const;
@@ -117,6 +122,7 @@ public:
 
 	void push_main_thread_time_spread_task(ITimeSpreadTask *task);
 	int get_main_thread_time_budget_usec() const;
+	void set_main_thread_time_budget_usec(unsigned int usec);
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);
 
@@ -128,11 +134,6 @@ public:
 	void push_async_io_task(IThreadedTask *task);
 	// Thread-safe.
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
-
-	// Gets by how much voxels must be padded with neighbors in order to be polygonized properly
-	// void get_min_max_block_padding(
-	// 		bool blocky_enabled, bool smooth_enabled,
-	// 		unsigned int &out_min_padding, unsigned int &out_max_padding) const;
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -153,14 +154,6 @@ public:
 			unsigned int thread_count;
 			unsigned int active_threads;
 			unsigned int tasks;
-
-			Dictionary to_dict() {
-				Dictionary d;
-				d["tasks"] = tasks;
-				d["active_threads"] = active_threads;
-				d["thread_count"] = thread_count;
-				return d;
-			}
 		};
 
 		ThreadPoolStats streaming;
@@ -169,13 +162,16 @@ public:
 		int streaming_tasks;
 		int meshing_tasks;
 		int main_thread_tasks;
-
-		Dictionary to_dict();
 	};
 
 	Stats get_stats() const;
 
+	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
+	~VoxelServer();
+
 private:
+	VoxelServer(ThreadsConfig threads_config);
+
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
 	// - Copy the data for each task. This is suitable for simple information that doesn't change after scheduling.
@@ -209,7 +205,7 @@ private:
 	ThreadedTaskRunner _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
 	TimeSpreadTaskRunner _time_spread_task_runner;
-	int _main_thread_time_budget_usec = 8000;
+	unsigned int _main_thread_time_budget_usec = 8000;
 	ProgressiveTaskRunner _progressive_task_runner;
 
 	FileLocker _file_locker;

@@ -1,4 +1,5 @@
 #include "voxel_server_gd.h"
+#include "../storage/voxel_memory_pool.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/tasks/godot/threaded_task_gd.h"
@@ -31,8 +32,40 @@ VoxelServer::VoxelServer() {
 #endif
 }
 
+Dictionary to_dict(const zylann::voxel::VoxelServer::Stats::ThreadPoolStats &stats) {
+	Dictionary d;
+	d["tasks"] = stats.tasks;
+	d["active_threads"] = stats.active_threads;
+	d["thread_count"] = stats.thread_count;
+	return d;
+}
+
+Dictionary to_dict(const zylann::voxel::VoxelServer::Stats &stats) {
+	Dictionary pools;
+	pools["streaming"] = to_dict(stats.streaming);
+	pools["general"] = to_dict(stats.general);
+
+	Dictionary tasks;
+	tasks["streaming"] = stats.streaming_tasks;
+	tasks["generation"] = stats.generation_tasks;
+	tasks["meshing"] = stats.meshing_tasks;
+	tasks["main_thread"] = stats.main_thread_tasks;
+
+	// This part is additional for scripts because VoxelMemoryPool is not exposed
+	Dictionary mem;
+	mem["voxel_total"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_total_memory());
+	mem["voxel_used"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_used_memory());
+	mem["block_count"] = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
+
+	Dictionary d;
+	d["thread_pools"] = pools;
+	d["tasks"] = tasks;
+	d["memory_pools"] = mem;
+	return d;
+}
+
 Dictionary VoxelServer::get_stats() const {
-	return zylann::voxel::VoxelServer::get_singleton().get_stats().to_dict();
+	return to_dict(zylann::voxel::VoxelServer::get_singleton().get_stats());
 }
 
 void VoxelServer::schedule_task(Ref<ZN_ThreadedTask> task) {

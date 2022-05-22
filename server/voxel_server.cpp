@@ -1,6 +1,5 @@
 #include "voxel_server.h"
 #include "../constants/voxel_constants.h"
-#include "../storage/voxel_memory_pool.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -11,8 +10,6 @@
 #include "mesh_block_task.h"
 #include "save_block_data_task.h"
 
-#include <core/config/project_settings.h>
-
 namespace zylann::voxel {
 
 VoxelServer *g_voxel_server = nullptr;
@@ -22,65 +19,39 @@ VoxelServer &VoxelServer::get_singleton() {
 	return *g_voxel_server;
 }
 
-void VoxelServer::create_singleton() {
+void VoxelServer::create_singleton(ThreadsConfig threads_config) {
 	ZN_ASSERT_MSG(g_voxel_server == nullptr, "Creating singleton twice");
-	g_voxel_server = memnew(VoxelServer);
+	g_voxel_server = ZN_NEW(VoxelServer(threads_config));
 }
 
 void VoxelServer::destroy_singleton() {
 	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Destroying singleton twice");
-	memdelete(g_voxel_server);
+	ZN_DELETE(g_voxel_server);
 	g_voxel_server = nullptr;
 }
 
-VoxelServer::VoxelServer() {
-	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
-
+VoxelServer::VoxelServer(ThreadsConfig threads_config) {
 	const int hw_threads_hint = Thread::get_hardware_concurrency();
 	ZN_PRINT_VERBOSE(format("Voxel: HW threads hint: {}", hw_threads_hint));
+
+	ZN_ASSERT(threads_config.thread_count_margin_below_max >= 0);
+	ZN_ASSERT(threads_config.thread_count_minimum >= 1);
+	ZN_ASSERT(threads_config.thread_count_ratio_over_max >= 0.f);
 
 	// Compute thread count for general pool.
 	// Note that the I/O thread counts as one used thread and will always be present.
 
-	// "RST" means changing the property requires an editor restart (or game restart)
-	GLOBAL_DEF_RST("voxel/threads/count/minimum", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/minimum",
-			PropertyInfo(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/margin_below_max", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/margin_below_max",
-			PropertyInfo(Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
-			PropertyInfo(Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
-
-	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",
-			PropertyInfo(Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000"));
-
-	_main_thread_time_budget_usec =
-			1000 * int(ProjectSettings::get_singleton()->get("voxel/threads/main/time_budget_ms"));
-
-	const int minimum_thread_count =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
-
-	// How many threads below available count on the CPU should we set as limit
-	const int thread_count_margin =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
-
-	// Portion of available CPU threads to attempt using
-	const float threads_ratio =
-			math::clamp(float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
-
-	const int maximum_thread_count = math::max(hw_threads_hint - thread_count_margin, minimum_thread_count);
+	const int maximum_thread_count = math::max(
+			hw_threads_hint - threads_config.thread_count_margin_below_max, threads_config.thread_count_minimum);
 	// `-1` is for the stream thread
-	const int thread_count_by_ratio = int(Math::round(float(threads_ratio) * hw_threads_hint)) - 1;
-	const int thread_count = math::clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
+	const int thread_count_by_ratio =
+			int(Math::round(float(threads_config.thread_count_ratio_over_max) * hw_threads_hint)) - 1;
+	const int thread_count =
+			math::clamp(thread_count_by_ratio, threads_config.thread_count_minimum, maximum_thread_count);
 	ZN_PRINT_VERBOSE(format("Voxel: automatic thread count set to {}", thread_count));
 
 	if (thread_count > hw_threads_hint) {
-		WARN_PRINT("Configured thread count exceeds hardware thread count. Performance may not be optimal");
+		ZN_PRINT_WARNING("Configured thread count exceeds hardware thread count. Performance may not be optimal");
 	}
 
 	// I/O can't be more than 1 thread. File access with more threads isn't worth it.
@@ -244,6 +215,10 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
+void VoxelServer::set_main_thread_time_budget_usec(unsigned int usec) {
+	_main_thread_time_budget_usec = usec;
+}
+
 void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task);
 }
@@ -324,30 +299,6 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
 	d.thread_count = pool.get_thread_count();
-	return d;
-}
-
-Dictionary VoxelServer::Stats::to_dict() {
-	Dictionary pools;
-	pools["streaming"] = streaming.to_dict();
-	pools["general"] = general.to_dict();
-
-	Dictionary tasks;
-	tasks["streaming"] = streaming_tasks;
-	tasks["generation"] = generation_tasks;
-	tasks["meshing"] = meshing_tasks;
-	tasks["main_thread"] = main_thread_tasks;
-
-	// This part is additional for scripts because VoxelMemoryPool is not exposed
-	Dictionary mem;
-	mem["voxel_total"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_total_memory());
-	mem["voxel_used"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_used_memory());
-	mem["block_count"] = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
-
-	Dictionary d;
-	d["thread_pools"] = pools;
-	d["tasks"] = tasks;
-	d["memory_pools"] = mem;
 	return d;
 }
 
