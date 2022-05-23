@@ -1155,7 +1155,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 
 	const int data_block_size = data.lods[0].map.get_block_size();
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-	const int render_to_data_factor = mesh_block_size / mesh_block_size;
+	const int render_to_data_factor = mesh_block_size / data_block_size;
 
 	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
 		ZN_PROFILE_SCOPE();
