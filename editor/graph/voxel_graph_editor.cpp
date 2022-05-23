@@ -458,9 +458,13 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	_undo_redo->commit_action();
 }
 
-void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
+void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(TypedArray<StringName> node_names) {
 	std::vector<VoxelGraphEditorNode *> to_erase;
 
+	// The `node_names` argument is the result of Godot issue #61112. While it is less convenient than just getting
+	// the nodes themselves, it also has the downside of being always empty if you choose to not show "close" buttons
+	// on every graph node corner, even if you have nodes selected.
+	// So... I keep doing it the old way.
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
 		if (node_view != nullptr) {
