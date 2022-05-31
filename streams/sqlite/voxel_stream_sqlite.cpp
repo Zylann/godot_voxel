@@ -587,7 +587,7 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 	ZN_PRINT_VERBOSE("~VoxelStreamSQLite");
 	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
-		flush_cache();
+		flush();
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
 	}
 	for (auto it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
@@ -712,7 +712,7 @@ void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	// TODO We should consider using a serialized cache, and measure the threshold in bytes
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
-		flush_cache();
+		flush();
 	}
 }
 
@@ -797,7 +797,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 	// TODO Optimization: we should consider using a serialized cache, and measure the threshold in bytes
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
-		flush_cache();
+		flush();
 	}
 }
 
@@ -865,7 +865,7 @@ int VoxelStreamSQLite::get_used_channels_mask() const {
 	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
-void VoxelStreamSQLite::flush_cache() {
+void VoxelStreamSQLite::flush() {
 	VoxelStreamSQLiteInternal *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
 	flush_cache(con);
@@ -966,6 +966,7 @@ void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
 void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_database_path", "path"), &VoxelStreamSQLite::set_database_path);
 	ClassDB::bind_method(D_METHOD("get_database_path"), &VoxelStreamSQLite::get_database_path);
+	ClassDB::bind_method(D_METHOD("flush_cache"), &VoxelStreamSQLite::flush);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path",
 			"get_database_path");

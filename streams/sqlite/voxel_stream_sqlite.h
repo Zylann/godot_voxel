@@ -40,7 +40,7 @@ public:
 
 	int get_used_channels_mask() const override;
 
-	void flush_cache();
+	void flush();
 
 private:
 	// An SQlite3 database is safe to use with multiple threads in serialized mode,
