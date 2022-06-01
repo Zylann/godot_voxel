@@ -40,7 +40,7 @@ public:
 
 	int get_used_channels_mask() const override;
 
-	void flush();
+	void flush_cache();
 
 private:
 	// An SQlite3 database is safe to use with multiple threads in serialized mode,
@@ -59,7 +59,7 @@ private:
 
 	VoxelStreamSQLiteInternal *get_connection();
 	void recycle_connection(VoxelStreamSQLiteInternal *con);
-	void flush_cache(VoxelStreamSQLiteInternal *con);
+	void flush(VoxelStreamSQLiteInternal *con);
 
 	static void _bind_methods();
 

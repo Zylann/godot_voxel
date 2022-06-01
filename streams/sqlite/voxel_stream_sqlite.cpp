@@ -587,7 +587,7 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 	ZN_PRINT_VERBOSE("~VoxelStreamSQLite");
 	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
-		flush();
+		flush_cache();
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
 	}
 	for (auto it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
@@ -611,7 +611,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
 		if (con.open(cpath)) {
-			flush_cache(&con);
+			flush(&con);
 		}
 	}
 	for (auto it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
@@ -712,7 +712,7 @@ void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	// TODO We should consider using a serialized cache, and measure the threshold in bytes
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
-		flush();
+		flush_cache();
 	}
 }
 
@@ -797,7 +797,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 	// TODO Optimization: we should consider using a serialized cache, and measure the threshold in bytes
 	if (_cache.get_indicative_block_count() >= CACHE_SIZE) {
-		flush();
+		flush_cache();
 	}
 }
 
@@ -865,15 +865,15 @@ int VoxelStreamSQLite::get_used_channels_mask() const {
 	return VoxelBufferInternal::ALL_CHANNELS_MASK;
 }
 
-void VoxelStreamSQLite::flush() {
+void VoxelStreamSQLite::flush_cache() {
 	VoxelStreamSQLiteInternal *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
-	flush_cache(con);
+	flush(con);
 	recycle_connection(con);
 }
 
 // This function does not lock any mutex for internal use.
-void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
+void VoxelStreamSQLite::flush(VoxelStreamSQLiteInternal *con) {
 	ZN_PROFILE_SCOPE();
 	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
@@ -966,7 +966,7 @@ void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
 void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_database_path", "path"), &VoxelStreamSQLite::set_database_path);
 	ClassDB::bind_method(D_METHOD("get_database_path"), &VoxelStreamSQLite::get_database_path);
-	ClassDB::bind_method(D_METHOD("flush_cache"), &VoxelStreamSQLite::flush);
+	ClassDB::bind_method(D_METHOD("flush_cache"), &VoxelStreamSQLite::flush_cache);
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path",
 			"get_database_path");
