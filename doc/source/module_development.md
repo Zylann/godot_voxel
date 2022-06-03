@@ -35,6 +35,8 @@ python build.py -a
 Layers
 -------
 
+### Folders
+
 The module is divided in several layers, each with different dependencies. Because of this, it is possible to use `VoxelMesher`, `VoxelGenerator` or `VoxelStream` standalone, without needing to use a `VoxelTerrain` node for example.
 
 Directory      | Description
@@ -53,6 +55,15 @@ tests/         | Contains tests. These run when Godot starts if enabled in the b
 doc/           | Contains documentation
 
 <p></p>
+
+### Code
+
+In addition to layers reflected by the folder structure, there is an implicit distinction between Godot and this module: if a piece of code does not need to depend on Godot, then it will tend to not depend on Godot.
+
+For example, the *implementation* of Transvoxel has very little dependencies on Godot. Indeed, it doesn't care what a resource is, doesn't need Variant, doesnt need bindings, doesn't need to use OOP etc. That's why the *mesher resource* does not contain the *logic*, but instead acts as a "bridge" between the algorithm and its usage within Godot.
+
+Same for `VoxelBuffer`: this class is actually not a full-fledged Godot object. It is much lighter than that, because it can have thousands of instances, or even supports being allocated on the stack and moved. It is exposed as a wrapper object instead for the few cases where scripters have to interact with it.
+
 
 Tests
 -------
