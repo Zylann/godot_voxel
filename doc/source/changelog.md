@@ -62,6 +62,7 @@ Godot 4 is required from this version.
     - `VoxelMesherCubes`: fixed raw color mode not working properly
     - `VoxelMesherCubes`: wrong alpha check between transparent and solid cubes
     - `VoxelMesherTransvoxel`: fixed surface not appearing if it lines up exactly at integer coordinates
+    - `VoxelMesherTransvoxel`: fixed occasional holes and "spikes" in geometry in some specific configurations
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN

@@ -67,7 +67,7 @@ class Cache {
 public:
 	void reset_reuse_cells(Vector3i p_block_size) {
 		_block_size = p_block_size;
-		unsigned int deck_area = _block_size.x * _block_size.y;
+		const unsigned int deck_area = _block_size.x * _block_size.y;
 		for (unsigned int i = 0; i < _cache.size(); ++i) {
 			std::vector<ReuseCell> &deck = _cache[i];
 			deck.resize(deck_area);
