@@ -2,6 +2,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_terrain.h"
+#include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../server/generate_block_task.h"
 #include "../../server/load_block_data_task.h"
 #include "../../server/mesh_block_task.h"
@@ -294,14 +295,6 @@ void VoxelTerrain::set_mesher(Ref<VoxelMesher> mesher) {
 	}
 
 	update_configuration_warnings();
-}
-
-Ref<VoxelBlockyLibrary> VoxelTerrain::get_voxel_library() const {
-	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
-	if (blocky_mesher.is_valid()) {
-		return blocky_mesher->get_library();
-	}
-	return Ref<VoxelBlockyLibrary>();
 }
 
 void VoxelTerrain::get_viewers_in_area(std::vector<int> &out_viewer_ids, Box3i voxel_box) const {

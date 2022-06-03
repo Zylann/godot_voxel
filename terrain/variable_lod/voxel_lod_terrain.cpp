@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../server/load_all_blocks_data_task.h"
 #include "../../server/voxel_server_gd.h"

@@ -110,9 +110,6 @@ public:
 	// If the block is out of range of any viewer, it will be cancelled.
 	void generate_block_async(Vector3i block_position);
 
-	// For convenience, this is actually stored in a particular type of mesher
-	Ref<VoxelBlockyLibrary> get_voxel_library() const;
-
 	struct Stats {
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;

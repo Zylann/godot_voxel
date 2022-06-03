@@ -1,18 +1,15 @@
 #ifndef VOXEL_SERVER_H
 #define VOXEL_SERVER_H
 
-#include "../constants/voxel_constants.h"
-#include "../generators/voxel_generator.h"
-#include "../meshers/blocky/voxel_mesher_blocky.h"
-#include "../streams/voxel_stream.h"
+#include "../meshers/voxel_mesher.h"
+#include "../streams/instance_data.h"
 #include "../util/file_locker.h"
+#include "../util/memory.h"
 #include "../util/struct_db.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
 #include "priority_dependency.h"
-
-#include <memory>
 
 namespace zylann::voxel {
 
