@@ -268,6 +268,7 @@ private:
 	void start_streamer();
 	void stop_streamer();
 	void reset_maps();
+	void reset_mesh_maps();
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);

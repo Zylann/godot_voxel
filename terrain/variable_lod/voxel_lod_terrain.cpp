@@ -387,46 +387,17 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		return;
 	}
 
-	_update_data->wait_for_end_of_task();
+	reset_mesh_maps();
+
+	//_update_data->wait_for_end_of_task(); // Done by reset_mesh_maps()
+	ZN_ASSERT(_update_data->task_is_complete);
 	_update_data->settings.mesh_block_size_po2 = po2;
 	_update_data->state.force_update_octrees_next_update = true;
-
-	VoxelLodTerrainUpdateData::State &state = _update_data->state;
-	const unsigned int lod_count = _update_data->settings.lod_count;
-
-	// Reset mesh maps
-	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
-		if (_instancer != nullptr) {
-			// Unload instances
-			VoxelInstancer *instancer = _instancer;
-			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlockVLT &block) {
-				instancer->on_mesh_block_exit(block.position, lod_index);
-			});
-		}
-		// Unload mesh blocks
-		mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
-		mesh_map.clear();
-		// Reset view distance cache so they will be re-entered
-		lod.last_view_distance_mesh_blocks = 0;
-	}
 
 	// Doing this after because `on_mesh_block_exit` may use the old size
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_block_size_po2(mesh_block_size);
 	}
-
-	// Reset LOD octrees
-	LodOctree::NoDestroyAction nda;
-
-	for (std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.begin();
-			it != state.lod_octrees.end(); ++it) {
-		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
-		item.octree.create(lod_count, nda);
-	}
-
-	// VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, mesh_block_size);
 
 	// Update voxel bounds because block size change can affect octree size
 	set_voxel_bounds(_update_data->settings.bounds_in_voxels);
@@ -844,9 +815,30 @@ void VoxelLodTerrain::reset_maps() {
 		}
 	}
 
+	abort_async_edits();
+
+	reset_mesh_maps();
+}
+
+void VoxelLodTerrain::reset_mesh_maps() {
+	_update_data->wait_for_end_of_task();
+
+	const unsigned int lod_count = _update_data->settings.lod_count;
+	VoxelLodTerrainUpdateData::State &state = _update_data->state;
+
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+		if (_instancer != nullptr) {
+			// Unload instances
+			VoxelInstancer *instancer = _instancer;
+			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlockVLT &block) {
+				instancer->on_mesh_block_exit(block.position, lod_index);
+			});
+		}
+
+		//mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < lod_count) {
@@ -860,6 +852,7 @@ void VoxelLodTerrain::reset_maps() {
 
 		lod.mesh_map_state.map.clear();
 
+		// Clear temporal lists
 		lod.mesh_blocks_to_activate.clear();
 		lod.mesh_blocks_to_deactivate.clear();
 		lod.mesh_blocks_to_unload.clear();
@@ -868,7 +861,13 @@ void VoxelLodTerrain::reset_maps() {
 		_deferred_collision_updates_per_lod[lod_index].clear();
 	}
 
-	abort_async_edits();
+	// Reset LOD octrees
+	LodOctree::NoDestroyAction nda;
+	for (std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.begin();
+			it != state.lod_octrees.end(); ++it) {
+		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
+		item.octree.create(lod_count, nda);
+	}
 
 	// Reset previous state caches to force rebuilding the view area
 	state.last_octree_region_box = Box3i();
@@ -1739,6 +1738,7 @@ void VoxelLodTerrain::restart_stream() {
 }
 
 void VoxelLodTerrain::remesh_all_blocks() {
+	// Requests a new mesh for all mesh blocks, without dropping everything first
 	_update_data->wait_for_end_of_task();
 	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
