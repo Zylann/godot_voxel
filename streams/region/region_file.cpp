@@ -98,8 +98,8 @@ static bool save_header(
 	// TODO Deal with endianess, this should be little-endian
 	f.store_buffer(reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(RegionBlockInfo));
 
-	const size_t blocks_begin_offset = f.get_position();
 #ifdef DEBUG_ENABLED
+	const size_t blocks_begin_offset = f.get_position();
 	CRASH_COND(blocks_begin_offset != get_header_size_v3(format));
 #endif
 
