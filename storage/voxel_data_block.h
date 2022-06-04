@@ -2,7 +2,6 @@
 #define VOXEL_DATA_BLOCK_H
 
 #include "../storage/voxel_buffer_internal.h"
-#include "../util/log.h"
 #include "../util/ref_count.h"
 #include <memory>
 
@@ -42,27 +41,27 @@ public:
 
 	VoxelBufferInternal &get_voxels() {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(_voxels == nullptr);
+		ZN_ASSERT(_voxels != nullptr);
 #endif
 		return *_voxels;
 	}
 
 	const VoxelBufferInternal &get_voxels_const() const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(_voxels == nullptr);
+		ZN_ASSERT(_voxels != nullptr);
 #endif
 		return *_voxels;
 	}
 
 	std::shared_ptr<VoxelBufferInternal> get_voxels_shared() const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(_voxels == nullptr);
+		ZN_ASSERT(_voxels != nullptr);
 #endif
 		return _voxels;
 	}
 
 	void set_voxels(std::shared_ptr<VoxelBufferInternal> &buffer) {
-		ERR_FAIL_COND(buffer == nullptr);
+		ZN_ASSERT_RETURN(buffer != nullptr);
 		_voxels = buffer;
 	}
 
