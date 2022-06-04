@@ -69,7 +69,7 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
 #endif
 	VoxelDataBlock &map_block = _blocks_map[bpos];
-	map_block = std::move(VoxelDataBlock(bpos, buffer, _lod_index));
+	map_block = std::move(VoxelDataBlock(buffer, _lod_index));
 	return &map_block;
 }
 
@@ -144,7 +144,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 
 	if (block == nullptr) {
 		VoxelDataBlock &map_block = _blocks_map[bpos];
-		map_block = std::move(VoxelDataBlock(bpos, buffer, _lod_index));
+		map_block = std::move(VoxelDataBlock(buffer, _lod_index));
 		block = &map_block;
 
 	} else if (overwrite) {

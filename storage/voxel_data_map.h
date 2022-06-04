@@ -102,14 +102,14 @@ public:
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
 		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
-			op(it->second);
+			op(it->first, it->second);
 		}
 	}
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
 		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
-			op(it->second);
+			op(it->first, it->second);
 		}
 	}
 

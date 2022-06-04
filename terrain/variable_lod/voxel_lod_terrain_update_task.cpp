@@ -166,6 +166,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 
 struct BeforeUnloadDataAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
+	const Vector3i bpos;
 	bool save;
 
 	void operator()(VoxelDataBlock &block) {
@@ -176,7 +177,7 @@ struct BeforeUnloadDataAction {
 			VoxelLodTerrainUpdateData::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
 			b.voxels = block.get_voxels_shared();
-			b.position = block.get_position();
+			b.position = bpos;
 			b.lod = block.get_lod_index();
 			blocks_to_save.push_back(b);
 		}
@@ -187,7 +188,7 @@ static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, Voxel
 		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
 	ZN_PROFILE_SCOPE();
 
-	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, can_save });
+	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, block_pos, can_save });
 
 	//print_line(String("Unloading data block {0} lod {1}").format(varray(block_pos.to_vec3(), lod_index)));
 	MutexLock lock(lod.loading_blocks_mutex);

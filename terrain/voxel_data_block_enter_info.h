@@ -18,6 +18,7 @@ class VoxelDataBlockEnterInfo : public Object {
 	GDCLASS(VoxelDataBlockEnterInfo, Object)
 public:
 	int network_peer_id = -1;
+	Vector3i block_position;
 	VoxelDataBlock *voxel_block = nullptr;
 
 private:

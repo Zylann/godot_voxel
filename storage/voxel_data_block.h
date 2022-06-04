@@ -15,12 +15,11 @@ public:
 
 	VoxelDataBlock() {}
 
-	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
-			_position(bpos), _lod_index(p_lod_index), _voxels(buffer) {}
+	VoxelDataBlock(std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
+			_lod_index(p_lod_index), _voxels(buffer) {}
 
 	VoxelDataBlock(VoxelDataBlock &&src) :
 			viewers(src.viewers),
-			_position(src._position),
 			_lod_index(src._lod_index),
 			_voxels(std::move(src._voxels)),
 			_needs_lodding(src._needs_lodding),
@@ -29,17 +28,12 @@ public:
 
 	VoxelDataBlock &operator=(VoxelDataBlock &&src) {
 		viewers = src.viewers;
-		_position = src._position;
 		_lod_index = src._lod_index;
 		_voxels = std::move(src._voxels);
 		_needs_lodding = src._needs_lodding;
 		_modified = src._modified;
 		_edited = src._edited;
 		return *this;
-	}
-
-	inline const Vector3i &get_position() const {
-		return _position;
 	}
 
 	inline unsigned int get_lod_index() const {
@@ -95,8 +89,6 @@ public:
 	}
 
 private:
-	Vector3i _position;
-
 	std::shared_ptr<VoxelBufferInternal> _voxels;
 
 	uint8_t _lod_index = 0;

@@ -177,12 +177,12 @@ private:
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_data_block_loaded(const VoxelDataBlock &block);
-	void emit_data_block_unloaded(const VoxelDataBlock &block);
+	void emit_data_block_loaded(const VoxelDataBlock &block, Vector3i bpos);
+	void emit_data_block_unloaded(const VoxelDataBlock &block, Vector3i bpos);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
-	void notify_data_block_enter(VoxelDataBlock &block, uint32_t viewer_id);
+	void notify_data_block_enter(VoxelDataBlock &block, Vector3i bpos, uint32_t viewer_id);
 
 	void get_viewers_in_area(std::vector<int> &out_viewer_ids, Box3i voxel_box) const;
 
