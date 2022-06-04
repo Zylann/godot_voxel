@@ -13,8 +13,7 @@
 
 namespace zylann::voxel {
 
-// Access point for asynchronous voxel processing APIs.
-// Functions must be used from the main thread.
+// Singleton for common things, notably the task system and shared viewers list.
 class VoxelServer {
 public:
 	struct BlockMeshOutput {
