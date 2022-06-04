@@ -582,7 +582,7 @@ struct ScheduleSaveAction {
 			} else {
 				b.voxels = block.get_voxels_shared();
 			}
-			b.position = block.position;
+			b.position = block.get_position();
 			blocks_to_save.push_back(b);
 			block.set_modified(false);
 		}
@@ -1018,13 +1018,13 @@ void VoxelTerrain::emit_data_block_loaded(const VoxelDataBlock &block) {
 	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
 	//const Variant vbuffer = block->voxels;
 	//const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton().block_loaded, block.position);
+	emit_signal(VoxelStringNames::get_singleton().block_loaded, block.get_position());
 }
 
 void VoxelTerrain::emit_data_block_unloaded(const VoxelDataBlock &block) {
 	// const Variant vbuffer = block->voxels;
 	// const Variant *args[2] = { &vpos, &vbuffer };
-	emit_signal(VoxelStringNames::get_singleton().block_unloaded, block.position);
+	emit_signal(VoxelStringNames::get_singleton().block_unloaded, block.get_position());
 }
 
 bool VoxelTerrain::try_get_paired_viewer_index(uint32_t id, size_t &out_i) const {

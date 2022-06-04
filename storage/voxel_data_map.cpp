@@ -65,9 +65,12 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
 	buffer->set_default_values(_default_voxel);
-	VoxelDataBlock *block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
-	set_block(bpos, block);
-	return block;
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
+#endif
+	VoxelDataBlock &map_block = _blocks_map[bpos];
+	map_block = std::move(VoxelDataBlock(bpos, buffer, _lod_index));
+	return &map_block;
 }
 
 VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
@@ -120,13 +123,7 @@ int VoxelDataMap::get_default_voxel(unsigned int channel) {
 VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
-		const unsigned int i = it->second;
-#ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _blocks.size());
-#endif
-		VoxelDataBlock *block = _blocks[i];
-		CRASH_COND(block == nullptr); // The map should not contain null blocks
-		return block;
+		return &it->second;
 	}
 	return nullptr;
 }
@@ -134,66 +131,31 @@ VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
-		const unsigned int i = it->second;
-#ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _blocks.size());
-#endif
-		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
-		// again...
-		const VoxelDataBlock *block = _blocks[i];
-		CRASH_COND(block == nullptr); // The map should not contain null blocks
-		return block;
+		return &it->second;
 	}
 	return nullptr;
-}
-
-void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
-	ERR_FAIL_COND(block == nullptr);
-	CRASH_COND(bpos != block->position);
-#ifdef DEBUG_ENABLED
-	CRASH_COND(_blocks_map.find(bpos) != _blocks_map.end());
-#endif
-	unsigned int i = _blocks.size();
-	_blocks.push_back(block);
-	_blocks_map.insert(std::make_pair(bpos, i));
-}
-
-void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
-	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
-	// This might be caused by internal rehashing/resizing.
-	// We should look for a faster container, or reduce the number of entries.
-
-	// This function assumes the block is already freed
-	_blocks_map.erase(bpos);
-
-	VoxelDataBlock *moved_block = _blocks.back();
-#ifdef DEBUG_ENABLED
-	CRASH_COND(index >= _blocks.size());
-#endif
-	_blocks[index] = moved_block;
-	_blocks.pop_back();
-
-	if (index < _blocks.size()) {
-		auto it = _blocks_map.find(moved_block->position);
-		CRASH_COND(it == _blocks_map.end());
-		it->second = index;
-	}
 }
 
 VoxelDataBlock *VoxelDataMap::set_block_buffer(
 		Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite) {
 	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
+
 	VoxelDataBlock *block = get_block(bpos);
+
 	if (block == nullptr) {
-		block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
-		set_block(bpos, block);
+		VoxelDataBlock &map_block = _blocks_map[bpos];
+		map_block = std::move(VoxelDataBlock(bpos, buffer, _lod_index));
+		block = &map_block;
+
 	} else if (overwrite) {
 		block->set_voxels(buffer);
+
 	} else {
 		ZN_PROFILE_MESSAGE("Redundant data block");
 		ZN_PRINT_VERBOSE(format(
 				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
 	}
+
 	return block;
 }
 
@@ -328,29 +290,18 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 }
 
 void VoxelDataMap::clear() {
-	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		VoxelDataBlock *block = *it;
-		if (block == nullptr) {
-			ERR_PRINT("Unexpected nullptr in VoxelMap::clear()");
-		} else {
-			memdelete(block);
-		}
-	}
-	_blocks.clear();
 	_blocks_map.clear();
 }
 
 int VoxelDataMap::get_block_count() const {
-#ifdef DEBUG_ENABLED
-	const unsigned int blocks_map_size = _blocks_map.size();
-	CRASH_COND(_blocks.size() != blocks_map_size);
-#endif
-	return _blocks.size();
+	return _blocks_map.size();
 }
 
 bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 	Box3i block_box = voxels_box.downscaled(get_block_size());
-	return block_box.all_cells_match([this](Vector3i pos) { return has_block(pos); });
+	return block_box.all_cells_match([this](Vector3i pos) { //
+		return has_block(pos);
+	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

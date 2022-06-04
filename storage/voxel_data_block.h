@@ -11,15 +11,39 @@ namespace zylann::voxel {
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
 public:
-	const Vector3i position;
-	const unsigned int lod_index = 0;
 	RefCount viewers;
 
-	static VoxelDataBlock *create(
-			Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int size, unsigned int p_lod_index) {
-		ERR_FAIL_COND_V(buffer == nullptr, nullptr);
-		ERR_FAIL_COND_V(buffer->get_size() != Vector3i(size, size, size), nullptr);
-		return memnew(VoxelDataBlock(bpos, buffer, p_lod_index));
+	VoxelDataBlock() {}
+
+	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
+			_position(bpos), _lod_index(p_lod_index), _voxels(buffer) {}
+
+	VoxelDataBlock(VoxelDataBlock &&src) :
+			viewers(src.viewers),
+			_position(src._position),
+			_lod_index(src._lod_index),
+			_voxels(std::move(src._voxels)),
+			_needs_lodding(src._needs_lodding),
+			_modified(src._modified),
+			_edited(src._edited) {}
+
+	VoxelDataBlock &operator=(VoxelDataBlock &&src) {
+		viewers = src.viewers;
+		_position = src._position;
+		_lod_index = src._lod_index;
+		_voxels = std::move(src._voxels);
+		_needs_lodding = src._needs_lodding;
+		_modified = src._modified;
+		_edited = src._edited;
+		return *this;
+	}
+
+	inline const Vector3i &get_position() const {
+		return _position;
+	}
+
+	inline unsigned int get_lod_index() const {
+		return _lod_index;
 	}
 
 	VoxelBufferInternal &get_voxels() {
@@ -71,10 +95,11 @@ public:
 	}
 
 private:
-	VoxelDataBlock(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
-			position(bpos), lod_index(p_lod_index), _voxels(buffer) {}
+	Vector3i _position;
 
 	std::shared_ptr<VoxelBufferInternal> _voxels;
+
+	uint8_t _lod_index = 0;
 
 	// The block was edited, which requires its LOD counterparts to be recomputed
 	bool _needs_lodding = false;

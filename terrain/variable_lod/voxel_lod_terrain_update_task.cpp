@@ -176,8 +176,8 @@ struct BeforeUnloadDataAction {
 			VoxelLodTerrainUpdateData::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
 			b.voxels = block.get_voxels_shared();
-			b.position = block.position;
-			b.lod = block.lod_index;
+			b.position = block.get_position();
+			b.lod = block.get_lod_index();
 			blocks_to_save.push_back(b);
 		}
 	}

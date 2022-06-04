@@ -111,8 +111,8 @@ struct ScheduleSaveAction {
 				block.get_voxels_const().duplicate_to(*b.voxels, true);
 			}
 
-			b.position = block.position;
-			b.lod = block.lod_index;
+			b.position = block.get_position();
+			b.lod = block.get_lod_index();
 			blocks_to_save.push_back(b);
 			block.set_modified(false);
 		}
@@ -2086,7 +2086,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 		RWLockRead rlock(data_lod.map_lock);
 		data_lod.map.for_each_block([&dr, parent_transform, data_block_size, basis](const VoxelDataBlock &block) {
-			const Transform3D local_transform(basis, block.position * data_block_size);
+			const Transform3D local_transform(basis, block.get_position() * data_block_size);
 			const Transform3D t = parent_transform * local_transform;
 			const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
 			dr.draw_box_mm(t, c);
