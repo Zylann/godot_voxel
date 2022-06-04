@@ -94,16 +94,16 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 
 	_streaming_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			WARN_PRINT("Streaming tasks remain on module cleanup, "
-					   "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING("Streaming tasks remain on module cleanup, "
+							 "this could become a problem if they reference scripts");
 		}
 		memdelete(task);
 	});
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			WARN_PRINT("General tasks remain on module cleanup, "
-					   "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
+							 "this could become a problem if they reference scripts");
 		}
 		memdelete(task);
 	});

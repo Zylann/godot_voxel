@@ -52,9 +52,9 @@ public:
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {
-			ERR_FAIL_COND_V(mesh_output_callback == nullptr, false);
-			ERR_FAIL_COND_V(data_output_callback == nullptr, false);
-			ERR_FAIL_COND_V(data == nullptr, false);
+			ZN_ASSERT_RETURN_V(mesh_output_callback != nullptr, false);
+			ZN_ASSERT_RETURN_V(data_output_callback != nullptr, false);
+			ZN_ASSERT_RETURN_V(data != nullptr, false);
 			return true;
 		}
 	};
