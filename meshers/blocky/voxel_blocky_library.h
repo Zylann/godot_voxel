@@ -1,6 +1,7 @@
 #ifndef VOXEL_BLOCKY_LIBRARY_H
 #define VOXEL_BLOCKY_LIBRARY_H
 
+#include "../../util/thread/rw_lock.h"
 #include "../../util/dynamic_bitset.h"
 #include "voxel_blocky_model.h"
 #include <core/object/ref_counted.h>
