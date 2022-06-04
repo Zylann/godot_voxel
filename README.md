@@ -55,31 +55,35 @@ Supporters
 This module is a non-profit project developped by voluntary contributors. The following is the list of the current donors.
 Thanks for your support :)
 
+### Gold supporters
+
+```
+Aaron Franke (aaronfranke)
+```
+
+### Silver supporters
+
+```
+TheConceptBoy
+Chris Bolton (yochrisbolton)
+Gamerfiend (Snowminx) 
+greenlion (Justin Swanhart) 
+segfault-god (jp.owo.Manda)
+RonanZe
+Phyronnaz
+NoFr1ends (Lynx)
+```
+
 ### Supporters
 
 ```
-wacyym
-Sergey Lapin (slapin)
-Lynx (NoFr1ends)
-lenis0012
-Phyronnaz
-RonanZe
-furtherorbit
-jp.owo.Manda (segfault-god)
-hidemat
-Jakub Buriánek (Buri)
-Justin Swanhart (Greenlion)
-Sebastian Clausen (sclausen)
-MrGreaterThan
-baals
-Treer
-stackdump.eth
-Snowminx (Gamerfiend)
-Skyquakers
+rcorre (Ryan Roden-Corrent) 
+duchainer (Raphaël Duchaîne)
 MadMartian
-Luiz Felipe Warmling Amadeu (Amad3eu)
-Trevor Schara (trevjs)
-Raphaël Duchaîne (duchainer)
-Ryan Roden-Corrent (rcorre)
+stackdump (stackdump.eth)
+Treer
+MrGreaterThan
+lenis0012
 ```
+
 
