@@ -58,6 +58,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
+    - `VoxelGeneratorFlat`: fixed underground SDF values being 0 instead of negative
     - `VoxelMesherCubes`: editor: color mode is now a proper dropdown
     - `VoxelMesherCubes`: fixed raw color mode not working properly
     - `VoxelMesherCubes`: wrong alpha check between transparent and solid cubes

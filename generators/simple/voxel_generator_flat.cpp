@@ -75,7 +75,11 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	}
 	if (origin.y + (bs.y << lod) < params.height - margin) {
 		// The top of the block is below the lowest ground can go
-		out_buffer.clear_channel(params.channel, use_sdf ? 0 : params.voxel_type);
+		if (use_sdf) {
+			out_buffer.clear_channel_f(params.channel, -1);
+		} else {
+			out_buffer.clear_channel(params.channel, params.voxel_type);
+		}
 		result.max_lod_hint = true;
 		return result;
 	}
