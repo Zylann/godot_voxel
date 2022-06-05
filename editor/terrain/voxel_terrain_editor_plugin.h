@@ -40,6 +40,7 @@ private:
 		MENU_STREAM_FOLLOW_CAMERA,
 		MENU_SHOW_OCTREE_BOUNDS,
 		MENU_SHOW_OCTREE_NODES,
+		MENU_SHOW_MESH_UPDATES,
 		MENU_ABOUT
 	};
 
@@ -50,6 +51,7 @@ private:
 	bool _editor_viewer_follows_camera = false;
 	bool _show_octree_nodes = false;
 	bool _show_octree_bounds = false;
+	bool _show_mesh_updates = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;

@@ -229,6 +229,10 @@ public:
 	bool is_showing_octree_bounds_gizmos() const {
 		return _show_octree_bounds_gizmos;
 	}
+	void set_show_mesh_updates(bool enable);
+	bool is_showing_mesh_updates() const {
+		return _show_mesh_updates;
+	}
 
 	TypedArray<String> get_configuration_warnings() const override;
 
@@ -341,8 +345,16 @@ private:
 	bool _show_volume_bounds_gizmos = true;
 	bool _show_octree_node_gizmos = false;
 	bool _show_edited_blocks = false;
+	bool _show_mesh_updates = true;
 	unsigned int _edited_blocks_gizmos_lod_index = 0;
 	DebugRenderer _debug_renderer;
+	struct DebugMeshUpdateItem {
+		static constexpr uint32_t LINGER_FRAMES = 10;
+		Vector3i position;
+		uint32_t lod;
+		uint32_t remaining_frames;
+	};
+	std::vector<DebugMeshUpdateItem> _debug_mesh_update_items;
 #endif
 
 	Stats _stats;

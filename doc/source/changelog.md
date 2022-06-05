@@ -40,6 +40,7 @@ Godot 4 is required from this version.
     - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
+    - `VoxelToolLodTerrain`: added debug gizmos to see mesh updates
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes

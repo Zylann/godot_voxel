@@ -32,6 +32,10 @@ inline Vector3 to_vec3(const Vector3f v) {
 	return Vector3(v.x, v.y, v.z);
 }
 
+inline Vector3 to_vec3(const Vector3i v) {
+	return Vector3(v.x, v.y, v.z);
+}
+
 inline Vector3d to_vec3d(const Vector3f v) {
 	return Vector3d(v.x, v.y, v.z);
 }

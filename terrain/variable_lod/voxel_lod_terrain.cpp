@@ -10,6 +10,7 @@
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
+#include "../../util/math/color.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -1515,6 +1516,12 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	}
 
 	block->set_parent_transform(get_global_transform());
+
+#ifdef TOOLS_ENABLED
+	if (_show_mesh_updates) {
+		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
+	}
+#endif
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -2094,6 +2101,33 @@ void VoxelLodTerrain::update_gizmos() {
 				});
 	}
 
+	// Debug updates
+	if (_show_mesh_updates) {
+		const int mesh_block_size = get_mesh_block_size();
+
+		for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
+			DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
+
+			const Transform3D local_transform(
+					Basis().scaled(to_vec3(Vector3iUtil::create(mesh_block_size << item.lod))),
+					to_vec3(item.position * (mesh_block_size << item.lod)));
+
+			const Transform3D t = parent_transform * local_transform;
+
+			const Color color = math::lerp(
+					Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
+			dr.draw_box_mm(t, Color8(color));
+
+			--item.remaining_frames;
+			if (item.remaining_frames == 0) {
+				item = _debug_mesh_update_items.back();
+				_debug_mesh_update_items.pop_back();
+			} else {
+				++i;
+			}
+		}
+	}
+
 	dr.end();
 }
 
@@ -2103,6 +2137,7 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
 	} else {
 		_debug_renderer.clear();
+		_debug_mesh_update_items.clear();
 	}
 }
 
@@ -2112,6 +2147,11 @@ void VoxelLodTerrain::set_show_octree_gizmos(bool enable) {
 
 void VoxelLodTerrain::set_show_octree_bounds_gizmos(bool enable) {
 	_show_octree_bounds_gizmos = enable;
+}
+
+void VoxelLodTerrain::set_show_mesh_updates(bool enable) {
+	_show_mesh_updates = enable;
+	_debug_mesh_update_items.clear();
 }
 
 #endif
