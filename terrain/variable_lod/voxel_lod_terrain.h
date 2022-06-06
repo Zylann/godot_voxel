@@ -345,7 +345,7 @@ private:
 	bool _show_volume_bounds_gizmos = true;
 	bool _show_octree_node_gizmos = false;
 	bool _show_edited_blocks = false;
-	bool _show_mesh_updates = true;
+	bool _show_mesh_updates = false;
 	unsigned int _edited_blocks_gizmos_lod_index = 0;
 	DebugRenderer _debug_renderer;
 	struct DebugMeshUpdateItem {
