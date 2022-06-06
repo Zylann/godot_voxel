@@ -268,12 +268,6 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelServer::destroy_singleton();
 
 		// Do this last as VoxelServer might still be holding some refs to voxel blocks
-		const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
-		if (used_blocks > 0) {
-			ERR_PRINT(String("VoxelMemoryPool: "
-							 "{0} memory blocks are still used when unregistering the module. Recycling leak?")
-							  .format(varray(used_blocks)));
-		}
 		VoxelMemoryPool::destroy_singleton();
 		// TODO No remove?
 	}

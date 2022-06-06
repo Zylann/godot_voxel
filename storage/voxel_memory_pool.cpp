@@ -16,11 +16,62 @@ void VoxelMemoryPool::create_singleton() {
 }
 
 void VoxelMemoryPool::destroy_singleton() {
+	const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
+	if (used_blocks > 0) {
+		ZN_PRINT_ERROR(format("VoxelMemoryPool: "
+							  "{} memory blocks are still used when unregistering the module. Recycling leak?",
+				used_blocks));
+#ifdef DEBUG_ENABLED
+		VoxelMemoryPool::get_singleton().debug_print_used_blocks(10);
+#endif
+	}
+
 	ZN_ASSERT(g_memory_pool != nullptr);
 	VoxelMemoryPool *pool = g_memory_pool;
 	g_memory_pool = nullptr;
 	memdelete(pool);
 }
+
+#ifdef DEBUG_ENABLED
+void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
+	struct L {
+		static void debug_print_used_blocks(const VoxelMemoryPool::DebugUsedBlocks &debug_used_blocks,
+				unsigned int &count, unsigned int max_count, size_t mem_size) {
+			if (count > max_count) {
+				count += debug_used_blocks.blocks.size();
+				return;
+			}
+			const unsigned int initial_count = count;
+			for (auto it = debug_used_blocks.blocks.begin(); it != debug_used_blocks.blocks.end(); ++it) {
+				if (count > max_count) {
+					break;
+				}
+				std::string s;
+				const dstack::Info &info = it->second;
+				info.to_string(s);
+				if (mem_size == 0) {
+					println(format("--- Alloc {}:", count));
+				} else {
+					println(format("--- Alloc {}, size {}:", count, mem_size));
+				}
+				println(s);
+				++count;
+			}
+			count = initial_count + debug_used_blocks.blocks.size();
+		}
+	};
+
+	unsigned int count = 0;
+	for (unsigned int pool_index = 0; pool_index < _pot_pools.size(); ++pool_index) {
+		const Pool &pool = _pot_pools[pool_index];
+		L::debug_print_used_blocks(pool.debug_used_blocks, count, max_count, get_size_from_pool_index(pool_index));
+	}
+	L::debug_print_used_blocks(_debug_nonpooled_used_blocks, count, max_count, 0);
+	if (count > 0 && count > max_count) {
+		println(format("[...] and {} more allocs.", max_count - count));
+	}
+}
+#endif
 
 VoxelMemoryPool &VoxelMemoryPool::get_singleton() {
 	ZN_ASSERT(g_memory_pool != nullptr);
@@ -39,6 +90,7 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 }
 
 uint8_t *VoxelMemoryPool::allocate(size_t size) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(size != 0);
 	uint8_t *block = nullptr;

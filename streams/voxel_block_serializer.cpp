@@ -1,6 +1,7 @@
 #include "voxel_block_serializer.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_memory_pool.h"
+#include "../util/dstack.h"
 #include "../util/macros.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
@@ -548,6 +549,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 } // namespace legacy
 
 bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;

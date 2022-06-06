@@ -5,6 +5,7 @@
 #include "../../server/save_block_data_task.h"
 #include "../../server/voxel_server.h"
 #include "../../util/container_funcs.h"
+#include "../../util/dstack.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -14,6 +15,7 @@ namespace zylann::voxel {
 
 void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
 		Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.

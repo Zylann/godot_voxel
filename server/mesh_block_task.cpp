@@ -1,4 +1,5 @@
 #include "mesh_block_task.h"
+#include "../util/dstack.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
@@ -11,6 +12,7 @@ namespace zylann::voxel {
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, int data_block_size,
 		uint8_t lod_index, Vector3i mesh_block_pos) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
@@ -161,6 +163,7 @@ int MeshBlockTask::debug_get_running_count() {
 }
 
 void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	CRASH_COND(meshing_dependency == nullptr);
 

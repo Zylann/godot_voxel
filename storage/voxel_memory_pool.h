@@ -1,13 +1,14 @@
 #ifndef VOXEL_MEMORY_POOL_H
 #define VOXEL_MEMORY_POOL_H
 
+#include "../util/dstack.h"
 #include "../util/fixed_array.h"
 #include "../util/math/funcs.h"
 #include "../util/thread/mutex.h"
 
 #include <atomic>
 #include <limits>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace zylann::voxel {
@@ -22,14 +23,14 @@ private:
 #ifdef DEBUG_ENABLED
 	struct DebugUsedBlocks {
 		Mutex mutex;
-		std::unordered_set<void *> blocks;
+		std::unordered_map<void *, dstack::Info> blocks;
 
-		void add(void *block) {
+		void add(void *mem) {
 			MutexLock lock(mutex);
-			auto it = blocks.find(block);
+			auto it = blocks.find(mem);
 			// Must not add twice
 			ZN_ASSERT(it == blocks.end());
-			blocks.insert(block);
+			blocks.insert({ mem, dstack::Info() });
 		}
 
 		void remove(void *block) {
@@ -84,9 +85,13 @@ private:
 		return math::get_shift_from_power_of_two_32(math::get_next_power_of_two_32(size));
 	}
 
-	inline size_t get_size_from_pool_index(unsigned int i) const {
+	static inline size_t get_size_from_pool_index(unsigned int i) {
 		return size_t(1) << i;
 	}
+
+#ifdef DEBUG_ENABLED
+	void debug_print_used_blocks(unsigned int max_amount);
+#endif
 
 	// We handle allocations with up to 2^20 = 1,048,576 bytes.
 	// This is chosen based on practical needs.

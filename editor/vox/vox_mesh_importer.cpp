@@ -4,6 +4,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox_data.h"
+#include "../../util/dstack.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory.h"
@@ -136,6 +137,7 @@ struct ModelInstance {
 };
 
 void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &out_instances) {
+	ZN_DSTACK();
 	// Gather all models and bake their rotations
 	for_each_model_instance(vox_data, [&out_instances](ForEachModelInstanceArgs args) {
 		ERR_FAIL_COND(args.model == nullptr);

@@ -1,11 +1,13 @@
 #include "vox_loader.h"
 #include "../meshers/cubes/voxel_color_palette.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/dstack.h"
 #include "vox_data.h"
 
 namespace zylann::voxel {
 
 Error VoxelVoxLoader::load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette) {
+	ZN_DSTACK();
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
 	VoxelBufferInternal &voxels = p_voxels->get_buffer();
 

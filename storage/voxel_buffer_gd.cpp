@@ -1,5 +1,6 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
+#include "../util/dstack.h"
 #include "../util/math/color.h"
 #include "../util/memory.h"
 #include "voxel_metadata_variant.h"
@@ -42,26 +43,31 @@ real_t VoxelBuffer::get_voxel_f(int x, int y, int z, unsigned int channel_index)
 }
 
 void VoxelBuffer::set_voxel_f(real_t value, int x, int y, int z, unsigned int channel_index) {
+	ZN_DSTACK();
 	return _buffer->set_voxel_f(value, x, y, z, channel_index);
 }
 
 void VoxelBuffer::copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel) {
+	ZN_DSTACK();
 	ERR_FAIL_COND(other.is_null());
 	_buffer->copy_from(other->get_buffer(), channel);
 }
 
 void VoxelBuffer::copy_channel_from_area(
 		Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel) {
+	ZN_DSTACK();
 	ERR_FAIL_COND(other.is_null());
 	_buffer->copy_from(other->get_buffer(), src_min, src_max, dst_min, channel);
 }
 
 void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
+	ZN_DSTACK();
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	_buffer->fill(defval, channel_index);
 }
 
 void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
+	ZN_DSTACK();
 	ERR_FAIL_INDEX(channel, MAX_CHANNELS);
 	_buffer->fill_f(value, channel);
 }
@@ -81,6 +87,7 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int chann
 }
 
 void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
+	ZN_DSTACK();
 	ERR_FAIL_COND(dst.is_null());
 	_buffer->downscale_to(dst->get_buffer(), src_min, src_max, dst_min);
 }
