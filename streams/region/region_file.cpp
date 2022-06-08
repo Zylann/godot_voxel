@@ -15,8 +15,7 @@ const uint8_t FORMAT_VERSION = 3;
 
 // Version 2 is like 3, but does not include any format information
 const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
-
-const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
+//const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const uint32_t MAGIC_AND_VERSION_SIZE = 4 + 1;

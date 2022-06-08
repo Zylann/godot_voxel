@@ -392,9 +392,8 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size()));
 #endif
 
-	const unsigned int buffer_size = in_x.size();
-
 #ifdef TOOLS_ENABLED
+	const unsigned int buffer_size = in_x.size();
 	ERR_FAIL_COND(state.buffers.size() < _program.buffer_count);
 	ERR_FAIL_COND(state.buffers.size() == 0);
 	ERR_FAIL_COND(state.buffer_size < buffer_size);
