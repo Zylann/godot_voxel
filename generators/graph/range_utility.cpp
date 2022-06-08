@@ -42,8 +42,10 @@ void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSectio
 
 			section.x_min = prev_x;
 			section.y_min = prev_y;
-			current_stationary = current_stationary;
 			current_increasing = increasing;
+			// Note, `current_stationary` does not become true ever again, because we only care about varying sections.
+			// If a part of the curve becomes stationary, it will be included within the current section until it
+			// starts increasing or decreasing.
 		}
 
 		prev_x = x;
