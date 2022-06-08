@@ -72,6 +72,7 @@ For more information about SDF and other domains where they are used, you can ch
 - [Glyphs, shapes, fonts, signed distance fields. (Martin Donald)](https://www.youtube.com/watch?v=1b5hIMqz_wM)
 - [Coding Adventure: Marching Cubes (Sebastian Lague)](https://www.youtube.com/watch?v=M3iI2l0ltbE)
 - [Painting a Cartoon Girl using Mathematics (Inigo Quilez)](https://www.youtube.com/watch?v=8--5LwHRhjk)
+- [Code for a bunch of SDF functions and operations (Inigo Quilez)](https://iquilezles.org/articles/distfunctions/)
 
 
 Transvoxel
