@@ -1480,8 +1480,9 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		}
 	}
 
-	const uint32_t now = get_ticks_msec();
 	if (has_collision) {
+		const uint32_t now = get_ticks_msec();
+
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 			static thread_local std::vector<Array> tls_collidable_surfaces;
@@ -1498,6 +1499,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			block->last_collider_update_time = now;
 			block->has_deferred_collider_update = false;
 			block->deferred_collider_data.clear();
+
 		} else {
 			if (!block->has_deferred_collider_update) {
 				_deferred_collision_updates_per_lod[ob.lod].push_back(ob.position);
