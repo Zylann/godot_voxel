@@ -126,6 +126,29 @@ static inline uint64_t get_ticks_msec() {
 
 } // namespace
 
+void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
+	if (!VoxelServer::get_singleton().is_volume_valid(volume_id)) {
+		// The node can have been destroyed while this task was still pending
+		ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
+		return;
+	}
+
+	std::unordered_map<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[data.lod];
+	auto it = queued_tasks_in_lod.find(data.position);
+	if (it != queued_tasks_in_lod.end()) {
+		RefCount &count = it->second;
+		count.remove();
+		if (count.get() > 0) {
+			// This is not the only main thread task queued for this block.
+			// Cancel it to avoid buildup.
+			return;
+		}
+		queued_tasks_in_lod.erase(it);
+	}
+
+	self->apply_mesh_update(data);
+}
+
 VoxelLodTerrain::VoxelLodTerrain() {
 	// Note: don't do anything heavy in the constructor.
 	// Godot may create and destroy dozens of instances of all node types on startup,
@@ -148,20 +171,6 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_update_data->settings.bounds_in_voxels =
 			Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
-	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
-		void run(TimeSpreadTaskContext &ctx) override {
-			if (!VoxelServer::get_singleton().is_volume_valid(volume_id)) {
-				// The node can have been destroyed while this task was still pending
-				ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
-				return;
-			}
-			self->apply_mesh_update(data);
-		}
-		uint32_t volume_id = 0;
-		VoxelLodTerrain *self = nullptr;
-		VoxelServer::BlockMeshOutput data;
-	};
-
 	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
 	// but instead of using a reception buffer we use a callback,
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
@@ -174,6 +183,16 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		task->self = self;
 		task->data = ob;
 		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
+
+		// If two tasks are queued for the same mesh, cancel the old ones.
+		// This is for cases where creating the mesh is slower than the speed at which it is generated,
+		// which can cause a buildup that never seems to stop.
+		// This is at the expense of holes appearing until all tasks are done.
+		std::unordered_map<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[ob.lod];
+		auto p = queued_tasks_in_lod.insert({ ob.position, RefCount(1) });
+		if (!p.second) {
+			p.first->second.add();
+		}
 	};
 	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
@@ -515,7 +534,13 @@ VoxelSingleValue VoxelLodTerrain::get_voxel(Vector3i pos, unsigned int channel, 
 		std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos);
 		if (voxels == nullptr) {
 			if (_generator.is_valid()) {
-				return _generator->generate_single(pos, channel);
+				VoxelSingleValue value = _generator->generate_single(pos, channel);
+				if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+					float sdf = value.f;
+					_data->modifiers.apply(sdf, to_vec3(pos));
+					value.f = sdf;
+				}
+				return value;
 			}
 		} else {
 			const Vector3i rpos = data_lod0.map.to_local(pos);
@@ -560,6 +585,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 			voxels->create(Vector3iUtil::create(get_data_block_size()));
 			VoxelGenerator::VoxelQueryData q{ *voxels, pos, 0 };
 			_generator->generate_block(q);
+			_data->modifiers.apply(q.voxel_buffer, AABB(pos, q.voxel_buffer.get_size()));
 			RWLockWrite wlock(data_lod0.map_lock);
 			if (data_lod0.map.has_block(block_pos_lod0)) {
 				// A block was loaded by another thread, cancel our edit.
@@ -576,16 +602,27 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 
 void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) {
 	const VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+	VoxelModifierStack &modifiers = _data->modifiers;
+
 	if (_update_data->settings.full_load_mode && _generator.is_valid()) {
+		struct GenContext {
+			VoxelGenerator &generator;
+			const VoxelModifierStack &modifiers;
+		};
+
+		GenContext gctx{ **_generator, modifiers };
+
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, *_generator,
+		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, &gctx,
 				[](void *callback_data, VoxelBufferInternal &voxels, Vector3i pos) {
-					VoxelGenerator *generator = reinterpret_cast<VoxelGenerator *>(callback_data);
+					GenContext *gctx = reinterpret_cast<GenContext *>(callback_data);
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-					generator->generate_block(q);
+					gctx->generator.generate_block(q);
+					gctx->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
 				});
 	} else {
 		RWLockRead rlock(data_lod0.map_lock);
+		// TODO Apply modifiers
 		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask);
 	}
 }
@@ -622,6 +659,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 			// TODO That boolean is also modified by the threaded update task (always set to false)
 			if (!block->get_needs_lodding()) {
 				block->set_needs_lodding(true);
+				// This is what indirectly causes remeshing
 				_update_data->state.blocks_pending_lodding_lod0.push_back(block_pos_lod0);
 			}
 		});
@@ -630,6 +668,11 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	if (_instancer != nullptr) {
 		_instancer->on_area_edited(p_box);
 	}
+}
+
+void VoxelLodTerrain::post_edit_modifiers(Box3i p_box) {
+	MutexLock lock(_update_data->state.remesh_requests_mutex);
+	_update_data->state.remesh_requests.push_back(p_box);
 }
 
 void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -786,6 +829,10 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
 		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
 		item.octree.create(p_lod_count, nda);
+	}
+
+	for (unsigned int i = 0; i < _queued_main_thread_mesh_updates.size(); ++i) {
+		_queued_main_thread_mesh_updates[i].clear();
 	}
 
 	// Not entirely required, but changing LOD count at runtime is rarely needed

@@ -3,9 +3,10 @@
 
 #include "../storage/funcs.h"
 #include "../util/fixed_array.h"
+#include "../util/math/conv.h"
 #include "../util/math/sdf.h"
-#include "../util/math/vector3.h"
-#include "../util/math/vector3f.h"
+
+#include <core/math/transform_3d.h>
 
 namespace zylann::voxel {
 
@@ -175,6 +176,25 @@ struct SdfSphere {
 
 	inline real_t operator()(Vector3 pos) const {
 		return scale * zylann::math::sdf_sphere(pos, center, radius);
+	}
+};
+
+struct SdfBufferShape {
+	Span<const float> buffer;
+	Vector3i buffer_size;
+	Transform3D world_to_buffer;
+	float isolevel;
+	float sdf_scale;
+
+	inline real_t operator()(const Vector3 &wpos) const {
+		// Transform terrain-space position to buffer-space
+		const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
+		if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
+				lpos.z >= buffer_size.z) {
+			// Outside the buffer
+			return 100;
+		}
+		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
 };
 

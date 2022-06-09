@@ -1340,6 +1340,36 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 	}
 }
 
+static void process_remesh_requests(
+		VoxelLodTerrainUpdateData::State &state, const VoxelLodTerrainUpdateData::Settings &settings) {
+	const unsigned int mesh_block_size = 1 << settings.mesh_block_size_po2;
+
+	MutexLock lock(state.remesh_requests_mutex);
+	if (state.remesh_requests.size() == 0) {
+		return;
+	}
+
+	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
+		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+
+		for (auto box_it = state.remesh_requests.begin(); box_it != state.remesh_requests.end(); ++box_it) {
+			const Box3i &voxel_box = *box_it;
+			const Box3i bbox = voxel_box.padded(1).downscaled(mesh_block_size << lod_index);
+
+			RWLockRead rlock(lod.mesh_map_state.map_lock);
+
+			bbox.for_each_cell_zxy([&lod](const Vector3i bpos) {
+				auto block_it = lod.mesh_map_state.map.find(bpos);
+				if (block_it != lod.mesh_map_state.map.end()) {
+					VoxelLodTerrainUpdateTask::schedule_mesh_update(block_it->second, bpos, lod.blocks_pending_update);
+				}
+			});
+		}
+	}
+
+	state.remesh_requests.clear();
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
@@ -1388,7 +1418,11 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	// Update pending LOD data modifications due to edits.
 	// These are deferred from edits so we can batch them.
 	// It has to happen first because blocks can be unloaded afterwards.
+	// This is also what causes meshes to update after edits.
 	flush_pending_lod_edits(state, data, generator, settings.full_load_mode, 1 << settings.mesh_block_size_po2);
+
+	// Other mesh updates
+	process_remesh_requests(state, settings);
 
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToSave> data_blocks_to_save;
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> data_blocks_to_load;

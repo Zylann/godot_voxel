@@ -3,6 +3,7 @@
 
 #include "../util/fixed_array.h"
 #include "../util/profiling.h"
+#include "modifiers.h"
 #include "voxel_data_block.h"
 
 #include <unordered_map>
@@ -210,6 +211,7 @@ struct VoxelDataLodMap {
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	FixedArray<Lod, constants::MAX_LOD> lods;
 	unsigned int lod_count = 1;
+	VoxelModifierStack modifiers;
 };
 
 // Generates all non-present blocks in preparation for an edit.

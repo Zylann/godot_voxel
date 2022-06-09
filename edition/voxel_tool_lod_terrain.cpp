@@ -276,6 +276,7 @@ public:
 			RWLockRead rlock(data_lod.map_lock);
 			// TODO May want to fail if not all blocks were found
 			_op.blocks.reference_area(data_lod.map, _op.box);
+			// TODO Need to apply modifiers
 			_op();
 		}
 		_tracker->post_complete();
@@ -774,31 +775,12 @@ void VoxelToolLodTerrain::stamp_sdf(
 	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesnt intersect
 	// TODO Maybe we should scale SDF values based on the scale of the transform too
 
-	struct SdfBufferShape {
-		Span<const float> buffer;
-		Vector3i buffer_size;
-		Transform3D world_to_buffer;
-		float isolevel;
-		float sdf_scale;
-
-		inline real_t operator()(const Vector3 &wpos) const {
-			// Transform terrain-space position to buffer-space
-			const Vector3f lpos = to_vec3f(world_to_buffer.xform(wpos));
-			if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
-					lpos.z >= buffer_size.z) {
-				// Outside the buffer
-				return 100;
-			}
-			return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
-		}
-	};
-
 	const Transform3D buffer_to_box =
 			Transform3D(Basis().scaled(Vector3(local_aabb.size / buffer.get_size())), local_aabb.position);
 	const Transform3D buffer_to_world = box_to_world * buffer_to_box;
 
 	// TODO Support other depths, format should be accessible from the volume
-	ops::SdfOperation16bit<ops::SdfUnion, SdfBufferShape> op;
+	ops::SdfOperation16bit<ops::SdfUnion, ops::SdfBufferShape> op;
 	op.shape.world_to_buffer = buffer_to_world.affine_inverse();
 	op.shape.buffer_size = buffer.get_size();
 	op.shape.isolevel = isolevel;

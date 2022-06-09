@@ -356,6 +356,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 			VoxelGenerator::VoxelQueryData q{ *task.voxels, task.block_pos * (data_block_size << task.lod_index),
 				task.lod_index };
 			generator->generate_block(q);
+			data.modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << q.lod));
 		}
 	}
 

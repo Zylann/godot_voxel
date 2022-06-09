@@ -159,6 +159,9 @@ struct VoxelLodTerrainUpdateData {
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
 
+		std::vector<Box3i> remesh_requests;
+		BinaryMutex remesh_requests_mutex;
+
 		Stats stats;
 	};
 

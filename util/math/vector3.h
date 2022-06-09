@@ -22,6 +22,10 @@ inline bool is_normalized(const Vector3 &v) {
 	return v.is_normalized();
 }
 
+inline Vector3 lerp(const Vector3 a, const Vector3 b, const Vector3 alpha) {
+	return Vector3(Math::lerp(a.x, b.x, alpha.x), Math::lerp(a.y, b.y, alpha.y), Math::lerp(a.z, b.z, alpha.z));
+}
+
 } // namespace zylann::math
 
 #endif // ZN_VECTOR3_H

@@ -1,4 +1,5 @@
 #include "mesh_block_task.h"
+#include "../storage/voxel_data_map.h"
 #include "../util/dstack.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
@@ -178,6 +179,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			mesher->get_used_channels_mask(), meshing_dependency->generator, data_block_size, lod, position);
 
 	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod);
+
+	if (data != nullptr) {
+		data->modifiers.apply(voxels, AABB(origin_in_voxels, voxels.get_size() << lod));
+	}
 
 	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels, lod,
 		collision_hint };
