@@ -181,26 +181,27 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Repository:[/b] [url]https://github.com/Zylann/godot_voxel[/url]\n"
 						"[b]Issue tracker:[/b] [url]https://github.com/Zylann/godot_voxel/issues[/url]\n"
 						"\n"
-						"[b]Donors:[/b]\n"
-						"wacyym\n"
-						"Sergey Lapin (slapin)\n"
-						"Lynx (NoFr1ends)\n"
-						"lenis0012\n"
-						"Phyronnaz\n"
+						"[b]Gold supporters:[/b]\n"
+						"Aaron Franke (aaronfranke)\n"
+						"\n"
+						"[b]Silver supporters:[/b]\n"
+						"TheConceptBoy\n"
+						"Chris Bolton (yochrisbolton)\n"
+						"Gamerfiend (Snowminx)\n"
+						"greenlion (Justin Swanhart)\n"
+						"segfault-god (jp.owo.Manda)\n"
 						"RonanZe\n"
-						"furtherorbit\n"
-						"jp.owo.Manda (segfault-god)\n"
-						"hidemat\n"
-						"Jakub Buriánek (Buri)\n"
-						"Justin Swanhart (Greenlion)\n"
-						"Sebastian Clausen (sclausen)\n"
-						"MrGreaterThan\n"
-						"baals\n"
+						"Phyronnaz\n"
+						"NoFr1ends (Lynx)\n"
+						"\n"
+						"[b]Supporters:[/b]\n"
+						"rcorre (Ryan Roden-Corrent)\n"
+						"duchainer (Raphaël Duchaîne)\n"
+						"MadMartian\n"
+						"stackdump (stackdump.eth)\n"
 						"Treer\n"
-						"stackdump.eth\n"
-						"Snowminx (Gamerfiend)\n"
-						"Skyquakers\n"
-						"MadMartian\n";
+						"MrGreaterThan\n"
+						"lenis0012\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
@@ -297,12 +298,6 @@ void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
 }
 
-void VoxelAboutWindow::_bind_methods() {
-	// ClassDB::bind_method(D_METHOD("_on_ok_button_pressed"), &VoxelAboutWindow::_on_ok_button_pressed);
-	// ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
-	// 		&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
-	// ClassDB::bind_method(
-	// 		D_METHOD("_on_third_party_list_item_selected"), &VoxelAboutWindow::_on_third_party_list_item_selected);
-}
+void VoxelAboutWindow::_bind_methods() {}
 
 } // namespace zylann::voxel

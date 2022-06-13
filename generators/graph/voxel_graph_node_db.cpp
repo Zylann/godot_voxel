@@ -15,6 +15,7 @@
 #include "../../util/noise/fast_noise_2.h"
 #endif
 
+#include <modules/noise/fastnoise_lite.h>
 #include <modules/noise/noise.h>
 #include <scene/resources/curve.h>
 
@@ -214,6 +215,13 @@ inline Interval sdf_sphere_heightmap(Interval x, Interval y, Interval z, float r
 	}
 
 	return sd - m * h;
+}
+
+template <typename T>
+Variant create_resource_to_variant() {
+	Ref<T> res;
+	res.instantiate();
+	return Variant(res);
 }
 
 const VoxelGraphNodeDB &VoxelGraphNodeDB::get_singleton() {
@@ -984,7 +992,17 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("curve", Curve::get_class_static()));
+		t.params.push_back(Param("curve", Curve::get_class_static(), []() {
+			Ref<Curve> curve;
+			curve.instantiate();
+			// The default preset when creating a Curve isn't convenient.
+			// Let's use a linear preset.
+			curve->add_point(Vector2(0, 0));
+			curve->add_point(Vector2(1, 1));
+			curve->set_point_right_mode(0, Curve::TANGENT_LINEAR);
+			curve->set_point_left_mode(1, Curve::TANGENT_LINEAR);
+			return Variant(curve);
+		}));
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Curve> curve = ctx.get_param(0);
 			if (curve.is_null()) {
@@ -1036,7 +1054,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", Noise::get_class_static()));
+		t.params.push_back(Param("noise", Noise::get_class_static(), &create_resource_to_variant<FastNoiseLite>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
@@ -1082,7 +1100,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", Noise::get_class_static()));
+		t.params.push_back(Param("noise", Noise::get_class_static(), &create_resource_to_variant<FastNoiseLite>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Noise> noise = ctx.get_param(0);
@@ -1127,7 +1145,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("image", Image::get_class_static()));
+		t.params.push_back(Param("image", Image::get_class_static(), nullptr));
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
@@ -1590,7 +1608,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("sdf"));
-		t.params.push_back(Param("image", Image::get_class_static()));
+		t.params.push_back(Param("image", Image::get_class_static(), nullptr));
 		t.params.push_back(Param("radius", Variant::FLOAT, 10.f));
 		t.params.push_back(Param("factor", Variant::FLOAT, 1.f));
 
@@ -1718,7 +1736,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", ZN_FastNoiseLite::get_class_static()));
+		t.params.push_back(
+				Param("noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
@@ -1785,7 +1804,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", ZN_FastNoiseLite::get_class_static()));
+		t.params.push_back(
+				Param("noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLite> noise = ctx.get_param(0);
@@ -1854,7 +1874,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
-		t.params.push_back(Param("noise", ZN_FastNoiseLiteGradient::get_class_static()));
+		t.params.push_back(Param("noise", ZN_FastNoiseLiteGradient::get_class_static(),
+				&create_resource_to_variant<ZN_FastNoiseLiteGradient>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -1908,7 +1929,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
 		t.outputs.push_back(Port("out_z"));
-		t.params.push_back(Param("noise", ZN_FastNoiseLiteGradient::get_class_static()));
+		t.params.push_back(Param("noise", ZN_FastNoiseLiteGradient::get_class_static(),
+				&create_resource_to_variant<ZN_FastNoiseLiteGradient>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<ZN_FastNoiseLiteGradient> noise = ctx.get_param(0);
@@ -1966,7 +1988,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("x"));
 		t.inputs.push_back(Port("y"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", FastNoise2::get_class_static()));
+		t.params.push_back(Param("noise", FastNoise2::get_class_static(), &create_resource_to_variant<FastNoise2>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
@@ -2014,7 +2036,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y"));
 		t.inputs.push_back(Port("z"));
 		t.outputs.push_back(Port("out"));
-		t.params.push_back(Param("noise", FastNoise2::get_class_static()));
+		t.params.push_back(Param("noise", FastNoise2::get_class_static(), &create_resource_to_variant<FastNoise2>));
 
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<FastNoise2> noise = ctx.get_param(0);
@@ -2163,11 +2185,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
-		_type_name_to_id.insert(t.name, (VoxelGeneratorGraph::NodeTypeID)i);
+		_type_name_to_id.insert({ t.name, (VoxelGeneratorGraph::NodeTypeID)i });
 
 		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
-			t.param_name_to_index.insert(p.name, param_index);
+			t.param_name_to_index.insert({ p.name, param_index });
 			p.index = param_index;
 
 			switch (p.type) {
@@ -2195,7 +2217,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
-			t.input_name_to_index.insert(p.name, input_index);
+			t.input_name_to_index.insert({ p.name, input_index });
 		}
 
 		if (t.expression_func != nullptr) {
@@ -2255,11 +2277,11 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 
 bool VoxelGraphNodeDB::try_get_type_id_from_name(
 		const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
-	const VoxelGeneratorGraph::NodeTypeID *p = _type_name_to_id.getptr(name);
-	if (p == nullptr) {
+	auto it = _type_name_to_id.find(name);
+	if (it == _type_name_to_id.end()) {
 		return false;
 	}
-	out_type_id = *p;
+	out_type_id = it->second;
 	return true;
 }
 
@@ -2267,11 +2289,11 @@ bool VoxelGraphNodeDB::try_get_param_index_from_name(
 		uint32_t type_id, const String &name, uint32_t &out_param_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
-	const uint32_t *p = t.param_name_to_index.getptr(name);
-	if (p == nullptr) {
+	auto it = t.param_name_to_index.find(name);
+	if (it == t.param_name_to_index.end()) {
 		return false;
 	}
-	out_param_index = *p;
+	out_param_index = it->second;
 	return true;
 }
 
@@ -2279,11 +2301,11 @@ bool VoxelGraphNodeDB::try_get_input_index_from_name(
 		uint32_t type_id, const String &name, uint32_t &out_input_index) const {
 	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
 	const NodeType &t = _types[type_id];
-	const uint32_t *p = t.input_name_to_index.getptr(name);
-	if (p == nullptr) {
+	auto it = t.input_name_to_index.find(name);
+	if (it == t.input_name_to_index.end()) {
 		return false;
 	}
-	out_input_index = *p;
+	out_input_index = it->second;
 	return true;
 }
 

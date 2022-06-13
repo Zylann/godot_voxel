@@ -15,8 +15,7 @@ const uint8_t FORMAT_VERSION = 3;
 
 // Version 2 is like 3, but does not include any format information
 const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
-
-const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
+//const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const uint32_t MAGIC_AND_VERSION_SIZE = 4 + 1;
@@ -98,8 +97,8 @@ static bool save_header(
 	// TODO Deal with endianess, this should be little-endian
 	f.store_buffer(reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(RegionBlockInfo));
 
-	const size_t blocks_begin_offset = f.get_position();
 #ifdef DEBUG_ENABLED
+	const size_t blocks_begin_offset = f.get_position();
 	CRASH_COND(blocks_begin_offset != get_header_size_v3(format));
 #endif
 

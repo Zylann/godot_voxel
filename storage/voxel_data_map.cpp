@@ -32,8 +32,8 @@ void VoxelDataMap::create(unsigned int block_size_po2, int lod_index) {
 }
 
 void VoxelDataMap::set_block_size_pow2(unsigned int p) {
-	ERR_FAIL_COND_MSG(p < 1, "Block size is too small");
-	ERR_FAIL_COND_MSG(p > 8, "Block size is too big");
+	ZN_ASSERT_RETURN_MSG(p >= 1, "Block size is too small");
+	ZN_ASSERT_RETURN_MSG(p <= 8, "Block size is too big");
 
 	_block_size_pow2 = p;
 	_block_size = 1 << _block_size_pow2;
@@ -41,8 +41,8 @@ void VoxelDataMap::set_block_size_pow2(unsigned int p) {
 }
 
 void VoxelDataMap::set_lod_index(int lod_index) {
-	ERR_FAIL_COND_MSG(lod_index < 0, "LOD index can't be negative");
-	ERR_FAIL_COND_MSG(lod_index >= 32, "LOD index is too big");
+	ZN_ASSERT_RETURN_MSG(lod_index >= 0, "LOD index can't be negative");
+	ZN_ASSERT_RETURN_MSG(lod_index < 32, "LOD index is too big");
 
 	_lod_index = lod_index;
 }
@@ -65,9 +65,12 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
 	buffer->set_default_values(_default_voxel);
-	VoxelDataBlock *block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
-	set_block(bpos, block);
-	return block;
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
+#endif
+	VoxelDataBlock &map_block = _blocks_map[bpos];
+	map_block = std::move(VoxelDataBlock(buffer, _lod_index));
+	return &map_block;
 }
 
 VoxelDataBlock *VoxelDataMap::get_or_create_block_at_voxel_pos(Vector3i pos) {
@@ -108,25 +111,19 @@ void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 }
 
 void VoxelDataMap::set_default_voxel(int value, unsigned int channel) {
-	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
+	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS);
 	_default_voxel[channel] = value;
 }
 
 int VoxelDataMap::get_default_voxel(unsigned int channel) {
-	ERR_FAIL_INDEX_V(channel, VoxelBufferInternal::MAX_CHANNELS, 0);
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS, 0);
 	return _default_voxel[channel];
 }
 
 VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
-		const unsigned int i = it->second;
-#ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _blocks.size());
-#endif
-		VoxelDataBlock *block = _blocks[i];
-		CRASH_COND(block == nullptr); // The map should not contain null blocks
-		return block;
+		return &it->second;
 	}
 	return nullptr;
 }
@@ -134,66 +131,31 @@ VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
 const VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) const {
 	auto it = _blocks_map.find(bpos);
 	if (it != _blocks_map.end()) {
-		const unsigned int i = it->second;
-#ifdef DEBUG_ENABLED
-		CRASH_COND(i >= _blocks.size());
-#endif
-		// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
-		// again...
-		const VoxelDataBlock *block = _blocks[i];
-		CRASH_COND(block == nullptr); // The map should not contain null blocks
-		return block;
+		return &it->second;
 	}
 	return nullptr;
 }
 
-void VoxelDataMap::set_block(Vector3i bpos, VoxelDataBlock *block) {
-	ERR_FAIL_COND(block == nullptr);
-	CRASH_COND(bpos != block->position);
-#ifdef DEBUG_ENABLED
-	CRASH_COND(_blocks_map.find(bpos) != _blocks_map.end());
-#endif
-	unsigned int i = _blocks.size();
-	_blocks.push_back(block);
-	_blocks_map.insert(std::make_pair(bpos, i));
-}
-
-void VoxelDataMap::remove_block_internal(Vector3i bpos, unsigned int index) {
-	// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
-	// This might be caused by internal rehashing/resizing.
-	// We should look for a faster container, or reduce the number of entries.
-
-	// This function assumes the block is already freed
-	_blocks_map.erase(bpos);
-
-	VoxelDataBlock *moved_block = _blocks.back();
-#ifdef DEBUG_ENABLED
-	CRASH_COND(index >= _blocks.size());
-#endif
-	_blocks[index] = moved_block;
-	_blocks.pop_back();
-
-	if (index < _blocks.size()) {
-		auto it = _blocks_map.find(moved_block->position);
-		CRASH_COND(it == _blocks_map.end());
-		it->second = index;
-	}
-}
-
 VoxelDataBlock *VoxelDataMap::set_block_buffer(
 		Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite) {
-	ERR_FAIL_COND_V(buffer == nullptr, nullptr);
+	ZN_ASSERT_RETURN_V(buffer != nullptr, nullptr);
+
 	VoxelDataBlock *block = get_block(bpos);
+
 	if (block == nullptr) {
-		block = VoxelDataBlock::create(bpos, buffer, _block_size, _lod_index);
-		set_block(bpos, block);
+		VoxelDataBlock &map_block = _blocks_map[bpos];
+		map_block = std::move(VoxelDataBlock(buffer, _lod_index));
+		block = &map_block;
+
 	} else if (overwrite) {
 		block->set_voxels(buffer);
+
 	} else {
 		ZN_PROFILE_MESSAGE("Redundant data block");
 		ZN_PRINT_VERBOSE(format(
 				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
 	}
+
 	return block;
 }
 
@@ -328,29 +290,18 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 }
 
 void VoxelDataMap::clear() {
-	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		VoxelDataBlock *block = *it;
-		if (block == nullptr) {
-			ERR_PRINT("Unexpected nullptr in VoxelMap::clear()");
-		} else {
-			memdelete(block);
-		}
-	}
-	_blocks.clear();
 	_blocks_map.clear();
 }
 
 int VoxelDataMap::get_block_count() const {
-#ifdef DEBUG_ENABLED
-	const unsigned int blocks_map_size = _blocks_map.size();
-	CRASH_COND(_blocks.size() != blocks_map_size);
-#endif
-	return _blocks.size();
+	return _blocks_map.size();
 }
 
 bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 	Box3i block_box = voxels_box.downscaled(get_block_size());
-	return block_box.all_cells_match([this](Vector3i pos) { return has_block(pos); });
+	return block_box.all_cells_match([this](Vector3i pos) { //
+		return has_block(pos);
+	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -411,7 +362,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	// Populate slots
 	unsigned int task_index = 0;
 	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
-		CRASH_COND(lod_index >= count_per_lod.size());
+		ZN_ASSERT(lod_index < count_per_lod.size());
 		const unsigned int count = count_per_lod[lod_index];
 
 		if (count > 0) {
@@ -422,7 +373,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 
 			for (; task_index < end_task_index; ++task_index) {
 				Task &task = todo[task_index];
-				CRASH_COND(task.lod_index != lod_index);
+				ZN_ASSERT(task.lod_index == lod_index);
 				if (data_lod.map.has_block(task.block_pos)) {
 					// Sorry, that block has been set in the meantime by another thread.
 					// We'll assume the block we just generated is redundant and discard it.

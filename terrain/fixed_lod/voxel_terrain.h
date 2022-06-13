@@ -1,7 +1,7 @@
 #ifndef VOXEL_TERRAIN_H
 #define VOXEL_TERRAIN_H
 
-#include "../../server/voxel_server.h"
+#include "../../server/meshing_dependency.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../util/godot/funcs.h"
 #include "../voxel_data_block_enter_info.h"
@@ -77,8 +77,8 @@ public:
 	void set_automatic_loading_enabled(bool enable);
 	bool is_automatic_loading_enabled() const;
 
-	void set_material(unsigned int id, Ref<Material> material);
-	Ref<Material> get_material(unsigned int id) const;
+	void set_material_override(Ref<Material> material);
+	Ref<Material> get_material_override() const;
 
 	VoxelDataMap &get_storage() {
 		return _data_map;
@@ -110,9 +110,6 @@ public:
 	// If the block is out of range of any viewer, it will be cancelled.
 	void generate_block_async(Vector3i block_position);
 
-	// For convenience, this is actually stored in a particular type of mesher
-	Ref<VoxelBlockyLibrary> get_voxel_library() const;
-
 	struct Stats {
 		int updated_blocks = 0;
 		int dropped_block_loads = 0;
@@ -140,16 +137,16 @@ public:
 		return _volume_id;
 	}
 
+	std::shared_ptr<StreamingDependency> get_streaming_dependency() const override {
+		return _streaming_dependency;
+	}
+
 protected:
 	void _notification(int p_what);
 
 	void _on_gi_mode_changed() override;
 
 private:
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-
 	void _process();
 	void process_viewers();
 	//void process_received_data_blocks();
@@ -180,12 +177,12 @@ private:
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_block_data_requests();
 
-	void emit_data_block_loaded(const VoxelDataBlock &block);
-	void emit_data_block_unloaded(const VoxelDataBlock &block);
+	void emit_data_block_loaded(const VoxelDataBlock &block, Vector3i bpos);
+	void emit_data_block_unloaded(const VoxelDataBlock &block, Vector3i bpos);
 
 	bool try_get_paired_viewer_index(uint32_t id, size_t &out_i) const;
 
-	void notify_data_block_enter(VoxelDataBlock &block, uint32_t viewer_id);
+	void notify_data_block_enter(VoxelDataBlock &block, Vector3i bpos, uint32_t viewer_id);
 
 	void get_viewers_in_area(std::vector<int> &out_viewer_ids, Box3i voxel_box) const;
 
@@ -253,7 +250,7 @@ private:
 	};
 
 	// Blocks currently being loaded.
-	HashMap<Vector3i, LoadingBlock, Vector3iHasher> _loading_blocks;
+	std::unordered_map<Vector3i, LoadingBlock> _loading_blocks;
 	// Blocks that should be loaded on the next process call.
 	// The order in that list does not matter.
 	std::vector<Vector3i> _blocks_pending_load;
@@ -268,6 +265,10 @@ private:
 	Ref<VoxelMesher> _mesher;
 	Ref<VoxelGenerator> _generator;
 
+	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	std::shared_ptr<StreamingDependency> _streaming_dependency;
+	std::shared_ptr<MeshingDependency> _meshing_dependency;
+
 	bool _generate_collisions = true;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
@@ -279,7 +280,7 @@ private:
 	// If enabled, VoxelViewers will cause blocks to automatically load around them.
 	bool _automatic_loading_enabled = true;
 
-	Ref<Material> _materials[VoxelMesherBlocky::MAX_MATERIALS];
+	Ref<Material> _material_override;
 
 	GodotObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 

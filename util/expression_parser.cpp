@@ -72,7 +72,7 @@ std::string_view get_name(const std::string_view text, unsigned int &pos) {
 bool get_number_token(const std::string_view text, unsigned int &pos, Token &out_token, bool negative) {
 	// Integer part
 	int64_t n = 0;
-	char c;
+	char c = 0;
 	while (pos < text.size()) {
 		c = text[pos];
 		if (!is_digit(c)) {

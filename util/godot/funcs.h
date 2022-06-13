@@ -7,6 +7,7 @@
 
 #include <core/object/ref_counted.h>
 
+#include <functional>
 #include <iosfwd>
 #include <memory>
 
@@ -21,6 +22,7 @@ bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(const Mesh &mesh);
 
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> positions, Span<const int> indices);
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);
@@ -140,5 +142,25 @@ struct GodotStringWrapper {
 	const String &s;
 };
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
+
+namespace std {
+
+// For String keys in std::unordered_map
+template <>
+struct hash<String> {
+	inline size_t operator()(const String &v) const {
+		return v.hash();
+	}
+};
+
+// For Ref<T> keys in std::unordered_map, hashed by pointer, not by content
+template <typename T>
+struct hash<Ref<T>> {
+	inline size_t operator()(const Ref<T> &v) const {
+		return std::hash<const T *>{}(v.ptr());
+	}
+};
+
+} // namespace std
 
 #endif // VOXEL_UTILITY_GODOT_FUNCS_H

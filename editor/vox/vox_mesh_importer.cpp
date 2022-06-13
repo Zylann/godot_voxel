@@ -4,6 +4,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox_data.h"
+#include "../../util/dstack.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory.h"
@@ -57,7 +58,7 @@ void VoxelVoxMeshImporter::get_import_options(const String &p_path, List<ImportO
 }
 
 bool VoxelVoxMeshImporter::get_option_visibility(
-		const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const {
+		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
 	return true;
 }
 
@@ -136,6 +137,7 @@ struct ModelInstance {
 };
 
 void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &out_instances) {
+	ZN_DSTACK();
 	// Gather all models and bake their rotations
 	for_each_model_instance(vox_data, [&out_instances](ForEachModelInstanceArgs args) {
 		ERR_FAIL_COND(args.model == nullptr);
@@ -216,7 +218,7 @@ bool make_single_voxel_grid(
 }
 
 Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_save_path,
-		const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
+		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
 		Variant *r_metadata) {
 	//
 	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];

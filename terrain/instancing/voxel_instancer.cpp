@@ -1,4 +1,5 @@
 #include "../../edition/voxel_tool.h"
+#include "../../server/save_block_data_task.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
@@ -1238,7 +1239,15 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	}
 
 	const int volume_id = _parent->get_volume_id();
-	VoxelServer::get_singleton().request_instance_block_save(volume_id, std::move(data), data_grid_pos, lod_index);
+
+	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
+	ZN_ASSERT(stream_dependency != nullptr);
+
+	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+			volume_id, data_grid_pos, lod_index, data_block_size, std::move(data), stream_dependency));
+
+	// No priority data, saving doesnt need sorting
+	VoxelServer::get_singleton().push_async_io_task(task);
 }
 
 void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform,
@@ -1470,7 +1479,7 @@ void VoxelInstancer::on_body_removed(
 
 	// Unregister the body
 	unsigned int body_count = block.bodies.size();
-	unsigned int last_instance_index = --body_count;
+	const unsigned int last_instance_index = --body_count;
 	VoxelInstancerRigidBody *moved_body = block.bodies[last_instance_index];
 	if (instance_index != last_instance_index) {
 		moved_body->set_instance_index(instance_index);
@@ -1487,11 +1496,11 @@ void VoxelInstancer::on_body_removed(
 void VoxelInstancer::on_scene_instance_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.bodies.size());
+	ERR_FAIL_INDEX(instance_index, block.scene_instances.size());
 
 	// Unregister the scene instance
 	unsigned int instance_count = block.scene_instances.size();
-	unsigned int last_instance_index = --instance_count;
+	const unsigned int last_instance_index = --instance_count;
 	SceneInstance moved_instance = block.scene_instances[last_instance_index];
 	if (instance_index != last_instance_index) {
 		ERR_FAIL_COND(moved_instance.component == nullptr);
@@ -1580,7 +1589,7 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	root->set_transform(get_transform());
 	root->set_name("VoxelInstancerRoot");
 
-	HashMap<Ref<Mesh>, Ref<Mesh>, RefHasher<Mesh>> mesh_copies;
+	std::unordered_map<Ref<Mesh>, Ref<Mesh>> mesh_copies;
 
 	// For each layer
 	const int *layer_key = nullptr;
@@ -1607,13 +1616,13 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 				ERR_CONTINUE(src_mesh.is_null());
 
 				// Duplicating the meshes because often they don't get saved even with `FLAG_BUNDLE_RESOURCES`
-				Ref<Mesh> *mesh_copy_ptr = mesh_copies.getptr(src_mesh);
+				auto mesh_copy_it = mesh_copies.find(src_mesh);
 				Ref<Mesh> mesh_copy;
-				if (mesh_copy_ptr == nullptr) {
+				if (mesh_copy_it == mesh_copies.end()) {
 					mesh_copy = src_mesh->duplicate();
-					mesh_copies.insert(src_mesh, mesh_copy);
+					mesh_copies.insert({ src_mesh, mesh_copy });
 				} else {
-					mesh_copy = *mesh_copy_ptr;
+					mesh_copy = mesh_copy_it->second;
 				}
 
 				Ref<MultiMesh> multimesh_copy = multimesh->duplicate();

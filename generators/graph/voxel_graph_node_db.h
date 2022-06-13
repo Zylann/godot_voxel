@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_NODE_DB_H
 
 #include "../../util/expression_parser.h"
+#include "../../util/godot/funcs.h" // For String hash
 #include "voxel_generator_graph.h"
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_shader_generator.h"
@@ -20,9 +21,12 @@ public:
 		Port(String p_name, float p_default_value) : name(p_name), default_value(p_default_value) {}
 	};
 
+	typedef Variant (*DefaultValueFactory)();
+
 	struct Param {
 		String name;
 		Variant default_value;
+		DefaultValueFactory default_value_func;
 		Variant::Type type;
 		String class_name;
 		uint32_t index = -1;
@@ -33,7 +37,8 @@ public:
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}
 
-		Param(String p_name, String p_class_name) : name(p_name), type(Variant::OBJECT), class_name(p_class_name) {}
+		Param(String p_name, String p_class_name, DefaultValueFactory dvf) :
+				name(p_name), default_value_func(dvf), type(Variant::OBJECT), class_name(p_class_name) {}
 	};
 
 	enum Category {
@@ -57,8 +62,8 @@ public:
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Param> params;
-		HashMap<String, uint32_t> param_name_to_index;
-		HashMap<String, uint32_t> input_name_to_index;
+		std::unordered_map<String, uint32_t> param_name_to_index;
+		std::unordered_map<String, uint32_t> input_name_to_index;
 		CompileFunc compile_func = nullptr;
 		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
 		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
@@ -95,7 +100,7 @@ public:
 
 private:
 	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;
-	HashMap<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
+	std::unordered_map<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
 	std::vector<ExpressionParser::Function> _expression_functions;
 };
 

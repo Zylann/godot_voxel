@@ -325,6 +325,14 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 	}
 }
 
+static Ref<VoxelBlockyLibrary> get_voxel_library(const VoxelTerrain &terrain) {
+	Ref<VoxelMesherBlocky> blocky_mesher = terrain.get_mesher();
+	if (blocky_mesher.is_valid()) {
+		return blocky_mesher->get_library();
+	}
+	return Ref<VoxelBlockyLibrary>();
+}
+
 // TODO This function snaps the given AABB to blocks, this is not intuitive. Should figure out a way to respect the
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
 // slow "natural" cellular automata behavior, as can be seen in Minecraft.
@@ -333,8 +341,8 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND_MSG(
-			_terrain->get_voxel_library().is_null(), "This function requires a volume using VoxelMesherBlocky");
+	ERR_FAIL_COND_MSG(get_voxel_library(*_terrain).is_null(),
+			String("This function requires a volume using {0}").format(varray(VoxelMesherBlocky::get_class_static())));
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
@@ -349,7 +357,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	};
 	CallbackData cb_self{ callback };
 
-	const VoxelBlockyLibrary &lib = **_terrain->get_voxel_library();
+	const VoxelBlockyLibrary &lib = **get_voxel_library(*_terrain);
 	VoxelDataMap &map = _terrain->get_storage();
 	const Box3i voxel_box(math::floor_to_int(voxel_area.position), math::floor_to_int(voxel_area.size));
 

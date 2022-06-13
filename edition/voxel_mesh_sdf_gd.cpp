@@ -2,6 +2,7 @@
 #include "../server/voxel_server.h"
 #include "../server/voxel_server_updater.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/color.h"
 #include "../util/math/conv.h"
@@ -92,6 +93,7 @@ Ref<Mesh> VoxelMeshSDF::get_mesh() const {
 }
 
 void VoxelMeshSDF::bake() {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
 	Ref<Mesh> mesh = _mesh;
@@ -187,6 +189,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 		Ref<VoxelMeshSDF> obj_to_notify;
 
 		void run(ThreadedTaskContext ctx) override {
+			ZN_DSTACK();
 			ZN_PROFILE_SCOPE();
 			ZN_ASSERT(obj_to_notify.is_valid());
 
@@ -399,6 +402,7 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 }
 
 void VoxelMeshSDF::_b_set_data(Dictionary d) {
+	ZN_DSTACK();
 	if (_is_baking) {
 		WARN_PRINT("Setting data while baking, that data will be overwritten when baking ends.");
 	}

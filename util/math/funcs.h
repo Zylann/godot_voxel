@@ -237,8 +237,44 @@ inline void sort(T &a, T &b, T &c, T &d) {
 	sort(b, c);
 }
 
-inline float sign(float x) {
+// Returns -1 if `x` is negative, and 1 otherwise.
+// Contrary to a usual version like GLSL, this one returns 1 when `x` is 0, instead of 0.
+inline float sign_nonzero(float x) {
 	return x < 0.f ? -1.f : 1.f;
+}
+
+// Trilinear interpolation between corner values of a unit-sized cube.
+// `v***` arguments are corner values named as `vXYZ`, where a coordinate is 0 or 1 on the cube.
+// Coordinates of `p` are in 0..1, but are not clamped so extrapolation is possible.
+//
+//      6---------------7
+//     /|              /|
+//    / |             / |
+//   5---------------4  |
+//   |  |            |  |
+//   |  |            |  |
+//   |  |            |  |
+//   |  2------------|--3        Y
+//   | /             | /         | Z
+//   |/              |/          |/
+//   1---------------0      X----o
+//
+// p000, p100, p101, p001, p010, p110, p111, p011
+template <typename T, typename Vec3_T>
+inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T v001, const T v010, const T v110,
+		const T v111, const T v011, Vec3_T p) {
+	//
+	const T v00 = v000 + p.x * (v100 - v000);
+	const T v10 = v010 + p.x * (v110 - v010);
+	const T v01 = v001 + p.x * (v101 - v001);
+	const T v11 = v011 + p.x * (v111 - v011);
+
+	const T v0 = v00 + p.y * (v10 - v00);
+	const T v1 = v01 + p.y * (v11 - v01);
+
+	const T v = v0 + p.z * (v1 - v0);
+
+	return v;
 }
 
 } // namespace zylann::math

@@ -36,7 +36,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 	std::vector<uint32_t> terminal_nodes;
 
 	// Only getting SDF for now, as this is the first use case I want to test this feature with
-	expanded_graph.for_each_node_const([&terminal_nodes, &type_db](const ProgramGraph::Node &node) {
+	expanded_graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
 		if (node.type_id == VoxelGeneratorGraph::NODE_OUTPUT_SDF) {
 			terminal_nodes.push_back(node.id);
 		}

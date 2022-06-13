@@ -28,7 +28,8 @@ public:
 	// It becomes distinct because it's going to be used in a multithread environment,
 	// while the configuration that produced the data can be changed by the user at any time.
 	struct BakedData {
-		struct Model {
+		struct Surface {
+			// Inside part of the model.
 			std::vector<Vector3f> positions;
 			std::vector<Vector3f> normals;
 			std::vector<Vector2f> uvs;
@@ -42,7 +43,8 @@ public:
 			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
 			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
 
-			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+			uint32_t material_id = 0;
+			bool collision_enabled = true;
 
 			void clear() {
 				positions.clear();
@@ -60,8 +62,28 @@ public:
 			}
 		};
 
+		struct Model {
+			static constexpr uint32_t MAX_SURFACES = 2;
+
+			// A model can have up to 2 materials.
+			// If more is needed or profiling tells better, we could change it to a vector?
+			FixedArray<Surface, MAX_SURFACES> surfaces;
+			unsigned int surface_count = 0;
+			// Cached information to check this case early
+			uint8_t empty_sides_mask = 0;
+
+			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
+			// Side patterns are still determined based on a combination of all surfaces.
+			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+
+			void clear() {
+				for (unsigned int i = 0; i < surfaces.size(); ++i) {
+					surfaces[i].clear();
+				}
+			}
+		};
+
 		Model model;
-		int material_id;
 		Color color;
 		uint8_t transparency_index;
 		bool contributes_to_ao;
@@ -102,12 +124,13 @@ public:
 		return _color;
 	}
 
-	void set_material_id(unsigned int id);
-	_FORCE_INLINE_ unsigned int get_material_id() const {
-		return _material_id;
-	}
+	void set_material_override(int index, Ref<Material> material);
+	Ref<Material> get_material_override(int index) const;
 
-	// TODO Might become obsolete
+	void set_mesh_collision_enabled(int surface_index, bool enabled);
+	bool is_mesh_collision_enabled(int surface_index) const;
+
+	// TODO Might become obsoleted by transparency index
 	void set_transparent(bool t = true);
 	_FORCE_INLINE_ bool is_transparent() const {
 		return _transparency_index != 0;
@@ -159,7 +182,23 @@ public:
 	//------------------------------------------
 	// Properties for internal usage only
 
-	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents);
+	struct MaterialIndexer {
+		std::vector<Ref<Material>> &materials;
+
+		unsigned int get_or_create_index(const Ref<Material> &p_material) {
+			for (size_t i = 0; i < materials.size(); ++i) {
+				const Ref<Material> &material = materials[i];
+				if (material == p_material) {
+					return i;
+				}
+			}
+			const unsigned int ret = materials.size();
+			materials.push_back(p_material);
+			return ret;
+		}
+	};
+
+	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials);
 
 	const std::vector<AABB> &get_collision_aabbs() const {
 		return _collision_aabbs;
@@ -174,32 +213,41 @@ private:
 
 	static void _bind_methods();
 
-	void set_cube_geometry();
-
 	Array _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(Array array);
 
 private:
+	void set_surface_count(unsigned int new_count);
+
 	// Identifiers
 
-	int _id;
+	int _id = -1;
 	StringName _name;
 
 	// Properties
 
-	int _material_id;
+	struct SurfaceParams {
+		// If assigned, these materials override those present on the mesh itself.
+		Ref<Material> material_override;
+		// If true and classic mesh physics are enabled, the surface will be present in the collider.
+		bool collision_enabled = true;
+	};
+
+	FixedArray<SurfaceParams, BakedData::Model::MAX_SURFACES> _surface_params;
+	unsigned int _surface_count = 0;
 
 	// If two neighboring voxels are supposed to occlude their shared face,
 	// this index decides wether or not it should happen. Equal indexes culls the face, different indexes doesn't.
 	uint8_t _transparency_index = 0;
 
 	Color _color;
-	GeometryType _geometry_type;
+	GeometryType _geometry_type = GEOMETRY_NONE;
 	FixedArray<Vector2f, Cube::SIDE_COUNT> _cube_tiles;
 	Ref<Mesh> _custom_mesh;
-	std::vector<AABB> _collision_aabbs;
 	bool _random_tickable = false;
 	bool _empty = true;
+	// Used for AABB physics only, not classic physics
+	std::vector<AABB> _collision_aabbs;
 	uint32_t _collision_mask = 1;
 };
 

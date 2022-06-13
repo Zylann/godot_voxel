@@ -46,10 +46,24 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	}
 	if (is_lod_terrain) {
 		popup->add_separator();
-		popup->add_item(TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
-		const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
-		popup->set_item_as_checkable(i, true);
-		popup->set_item_checked(i, _show_octree_nodes);
+		{
+			popup->add_item(TTR("Show octree bounds"), MENU_SHOW_OCTREE_BOUNDS);
+			const int i = popup->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, _show_octree_bounds);
+		}
+		{
+			popup->add_item(TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
+			const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, _show_octree_nodes);
+		}
+		{
+			popup->add_item(TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
+			const int i = popup->get_item_index(MENU_SHOW_MESH_UPDATES);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, _show_mesh_updates);
+		}
 	}
 	popup->add_separator();
 	popup->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
@@ -143,6 +157,8 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		if (vlt != nullptr) {
 			vlt->set_show_gizmos(true);
 			vlt->set_show_octree_gizmos(_show_octree_nodes);
+			vlt->set_show_octree_bounds_gizmos(_show_octree_bounds);
+			vlt->set_show_mesh_updates(_show_mesh_updates);
 		}
 	}
 }
@@ -201,6 +217,16 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
 		} break;
 
+		case MENU_SHOW_OCTREE_BOUNDS: {
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(lod_terrain == nullptr);
+			_show_octree_bounds = !_show_octree_bounds;
+			lod_terrain->set_show_octree_bounds_gizmos(_show_octree_bounds);
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
+			_menu_button->get_popup()->set_item_checked(i, _show_octree_bounds);
+		} break;
+
 		case MENU_SHOW_OCTREE_NODES: {
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
@@ -209,6 +235,16 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
 			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
+		} break;
+
+		case MENU_SHOW_MESH_UPDATES: {
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(lod_terrain == nullptr);
+			_show_mesh_updates = !_show_mesh_updates;
+			lod_terrain->set_show_mesh_updates(_show_mesh_updates);
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MESH_UPDATES);
+			_menu_button->get_popup()->set_item_checked(i, _show_mesh_updates);
 		} break;
 
 		case MENU_ABOUT:

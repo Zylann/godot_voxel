@@ -99,6 +99,7 @@ It is not possible for the module to just "pool the meshes", because when new me
 A mitigation is in place to smooth the spikes by spreading the amount of destroyed meshes over time, but the slowdown is still noticeable.
 
 The only workarounds involve limiting the game:
+
 - Increase mesh block size to 32 to reduce their number, at the expense of edition cost
 - Limit the speed at which the player can move when close to voxels
 - Reduce LOD distance so less blocks have to be destroyed, at the expense of quality

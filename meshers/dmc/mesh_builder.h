@@ -2,8 +2,8 @@
 #define MESH_BUILDER_H
 
 #include "../../util/math/vector3f.h"
-#include <core/templates/map.h>
 #include <core/variant/array.h>
+#include <map>
 #include <vector>
 
 namespace zylann::voxel::dmc {
@@ -16,15 +16,15 @@ public:
 	inline void add_vertex(Vector3f position, Vector3f normal) {
 		int i = 0;
 
-		Map<Vector3f, int>::Element *e = _position_to_index.find(position);
+		std::map<Vector3f, int>::iterator it = _position_to_index.find(position);
 
-		if (e) {
-			i = e->get();
+		if (it != _position_to_index.end()) {
+			i = it->second;
 			++_reused_vertices;
 
 		} else {
 			i = _positions.size();
-			_position_to_index.insert(position, i);
+			_position_to_index.insert({ position, i });
 
 			_positions.push_back(position);
 			_normals.push_back(normal);
@@ -45,7 +45,7 @@ private:
 	std::vector<Vector3f> _positions;
 	std::vector<Vector3f> _normals;
 	std::vector<int> _indices;
-	Map<Vector3f, int> _position_to_index;
+	std::map<Vector3f, int> _position_to_index;
 	int _reused_vertices;
 };
 

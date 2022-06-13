@@ -1,6 +1,5 @@
 #include "voxel_server.h"
 #include "../constants/voxel_constants.h"
-#include "../storage/voxel_memory_pool.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -11,76 +10,48 @@
 #include "mesh_block_task.h"
 #include "save_block_data_task.h"
 
-#include <core/config/project_settings.h>
-
 namespace zylann::voxel {
 
 VoxelServer *g_voxel_server = nullptr;
 
 VoxelServer &VoxelServer::get_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
+	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Accessing singleton while it's null");
 	return *g_voxel_server;
 }
 
-void VoxelServer::create_singleton() {
-	CRASH_COND_MSG(g_voxel_server != nullptr, "Creating singleton twice");
-	g_voxel_server = memnew(VoxelServer);
+void VoxelServer::create_singleton(ThreadsConfig threads_config) {
+	ZN_ASSERT_MSG(g_voxel_server == nullptr, "Creating singleton twice");
+	g_voxel_server = ZN_NEW(VoxelServer(threads_config));
 }
 
 void VoxelServer::destroy_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Destroying singleton twice");
-	memdelete(g_voxel_server);
+	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Destroying singleton twice");
+	ZN_DELETE(g_voxel_server);
 	g_voxel_server = nullptr;
 }
 
-VoxelServer::VoxelServer() {
-	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
-
+VoxelServer::VoxelServer(ThreadsConfig threads_config) {
 	const int hw_threads_hint = Thread::get_hardware_concurrency();
 	ZN_PRINT_VERBOSE(format("Voxel: HW threads hint: {}", hw_threads_hint));
+
+	ZN_ASSERT(threads_config.thread_count_margin_below_max >= 0);
+	ZN_ASSERT(threads_config.thread_count_minimum >= 1);
+	ZN_ASSERT(threads_config.thread_count_ratio_over_max >= 0.f);
 
 	// Compute thread count for general pool.
 	// Note that the I/O thread counts as one used thread and will always be present.
 
-	// "RST" means changing the property requires an editor restart (or game restart)
-	GLOBAL_DEF_RST("voxel/threads/count/minimum", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/minimum",
-			PropertyInfo(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/margin_below_max", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/margin_below_max",
-			PropertyInfo(Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
-			PropertyInfo(Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
-
-	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",
-			PropertyInfo(Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000"));
-
-	_main_thread_time_budget_usec =
-			1000 * int(ProjectSettings::get_singleton()->get("voxel/threads/main/time_budget_ms"));
-
-	const int minimum_thread_count =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
-
-	// How many threads below available count on the CPU should we set as limit
-	const int thread_count_margin =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
-
-	// Portion of available CPU threads to attempt using
-	const float threads_ratio =
-			math::clamp(float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
-
-	const int maximum_thread_count = math::max(hw_threads_hint - thread_count_margin, minimum_thread_count);
+	const int maximum_thread_count = math::max(
+			hw_threads_hint - threads_config.thread_count_margin_below_max, threads_config.thread_count_minimum);
 	// `-1` is for the stream thread
-	const int thread_count_by_ratio = int(Math::round(float(threads_ratio) * hw_threads_hint)) - 1;
-	const int thread_count = math::clamp(thread_count_by_ratio, minimum_thread_count, maximum_thread_count);
+	const int thread_count_by_ratio =
+			int(Math::round(float(threads_config.thread_count_ratio_over_max) * hw_threads_hint)) - 1;
+	const int thread_count =
+			math::clamp(thread_count_by_ratio, threads_config.thread_count_minimum, maximum_thread_count);
 	ZN_PRINT_VERBOSE(format("Voxel: automatic thread count set to {}", thread_count));
 
 	if (thread_count > hw_threads_hint) {
-		WARN_PRINT("Configured thread count exceeds hardware thread count. Performance may not be optimal");
+		ZN_PRINT_WARNING("Configured thread count exceeds hardware thread count. Performance may not be optimal");
 	}
 
 	// I/O can't be more than 1 thread. File access with more threads isn't worth it.
@@ -123,105 +94,26 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 
 	_streaming_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			WARN_PRINT("Streaming tasks remain on module cleanup, "
-					   "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING("Streaming tasks remain on module cleanup, "
+							 "this could become a problem if they reference scripts");
 		}
 		memdelete(task);
 	});
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
-			WARN_PRINT("General tasks remain on module cleanup, "
-					   "this could become a problem if they reference scripts");
+			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
+							 "this could become a problem if they reference scripts");
 		}
 		memdelete(task);
 	});
 }
 
-uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks, VolumeType type) {
-	CRASH_COND(!callbacks.check_callbacks());
+uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks) {
+	ZN_ASSERT(callbacks.check_callbacks());
 	Volume volume;
-	volume.type = type;
 	volume.callbacks = callbacks;
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
 	return _world.volumes.create(volume);
-}
-
-void VoxelServer::set_volume_transform(uint32_t volume_id, Transform3D t) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.transform = t;
-}
-
-void VoxelServer::set_volume_render_block_size(uint32_t volume_id, uint32_t block_size) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.render_block_size = block_size;
-}
-
-void VoxelServer::set_volume_data_block_size(uint32_t volume_id, uint32_t block_size) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.data_block_size = block_size;
-}
-
-void VoxelServer::set_volume_stream(uint32_t volume_id, Ref<VoxelStream> stream) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.stream = stream;
-
-	// Commit a new dependency to process requests with
-	if (volume.stream_dependency != nullptr) {
-		volume.stream_dependency->valid = false;
-	}
-
-	volume.stream_dependency = make_shared_instance<StreamingDependency>();
-	volume.stream_dependency->generator = volume.generator;
-	volume.stream_dependency->stream = volume.stream;
-}
-
-void VoxelServer::set_volume_generator(uint32_t volume_id, Ref<VoxelGenerator> generator) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.generator = generator;
-
-	// Commit a new dependency to process requests with
-	if (volume.stream_dependency != nullptr) {
-		volume.stream_dependency->valid = false;
-	}
-
-	volume.stream_dependency = make_shared_instance<StreamingDependency>();
-	volume.stream_dependency->generator = volume.generator;
-	volume.stream_dependency->stream = volume.stream;
-
-	if (volume.meshing_dependency != nullptr) {
-		volume.meshing_dependency->valid = false;
-	}
-
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
-}
-
-void VoxelServer::set_volume_mesher(uint32_t volume_id, Ref<VoxelMesher> mesher) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.mesher = mesher;
-
-	if (volume.meshing_dependency != nullptr) {
-		volume.meshing_dependency->valid = false;
-	}
-
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
-}
-
-void VoxelServer::set_volume_octree_lod_distance(uint32_t volume_id, float lod_distance) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.octree_lod_distance = lod_distance;
-}
-
-void VoxelServer::invalidate_volume_mesh_requests(uint32_t volume_id) {
-	Volume &volume = _world.volumes.get(volume_id);
-	volume.meshing_dependency->valid = false;
-	volume.meshing_dependency = make_shared_instance<MeshingDependency>();
-	volume.meshing_dependency->mesher = volume.mesher;
-	volume.meshing_dependency->generator = volume.generator;
 }
 
 VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_id) const {
@@ -229,167 +121,7 @@ VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_i
 	return volume.callbacks;
 }
 
-static inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
-	return (pos << lod) * bs + Vector3iUtil::create(bs / 2);
-}
-
-void VoxelServer::init_priority_dependency(
-		PriorityDependency &dep, Vector3i block_position, uint8_t lod, const Volume &volume, int block_size) {
-	const Vector3i voxel_pos = get_block_center(block_position, block_size, lod);
-	const float block_radius = (block_size << lod) / 2;
-	dep.shared = _world.shared_priority_dependency;
-	dep.world_position = volume.transform.xform(voxel_pos);
-	const float transformed_block_radius =
-			volume.transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
-
-	switch (volume.type) {
-		case VOLUME_SPARSE_GRID:
-			// Distance beyond which no field of view can overlap the block.
-			// Doubling block radius to account for an extra margin of blocks,
-			// since they are used to provide neighbors when meshing
-			dep.drop_distance_squared = math::squared(
-					_world.shared_priority_dependency->highest_view_distance + 2.f * transformed_block_radius);
-			break;
-
-		case VOLUME_SPARSE_OCTREE:
-			// Distance beyond which it is safe to drop a block without risking to block LOD subdivision.
-			// This does not depend on viewer's view distance, but on LOD precision instead.
-			dep.drop_distance_squared = math::squared(2.f * transformed_block_radius *
-					get_octree_lod_block_region_extent(volume.octree_lod_distance, block_size));
-			break;
-
-		default:
-			CRASH_NOW_MSG("Unexpected type");
-			break;
-	}
-}
-
-void VoxelServer::request_block_mesh(uint32_t volume_id, const BlockMeshInput &input) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.meshing_dependency == nullptr);
-	ERR_FAIL_COND(volume.meshing_dependency->mesher.is_null());
-	ERR_FAIL_COND(volume.data_block_size > 255);
-
-	MeshBlockTask *task = memnew(MeshBlockTask);
-	task->volume_id = volume_id;
-	task->blocks = input.data_blocks;
-	task->blocks_count = input.data_blocks_count;
-	task->position = input.render_block_position;
-	task->lod = input.lod;
-	task->meshing_dependency = volume.meshing_dependency;
-	task->data_block_size = volume.data_block_size;
-
-	init_priority_dependency(
-			task->priority_dependency, input.render_block_position, input.lod, volume, volume.render_block_size);
-
-	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_block_load(uint32_t volume_id, Vector3i block_pos, int lod, bool request_instances) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream_dependency == nullptr);
-	ERR_FAIL_COND(volume.data_block_size > 255);
-
-	if (volume.stream_dependency->stream.is_valid()) {
-		PriorityDependency priority_dependency;
-		init_priority_dependency(priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod, volume.data_block_size,
-				request_instances, volume.stream_dependency, priority_dependency));
-
-		_streaming_thread_pool.enqueue(task);
-
-	} else {
-		// Directly generate the block without checking the stream
-		ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
-
-		GenerateBlockTask *task = memnew(GenerateBlockTask);
-		task->volume_id = volume_id;
-		task->position = block_pos;
-		task->lod = lod;
-		task->block_size = volume.data_block_size;
-		task->stream_dependency = volume.stream_dependency;
-
-		init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-		_general_thread_pool.enqueue(task);
-	}
-}
-
-void VoxelServer::request_block_generate(
-		uint32_t volume_id, Vector3i block_pos, int lod, std::shared_ptr<zylann::AsyncDependencyTracker> tracker) {
-	//
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream_dependency->generator.is_null());
-
-	GenerateBlockTask *task = memnew(GenerateBlockTask);
-	task->volume_id = volume_id;
-	task->position = block_pos;
-	task->lod = lod;
-	task->block_size = volume.data_block_size;
-	task->stream_dependency = volume.stream_dependency;
-	task->tracker = tracker;
-	task->drop_beyond_max_distance = false;
-
-	init_priority_dependency(task->priority_dependency, block_pos, lod, volume, volume.data_block_size);
-
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_all_stream_blocks(uint32_t volume_id) {
-	ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", volume_id));
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
-	task->volume_id = volume_id;
-	task->stream_dependency = volume.stream_dependency;
-
-	_general_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_voxel_block_save(
-		uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> voxels, Vector3i block_pos, int lod) {
-	//
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	SaveBlockDataTask *task = memnew(
-			SaveBlockDataTask(volume_id, block_pos, lod, volume.data_block_size, voxels, volume.stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	_streaming_thread_pool.enqueue(task);
-}
-
-void VoxelServer::request_instance_block_save(
-		uint32_t volume_id, UniquePtr<InstanceBlockData> instances, Vector3i block_pos, int lod) {
-	const Volume &volume = _world.volumes.get(volume_id);
-	ERR_FAIL_COND(volume.stream.is_null());
-	CRASH_COND(volume.stream_dependency == nullptr);
-
-	SaveBlockDataTask *task = memnew(SaveBlockDataTask(
-			volume_id, block_pos, lod, volume.data_block_size, std::move(instances), volume.stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	_streaming_thread_pool.enqueue(task);
-}
-
 void VoxelServer::remove_volume(uint32_t volume_id) {
-	{
-		Volume &volume = _world.volumes.get(volume_id);
-		if (volume.stream_dependency != nullptr) {
-			volume.stream_dependency->valid = false;
-		}
-		if (volume.meshing_dependency != nullptr) {
-			volume.meshing_dependency->valid = false;
-		}
-	}
-
 	_world.volumes.destroy(volume_id);
 	// TODO How to cancel meshing tasks?
 
@@ -483,6 +215,10 @@ int VoxelServer::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
+void VoxelServer::set_main_thread_time_budget_usec(unsigned int usec) {
+	_main_thread_time_budget_usec = usec;
+}
+
 void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task);
 }
@@ -563,30 +299,6 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
 	d.thread_count = pool.get_thread_count();
-	return d;
-}
-
-Dictionary VoxelServer::Stats::to_dict() {
-	Dictionary pools;
-	pools["streaming"] = streaming.to_dict();
-	pools["general"] = general.to_dict();
-
-	Dictionary tasks;
-	tasks["streaming"] = streaming_tasks;
-	tasks["generation"] = generation_tasks;
-	tasks["meshing"] = meshing_tasks;
-	tasks["main_thread"] = main_thread_tasks;
-
-	// This part is additional for scripts because VoxelMemoryPool is not exposed
-	Dictionary mem;
-	mem["voxel_total"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_total_memory());
-	mem["voxel_used"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_used_memory());
-	mem["block_count"] = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
-
-	Dictionary d;
-	d["thread_pools"] = pools;
-	d["tasks"] = tasks;
-	d["memory_pools"] = mem;
 	return d;
 }
 

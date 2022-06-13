@@ -397,7 +397,7 @@ private:
 
 		// Associates a port from the input graph to its corresponding address within the compiled program.
 		// This is used for debugging intermediate values.
-		HashMap<ProgramGraph::PortLocation, uint16_t, ProgramGraphPortLocationHasher> output_port_addresses;
+		std::unordered_map<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
 
 		// If you have a port location from the original user graph, before querying `output_port_addresses`, remap
 		// it first, in case it got expanded to different nodes during compilation.

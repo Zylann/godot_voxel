@@ -66,26 +66,24 @@ void test_box3i_intersects() {
 void test_box3i_for_inner_outline() {
 	const Box3i box(-1, 2, 3, 8, 6, 5);
 
-	HashMap<Vector3i, bool, Vector3iHasher> expected_coords;
+	std::unordered_map<Vector3i, bool> expected_coords;
 	const Box3i inner_box = box.padded(-1);
 	box.for_each_cell([&expected_coords, inner_box](Vector3i pos) {
 		if (!inner_box.contains(pos)) {
-			expected_coords.set(pos, false);
+			expected_coords.insert({ pos, false });
 		}
 	});
 
 	box.for_inner_outline([&expected_coords](Vector3i pos) {
-		bool *b = expected_coords.getptr(pos);
-		ZYLANN_TEST_ASSERT_MSG(b != nullptr, "Position must be on the inner outline");
-		ZYLANN_TEST_ASSERT_MSG(*b == false, "Position must be unique");
-		*b = true;
+		auto it = expected_coords.find(pos);
+		ZYLANN_TEST_ASSERT_MSG(it != expected_coords.end(), "Position must be on the inner outline");
+		ZYLANN_TEST_ASSERT_MSG(it->second == false, "Position must be unique");
+		it->second = true;
 	});
 
-	const Vector3i *key = nullptr;
-	while ((key = expected_coords.next(key))) {
-		const bool *v = expected_coords.getptr(*key);
-		ZYLANN_TEST_ASSERT(v != nullptr);
-		ZYLANN_TEST_ASSERT_MSG(*v, "All expected coordinates must have been found");
+	for (auto it = expected_coords.begin(); it != expected_coords.end(); ++it) {
+		const bool v = it->second;
+		ZYLANN_TEST_ASSERT_MSG(v, "All expected coordinates must have been found");
 	}
 }
 
@@ -2065,7 +2063,7 @@ void test_voxel_mesher_cubes() {
 	mesher.instantiate();
 	mesher->set_color_mode(VoxelMesherCubes::COLOR_RAW);
 
-	VoxelMesher::Input input{ vb, nullptr, nullptr, Vector3i(), 0 };
+	VoxelMesher::Input input{ vb, nullptr, nullptr, Vector3i(), 0, false };
 	VoxelMesher::Output output;
 	mesher->build(output, input);
 
@@ -2073,13 +2071,13 @@ void test_voxel_mesher_cubes() {
 	const unsigned int transparent_surface_index = VoxelMesherCubes::MATERIAL_TRANSPARENT;
 
 	ZYLANN_TEST_ASSERT(output.surfaces.size() == 2);
-	ZYLANN_TEST_ASSERT(output.surfaces[0].size() > 0);
-	ZYLANN_TEST_ASSERT(output.surfaces[1].size() > 0);
+	ZYLANN_TEST_ASSERT(output.surfaces[0].arrays.size() > 0);
+	ZYLANN_TEST_ASSERT(output.surfaces[1].arrays.size() > 0);
 
-	const PackedVector3Array surface0_vertices = output.surfaces[opaque_surface_index][Mesh::ARRAY_VERTEX];
+	const PackedVector3Array surface0_vertices = output.surfaces[opaque_surface_index].arrays[Mesh::ARRAY_VERTEX];
 	const unsigned int surface0_vertices_count = surface0_vertices.size();
 
-	const PackedVector3Array surface1_vertices = output.surfaces[transparent_surface_index][Mesh::ARRAY_VERTEX];
+	const PackedVector3Array surface1_vertices = output.surfaces[transparent_surface_index].arrays[Mesh::ARRAY_VERTEX];
 	const unsigned int surface1_vertices_count = surface1_vertices.size();
 
 	// println("Surface0:");

@@ -30,7 +30,7 @@ public:
 		}
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
-			const unsigned int i = it->second;
+			const unsigned int i = it->second.index;
 #ifdef DEBUG_ENABLED
 			CRASH_COND(i >= _blocks.size());
 #endif
@@ -48,13 +48,14 @@ public:
 		}
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
-			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
+			const unsigned int i = it->second.index;
 			CRASH_COND(i >= _blocks.size());
-#endif
 			MeshBlock_T *block = _blocks[i];
 			CRASH_COND(block == nullptr); // The map should not contain null blocks
-			_last_accessed_block = block;
+			CRASH_COND(it->second.block == nullptr);
+#endif
+			_last_accessed_block = it->second.block;
 			return _last_accessed_block;
 		}
 		return nullptr;
@@ -66,15 +67,16 @@ public:
 		}
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
-			const unsigned int i = it->second;
 #ifdef DEBUG_ENABLED
+			const unsigned int i = it->second.index;
 			CRASH_COND(i >= _blocks.size());
-#endif
-			// TODO This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
-			// again...
-			const MeshBlock_T *block = _blocks[i];
+			MeshBlock_T *block = _blocks[i];
 			CRASH_COND(block == nullptr); // The map should not contain null blocks
-			return block;
+			CRASH_COND(it->second.block == nullptr);
+#endif
+			// This function can't cache _last_accessed_block, because it's const, so repeated accesses are hashing
+			// again...
+			return it->second.block;
 		}
 		return nullptr;
 	}
@@ -90,7 +92,7 @@ public:
 #endif
 		unsigned int i = _blocks.size();
 		_blocks.push_back(block);
-		_blocks_map.insert({ bpos, i });
+		_blocks_map.insert({ bpos, { block, i } });
 	}
 
 	bool has_block(Vector3i pos) const {
@@ -143,7 +145,13 @@ public:
 	}
 
 private:
-	void remove_block_internal(std::unordered_map<Vector3i, unsigned int>::iterator rm_it, unsigned int index) {
+	struct MapItem {
+		MeshBlock_T *block;
+		// Index of the block within the vector storage
+		unsigned int index;
+	};
+
+	void remove_block_internal(typename std::unordered_map<Vector3i, MapItem>::iterator rm_it, unsigned int index) {
 		// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 		// This might be caused by internal rehashing/resizing.
 		// We should look for a faster container, or reduce the number of entries.
@@ -161,7 +169,7 @@ private:
 		if (index < _blocks.size()) {
 			auto moved_block_index_it = _blocks_map.find(moved_block->position);
 			CRASH_COND(moved_block_index_it == _blocks_map.end());
-			moved_block_index_it->second = index;
+			moved_block_index_it->second.index = index;
 		}
 	}
 
@@ -182,8 +190,9 @@ private:
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
-	std::unordered_map<Vector3i, unsigned int> _blocks_map;
-	// Blocks are stored in a vector to allow faster iteration over all of them
+	std::unordered_map<Vector3i, MapItem> _blocks_map;
+	// Blocks are stored in a vector to allow faster iteration over all of them.
+	// Use cases for this include updating the transform of the meshes
 	std::vector<MeshBlock_T *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.

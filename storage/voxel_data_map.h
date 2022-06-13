@@ -84,15 +84,8 @@ public:
 	void remove_block(Vector3i bpos, Action_T pre_delete) {
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
-			const unsigned int i = it->second;
-#ifdef DEBUG_ENABLED
-			CRASH_COND(i >= _blocks.size());
-#endif
-			VoxelDataBlock *block = _blocks[i];
-			ERR_FAIL_COND(block == nullptr);
-			pre_delete(*block);
-			memdelete(block);
-			remove_block_internal(bpos, i);
+			pre_delete(it->second);
+			_blocks_map.erase(it);
 		}
 	}
 
@@ -108,23 +101,15 @@ public:
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			VoxelDataBlock *block = *it;
-#ifdef DEBUG_ENABLED
-			CRASH_COND(block == nullptr);
-#endif
-			op(*block);
+		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
+			op(it->first, it->second);
 		}
 	}
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			const VoxelDataBlock *block = *it;
-#ifdef DEBUG_ENABLED
-			CRASH_COND(block == nullptr);
-#endif
-			op(*block);
+		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
+			op(it->first, it->second);
 		}
 	}
 
@@ -182,10 +167,9 @@ public:
 	}
 
 private:
-	void set_block(Vector3i bpos, VoxelDataBlock *block);
+	//void set_block(Vector3i bpos, VoxelDataBlock *block);
 	VoxelDataBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 	VoxelDataBlock *create_default_block(Vector3i bpos);
-	void remove_block_internal(Vector3i bpos, unsigned int index);
 
 	void set_block_size_pow2(unsigned int p);
 
@@ -194,11 +178,11 @@ private:
 	FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
 
 	// Blocks stored with a spatial hash in all 3D directions.
+	// This is dual storage: map and vector, for fast lookup and also fast iteration.
 	// Before I used Godot's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to
 	// defaults, but it sometimes has very long stalls on removal, which std::unordered_map doesn't seem to have
 	// (not as badly). Also overall performance is slightly better.
-	std::unordered_map<Vector3i, unsigned int> _blocks_map;
-	std::vector<VoxelDataBlock *> _blocks;
+	std::unordered_map<Vector3i, VoxelDataBlock> _blocks_map;
 
 	// This was a possible optimization in a single-threaded scenario, but it's not in multithread.
 	// We want to be able to do shared read-accesses but this is a mutable variable.

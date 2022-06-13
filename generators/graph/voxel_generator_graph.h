@@ -300,8 +300,8 @@ private:
 	static thread_local Cache _cache;
 };
 
-ProgramGraph::Node *create_node_internal(
-		ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position, uint32_t id);
+ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position,
+		uint32_t id, bool create_default_instances);
 
 } // namespace zylann::voxel
 

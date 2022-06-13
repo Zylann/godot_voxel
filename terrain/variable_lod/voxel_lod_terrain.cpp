@@ -1,13 +1,16 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../../server/load_all_blocks_data_task.h"
 #include "../../server/voxel_server_gd.h"
 #include "../../server/voxel_server_updater.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
+#include "../../util/math/color.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -27,21 +30,22 @@ namespace zylann::voxel {
 
 namespace {
 
-Ref<ArrayMesh> build_mesh(
-		Span<const Array> surfaces, Mesh::PrimitiveType primitive, int flags, Ref<Material> material) {
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material) {
 	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 
 	unsigned int surface_index = 0;
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		Array surface = surfaces[i];
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		Array arrays = surface.arrays;
 
-		if (surface.is_empty()) {
+		if (arrays.is_empty()) {
 			continue;
 		}
 
-		CRASH_COND(surface.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(surface)) {
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -51,7 +55,7 @@ Ref<ArrayMesh> build_mesh(
 
 		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
 		// the same)
-		mesh->add_surface_from_arrays(primitive, surface, Array(), Dictionary(), flags);
+		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
 		mesh->surface_set_material(surface_index, material);
 		// No multi-material supported yet
 		++surface_index;
@@ -95,7 +99,7 @@ struct BeforeUnloadMeshAction {
 struct ScheduleSaveAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 
-	void operator()(VoxelDataBlock &block) {
+	void operator()(const Vector3i &bpos, VoxelDataBlock &block) {
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
 		if (block.is_modified()) {
@@ -108,8 +112,8 @@ struct ScheduleSaveAction {
 				block.get_voxels_const().duplicate_to(*b.voxels, true);
 			}
 
-			b.position = block.position;
-			b.lod = block.lod_index;
+			b.position = bpos;
+			b.lod = block.get_lod_index();
 			blocks_to_save.push_back(b);
 			block.set_modified(false);
 		}
@@ -176,8 +180,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton().add_volume(callbacks, VoxelServer::VOLUME_SPARSE_OCTREE);
-	VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	_volume_id = VoxelServer::get_singleton().add_volume(callbacks);
+	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
@@ -189,6 +193,8 @@ VoxelLodTerrain::VoxelLodTerrain() {
 VoxelLodTerrain::~VoxelLodTerrain() {
 	ZN_PRINT_VERBOSE("Destroy VoxelLodTerrain");
 	abort_async_edits();
+	_streaming_dependency->valid = false;
+	_meshing_dependency->valid = false;
 	VoxelServer::get_singleton().remove_volume(_volume_id);
 	// Instancer can take care of itself
 }
@@ -225,11 +231,7 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 
 	_stream = p_stream;
 
-	_streaming_dependency->valid = false;
-	_streaming_dependency = make_shared_instance<StreamingDependency>();
-	_streaming_dependency->stream = _stream;
-	_streaming_dependency->generator = _generator;
-	_streaming_dependency->valid = true;
+	StreamingDependency::reset(_streaming_dependency, _stream, _generator);
 
 #ifdef TOOLS_ENABLED
 	if (p_stream.is_valid()) {
@@ -249,7 +251,7 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 }
 
 Ref<VoxelStream> VoxelLodTerrain::get_stream() const {
-	return _streaming_dependency->stream;
+	return _stream;
 }
 
 void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
@@ -259,17 +261,8 @@ void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 
 	_generator = p_generator;
 
-	_meshing_dependency->valid = false;
-	_meshing_dependency = make_shared_instance<MeshingDependency>();
-	_meshing_dependency->mesher = _mesher;
-	_meshing_dependency->generator = p_generator;
-	_meshing_dependency->valid = true;
-
-	_streaming_dependency->valid = false;
-	_streaming_dependency = make_shared_instance<StreamingDependency>();
-	_streaming_dependency->stream = _stream;
-	_streaming_dependency->generator = p_generator;
-	_streaming_dependency->valid = true;
+	MeshingDependency::reset(_meshing_dependency, _mesher, p_generator);
+	StreamingDependency::reset(_streaming_dependency, _stream, p_generator);
 
 #ifdef TOOLS_ENABLED
 	if (p_generator.is_valid()) {
@@ -310,11 +303,7 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 
 	_mesher = p_mesher;
 
-	_meshing_dependency->valid = false;
-	_meshing_dependency = make_shared_instance<MeshingDependency>();
-	_meshing_dependency->mesher = _mesher;
-	_meshing_dependency->generator = _generator;
-	_meshing_dependency->valid = true;
+	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
 
 	if (_mesher.is_valid()) {
 		start_updater();
@@ -350,8 +339,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		}
 	}
 
-	VoxelServer::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
-	VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
+	// VoxelServer::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
+	// VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
 
 	reset_maps();
 	// TODO Size other than 16 is not really supported though.
@@ -400,45 +389,17 @@ void VoxelLodTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		return;
 	}
 
-	_update_data->wait_for_end_of_task();
+	reset_mesh_maps();
+
+	//_update_data->wait_for_end_of_task(); // Done by reset_mesh_maps()
+	ZN_ASSERT(_update_data->task_is_complete);
 	_update_data->settings.mesh_block_size_po2 = po2;
 	_update_data->state.force_update_octrees_next_update = true;
-
-	VoxelLodTerrainUpdateData::State &state = _update_data->state;
-	const unsigned int lod_count = _update_data->settings.lod_count;
-
-	// Reset mesh maps
-	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
-		if (_instancer != nullptr) {
-			// Unload instances
-			VoxelInstancer *instancer = _instancer;
-			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlockVLT &block) {
-				instancer->on_mesh_block_exit(block.position, lod_index);
-			});
-		}
-		// Unload mesh blocks
-		mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
-		mesh_map.clear();
-		// Reset view distance cache so they will be re-entered
-		lod.last_view_distance_mesh_blocks = 0;
-	}
 
 	// Doing this after because `on_mesh_block_exit` may use the old size
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_block_size_po2(mesh_block_size);
 	}
-
-	// Reset LOD octrees
-	LodOctree::NoDestroyAction nda;
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
-			E = E->next()) {
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
-		item.octree.create(lod_count, nda);
-	}
-
-	VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, mesh_block_size);
 
 	// Update voxel bounds because block size change can affect octree size
 	set_voxel_bounds(_update_data->settings.bounds_in_voxels);
@@ -497,10 +458,10 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 	if (block.fading_state != fading_state) {
 		if (block.fading_state == VoxelMeshBlockVLT::FADING_NONE) {
-			Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
 			// Must not have duplicates
-			ERR_FAIL_COND(fading_blocks.has(block.position));
-			fading_blocks.insert(block.position, &block);
+			ERR_FAIL_COND(fading_blocks.find(block.position) != fading_blocks.end());
+			fading_blocks.insert({ block.position, &block });
 		}
 		block.fading_state = fading_state;
 		block.fading_progress = initial_progress;
@@ -718,11 +679,13 @@ void VoxelLodTerrain::start_updater() {
 		}
 	}
 
-	VoxelServer::get_singleton().set_volume_mesher(_volume_id, _mesher);
+	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelLodTerrain::stop_updater() {
-	VoxelServer::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
+	// Invalidate pending tasks
+	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
+	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
 	//_reception_buffers.mesh_output.clear();
@@ -743,19 +706,27 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	VoxelServer::get_singleton().set_volume_stream(_volume_id, _stream);
-	VoxelServer::get_singleton().set_volume_generator(_volume_id, _generator);
+	// VoxelServer::get_singleton().set_volume_stream(_volume_id, _stream);
+	// VoxelServer::get_singleton().set_volume_generator(_volume_id, _generator);
 
 	if (_update_data->settings.full_load_mode && _stream.is_valid()) {
 		// TODO May want to defer this to be sure it's not done multiple times.
 		// This would be a side-effect of setting properties one by one, either by scene loader or by script
-		VoxelServer::get_singleton().request_all_stream_blocks(_volume_id);
+
+		ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", _volume_id));
+		ZN_ASSERT(_streaming_dependency != nullptr);
+
+		LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
+		task->volume_id = _volume_id;
+		task->stream_dependency = _streaming_dependency;
+
+		VoxelServer::get_singleton().push_async_io_task(task);
 	}
 }
 
 void VoxelLodTerrain::stop_streamer() {
-	VoxelServer::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
-	VoxelServer::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
+	// VoxelServer::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
+	// VoxelServer::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	_update_data->wait_for_end_of_task();
 
@@ -780,7 +751,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 	_update_data->settings.lod_distance = lod_distance;
 	_update_data->state.force_update_octrees_next_update = true;
-	VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_lod_distance(lod_distance);
@@ -811,9 +782,9 @@ void VoxelLodTerrain::_set_lod_count(int p_lod_count) {
 
 	LodOctree::NoDestroyAction nda;
 
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = _update_data->state.lod_octrees.front(); E;
-			E = E->next()) {
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+	std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
 		item.octree.create(p_lod_count, nda);
 	}
 
@@ -846,9 +817,30 @@ void VoxelLodTerrain::reset_maps() {
 		}
 	}
 
+	abort_async_edits();
+
+	reset_mesh_maps();
+}
+
+void VoxelLodTerrain::reset_mesh_maps() {
+	_update_data->wait_for_end_of_task();
+
+	const unsigned int lod_count = _update_data->settings.lod_count;
+	VoxelLodTerrainUpdateData::State &state = _update_data->state;
+
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+		if (_instancer != nullptr) {
+			// Unload instances
+			VoxelInstancer *instancer = _instancer;
+			mesh_map.for_each_block([lod_index, instancer](VoxelMeshBlockVLT &block) {
+				instancer->on_mesh_block_exit(block.position, lod_index);
+			});
+		}
+
+		//mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < lod_count) {
@@ -862,6 +854,7 @@ void VoxelLodTerrain::reset_maps() {
 
 		lod.mesh_map_state.map.clear();
 
+		// Clear temporal lists
 		lod.mesh_blocks_to_activate.clear();
 		lod.mesh_blocks_to_deactivate.clear();
 		lod.mesh_blocks_to_unload.clear();
@@ -870,7 +863,13 @@ void VoxelLodTerrain::reset_maps() {
 		_deferred_collision_updates_per_lod[lod_index].clear();
 	}
 
-	abort_async_edits();
+	// Reset LOD octrees
+	LodOctree::NoDestroyAction nda;
+	for (std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.begin();
+			it != state.lod_octrees.end(); ++it) {
+		VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
+		item.octree.create(lod_count, nda);
+	}
 
 	// Reset previous state caches to force rebuilding the view area
 	state.last_octree_region_box = Box3i();
@@ -1052,7 +1051,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
-			VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
+			// VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
 				// The transform and other properties can be set by the scene loader,
@@ -1434,7 +1433,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
 			// TODO The mesh could come from an edited region!
 			// We would have to know if specific voxels got edited, or different from the generator
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0]);
+			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
 
 		// Lazy initialization
@@ -1474,7 +1473,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-			Ref<ArrayMesh> transition_mesh = build_mesh(to_span_const(mesh_data.transition_surfaces[dir]),
+			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
 					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
 			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
@@ -1485,8 +1484,15 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	if (has_collision) {
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-			block->set_collision_mesh(to_span_const(mesh_data.surfaces), get_tree()->is_debugging_collisions_hint(),
-					this, _collision_margin);
+			static thread_local std::vector<Array> tls_collidable_surfaces;
+			std::vector<Array> &collidable_surfaces = tls_collidable_surfaces;
+			collidable_surfaces.clear();
+			for (unsigned int i = 0; i < mesh_data.surfaces.size(); ++i) {
+				collidable_surfaces.push_back(mesh_data.surfaces[i].arrays);
+			}
+			block->set_collision_mesh(
+					to_span(collidable_surfaces), get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
 			block->last_collider_update_time = now;
@@ -1502,11 +1508,20 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 			// The caller providing `mesh_data` doesnt use `mesh_data` later so we could have moved the vector,
 			// but at the moment it's passed with `const` so that isn't possible. Indeed we are only going to read the
 			// data, but `const` also means the structure holding it is read-only as well.
-			block->deferred_collider_data = mesh_data.surfaces;
+			block->deferred_collider_data.resize(mesh_data.surfaces.size());
+			for (size_t i = 0; i < mesh_data.surfaces.size(); ++i) {
+				block->deferred_collider_data[i] = mesh_data.surfaces[i].arrays;
+			}
 		}
 	}
 
 	block->set_parent_transform(get_global_transform());
+
+#ifdef TOOLS_ENABLED
+	if (_show_mesh_updates) {
+		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
+	}
+#endif
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -1573,24 +1588,23 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
 	for (unsigned int lod_index = 0; lod_index < _fading_blocks_per_lod.size(); ++lod_index) {
-		Map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+		std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+		std::map<Vector3i, VoxelMeshBlockVLT *>::iterator it = fading_blocks.begin();
 
-		Map<Vector3i, VoxelMeshBlockVLT *>::Element *e = fading_blocks.front();
-
-		while (e != nullptr) {
-			VoxelMeshBlockVLT *block = e->value();
+		while (it != fading_blocks.end()) {
+			VoxelMeshBlockVLT *block = it->second;
+			ZN_ASSERT(block != nullptr);
 			// The collection of fading blocks must only contain fading blocks
 			ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
 
 			const bool finished = block->update_fading(speed);
 
 			if (finished) {
-				Map<Vector3i, VoxelMeshBlockVLT *>::Element *next = e->next();
-				fading_blocks.erase(e);
-				e = next;
+				// `erase` returns the next iterator
+				it = fading_blocks.erase(it);
 
 			} else {
-				e = e->next();
+				++it;
 			}
 		}
 	}
@@ -1732,6 +1746,7 @@ void VoxelLodTerrain::restart_stream() {
 }
 
 void VoxelLodTerrain::remesh_all_blocks() {
+	// Requests a new mesh for all mesh blocks, without dropping everything first
 	_update_data->wait_for_end_of_task();
 	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
@@ -1917,11 +1932,11 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 Array VoxelLodTerrain::debug_get_octree_positions() const {
 	_update_data->wait_for_end_of_task();
 	Array positions;
-	const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	const std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
 	positions.resize(octrees.size());
 	int i = 0;
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = octrees.front(); e; e = e->next()) {
-		positions[i++] = e->key();
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		positions[i++] = it->first;
 	}
 	return positions;
 }
@@ -1981,15 +1996,15 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 
 	_update_data->wait_for_end_of_task();
 
-	const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
+	const std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem> &octrees = _update_data->state.lod_octrees;
 
 	Array forest_data;
 
-	for (const Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = octrees.front(); e; e = e->next()) {
-		const LodOctree &octree = e->value().octree;
+	for (auto it = octrees.begin(); it != octrees.end(); ++it) {
+		const LodOctree &octree = it->second.octree;
 		const LodOctree::Node *root = octree.get_root();
 		Array root_data;
-		const Vector3i octree_pos = e->key();
+		const Vector3i octree_pos = it->first;
 		L::read_node(octree, root, octree_pos, get_lod_count() - 1, _update_data->state, root_data);
 		forest_data.append(octree_pos);
 		forest_data.append(root_data);
@@ -2022,9 +2037,9 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_octree_bounds_gizmos) {
 		const int octree_size = 1 << LodOctree::get_octree_size_po2(get_mesh_block_size_pow2(), get_lod_count());
 		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
-		for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = state.lod_octrees.front(); e;
-				e = e->next()) {
-			const Transform3D local_transform(local_octree_basis, e->key() * octree_size);
+
+		for (auto it = state.lod_octrees.begin(); it != state.lod_octrees.end(); ++it) {
+			const Transform3D local_transform(local_octree_basis, it->first * octree_size);
 			dr.draw_box(parent_transform * local_transform, DebugColors::ID_OCTREE_BOUNDS);
 		}
 	}
@@ -2033,6 +2048,7 @@ void VoxelLodTerrain::update_gizmos() {
 	if (_show_volume_bounds_gizmos) {
 		const Box3i bounds_in_voxels = get_voxel_bounds();
 		const float bounds_in_voxels_len = Vector3(bounds_in_voxels.size).length();
+
 		if (bounds_in_voxels_len < 10000) {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
@@ -2047,11 +2063,11 @@ void VoxelLodTerrain::update_gizmos() {
 		// That can be expensive to draw
 		const int mesh_block_size = get_mesh_block_size();
 		const float lod_count_f = lod_count;
-		for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *e = state.lod_octrees.front(); e;
-				e = e->next()) {
-			const LodOctree &octree = e->value().octree;
 
-			const Vector3i block_pos_maxlod = e->key();
+		for (auto it = state.lod_octrees.begin(); it != state.lod_octrees.end(); ++it) {
+			const LodOctree &octree = it->second.octree;
+
+			const Vector3i block_pos_maxlod = it->first;
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 
 			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform, lod_count_f](
@@ -2076,12 +2092,40 @@ void VoxelLodTerrain::update_gizmos() {
 		const Basis basis(Basis().scaled(Vector3(data_block_size, data_block_size, data_block_size)));
 
 		RWLockRead rlock(data_lod.map_lock);
-		data_lod.map.for_each_block([&dr, parent_transform, data_block_size, basis](const VoxelDataBlock &block) {
-			const Transform3D local_transform(basis, block.position * data_block_size);
+		data_lod.map.for_each_block(
+				[&dr, parent_transform, data_block_size, basis](const Vector3i &bpos, const VoxelDataBlock &block) {
+					const Transform3D local_transform(basis, bpos * data_block_size);
+					const Transform3D t = parent_transform * local_transform;
+					const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
+					dr.draw_box_mm(t, c);
+				});
+	}
+
+	// Debug updates
+	if (_show_mesh_updates) {
+		const int mesh_block_size = get_mesh_block_size();
+
+		for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
+			DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
+
+			const Transform3D local_transform(
+					Basis().scaled(to_vec3(Vector3iUtil::create(mesh_block_size << item.lod))),
+					to_vec3(item.position * (mesh_block_size << item.lod)));
+
 			const Transform3D t = parent_transform * local_transform;
-			const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
-			dr.draw_box_mm(t, c);
-		});
+
+			const Color color = math::lerp(
+					Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
+			dr.draw_box_mm(t, Color8(color));
+
+			--item.remaining_frames;
+			if (item.remaining_frames == 0) {
+				item = _debug_mesh_update_items.back();
+				_debug_mesh_update_items.pop_back();
+			} else {
+				++i;
+			}
+		}
 	}
 
 	dr.end();
@@ -2093,11 +2137,21 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
 	} else {
 		_debug_renderer.clear();
+		_debug_mesh_update_items.clear();
 	}
 }
 
 void VoxelLodTerrain::set_show_octree_gizmos(bool enable) {
 	_show_octree_node_gizmos = enable;
+}
+
+void VoxelLodTerrain::set_show_octree_bounds_gizmos(bool enable) {
+	_show_octree_bounds_gizmos = enable;
+}
+
+void VoxelLodTerrain::set_show_mesh_updates(bool enable) {
+	_show_mesh_updates = enable;
+	_debug_mesh_update_items.clear();
 }
 
 #endif

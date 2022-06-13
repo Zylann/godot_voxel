@@ -34,7 +34,7 @@ For more in-depth information, see the rest of the documentation.
 	
 2.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
 
-2.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`.
+2.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
 
 2.2) `Mesher`: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
 
@@ -59,7 +59,7 @@ You can modify the shape of the terrain by changing noise parameters under the g
 
 2) Add a `VoxelLODTerrain` node, and adjust the following settings in the inspector:
 
-2.1) `Generator`: create a new `VoxelGeneratorNoise3D`. Then click on it and set its `Channel` parameter to `SDF`.
+2.1) `Generator`: create a new `VoxelGeneratorNoise`. Then click on it and set its `Channel` parameter to `SDF`. Also make sure the `noise` property is assigned to a noise resource.
 
 2.2) `Mesher`: create a new `VoxelMesherTransvoxel`.
 

@@ -31,15 +31,29 @@ public:
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
 		// Not initialized because it confused GCC.
-		int lod; // = 0;
+		uint8_t lod; // = 0;
+		// If true, collision information is required.
+		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
+		// but in other setups it can be different and will be returned in `collision_surface`.
+		bool collision_hint = false;
 	};
 
 	struct Output {
-		// Each surface correspond to a different material
-		std::vector<Array> surfaces;
-		FixedArray<std::vector<Array>, Cube::SIDE_COUNT> transition_surfaces;
+		struct Surface {
+			Array arrays;
+		};
+		// Each surface correspond to a different material and can be empty.
+		std::vector<Surface> surfaces;
+		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
-		unsigned int mesh_flags = 0;
+		uint32_t mesh_flags = 0;
+
+		struct CollisionSurface {
+			std::vector<Vector3f> positions;
+			std::vector<int> indices;
+		};
+		CollisionSurface collision_surface;
+
 		Ref<Image> atlas_image;
 	};
 
@@ -71,6 +85,10 @@ public:
 	virtual bool supports_lod() const {
 		return true;
 	}
+
+	// Some meshers can provide materials themselves. These will be used for corresponding surfaces. Returns null if the
+	// index does not have a material assigned. If not provided here, a default material may be used.
+	virtual Ref<Material> get_material_by_index(unsigned int i) const;
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}

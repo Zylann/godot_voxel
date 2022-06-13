@@ -14,6 +14,17 @@ struct StreamingDependency {
 	Ref<VoxelStream> stream;
 	Ref<VoxelGenerator> generator;
 	bool valid = true;
+
+	static void reset(
+			std::shared_ptr<StreamingDependency> &ref, Ref<VoxelStream> stream, Ref<VoxelGenerator> generator) {
+		if (ref != nullptr) {
+			ref->valid = false;
+		}
+		ref = make_shared_instance<StreamingDependency>();
+		ref->stream = stream;
+		ref->generator = generator;
+		ref->valid = true;
+	}
 };
 
 } // namespace zylann::voxel

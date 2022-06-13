@@ -34,7 +34,7 @@ ICustomVoxelMetadata *VoxelMetadataVariant::duplicate() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Variant get_as_variant(const VoxelMetadata &meta) {
-	switch (meta.get_type()) {
+	switch (int(meta.get_type())) {
 		case METADATA_TYPE_VARIANT: {
 			const VoxelMetadataVariant &mv = static_cast<const VoxelMetadataVariant &>(meta.get_custom());
 			return mv.data;

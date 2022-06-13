@@ -341,7 +341,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 			[terrain, channel](Vector3i ipos) {
 				VoxelSingleValue defval;
 				defval.f = 1.f;
-				VoxelSingleValue value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, defval);
+				VoxelSingleValue value = terrain->get_voxel(ipos, channel, defval);
 				return value.f;
 			},
 			position);
@@ -752,7 +752,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	const AABB local_aabb = mesh_sdf->get_aabb();
 
 	// Note, transform is local to the terrain
-	const AABB aabb = box_to_world.xform(aabb);
+	const AABB aabb = box_to_world.xform(local_aabb);
 	const Box3i voxel_box = Box3i::from_min_max(aabb.position.floor(), (aabb.position + aabb.size).ceil());
 
 	// TODO Sometimes it will fail near unloaded blocks, even though the transformed box does not intersect them.

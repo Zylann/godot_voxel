@@ -5,6 +5,7 @@
 #include "../../server/save_block_data_task.h"
 #include "../../server/voxel_server.h"
 #include "../../util/container_funcs.h"
+#include "../../util/dstack.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
@@ -14,6 +15,7 @@ namespace zylann::voxel {
 
 void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
 		Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// Propagates edits performed so far to other LODs.
 	// These LODs must be currently in memory, otherwise terrain data will miss it.
@@ -166,6 +168,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 
 struct BeforeUnloadDataAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
+	const Vector3i bpos;
 	bool save;
 
 	void operator()(VoxelDataBlock &block) {
@@ -176,8 +179,8 @@ struct BeforeUnloadDataAction {
 			VoxelLodTerrainUpdateData::BlockToSave b;
 			// We don't copy since the block will be unloaded anyways
 			b.voxels = block.get_voxels_shared();
-			b.position = block.position;
-			b.lod = block.lod_index;
+			b.position = bpos;
+			b.lod = block.get_lod_index();
 			blocks_to_save.push_back(b);
 		}
 	}
@@ -187,7 +190,7 @@ static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, Voxel
 		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
 	ZN_PROFILE_SCOPE();
 
-	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, can_save });
+	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, block_pos, can_save });
 
 	//print_line(String("Unloading data block {0} lod {1}").format(varray(block_pos.to_vec3(), lod_index)));
 	MutexLock lock(lod.loading_blocks_mutex);
@@ -397,13 +400,13 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 			unsigned int lod_count;
 
 			void operator()(const Vector3i &pos) {
-				Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.find(pos);
-				if (E == nullptr) {
+				std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it = state.lod_octrees.find(pos);
+				if (it == state.lod_octrees.end()) {
 					return;
 				}
 
-				VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
-				const Vector3i block_pos_maxlod = E->key();
+				VoxelLodTerrainUpdateData::OctreeItem &item = it->second;
+				const Vector3i block_pos_maxlod = it->first;
 
 				const unsigned int last_lod_index = lod_count - 1;
 
@@ -413,7 +416,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 				CleanOctreeAction a{ state, block_pos_maxlod << last_lod_index };
 				item.octree.clear(a);
 
-				state.lod_octrees.erase(E);
+				state.lod_octrees.erase(it);
 
 				// Unload last lod from here, as it may extend a bit further than the others.
 				// Other LODs are unloaded earlier using a sliding region.
@@ -429,14 +432,14 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 
 			void operator()(const Vector3i &pos) {
 				// That's a new cell we are entering, shouldn't be anything there
-				CRASH_COND(state.lod_octrees.has(pos));
+				CRASH_COND(state.lod_octrees.find(pos) != state.lod_octrees.end());
 
 				// Create new octree
 				// TODO Use ObjectPool to store them, deletion won't be cheap
-				Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E =
-						state.lod_octrees.insert(pos, VoxelLodTerrainUpdateData::OctreeItem());
-				CRASH_COND(E == nullptr);
-				VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+				std::pair<std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator, bool> p =
+						state.lod_octrees.insert({ pos, VoxelLodTerrainUpdateData::OctreeItem() });
+				CRASH_COND(p.second == false);
+				VoxelLodTerrainUpdateData::OctreeItem &item = p.first->second;
 				LodOctree::NoDestroyAction nda;
 				item.octree.create(lod_count, nda);
 			}
@@ -824,8 +827,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	unsigned int blocked_octree_nodes = 0;
 
 	// TODO Maintain a vector to make iteration faster?
-	for (Map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::Element *E = state.lod_octrees.front(); E;
-			E = E->next()) {
+	for (auto octree_it = state.lod_octrees.begin(); octree_it != state.lod_octrees.end(); ++octree_it) {
 		ZN_PROFILE_SCOPE();
 
 		struct OctreeActions {
@@ -969,7 +971,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			}
 		};
 
-		const Vector3i block_pos_maxlod = E->key();
+		const Vector3i block_pos_maxlod = octree_it->first;
 		const Vector3i block_offset_lod0 = block_pos_maxlod << (settings.lod_count - 1);
 		const Vector3 relative_viewer_pos = p_viewer_pos - Vector3(mesh_block_size * block_offset_lod0);
 
@@ -983,7 +985,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			lod_distance_octree_space, //
 			relative_viewer_pos / octree_leaf_node_size
 		};
-		VoxelLodTerrainUpdateData::OctreeItem &item = E->value();
+		VoxelLodTerrainUpdateData::OctreeItem &item = octree_it->second;
 		item.octree.update(octree_actions);
 
 		blocked_octree_nodes += octree_actions.blocked_count;
@@ -1143,33 +1145,6 @@ void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
 	}
 }
 
-static void request_block_mesh(uint32_t volume_id, const VoxelServer::BlockMeshInput &input,
-		std::shared_ptr<MeshingDependency> meshing_dependency,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
-		unsigned int mesh_block_size, const Transform3D &volume_transform, float lod_distance,
-		BufferedTaskScheduler &task_scheduler, const std::shared_ptr<VoxelDataLodMap> &data) {
-	//
-	ERR_FAIL_COND(meshing_dependency == nullptr);
-	ERR_FAIL_COND(meshing_dependency->mesher.is_null());
-	ERR_FAIL_COND(data_block_size > 255);
-
-	// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-	MeshBlockTask *task = memnew(MeshBlockTask);
-	task->volume_id = volume_id;
-	task->blocks = input.data_blocks;
-	task->blocks_count = input.data_blocks_count;
-	task->position = input.render_block_position;
-	task->lod = input.lod;
-	task->meshing_dependency = meshing_dependency;
-	task->data_block_size = data_block_size;
-	task->data = data;
-
-	init_sparse_octree_priority_dependency(task->priority_dependency, input.render_block_position, input.lod,
-			mesh_block_size, shared_viewers_data, volume_transform, lod_distance);
-
-	task_scheduler.push_main_task(task);
-}
-
 static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> &data_ptr,
 		std::shared_ptr<MeshingDependency> meshing_dependency,
@@ -1183,7 +1158,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 
 	const int data_block_size = data.lods[0].map.get_block_size();
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-	const int render_to_data_factor = mesh_block_size / mesh_block_size;
+	const int render_to_data_factor = mesh_block_size / data_block_size;
 
 	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
 		ZN_PROFILE_SCOPE();
@@ -1201,9 +1176,18 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			ERR_CONTINUE(mesh_block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
-			VoxelServer::BlockMeshInput mesh_request;
-			mesh_request.render_block_position = mesh_block_pos;
-			mesh_request.lod = lod_index;
+			// VoxelServer::BlockMeshInput mesh_request;
+			// mesh_request.render_block_position = mesh_block_pos;
+			// mesh_request.lod = lod_index;
+
+			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
+			MeshBlockTask *task = memnew(MeshBlockTask);
+			task->volume_id = volume_id;
+			task->position = mesh_block_pos;
+			task->lod = lod_index;
+			task->meshing_dependency = meshing_dependency;
+			task->data_block_size = data_block_size;
+			task->data = data_ptr;
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_block_pos, Vector3iUtil::create(render_to_data_factor))
@@ -1215,18 +1199,21 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			// Iteration order matters for thread access.
 			// The array also implicitely encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
-			data_box.for_each_cell_zxy([&mesh_request, &data_lod](Vector3i data_block_pos) {
+			task->blocks_count = 0;
+			data_box.for_each_cell_zxy([task, &data_lod](Vector3i data_block_pos) {
 				const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
 				// The block can actually be null on some occasions. Not sure yet if it's that bad
 				//CRASH_COND(nblock == nullptr);
 				if (nblock != nullptr) {
-					mesh_request.data_blocks[mesh_request.data_blocks_count] = nblock->get_voxels_shared();
+					task->blocks[task->blocks_count] = nblock->get_voxels_shared();
 				}
-				++mesh_request.data_blocks_count;
+				++task->blocks_count;
 			});
 
-			request_block_mesh(volume_id, mesh_request, meshing_dependency, shared_viewers_data, data_block_size,
-					mesh_block_size, volume_transform, settings.lod_distance, task_scheduler, data_ptr);
+			init_sparse_octree_priority_dependency(task->priority_dependency, task->position, task->lod,
+					mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
+
+			task_scheduler.push_main_task(task);
 
 			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		}

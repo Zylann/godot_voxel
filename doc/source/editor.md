@@ -29,6 +29,10 @@ Blocks will only load around the node's origin by default. If the volume is very
 This option exists for large volumes because they need to stream blocks in and out as you move around. While this is often done in a controlled manner in a game, in the editor the camera could be moving very fast without any restriction, which can demand much more work for the CPU.
 You can monitor the amount of ongoing tasks in the bottom panel, while the node is selected.
 
+The terrain also needs to be selected, partially because of [this](https://github.com/godotengine/godot-proposals/issues/1302)).
+
+Terrains can be very big, and sometimes Godot might prevent you from zooming out further. You can workaround this by increasing the editor's Camera `far` clip in the `View -> Settings` menu. That might slightly degrade visual quality if set too high, so you can also increase `near` clip to keep it balanced. These two numbers cannot be too far apart due to 32-bit float precision.
+
 
 Editing
 --------

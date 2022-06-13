@@ -124,7 +124,7 @@ Surface material properties on the `MeshInstance` node are not supported.
 
 Multimesh items are fast and efficient, but are quite limited.
 
-Instancing scenes is supported by adding items of type `VoxelInstanceLibrarySceneItem`. Instead of spawning multimeshes, regular scene instances will be created as child of `VoxelInstancer`. The advantage is the ability to put much more varied behavior on them, such as scripts, sounds, animations, or even further spawning logic or interaction. The only constraint is, the root of the scene must be `Spatial` or derive from it.
+Instancing scenes is supported by adding items of type `VoxelInstanceLibrarySceneItem`. Instead of spawning multimeshes, regular scene instances will be created as child of `VoxelInstancer`. The advantage is the ability to put much more varied behavior on them, such as scripts, sounds, animations, or even further spawning logic or interaction. The only constraint is, the root of the scene must be `Node3D` or derive from it.
 
 This freedom has a high price compared to multimesh instances. Adding many instances can become slow quickly, so the default density of these items is lower when you create them from the editor. It is strongly recommended to not use too complex scenes, because depending on the settings, it can lead to a freeze or crash of Godot if your computer cannot handle too many instances.
 

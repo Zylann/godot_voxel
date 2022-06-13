@@ -5,6 +5,7 @@
 #endif
 
 #include "../util/container_funcs.h"
+#include "../util/dstack.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "voxel_buffer_internal.h"
@@ -15,6 +16,7 @@
 namespace zylann::voxel {
 
 inline uint8_t *allocate_channel_data(size_t size) {
+	ZN_DSTACK();
 #ifdef VOXEL_BUFFER_USE_MEMORY_POOL
 	return VoxelMemoryPool::get_singleton().allocate(size);
 #else
@@ -134,6 +136,7 @@ VoxelBufferInternal &VoxelBufferInternal::operator=(VoxelBufferInternal &&src) {
 }
 
 void VoxelBufferInternal::create(unsigned int sx, unsigned int sy, unsigned int sz) {
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(sx <= MAX_SIZE && sy <= MAX_SIZE && sz <= MAX_SIZE);
 #ifdef TOOLS_ENABLED
 	if (sx == 0 || sy == 0 || sz == 0) {
@@ -231,6 +234,7 @@ uint64_t VoxelBufferInternal::get_voxel(int x, int y, int z, unsigned int channe
 }
 
 void VoxelBufferInternal::set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index) {
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 	ZN_ASSERT_RETURN_MSG(is_position_valid(x, y, z), format("At position ({}, {}, {})", x, y, z));
 
@@ -339,6 +343,7 @@ void VoxelBufferInternal::fill(uint64_t defval, unsigned int channel_index) {
 }
 
 void VoxelBufferInternal::fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index) {
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 	Vector3iUtil::sort_min_max(min, max);
@@ -482,6 +487,7 @@ void VoxelBufferInternal::compress_if_uniform(Channel &channel) {
 }
 
 void VoxelBufferInternal::decompress_channel(unsigned int channel_index) {
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
@@ -512,6 +518,7 @@ void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other) {
 }
 
 void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, unsigned int channel_index) {
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 	ZN_ASSERT_RETURN(other._size == _size);
 
@@ -539,6 +546,7 @@ void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, unsigned i
 void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, Vector3i src_min, Vector3i src_max,
 		Vector3i dst_min, unsigned int channel_index) {
 	//
+	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 	Channel &channel = _channels[channel_index];
@@ -577,6 +585,7 @@ void VoxelBufferInternal::copy_from(const VoxelBufferInternal &other, Vector3i s
 }
 
 void VoxelBufferInternal::duplicate_to(VoxelBufferInternal &dst, bool include_metadata) const {
+	ZN_DSTACK();
 	dst.create(_size);
 	for (unsigned int i = 0; i < _channels.size(); ++i) {
 		dst.set_channel_depth(i, _channels[i].depth);
@@ -619,6 +628,7 @@ bool VoxelBufferInternal::get_channel_raw(unsigned int channel_index, Span<uint8
 }
 
 bool VoxelBufferInternal::create_channel(int i, uint64_t defval) {
+	ZN_DSTACK();
 	if (!create_channel_noinit(i, _size)) {
 		return false;
 	}
@@ -635,6 +645,7 @@ size_t VoxelBufferInternal::get_size_in_bytes_for_volume(Vector3i size, Depth de
 }
 
 bool VoxelBufferInternal::create_channel_noinit(int i, Vector3i size) {
+	ZN_DSTACK();
 	Channel &channel = _channels[i];
 	const size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
 	ZN_ASSERT_RETURN_V_MSG(size_in_bytes <= Channel::MAX_SIZE_IN_BYTES, false, "Buffer is too big");

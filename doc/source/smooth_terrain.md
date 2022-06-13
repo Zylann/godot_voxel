@@ -72,6 +72,7 @@ For more information about SDF and other domains where they are used, you can ch
 - [Glyphs, shapes, fonts, signed distance fields. (Martin Donald)](https://www.youtube.com/watch?v=1b5hIMqz_wM)
 - [Coding Adventure: Marching Cubes (Sebastian Lague)](https://www.youtube.com/watch?v=M3iI2l0ltbE)
 - [Painting a Cartoon Girl using Mathematics (Inigo Quilez)](https://www.youtube.com/watch?v=8--5LwHRhjk)
+- [Code for a bunch of SDF functions and operations (Inigo Quilez)](https://iquilezles.org/articles/distfunctions/)
 
 
 Transvoxel
@@ -137,7 +138,7 @@ Look at how the brick textures are blended together on the top right sphere.
 
 ![Triplanar mapping image](https://docs.godotengine.org/en/3.1/_images/spatial_material25.png)
 
-Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/spatial_material.html?highlight=triplanar%20#triplanar-mapping).
+Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#triplanar-mapping).
 
 It is also possible to choose a different texture for the 3 axes.
 
@@ -328,7 +329,7 @@ If you use a `ShaderMaterial` on a voxel node, the module may exploit some unifo
 Parameter name             | Type     | Description
 ---------------------------|----------|-----------------------
 `u_lod_fade`               | `vec2`   | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
-`u_block_local_transform`  | `mat4`   | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+`u_block_local_transform`  | `mat4`   | Transform of the rendered blockl, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
 
 
 Level of detail (LOD)
@@ -338,7 +339,63 @@ Level of detail (LOD)
 
 ### Description
 
-TODO
+LOD (Level Of Detail) is a technique used to change the amount of geometry dymamically, such that meshes close to the viewer have high definition, while meshes far from the viewer are simplified down. This aims at improving performance.
+
+![LOD example](images/lod_example.png)
+
+!!! note
+	Careful: in this engine, `LOD` *levels* are frequently represented with numbers from `0` to `N-1`, where `N` is the number of LODs. `0` is the *highest level of detail*, while LOD `1`, `2` etc up to `N-1` are *lower levels of detail*.
+
+![Illustration of level of detail with a grid of voxels](images/lod_density_schema.png)
+
+When going from LOD `i` to `i+1`, voxels and blocks double in size, covering more space. However resolution of blocks doesn't change, so detail density is lower and consumes less resources.
+
+
+### Octrees
+
+LOD is implemented using a *grid of octrees*. Each octree may then be subdivided into chunks of variable size, where the smallest size will be LOD 0.
+
+Subdivision occurs as the viewer gets closer. The threshold upon which it happens is controlled with the `lod_distance` property. It represents how far LOD 0 will spread around the viewer. It also affects how far other LODs will go, so it controls quality overall.
+
+Similarly to `VoxelTerrain`, as the viewer moves around, octrees are loaded in front and those getting too far are unloaded. This allows to keep support for "infinite" terrain, without having to setup a single octree with unnecessary depth levels.
+
+In the editor, gizmos are showing the *grid of octrees*. Block bounds can be shown by checking the `Terrain -> Show octree nodes` menu.
+
+The size of the grid around the viewer depends on two factors:
+
+- The `view_distance` parameter of `VoxelLodTerrain`
+- The `view_distance` parameter on `VoxelViewer`.
+
+
+### Number of LODs
+
+Increasing the number of LODs allows the terrain to have larger octrees, which in turns allows to increase view distance. It does not actually make `LOD0` sharper, it goes the other way around (if you expected otherwise, maybe you need to tweak your generator to produce larger shapes, reduce voxel size or change the scales of your game which might be too small).
+You might notice the grid of octrees changes size if you change LOD count: this is because it rounds to the current `view_distance`.
+
+Reducing the number of LODs reduces the size of octrees, however it also means there will be much more of them to fill the grid up to `view_distance`. Make sure to keep a good sweetspot between LOD count and `view_distance` so that the density of octrees is not too high.
+
+If you are not making an infinite terrain, you may give it fixed bounds with the `bounds` property, as well as a very large view distance so it stays in view.
+`bounds` will be rounded to octree size: for example, with 4 LODs and mesh block size of 16, LOD0 blocks will be 16, LOD1 will be 32, LOD2 will be 64... and LOD3 (the biggest) will be 128. Since the current implementation keeps at minimum 8 octrees around the origin, optimal bounds for this setup would be 256.
+
+![Screenshot of fixed bounds LOD terrain](images/fixed_bounds_octrees.png)
+
+Following the same logic, fixed bounds of 512 is optimal with 5 LODs, 1024 is optimal with 6 LODs and so on.
+This is based on mesh block size of `16`, so if you set it to `32`, you may set one less LOD since meshes are twice as big.
+
+For information about LOD behavior in the editor, see [Camera options in editor](editor.md#camera-options).
+
+
+### Voxel size
+
+Currently, the size of voxels is fixed to 1 space unit. It might be possible in a future version to change it. For now, a workaround is to scale down the node. However, make sure it is a uniform scale, and careful not to scale too low otherwise it might blow up.
+
+
+### Full load mode
+
+LOD applies both to meshes and to voxel data, keeping memory usage relatively constant. Depending on your settings, distant voxels will not load full-resolution data. Only full-resolution voxels can be edited, so that means you can only modify terrain in a limited distance around the viewer.
+
+If this limitation isn't suitable for your game, a workaround is to enable `full_load_mode`. This will load all edited chunks present in the `stream` (if any), such that all the data is available and can be edited anywhere without wait. Non-edited chunks will cause the generator to be queried on the fly instead of being cached. Because data streaming won't take place, keep in mind more memory will be used the more edited chunks the terrain contains.
+
 
 ### LOD fading (experimental)
 

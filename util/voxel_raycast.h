@@ -52,7 +52,7 @@ bool voxel_raycast(Vec3f_T ray_origin, Vec3f_T ray_direction, Predicate_F predic
 
 	// Note : the grid is assumed to have 1-unit square cells.
 
-	ZN_ASSERT_RETURN_V(ray_direction.is_normalized(), false); // Must be normalized
+	ZN_ASSERT_RETURN_V(math::is_normalized(ray_direction), false); // Must be normalized
 
 	/* Initialisation */
 

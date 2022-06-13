@@ -1,7 +1,7 @@
 #include "voxel_generator_noise_2d.h"
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
-#include <modules/noise/noise.h>
+#include <modules/noise/fastnoise_lite.h>
 #include <scene/resources/curve.h>
 
 namespace zylann::voxel {
@@ -113,7 +113,7 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 	// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
 	// ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static(),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_noise", "get_noise");
 	ADD_PROPERTY(

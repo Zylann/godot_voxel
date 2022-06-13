@@ -4,6 +4,8 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
+//#define VOXEL_TRANSVOXEL_REUSE_VERTEX_ON_COINCIDENT_CASES
+
 namespace zylann::voxel::transvoxel {
 
 static const float TRANSITION_CELL_SCALE = 0.25;
@@ -92,7 +94,7 @@ inline uint8_t get_border_mask(const Vector3i &pos, const Vector3i &block_size) 
 }
 
 inline Vector3f normalized_not_null(Vector3f n) {
-	const float lengthsq = n.length_squared();
+	const float lengthsq = math::length_squared(n);
 	if (lengthsq == 0) {
 		return Vector3f(0, 1, 0);
 	} else {
@@ -604,9 +606,19 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 						current_reuse_cell.vertices[0] = cell_vertex_indices[vertex_index];
 
 					} else {
-						// The vertex is either on p0 or p1
-						// Always try to reuse previous vertices in these cases
+						// The vertex is either on p0 or p1.
+						// The original Transvoxel tries to reuse previous vertices in these cases,
+						// however here we don't do it because of ambiguous cases that makes artifacts appear.
+						// It's not a common case so it shouldn't be too bad
+						// (unless you do a lot of grid-aligned shapes?).
 
+						// What do we do if the vertex we would re-use is on a cell that had no triangulation?
+						// The previous cell might have had all corners of the same sign, except one being 0.
+						// Forcing `present=false` seems to fix cases of holes that would be caused by that.
+						// Resetting the cache before processing each deck also works, but is slightly slower.
+						// Otherwise the code would try to re-use a vertex that hasn't been written as re-usable,
+						// so it picks up some garbage from earlier decks.
+#ifdef VOXEL_TRANSVOXEL_REUSE_VERTEX_ON_COINCIDENT_CASES
 						// A 3-bit direction code leading to the proper cell can easily be obtained by
 						// inverting the 3-bit corner index (bitwise, by exclusive ORing with the number 7).
 						// The corner index depends on the value of t, t = 0 means that we're at the higher
@@ -621,7 +633,9 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 							cell_vertex_indices[vertex_index] = prev_cell.vertices[0];
 						}
 
-						if (!present || cell_vertex_indices[vertex_index] < 0) {
+						if (!present || cell_vertex_indices[vertex_index] == -1)
+#endif
+						{
 							// Create new vertex
 
 							// TODO Earlier we associated t==0 to p0, why are we doing p1 here?
