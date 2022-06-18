@@ -80,7 +80,7 @@ public:
 	}
 
 	inline void set_edited(bool edited) {
-		_edited = true;
+		_edited = edited;
 	}
 
 	inline bool is_edited() const {
