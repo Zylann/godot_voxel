@@ -389,6 +389,11 @@ For information about LOD behavior in the editor, see [Camera options in editor]
 
 Currently, the size of voxels is fixed to 1 space unit. It might be possible in a future version to change it. For now, a workaround is to scale down the node. However, make sure it is a uniform scale, and careful not to scale too low otherwise it might blow up.
 
+`scale` from Node3D must not be confused with the concept of *size*. If you change `scale`, *it will also scale the voxel grid*, view distances, all the dimensions you might have set in generators, and of course it will apply to child nodes as well. The result will *look the same*, just bigger, no more details. So if you want something larger *with more details as a result*, it is recommended to change these sizes instead of scaling everything.
+For example, if your generator contains a sphere and Perlin noise, you may change the radius of the sphere and the frequency/period of the noise instead of scaling the node. Doing it this way preserve the size of voxels and so it preserves accuracy.
+
+Godot also allows you to scale non-uniformly, but it's not recommended (might cause collision issues too).
+
 
 ### Full load mode
 
