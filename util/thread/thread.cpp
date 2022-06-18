@@ -45,4 +45,14 @@ unsigned int Thread::get_hardware_concurrency() {
 	return std::thread::hardware_concurrency();
 }
 
+static uint64_t get_hash(const std::thread::id &p_t) {
+	static std::hash<std::thread::id> hasher;
+	return hasher(p_t);
+}
+
+Thread::ID Thread::get_caller_id() {
+	static thread_local ID caller_id = get_hash(std::this_thread::get_id());
+	return caller_id;
+}
+
 } // namespace zylann
