@@ -26,25 +26,27 @@ Short recipes
 The following sections contain basic quick start instructions to get voxel terrains running.
 For more in-depth information, see the rest of the documentation.
 
+Before each example, you may do the following:
+
+- Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
+
 ### Blocky heightmap terrain using `VoxelTerrain`
 
-1) Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
-
-2) Add a `VoxelTerrain` node, and adjust the following settings in the inspector:
+1) Add a `VoxelTerrain` node, and adjust the following settings in the inspector:
 	
-2.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
+1.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
 
-2.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
+1.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
 
-2.2) `Mesher`: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
+1.2) `Mesher`: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
 
-2.3) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
+1.3) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
 
-3) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+2) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
-4) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
+3) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
-5) Play the scene: you should see the terrain appear!
+4) Play the scene: you should see the terrain appear!
 
 ![Screenshot of blocky terrain from the quick start guide](images/default-terrain.jpg)
 
@@ -53,23 +55,21 @@ You can modify the shape of the terrain by changing noise parameters under the g
 `VoxelMesherBlocky` allows to specify way more than just white cubes: you can define multiple models, with varying textures, materials and shapes, in order to compose a world like you would see in Minecraft for example.
 
 
-### Large smooth world using `VoxelLODTerrain`
+### Large smooth heightmap with overhangs using `VoxelLODTerrain`
 
-1) Create a new project and a new 3D scene. Give it some light by adding a `DirectionalLight` node, and orientate it so it shines approximately downwards. You can enable `Shadows` too.
+1) Add a `VoxelLODTerrain` node, and adjust the following settings in the inspector:
 
-2) Add a `VoxelLODTerrain` node, and adjust the following settings in the inspector:
+1.1) `Generator`: create a new `VoxelGeneratorNoise`. Then click on it and set its `Channel` parameter to `SDF`. Also make sure the `noise` property is assigned to a noise resource.
 
-2.1) `Generator`: create a new `VoxelGeneratorNoise`. Then click on it and set its `Channel` parameter to `SDF`. Also make sure the `noise` property is assigned to a noise resource.
+1.2) `Mesher`: create a new `VoxelMesherTransvoxel`.
 
-2.2) `Mesher`: create a new `VoxelMesherTransvoxel`.
+2) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
 
-3) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
+3) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
-4) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+4) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
-5) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
-
-6) Play the scene: you should see the terrain appear!
+5) Play the scene: you should see the terrain appear!
 
 ![Screenshot of smooth terrain from the quick start guide](images/noise-terrain-default.jpg)
 
@@ -91,4 +91,4 @@ It's easy to think a project needs voxels, but they are less needed than it soun
 
 - "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
 
-- "GridMap sucks": how large do you want your grid to be? How complex are your models? This module is geared towards very large grids with simple geometry, so it has its own restrictions.
+- "GridMap sucks": how large do you want your grid to be? How complex are your models? This module's blocky mesher is geared towards very large grids with simple geometry, so it has its own restrictions.
