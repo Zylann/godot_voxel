@@ -134,6 +134,28 @@ void store_sdf(VoxelBufferInternal &voxels, Span<float> sdf) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+VoxelModifierStack::VoxelModifierStack() {}
+
+VoxelModifierStack::VoxelModifierStack(VoxelModifierStack &&other) {
+	move_from_noclear(other);
+}
+
+VoxelModifierStack &VoxelModifierStack::operator=(VoxelModifierStack &&other) {
+	clear();
+	move_from_noclear(other);
+	_next_id = other._next_id;
+	return *this;
+}
+
+void VoxelModifierStack::move_from_noclear(VoxelModifierStack &other) {
+	{
+		RWLockRead rlock(other._stack_lock);
+		_modifiers = std::move(other._modifiers);
+		_stack = std::move(other._stack);
+	}
+	_next_id = other._next_id;
+}
+
 uint32_t VoxelModifierStack::allocate_id() {
 	return ++_next_id;
 }
@@ -224,6 +246,12 @@ void VoxelModifierStack::apply(float &sdf, Vector3 position) const {
 	}
 }
 
+void VoxelModifierStack::clear() {
+	RWLockWrite lock(_stack_lock);
+	_stack.clear();
+	_modifiers.clear();
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void VoxelModifierSphere::set_radius(real_t radius) {
@@ -302,6 +330,10 @@ void VoxelModifierBuffer::apply(VoxelModifierContext ctx) const {
 	if (_buffer == nullptr) {
 		return;
 	}
+
+	// TODO VoxelMeshSDF isn't preventing scripts from writing into this buffer from a different thread.
+	// I can't think of a reason to manually modify the buffer of a VoxelMeshSDF at the moment.
+	RWLockRead buffer_rlock(_buffer->get_lock());
 
 	const Transform3D model_to_world = get_transform();
 	const Transform3D buffer_to_model =

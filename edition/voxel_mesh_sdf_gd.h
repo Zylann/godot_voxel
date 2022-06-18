@@ -12,7 +12,6 @@ class SceneTree;
 namespace zylann::voxel {
 
 // Contains the baked signed distance field of a mesh, which can be used to sculpt terrain.
-// TODO Make it a resource so we can pre-build, save and load the baked data more easily
 class VoxelMeshSDF : public Resource {
 	GDCLASS(VoxelMeshSDF, Resource)
 public:
@@ -62,7 +61,14 @@ public:
 	// It is currently needed to ensure `VoxelServerUpdater` gets created so it can tick the task system...
 	void bake_async(SceneTree *scene_tree);
 
+	// Accesses baked SDF data.
+	// WARNING: don't modify this buffer. Only read from it.
+	// There are some usages (like modifiers) that will read it from different threads,
+	// but there is no thread safety in case of direct modification.
+	// TODO Introduce a VoxelBufferReadOnly? Since that's likely the only way in an object-oriented script API...
 	Ref<gd::VoxelBuffer> get_voxel_buffer() const;
+
+	// Gets the padded bounding box of the model. This is important to know for signed distances to be coherent.
 	AABB get_aabb() const;
 
 	Array debug_check_sdf(Ref<Mesh> mesh);

@@ -159,8 +159,9 @@ struct VoxelLodTerrainUpdateData {
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
 
-		std::vector<Box3i> remesh_requests;
-		BinaryMutex remesh_requests_mutex;
+		// Areas where generated stuff has changed. Similar to an edit, but non-destructive.
+		std::vector<Box3i> changed_generated_areas;
+		BinaryMutex changed_generated_areas_mutex;
 
 		Stats stats;
 	};

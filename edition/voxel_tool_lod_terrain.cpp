@@ -237,9 +237,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(data == nullptr);
 	VoxelDataLodMap::Lod &data_lod = data->lods[0];
 
-	if (_terrain->is_full_load_mode_enabled()) {
-		preload_box(*data, box, _terrain->get_generator().ptr());
-	}
+	preload_box(*data, box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
 
 	ops::DoSphere op;
 	op.box = box;
@@ -768,9 +766,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	ERR_FAIL_COND(data == nullptr);
 	VoxelDataLodMap::Lod &data_lod = data->lods[0];
 
-	if (_terrain->is_full_load_mode_enabled()) {
-		preload_box(*data, voxel_box, _terrain->get_generator().ptr());
-	}
+	preload_box(*data, voxel_box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
 
 	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesnt intersect
 	// TODO Maybe we should scale SDF values based on the scale of the transform too

@@ -116,7 +116,7 @@ void VoxelModifier::_notification(int p_what) {
 				std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
 				VoxelModifierStack &modifiers = data->modifiers;
 				zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
-				ZN_ASSERT_RETURN(modifier != nullptr);
+				ZN_ASSERT_RETURN_MSG(modifier != nullptr, "The modifier node wasn't linked properly");
 				post_edit_modifier(*_volume, modifier->get_aabb());
 				modifiers.remove_modifier(_modifier_id);
 				_volume = nullptr;

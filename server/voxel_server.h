@@ -36,6 +36,8 @@ public:
 		};
 
 		Type type;
+		// If voxels are null with TYPE_LOADED, it means no block was found in the stream (if any) and no generator task
+		// was scheduled. This is the case when we don't want to cache blocks of generated data.
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		UniquePtr<InstanceBlockData> instances;
 		Vector3i position;

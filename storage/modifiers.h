@@ -146,6 +146,11 @@ class VoxelModifierStack {
 public:
 	uint32_t allocate_id();
 
+	VoxelModifierStack();
+	VoxelModifierStack(VoxelModifierStack &&other);
+
+	VoxelModifierStack &operator=(VoxelModifierStack &&other);
+
 	template <typename T>
 	T *add_modifier(uint32_t id) {
 		ZN_ASSERT(!has_modifier(id));
@@ -162,8 +167,11 @@ public:
 	VoxelModifier *get_modifier(uint32_t id) const;
 	void apply(VoxelBufferInternal &voxels, AABB aabb) const;
 	void apply(float &sdf, Vector3 position) const;
+	void clear();
 
 private:
+	void move_from_noclear(VoxelModifierStack &other);
+
 	std::unordered_map<uint32_t, UniquePtr<VoxelModifier>> _modifiers;
 	uint32_t _next_id = 1;
 	// TODO Later, replace this with a spatial acceleration structure based on AABBs, like BVH

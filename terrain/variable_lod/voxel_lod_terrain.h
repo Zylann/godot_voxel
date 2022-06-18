@@ -143,7 +143,7 @@ public:
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
-	void post_edit_modifiers(Box3i p_box);
+	void post_edit_modifiers(Box3i p_voxel_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
 	void push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker);

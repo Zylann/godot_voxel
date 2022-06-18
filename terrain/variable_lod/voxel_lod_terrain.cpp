@@ -106,10 +106,13 @@ struct ScheduleSaveAction {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelLodTerrainUpdateData::BlockToSave b;
 
-			b.voxels = make_shared_instance<VoxelBufferInternal>();
-			{
-				RWLockRead lock(block.get_voxels().get_lock());
-				block.get_voxels_const().duplicate_to(*b.voxels, true);
+			// If a modified block has no voxels, it is equivalent to removing the block from the stream
+			if (block.has_voxels()) {
+				b.voxels = make_shared_instance<VoxelBufferInternal>();
+				{
+					RWLockRead lock(block.get_voxels().get_lock());
+					block.get_voxels_const().duplicate_to(*b.voxels, true);
+				}
 			}
 
 			b.position = bpos;
@@ -501,10 +504,14 @@ bool VoxelLodTerrain::is_area_editable(Box3i p_voxel_box) const {
 }
 
 inline std::shared_ptr<VoxelBufferInternal> try_get_voxel_buffer_with_lock(
-		const VoxelDataLodMap::Lod &data_lod, Vector3i block_pos) {
+		const VoxelDataLodMap::Lod &data_lod, Vector3i block_pos, bool &out_generate) {
 	RWLockRead rlock(data_lod.map_lock);
 	const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
 	if (block == nullptr) {
+		return nullptr;
+	}
+	if (!block->has_voxels()) {
+		out_generate = true;
 		return nullptr;
 	}
 	return block->get_voxels_shared();
@@ -528,11 +535,13 @@ VoxelSingleValue VoxelLodTerrain::get_voxel(Vector3i pos, unsigned int channel, 
 	}
 
 	Vector3i block_pos = pos >> get_data_block_size_pow2();
+	bool generate = false;
 
 	if (_update_data->settings.full_load_mode) {
 		const VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
-		std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos);
+		std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, generate);
 		if (voxels == nullptr) {
+			// TODO We should be able to get a value if modifiers are used but not a base generator
 			if (_generator.is_valid()) {
 				VoxelSingleValue value = _generator->generate_single(pos, channel);
 				if (channel == VoxelBufferInternal::CHANNEL_SDF) {
@@ -559,10 +568,27 @@ VoxelSingleValue VoxelLodTerrain::get_voxel(Vector3i pos, unsigned int channel, 
 		Vector3i voxel_pos = pos;
 		for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 			const VoxelDataLodMap::Lod &data_lod = _data->lods[lod_index];
-			std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod, block_pos);
+
+			std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod, block_pos, generate);
+
 			if (voxels != nullptr) {
 				return get_voxel_with_lock(*voxels, data_lod.map.to_local(voxel_pos), channel);
+
+			} else if (generate) {
+				// TODO We should be able to get a value if modifiers are used but not a base generator
+				if (_generator.is_valid()) {
+					VoxelSingleValue value = _generator->generate_single(pos, channel);
+					if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+						float sdf = value.f;
+						_data->modifiers.apply(sdf, to_vec3(pos));
+						value.f = sdf;
+					}
+					return value;
+				} else {
+					return defval;
+				}
 			}
+
 			// Fallback on lower LOD
 			block_pos = block_pos >> 1;
 			voxel_pos = voxel_pos >> 1;
@@ -575,9 +601,12 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 	const Vector3i block_pos_lod0 = pos >> get_data_block_size_pow2();
 	VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 	const Vector3i block_pos = data_lod0.map.voxel_to_block(pos);
-	std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos);
+
+	bool can_generate = false;
+	std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, can_generate);
+
 	if (voxels == nullptr) {
-		if (!_update_data->settings.full_load_mode) {
+		if (!_update_data->settings.full_load_mode && !can_generate) {
 			return false;
 		}
 		if (_generator.is_valid()) {
@@ -597,6 +626,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 	// If it turns out to be a problem, use CoW?
 	RWLockWrite lock(voxels->get_lock());
 	voxels->set_voxel(value, data_lod0.map.to_local(pos), channel);
+	// We don't update mips, this must be done by the caller
 	return true;
 }
 
@@ -670,9 +700,12 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	}
 }
 
-void VoxelLodTerrain::post_edit_modifiers(Box3i p_box) {
-	MutexLock lock(_update_data->state.remesh_requests_mutex);
-	_update_data->state.remesh_requests.push_back(p_box);
+void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
+	clear_cached_blocks_in_voxel_area(*_data, p_voxel_box);
+	// Not sure if it is worth re-caching these blocks. We may see about that in the future if performance is an issue.
+
+	MutexLock lock(_update_data->state.changed_generated_areas_mutex);
+	_update_data->state.changed_generated_areas.push_back(p_voxel_box);
 }
 
 void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -851,7 +884,11 @@ void VoxelLodTerrain::reset_maps() {
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
 	// Make a new one, so if threads still reference the old one it will be a different copy
-	_data = make_shared_instance<VoxelDataLodMap>();
+	std::shared_ptr<VoxelDataLodMap> new_data = make_shared_instance<VoxelDataLodMap>();
+	// Keep modifiers, we only reset voxel data
+	new_data->modifiers = std::move(_data->modifiers);
+	_data = new_data;
+
 	_data->lod_count = lod_count;
 
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
@@ -1378,6 +1415,14 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 		VoxelDataBlock *block = data_lod.map.set_block_buffer(ob.position, ob.voxels, false);
 		CRASH_COND(block == nullptr);
 		block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
+
+	} else {
+		// Loading returned an empty block: that means we know the stream does not contain a block here.
+		// When doing data streaming, we'll generate on the fly if this block is queried.
+		VoxelDataLodMap::Lod &data_lod = _data->lods[ob.lod];
+		RWLockWrite wlock(data_lod.map_lock);
+		VoxelDataBlock *block = data_lod.map.set_empty_block(ob.position, false);
+		ZN_ASSERT(block != nullptr);
 	}
 
 	{
@@ -2223,16 +2268,12 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 
 		const VoxelDataLodMap::Lod &data_lod = _data->lods[lod_index];
 
-		world_box.for_each_cell([&data_lod, &buffer, world_box](const Vector3i &world_pos) {
-			std::shared_ptr<VoxelBufferInternal> voxels =
-					try_get_voxel_buffer_with_lock(data_lod, data_lod.map.voxel_to_block(world_pos));
-			if (voxels == nullptr) {
-				return;
-			}
-			const float v =
-					get_voxel_with_lock(*voxels, data_lod.map.to_local(world_pos), VoxelBufferInternal::CHANNEL_SDF).f;
+		world_box.for_each_cell([this, world_box, &buffer](const Vector3i &world_pos) {
 			const Vector3i rpos = world_pos - world_box.pos;
-			buffer.set_voxel_f(v, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
+			VoxelSingleValue v;
+			v.f = 1.f;
+			v = get_voxel(world_pos, VoxelBufferInternal::CHANNEL_SDF, v);
+			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
 		});
 
 		Ref<Image> image = gd::VoxelBuffer::debug_print_sdf_to_image_top_down(buffer);
