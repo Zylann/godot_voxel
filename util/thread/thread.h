@@ -15,6 +15,8 @@ public:
 		PRIORITY_HIGH
 	};
 
+	typedef uint64_t ID;
+
 	typedef void (*Callback)(void *p_userdata);
 
 	Thread();
@@ -30,6 +32,9 @@ public:
 	// Targets the current thread
 	static void set_name(const char *name);
 	static void sleep_usec(uint32_t microseconds);
+
+	// Get ID of the current thread
+	static ID get_caller_id();
 
 private:
 	ThreadImpl *_impl = nullptr;

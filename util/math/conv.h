@@ -6,6 +6,8 @@
 #include "vector3d.h"
 #include "vector3f.h"
 #include "vector3i.h"
+#include "vector3i16.h"
+#include <limits>
 
 namespace zylann {
 
@@ -38,6 +40,16 @@ inline Vector3 to_vec3(const Vector3i v) {
 
 inline Vector3d to_vec3d(const Vector3f v) {
 	return Vector3d(v.x, v.y, v.z);
+}
+
+inline Vector3i16 to_vec3i16(const Vector3i v) {
+	return Vector3i16(v.x, v.y, v.z);
+}
+
+inline bool can_convert_to_i16(Vector3i p) {
+	return p.x >= std::numeric_limits<int16_t>::min() && p.x <= std::numeric_limits<int16_t>::max() &&
+			p.y >= std::numeric_limits<int16_t>::min() && p.y <= std::numeric_limits<int16_t>::max() &&
+			p.z >= std::numeric_limits<int16_t>::min() && p.z <= std::numeric_limits<int16_t>::max();
 }
 
 namespace math {
