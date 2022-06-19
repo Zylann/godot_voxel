@@ -326,6 +326,8 @@ float get_largest_coord(Vector3 v) {
 }
 
 void VoxelModifierBuffer::apply(VoxelModifierContext ctx) const {
+	ZN_PROFILE_SCOPE();
+
 	RWLockRead rlock(_rwlock);
 	if (_buffer == nullptr) {
 		return;
