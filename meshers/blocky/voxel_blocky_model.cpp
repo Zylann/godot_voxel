@@ -117,8 +117,7 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 				Variant::NIL, "Mesh collision", PROPERTY_HINT_NONE, "collision_enabled_", PROPERTY_USAGE_GROUP));
 
 		for (unsigned int i = 0; i < _surface_count; ++i) {
-			p_list->push_back(PropertyInfo(Variant::OBJECT, String("collision_enabled_{0}").format(varray(i)),
-					PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()));
+			p_list->push_back(PropertyInfo(Variant::BOOL, String("collision_enabled_{0}").format(varray(i))));
 		}
 	}
 }
