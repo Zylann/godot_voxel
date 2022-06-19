@@ -66,6 +66,10 @@ public:
 	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
 #endif
 
+	bool is_generating_collision_surface() const override {
+		return true;
+	}
+
 protected:
 	static void _bind_methods();
 

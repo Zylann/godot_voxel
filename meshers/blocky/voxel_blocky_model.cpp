@@ -615,7 +615,7 @@ void VoxelBlockyModel::bake(BakedData &baked_data, int p_atlas_size, bool bake_t
 				surface.material_id = material_index;
 			}
 
-			//surface.collision_enabled = surface_params.collision_enabled;
+			surface.collision_enabled = surface_params.collision_enabled;
 		}
 	}
 

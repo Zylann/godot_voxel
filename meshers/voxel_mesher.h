@@ -94,6 +94,12 @@ public:
 	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
 #endif
 
+	// Returns `true` if the mesher generates a separate mesh for collisions.
+	// If `false`, the rendering mesh may be used as collider.
+	virtual bool is_generating_collision_surface() const {
+		return false;
+	}
+
 protected:
 	static void _bind_methods();
 

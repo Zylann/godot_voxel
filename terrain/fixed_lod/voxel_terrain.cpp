@@ -1540,10 +1540,16 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		return;
 	}
 
+	// There is a slim chance for some updates to come up just after setting the mesher to null. Avoids a crash.
+	if (_mesher.is_null()) {
+		++_stats.dropped_block_meshs;
+		return;
+	}
+
 	Ref<ArrayMesh> mesh;
 
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
-	const bool use_render_mesh_as_collider = gen_collisions && ob.surfaces.collision_surface.positions.size() == 0;
+	const bool use_render_mesh_as_collider = gen_collisions && !_mesher->is_generating_collision_surface();
 	std::vector<Array> render_surfaces;
 
 	int gd_surface_index = 0;
@@ -1618,6 +1624,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	block->set_visible(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
+	// TODO We dont set MESH_UP_TO_DATE anywhere, but it seems to work?
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
