@@ -857,7 +857,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		VoxelStream::InstancesQueryData &q = p_blocks[i];
 
 		if (!BlockLocation::validate(q.position, q.lod)) {
-			ZN_PRINT_ERROR("Instance block position {} is outside of supported range", q.position);
+			ZN_PRINT_ERROR(format("Instance block position {} is outside of supported range", q.position));
 			continue;
 		}
 
