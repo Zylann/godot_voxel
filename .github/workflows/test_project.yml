@@ -80,9 +80,9 @@ jobs:
       # Download and extract zip archive with project, folder is renamed to be able to easy change used project
       - name: Download test project
         run: |
-          wget https://github.com/qarmin/RegressionTestProject/archive/master.zip
-          unzip master.zip
-          mv "RegressionTestProject-master" "test_project"
+          wget https://github.com/godotengine/regression-test-project/archive/refs/heads/4.0.zip
+          unzip 4.0.zip
+          mv "regression-test-project-4.0" "test_project"
 
       # Editor is quite complicated piece of software, so it is easy to introduce bug here
       - name: Open and close editor
