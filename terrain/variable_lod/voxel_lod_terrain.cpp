@@ -1563,6 +1563,11 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 	{
+		// TODO Optimize: don't build transition meshes until they need to be shown.
+		// Profiling has shown Godot takes as much time to build one as the main mesh of a block, so because there are 6
+		// transition meshes, we spend about 80% of the time on these. Which is counter-intuitive because transition
+		// meshes are tiny in comparison... (collision meshes still take 5x more time than building ALL rendering meshes
+		// but that's a different issue)
 		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
 			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
