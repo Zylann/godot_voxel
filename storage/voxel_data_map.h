@@ -3,6 +3,7 @@
 
 #include "../util/fixed_array.h"
 #include "../util/profiling.h"
+#include "modifiers.h"
 #include "voxel_data_block.h"
 
 #include <unordered_map>
@@ -11,9 +12,17 @@ namespace zylann::voxel {
 
 class VoxelGenerator;
 
-// Infinite voxel storage by means of octants like Gridmap, within a constant LOD.
+// Sparse voxel storage by means of cubic chunks, within a constant LOD.
+//
 // Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.
 // However, the map itself is not thread-safe.
+//
+// When doing data streaming, the volume is *partially* loaded. If a block is not found at some coordinates,
+// it means we don't know if it contains edits or not. Knowing this is important to avoid writing or caching voxel data
+// in blank areas, that may be completely different once loaded.
+// When using "full load" of edits, it doesn't matter. If all edits are loaded, we know up-front that everything else
+// isn't edited (which also means we may not find blocks without data in them).
+//
 class VoxelDataMap {
 public:
 	// Converts voxel coodinates into block coordinates.
@@ -75,6 +84,7 @@ public:
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
+	VoxelDataBlock *set_empty_block(Vector3i bpos, bool overwrite);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock &block) {}
@@ -192,6 +202,7 @@ private:
 	// To prevent too much hashing, this reference is checked before.
 	//mutable VoxelDataBlock *_last_accessed_block = nullptr;
 
+	// This is block size in VOXELS. To convert to space units, use `block_size << lod_index`.
 	unsigned int _block_size;
 	unsigned int _block_size_pow2;
 	unsigned int _block_size_mask;
@@ -210,13 +221,17 @@ struct VoxelDataLodMap {
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	FixedArray<Lod, constants::MAX_LOD> lods;
 	unsigned int lod_count = 1;
+	VoxelModifierStack modifiers;
 };
 
 // Generates all non-present blocks in preparation for an edit.
 // Every block intersecting with the box at every LOD will be checked.
 // This function runs sequentially and should be thread-safe. May be used if blocks are immediately needed.
 // It will block if other threads are accessing the same data.
-void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator);
+void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator, bool is_streaming);
+
+// Clears voxel data from blocks that are pure results of generators and modifiers.
+void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box);
 
 } // namespace zylann::voxel
 

@@ -212,6 +212,8 @@ void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
+	// TODO In this situation, the generator would need to be invoked to fill in the blank
+	ERR_FAIL_COND_MSG(!block->has_voxels(), "Area not cached");
 	RWLockWrite lock(block->get_voxels().get_lock());
 	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(map.to_local(pos));
 	ERR_FAIL_COND(meta_storage == nullptr);
@@ -223,6 +225,8 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	VoxelDataMap &map = _terrain->get_storage();
 	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
 	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
+	// TODO In this situation, the generator would need to be invoked to fill in the blank
+	ERR_FAIL_COND_V_MSG(!block->has_voxels(), Variant(), "Area not cached");
 	RWLockRead lock(block->get_voxels().get_lock());
 	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
 	if (meta == nullptr) {
@@ -273,7 +277,8 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 		const Vector3i block_origin = map.block_to_voxel(block_pos);
 
 		VoxelDataBlock *block = map.get_block(block_pos);
-		if (block != nullptr) {
+
+		if (block != nullptr && block->has_voxels()) {
 			// Doing ONLY reads here.
 			{
 				RWLockRead lock(block->get_voxels().get_lock());
@@ -395,7 +400,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 	data_block_box.for_each_cell([&map, &callback, voxel_box](Vector3i block_pos) {
 		VoxelDataBlock *block = map.get_block(block_pos);
 
-		if (block == nullptr) {
+		if (block == nullptr || !block->has_voxels()) {
 			return;
 		}
 

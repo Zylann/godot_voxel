@@ -1,5 +1,6 @@
 #include "voxel_terrain_editor_plugin.h"
 #include "../../generators/voxel_generator.h"
+#include "../../storage/modifiers_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../about_window.h"
@@ -100,6 +101,10 @@ static bool is_side_handled(Object *p_object) {
 	// And have to account for this hack as well
 	VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
 	if (wrapper != nullptr) {
+		return true;
+	}
+	gd::VoxelModifier *modifier = Object::cast_to<gd::VoxelModifier>(p_object);
+	if (modifier != nullptr) {
 		return true;
 	}
 	return false;

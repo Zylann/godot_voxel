@@ -575,12 +575,15 @@ struct ScheduleSaveAction {
 		if (block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
-			if (with_copy) {
-				RWLockRead lock(block.get_voxels().get_lock());
-				b.voxels = make_shared_instance<VoxelBufferInternal>();
-				block.get_voxels_const().duplicate_to(*b.voxels, true);
-			} else {
-				b.voxels = block.get_voxels_shared();
+			// If a modified block has no voxels, it is equivalent to removing the block from the stream
+			if (block.has_voxels()) {
+				if (with_copy) {
+					RWLockRead lock(block.get_voxels().get_lock());
+					b.voxels = make_shared_instance<VoxelBufferInternal>();
+					block.get_voxels_const().duplicate_to(*b.voxels, true);
+				} else {
+					b.voxels = block.get_voxels_shared();
+				}
 			}
 			b.position = bpos;
 			blocks_to_save.push_back(b);
@@ -936,8 +939,8 @@ static void request_block_load(uint32_t volume_id, std::shared_ptr<StreamingDepe
 		init_sparse_grid_priority_dependency(
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
-		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(
-				volume_id, block_pos, 0, data_block_size, request_instances, stream_dependency, priority_dependency));
+		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
+				stream_dependency, priority_dependency, true));
 
 		VoxelServer::get_singleton().push_async_io_task(task);
 
@@ -1471,7 +1474,7 @@ void VoxelTerrain::process_meshing() {
 			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
 			task->volume_id = _volume_id;
 			task->position = mesh_block_pos;
-			task->lod = 0;
+			task->lod_index = 0;
 			task->meshing_dependency = _meshing_dependency;
 			task->data_block_size = get_data_block_size();
 			task->collision_hint = _generate_collisions;
@@ -1480,7 +1483,7 @@ void VoxelTerrain::process_meshing() {
 			task->blocks_count = 0;
 			data_box.for_each_cell_zxy([this, task](Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
-				if (data_block != nullptr) {
+				if (data_block != nullptr && data_block->has_voxels()) {
 					task->blocks[task->blocks_count] = data_block->get_voxels_shared();
 				}
 				++task->blocks_count;

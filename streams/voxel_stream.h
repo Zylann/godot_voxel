@@ -110,6 +110,8 @@ public:
 	virtual int get_lod_count() const;
 
 	// Should generated blocks be saved immediately? If not, they will be saved only when modified.
+	// If this is enabled, generated blocks will immediately be considered edited and will be saved to the stream.
+	// Warning: this is incompatible with non-destructive workflows such as modifiers.
 	void set_save_generator_output(bool enabled);
 	bool get_save_generator_output() const;
 

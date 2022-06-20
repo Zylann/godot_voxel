@@ -143,6 +143,7 @@ public:
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
+	void post_edit_modifiers(Box3i p_voxel_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread
 	void push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker);
@@ -338,6 +339,16 @@ private:
 	std::shared_ptr<VoxelLodTerrainUpdateData> _update_data;
 	std::shared_ptr<StreamingDependency> _streaming_dependency;
 	std::shared_ptr<MeshingDependency> _meshing_dependency;
+
+	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
+		void run(TimeSpreadTaskContext &ctx) override;
+
+		uint32_t volume_id = 0;
+		VoxelLodTerrain *self = nullptr;
+		VoxelServer::BlockMeshOutput data;
+	};
+
+	FixedArray<std::unordered_map<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
 
 #ifdef TOOLS_ENABLED
 	bool _show_gizmos_enabled = false;

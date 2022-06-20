@@ -54,6 +54,10 @@ struct VoxelLodTerrainUpdateData {
 		bool full_load_mode = false;
 		bool run_stream_in_editor = true;
 		unsigned int mesh_block_size_po2 = 4;
+		// If true, try to generate blocks and store them in the data map before posting mesh requests.
+		// If false, everything will generate non-edited voxels on the fly instead.
+		// Not really exposed for now, will wait for it to be really needed. It might never be.
+		bool cache_generated_blocks = false;
 	};
 
 	enum MeshState {
@@ -158,6 +162,10 @@ struct VoxelLodTerrainUpdateData {
 		std::vector<AsyncEdit> pending_async_edits;
 		BinaryMutex pending_async_edits_mutex;
 		std::vector<RunningAsyncEdit> running_async_edits;
+
+		// Areas where generated stuff has changed. Similar to an edit, but non-destructive.
+		std::vector<Box3i> changed_generated_areas;
+		BinaryMutex changed_generated_areas_mutex;
 
 		Stats stats;
 	};
