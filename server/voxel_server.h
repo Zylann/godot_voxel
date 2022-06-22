@@ -119,7 +119,8 @@ public:
 		_world.viewers.for_each_with_id(f);
 	}
 
-	void push_main_thread_time_spread_task(ITimeSpreadTask *task);
+	void push_main_thread_time_spread_task(
+			ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority = TimeSpreadTaskRunner::PRIORITY_NORMAL);
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
