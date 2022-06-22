@@ -58,12 +58,12 @@ VoxelTerrain::VoxelTerrain() {
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
 	VoxelServer::VolumeCallbacks callbacks;
 	callbacks.data = this;
-	callbacks.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+	callbacks.mesh_output_callback = [](void *cb_data, VoxelServer::BlockMeshOutput &ob) {
 		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->_volume_id;
 		task->self = self;
-		task->data = ob;
+		task->data = std::move(ob);
 		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
 	};
 	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {

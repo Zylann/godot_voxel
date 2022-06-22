@@ -50,7 +50,7 @@ public:
 	};
 
 	struct VolumeCallbacks {
-		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
+		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
 		void *data = nullptr;
 

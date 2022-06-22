@@ -1,7 +1,9 @@
 #include "voxel_mesh_block_vlt.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "../free_mesh_task.h"
+#include "build_transition_mesh_task.h"
 
 namespace zylann::voxel {
 
@@ -9,6 +11,7 @@ VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, uns
 		VoxelMeshBlock(bpos) {
 	_position_in_voxels = bpos * (size << p_lod_index);
 	lod_index = p_lod_index;
+	fill(_pending_transition_mesh_tasks, (BuildTransitionMeshTask *)nullptr);
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<SpatialMaterial> debug_material;
@@ -31,6 +34,7 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
 	}
+	cancel_transition_mesh_tasks();
 }
 
 void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode) {
@@ -74,7 +78,41 @@ void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode) {
+void VoxelMeshBlockVLT::set_pending_transition_mesh_task(unsigned int side, BuildTransitionMeshTask &task) {
+	BuildTransitionMeshTask *prev_task = _pending_transition_mesh_tasks[side];
+	if (prev_task != nullptr) {
+		// This pointer should be valid because the task is assumed to unregister itself from the block when it
+		// completes.
+		prev_task->block = nullptr;
+	}
+	_pending_transition_mesh_tasks[side] = &task;
+}
+
+void VoxelMeshBlockVLT::on_transition_mesh_task_completed(const BuildTransitionMeshTask &p_task) {
+	const unsigned int side = p_task.side;
+	const BuildTransitionMeshTask *task = _pending_transition_mesh_tasks[side];
+	if (task == &p_task) {
+		_pending_transition_mesh_tasks[side] = nullptr;
+	}
+}
+
+void VoxelMeshBlockVLT::cancel_transition_mesh_tasks() {
+	for (unsigned int i = 0; i < _pending_transition_mesh_tasks.size(); ++i) {
+		cancel_transition_mesh_task(i);
+	}
+}
+
+void VoxelMeshBlockVLT::cancel_transition_mesh_task(unsigned int side) {
+	BuildTransitionMeshTask *task = _pending_transition_mesh_tasks[side];
+	if (task != nullptr) {
+		// This pointer should be valid because the task is assumed to unregister itself from the block when it
+		// completes.
+		task->block = nullptr;
+		_pending_transition_mesh_tasks[side] = nullptr;
+	}
+}
+
+void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -82,8 +120,8 @@ void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMesh
 			// Create instance if it doesn't exist
 			mesh_instance.create();
 			mesh_instance.set_gi_mode(gi_mode);
-			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
+		set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 
 		mesh_instance.set_mesh(mesh);
 
@@ -190,7 +228,7 @@ void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
-		if ((diff & (1 << dir)) && mi.is_valid()) {
+		if (mi.is_valid() && (diff & (1 << dir))) {
 			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
 		}
 	}
@@ -208,6 +246,7 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 	ZN_PROFILE_SCOPE();
 
 	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
+		// TODO Optimize: could be optimized due to the basis being identity
 		const Transform3D local_transform(Basis(), _position_in_voxels);
 		const Transform3D world_transform = parent_transform * local_transform;
 
@@ -225,6 +264,16 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 		if (_static_body.is_valid()) {
 			_static_body.set_transform(world_transform);
 		}
+	}
+}
+
+void VoxelMeshBlockVLT::update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform) {
+	DirectMeshInstance &mi = _transition_mesh_instances[side];
+	if (mi.is_valid()) {
+		// TODO Optimize: could be optimized due to the basis being identity
+		const Transform3D local_transform(Basis(), _position_in_voxels);
+		const Transform3D world_transform = parent_transform * local_transform;
+		mi.set_transform(world_transform);
 	}
 }
 
@@ -278,6 +327,60 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 	}
 
 	return finished;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material) {
+	ZN_PROFILE_SCOPE();
+	Ref<ArrayMesh> mesh;
+
+	unsigned int surface_index = 0;
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		Array arrays = surface.arrays;
+
+		if (arrays.is_empty()) {
+			continue;
+		}
+
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
+			continue;
+		}
+
+		if (mesh.is_null()) {
+			mesh.instantiate();
+		}
+
+		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
+		// the same)
+		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
+		mesh->surface_set_material(surface_index, material);
+		// No multi-material supported yet
+		++surface_index;
+	}
+
+	// Debug code to highlight vertex sharing
+	/*if (mesh->get_surface_count() > 0) {
+		Array wireframe_surface = generate_debug_seams_wireframe_surface(mesh, 0);
+		if (wireframe_surface.size() > 0) {
+			const int wireframe_surface_index = mesh->get_surface_count();
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
+			Ref<SpatialMaterial> line_material;
+			line_material.instance();
+			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+			line_material->set_albedo(Color(1.0, 0.0, 1.0));
+			mesh->surface_set_material(wireframe_surface_index, line_material);
+		}
+	}*/
+
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+		mesh = Ref<Mesh>();
+	}
+
+	return mesh;
 }
 
 } // namespace zylann::voxel

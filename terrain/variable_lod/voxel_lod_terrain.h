@@ -265,7 +265,7 @@ private:
 	void _process(float delta);
 	void apply_main_thread_update_tasks();
 
-	void apply_mesh_update(const VoxelServer::BlockMeshOutput &ob);
+	void apply_mesh_update(VoxelServer::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
 
 	void start_updater();
@@ -305,6 +305,8 @@ private:
 	static void _bind_methods();
 
 private:
+	friend class BuildTransitionMeshTask;
+
 	uint32_t _volume_id = 0;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 

@@ -19,6 +19,7 @@
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
+#include "build_transition_mesh_task.h"
 #include "voxel_lod_terrain_update_task.h"
 
 #include <core/config/engine.h>
@@ -29,58 +30,6 @@
 namespace zylann::voxel {
 
 namespace {
-
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		Ref<Material> material) {
-	ZN_PROFILE_SCOPE();
-	Ref<ArrayMesh> mesh;
-
-	unsigned int surface_index = 0;
-	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		const VoxelMesher::Output::Surface &surface = surfaces[i];
-		Array arrays = surface.arrays;
-
-		if (arrays.is_empty()) {
-			continue;
-		}
-
-		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
-			continue;
-		}
-
-		if (mesh.is_null()) {
-			mesh.instantiate();
-		}
-
-		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
-		// the same)
-		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
-		mesh->surface_set_material(surface_index, material);
-		// No multi-material supported yet
-		++surface_index;
-	}
-
-	// Debug code to highlight vertex sharing
-	/*if (mesh->get_surface_count() > 0) {
-		Array wireframe_surface = generate_debug_seams_wireframe_surface(mesh, 0);
-		if (wireframe_surface.size() > 0) {
-			const int wireframe_surface_index = mesh->get_surface_count();
-			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
-			Ref<SpatialMaterial> line_material;
-			line_material.instance();
-			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
-			line_material->set_albedo(Color(1.0, 0.0, 1.0));
-			mesh->surface_set_material(wireframe_surface_index, line_material);
-		}
-	}*/
-
-	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
-		mesh = Ref<Mesh>();
-	}
-
-	return mesh;
-}
 
 struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
@@ -93,6 +42,8 @@ struct BeforeUnloadMeshAction {
 			shader_material_pool.push_back(sm);
 			block.set_shader_material(Ref<ShaderMaterial>());
 		}
+		// Optimization: do it now because the actual destructor could be called much later
+		block.cancel_transition_mesh_tasks();
 	}
 };
 
@@ -179,12 +130,12 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
 	VoxelServer::VolumeCallbacks callbacks;
 	callbacks.data = this;
-	callbacks.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+	callbacks.mesh_output_callback = [](void *cb_data, VoxelServer::BlockMeshOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->get_volume_id();
 		task->self = self;
-		task->data = ob;
+		task->data = std::move(ob);
 		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
 
 		// If two tasks are queued for the same mesh, cancel the old ones.
@@ -1437,7 +1388,20 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	}
 }
 
-void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
+static bool is_surface_data_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		if (surface.arrays.size() != 0) {
+			const PackedVector3Array vertex_array = surface.arrays[Mesh::ARRAY_VERTEX];
+			if (vertex_array.size() > 0) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 	// This also proved to be very slow compared to the meshing process itself...
 	// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
@@ -1488,7 +1452,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod];
 	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
-	const VoxelMesher::Output &mesh_data = ob.surfaces;
+	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh =
 			build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
@@ -1562,23 +1526,50 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	}
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
-	{
-		// TODO Optimize: don't build transition meshes until they need to be shown.
-		// Profiling has shown Godot takes as much time to build one as the main mesh of a block, so because there are 6
-		// transition meshes, we spend about 80% of the time on these. Which is counter-intuitive because transition
-		// meshes are tiny in comparison... (collision meshes still take 5x more time than building ALL rendering meshes
-		// but that's a different issue)
-		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
-		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
-					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
-			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
+	{
+		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
+		// because there are 6 transition meshes per block, we would spend about 80% of the time on these if we build
+		// them all. Which is counter-intuitive because transition meshes are tiny in comparison... (collision meshes
+		// still take 5x more time than building ALL rendering meshes but that's a different issue)
+		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
+
+		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
+			std::vector<VoxelMesher::Output::Surface> &mesh_data_for_side = mesh_data.transition_surfaces[dir];
+
+			if ((transition_mask & (1 << dir)) != 0) {
+				// The mesh may currently be visible, build it now
+				Ref<ArrayMesh> transition_mesh = build_mesh(
+						to_span(mesh_data_for_side), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+
+				block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
+				block->cancel_transition_mesh_task(dir);
+
+			} else if (is_surface_data_empty(to_span(mesh_data_for_side))) {
+				// No need to bother, just reset
+				block->set_transition_mesh(Ref<Mesh>(), dir, DirectMeshInstance::GIMode(get_gi_mode()));
+				block->cancel_transition_mesh_task(dir);
+
+			} else {
+				// We dont need this mesh immediately, defer it for later:
+				// One main use case is edits, which are often done in blocks that have no transitions visible.
+				BuildTransitionMeshTask *task = ZN_NEW(BuildTransitionMeshTask);
+				task->volume = this;
+				task->volume_id = _volume_id;
+				task->mesh_data = std::move(mesh_data_for_side);
+				task->side = dir;
+				task->mesh_flags = mesh_data.mesh_flags;
+				task->primitive_type = mesh_data.primitive_type;
+				task->block = block;
+				block->set_pending_transition_mesh_task(dir, *task);
+				VoxelServer::get_singleton().push_main_thread_time_spread_task(
+						task, TimeSpreadTaskRunner::PRIORITY_LOW);
+			}
 		}
 	}
 
 	if (has_collision) {
-		const uint32_t now = get_ticks_msec();
+		const uint64_t now = get_ticks_msec();
 
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {

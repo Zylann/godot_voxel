@@ -1,9 +1,12 @@
 #ifndef VOXEL_MESH_BLOCK_VLT_H
 #define VOXEL_MESH_BLOCK_VLT_H
 
+#include "../../util/tasks/time_spread_task_runner.h"
 #include "../voxel_mesh_block.h"
 
 namespace zylann::voxel {
+
+class BuildTransitionMeshTask;
 
 // Stores mesh and collider for one chunk of `VoxelTerrain`.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
@@ -29,7 +32,7 @@ public:
 
 	bool got_first_mesh_update = false;
 
-	uint32_t last_collider_update_time = 0;
+	uint64_t last_collider_update_time = 0;
 	bool has_deferred_collider_update = false;
 	std::vector<Array> deferred_collider_data;
 
@@ -50,13 +53,21 @@ public:
 	}
 
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
-	void set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode);
+
+	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode);
+
+	void set_pending_transition_mesh_task(unsigned int side, BuildTransitionMeshTask &task);
+	void on_transition_mesh_task_completed(const BuildTransitionMeshTask &task);
+	void cancel_transition_mesh_tasks();
+	void cancel_transition_mesh_task(unsigned int side);
+
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
 	}
 
 	void set_parent_transform(const Transform3D &parent_transform);
+	void update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform);
 
 	template <typename F>
 	void for_each_mesh_instance_with_transform(F f) const {
@@ -74,11 +85,14 @@ public:
 private:
 	void _set_visible(bool visible);
 
-	inline bool _is_transition_visible(int side) const {
+	inline bool _is_transition_visible(unsigned int side) const {
 		return _transition_mask & (1 << side);
 	}
 
 	Ref<ShaderMaterial> _shader_material;
+
+	// Not owned. Keeping a reference to cancel it if the block gets destroyed.
+	FixedArray<BuildTransitionMeshTask *, Cube::SIDE_COUNT> _pending_transition_mesh_tasks;
 
 	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 
@@ -89,6 +103,9 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 };
+
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material);
 
 } // namespace zylann::voxel
 

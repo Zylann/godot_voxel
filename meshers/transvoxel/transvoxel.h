@@ -48,6 +48,7 @@ struct MeshArrays {
 		int vi = vertices.size();
 		vertices.push_back(primary);
 		normals.push_back(normal);
+		// TODO Use an explicit struct for this, and use floatToBits in shader so we can pack more data safely
 		lod_data.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
 		return vi;
 	}
