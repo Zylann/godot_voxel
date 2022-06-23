@@ -165,9 +165,9 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 
-	static thread_local transvoxel::Cache s_cache;
-	static thread_local transvoxel::MeshArrays s_mesh_arrays;
-	static thread_local transvoxel::MeshArrays s_simplified_mesh_arrays;
+	static thread_local transvoxel::Cache tls_cache;
+	static thread_local transvoxel::MeshArrays tls_mesh_arrays;
+	static thread_local transvoxel::MeshArrays tls_simplified_mesh_arrays;
 
 	const VoxelBufferInternal::ChannelId sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
 
@@ -175,7 +175,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// These vectors are re-used.
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
-	s_mesh_arrays.clear();
+	tls_mesh_arrays.clear();
 
 	const VoxelBufferInternal &voxels = input.voxels;
 	if (voxels.is_uniform(sdf_channel)) {
@@ -194,13 +194,13 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// `generate_single` in between, knowing they will all be done within the specified area.
 
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays, &ds);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, &ds);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays, nullptr);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, nullptr);
 	}
 
-	if (s_mesh_arrays.vertices.size() == 0) {
+	if (tls_mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
 		return;
 	}
@@ -211,31 +211,31 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// TODO When voxel texturing is enabled, this will decrease quality a lot.
 		// There is no support yet for taking textures into account when simplifying.
 		// See https://github.com/zeux/meshoptimizer/issues/158
-		simplify(s_mesh_arrays, s_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
+		simplify(tls_mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
 				_mesh_optimization_params.error_threshold);
 
-		fill_surface_arrays(regular_arrays, s_simplified_mesh_arrays);
+		fill_surface_arrays(regular_arrays, tls_simplified_mesh_arrays);
 
 	} else {
-		fill_surface_arrays(regular_arrays, s_mesh_arrays);
+		fill_surface_arrays(regular_arrays, tls_mesh_arrays);
 	}
 
 	output.surfaces.push_back({ regular_arrays });
 
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		ZN_PROFILE_SCOPE();
-		s_mesh_arrays.clear();
+		tls_mesh_arrays.clear();
 
 		transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays,
 				default_texture_indices_data);
 
-		if (s_mesh_arrays.vertices.size() == 0) {
+		if (tls_mesh_arrays.vertices.size() == 0) {
 			continue;
 		}
 
 		Array transition_arrays;
-		fill_surface_arrays(transition_arrays, s_mesh_arrays);
+		fill_surface_arrays(transition_arrays, tls_mesh_arrays);
 		output.transition_surfaces[dir].push_back({ transition_arrays });
 	}
 
