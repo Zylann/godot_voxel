@@ -125,9 +125,11 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 			}
 
 			// The block and its lower LOD indices are expected to be available.
-			// Otherwise it means the function was called too late
-			ZN_ASSERT(src_block != nullptr && src_block->has_voxels());
-			//CRASH_COND(dst_block == nullptr);
+			// Otherwise it means the function was called too late?
+			ZN_ASSERT(src_block != nullptr);
+			//ZN_ASSERT(dst_block != nullptr);
+			// The block should have voxels if it has been edited or mipped.
+			ZN_ASSERT(src_block->has_voxels());
 
 			{
 				const Vector3i mesh_block_pos = math::floordiv(dst_bpos, data_to_mesh_factor);
@@ -153,7 +155,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 			// TODO Optimization: try to narrow to edited region instead of taking whole block
 			{
 				ZN_PROFILE_SCOPE_NAMED("Downscale");
-				RWLockWrite lock(src_block->get_voxels().get_lock());
+				RWLockRead rlock(src_block->get_voxels().get_lock());
 				src_block->get_voxels().downscale_to(
 						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs);
 			}

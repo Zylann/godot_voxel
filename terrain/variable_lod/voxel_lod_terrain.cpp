@@ -678,8 +678,13 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 
 		bbox.for_each_cell([this, &data_lod0](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
+			// We can get null blocks due to the added padding...
 			//ERR_FAIL_COND(block == nullptr);
 			if (block == nullptr) {
+				return;
+			}
+			// We can get blocks without voxels in them due to the added padding...
+			if (!block->has_voxels()) {
 				return;
 			}
 
@@ -689,6 +694,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 			// TODO That boolean is also modified by the threaded update task (always set to false)
 			if (!block->get_needs_lodding()) {
 				block->set_needs_lodding(true);
+
 				// This is what indirectly causes remeshing
 				_update_data->state.blocks_pending_lodding_lod0.push_back(block_pos_lod0);
 			}
