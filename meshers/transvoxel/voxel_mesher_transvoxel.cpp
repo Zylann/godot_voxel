@@ -27,7 +27,12 @@ int VoxelMesherTransvoxel::get_used_channels_mask() const {
 	return (1 << VoxelBufferInternal::CHANNEL_SDF);
 }
 
-void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
+bool VoxelMesherTransvoxel::is_generating_collision_surface() const {
+	// Via submesh indices
+	return true;
+}
+
+static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedVector3Array vertices;
 	PackedVector3Array normals;
 	PackedFloat32Array lod_data; // 4*float32
@@ -38,6 +43,8 @@ void VoxelMesherTransvoxel::fill_surface_arrays(Array &arrays, const transvoxel:
 
 	//raw_copy_to(lod_data, src.lod_data);
 	lod_data.resize(src.lod_data.size() * 4);
+	// Based on the layout, position is first 3 floats, and 4th float is actually a bitmask
+	static_assert(sizeof(transvoxel::LodAttrib) == 16);
 	memcpy(lod_data.ptrw(), src.lod_data.data(), lod_data.size() * sizeof(float));
 
 	raw_copy_to(indices, src.indices);
@@ -167,6 +174,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	static thread_local transvoxel::Cache tls_cache;
 	static thread_local transvoxel::MeshArrays tls_mesh_arrays;
+	// static thread_local FixedArray<transvoxel::MeshArrays, Cube::SIDE_COUNT> tls_transition_mesh_arrays;
 	static thread_local transvoxel::MeshArrays tls_simplified_mesh_arrays;
 
 	const VoxelBufferInternal::ChannelId sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
@@ -205,8 +213,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		return;
 	}
 
-	Array regular_arrays;
-
+	transvoxel::MeshArrays *combined_mesh_arrays = &tls_mesh_arrays;
 	if (_mesh_optimization_params.enabled) {
 		// TODO When voxel texturing is enabled, this will decrease quality a lot.
 		// There is no support yet for taking textures into account when simplifying.
@@ -214,30 +221,29 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		simplify(tls_mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
 				_mesh_optimization_params.error_threshold);
 
-		fill_surface_arrays(regular_arrays, tls_simplified_mesh_arrays);
-
-	} else {
-		fill_surface_arrays(regular_arrays, tls_mesh_arrays);
+		combined_mesh_arrays = &tls_simplified_mesh_arrays;
 	}
 
-	output.surfaces.push_back({ regular_arrays });
+	output.collision_surface.submesh_vertex_end = combined_mesh_arrays->vertices.size();
+	output.collision_surface.submesh_index_end = combined_mesh_arrays->indices.size();
 
-	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		ZN_PROFILE_SCOPE();
-		tls_mesh_arrays.clear();
+	if (_transitions_enabled) {
+		// We combine transition meshes with the regular mesh, because it results in less draw calls than if they were
+		// separate. This only requires a vertex shader trick to discard them when neighbors change.
+		ZN_ASSERT(combined_mesh_arrays != nullptr);
 
-		transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays,
-				default_texture_indices_data);
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			ZN_PROFILE_SCOPE();
 
-		if (tls_mesh_arrays.vertices.size() == 0) {
-			continue;
+			transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
+					static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, *combined_mesh_arrays,
+					default_texture_indices_data);
 		}
-
-		Array transition_arrays;
-		fill_surface_arrays(transition_arrays, tls_mesh_arrays);
-		output.transition_surfaces[dir].push_back({ transition_arrays });
 	}
+
+	Array gd_arrays;
+	fill_surface_arrays(gd_arrays, *combined_mesh_arrays);
+	output.surfaces.push_back({ gd_arrays });
 
 	// const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
@@ -248,7 +254,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 			(RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
 }
 
-// TODO For testing at the moment
+// Only exists for testing
 Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction) {
 	static thread_local transvoxel::Cache s_cache;
 	static thread_local transvoxel::MeshArrays s_mesh_arrays;
@@ -326,6 +332,14 @@ bool VoxelMesherTransvoxel::is_deep_sampling_enabled() const {
 	return _deep_sampling_enabled;
 }
 
+void VoxelMesherTransvoxel::set_transitions_enabled(bool enable) {
+	_transitions_enabled = enable;
+}
+
+bool VoxelMesherTransvoxel::get_transitions_enabled() const {
+	return _transitions_enabled;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
 			&VoxelMesherTransvoxel::build_transition_mesh);
@@ -352,6 +366,10 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			D_METHOD("set_deep_sampling_enabled", "enabled"), &VoxelMesherTransvoxel::set_deep_sampling_enabled);
 	ClassDB::bind_method(D_METHOD("is_deep_sampling_enabled"), &VoxelMesherTransvoxel::is_deep_sampling_enabled);
 
+	ClassDB::bind_method(
+			D_METHOD("set_transitions_enabled", "enabled"), &VoxelMesherTransvoxel::set_transitions_enabled);
+	ClassDB::bind_method(D_METHOD("get_transitions_enabled"), &VoxelMesherTransvoxel::get_transitions_enabled);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
@@ -367,6 +385,9 @@ void VoxelMesherTransvoxel::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deep_sampling_enabled"), "set_deep_sampling_enabled",
 			"is_deep_sampling_enabled");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL

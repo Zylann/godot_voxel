@@ -29,11 +29,41 @@ enum TexturingMode {
 	TEXTURES_BLEND_4_OVER_16
 };
 
+struct LodAttrib {
+	Vector3f secondary_position;
+	// Mask telling if a cell the vertex belongs to is on a side of the block.
+	// Each bit corresponds to a side.
+	// 0: -X
+	// 1: +X
+	// 2: -Y
+	// 3: +Y
+	// 4: -Z
+	// 5: +Z
+	uint8_t cell_border_mask;
+	// Mask telling if the vertex is on a side of the block. Same convention as above.
+	uint8_t vertex_border_mask;
+	// Flag telling if the vertex belongs to a transition mesh.
+	uint8_t transition;
+	// Unused. Necessary to align to 4*sizeof(float) so it can be memcpied to a rendering buffer.
+	uint8_t _pad;
+};
+
+// struct TextureAttrib {
+// 	uint8_t index0;
+// 	uint8_t index1;
+// 	uint8_t index2;
+// 	uint8_t index3;
+// 	uint8_t weight0;
+// 	uint8_t weight1;
+// 	uint8_t weight2;
+// 	uint8_t weight3;
+// };
+
 struct MeshArrays {
 	std::vector<Vector3f> vertices;
 	std::vector<Vector3f> normals;
-	std::vector<Color> lod_data;
-	std::vector<Vector2f> texturing_data;
+	std::vector<LodAttrib> lod_data;
+	std::vector<Vector2f> texturing_data; // TextureAttrib
 	std::vector<int> indices;
 
 	void clear() {
@@ -44,12 +74,12 @@ struct MeshArrays {
 		indices.clear();
 	}
 
-	int add_vertex(Vector3f primary, Vector3f normal, uint16_t border_mask, Vector3f secondary) {
+	int add_vertex(Vector3f primary, Vector3f normal, uint8_t cell_border_mask, uint8_t vertex_border_mask,
+			uint8_t transition, Vector3f secondary) {
 		int vi = vertices.size();
 		vertices.push_back(primary);
 		normals.push_back(normal);
-		// TODO Use an explicit struct for this, and use floatToBits in shader so we can pack more data safely
-		lod_data.push_back(Color(secondary.x, secondary.y, secondary.z, border_mask));
+		lod_data.push_back({ secondary, cell_border_mask, vertex_border_mask, transition });
 		return vi;
 	}
 };

@@ -548,17 +548,16 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 							const Vector3f normal = normalized_not_null(cg0 * t0 + cg1 * t1);
 
 							Vector3f secondary;
-							uint16_t border_mask = cell_border_mask;
 
+							uint8_t vertex_border_mask = 0;
 							if (cell_border_mask > 0) {
 								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-								border_mask |= (get_border_mask(p0, block_size_scaled) &
-													   get_border_mask(p1, block_size_scaled))
-										<< 6;
+								vertex_border_mask = (get_border_mask(p0, block_size_scaled) &
+										get_border_mask(p1, block_size_scaled));
 							}
 
-							cell_vertex_indices[vertex_index] =
-									output.add_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[vertex_index] = output.add_vertex(
+									primaryf, normal, cell_border_mask, vertex_border_mask, 0, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 = cell_textures.weights[v0];
@@ -589,14 +588,15 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 						const Vector3f normal = normalized_not_null(cg1);
 
 						Vector3f secondary;
-						uint16_t border_mask = cell_border_mask;
 
+						uint8_t vertex_border_mask = 0;
 						if (cell_border_mask > 0) {
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-							border_mask |= get_border_mask(p1, block_size_scaled) << 6;
+							vertex_border_mask = get_border_mask(p1, block_size_scaled);
 						}
 
-						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] =
+								output.add_vertex(primaryf, normal, cell_border_mask, vertex_border_mask, 0, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights1 = cell_textures.weights[v1];
@@ -649,15 +649,15 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 							// TODO This bit of code is repeated several times, factor it?
 							Vector3f secondary;
-							uint16_t border_mask = cell_border_mask;
 
+							uint8_t vertex_border_mask = 0;
 							if (cell_border_mask > 0) {
 								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-								border_mask |= get_border_mask(primary, block_size_scaled) << 6;
+								vertex_border_mask = get_border_mask(primary, block_size_scaled);
 							}
 
-							cell_vertex_indices[vertex_index] =
-									output.add_vertex(primaryf, normal, border_mask, secondary);
+							cell_vertex_indices[vertex_index] = output.add_vertex(
+									primaryf, normal, cell_border_mask, vertex_border_mask, 0, secondary);
 
 							if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 								const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[vi];
@@ -758,6 +758,33 @@ inline void get_face_axes(int &ax, int &ay, int dir) {
 	}
 }
 
+// TODO Cube::Side has a legacy issue where Y axes are inverted compared to the others
+inline uint8_t get_face_index(int cube_dir) {
+	switch (cube_dir) {
+		case Cube::SIDE_NEGATIVE_X:
+			return 0;
+
+		case Cube::SIDE_POSITIVE_X:
+			return 1;
+
+		case Cube::SIDE_NEGATIVE_Y:
+			return 2;
+
+		case Cube::SIDE_POSITIVE_Y:
+			return 3;
+
+		case Cube::SIDE_NEGATIVE_Z:
+			return 4;
+
+		case Cube::SIDE_POSITIVE_Z:
+			return 5;
+
+		default:
+			ZN_CRASH();
+			return 0;
+	}
+}
+
 template <typename Sdf_T, typename WeightSampler_T>
 void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler, const Vector3i block_size_with_padding, int direction, int lod_index,
@@ -826,6 +853,8 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 	const int fz = MIN_PADDING;
 
 	const Sdf_T isolevel = get_isolevel<Sdf_T>();
+
+	const uint8_t transition_hint_mask = 1 << get_face_index(direction);
 
 	// Iterating in face space
 	for (int fy = min_fpos_y; fy < max_fpos_y; fy += 2) {
@@ -1047,24 +1076,24 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						const Vector3f normal = normalized_not_null(n0 * t0 + n1 * t1);
 
 						const bool fullres_side = (index_vertex_a < 9 || index_vertex_b < 9);
-						uint16_t border_mask = cell_border_mask;
 
 						Vector3f secondary;
+						uint8_t cell_border_mask2 = cell_border_mask;
+						uint8_t vertex_border_mask = 0;
 						if (fullres_side) {
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-							border_mask |=
-									(get_border_mask(p0, block_size_scaled) & get_border_mask(p1, block_size_scaled))
-									<< 6;
-
+							vertex_border_mask =
+									(get_border_mask(p0, block_size_scaled) & get_border_mask(p1, block_size_scaled));
 						} else {
 							// If the vertex is on the half-res side (in our implementation,
 							// it's the side of the block), then we make the mask 0 so that the vertex is never moved.
 							// We only move the full-res side to connect with the regular mesh,
 							// which will also be moved by the same amount to fit the transition mesh.
-							border_mask = 0;
+							cell_border_mask2 = 0;
 						}
 
-						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, cell_border_mask2,
+								vertex_border_mask, transition_hint_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights0 =
@@ -1119,15 +1148,17 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						uint16_t border_mask = cell_border_mask;
 
 						Vector3f secondary;
+						uint8_t vertex_border_mask = 0;
+						uint8_t cell_border_mask2 = cell_border_mask;
 						if (fullres_side) {
 							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
-							border_mask |= get_border_mask(primary, block_size_scaled) << 6;
-
+							vertex_border_mask = get_border_mask(primary, block_size_scaled);
 						} else {
-							border_mask = 0;
+							cell_border_mask2 = 0;
 						}
 
-						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, border_mask, secondary);
+						cell_vertex_indices[vertex_index] = output.add_vertex(primaryf, normal, cell_border_mask2,
+								vertex_border_mask, transition_hint_mask, secondary);
 
 						if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 							const FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights = cell_textures.weights[cell_index];

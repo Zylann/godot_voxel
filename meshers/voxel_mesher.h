@@ -46,14 +46,22 @@ public:
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+		// Flags for creating the Godot mesh resource
 		uint32_t mesh_flags = 0;
 
 		struct CollisionSurface {
 			std::vector<Vector3f> positions;
 			std::vector<int> indices;
+			// If >= 0, the collision surface may actually be picked from a sub-section of arrays of the first surface
+			// in the render mesh (It may start from index 0).
+			// Used when transition meshes are combined with the main mesh.
+			int32_t submesh_vertex_end = -1;
+			int32_t submesh_index_end = -1;
 		};
 		CollisionSurface collision_surface;
 
+		// May be used to store extra information needed in shader to render the mesh properly
+		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 	};
 

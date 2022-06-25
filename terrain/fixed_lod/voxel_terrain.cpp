@@ -22,6 +22,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 #include <scene/3d/mesh_instance_3d.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 
 namespace zylann::voxel {
 
@@ -1609,16 +1610,9 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	if (gen_collisions) {
-		const bool debug_collisions = get_tree()->is_debugging_collisions_hint();
-		const VoxelMesher::Output::CollisionSurface &collision_surface = ob.surfaces.collision_surface;
-
-		if (use_render_mesh_as_collider) {
-			block->set_collision_mesh(to_span(render_surfaces), debug_collisions, this, _collision_margin);
-
-		} else {
-			block->set_collision_mesh(to_span(collision_surface.positions), to_span(collision_surface.indices),
-					debug_collisions, this, _collision_margin);
-		}
+		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
+		block->set_collision_shape(
+				collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);

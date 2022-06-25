@@ -1,6 +1,7 @@
 #ifndef VOXEL_MESH_BLOCK_VLT_H
 #define VOXEL_MESH_BLOCK_VLT_H
 
+#include "../../util/memory.h"
 #include "../../util/tasks/time_spread_task_runner.h"
 #include "../voxel_mesh_block.h"
 
@@ -33,8 +34,7 @@ public:
 	bool got_first_mesh_update = false;
 
 	uint64_t last_collider_update_time = 0;
-	bool has_deferred_collider_update = false;
-	std::vector<Array> deferred_collider_data;
+	UniquePtr<VoxelMesher::Output> deferred_collider_data;
 
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();

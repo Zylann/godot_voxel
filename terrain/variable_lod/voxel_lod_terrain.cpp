@@ -25,6 +25,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 #include <scene/3d/mesh_instance_3d.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/packed_scene.h>
 
 namespace zylann::voxel {
@@ -1417,6 +1418,11 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 		++_stats.dropped_block_meshs;
 		return;
 	}
+	// There is a slim chance for some updates to come up just after setting the mesher to null. Avoids a crash.
+	if (_mesher.is_null()) {
+		++_stats.dropped_block_meshs;
+		return;
+	}
 
 	uint8_t transition_mask;
 	bool active;
@@ -1527,7 +1533,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 
-	{
+	/*{
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
 		// because there are 6 transition meshes per block, we would spend about 80% of the time on these if we build
 		// them all. Which is counter-intuitive because transition meshes are tiny in comparison... (collision meshes
@@ -1566,42 +1572,29 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 						task, TimeSpreadTaskRunner::PRIORITY_LOW);
 			}
 		}
-	}
+	}*/
 
 	if (has_collision) {
 		const uint64_t now = get_ticks_msec();
 
 		if (_collision_update_delay == 0 ||
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-			static thread_local std::vector<Array> tls_collidable_surfaces;
-			std::vector<Array> &collidable_surfaces = tls_collidable_surfaces;
-			collidable_surfaces.clear();
-			for (unsigned int i = 0; i < mesh_data.surfaces.size(); ++i) {
-				collidable_surfaces.push_back(mesh_data.surfaces[i].arrays);
-			}
-			block->set_collision_mesh(
-					to_span(collidable_surfaces), get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+			ZN_ASSERT(_mesher.is_valid());
+			Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
+			block->set_collision_shape(
+					collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
 
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
 			block->last_collider_update_time = now;
-			block->has_deferred_collider_update = false;
-			block->deferred_collider_data.clear();
+			block->deferred_collider_data.reset();
 
 		} else {
-			if (!block->has_deferred_collider_update) {
+			if (block->deferred_collider_data == nullptr) {
 				_deferred_collision_updates_per_lod[ob.lod].push_back(ob.position);
-				block->has_deferred_collider_update = true;
+				block->deferred_collider_data = make_unique_instance<VoxelMesher::Output>();
 			}
-			// TODO Optimization: could avoid the small allocation.
-			// It's usually a small vectors with a handful of elements.
-			// The caller providing `mesh_data` doesnt use `mesh_data` later so we could have moved the vector,
-			// but at the moment it's passed with `const` so that isn't possible. Indeed we are only going to read the
-			// data, but `const` also means the structure holding it is read-only as well.
-			block->deferred_collider_data.resize(mesh_data.surfaces.size());
-			for (size_t i = 0; i < mesh_data.surfaces.size(); ++i) {
-				block->deferred_collider_data[i] = mesh_data.surfaces[i].arrays;
-			}
+			*block->deferred_collider_data = std::move(ob.surfaces);
 		}
 	}
 
@@ -1618,6 +1611,8 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int lod_count = _update_data->settings.lod_count;
+	// TODO We may move this in a time spread task somehow, the timeout does not account for them so could take longer
+	const uint64_t then = get_ticks_msec();
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -1627,30 +1622,35 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 			const Vector3i block_pos = deferred_collision_updates[i];
 			VoxelMeshBlockVLT *block = mesh_map.get_block(block_pos);
 
-			if (block == nullptr || block->has_deferred_collider_update == false) {
+			if (block == nullptr || block->deferred_collider_data == nullptr) {
 				// Block was unloaded or no longer needs a collision update
 				unordered_remove(deferred_collision_updates, i);
 				--i;
 				continue;
 			}
 
-			const uint32_t now = get_ticks_msec();
+			const uint64_t now = get_ticks_msec();
 
 			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
-				block->set_collision_mesh(to_span_const(block->deferred_collider_data),
-						get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+				Ref<Shape3D> collision_shape;
+				if (_mesher.is_valid()) {
+					collision_shape ==
+							make_collision_shape_from_mesher_output(*block->deferred_collider_data, **_mesher);
+				}
+
+				block->set_collision_shape(
+						collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
 				block->set_collision_layer(_collision_layer);
 				block->set_collision_mask(_collision_mask);
 				block->last_collider_update_time = now;
-				block->has_deferred_collider_update = false;
-				block->deferred_collider_data.clear();
+				block->deferred_collider_data.reset();
 
 				unordered_remove(deferred_collision_updates, i);
 				--i;
 			}
 
-			// We always process at least one, then we to check the timeout
-			if (get_ticks_msec() >= timeout_msec) {
+			// We always process at least one, then we check the timeout
+			if (get_ticks_msec() - then >= timeout_msec) {
 				return;
 			}
 		}
