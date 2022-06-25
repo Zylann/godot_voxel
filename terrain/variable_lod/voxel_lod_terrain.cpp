@@ -701,6 +701,12 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 		});
 	}
 
+#ifdef TOOLS_ENABLED
+	if (_show_gizmos_enabled && _show_edit_boxes) {
+		_debug_edit_items.push_back({ p_box, DebugEditItem::LINGER_FRAMES });
+	}
+#endif
+
 	if (_instancer != nullptr) {
 		_instancer->on_area_edited(p_box);
 	}
@@ -712,6 +718,12 @@ void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
 
 	MutexLock lock(_update_data->state.changed_generated_areas_mutex);
 	_update_data->state.changed_generated_areas.push_back(p_voxel_box);
+
+#ifdef TOOLS_ENABLED
+	if (_show_gizmos_enabled && _show_edit_boxes) {
+		_debug_edit_items.push_back({ p_voxel_box, DebugEditItem::LINGER_FRAMES });
+	}
+#endif
 }
 
 void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -1623,7 +1635,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	block->set_parent_transform(get_global_transform());
 
 #ifdef TOOLS_ENABLED
-	if (_show_mesh_updates) {
+	if (_show_gizmos_enabled && _show_mesh_updates) {
 		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
 	}
 #endif
@@ -2207,7 +2219,7 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Debug updates
-	if (_show_mesh_updates) {
+	{
 		const int mesh_block_size = get_mesh_block_size();
 
 		for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
@@ -2233,6 +2245,26 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+	for (unsigned int i = 0; i < _debug_edit_items.size();) {
+		DebugEditItem &item = _debug_edit_items[i];
+
+		const Transform3D local_transform(Basis().scaled(to_vec3(item.voxel_box.size)), to_vec3(item.voxel_box.pos));
+
+		const Transform3D t = parent_transform * local_transform;
+
+		const Color color = math::lerp(
+				Color(0, 0, 0), Color(1, 1, 0), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
+		dr.draw_box_mm(t, Color8(color));
+
+		--item.remaining_frames;
+		if (item.remaining_frames == 0) {
+			item = _debug_edit_items.back();
+			_debug_edit_items.pop_back();
+		} else {
+			++i;
+		}
+	}
+
 	dr.end();
 }
 
@@ -2243,6 +2275,7 @@ void VoxelLodTerrain::set_show_gizmos(bool enable) {
 	} else {
 		_debug_renderer.clear();
 		_debug_mesh_update_items.clear();
+		_debug_edit_items.clear();
 	}
 }
 

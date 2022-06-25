@@ -357,6 +357,7 @@ private:
 	bool _show_octree_node_gizmos = false;
 	bool _show_edited_blocks = false;
 	bool _show_mesh_updates = false;
+	bool _show_edit_boxes = true;
 	unsigned int _edited_blocks_gizmos_lod_index = 0;
 	DebugRenderer _debug_renderer;
 	struct DebugMeshUpdateItem {
@@ -366,6 +367,12 @@ private:
 		uint32_t remaining_frames;
 	};
 	std::vector<DebugMeshUpdateItem> _debug_mesh_update_items;
+	struct DebugEditItem {
+		static constexpr uint32_t LINGER_FRAMES = 10;
+		Box3i voxel_box;
+		uint32_t remaining_frames;
+	};
+	std::vector<DebugEditItem> _debug_edit_items;
 #endif
 
 	Stats _stats;
