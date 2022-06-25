@@ -3,7 +3,6 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "../free_mesh_task.h"
-#include "build_transition_mesh_task.h"
 
 namespace zylann::voxel {
 
@@ -11,7 +10,6 @@ VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, uns
 		VoxelMeshBlock(bpos) {
 	_position_in_voxels = bpos * (size << p_lod_index);
 	lod_index = p_lod_index;
-	fill(_pending_transition_mesh_tasks, (BuildTransitionMeshTask *)nullptr);
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<SpatialMaterial> debug_material;
@@ -34,7 +32,6 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
 	}
-	cancel_transition_mesh_tasks();
 }
 
 void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode) {
@@ -78,40 +75,6 @@ void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_pending_transition_mesh_task(unsigned int side, BuildTransitionMeshTask &task) {
-	BuildTransitionMeshTask *prev_task = _pending_transition_mesh_tasks[side];
-	if (prev_task != nullptr) {
-		// This pointer should be valid because the task is assumed to unregister itself from the block when it
-		// completes.
-		prev_task->block = nullptr;
-	}
-	_pending_transition_mesh_tasks[side] = &task;
-}
-
-void VoxelMeshBlockVLT::on_transition_mesh_task_completed(const BuildTransitionMeshTask &p_task) {
-	const unsigned int side = p_task.side;
-	const BuildTransitionMeshTask *task = _pending_transition_mesh_tasks[side];
-	if (task == &p_task) {
-		_pending_transition_mesh_tasks[side] = nullptr;
-	}
-}
-
-void VoxelMeshBlockVLT::cancel_transition_mesh_tasks() {
-	for (unsigned int i = 0; i < _pending_transition_mesh_tasks.size(); ++i) {
-		cancel_transition_mesh_task(i);
-	}
-}
-
-void VoxelMeshBlockVLT::cancel_transition_mesh_task(unsigned int side) {
-	BuildTransitionMeshTask *task = _pending_transition_mesh_tasks[side];
-	if (task != nullptr) {
-		// This pointer should be valid because the task is assumed to unregister itself from the block when it
-		// completes.
-		task->block = nullptr;
-		_pending_transition_mesh_tasks[side] = nullptr;
-	}
-}
-
 void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
@@ -120,8 +83,8 @@ void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, D
 			// Create instance if it doesn't exist
 			mesh_instance.create();
 			mesh_instance.set_gi_mode(gi_mode);
+			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
-		set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 
 		mesh_instance.set_mesh(mesh);
 

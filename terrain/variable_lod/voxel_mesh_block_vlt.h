@@ -7,8 +7,6 @@
 
 namespace zylann::voxel {
 
-class BuildTransitionMeshTask;
-
 // Stores mesh and collider for one chunk of `VoxelTerrain`.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
 class VoxelMeshBlockVLT : public VoxelMeshBlock {
@@ -56,11 +54,6 @@ public:
 
 	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode);
 
-	void set_pending_transition_mesh_task(unsigned int side, BuildTransitionMeshTask &task);
-	void on_transition_mesh_task_completed(const BuildTransitionMeshTask &task);
-	void cancel_transition_mesh_tasks();
-	void cancel_transition_mesh_task(unsigned int side);
-
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
@@ -90,9 +83,6 @@ private:
 	}
 
 	Ref<ShaderMaterial> _shader_material;
-
-	// Not owned. Keeping a reference to cancel it if the block gets destroyed.
-	FixedArray<BuildTransitionMeshTask *, Cube::SIDE_COUNT> _pending_transition_mesh_tasks;
 
 	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 

@@ -19,7 +19,6 @@
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
-#include "build_transition_mesh_task.h"
 #include "voxel_lod_terrain_update_task.h"
 
 #include <core/config/engine.h>
@@ -43,8 +42,6 @@ struct BeforeUnloadMeshAction {
 			shader_material_pool.push_back(sm);
 			block.set_shader_material(Ref<ShaderMaterial>());
 		}
-		// Optimization: do it now because the actual destructor could be called much later
-		block.cancel_transition_mesh_tasks();
 	}
 };
 
@@ -1533,46 +1530,21 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 
-	/*{
+	{
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
 		// because there are 6 transition meshes per block, we would spend about 80% of the time on these if we build
 		// them all. Which is counter-intuitive because transition meshes are tiny in comparison... (collision meshes
-		// still take 5x more time than building ALL rendering meshes but that's a different issue)
+		// still take 5x more time than building ALL rendering meshes but that's a different issue).
+		// Therefore I recommend combining them with the main mesh. This code might not do anything now.
 		ZN_PROFILE_SCOPE_NAMED("Transition meshes");
 
 		for (unsigned int dir = 0; dir < mesh_data.transition_surfaces.size(); ++dir) {
-			std::vector<VoxelMesher::Output::Surface> &mesh_data_for_side = mesh_data.transition_surfaces[dir];
+			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
+					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
-			if ((transition_mask & (1 << dir)) != 0) {
-				// The mesh may currently be visible, build it now
-				Ref<ArrayMesh> transition_mesh = build_mesh(
-						to_span(mesh_data_for_side), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
-
-				block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
-				block->cancel_transition_mesh_task(dir);
-
-			} else if (is_surface_data_empty(to_span(mesh_data_for_side))) {
-				// No need to bother, just reset
-				block->set_transition_mesh(Ref<Mesh>(), dir, DirectMeshInstance::GIMode(get_gi_mode()));
-				block->cancel_transition_mesh_task(dir);
-
-			} else {
-				// We dont need this mesh immediately, defer it for later:
-				// One main use case is edits, which are often done in blocks that have no transitions visible.
-				BuildTransitionMeshTask *task = ZN_NEW(BuildTransitionMeshTask);
-				task->volume = this;
-				task->volume_id = _volume_id;
-				task->mesh_data = std::move(mesh_data_for_side);
-				task->side = dir;
-				task->mesh_flags = mesh_data.mesh_flags;
-				task->primitive_type = mesh_data.primitive_type;
-				task->block = block;
-				block->set_pending_transition_mesh_task(dir, *task);
-				VoxelServer::get_singleton().push_main_thread_time_spread_task(
-						task, TimeSpreadTaskRunner::PRIORITY_LOW);
-			}
+			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
 		}
-	}*/
+	}
 
 	if (has_collision) {
 		const uint64_t now = get_ticks_msec();
