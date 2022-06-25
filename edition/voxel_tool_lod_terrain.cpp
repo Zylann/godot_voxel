@@ -223,9 +223,11 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	VOXEL_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(
-			Vector3i::from_floored(center) - Vector3i(Math::floor(radius)),
-			Vector3i(Math::ceil(radius) * 2))
+	const Box3i box = Box3i::from_min_max( //
+			Vector3i::from_floored(center - Vector3(radius, radius, radius)),
+			Vector3i::from_ceiled(center + Vector3(radius, radius, radius)))
+							  // That padding is for SDF to have some margin
+							  .padded(2)
 							  .clipped(_terrain->get_voxel_bounds());
 
 	if (!is_area_editable(box)) {
