@@ -15,7 +15,7 @@ inline uint8_t sign_f(float v) {
 	return v < 0.f;
 }
 
-Vector3f get_border_offset(const Vector3f pos, const int lod_index, const Vector3i block_size) {
+Vector3f get_border_offset(const Vector3f pos_scaled, const int lod_index, const Vector3i block_size_non_scaled) {
 	// When transition meshes are inserted between blocks of different LOD, we need to make space for them.
 	// Secondary vertex positions can be calculated by linearly transforming positions inside boundary cells
 	// so that the full-size cell is scaled to a smaller size that allows space for between one and three
@@ -31,8 +31,8 @@ Vector3f get_border_offset(const Vector3f pos, const int lod_index, const Vector
 	const float wk = TRANSITION_CELL_SCALE * p2k; // 2 ^ (lod - 2), if scale is 0.25
 
 	for (unsigned int i = 0; i < Vector3iUtil::AXIS_COUNT; ++i) {
-		const float p = pos[i];
-		const float s = block_size[i];
+		const float p = pos_scaled[i];
+		const float s = block_size_non_scaled[i];
 
 		if (p < p2k) {
 			// The vertex is inside the minimum cell.
@@ -63,8 +63,8 @@ inline Vector3f project_border_offset(Vector3f delta, Vector3f normal) {
 }
 
 inline Vector3f get_secondary_position(
-		const Vector3f primary, const Vector3f normal, const int lod_index, const Vector3i block_size) {
-	Vector3f delta = get_border_offset(primary, lod_index, block_size);
+		const Vector3f primary, const Vector3f normal, const int lod_index, const Vector3i block_size_non_scaled) {
+	Vector3f delta = get_border_offset(primary, lod_index, block_size_non_scaled);
 	delta = project_border_offset(delta, normal);
 	return primary + delta;
 }
@@ -551,7 +551,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 							uint8_t vertex_border_mask = 0;
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
+								secondary = get_secondary_position(primaryf, normal, lod_index, block_size);
 								vertex_border_mask = (get_border_mask(p0, block_size_scaled) &
 										get_border_mask(p1, block_size_scaled));
 							}
@@ -591,7 +591,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 						uint8_t vertex_border_mask = 0;
 						if (cell_border_mask > 0) {
-							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
+							secondary = get_secondary_position(primaryf, normal, lod_index, block_size);
 							vertex_border_mask = get_border_mask(p1, block_size_scaled);
 						}
 
@@ -652,7 +652,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 							uint8_t vertex_border_mask = 0;
 							if (cell_border_mask > 0) {
-								secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
+								secondary = get_secondary_position(primaryf, normal, lod_index, block_size);
 								vertex_border_mask = get_border_mask(primary, block_size_scaled);
 							}
 
@@ -1081,7 +1081,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						uint8_t cell_border_mask2 = cell_border_mask;
 						uint8_t vertex_border_mask = 0;
 						if (fullres_side) {
-							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
+							secondary = get_secondary_position(primaryf, normal, lod_index, block_size_without_padding);
 							vertex_border_mask =
 									(get_border_mask(p0, block_size_scaled) & get_border_mask(p1, block_size_scaled));
 						} else {
@@ -1151,7 +1151,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						uint8_t vertex_border_mask = 0;
 						uint8_t cell_border_mask2 = cell_border_mask;
 						if (fullres_side) {
-							secondary = get_secondary_position(primaryf, normal, 0, block_size_scaled);
+							secondary = get_secondary_position(primaryf, normal, lod_index, block_size_without_padding);
 							vertex_border_mask = get_border_mask(primary, block_size_scaled);
 						} else {
 							cell_border_mask2 = 0;
