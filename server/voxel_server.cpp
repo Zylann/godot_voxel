@@ -889,7 +889,7 @@ void VoxelServer::AllBlocksDataRequest::run(VoxelTaskContext ctx) {
 
 	stream->load_all_blocks(result);
 
-	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(result.blocks.size(), volume_id)));
+	PRINT_VERBOSE(String("Loaded {0} blocks for volume {1}").format(varray(SIZE_T_TO_VARIANT(result.blocks.size()), volume_id)));
 }
 
 int VoxelServer::AllBlocksDataRequest::get_priority() {
