@@ -338,7 +338,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 
 	struct Task {
 		Vector3i block_pos;
-		uint8_t lod_index;
+		uint32_t lod_index;
 		std::shared_ptr<VoxelBufferInternal> voxels;
 	};
 
@@ -349,7 +349,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	const unsigned int data_block_size = data.lods[0].map.get_block_size();
 
 	// Find empty slots
-	for (uint8_t lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
 		ZN_PRINT_VERBOSE(format("Preloading box {} at lod {} synchronously", block_box, lod_index));
@@ -411,7 +411,8 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 			for (; task_index < end_task_index; ++task_index) {
 				Task &task = todo[task_index];
 				ZN_ASSERT(task.lod_index == lod_index);
-				if (data_lod.map.has_block(task.block_pos)) {
+				const VoxelDataBlock *prev_block = data_lod.map.get_block(task.block_pos);
+				if (prev_block != nullptr && prev_block->has_voxels()) {
 					// Sorry, that block has been set in the meantime by another thread.
 					// We'll assume the block we just generated is redundant and discard it.
 					continue;

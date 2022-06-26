@@ -211,29 +211,29 @@ public:
 	Array debug_get_octree_positions() const;
 	Array debug_get_octrees_detailed() const;
 
+	enum DebugDrawFlag {
+		DEBUG_DRAW_OCTREE_NODES = 0,
+		DEBUG_DRAW_OCTREE_BOUNDS = 1,
+		DEBUG_DRAW_MESH_UPDATES = 2,
+		DEBUG_DRAW_EDIT_BOXES = 3,
+		DEBUG_DRAW_VOLUME_BOUNDS = 4,
+		DEBUG_DRAW_EDITED_BLOCKS = 5,
+
+		DEBUG_DRAW_FLAGS_COUNT = 6
+	};
+
+	void debug_set_draw_enabled(bool enabled);
+	bool debug_is_draw_enabled() const;
+
+	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
+	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
+
 	// Editor
 
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
 
 #ifdef TOOLS_ENABLED
-
-	void set_show_gizmos(bool enable);
-	bool is_showing_gizmos() const {
-		return _show_gizmos_enabled;
-	}
-	void set_show_octree_gizmos(bool enable);
-	bool is_showing_octree_gizmos() const {
-		return _show_octree_node_gizmos;
-	}
-	void set_show_octree_bounds_gizmos(bool enable);
-	bool is_showing_octree_bounds_gizmos() const {
-		return _show_octree_bounds_gizmos;
-	}
-	void set_show_mesh_updates(bool enable);
-	bool is_showing_mesh_updates() const {
-		return _show_mesh_updates;
-	}
 
 	TypedArray<String> get_configuration_warnings() const override;
 
@@ -292,10 +292,12 @@ private:
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
+
 	Array _b_debug_print_sdf_top_down(Vector3i center, Vector3i extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
 	Error _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
+
 	Dictionary _b_get_statistics() const;
 
 #ifdef TOOLS_ENABLED
@@ -353,21 +355,28 @@ private:
 	FixedArray<std::unordered_map<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
 
 #ifdef TOOLS_ENABLED
-	bool _show_gizmos_enabled = false;
-	bool _show_octree_bounds_gizmos = true;
-	bool _show_volume_bounds_gizmos = true;
-	bool _show_octree_node_gizmos = false;
-	bool _show_edited_blocks = false;
-	bool _show_mesh_updates = false;
-	unsigned int _edited_blocks_gizmos_lod_index = 0;
+	bool _debug_draw_enabled = false;
+	uint8_t _debug_draw_flags = 0;
+	uint8_t _edited_blocks_gizmos_lod_index = 0;
+
 	DebugRenderer _debug_renderer;
+
 	struct DebugMeshUpdateItem {
 		static constexpr uint32_t LINGER_FRAMES = 10;
 		Vector3i position;
 		uint32_t lod;
 		uint32_t remaining_frames;
 	};
+
 	std::vector<DebugMeshUpdateItem> _debug_mesh_update_items;
+
+	struct DebugEditItem {
+		static constexpr uint32_t LINGER_FRAMES = 10;
+		Box3i voxel_box;
+		uint32_t remaining_frames;
+	};
+
+	std::vector<DebugEditItem> _debug_edit_items;
 #endif
 
 	Stats _stats;
@@ -376,5 +385,6 @@ private:
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::DebugDrawFlag)
 
 #endif // VOXEL_LOD_TERRAIN_HPP
