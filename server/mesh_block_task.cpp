@@ -241,7 +241,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod_index);
 
 	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
-		lod_index, collision_hint };
+		lod_index, collision_hint, lod_hint };
 	mesher->build(_surfaces_output, input);
 
 	_has_run = true;

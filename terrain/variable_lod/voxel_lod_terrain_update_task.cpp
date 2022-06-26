@@ -1219,6 +1219,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			task->volume_id = volume_id;
 			task->position = mesh_block_pos;
 			task->lod_index = lod_index;
+			task->lod_hint = true;
 			task->meshing_dependency = meshing_dependency;
 			task->data_block_size = data_block_size;
 			task->data = data_ptr;

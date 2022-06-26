@@ -227,7 +227,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	output.collision_surface.submesh_vertex_end = combined_mesh_arrays->vertices.size();
 	output.collision_surface.submesh_index_end = combined_mesh_arrays->indices.size();
 
-	if (_transitions_enabled) {
+	if (_transitions_enabled && input.lod_hint) {
 		// We combine transition meshes with the regular mesh, because it results in less draw calls than if they were
 		// separate. This only requires a vertex shader trick to discard them when neighbors change.
 		ZN_ASSERT(combined_mesh_arrays != nullptr);

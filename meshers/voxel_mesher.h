@@ -17,6 +17,7 @@ class VoxelBufferInternal;
 class VoxelGenerator;
 struct VoxelDataLodMap;
 
+// Base class for algorithms that generate meshes from voxels.
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
@@ -30,12 +31,15 @@ public:
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
-		// Not initialized because it confused GCC.
+		// Not initialized because it confused GCC (???)
 		uint8_t lod; // = 0;
 		// If true, collision information is required.
 		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
 		// but in other setups it can be different and will be returned in `collision_surface`.
 		bool collision_hint = false;
+		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
+		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
+		bool lod_hint = false;
 	};
 
 	struct Output {
