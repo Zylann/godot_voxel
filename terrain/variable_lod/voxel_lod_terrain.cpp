@@ -703,7 +703,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	}
 
 #ifdef TOOLS_ENABLED
-	if (_show_gizmos_enabled && _show_edit_boxes) {
+	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_EDIT_BOXES)) {
 		_debug_edit_items.push_back({ p_box, DebugEditItem::LINGER_FRAMES });
 	}
 #endif
@@ -721,7 +721,7 @@ void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
 	_update_data->state.changed_generated_areas.push_back(p_voxel_box);
 
 #ifdef TOOLS_ENABLED
-	if (_show_gizmos_enabled && _show_edit_boxes) {
+	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_EDIT_BOXES)) {
 		_debug_edit_items.push_back({ p_voxel_box, DebugEditItem::LINGER_FRAMES });
 	}
 #endif
@@ -1111,7 +1111,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				});
 			}
 #ifdef TOOLS_ENABLED
-			if (is_showing_gizmos()) {
+			if (debug_is_draw_enabled()) {
 				_debug_renderer.set_world(is_visible_in_tree() ? world : nullptr);
 			}
 #endif
@@ -1144,7 +1144,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 
 #ifdef TOOLS_ENABLED
-			if (is_showing_gizmos()) {
+			if (debug_is_draw_enabled()) {
 				_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
 			}
 #endif
@@ -1227,7 +1227,7 @@ void VoxelLodTerrain::_process(float delta) {
 	process_deferred_collision_updates(VoxelServer::get_singleton().get_main_thread_time_budget_usec());
 
 #ifdef TOOLS_ENABLED
-	if (is_showing_gizmos() && is_visible_in_tree()) {
+	if (debug_is_draw_enabled() && is_visible_in_tree()) {
 		update_gizmos();
 	}
 #endif
@@ -1636,7 +1636,7 @@ void VoxelLodTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) 
 	block->set_parent_transform(get_global_transform());
 
 #ifdef TOOLS_ENABLED
-	if (_show_gizmos_enabled && _show_mesh_updates) {
+	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_MESH_UPDATES)) {
 		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
 	}
 #endif
@@ -2131,6 +2131,41 @@ Array VoxelLodTerrain::debug_get_octrees_detailed() const {
 	return forest_data;
 }
 
+void VoxelLodTerrain::debug_set_draw_enabled(bool enabled) {
+#ifdef TOOLS_ENABLED
+	_debug_draw_enabled = enabled;
+	if (_debug_draw_enabled) {
+		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+	} else {
+		_debug_renderer.clear();
+		_debug_mesh_update_items.clear();
+		_debug_edit_items.clear();
+	}
+#endif
+}
+
+bool VoxelLodTerrain::debug_is_draw_enabled() const {
+#ifdef TOOLS_ENABLED
+	return _debug_draw_enabled;
+#endif
+}
+
+void VoxelLodTerrain::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled) {
+#ifdef TOOLS_ENABLED
+	if (enabled) {
+		_debug_draw_flags |= (1 << flag_index);
+	} else {
+		_debug_draw_flags &= ~(1 << flag_index);
+	}
+#endif
+}
+
+bool VoxelLodTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
+#ifdef TOOLS_ENABLED
+	return (_debug_draw_flags & (1 << flag_index)) != 0;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
@@ -2150,9 +2185,10 @@ void VoxelLodTerrain::update_gizmos() {
 
 	const Transform3D parent_transform = get_global_transform();
 	const unsigned int lod_count = get_lod_count();
+	const int mesh_block_size = get_mesh_block_size();
 
 	// Octree bounds
-	if (_show_octree_bounds_gizmos) {
+	if (debug_get_draw_flag(DEBUG_DRAW_OCTREE_BOUNDS)) {
 		const int octree_size = 1 << LodOctree::get_octree_size_po2(get_mesh_block_size_pow2(), get_lod_count());
 		const Basis local_octree_basis = Basis().scaled(Vector3(octree_size, octree_size, octree_size));
 
@@ -2163,7 +2199,7 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Volume bounds
-	if (_show_volume_bounds_gizmos) {
+	if (debug_get_draw_flag(DEBUG_DRAW_VOLUME_BOUNDS)) {
 		const Box3i bounds_in_voxels = get_voxel_bounds();
 		const float bounds_in_voxels_len = Vector3(bounds_in_voxels.size).length();
 
@@ -2177,9 +2213,8 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Octree nodes
-	if (_show_octree_node_gizmos) {
+	if (debug_get_draw_flag(DEBUG_DRAW_OCTREE_NODES)) {
 		// That can be expensive to draw
-		const int mesh_block_size = get_mesh_block_size();
 		const float lod_count_f = lod_count;
 
 		for (auto it = state.lod_octrees.begin(); it != state.lod_octrees.end(); ++it) {
@@ -2204,7 +2239,7 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Edited blocks
-	if (_show_edited_blocks && _edited_blocks_gizmos_lod_index < lod_count) {
+	if (debug_get_draw_flag(DEBUG_DRAW_EDITED_BLOCKS) && _edited_blocks_gizmos_lod_index < lod_count) {
 		const VoxelDataLodMap::Lod &data_lod = _data->lods[_edited_blocks_gizmos_lod_index];
 		const int data_block_size = get_data_block_size() << _edited_blocks_gizmos_lod_index;
 		const Basis basis(Basis().scaled(Vector3(data_block_size, data_block_size, data_block_size)));
@@ -2220,29 +2255,24 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Debug updates
-	{
-		const int mesh_block_size = get_mesh_block_size();
+	for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
+		DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
 
-		for (unsigned int i = 0; i < _debug_mesh_update_items.size();) {
-			DebugMeshUpdateItem &item = _debug_mesh_update_items[i];
+		const Transform3D local_transform(Basis().scaled(to_vec3(Vector3iUtil::create(mesh_block_size << item.lod))),
+				to_vec3(item.position * (mesh_block_size << item.lod)));
 
-			const Transform3D local_transform(
-					Basis().scaled(to_vec3(Vector3iUtil::create(mesh_block_size << item.lod))),
-					to_vec3(item.position * (mesh_block_size << item.lod)));
+		const Transform3D t = parent_transform * local_transform;
 
-			const Transform3D t = parent_transform * local_transform;
+		const Color color = math::lerp(
+				Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
+		dr.draw_box_mm(t, Color8(color));
 
-			const Color color = math::lerp(
-					Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
-			dr.draw_box_mm(t, Color8(color));
-
-			--item.remaining_frames;
-			if (item.remaining_frames == 0) {
-				item = _debug_mesh_update_items.back();
-				_debug_mesh_update_items.pop_back();
-			} else {
-				++i;
-			}
+		--item.remaining_frames;
+		if (item.remaining_frames == 0) {
+			item = _debug_mesh_update_items.back();
+			_debug_mesh_update_items.pop_back();
+		} else {
+			++i;
 		}
 	}
 
@@ -2267,30 +2297,6 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	dr.end();
-}
-
-void VoxelLodTerrain::set_show_gizmos(bool enable) {
-	_show_gizmos_enabled = enable;
-	if (_show_gizmos_enabled) {
-		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
-	} else {
-		_debug_renderer.clear();
-		_debug_mesh_update_items.clear();
-		_debug_edit_items.clear();
-	}
-}
-
-void VoxelLodTerrain::set_show_octree_gizmos(bool enable) {
-	_show_octree_node_gizmos = enable;
-}
-
-void VoxelLodTerrain::set_show_octree_bounds_gizmos(bool enable) {
-	_show_octree_bounds_gizmos = enable;
-}
-
-void VoxelLodTerrain::set_show_mesh_updates(bool enable) {
-	_show_mesh_updates = enable;
-	_debug_mesh_update_items.clear();
 }
 
 #endif
@@ -2472,12 +2478,25 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_data_block_count"), &VoxelLodTerrain::_b_debug_get_data_block_count);
 	ClassDB::bind_method(
 			D_METHOD("debug_dump_as_scene", "path", "include_instancer"), &VoxelLodTerrain::_b_debug_dump_as_scene);
+	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelLodTerrain::debug_is_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelLodTerrain::debug_set_draw_enabled);
+	ClassDB::bind_method(
+			D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &VoxelLodTerrain::debug_set_draw_flag);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &VoxelLodTerrain::debug_get_draw_flag);
 
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_IDLE);
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_PHYSICS);
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_DISABLED);
+
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_OCTREE_NODES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_OCTREE_BOUNDS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_MESH_UPDATES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDIT_BOXES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_GROUP("Bounds", "");
 

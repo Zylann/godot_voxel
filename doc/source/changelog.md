@@ -31,6 +31,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
     - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
+    - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
