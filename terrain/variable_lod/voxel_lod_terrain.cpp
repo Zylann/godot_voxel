@@ -2311,8 +2311,6 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 		VoxelBufferInternal buffer;
 		buffer.create(world_box.size);
 
-		const VoxelDataLodMap::Lod &data_lod = _data->lods[lod_index];
-
 		world_box.for_each_cell([this, world_box, &buffer](const Vector3i &world_pos) {
 			const Vector3i rpos = world_pos - world_box.pos;
 			VoxelSingleValue v;
