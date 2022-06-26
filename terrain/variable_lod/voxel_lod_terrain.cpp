@@ -645,10 +645,11 @@ void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_bu
 		RWLockRead rlock(data_lod0.map_lock);
 		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask, &gctx,
 				[](void *callback_data, VoxelBufferInternal &voxels, Vector3i pos) {
-					GenContext *gctx = reinterpret_cast<GenContext *>(callback_data);
+					// Suffixed with `2` because GCC warns it shadows a previous local...
+					GenContext *gctx2 = reinterpret_cast<GenContext *>(callback_data);
 					VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-					gctx->generator.generate_block(q);
-					gctx->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
+					gctx2->generator.generate_block(q);
+					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
 				});
 	} else {
 		RWLockRead rlock(data_lod0.map_lock);
