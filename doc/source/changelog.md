@@ -45,7 +45,8 @@ Godot 4 is required from this version.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
-    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited for now).
+    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
+    - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
 
 - Blocky voxels
     - `VoxelMesherBlocky`: materials are now unlimited and specified in each model, either as overrides or directly from mesh (You still need to consider draw calls when using many materials)
@@ -82,6 +83,7 @@ Godot 4 is required from this version.
     - `VoxelLodTerrain`: `set_process_mode` and `get_process_mode` were renamed `set_process_callback` and `get_process_callback` (due to a name conflict)
     - `VoxelLodTerrain`: `has_block` was renamed `has_data_block`
     - `VoxelMesherTransvoxel`: Shader API: The data in `COLOR` and `UV` was moved respectively to `CUSTOM0` and `CUSTOM1` (old attributes no longer work for this use case)
+    - `VoxelMesherTransvoxel`: Variable LOD: a shader is now required to properly render transitions
     - `Voxel` was renamed `VoxelBlockyModel`
     - `VoxelLibrary` was renamed `VoxelBlockyLibrary`
     - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
