@@ -10,7 +10,7 @@ const char *GDSHADER_SOURCE =
 "uniform int u_transition_mask;\n"
 "\n"
 "float get_transvoxel_secondary_factor(int idata) {\n"
-"	int cell_border_mask = (idata >> 0) & 63; // Which sides the cell is touching\n"
+"	int cell_border_mask = idata & 63; // Which sides the cell is touching\n"
 "	int vertex_border_mask = (idata >> 8) & 63; // Which sides the vertex is touching\n"
 "	// If the vertex is near a side where there is a low-resolution neighbor,\n"
 "	// move it to secondary position\n"
