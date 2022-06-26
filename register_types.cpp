@@ -136,6 +136,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
 
+		VoxelMesherTransvoxel::load_static_resources();
+
 		// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not
 		// abstract?
 		ClassDB::register_class<gd::VoxelServer>();
@@ -266,6 +268,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		// users can write custom generators, which run inside threads, and these threads are hosted in the server...
 		// See https://github.com/Zylann/godot_voxel/issues/189
 
+		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
 		VoxelGraphNodeDB::destroy_singleton();
 		gd::VoxelServer::destroy_singleton();

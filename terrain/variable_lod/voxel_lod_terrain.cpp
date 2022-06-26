@@ -177,6 +177,24 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	// TODO Update existing block surfaces
 	_material = p_material;
+
+#ifdef TOOLS_ENABLED
+	// Create a fork of the default shader if a new empty ShaderMaterial is assigned
+	if (Engine::get_singleton()->is_editor_hint()) {
+		Ref<ShaderMaterial> sm = p_material;
+		if (sm.is_valid() && sm->get_shader().is_null() && _mesher.is_valid()) {
+			Ref<ShaderMaterial> default_sm = _mesher->get_default_lod_material();
+			if (default_sm.is_valid()) {
+				Ref<Shader> default_shader = default_sm->get_shader();
+				ZN_ASSERT_RETURN(default_shader.is_valid());
+				Ref<Shader> shader_copy = default_shader->duplicate();
+				sm->set_shader(shader_copy);
+			}
+		}
+
+		update_configuration_warnings();
+	}
+#endif
 }
 
 unsigned int VoxelLodTerrain::get_data_block_size() const {
@@ -1503,6 +1521,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 		block->set_world(get_world_3d());
 
 		Ref<ShaderMaterial> shader_material = _material;
+
+		if (_material.is_null()) {
+			Ref<ShaderMaterial> default_material = _mesher->get_default_lod_material();
+			if (default_material.is_valid()) {
+				shader_material = default_material;
+			}
+		}
+
 		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
 			ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
 
@@ -1859,8 +1885,22 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 		return warnings;
 	}
 	Ref<VoxelMesher> mesher = get_mesher();
-	if (mesher.is_valid() && !mesher->supports_lod()) {
-		warnings.append(TTR("The assigned mesher does not support level of detail (LOD), results may be unexpected."));
+	if (mesher.is_valid()) {
+		if (!mesher->supports_lod()) {
+			warnings.append(
+					TTR("The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
+							.format(varray(mesher->get_class())));
+		}
+		if (_material.is_valid() && mesher->get_default_lod_material().is_valid()) {
+			Ref<ShaderMaterial> sm = _material;
+			if (sm.is_null()) {
+				warnings.append(
+						TTR("The current mesher ({0}) requires custom shader code to render properly. The current "
+							"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
+							"default shader.")
+								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
+			}
+		}
 	}
 	return warnings;
 }

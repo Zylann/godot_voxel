@@ -5,9 +5,26 @@
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
+#include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
 
 namespace zylann::voxel {
+
+namespace {
+Ref<ShaderMaterial> g_minimal_shader_material;
+}
+
+void VoxelMesherTransvoxel::load_static_resources() {
+	Ref<Shader> shader;
+	shader.instantiate();
+	shader->set_code(transvoxel_shader_minimal::GDSHADER_SOURCE);
+	g_minimal_shader_material.instantiate();
+	g_minimal_shader_material->set_shader(shader);
+}
+
+void VoxelMesherTransvoxel::free_static_resources() {
+	g_minimal_shader_material.unref();
+}
 
 VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 	set_padding(transvoxel::MIN_PADDING, transvoxel::MAX_PADDING);
@@ -338,6 +355,10 @@ void VoxelMesherTransvoxel::set_transitions_enabled(bool enable) {
 
 bool VoxelMesherTransvoxel::get_transitions_enabled() const {
 	return _transitions_enabled;
+}
+
+Ref<ShaderMaterial> VoxelMesherTransvoxel::get_default_lod_material() const {
+	return g_minimal_shader_material;
 }
 
 void VoxelMesherTransvoxel::_bind_methods() {

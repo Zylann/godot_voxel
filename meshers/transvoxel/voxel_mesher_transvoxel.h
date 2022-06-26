@@ -50,6 +50,11 @@ public:
 	void set_transitions_enabled(bool enable);
 	bool get_transitions_enabled() const;
 
+	Ref<ShaderMaterial> get_default_lod_material() const override;
+
+	static void load_static_resources();
+	static void free_static_resources();
+
 	// Not sure if that's necessary, currently transitions are either combined or not generated
 	// enum TransitionMode {
 	// 	// No transition meshes will be generated
