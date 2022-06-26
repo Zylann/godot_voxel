@@ -1145,7 +1145,6 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						const Vector3f normal = normalized_not_null(cell_gradients[cell_index]);
 
 						const bool fullres_side = (cell_index < 9);
-						uint16_t border_mask = cell_border_mask;
 
 						Vector3f secondary;
 						uint8_t vertex_border_mask = 0;
