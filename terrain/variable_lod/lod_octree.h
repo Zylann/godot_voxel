@@ -1,5 +1,5 @@
-#ifndef LOD_OCTREE_H
-#define LOD_OCTREE_H
+#ifndef VOXEL_LOD_OCTREE_H
+#define VOXEL_LOD_OCTREE_H
 
 #include "../../util/math/box3i.h"
 
@@ -477,4 +477,4 @@ private:
 // Population of an octree given its depth, thanks to Sage:
 // ((1 << 3 * (depth + 1)) - 1 ) / 7
 
-#endif // LOD_OCTREE_H
+#endif // VOXEL_LOD_OCTREE_H
