@@ -2137,6 +2137,8 @@ void VoxelLodTerrain::debug_set_draw_enabled(bool enabled) {
 bool VoxelLodTerrain::debug_is_draw_enabled() const {
 #ifdef TOOLS_ENABLED
 	return _debug_draw_enabled;
+#else
+	return false;
 #endif
 }
 
@@ -2153,6 +2155,8 @@ void VoxelLodTerrain::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled
 bool VoxelLodTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
 	return (_debug_draw_flags & (1 << flag_index)) != 0;
+#else
+	return false;
 #endif
 }
 
