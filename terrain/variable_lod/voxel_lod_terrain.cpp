@@ -1423,19 +1423,6 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	}
 }
 
-static bool is_surface_data_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
-	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		const VoxelMesher::Output::Surface &surface = surfaces[i];
-		if (surface.arrays.size() != 0) {
-			const PackedVector3Array vertex_array = surface.arrays[Mesh::ARRAY_VERTEX];
-			if (vertex_array.size() > 0) {
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
 void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
 	// This also proved to be very slow compared to the meshing process itself...
