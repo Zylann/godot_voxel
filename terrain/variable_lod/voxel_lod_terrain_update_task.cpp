@@ -81,7 +81,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateDat
 		VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[dst_lod_index];
 
 		VoxelDataLodMap::Lod &src_data_lod = data.lods[src_lod_index];
-		RWLockRead rlock(src_data_lod.map_lock);
+		RWLockRead src_data_lod_map_rlock(src_data_lod.map_lock);
 
 		VoxelDataLodMap::Lod &dst_data_lod = data.lods[dst_lod_index];
 		// TODO Could take long locking this, we may generate things first and assign to the map at the end.
