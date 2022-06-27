@@ -19,6 +19,7 @@ enum Side {
 	SIDE_COUNT
 };
 // Alias to the above for clarity, fixing some interpretation problems regarding the side_normals table...
+// TODO Legacy: I would like to fix the X axes, they are inverted compared to the others
 enum SideAxis {
 	SIDE_POSITIVE_X = 0,
 	SIDE_NEGATIVE_X,

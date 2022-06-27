@@ -9,6 +9,7 @@
 #endif
 
 #ifdef ZN_DSTACK_ENABLED
+// Put this macro on top of each function you want to track in debug stack traces.
 #define ZN_DSTACK() zylann::dstack::Scope dstack_scope_##__LINE__(__FILE__, __LINE__, __FUNCTION__)
 #else
 #define ZN_DSTACK()
@@ -37,6 +38,7 @@ struct Frame {
 
 struct Info {
 public:
+	// Constructs a copy of the current stack gathered so far from ZN_DSTACK() calls
 	Info();
 	void to_string(FwdMutableStdString s) const;
 

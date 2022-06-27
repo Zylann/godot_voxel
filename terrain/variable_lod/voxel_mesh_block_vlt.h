@@ -1,6 +1,8 @@
 #ifndef VOXEL_MESH_BLOCK_VLT_H
 #define VOXEL_MESH_BLOCK_VLT_H
 
+#include "../../util/memory.h"
+#include "../../util/tasks/time_spread_task_runner.h"
 #include "../voxel_mesh_block.h"
 
 namespace zylann::voxel {
@@ -29,9 +31,8 @@ public:
 
 	bool got_first_mesh_update = false;
 
-	uint32_t last_collider_update_time = 0;
-	bool has_deferred_collider_update = false;
-	std::vector<Array> deferred_collider_data;
+	uint64_t last_collider_update_time = 0;
+	UniquePtr<VoxelMesher::Output> deferred_collider_data;
 
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();
@@ -50,13 +51,16 @@ public:
 	}
 
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
-	void set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode);
+
+	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode);
+
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
 	}
 
 	void set_parent_transform(const Transform3D &parent_transform);
+	void update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform);
 
 	template <typename F>
 	void for_each_mesh_instance_with_transform(F f) const {
@@ -74,7 +78,7 @@ public:
 private:
 	void _set_visible(bool visible);
 
-	inline bool _is_transition_visible(int side) const {
+	inline bool _is_transition_visible(unsigned int side) const {
 		return _transition_mask & (1 << side);
 	}
 
@@ -89,6 +93,9 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 };
+
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material);
 
 } // namespace zylann::voxel
 

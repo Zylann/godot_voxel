@@ -38,11 +38,10 @@ public:
 	struct VoxelQueryData {
 		VoxelBufferInternal &voxel_buffer;
 		Vector3i origin_in_voxels;
-		uint8_t lod;
+		uint32_t lod;
 	};
 
 	virtual Result generate_block(VoxelQueryData &input);
-	// TODO Single sample
 
 	virtual bool supports_single_generation() const {
 		return false;

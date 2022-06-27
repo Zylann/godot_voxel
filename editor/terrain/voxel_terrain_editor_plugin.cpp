@@ -1,5 +1,6 @@
 #include "voxel_terrain_editor_plugin.h"
 #include "../../generators/voxel_generator.h"
+#include "../../storage/modifiers_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../about_window.h"
@@ -102,6 +103,10 @@ static bool is_side_handled(Object *p_object) {
 	if (wrapper != nullptr) {
 		return true;
 	}
+	gd::VoxelModifier *modifier = Object::cast_to<gd::VoxelModifier>(p_object);
+	if (modifier != nullptr) {
+		return true;
+	}
 	return false;
 }
 
@@ -138,7 +143,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
-			vlt->set_show_gizmos(false);
+			vlt->debug_set_draw_enabled(false);
 		}
 	}
 
@@ -155,10 +160,10 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		generate_menu_items(_menu_button, vlt != nullptr);
 
 		if (vlt != nullptr) {
-			vlt->set_show_gizmos(true);
-			vlt->set_show_octree_gizmos(_show_octree_nodes);
-			vlt->set_show_octree_bounds_gizmos(_show_octree_bounds);
-			vlt->set_show_mesh_updates(_show_mesh_updates);
+			vlt->debug_set_draw_enabled(true);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
 		}
 	}
 }
@@ -171,7 +176,7 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	if (_node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
-			vlt->set_show_gizmos(visible);
+			vlt->debug_set_draw_enabled(visible);
 		}
 	}
 
@@ -221,7 +226,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_bounds = !_show_octree_bounds;
-			lod_terrain->set_show_octree_bounds_gizmos(_show_octree_bounds);
+			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
 			_menu_button->get_popup()->set_item_checked(i, _show_octree_bounds);
@@ -231,7 +236,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_nodes = !_show_octree_nodes;
-			lod_terrain->set_show_octree_gizmos(_show_octree_nodes);
+			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
 			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
@@ -241,7 +246,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_mesh_updates = !_show_mesh_updates;
-			lod_terrain->set_show_mesh_updates(_show_mesh_updates);
+			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MESH_UPDATES);
 			_menu_button->get_popup()->set_item_checked(i, _show_mesh_updates);

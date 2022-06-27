@@ -30,6 +30,8 @@ public:
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;
 
+	bool is_generating_collision_surface() const;
+
 	void set_texturing_mode(TexturingMode mode);
 	TexturingMode get_texturing_mode() const;
 
@@ -45,12 +47,28 @@ public:
 	void set_deep_sampling_enabled(bool enable);
 	bool is_deep_sampling_enabled() const;
 
+	void set_transitions_enabled(bool enable);
+	bool get_transitions_enabled() const;
+
+	Ref<ShaderMaterial> get_default_lod_material() const override;
+
+	static void load_static_resources();
+	static void free_static_resources();
+
+	// Not sure if that's necessary, currently transitions are either combined or not generated
+	// enum TransitionMode {
+	// 	// No transition meshes will be generated
+	// 	TRANSITION_NONE,
+	// 	// Generates transition meshes as separate meshes
+	// 	TRANSITION_SEPARATE,
+	// 	// Transition meshes will be part of the main mesh
+	// 	TRANSITION_COMBINED
+	// };
+
 protected:
 	static void _bind_methods();
 
 private:
-	void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src);
-
 	TexturingMode _texture_mode = TEXTURES_NONE;
 
 	struct MeshOptimizationParams {
@@ -65,6 +83,8 @@ private:
 	// by querying the generator and edits. This can result in better quality meshes, but is also more expensive
 	// because voxel data shared between threads will have to be accessed randomly over denser data sets.
 	bool _deep_sampling_enabled = false;
+
+	bool _transitions_enabled = true;
 };
 
 } // namespace zylann::voxel

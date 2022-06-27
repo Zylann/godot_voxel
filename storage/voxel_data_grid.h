@@ -16,7 +16,9 @@ public:
 		_offset_in_blocks = blocks_box.pos;
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			VoxelDataBlock *block = map.get_block(pos);
-			if (block != nullptr) {
+			// TODO Might need to invoke the generator at some level for present blocks without voxels,
+			// or make sure all blocks contain voxel data
+			if (block != nullptr && block->has_voxels()) {
 				set_block(pos, block->get_voxels_shared());
 			} else {
 				set_block(pos, nullptr);

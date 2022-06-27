@@ -31,6 +31,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
     - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
+    - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
@@ -44,7 +45,8 @@ Godot 4 is required from this version.
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
-    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited for now).
+    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
+    - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
 
 - Blocky voxels
     - `VoxelMesherBlocky`: materials are now unlimited and specified in each model, either as overrides or directly from mesh (You still need to consider draw calls when using many materials)
@@ -68,10 +70,11 @@ Godot 4 is required from this version.
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
+    - `VoxelToolLodTerrain`: fix inconsistent result with integer `do_sphere` radius
+    - `VoxelToolTerrain`: `run_blocky_random_tick` no longer snaps area borders to chunk borders in unintuitive ways
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
     - `VoxelInstancer`: fix errors when removing scene instances
-    - `VoxelToolTerrain`: `run_blocky_random_tick` no longer snaps area borders to chunk borders in unintuitive ways
     - `VoxelStreamScript`: fix voxel data not getting retrieved when `BLOCK_FOUND` is returned
 
 - Breaking changes
@@ -80,6 +83,7 @@ Godot 4 is required from this version.
     - `VoxelLodTerrain`: `set_process_mode` and `get_process_mode` were renamed `set_process_callback` and `get_process_callback` (due to a name conflict)
     - `VoxelLodTerrain`: `has_block` was renamed `has_data_block`
     - `VoxelMesherTransvoxel`: Shader API: The data in `COLOR` and `UV` was moved respectively to `CUSTOM0` and `CUSTOM1` (old attributes no longer work for this use case)
+    - `VoxelMesherTransvoxel`: Variable LOD: a shader is now required to properly render transitions
     - `Voxel` was renamed `VoxelBlockyModel`
     - `VoxelLibrary` was renamed `VoxelBlockyLibrary`
     - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
@@ -116,6 +120,7 @@ This branch is the last supporting Godot 3
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
+    - `VoxelToolLodTerrain`: fix inconsistent result with integer `do_sphere` radius
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
     - `VoxelInstancer`: fix errors when removing scene instances

@@ -54,7 +54,7 @@ unsigned int VoxelDataMap::get_lod_index() const {
 int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
-	if (block == nullptr) {
+	if (block == nullptr || !block->has_voxels()) {
 		return _default_voxel[c];
 	}
 	RWLockRead lock(block->get_voxels_const().get_lock());
@@ -93,7 +93,8 @@ void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
-	if (block == nullptr) {
+	// TODO The generator needs to be invoked if the block has no voxels
+	if (block == nullptr || !block->has_voxels()) {
 		// TODO Not valid for a float return value
 		return _default_voxel[c];
 	}
@@ -105,6 +106,8 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	Vector3i lpos = to_local(pos);
+	// TODO In this situation, the generator must be invoked to fill the block
+	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Block not cached");
 	VoxelBufferInternal &voxels = block->get_voxels();
 	RWLockWrite lock(voxels.get_lock());
 	voxels.set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
@@ -159,6 +162,26 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 	return block;
 }
 
+VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
+	VoxelDataBlock *block = get_block(bpos);
+
+	if (block == nullptr) {
+		VoxelDataBlock &map_block = _blocks_map[bpos];
+		map_block = std::move(VoxelDataBlock(_lod_index));
+		block = &map_block;
+
+	} else if (overwrite) {
+		block->clear_voxels();
+
+	} else {
+		ZN_PROFILE_MESSAGE("Redundant data block");
+		ZN_PRINT_VERBOSE(format(
+				"Discarded block {} lod {}, there was already data and overwriting is not enabled", bpos, _lod_index));
+	}
+
+	return block;
+}
+
 bool VoxelDataMap::has_block(Vector3i pos) const {
 	return _blocks_map.find(pos) != _blocks_map.end();
 }
@@ -194,7 +217,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 				const VoxelDataBlock *block = get_block(bpos);
 				const Vector3i src_block_origin = block_to_voxel(bpos);
 
-				if (block != nullptr) {
+				if (block != nullptr && block->has_voxels()) {
 					const VoxelBufferInternal &src_buffer = block->get_voxels_const();
 
 					RWLockRead rlock(src_buffer.get_lock());
@@ -260,6 +283,9 @@ void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsi
 						}
 					}
 
+					// TODO In this situation, the generator has to be invoked to fill the blanks
+					ZN_ASSERT_CONTINUE_MSG(block->has_voxels(), "Area not cached");
+
 					const Vector3i dst_block_origin = block_to_voxel(bpos);
 
 					VoxelBufferInternal &dst_buffer = block->get_voxels();
@@ -306,13 +332,13 @@ bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator) {
+void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator, bool is_streaming) {
 	ZN_PROFILE_SCOPE();
 	//ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 
 	struct Task {
 		Vector3i block_pos;
-		uint8_t lod_index;
+		uint32_t lod_index;
 		std::shared_ptr<VoxelBufferInternal> voxels;
 	};
 
@@ -323,7 +349,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 	const unsigned int data_block_size = data.lods[0].map.get_block_size();
 
 	// Find empty slots
-	for (uint8_t lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
 		ZN_PRINT_VERBOSE(format("Preloading box {} at lod {} synchronously", block_box, lod_index));
@@ -333,10 +359,20 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 
 		{
 			RWLockRead rlock(data_lod.map_lock);
-			block_box.for_each_cell([&data_lod, lod_index, &todo](Vector3i block_pos) {
+			block_box.for_each_cell([&data_lod, lod_index, &todo, is_streaming](Vector3i block_pos) {
 				// We don't check "loading blocks", because this function wants to complete the task right now.
-				if (!data_lod.map.has_block(block_pos)) {
-					todo.push_back(Task{ block_pos, lod_index, nullptr });
+				const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
+				if (is_streaming) {
+					// Non-resident blocks must not be touched because we don't know what's in them.
+					// We can generate caches if resident ones have no voxel data.
+					if (block != nullptr && !block->has_voxels()) {
+						todo.push_back(Task{ block_pos, lod_index, nullptr });
+					}
+				} else {
+					// We can generate anywhere voxel data is not in memory
+					if (block == nullptr || !block->has_voxels()) {
+						todo.push_back(Task{ block_pos, lod_index, nullptr });
+					}
 				}
 			});
 		}
@@ -356,6 +392,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 			VoxelGenerator::VoxelQueryData q{ *task.voxels, task.block_pos * (data_block_size << task.lod_index),
 				task.lod_index };
 			generator->generate_block(q);
+			data.modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << q.lod));
 		}
 	}
 
@@ -374,7 +411,8 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 			for (; task_index < end_task_index; ++task_index) {
 				Task &task = todo[task_index];
 				ZN_ASSERT(task.lod_index == lod_index);
-				if (data_lod.map.has_block(task.block_pos)) {
+				const VoxelDataBlock *prev_block = data_lod.map.get_block(task.block_pos);
+				if (prev_block != nullptr && prev_block->has_voxels()) {
 					// Sorry, that block has been set in the meantime by another thread.
 					// We'll assume the block we just generated is redundant and discard it.
 					continue;
@@ -382,6 +420,22 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 				data_lod.map.set_block_buffer(task.block_pos, task.voxels, true);
 			}
 		}
+	}
+}
+
+void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box) {
+	for (unsigned int lod_index = 0; lod_index < data.lod_count; ++lod_index) {
+		VoxelDataLodMap::Lod &lod = data.lods[lod_index];
+		RWLockRead rlock(lod.map_lock);
+
+		const Box3i blocks_box = p_voxel_box.downscaled(lod.map.get_block_size() << lod_index);
+		blocks_box.for_each_cell_zxy([&lod](const Vector3i bpos) {
+			VoxelDataBlock *block = lod.map.get_block(bpos);
+			if (block == nullptr || block->is_edited() || block->is_modified()) {
+				return;
+			}
+			block->clear_voxels();
+		});
 	}
 }
 

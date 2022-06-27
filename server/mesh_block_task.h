@@ -28,10 +28,11 @@ public:
 	//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 	Vector3i position; // In mesh blocks of the specified lod
 	uint32_t volume_id;
-	uint8_t lod = 0;
+	uint8_t lod_index = 0;
 	uint8_t blocks_count = 0;
 	uint8_t data_block_size = 0;
 	bool collision_hint = false;
+	bool lod_hint = false;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelDataLodMap> data;

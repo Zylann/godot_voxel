@@ -22,6 +22,7 @@
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
 #include <scene/3d/mesh_instance_3d.h>
+#include <scene/resources/concave_polygon_shape_3d.h>
 
 namespace zylann::voxel {
 
@@ -58,12 +59,12 @@ VoxelTerrain::VoxelTerrain() {
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
 	VoxelServer::VolumeCallbacks callbacks;
 	callbacks.data = this;
-	callbacks.mesh_output_callback = [](void *cb_data, const VoxelServer::BlockMeshOutput &ob) {
+	callbacks.mesh_output_callback = [](void *cb_data, VoxelServer::BlockMeshOutput &ob) {
 		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->_volume_id;
 		task->self = self;
-		task->data = ob;
+		task->data = std::move(ob);
 		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
 	};
 	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
@@ -575,12 +576,15 @@ struct ScheduleSaveAction {
 		if (block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelTerrain::BlockToSave b;
-			if (with_copy) {
-				RWLockRead lock(block.get_voxels().get_lock());
-				b.voxels = make_shared_instance<VoxelBufferInternal>();
-				block.get_voxels_const().duplicate_to(*b.voxels, true);
-			} else {
-				b.voxels = block.get_voxels_shared();
+			// If a modified block has no voxels, it is equivalent to removing the block from the stream
+			if (block.has_voxels()) {
+				if (with_copy) {
+					RWLockRead lock(block.get_voxels().get_lock());
+					b.voxels = make_shared_instance<VoxelBufferInternal>();
+					block.get_voxels_const().duplicate_to(*b.voxels, true);
+				} else {
+					b.voxels = block.get_voxels_shared();
+				}
 			}
 			b.position = bpos;
 			blocks_to_save.push_back(b);
@@ -936,8 +940,8 @@ static void request_block_load(uint32_t volume_id, std::shared_ptr<StreamingDepe
 		init_sparse_grid_priority_dependency(
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
-		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(
-				volume_id, block_pos, 0, data_block_size, request_instances, stream_dependency, priority_dependency));
+		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
+				stream_dependency, priority_dependency, true));
 
 		VoxelServer::get_singleton().push_async_io_task(task);
 
@@ -1471,7 +1475,7 @@ void VoxelTerrain::process_meshing() {
 			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
 			task->volume_id = _volume_id;
 			task->position = mesh_block_pos;
-			task->lod = 0;
+			task->lod_index = 0;
 			task->meshing_dependency = _meshing_dependency;
 			task->data_block_size = get_data_block_size();
 			task->collision_hint = _generate_collisions;
@@ -1480,7 +1484,7 @@ void VoxelTerrain::process_meshing() {
 			task->blocks_count = 0;
 			data_box.for_each_cell_zxy([this, task](Vector3i data_block_pos) {
 				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
-				if (data_block != nullptr) {
+				if (data_block != nullptr && data_block->has_voxels()) {
 					task->blocks[task->blocks_count] = data_block->get_voxels_shared();
 				}
 				++task->blocks_count;
@@ -1540,10 +1544,16 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		return;
 	}
 
+	// There is a slim chance for some updates to come up just after setting the mesher to null. Avoids a crash.
+	if (_mesher.is_null()) {
+		++_stats.dropped_block_meshs;
+		return;
+	}
+
 	Ref<ArrayMesh> mesh;
 
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
-	const bool use_render_mesh_as_collider = gen_collisions && ob.surfaces.collision_surface.positions.size() == 0;
+	const bool use_render_mesh_as_collider = gen_collisions && !_mesher->is_generating_collision_surface();
 	std::vector<Array> render_surfaces;
 
 	int gd_surface_index = 0;
@@ -1600,16 +1610,9 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	if (gen_collisions) {
-		const bool debug_collisions = get_tree()->is_debugging_collisions_hint();
-		const VoxelMesher::Output::CollisionSurface &collision_surface = ob.surfaces.collision_surface;
-
-		if (use_render_mesh_as_collider) {
-			block->set_collision_mesh(to_span(render_surfaces), debug_collisions, this, _collision_margin);
-
-		} else {
-			block->set_collision_mesh(to_span(collision_surface.positions), to_span(collision_surface.indices),
-					debug_collisions, this, _collision_margin);
-		}
+		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
+		block->set_collision_shape(
+				collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
@@ -1618,6 +1621,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	block->set_visible(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
+	// TODO We dont set MESH_UP_TO_DATE anywhere, but it seems to work?
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {

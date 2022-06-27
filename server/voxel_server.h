@@ -36,18 +36,21 @@ public:
 		};
 
 		Type type;
+		// If voxels are null with TYPE_LOADED, it means no block was found in the stream (if any) and no generator task
+		// was scheduled. This is the case when we don't want to cache blocks of generated data.
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		UniquePtr<InstanceBlockData> instances;
 		Vector3i position;
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;
-		// Blocks with this flag set should not be ignored
+		// Blocks with this flag set should not be ignored.
+		// This is used when data streaming is off, all blocks are loaded at once.
 		bool initial_load;
 	};
 
 	struct VolumeCallbacks {
-		void (*mesh_output_callback)(void *, const BlockMeshOutput &) = nullptr;
+		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
 		void *data = nullptr;
 
@@ -116,7 +119,8 @@ public:
 		_world.viewers.for_each_with_id(f);
 	}
 
-	void push_main_thread_time_spread_task(ITimeSpreadTask *task);
+	void push_main_thread_time_spread_task(
+			ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority = TimeSpreadTaskRunner::PRIORITY_NORMAL);
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 

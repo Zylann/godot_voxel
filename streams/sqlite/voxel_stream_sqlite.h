@@ -1,10 +1,13 @@
 #ifndef VOXEL_STREAM_SQLITE_H
 #define VOXEL_STREAM_SQLITE_H
 
+#include "../../util/math/vector3i16.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
+
+#include <unordered_set>
 #include <vector>
 
 namespace zylann::voxel {
@@ -20,6 +23,10 @@ public:
 	VoxelStreamSQLite();
 	~VoxelStreamSQLite();
 
+	// Warning: changing this path from a valid one to another is not always safe in a multithreaded context.
+	// If threads were about to write into database A but it gets changed to database B,
+	// that remaining data will get written in database B.
+	// The nominal use case is to set this path when the game starts and not change it until the end of the session.
 	void set_database_path(String path);
 	String get_database_path() const;
 
@@ -42,7 +49,49 @@ public:
 
 	void flush_cache();
 
+	// Might improve query performance if saved data is very sparse (like when only edited blocks are saved).
+	void set_key_cache_enabled(bool enable);
+	bool is_key_cache_enabled() const;
+
 private:
+	void rebuild_key_cache();
+
+	struct BlockKeysCache {
+		FixedArray<std::unordered_set<Vector3i16>, constants::MAX_LOD> lods;
+		RWLock rw_lock;
+
+		inline bool contains(Vector3i16 bpos, unsigned int lod_index) const {
+			const std::unordered_set<Vector3i16> &keys = lods[lod_index];
+			RWLockRead rlock(rw_lock);
+			return keys.find(bpos) != keys.end();
+		}
+
+		inline void add_no_lock(Vector3i16 bpos, unsigned int lod_index) {
+			lods[lod_index].insert(bpos);
+		}
+
+		inline void add(Vector3i16 bpos, unsigned int lod_index) {
+			RWLockWrite wlock(rw_lock);
+			add_no_lock(bpos, lod_index);
+		}
+
+		inline void clear() {
+			RWLockWrite wlock(rw_lock);
+			for (unsigned int i = 0; i < lods.size(); ++i) {
+				lods[i].clear();
+			}
+		}
+
+		// inline size_t get_memory_usage() const {
+		// 	size_t mem = 0;
+		// 	for (unsigned int i = 0; i < lods.size(); ++i) {
+		// 		const std::unordered_set<Vector3i> &keys = lods[i];
+		// 		mem += sizeof(Vector3i) * keys.size();
+		// 	}
+		// 	return mem;
+		// }
+	};
+
 	// An SQlite3 database is safe to use with multiple threads in serialized mode,
 	// but after having a look at the implementation while stepping with a debugger, here are what actually happens:
 	//
@@ -66,11 +115,18 @@ private:
 	String _connection_path;
 	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
+	// This cache stores blocks in memory, and gets flushed to the database when big enough.
+	// This is because save queries are more expensive.
+	// It also speeds up queries of blocks that were recently saved.
 	VoxelStreamCache _cache;
-
-	// TODO I should consider specialized memory allocators
-	static thread_local std::vector<uint8_t> _temp_block_data;
-	static thread_local std::vector<uint8_t> _temp_compressed_block_data;
+	// The current way we stream data is by querying every block location near each player, to know if there is data.
+	// Therefore testing if a block is present is the beginning of the most frequently executed code path.
+	// In configurations where only edited blocks get saved, very few blocks even get stored in the database,
+	// so it makes sense to cache keys to make this query fast and concurrent.
+	// Note: in the long term, on a game that systematically saves everything it generates instead of just edits,
+	// such a cache can become quite large. In this case we could either allow turning it off, or use an octree.
+	BlockKeysCache _block_keys_cache;
+	bool _block_keys_cache_enabled = false;
 };
 
 } // namespace zylann::voxel

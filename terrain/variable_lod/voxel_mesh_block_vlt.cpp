@@ -1,5 +1,6 @@
 #include "voxel_mesh_block_vlt.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "../free_mesh_task.h"
 
@@ -74,7 +75,7 @@ void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, int side, DirectMeshInstance::GIMode gi_mode) {
+void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -190,7 +191,7 @@ void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
-		if ((diff & (1 << dir)) && mi.is_valid()) {
+		if (mi.is_valid() && (diff & (1 << dir))) {
 			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
 		}
 	}
@@ -208,6 +209,7 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 	ZN_PROFILE_SCOPE();
 
 	if (_mesh_instance.is_valid() || _static_body.is_valid()) {
+		// TODO Optimize: could be optimized due to the basis being identity
 		const Transform3D local_transform(Basis(), _position_in_voxels);
 		const Transform3D world_transform = parent_transform * local_transform;
 
@@ -225,6 +227,16 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 		if (_static_body.is_valid()) {
 			_static_body.set_transform(world_transform);
 		}
+	}
+}
+
+void VoxelMeshBlockVLT::update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform) {
+	DirectMeshInstance &mi = _transition_mesh_instances[side];
+	if (mi.is_valid()) {
+		// TODO Optimize: could be optimized due to the basis being identity
+		const Transform3D local_transform(Basis(), _position_in_voxels);
+		const Transform3D world_transform = parent_transform * local_transform;
+		mi.set_transform(world_transform);
 	}
 }
 
@@ -278,6 +290,60 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 	}
 
 	return finished;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		Ref<Material> material) {
+	ZN_PROFILE_SCOPE();
+	Ref<ArrayMesh> mesh;
+
+	unsigned int surface_index = 0;
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		Array arrays = surface.arrays;
+
+		if (arrays.is_empty()) {
+			continue;
+		}
+
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
+			continue;
+		}
+
+		if (mesh.is_null()) {
+			mesh.instantiate();
+		}
+
+		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
+		// the same)
+		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
+		mesh->surface_set_material(surface_index, material);
+		// No multi-material supported yet
+		++surface_index;
+	}
+
+	// Debug code to highlight vertex sharing
+	/*if (mesh->get_surface_count() > 0) {
+		Array wireframe_surface = generate_debug_seams_wireframe_surface(mesh, 0);
+		if (wireframe_surface.size() > 0) {
+			const int wireframe_surface_index = mesh->get_surface_count();
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
+			Ref<SpatialMaterial> line_material;
+			line_material.instance();
+			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+			line_material->set_albedo(Color(1.0, 0.0, 1.0));
+			mesh->surface_set_material(wireframe_surface_index, line_material);
+		}
+	}*/
+
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+		mesh = Ref<Mesh>();
+	}
+
+	return mesh;
 }
 
 } // namespace zylann::voxel

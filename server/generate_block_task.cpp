@@ -1,5 +1,6 @@
 #include "generate_block_task.h"
 #include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_data_map.h"
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
@@ -42,6 +43,11 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod };
 	const VoxelGenerator::Result result = generator->generate_block(query_data);
 	max_lod_hint = result.max_lod_hint;
+
+	if (data != nullptr) {
+		data->modifiers.apply(
+				query_data.voxel_buffer, AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << lod));
+	}
 
 	if (stream_dependency->valid) {
 		Ref<VoxelStream> stream = stream_dependency->stream;
@@ -87,12 +93,20 @@ void GenerateBlockTask::apply_result() {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		if (stream_dependency->valid) {
+			Ref<VoxelStream> stream = stream_dependency->stream;
+
 			VoxelServer::BlockDataOutput o;
 			o.voxels = voxels;
 			o.position = position;
 			o.lod = lod;
 			o.dropped = !has_run;
-			o.type = VoxelServer::BlockDataOutput::TYPE_GENERATED;
+			if (stream.is_valid() && stream->get_save_generator_output()) {
+				// We can't consider the block as "generated" since there is no state to tell that once saved,
+				// so it has to be considered an edited block
+				o.type = VoxelServer::BlockDataOutput::TYPE_LOADED;
+			} else {
+				o.type = VoxelServer::BlockDataOutput::TYPE_GENERATED;
+			}
 			o.max_lod_hint = max_lod_hint;
 			o.initial_load = false;
 

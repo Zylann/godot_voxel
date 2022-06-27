@@ -17,6 +17,7 @@ class VoxelBufferInternal;
 class VoxelGenerator;
 struct VoxelDataLodMap;
 
+// Base class for algorithms that generate meshes from voxels.
 class VoxelMesher : public Resource {
 	GDCLASS(VoxelMesher, Resource)
 public:
@@ -30,12 +31,15 @@ public:
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
-		// Not initialized because it confused GCC.
+		// Not initialized because it confused GCC (???)
 		uint8_t lod; // = 0;
 		// If true, collision information is required.
 		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
 		// but in other setups it can be different and will be returned in `collision_surface`.
 		bool collision_hint = false;
+		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
+		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
+		bool lod_hint = false;
 	};
 
 	struct Output {
@@ -46,14 +50,22 @@ public:
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
+		// Flags for creating the Godot mesh resource
 		uint32_t mesh_flags = 0;
 
 		struct CollisionSurface {
 			std::vector<Vector3f> positions;
 			std::vector<int> indices;
+			// If >= 0, the collision surface may actually be picked from a sub-section of arrays of the first surface
+			// in the render mesh (It may start from index 0).
+			// Used when transition meshes are combined with the main mesh.
+			int32_t submesh_vertex_end = -1;
+			int32_t submesh_index_end = -1;
 		};
 		CollisionSurface collision_surface;
 
+		// May be used to store extra information needed in shader to render the mesh properly
+		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 	};
 
@@ -91,8 +103,24 @@ public:
 	virtual Ref<Material> get_material_by_index(unsigned int i) const;
 
 #ifdef TOOLS_ENABLED
+	// If the mesher has problems, messages may be returned by this method so they can be shown to the user.
 	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
 #endif
+
+	// Returns `true` if the mesher generates specific data for mesh collisions, which will be found in
+	// `CollisionSurface`.
+	// If `false`, the rendering mesh may be used as collider.
+	virtual bool is_generating_collision_surface() const {
+		return false;
+	}
+
+	// Gets a special default material to be used to render meshes produced with this mesher, when variable level of
+	// detail is used. If null, standard materials or default Godot shaders can be used. This is mostly to provide a
+	// default shader that looks ok. Users are still expected to tweak them if need be.
+	// Such material is not meant to be modified.
+	virtual Ref<ShaderMaterial> get_default_lod_material() const {
+		return Ref<ShaderMaterial>();
+	}
 
 protected:
 	static void _bind_methods();

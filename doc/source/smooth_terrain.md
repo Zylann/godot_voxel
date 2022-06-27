@@ -95,23 +95,39 @@ Create and setup a `ShaderMaterial` on your terrain, and integrate this snippet 
 // This is recognized and assigned automatically by the voxel engine
 uniform int u_transition_mask;
 
-vec3 get_transvoxel_position(vec3 vertex_pos, vec4 vertex_col) {
-	int border_mask = int(vertex_col.a);
-	int cell_border_mask = border_mask & 63; // Which sides the cell is touching
-	int vertex_border_mask = (border_mask >> 6) & 63; // Which sides the vertex is touching
-
+float get_transvoxel_secondary_factor(int idata) {
+	int cell_border_mask = idata & 63; // Which sides the cell is touching
+	int vertex_border_mask = (idata >> 8) & 63; // Which sides the vertex is touching
 	// If the vertex is near a side where there is a low-resolution neighbor,
 	// move it to secondary position
-	int m = u_transition_mask & (cell_border_mask & 63);
+	int m = u_transition_mask & cell_border_mask;
 	float t = float(m != 0);
-
 	// If the vertex lies on one or more sides, and at least one side has no low-resolution neighbor,
 	// don't move the vertex.
 	t *= float((vertex_border_mask & ~u_transition_mask) == 0);
+	return t;
+}
 
-	// Position to use when border mask matches
-	vec3 secondary_position = vertex_col.rgb;
-	return mix(vertex_pos, secondary_position, t);
+vec3 get_transvoxel_position(vec3 vertex_pos, vec4 fdata) {
+	int idata = floatBitsToInt(fdata.a);
+
+	// Move vertices to smooth transitions
+	float secondary_factor = get_transvoxel_secondary_factor(idata);
+	vec3 secondary_position = fdata.xyz;
+	vec3 pos = mix(vertex_pos, secondary_position, secondary_factor);
+
+	// If the mesh combines transitions and the vertex belongs to a transition,
+	// when that transition isn't active we change the position of the vertices so
+	// all triangles will be degenerate and won't be visible.
+	// This is an alternative to rendering them separately,
+	// which has less draw calls and less mesh resources to create in Godot.
+	// Ideally I would tweak the index buffer like LOD does but Godot does not
+	// expose anything to use it that way.
+	int itransition = (idata >> 16) & 0xff; // Is the vertex on a transition mesh?
+	float transition_cull = float(itransition == 0 || (itransition & u_transition_mask) != 0);
+	pos *= transition_cull;
+
+	return pos;
 }
 
 void vertex() {
@@ -388,6 +404,11 @@ For information about LOD behavior in the editor, see [Camera options in editor]
 ### Voxel size
 
 Currently, the size of voxels is fixed to 1 space unit. It might be possible in a future version to change it. For now, a workaround is to scale down the node. However, make sure it is a uniform scale, and careful not to scale too low otherwise it might blow up.
+
+`scale` from Node3D must not be confused with the concept of *size*. If you change `scale`, *it will also scale the voxel grid*, view distances, all the dimensions you might have set in generators, and of course it will apply to child nodes as well. The result will *look the same*, just bigger, no more details. So if you want something larger *with more details as a result*, it is recommended to change these sizes instead of scaling everything.
+For example, if your generator contains a sphere and Perlin noise, you may change the radius of the sphere and the frequency/period of the noise instead of scaling the node. Doing it this way preserve the size of voxels and so it preserves accuracy.
+
+Godot also allows you to scale non-uniformly, but it's not recommended (might cause collision issues too).
 
 
 ### Full load mode

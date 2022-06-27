@@ -29,10 +29,10 @@ bool is_mesh_empty(const Mesh &mesh) {
 	return false;
 }
 
-// Faster version of Mesh::create_trimesh_shape()
-// See https://github.com/Zylann/godot_voxel/issues/54
-//
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces) {
+	// Faster version of Mesh::create_trimesh_shape()
+	// See https://github.com/Zylann/godot_voxel/issues/54
+
 	ZN_PROFILE_SCOPE();
 
 	PackedVector3Array face_points;
@@ -127,6 +127,48 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> pos
 	}
 
 	Ref<ConcavePolygonShape3D> shape;
+	{
+		ZN_PROFILE_SCOPE_NAMED("Godot shape");
+		shape.instantiate();
+		shape->set_faces(face_points);
+	}
+	return shape;
+}
+
+Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arrays, unsigned int index_count) {
+	ZN_PROFILE_SCOPE();
+
+	Ref<ConcavePolygonShape3D> shape;
+
+	if (surface_arrays.size() == 0) {
+		return shape;
+	}
+	ZN_ASSERT(surface_arrays.size() == Mesh::ARRAY_MAX);
+
+	PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
+	ERR_FAIL_COND_V(index_count < 0 || index_count > static_cast<unsigned int>(indices.size()), shape);
+	if (indices.size() < 3) {
+		return shape;
+	}
+
+	PackedVector3Array positions = surface_arrays[Mesh::ARRAY_VERTEX];
+
+	ERR_FAIL_COND_V(positions.size() < 3, shape);
+	ERR_FAIL_COND_V(indices.size() < 3, shape);
+	ERR_FAIL_COND_V(indices.size() % 3 != 0, shape);
+
+	PackedVector3Array face_points;
+	face_points.resize(indices.size());
+
+	// Deindex mesh
+	{
+		Vector3 *w = face_points.ptrw();
+		for (unsigned int ii = 0; ii < index_count; ++ii) {
+			const int index = indices[ii];
+			w[ii] = to_vec3(positions[index]);
+		}
+	}
+
 	{
 		ZN_PROFILE_SCOPE_NAMED("Godot shape");
 		shape.instantiate();

@@ -24,20 +24,29 @@ public:
 // Runs tasks in the caller thread, within a time budget per call. Kind of like coroutines.
 class TimeSpreadTaskRunner {
 public:
+	enum Priority { //
+		PRIORITY_NORMAL = 0,
+		PRIORITY_LOW = 1,
+		PRIORITY_COUNT
+	};
+
 	~TimeSpreadTaskRunner();
 
 	// Pushing is thread-safe.
-	void push(ITimeSpreadTask *task);
-	void push(Span<ITimeSpreadTask *> tasks);
+	void push(ITimeSpreadTask *task, Priority priority = PRIORITY_NORMAL);
+	void push(Span<ITimeSpreadTask *> tasks, Priority priority = PRIORITY_NORMAL);
 
 	void process(uint64_t time_budget_usec);
 	void flush();
 	unsigned int get_pending_count() const;
 
 private:
-	// TODO Optimization: naive thread safety. Should be enough for now.
-	std::queue<ITimeSpreadTask *> _tasks;
-	BinaryMutex _tasks_mutex;
+	struct Queue {
+		std::queue<ITimeSpreadTask *> tasks;
+		// TODO Optimization: naive thread safety. Should be enough for now.
+		BinaryMutex tasks_mutex;
+	};
+	FixedArray<Queue, PRIORITY_COUNT> _queues;
 };
 
 } // namespace zylann

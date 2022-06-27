@@ -4,12 +4,13 @@ namespace zylann::voxel {
 
 bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels) {
 	const Lod &lod = _cache[lod_index];
-	lod.rw_lock.read_lock();
+
+	RWLockRead rlock(lod.rw_lock);
+
 	auto it = lod.blocks.find(position);
 
 	if (it == lod.blocks.end()) {
 		// Not in cache, will have to query
-		lod.rw_lock.read_unlock();
 		return false;
 
 	} else {
@@ -21,7 +22,6 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 		// and the requests wants us to populate the buffer it provides
 		vb.duplicate_to(out_voxels, true);
 
-		lod.rw_lock.read_unlock();
 		return true;
 	}
 }

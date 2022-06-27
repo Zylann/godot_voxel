@@ -12,7 +12,7 @@ class LoadBlockDataTask : public IThreadedTask {
 public:
 	LoadBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 			bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			PriorityDependency p_priority_dependency);
+			PriorityDependency p_priority_dependency, bool generate_cache_data);
 
 	~LoadBlockDataTask();
 
@@ -36,7 +36,8 @@ private:
 	bool _request_instances = false;
 	//bool _request_voxels = false;
 	bool _max_lod_hint = false;
-	bool _fallback_on_generator = false;
+	bool _generate_cache_data = true;
+	bool _requested_generator_task = false;
 	std::shared_ptr<StreamingDependency> _stream_dependency;
 };
 

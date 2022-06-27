@@ -20,6 +20,7 @@
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "server/voxel_server_gd.h"
+#include "storage/modifiers_gd.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
@@ -135,6 +136,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
 
+		VoxelMesherTransvoxel::load_static_resources();
+
 		// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not
 		// abstract?
 		ClassDB::register_class<gd::VoxelServer>();
@@ -160,6 +163,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstanceGenerator>();
 		ClassDB::register_class<VoxelInstancer>();
 		ClassDB::register_class<VoxelInstanceComponent>();
+		ClassDB::register_abstract_class<gd::VoxelModifier>();
+		ClassDB::register_class<gd::VoxelModifierSphere>();
+		ClassDB::register_class<gd::VoxelModifierMesh>();
 
 		// Streams
 		ClassDB::register_abstract_class<VoxelStream>();
@@ -262,6 +268,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		// users can write custom generators, which run inside threads, and these threads are hosted in the server...
 		// See https://github.com/Zylann/godot_voxel/issues/189
 
+		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
 		VoxelGraphNodeDB::destroy_singleton();
 		gd::VoxelServer::destroy_singleton();
