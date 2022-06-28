@@ -810,7 +810,11 @@ void VoxelInstancer::save_all_modified_blocks() {
 VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelInstanceLibrarySceneItem &scene_item,
 		int instance_index, unsigned int block_index, Transform3D transform, int data_block_size_po2) {
 	SceneInstance instance;
-	ERR_FAIL_COND_V(scene_item.get_scene().is_null(), instance);
+	ERR_FAIL_COND_V_MSG(scene_item.get_scene().is_null(), instance,
+			String("{0} ({1}) is missing an attached scene in {2} ({3})")
+					.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(), scene_item.get_item_name(),
+									VoxelInstancer::get_class_static()),
+							get_path()));
 	Node *root = scene_item.get_scene()->instantiate();
 	ERR_FAIL_COND_V(root == nullptr, instance);
 	instance.root = Object::cast_to<Node3D>(root);
@@ -961,7 +965,11 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
 		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
-		ERR_FAIL_COND(scene_item->get_scene().is_null());
+		ERR_FAIL_COND_MSG(scene_item->get_scene().is_null(),
+				String("{0} ({1}) is missing an attached scene in {2} ({3})")
+						.format(varray(VoxelInstanceLibrarySceneItem::get_class_static(), item_base.get_item_name(),
+										VoxelInstancer::get_class_static()),
+								get_path()));
 
 		const int data_block_size_po2 = _parent_data_block_size_po2;
 
