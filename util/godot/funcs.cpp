@@ -165,7 +165,7 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arra
 		Vector3 *w = face_points.ptrw();
 		for (unsigned int ii = 0; ii < index_count; ++ii) {
 			const int index = indices[ii];
-			w[ii] = to_vec3(positions[index]);
+			w[ii] = positions[index];
 		}
 	}
 

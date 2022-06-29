@@ -186,7 +186,7 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 	Ref<ConcavePolygonShape3D> shape;
 
 	if (mesher.is_generating_collision_surface()) {
-		if (mesher_output.collision_surface.submesh_vertex_end == -1) {
+		if (mesher_output.collision_surface.submesh_vertex_end != -1) {
 			// Use a sub-region of the render mesh
 			if (mesher_output.surfaces.size() > 0) {
 				shape = create_concave_polygon_shape(
