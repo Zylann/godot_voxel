@@ -30,6 +30,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: added Pow and Powi nodes
     - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
     - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
+    - `VoxelGeneratorGraph`: Added "live update" option, to automatically re-generate the terrain when the graph is modified
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 

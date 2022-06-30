@@ -187,6 +187,8 @@ public:
 	// Gets the buffer address of a specific output port
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint16_t &out_address) const;
 
+	uint64_t get_program_hash() const;
+
 	struct HeapResource {
 		void *ptr;
 		void (*deleter)(void *p);

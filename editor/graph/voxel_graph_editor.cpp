@@ -6,6 +6,7 @@
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
+#include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
@@ -16,6 +17,7 @@
 #include <core/object/undo_redo.h>
 #include <core/os/time.h>
 #include <editor/editor_scale.h>
+#include <scene/gui/check_box.h>
 #include <scene/gui/code_edit.h>
 #include <scene/gui/graph_edit.h>
 #include <scene/gui/label.h>
@@ -78,6 +80,13 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		generate_shader_button->connect(
 				"pressed", callable_mp(this, &VoxelGraphEditor::_on_generate_shader_button_pressed));
 		toolbar->add_child(generate_shader_button);
+
+		CheckBox *live_update_checkbox = memnew(CheckBox);
+		live_update_checkbox->set_text(TTR("Live Update"));
+		live_update_checkbox->set_tooltip(TTR("Automatically re-generate the terrain when the generator is modified"));
+		live_update_checkbox->set_pressed(_live_update_enabled);
+		live_update_checkbox->connect("toggled", callable_mp(this, &VoxelGraphEditor::_on_live_update_toggled));
+		toolbar->add_child(live_update_checkbox);
 
 		vbox_container->add_child(toolbar);
 	}
@@ -193,7 +202,7 @@ void VoxelGraphEditor::_process(float delta) {
 	if (_time_before_preview_update > 0.f) {
 		_time_before_preview_update -= delta;
 		if (_time_before_preview_update < 0.f) {
-			update_previews();
+			update_previews(true);
 		}
 	}
 
@@ -596,7 +605,7 @@ void reset_modulates(GraphEdit &graph_edit) {
 	}
 }
 
-void VoxelGraphEditor::update_previews() {
+void VoxelGraphEditor::update_previews(bool with_live_update) {
 	if (_graph.is_null()) {
 		return;
 	}
@@ -605,7 +614,7 @@ void VoxelGraphEditor::update_previews() {
 	hide_profiling_ratios();
 	reset_modulates(*_graph_edit);
 
-	uint64_t time_before = Time::get_singleton()->get_ticks_usec();
+	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	const VoxelGraphRuntime::CompilationResult result = _graph->compile(true);
 	if (!result.success) {
@@ -631,7 +640,6 @@ void VoxelGraphEditor::update_previews() {
 	if (!_graph->is_good()) {
 		return;
 	}
-
 	// We assume no other thread will try to modify the graph and compile something not good
 
 	update_slice_previews();
@@ -640,8 +648,22 @@ void VoxelGraphEditor::update_previews() {
 		update_range_analysis_previews();
 	}
 
-	uint64_t time_taken = Time::get_singleton()->get_ticks_usec() - time_before;
+	const uint64_t time_taken = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(format("Previews generated in {} us", time_taken));
+
+	if (_live_update_enabled && with_live_update) {
+		// Check if the graph changed in a way that actually changes the output,
+		// because re-generating all voxels is expensive.
+		// Note, sub-resouces can be involved, not just node connections and properties.
+		const uint64_t hash = _graph->get_output_graph_hash();
+
+		if (hash != _last_output_graph_hash) {
+			_last_output_graph_hash = hash;
+			// Re-generate the terrain.
+			// Only do that if the graph is valid.
+			_voxel_node->restart_stream();
+		}
+	}
 }
 
 void VoxelGraphEditor::update_range_analysis_previews() {
@@ -847,7 +869,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 }
 
 void VoxelGraphEditor::_on_update_previews_button_pressed() {
-	update_previews();
+	update_previews(false);
 }
 
 void VoxelGraphEditor::_on_profile_button_pressed() {
@@ -940,6 +962,10 @@ void VoxelGraphEditor::_on_generate_shader_button_pressed() {
 	}
 	_shader_dialog->set_shader_code(code);
 	_shader_dialog->popup_centered();
+}
+
+void VoxelGraphEditor::_on_live_update_toggled(bool enabled) {
+	_live_update_enabled = enabled;
 }
 
 void VoxelGraphEditor::_bind_methods() {

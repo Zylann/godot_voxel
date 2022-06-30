@@ -8,7 +8,6 @@ class GraphEdit;
 class PopupMenu;
 class AcceptDialog;
 class UndoRedo;
-class Node3D;
 
 namespace zylann::voxel {
 
@@ -50,7 +49,7 @@ private:
 	void set_node_position(int id, Vector2 offset);
 
 	void schedule_preview_update();
-	void update_previews();
+	void update_previews(bool with_live_update);
 	void update_slice_previews();
 	void update_range_analysis_previews();
 	void update_range_analysis_gizmo();
@@ -74,6 +73,7 @@ private:
 	void _on_range_analysis_area_changed();
 	void _on_preview_axes_menu_id_pressed(int id);
 	void _on_generate_shader_button_pressed();
+	void _on_live_update_toggled(bool enabled);
 
 	void _check_nothing_selected();
 
@@ -90,9 +90,11 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
-	Node3D *_voxel_node = nullptr;
+	VoxelNode *_voxel_node = nullptr;
 	DebugRenderer _debug_renderer;
 	VoxelGraphEditorShaderDialog *_shader_dialog = nullptr;
+	bool _live_update_enabled = false;
+	uint64_t _last_output_graph_hash = 0;
 
 	enum PreviewAxes { //
 		PREVIEW_XY = 0,
