@@ -20,6 +20,7 @@ Godot 4 is required from this version.
     - Improved support for 64-bit floats
     - Added `ZN_ThreadedTask` to allow running custom tasks using the thread pool system
     - Added `VoxelMeshSDF` to bake SDF from meshes, which can be used in voxel sculpting.
+    - Mesh resources are now fully built on threads with the Godot Vulkan renderer
     - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
     - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
