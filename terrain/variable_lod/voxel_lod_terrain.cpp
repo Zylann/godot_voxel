@@ -1424,9 +1424,10 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 }
 
 void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
-	// The following is done on the main thread because Godot doesn't really support multithreaded Mesh allocation.
-	// This also proved to be very slow compared to the meshing process itself...
-	// hopefully Vulkan will allow us to upload graphical resources without stalling rendering as they upload?
+	// The following is done on the main thread because Godot doesn't really support everything done here.
+	// Building meshes can be done in the threaded task when using Vulkan, but not OpenGL.
+	// Setting up mesh instances might not be well threaded?
+	// Building collision shapes in threads efficiently is not supported.
 	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(!is_inside_tree());
@@ -1472,19 +1473,31 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	// -------- Part where we invoke Godot functions ---------
-	// As far as I know, this is not yet threadable efficiently, for the most part.
-	// By that, I mean being able to call into RenderingServer and PhysicsServer,
-	// without inducing a stall of the main thread.
+	// This part is not fully threadable.
 
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod];
 	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
-	Ref<ArrayMesh> mesh =
-			build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+	Ref<ArrayMesh> mesh;
+	if (ob.has_mesh_resource) {
+		// The mesh was already built as part of the threaded task
+		mesh = ob.mesh;
+		// It can be empty
+		if (mesh.is_valid()) {
+			const unsigned int surface_count = mesh->get_surface_count();
+			for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
+				mesh->surface_set_material(surface_index, _material);
+			}
+		}
+	} else {
+		// Can't build meshes in threads, do it here
+		build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
+	}
 
 	if (mesh.is_null()) {
+		// The mesh is empty
 		if (block != nullptr) {
 			// No surface anymore in this block, destroy it
 			// TODO Factor removal in a function, it's done in a few places
@@ -1562,7 +1575,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
 
-	{
+	if (!ob.has_mesh_resource) {
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
 		// because there are 6 transition meshes per block, we would spend about 80% of the time on these if we build
 		// them all. Which is counter-intuitive because transition meshes are tiny in comparison... (collision meshes

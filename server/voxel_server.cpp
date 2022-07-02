@@ -220,6 +220,14 @@ void VoxelServer::set_main_thread_time_budget_usec(unsigned int usec) {
 	_main_thread_time_budget_usec = usec;
 }
 
+void VoxelServer::set_threaded_mesh_resource_building_enabled(bool enable) {
+	_threaded_mesh_resource_building_enabled = enable;
+}
+
+bool VoxelServer::is_threaded_mesh_resource_building_enabled() const {
+	return _threaded_mesh_resource_building_enabled;
+}
+
 void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task);
 }

@@ -1,6 +1,8 @@
 #include "mesh_block_task.h"
 #include "../storage/voxel_data_map.h"
+#include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
+#include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "voxel_server.h"
@@ -170,6 +172,61 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	}
 }
 
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		// This vector indexes surfaces to the material they use (if a surface uses a material but is empty, it
+		// won't be added to the mesh)
+		std::vector<uint8_t> &mesh_material_indices) {
+	ZN_PROFILE_SCOPE();
+	Ref<ArrayMesh> mesh;
+
+	unsigned int gd_surface_index = 0;
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
+		const VoxelMesher::Output::Surface &surface = surfaces[i];
+		Array arrays = surface.arrays;
+
+		if (arrays.is_empty()) {
+			continue;
+		}
+
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
+			continue;
+		}
+
+		if (mesh.is_null()) {
+			mesh.instantiate();
+		}
+
+		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
+		// the same)
+		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
+		// No multi-material supported yet
+		++gd_surface_index;
+
+		mesh_material_indices.push_back(i);
+	}
+
+	// Debug code to highlight vertex sharing
+	/*if (mesh->get_surface_count() > 0) {
+		Array wireframe_surface = generate_debug_seams_wireframe_surface(mesh, 0);
+		if (wireframe_surface.size() > 0) {
+			const int wireframe_surface_index = mesh->get_surface_count();
+			mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, wireframe_surface);
+			Ref<SpatialMaterial> line_material;
+			line_material.instance();
+			line_material->set_flag(SpatialMaterial::FLAG_UNSHADED, true);
+			line_material->set_albedo(Color(1.0, 0.0, 1.0));
+			mesh->surface_set_material(wireframe_surface_index, line_material);
+		}
+	}*/
+
+	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+		mesh = Ref<Mesh>();
+	}
+
+	return mesh;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
@@ -244,6 +301,15 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		lod_index, collision_hint, lod_hint };
 	mesher->build(_surfaces_output, input);
 
+	if (VoxelServer::get_singleton().is_threaded_mesh_resource_building_enabled()) {
+		// This shall only run if Godot supports building meshes from multiple threads
+		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
+				_surfaces_output.mesh_flags, _mesh_material_indices);
+		_has_mesh_resource = true;
+	} else {
+		_has_mesh_resource = false;
+	}
+
 	_has_run = true;
 }
 
@@ -276,6 +342,9 @@ void MeshBlockTask::apply_result() {
 			o.position = position;
 			o.lod = lod_index;
 			o.surfaces = std::move(_surfaces_output);
+			o.mesh = _mesh;
+			o.mesh_material_indices = std::move(_mesh_material_indices);
+			o.has_mesh_resource = _has_mesh_resource;
 
 			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);

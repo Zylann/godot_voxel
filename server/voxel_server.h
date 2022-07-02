@@ -24,8 +24,17 @@ public:
 
 		Type type;
 		VoxelMesher::Output surfaces;
+		// Only used if `has_mesh_resource` is true.
+		Ref<Mesh> mesh;
+		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
+		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
+		// surfaces, which would fit here without allocating.
+		std::vector<uint8_t> mesh_material_indices;
+		// In mesh block coordinates
 		Vector3i position;
 		uint8_t lod;
+		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
+		bool has_mesh_resource;
 	};
 
 	struct BlockDataOutput {
@@ -124,6 +133,12 @@ public:
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
+	// Allows/disallows building Mesh resources from inside threads. Depends on Godot's efficiency at doing so, and
+	// which renderer is used. For example, the OpenGL renderer does not support this well, but the Vulkan one should.
+	void set_threaded_mesh_resource_building_enabled(bool enable);
+	// This should be fast and safe to access from multiple threads.
+	bool is_threaded_mesh_resource_building_enabled() const;
+
 	void push_main_thread_progressive_task(IProgressiveTask *task);
 
 	// Thread-safe.
@@ -209,6 +224,8 @@ private:
 	ProgressiveTaskRunner _progressive_task_runner;
 
 	FileLocker _file_locker;
+
+	bool _threaded_mesh_resource_building_enabled = false;
 };
 
 struct VoxelFileLockerRead {
