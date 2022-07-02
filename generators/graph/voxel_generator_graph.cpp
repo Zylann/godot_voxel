@@ -1861,6 +1861,9 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 		}
 	});
 
+	// Sort for determinism
+	std::sort(terminal_nodes.begin(), terminal_nodes.end());
+
 	std::vector<uint32_t> order;
 	_graph.find_dependencies(terminal_nodes, order);
 
