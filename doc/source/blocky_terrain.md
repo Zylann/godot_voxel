@@ -18,7 +18,7 @@ The mesher has a `library` property of type `VoxelBlockyLibrary`. This is a reso
 First, set how many voxel types you need by setting the `voxel_count` property. If you need more later, you can increase it.
 A list of voxel types is shown below:
 
-![Screenshot of the list of voxels in VoxelBlockyLibrary](images/voxel_library_voxels_list.png)
+![Screenshot of the list of voxels in VoxelBlockyLibrary](images/voxel_library_voxels_list.webp)
 
 Each slot can contain a `VoxelBlockyModel` resource. The index shown on their left will be the ID they use in voxel data. Voxel `0` is a special case: by convention, it may be used as the default "air" voxel. You may assign a new `VoxelBlockyModel` resource to each slot, and fill in their properties.
 
@@ -30,25 +30,25 @@ A simple start is to set the `geometry_type` to `Cube`, so the voxel will be a c
 
 With this mesher, using atlases is recommended to allow re-using materials and reduce the number of draw calls. You can create a texture containing all the tiles your voxels can use. For example, here is one from the [blocky game](https://github.com/Zylann/voxelgame/tree/master/project/blocky_game) demo:
 
-![Atlas used in the blocky game demo](images/blocky_game_atlas.png)
+![Atlas used in the blocky game demo](images/blocky_game_atlas.webp)
 
 This atlas is a square texture and can contain up to 16x16 tiles. This number is important and needs to be set on the `VoxelBlockyLibrary` `atlas_size` property, so texture coordinates can be generated properly when you use the `Cube` geometry type:
 
-![VoxelBlockyLibrary atlas size property screenshot](images/voxel_library_atlas_size_property.png)
+![VoxelBlockyLibrary atlas size property screenshot](images/voxel_library_atlas_size_property.webp)
 
 Voxel types using the `Cube` geometry can have different tiles on each of their faces. You can decide which one to use by assigning properties of `Voxel`, under the `Cube tiles` category. Coordinates here are in tiles, not pixels.
 
-![Voxel cube tile properties screenshot](images/voxel_cube_tiles_properties.png)
+![Voxel cube tile properties screenshot](images/voxel_cube_tiles_properties.webp)
 
 For example, if you want to use the "planks" tile, you may use x=3 and y=1:
 
-![Tile coordinates](images/cube_tile_coordinates.png)
+![Tile coordinates](images/cube_tile_coordinates.webp)
 
 So far we defined a cubic voxel with specific texture coordinates on its faces, but we still have to actually assign the texture and material used to render it. This can be done in the `Material overrides` section, in which you can assign a material with the texture in it.
 
 Make sure to assign its `albedo_texture` to your texture. You may also check the `Vertex Color/Use as albedo` property, because this will allow the mesher to bake ambient occlusion on the edge of cubes.
 
-![Material for blocky terrain](images/material_blocky_game.png)
+![Material for blocky terrain](images/material_blocky_game.webp)
 
 Each model can use different materials with different textures, but keep in mind the more you re-use materials, the better. It reduces the number of draw calls and makes rendering faster.
 
@@ -56,7 +56,7 @@ Each model can use different materials with different textures, but keep in mind
 
 Creating voxel types with the `Cube` geometry is a shortcut that can be used for simple voxels, but the most versatile workflow is to use actual meshes. If you change `geometry_type` to `CustomMesh`, you are allowed to assign a mesh resource. In this mode, the `Cube tiles` properties are not available, because you will have to assign texture coordinates of the mesh within a 3D modeler like Blender.
 
-![Blender screenshot for UV editing a block](images/blender_block_uv_mapping.png)
+![Blender screenshot for UV editing a block](images/blender_block_uv_mapping.webp)
 
 Meshes can have any shape you want, however there are a few constraints to respect:
 
@@ -66,7 +66,7 @@ Meshes can have any shape you want, however there are a few constraints to respe
 - Keep it low-poly. The mesher can deal with large models, but performance can decrease very quickly if a complex model appears a lot of times.
 - Faces lying on the sides of the 1x1x1 unit cube will be the only faces that can be culled by the mesher. Make sure they are perfectly lining up. If they don't, it can cause dramatic slowdowns due to the amount of generated geometry not getting culled.
 
-![Blender screenshot for face lining up with cube side](images/blender_face_cube_side.png)
+![Blender screenshot for face lining up with cube side](images/blender_face_cube_side.webp)
 
 The best format to use to export your meshes is OBJ. Godot imports this format by default as a mesh resource. Other formats are not suitable because Godot imports them as scenes, and `VoxelBlockyModel` resources require meshes, not scenes.
 You can choose to export materials from here too, but it is recommended to do it in Godot because it allows you to re-use them.
@@ -101,13 +101,13 @@ Both require to use a different material from the default one you may have used.
 
 `VoxelBlockyModel` resources also have a `transparency_index` property. This property allows to tune how two voxels occlude their faces. For example, let's say you have two transparent voxels, glass and leaves. By default, if you put them next to each other, the face they share will be culled, allowing you to see through the leaves from the glass block:
 
-![Screenshot of transparency index not being exploited](images/transparency_index_example1.png)
+![Screenshot of transparency index not being exploited](images/transparency_index_example1.webp)
 
 If two faces touch each other, if they have the same transparency index, they can get culled. But if their transparency index is different, they may not. This allows to see the leaves directly behind glass, instead of seeing the insides.
 
 Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
 
-![Screenshot of transparency index being exploited](images/transparency_index_example2.png)
+![Screenshot of transparency index being exploited](images/transparency_index_example2.webp)
 
 
 ### Random tick

@@ -6,3 +6,4 @@
 *.obj
 *.pyc
 *.tmp
+.DS_Store

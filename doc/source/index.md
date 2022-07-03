@@ -10,9 +10,9 @@ Explore categories on the left to get started!
 !!! note
     This module is under development. A lot of features are available and can be used for games, but some other parts still need work and can change, so it's possible some information is not much detailed yet.
 
-![Blocky screenshot](images/blocky_screenshot.png)
+![Blocky screenshot](images/blocky_screenshot.webp)
 
-![Editor screenshot](images/graph_in_editor_with_fast_noise_lite.png)
+![Editor screenshot](images/graph_in_editor_with_fast_noise_lite.webp)
 
-![Smooth screenshot](images/smooth_screenshot.png)
+![Smooth screenshot](images/smooth_screenshot.webp)
 

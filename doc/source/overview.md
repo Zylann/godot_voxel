@@ -7,7 +7,7 @@ This section explains the main concepts used in this voxel engine and which part
 What voxels are
 ------------------
 
-![Cubes and marching cubes](images/cubes_and_marching_cubes.png)
+![Cubes and marching cubes](images/cubes_and_marching_cubes.webp)
 
 "Voxel" is short for "volumetric picture element", similar to "pixel" which means "picture element". They compose volumes, as opposed to simple 2D images, which allows to make 3D terrains or models that 3 dimensions. Instead of representing solely the surface of objects like classic polygon-based models do, they also represent the insides as well, in every point of space.
 
@@ -45,7 +45,7 @@ Types of generators include:
 Storing voxels
 ---------------
 
-![Block map storage schema](images/block_map_storage.png)
+![Block map storage schema](images/block_map_storage.webp)
 
 Even if it needs lots of memory, we still have to store voxel data at some point. This is important for passing voxels around, storing player edits which cannot be reproduced with a generator, or saving terrains to disk.
 
@@ -77,7 +77,7 @@ This block-based approach is especially useful if the world is very large. In co
 Turning voxels into meshes
 ----------------------------
 
-![Cubes and wireframe](images/cubes_and_wireframe.png)
+![Cubes and wireframe](images/cubes_and_wireframe.webp)
 
 Today's graphics cards are getting more and more powerful, but in average, polygons (meshes) remain the fastest way to render 3D models. So we are not really going to directly draw voxels. Instead, we have to convert them into polygons, which will then be rendered. To do this, this engine uses a resource called [VoxelMesher](api/VoxelMesher.md).
 
@@ -92,7 +92,7 @@ There are several ways to produce polygons from voxel data, and the engine provi
 Putting it together with nodes
 -------------------------------
 
-![Game screenshots](images/game_examples.png)
+![Game screenshots](images/game_examples.webp)
 
 So far, we could consider that there are enough tools to use voxels within games. It's a bit more work to take it from there, though.
 
