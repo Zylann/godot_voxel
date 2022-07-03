@@ -99,7 +99,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 				// I had to use `uint64` and clamp it because floats can't contain `0xffffffff` accurately. Instead
 				// it results in `0x100000000`, one unit above.
 				const uint32_t density_u32 =
-						math::min(uint64_t(0xffffffff * (_density / MAX_DENSITY)), uint64_t(0xffffffff));
+						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
 				const int size = vertices.size();
 				for (int i = 0; i < size; ++i) {
 					// TODO We could actually generate indexes and pick those,
