@@ -951,7 +951,11 @@ int VoxelLodTerrain::get_lod_count() const {
 }
 
 void VoxelLodTerrain::set_generate_collisions(bool enabled) {
-	_generate_collisions = enabled;
+	_update_data->settings.collision_enabled = enabled;
+}
+
+bool VoxelLodTerrain::get_generate_collisions() const {
+	return _update_data->settings.collision_enabled;
 }
 
 void VoxelLodTerrain::set_collision_lod_count(int lod_count) {
@@ -1516,7 +1520,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 		mesh_map.set_block(ob.position, block);
 	}
 
-	bool has_collision = _generate_collisions;
+	bool has_collision = get_generate_collisions();
 	if (has_collision && _collision_lod_count != 0) {
 		has_collision = ob.lod < _collision_lod_count;
 	}

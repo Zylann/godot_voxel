@@ -53,11 +53,12 @@ struct VoxelLodTerrainUpdateData {
 		unsigned int view_distance_voxels = 512;
 		bool full_load_mode = false;
 		bool run_stream_in_editor = true;
-		unsigned int mesh_block_size_po2 = 4;
 		// If true, try to generate blocks and store them in the data map before posting mesh requests.
 		// If false, everything will generate non-edited voxels on the fly instead.
 		// Not really exposed for now, will wait for it to be really needed. It might never be.
 		bool cache_generated_blocks = false;
+		bool collision_enabled = true;
+		unsigned int mesh_block_size_po2 = 4;
 	};
 
 	enum MeshState {

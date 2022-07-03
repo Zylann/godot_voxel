@@ -1225,6 +1225,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			task->meshing_dependency = meshing_dependency;
 			task->data_block_size = data_block_size;
 			task->data = data_ptr;
+			task->collision_hint = settings.collision_enabled;
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_block_pos, Vector3iUtil::create(render_to_data_factor))
