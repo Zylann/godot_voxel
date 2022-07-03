@@ -28,7 +28,7 @@ private:
 class VoxelInstanceLibraryEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelInstanceLibraryEditorPlugin, EditorPlugin)
 public:
-	virtual String get_name() const {
+	virtual String get_name() const override {
 		return "VoxelInstanceLibrary";
 	}
 
