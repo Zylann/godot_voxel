@@ -1830,7 +1830,7 @@ static uint64_t get_deep_hash(const Object &obj,
 
 		if ((property.usage & property_usage) != 0) {
 			const Variant value = obj.get(property.name);
-			uint64_t value_hash;
+			uint64_t value_hash = 0;
 
 			if (value.get_type() == Variant::OBJECT) {
 				const Object *obj_value = value.operator Object *();
