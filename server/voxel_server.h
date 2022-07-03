@@ -171,7 +171,6 @@ public:
 			unsigned int tasks;
 		};
 
-		ThreadPoolStats streaming;
 		ThreadPoolStats general;
 		int generation_tasks;
 		int streaming_tasks;
@@ -214,9 +213,6 @@ private:
 	// TODO multi-world support in the future
 	World _world;
 
-	// Pool specialized in file I/O
-	ThreadedTaskRunner _streaming_thread_pool;
-	// Pool for every other task
 	ThreadedTaskRunner _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
 	TimeSpreadTaskRunner _time_spread_task_runner;

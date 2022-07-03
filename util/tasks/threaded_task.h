@@ -18,6 +18,7 @@ public:
 	// Called from within the thread pool
 	virtual void run(ThreadedTaskContext ctx) = 0;
 
+	// TODO Make this optional
 	// Convenience method which can be called by the scheduler of the task (usually on the main thread)
 	// in order to apply results. It is not called from the thread pool.
 	virtual void apply_result() = 0;

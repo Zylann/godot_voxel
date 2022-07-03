@@ -43,9 +43,8 @@ VoxelServer::VoxelServer(ThreadsConfig threads_config) {
 
 	const int maximum_thread_count = math::max(
 			hw_threads_hint - threads_config.thread_count_margin_below_max, threads_config.thread_count_minimum);
-	// `-1` is for the stream thread
 	const int thread_count_by_ratio =
-			int(Math::round(float(threads_config.thread_count_ratio_over_max) * hw_threads_hint)) - 1;
+			int(Math::round(float(threads_config.thread_count_ratio_over_max) * hw_threads_hint));
 	const int thread_count =
 			math::clamp(thread_count_by_ratio, threads_config.thread_count_minimum, maximum_thread_count);
 	ZN_PRINT_VERBOSE(format("Voxel: automatic thread count set to {}", thread_count));
@@ -54,19 +53,9 @@ VoxelServer::VoxelServer(ThreadsConfig threads_config) {
 		ZN_PRINT_WARNING("Configured thread count exceeds hardware thread count. Performance may not be optimal");
 	}
 
-	// I/O can't be more than 1 thread. File access with more threads isn't worth it.
-	// This thread isn't configurable at the moment.
-	_streaming_thread_pool.set_name("Voxel streaming");
-	_streaming_thread_pool.set_thread_count(1);
-	_streaming_thread_pool.set_priority_update_period(300);
-	// Batching is only to give a chance for file I/O tasks to be grouped and reduce open/close calls.
-	// But in the end it might be better to move this idea to the tasks themselves?
-	_streaming_thread_pool.set_batch_count(16);
-
 	_general_thread_pool.set_name("Voxel general");
 	_general_thread_pool.set_thread_count(thread_count);
 	_general_thread_pool.set_priority_update_period(200);
-	_general_thread_pool.set_batch_count(1);
 
 	// Init world
 	_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
@@ -86,19 +75,7 @@ VoxelServer::~VoxelServer() {
 }
 
 void VoxelServer::wait_and_clear_all_tasks(bool warn) {
-	_streaming_thread_pool.wait_for_all_tasks();
 	_general_thread_pool.wait_for_all_tasks();
-
-	// Wait a second time because the generation pool can generate streaming requests
-	_streaming_thread_pool.wait_for_all_tasks();
-
-	_streaming_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
-		if (warn) {
-			ZN_PRINT_WARNING("Streaming tasks remain on module cleanup, "
-							 "this could become a problem if they reference scripts");
-		}
-		memdelete(task);
-	});
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
 		if (warn) {
@@ -229,19 +206,20 @@ bool VoxelServer::is_threaded_mesh_resource_building_enabled() const {
 }
 
 void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
-	_general_thread_pool.enqueue(task);
+	_general_thread_pool.enqueue(task, false);
 }
 
 void VoxelServer::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
-	_general_thread_pool.enqueue(tasks);
+	_general_thread_pool.enqueue(tasks, false);
 }
 
 void VoxelServer::push_async_io_task(zylann::IThreadedTask *task) {
-	_streaming_thread_pool.enqueue(task);
+	// I/O tasks run in serial because they usually can't run well in parallel due to locking shared resources.
+	_general_thread_pool.enqueue(task, true);
 }
 
 void VoxelServer::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
-	_streaming_thread_pool.enqueue(tasks);
+	_general_thread_pool.enqueue(tasks, true);
 }
 
 void VoxelServer::process() {
@@ -249,12 +227,6 @@ void VoxelServer::process() {
 	ZN_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
-
-	// Receive data updates
-	_streaming_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
-		task->apply_result();
-		memdelete(task);
-	});
 
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
@@ -313,7 +285,6 @@ static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 
 VoxelServer::Stats VoxelServer::get_stats() const {
 	Stats s;
-	s.streaming = debug_get_pool_stats(_streaming_thread_pool);
 	s.general = debug_get_pool_stats(_general_thread_pool);
 	s.generation_tasks = GenerateBlockTask::debug_get_running_count();
 	s.meshing_tasks = GenerateBlockTask::debug_get_running_count();
