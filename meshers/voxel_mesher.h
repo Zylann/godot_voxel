@@ -83,10 +83,6 @@ public:
 	// If this is not respected, the mesher might produce seams at the edges, or an error
 	unsigned int get_maximum_padding() const;
 
-	virtual Ref<Resource> duplicate(bool p_subresources = false) const {
-		return Ref<Resource>();
-	}
-
 	// Gets which channels this mesher is able to use in its current configuration.
 	// This is returned as a bitmask where channel index corresponds to bit position.
 	virtual int get_used_channels_mask() const {

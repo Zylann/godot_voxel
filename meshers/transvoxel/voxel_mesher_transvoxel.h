@@ -30,7 +30,7 @@ public:
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;
 
-	bool is_generating_collision_surface() const;
+	bool is_generating_collision_surface() const override;
 
 	void set_texturing_mode(TexturingMode mode);
 	TexturingMode get_texturing_mode() const;

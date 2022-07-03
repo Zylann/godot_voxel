@@ -178,7 +178,7 @@ public:
 		return _process_callback;
 	}
 
-	Ref<VoxelTool> get_voxel_tool();
+	Ref<VoxelTool> get_voxel_tool() override;
 
 	struct Stats {
 		// Amount of octree nodes waiting for data. It should reach zero when everything is loaded.
