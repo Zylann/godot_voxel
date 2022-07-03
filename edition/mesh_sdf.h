@@ -68,8 +68,6 @@ public:
 
 	// Called when `pending_jobs` reaches zero.
 	virtual void on_complete() {}
-
-	void apply_result() override {}
 };
 
 // Computes a representation of the mesh that's more optimal to compute distance to triangles.

@@ -283,7 +283,6 @@ public:
 		_tracker->post_complete();
 	}
 
-	void apply_result() override {}
 	std::shared_ptr<AsyncDependencyTracker> get_tracker() {
 		return _tracker;
 	}

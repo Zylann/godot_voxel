@@ -38,7 +38,6 @@ public:
 			_volume_transform(p_volume_transform) {}
 
 	void run(ThreadedTaskContext ctx) override;
-	void apply_result() override {}
 
 	// Functions also used outside of this task
 
