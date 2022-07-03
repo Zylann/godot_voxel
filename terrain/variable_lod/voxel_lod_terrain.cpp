@@ -1651,7 +1651,7 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 			if (static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 				Ref<Shape3D> collision_shape;
 				if (_mesher.is_valid()) {
-					collision_shape ==
+					collision_shape =
 							make_collision_shape_from_mesher_output(*block->deferred_collider_data, **_mesher);
 				}
 
