@@ -1129,7 +1129,8 @@ void VoxelTerrain::process_viewers() {
 				state.view_distance_voxels = math::min(view_distance_voxels, self._max_view_distance_voxels);
 				state.local_position_voxels = math::floor_to_int(local_position);
 				state.requires_collisions = VoxelServer::get_singleton().is_viewer_requiring_collisions(viewer_id);
-				state.requires_meshes = VoxelServer::get_singleton().is_viewer_requiring_visuals(viewer_id);
+				state.requires_meshes =
+						VoxelServer::get_singleton().is_viewer_requiring_visuals(viewer_id) && self._mesher.is_valid();
 
 				// Update data and mesh view boxes
 
@@ -1437,13 +1438,14 @@ void VoxelTerrain::process_meshing() {
 	ProfilingClock profiling_clock;
 
 	_stats.dropped_block_meshs = 0;
-	const Transform3D volume_transform = get_global_transform();
-	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
-			VoxelServer::get_singleton().get_shared_viewers_data_from_default_world();
 
 	// Send mesh updates
 	{
 		ZN_PROFILE_SCOPE();
+
+		const Transform3D volume_transform = get_global_transform();
+		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
+				VoxelServer::get_singleton().get_shared_viewers_data_from_default_world();
 
 		//const int used_channels_mask = get_used_channels_mask();
 		const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();

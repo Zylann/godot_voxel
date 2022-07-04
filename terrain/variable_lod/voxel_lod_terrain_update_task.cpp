@@ -1187,7 +1187,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	//
-	ZN_PROFILE_SCOPE_NAMED("Send mesh requests");
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(data_ptr == nullptr);
 	const VoxelDataLodMap &data = *data_ptr;
@@ -1530,9 +1530,12 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	}
 	state.stats.time_io_requests = profiling_clock.restart();
 
-	// TODO Don't request meshes if there is no mesher
-	send_mesh_requests(_volume_id, state, settings, _data, _meshing_dependency, _shared_viewers_data, _volume_transform,
-			task_scheduler);
+	// TODO When no mesher is assigned, mesh requests are still accumulated but not being sent. A better way to support
+	// this is by allowing voxels-only/mesh-less viewers, similar to VoxelTerrain
+	if (_meshing_dependency->mesher.is_valid()) {
+		send_mesh_requests(_volume_id, state, settings, _data, _meshing_dependency, _shared_viewers_data,
+				_volume_transform, task_scheduler);
+	}
 
 	task_scheduler.flush();
 

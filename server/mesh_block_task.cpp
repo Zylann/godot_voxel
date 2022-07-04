@@ -248,10 +248,11 @@ int MeshBlockTask::debug_get_running_count() {
 void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	CRASH_COND(meshing_dependency == nullptr);
+	ZN_ASSERT(meshing_dependency != nullptr);
 
 	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
-	CRASH_COND(mesher.is_null());
+	ZN_ASSERT_RETURN_MSG(
+			mesher.is_valid(), "Meshing task started without a mesher. Maybe missing on the terrain node?");
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
