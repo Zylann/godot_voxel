@@ -83,6 +83,7 @@ The module uses several background threads to process voxels. The number of thre
 ![Schema of threads](images/threads_schema.png)
 
 There is one pool of threads. This pool can be given many tasks and distributes them to all its threads. So the more threads are available, the quicker large amounts of tasks get done. Tasks are also sorted by priority, so for example updating a mesh near a player will run before generating a voxel block 300 meters away.
+
 Some tasks are scheduled in a "serial" group, which means only one of them will run at a time (although any thread can run them). This is to avoid clogging up all the threads with waiting tasks if they all lock a shared resource. This is used for I/O such as loading and saving to disk.
 
 Threads are managed in [VoxelServer](api/VoxelServer.md).
