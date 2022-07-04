@@ -26,7 +26,7 @@ A new build is made each time commits are pushed to the main branch, but also wh
 
 In case there are multiple downloadable artifacts, the editor build will be the one with `opt.tools` in the name (because it is built with optimizations enabled, and includes tools).
 
-![Github actions screenshot](images/github_actions_windows_artifacts.png)
+![Github actions screenshot](images/github_actions_windows_artifacts.webp)
 
 !!! note
 	You will need a Github account to be able to download development builds. Otherwise, links will not work.

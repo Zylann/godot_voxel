@@ -29,19 +29,19 @@ The following screenshots use a smooth `VoxelLodTerrain`.
 
 Generates a flat ground.
 
-![Screenshot of flat generator](images/generator_flat.png)
+![Screenshot of flat generator](images/generator_flat.webp)
 
 ### [Waves](api/VoxelGeneratorWaves.md)
 
 Generates waves.
 
-![Screenshot of waves generator](images/generator_waves.png)
+![Screenshot of waves generator](images/generator_waves.webp)
 
 ### [Image](api/VoxelGeneratorImage.md)
 
 Generates a heightmap based on an image, repeated infinitely.
 
-![Screenshot of image generator](images/generator_image.png)
+![Screenshot of image generator](images/generator_image.webp)
 
 !!! note
     With this generator, an `Image` resource is required. By default, Godot imports image files as `StreamTexture`. You may change this in the Import dock. At time of writing, in Godot 3, this requires an editor restart.
@@ -50,13 +50,13 @@ Generates a heightmap based on an image, repeated infinitely.
 
 Generates a heightmap based on fractal noise.
 
-![Screenshot of 2D noise generator](images/generator_noise2d.png)
+![Screenshot of 2D noise generator](images/generator_noise2d.webp)
 
 ### [Noise (3D)](api/VoxelGeneratorNoise.md)
 
 Generates a blobby terrain with overhangs using 3D fractal noise. A gradient is applied along height so the volume becomes air when going up, and closes down into matter when going down.
 
-![Screenshot of 3D noise generator](images/generator_noise3d.png)
+![Screenshot of 3D noise generator](images/generator_noise3d.webp)
 
 
 Node-graph generators (VoxelGraphs)
@@ -86,11 +86,11 @@ The simplest possible graph with a visible output is a flat plane. The SDF of a 
 
 Right-click the background of the graph, choose the nodes `InputY` and `SdfOutput`, then connect them together by dragging their ports together.
 
-![Plane voxel graph screenshot](images/voxel_graph_flat.png)
+![Plane voxel graph screenshot](images/voxel_graph_flat.webp)
 
 It is possible to decide the height of the plane by subtracting a constant (`sdf = y - height`), so that `sdf == 0` will occur at a higher coordinate. To do this, an extra node must be added:
 
-![Offset plane voxel graph screenshot](images/voxel_graph_flat_offset.png)
+![Offset plane voxel graph screenshot](images/voxel_graph_flat_offset.webp)
 
 By default, the `Add` node does nothing because its `b` port is not connected to anything. It is possible to give a default value to such port. You can set it by clicking on the node and changing it in the inspector.
 
@@ -106,33 +106,33 @@ There are several types of noise available, each with their own parameters. At t
 !!! note
     After you create this node, a new `FastNoiseLite` resource must be created in its parameters. If that resource is not setup, an error will occur and no voxels will be generated.
 
-![Voxel graph 2D noise](images/voxel_graph_noise2d.png)
+![Voxel graph 2D noise](images/voxel_graph_noise2d.webp)
 
 3D noise is more expensive to compute, but is interesting because it actually produces overhangs or even small caves. It is possible to replace 2D noise with 3D noise in the previous setup:
 
-![Voxel graph 3D noise](images/voxel_graph_noise3d_not_expanded.png)
+![Voxel graph 3D noise](images/voxel_graph_noise3d_not_expanded.webp)
 
 You might notice that despite it being 3D, it still appears to produce a heightmap. That's because the addition of `Y` in the graph is gradually offsetting noise values towards higher and higher values when going towards the sky, which makes the surface fade away quickly. So if we multiply `Y` with a small value, it will increase slower, letting the 3D noise expand more (`sdf = y * height_multiplier - height + noise3d(x, y, z)`):
 
-![Voxel graph 3D noise expanded](images/voxel_graph_noise3d_expanded.png)
+![Voxel graph 3D noise expanded](images/voxel_graph_noise3d_expanded.webp)
 
 #### Planet
 
 We are not actually forced to keep generating the world like a plane. We can go even crazier, and do planets. A good way to begin a planet is to make a sphere with the `SdfSphere` node:
 
-![Voxel graph sdf sphere node](images/voxel_graph_sphere.png)
+![Voxel graph sdf sphere node](images/voxel_graph_sphere.webp)
 
 We cannot really use 2D noise here, so we can add 3D noise as well:
 
-![Voxel graph sdf sphere with noise](images/voxel_graph_sphere_with_noise.png)
+![Voxel graph sdf sphere with noise](images/voxel_graph_sphere_with_noise.webp)
 
 However you might still want a heightmap-like result. One way to do this is to feed the 3D noise normalized coordinates, instead of global ones. Picking a ridged fractal can also give an eroded look, although it requires to negate the noise multiplier node to invert its distance field (if we leave it positive it will look puffed instead of eroded).
 
-![Voxel graph sdf sphere with height noise](images/voxel_graph_sphere_with_noise2.png)
+![Voxel graph sdf sphere with height noise](images/voxel_graph_sphere_with_noise2.webp)
 
 !!! note
     You can obtain a donut-shaped planet if you replace the `SdfSphere` node with a `SdfTorus` node.
-    ![Torus voxel graph](images/voxel_graph_torus.png)
+    ![Torus voxel graph](images/voxel_graph_torus.webp)
 
 
 #### Caves
@@ -142,23 +142,23 @@ However you might still want a heightmap-like result. One way to do this is to f
 
 It is possible to generate caves by subtracting noise "worms" from a base SDF terrain. To simplify the approach, let's first look at what 2D noise looks like, with a few octaves:
 
-![Noise](images/noise.png)
+![Noise](images/noise.webp)
 
 If we multiply that noise by itself (i.e square it), we obtain this:
 
-![Squared noise](images/squared_noise.png)
+![Squared noise](images/squared_noise.webp)
 
 And if we clamp it to highlight values below a threshold close to zero, we can notice a path-like pattern going on:
 
-![Squared noise path highlight](images/squared_noise_with_highlight.png)
+![Squared noise path highlight](images/squared_noise_with_highlight.webp)
 
 In 2D (or in 3D when using normalized coordinates) this is the key to produce rivers, or ravines. But the problem with caves is to obtain 3D, round-shaped "worms", not just 2D shapes. So we can cheat a little, by still using 2D noise, but instead we modulate the threshold along the Y axis. We need a parabola-shaped curve for this, which can be obtained with a second-degree polynome like `y^2 - 1`:
 
-![Cave threshold modulation](images/cave_threshold_modulation.png)
+![Cave threshold modulation](images/cave_threshold_modulation.webp)
 
 Back to the voxel graph, we may connect directly the cave generation nodes to the output just to preview what they look like, without the rest of the terrain:
 
-![Cave voxel graph](images/caves_flat.png)
+![Cave voxel graph](images/caves_flat.webp)
 
 After tweaking noise and other values, we obtain those famous worms, but there are two problems:
 
@@ -167,15 +167,15 @@ After tweaking noise and other values, we obtain those famous worms, but there a
 
 We can fix the first problem by adding an extra layer of 2D noise to the Y coordinate so it can perturb the caves vertically. Re-using the ground surface noise with an extra multiplier can prove effective sometimes, so we avoid computing extra noise.
 
-![Caves perturb](images/caves_perturb.png)
+![Caves perturb](images/caves_perturb.webp)
 
 The second problem can also be fixed with yet another layer of low-frequency noise, which can be added to the cave threshold so caves will shrink to become dead-ends on some regions. Again, adding multipliers may change how sharply that transition occurs.
 
-![Cave voxel graph perturb and modulated](images/caves_perturb_modulated.png)
+![Cave voxel graph perturb and modulated](images/caves_perturb_modulated.webp)
 
 Finally, we can blend our terrain with caves by subtracting them. This can be done with the `SdfSmoothSubtract` node, essentially doing `terrain - caves`.
 
-![Cave voxel graph terrain subtract](images/caves_composed.png)
+![Cave voxel graph terrain subtract](images/caves_composed.webp)
 
 There are likely variants of this to obtain different results.
 
@@ -186,15 +186,15 @@ It is possible to use this generator with `VoxelMesherBlocky` by using an `Outpu
 
 The simplest example is to pick any existing SDF generator, and replace `OutputSDF` with a `Select` node connected to an `OutputType`. The idea is to choose between the ID of two different voxel types (like air or stone) if the SDF value is above or below a threshold.
 
-![Example screenshot of a basic blocky heightmap made with a graph generator](images/voxel_graph_blocky_basic_heightmap.png)
+![Example screenshot of a basic blocky heightmap made with a graph generator](images/voxel_graph_blocky_basic_heightmap.webp)
 
 If more variety is needed, `Select` nodes can be chained to combine multiple layers, using different thresholds and sources.
 
-![Example screenshot of a blocky heightmap with two biomes made with a graph generator](images/voxel_graph_blocky_biome.png)
+![Example screenshot of a blocky heightmap with two biomes made with a graph generator](images/voxel_graph_blocky_biome.webp)
 
 `Select` creates a "cut" between the two possible values, and it may be desirable to have some sort of transition. While this isn't possible with `VoxelMesherBlocky` without a lot of different types for each value of the gradient (usually done with a shader), it is however easy to add a bit of noise to the threshold. This reproduces a similar "dithered" transition, as can be seen in Minecraft between sand and dirt.
 
-![Example screenshot of a blocky heightmap with two biomes and dithering](images/voxel_graph_blocky_biome_dithering.png)
+![Example screenshot of a blocky heightmap with two biomes and dithering](images/voxel_graph_blocky_biome_dithering.webp)
 
 Currently, graph generators only work per voxel. That makes them good to generate base ground and biomes, but it isn't practical to generate structures like trees or villages with it. This may be easier to accomplish using a second pass on the whole block instead, using a custom generator.
 
@@ -211,7 +211,7 @@ Contrary to many node-based or expression tools existing in Godot so far, voxel 
 
 So instead, outputs of each node are associated small buffers for a subset of the voxels, say, a 16x16 slice. Then, the graph is traversed once ahead-of-time to obtain a simple list of operations. It is guaranteed that if a node depends on another, the other will have run before.
 
-![Graph to operations schema](images/voxel_graph_operation_list.png)
+![Graph to operations schema](images/voxel_graph_operation_list.webp)
 
 Finally, the generator executes the list, node by node, and each node computes a bunch of voxels at once instead of just one. This ensures that the CPU is almost exclusively used for the operations themselves, providing performance similar to C++, while graph traversal becomes neglibible. It also offers the opportunity to use [SIMD](https://en.wikipedia.org/wiki/SIMD) very easily, which can be even faster than if the code was written in plain C++.
 
@@ -223,11 +223,11 @@ Before processing voxels in a specific region of space (a box), the generator fi
 
 It is possible to inspect results of this pass in the editor by enabling it with the `Analyse range` button. The analysis will focus on the box specified in the dialog, which will appear as a yellow wireframe in the 3D viewport.
 
-![Analyse range editor screenshot](images/range_analysis_dialog.png)
+![Analyse range editor screenshot](images/range_analysis_dialog.webp)
 
 You can also hover the output label of any node to see what range was calculated for it:
 
-![Range analysis tooltips](images/range_analysis_tooltip.png)
+![Range analysis tooltips](images/range_analysis_tooltip.webp)
 
 !!! note
     Noise is typically between -1 and 1, but we take it a step further. Ranges are approximated using maximum derivatives, which is how fast noise can vary along a given distance. Each noise algorithm has its own. We calculate noise at the center of the box, and add half of the maximum derivative, positively and negatively. In other words, in the box, we know noise cannot exceed the central value + the maximum variation along extents of the box. At close range, this can successfully detect valleys and hills, without fully computing them.
@@ -244,17 +244,17 @@ It is possible to choose that threshold with the `sdf_clip_threshold` property i
 
 It is exposed because in some situations, clipping can cause artifacts when the edge of a block is too close from a clipped one. Indeed, clipping blocks cause discontinuities in the distance field.
 
-![Sdf clipping schema](images/sdf_clipping.png)
+![Sdf clipping schema](images/sdf_clipping.webp)
 
 Usually they happen far enough from the surface to be of any concern, but sometimes they can come close if the threshold is too low:
 
-![Sdf clipping artifacts](images/sdf_clipping_artifacts.png)
+![Sdf clipping artifacts](images/sdf_clipping_artifacts.webp)
 
 So by default the threshold is above zero and should cover most cases.
 
 It is also possible to instruct the generator to invert clipped blocks, which will make them stand out:
 
-![Sdf clipping debug](images/sdf_clip_debug.png)
+![Sdf clipping debug](images/sdf_clip_debug.webp)
 
 
 #### Local optimization
@@ -263,11 +263,11 @@ Conditionals (`if/else`) are not supported by this voxel graph implementation. T
 
 Let's consider an example world made of two biomes, each generated with a big node setup, and blended together across the world's X axis.
 
-![Two biomes](images/biomes.png)
+![Two biomes](images/biomes.webp)
 
 If we don't optimize this, both biomes will constantly get calculated at every point of space close enough to the surface. But if we look at the range analysis we performed earlier, and focus on one of the biomes, we notice that the range of values received by the `Mix` node are such that only one biome is blended. In other words, one of the inputs of `Mix` has no effect on its result, and is therefore ignored there.
 
-![Ignored input](images/range_of_ignored_input.png)
+![Ignored input](images/range_of_ignored_input.webp)
 
 So each biome then only computes its own branch when far away enough from the blending area:
 
@@ -277,7 +277,7 @@ Thanks again to range analysis, the generator is able to detect this locally, an
 
 Internally, the generator parses the graph locally (using a faster data structure since the graph is compiled) to obtain an alternative list of operations. This list is currently nicknamed an `execution map`, because it maps the full list of operations to a reduced one.
 
-![Execution map schema](images/voxel_graph_operation_list_optimized.png)
+![Execution map schema](images/voxel_graph_operation_list_optimized.webp)
 
 This setting can be toggled in the inspector.
 

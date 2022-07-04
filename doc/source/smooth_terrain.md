@@ -30,11 +30,11 @@ else:
 
 Which gives the following:
 
-![Blocky SDF](images/sdf_example_blocky.png)
+![Blocky SDF](images/sdf_example_blocky.webp)
 
 Each voxel has binary values, either 1 or 0. But that gives no information about how the transition occurs between "matter" and "air", so if we were to render this using Transvoxel, the result would be:
 
-![SDF sphere blocky](images/sdf_sphere_blocky.png)
+![SDF sphere blocky](images/sdf_sphere_blocky.webp)
 
 It is kinda blocky. Now, we might indeed want this result (see section about shaders). But if we dont, we will need to change the code. In fact, if we walk back one step, the answer is already there:
 
@@ -44,11 +44,11 @@ voxel = distance(origin, position) - radius
 
 This is the signed distance of a sphere. Here shown normalized, so voxels close to `0` are grey:
 
-![True SDF](images/sdf_example_true.png)
+![True SDF](images/sdf_example_true.webp)
 
 Every voxel now contains a slowly changing gradient, so when Transvoxel marches through all cells to find the surface, it will see much more precise variations than just `0` or `1`, which allows it to produce smooth polygons.
 
-![SDF sphere blocky](images/sdf_sphere_smooth.png)
+![SDF sphere blocky](images/sdf_sphere_smooth.webp)
 
 
 ### Scaling and clamping
@@ -59,7 +59,7 @@ Voxels far away in the sky are actually not interesting for us. The surface is w
 
 So the sphere SDF we've seen earlier would actually look like this in the data:
 
-![Clamped SDF](images/sdf_example_clamped.png)
+![Clamped SDF](images/sdf_example_clamped.webp)
 
 Over multiple chunks, all regions without a gradient will take very little space in memory.
 
@@ -152,7 +152,7 @@ The method involves projecting the texture on to the part of object that directl
 
 Look at how the brick textures are blended together on the top right sphere.
 
-![Triplanar mapping image](https://docs.godotengine.org/en/3.1/_images/spatial_material25.png)
+![Triplanar mapping image](https://docs.godotengine.org/en/3.1/_images/spatial_material25.webp)
 
 Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#triplanar-mapping).
 
@@ -296,7 +296,7 @@ void fragment() {
 }
 ```
 
-![Smooth voxel painting prototype](images/smooth_voxel_painting_on_plane.png)
+![Smooth voxel painting prototype](images/smooth_voxel_painting_on_plane.webp)
 
 !!! note
 	If you only need 4 textures, then you can leave indices to their default values (which contains `0,1,2,3`) and only use weights. When using `VoxelTool`, you may only use texture indices 0, 1, 2 or 3. Texture arrays are less relevant in this case.
@@ -325,13 +325,13 @@ It is currently not possible to make the mesher produce vertices with split flat
 NORMAL = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
 ```
 
-![Flat shading](images/flat_shading.png)
+![Flat shading](images/flat_shading.webp)
 
 ### Blocky look
 
 It is also possible to give a "blocky" look to "smooth" voxels:
 
-![Flat shading](images/blocky_sdf.png)
+![Flat shading](images/blocky_sdf.webp)
 
 This can be done by saturating SDF values in the voxel generator: they have to be always -1 or 1, without transition values. Since values are clamped when using `set_voxel_f`, multiplying by a large number also works. Built-in basic generators might not have this option, but you can do it if you use your own generator script or `VoxelGeneratorGraph`.
 
@@ -357,12 +357,12 @@ Level of detail (LOD)
 
 LOD (Level Of Detail) is a technique used to change the amount of geometry dymamically, such that meshes close to the viewer have high definition, while meshes far from the viewer are simplified down. This aims at improving performance.
 
-![LOD example](images/lod_example.png)
+![LOD example](images/lod_example.webp)
 
 !!! note
 	Careful: in this engine, `LOD` *levels* are frequently represented with numbers from `0` to `N-1`, where `N` is the number of LODs. `0` is the *highest level of detail*, while LOD `1`, `2` etc up to `N-1` are *lower levels of detail*.
 
-![Illustration of level of detail with a grid of voxels](images/lod_density_schema.png)
+![Illustration of level of detail with a grid of voxels](images/lod_density_schema.webp)
 
 When going from LOD `i` to `i+1`, voxels and blocks double in size, covering more space. However resolution of blocks doesn't change, so detail density is lower and consumes less resources.
 
@@ -393,7 +393,7 @@ Reducing the number of LODs reduces the size of octrees, however it also means t
 If you are not making an infinite terrain, you may give it fixed bounds with the `bounds` property, as well as a very large view distance so it stays in view.
 `bounds` will be rounded to octree size: for example, with 4 LODs and mesh block size of 16, LOD0 blocks will be 16, LOD1 will be 32, LOD2 will be 64... and LOD3 (the biggest) will be 128. Since the current implementation keeps at minimum 8 octrees around the origin, optimal bounds for this setup would be 256.
 
-![Screenshot of fixed bounds LOD terrain](images/fixed_bounds_octrees.png)
+![Screenshot of fixed bounds LOD terrain](images/fixed_bounds_octrees.webp)
 
 Following the same logic, fixed bounds of 512 is optimal with 5 LODs, 1024 is optimal with 6 LODs and so on.
 This is based on mesh block size of `16`, so if you set it to `32`, you may set one less LOD since meshes are twice as big.
