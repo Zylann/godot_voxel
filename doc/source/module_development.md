@@ -78,13 +78,16 @@ No test framework is used at the moment, instead they just run by either printin
 Threads
 ---------
 
-The module uses several background thread pools to process voxels. The number of threads can be adjusted in Project Settings.
+The module uses several background threads to process voxels. The number of threads can be adjusted in Project Settings.
 
 ![Schema of threads](images/threads_schema.png)
 
-There are two pools of threads currently. One pool is actually just one thread dedicated to streaming (files I/O), and another pool uses more threads for every other type of task. This pool can be given many tasks and distributes them to all its threads. So the more threads are available, the quicker large amounts of tasks get done. Tasks are also sorted by priority, so for example updating a mesh near a player will run before generating a voxel block 300 meters away.
+There is one pool of threads. This pool can be given many tasks and distributes them to all its threads. So the more threads are available, the quicker large amounts of tasks get done. Tasks are also sorted by priority, so for example updating a mesh near a player will run before generating a voxel block 300 meters away.
+Some tasks are scheduled in a "serial" group, which means only one of them will run at a time (although any thread can run them). This is to avoid clogging up all the threads with waiting tasks if they all lock a shared resource. This is used for I/O such as loading and saving to disk.
 
 Threads are managed in [VoxelServer](api/VoxelServer.md).
+
+Note: this task system does not account for "frames". Tasks can run at any time for less or more than one frame of the main thread.
 
 
 Code guidelines

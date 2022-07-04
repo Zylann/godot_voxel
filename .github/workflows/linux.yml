@@ -18,12 +18,22 @@ jobs:
     strategy:
       matrix:
         include:
+          - name: Editor debug build
+            float: 32
+            target: debug
+            production: no
+            executable_name: godot.linuxbsd.tools.64
+
           - name: Editor build
             float: 32
+            target: release_debug
+            production: yes
             executable_name: godot.linuxbsd.opt.tools.64
 
           - name: Editor build with 64-bit floats
             float: 64
+            target: release_debug
+            production: yes
             executable_name: godot.linuxbsd.double.opt.tools.64
 
     steps:
@@ -85,7 +95,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug production=yes float=${{matrix.float}}
+          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
 
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
@@ -95,6 +105,7 @@ jobs:
 
       # Make build available
       - uses: actions/upload-artifact@v2
+        if: ${{ matrix.target != 'debug' }}
         with:
           name: ${{matrix.executable_name}}
           path: bin/${{matrix.executable_name}}

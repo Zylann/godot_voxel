@@ -40,8 +40,14 @@ public:
 private:
 	bool _has_run = false;
 	bool _too_far = false;
+	bool _has_mesh_resource = false;
 	VoxelMesher::Output _surfaces_output;
+	Ref<Mesh> _mesh;
+	std::vector<uint8_t> _mesh_material_indices; // Indexed by mesh surface
 };
+
+Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
+		std::vector<uint8_t> &surface_indices);
 
 } // namespace zylann::voxel
 

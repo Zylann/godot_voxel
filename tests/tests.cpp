@@ -20,6 +20,7 @@
 #include "../util/math/box3i.h"
 #include "../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../util/string_funcs.h"
+#include "../util/tasks/threaded_task_runner.h"
 #include "test_octree.h"
 #include "testing.h"
 
@@ -2097,6 +2098,126 @@ void test_voxel_mesher_cubes() {
 	ZYLANN_TEST_ASSERT(surface1_vertices_count == 20);
 }
 
+void test_threaded_task_runner() {
+	static const uint32_t task_duration_usec = 100'000;
+
+	struct TaskCounter {
+		std::atomic_int max_count;
+		std::atomic_int current_count;
+		std::atomic_int completed_count;
+
+		void reset() {
+			max_count = 0;
+			current_count = 0;
+			completed_count = 0;
+		}
+	};
+
+	class TestTask : public IThreadedTask {
+	public:
+		std::shared_ptr<TaskCounter> counter;
+		bool completed = false;
+
+		TestTask(std::shared_ptr<TaskCounter> p_counter) : counter(p_counter) {}
+
+		void run(ThreadedTaskContext ctx) override {
+			ZN_PROFILE_SCOPE();
+			ZN_ASSERT(counter != nullptr);
+
+			++counter->current_count;
+
+			// Update maximum count
+			// https://stackoverflow.com/questions/16190078/how-to-atomically-update-a-maximum-value
+			int current_count = counter->current_count;
+			int prev_max = counter->max_count;
+			while (prev_max < current_count && !counter->max_count.compare_exchange_weak(prev_max, current_count)) {
+				current_count = counter->current_count;
+			}
+
+			Thread::sleep_usec(task_duration_usec);
+
+			--counter->current_count;
+			++counter->completed_count;
+			completed = true;
+		}
+
+		void apply_result() override {
+			ZYLANN_TEST_ASSERT(completed);
+		}
+	};
+
+	struct L {
+		static void dequeue_tasks(ThreadedTaskRunner &runner) {
+			runner.dequeue_completed_tasks([](IThreadedTask *task) {
+				ZN_ASSERT(task != nullptr);
+				task->apply_result();
+				ZN_DELETE(task);
+			});
+		}
+	};
+
+	const unsigned int test_thread_count = 4;
+	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
+	if (hw_concurrency < test_thread_count) {
+		ZN_PRINT_WARNING(format(
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+	}
+
+	std::shared_ptr<TaskCounter> parallel_counter = make_unique_instance<TaskCounter>();
+	std::shared_ptr<TaskCounter> serial_counter = make_unique_instance<TaskCounter>();
+
+	ThreadedTaskRunner runner;
+	runner.set_thread_count(test_thread_count);
+	runner.set_batch_count(1);
+	runner.set_name("Test");
+
+	// Parallel tasks only
+
+	for (unsigned int i = 0; i < 16; ++i) {
+		runner.enqueue(ZN_NEW(TestTask(parallel_counter)), false);
+	}
+
+	runner.wait_for_all_tasks();
+	L::dequeue_tasks(runner);
+	ZYLANN_TEST_ASSERT(parallel_counter->completed_count == 16);
+	ZYLANN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
+	ZYLANN_TEST_ASSERT(parallel_counter->current_count == 0);
+
+	// Serial tasks only
+
+	for (unsigned int i = 0; i < 16; ++i) {
+		runner.enqueue(ZN_NEW(TestTask(serial_counter)), true);
+	}
+
+	runner.wait_for_all_tasks();
+	L::dequeue_tasks(runner);
+	ZYLANN_TEST_ASSERT(serial_counter->completed_count == 16);
+	ZYLANN_TEST_ASSERT(serial_counter->max_count == 1);
+	ZYLANN_TEST_ASSERT(serial_counter->current_count == 0);
+
+	// Interleaved
+
+	parallel_counter->reset();
+	serial_counter->reset();
+
+	for (unsigned int i = 0; i < 32; ++i) {
+		if ((i & 1) == 0) {
+			runner.enqueue(ZN_NEW(TestTask(parallel_counter)), false);
+		} else {
+			runner.enqueue(ZN_NEW(TestTask(serial_counter)), true);
+		}
+	}
+
+	runner.wait_for_all_tasks();
+	L::dequeue_tasks(runner);
+	ZYLANN_TEST_ASSERT(parallel_counter->completed_count == 16);
+	ZYLANN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
+	ZYLANN_TEST_ASSERT(parallel_counter->current_count == 0);
+	ZYLANN_TEST_ASSERT(serial_counter->completed_count == 16);
+	ZYLANN_TEST_ASSERT(serial_counter->max_count == 1);
+	ZYLANN_TEST_ASSERT(serial_counter->current_count == 0);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -2137,6 +2258,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_buffer_metadata);
 	VOXEL_TEST(test_voxel_buffer_metadata_gd);
 	VOXEL_TEST(test_voxel_mesher_cubes);
+	VOXEL_TEST(test_threaded_task_runner);
 
 	print_line("------------ Voxel tests end -------------");
 }

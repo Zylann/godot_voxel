@@ -8,8 +8,8 @@ namespace zylann::voxel {
 class VoxelMeshSDFInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(VoxelMeshSDFInspectorPlugin, EditorInspectorPlugin)
 public:
-	bool can_handle(Object *p_object);
-	void parse_begin(Object *p_object);
+	bool can_handle(Object *p_object) override;
+	void parse_begin(Object *p_object) override;
 };
 
 class VoxelMeshSDFEditorPlugin : public EditorPlugin {

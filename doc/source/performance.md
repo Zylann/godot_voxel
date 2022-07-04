@@ -25,7 +25,6 @@ Parameter name                              | Type    | Description
 Several notes:
 
 - It is recommended to not use all available threads for voxel stuff. Games use more for other things, and players may even do something else in background (such as music, YouTube playlist or voice chat).
-- The module uses one additional streaming thread for file I/O, which is always reserved, and will count in the amount of threads allocated.
 - It is not possible to use zero threads. The module is designed to use threads at the moment.
 - You can check at runtime how many theads are allocated with a script and using `VoxelServer.get_stats()`. It is also printed if `debug/settings/stdout/verbose_stdout` is enabled in project settings (or `-v` in command line).
 - Changing these settings requires an editor restart (or game restart) to take effect.

@@ -55,9 +55,7 @@ public:
 	int get_lod_count() const;
 
 	void set_generate_collisions(bool enabled);
-	bool get_generate_collisions() const {
-		return _generate_collisions;
-	}
+	bool get_generate_collisions() const;
 
 	// Sets up to which amount of LODs collision will generate. -1 means all of them.
 	void set_collision_lod_count(int lod_count);
@@ -178,7 +176,7 @@ public:
 		return _process_callback;
 	}
 
-	Ref<VoxelTool> get_voxel_tool();
+	Ref<VoxelTool> get_voxel_tool() override;
 
 	struct Stats {
 		// Amount of octree nodes waiting for data. It should reach zero when everything is loaded.
@@ -317,7 +315,6 @@ private:
 
 	FixedArray<VoxelMeshMap<VoxelMeshBlockVLT>, constants::MAX_LOD> _mesh_maps_per_lod;
 
-	bool _generate_collisions = true;
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;

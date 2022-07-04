@@ -1551,43 +1551,25 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
-
-	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
-	const bool use_render_mesh_as_collider = gen_collisions && !_mesher->is_generating_collision_surface();
-	std::vector<Array> render_surfaces;
-
-	int gd_surface_index = 0;
-	for (unsigned int surface_index = 0; surface_index < ob.surfaces.surfaces.size(); ++surface_index) {
-		const VoxelMesher::Output::Surface &surface = ob.surfaces.surfaces[surface_index];
-		Array arrays = surface.arrays;
-		if (arrays.is_empty()) {
-			continue;
-		}
-
-		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
-			continue;
-		}
-
-		if (use_render_mesh_as_collider) {
-			render_surfaces.push_back(arrays);
-		}
-
-		if (mesh.is_null()) {
-			mesh.instantiate();
-		}
-
-		mesh->add_surface_from_arrays(
-				ob.surfaces.primitive_type, arrays, Array(), Dictionary(), ob.surfaces.mesh_flags);
-
-		Ref<Material> material = _mesher->get_material_by_index(surface_index);
-		mesh->surface_set_material(gd_surface_index, material);
-		++gd_surface_index;
+	std::vector<uint8_t> material_indices;
+	if (ob.has_mesh_resource) {
+		// The mesh was already built as part of the threaded task
+		mesh = ob.mesh;
+		// It can be empty
+		material_indices = std::move(ob.mesh_material_indices);
+	} else {
+		// Can't build meshes in threads, do it here
+		material_indices.clear();
+		mesh = build_mesh(to_span_const(ob.surfaces.surfaces), ob.surfaces.primitive_type, ob.surfaces.mesh_flags,
+				material_indices);
 	}
-
-	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
-		mesh = Ref<Mesh>();
-		render_surfaces.clear();
+	if (mesh.is_valid()) {
+		const unsigned int surface_count = mesh->get_surface_count();
+		for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
+			const unsigned int material_index = material_indices[surface_index];
+			Ref<Material> material = _mesher->get_material_by_index(material_index);
+			mesh->surface_set_material(surface_index, material);
+		}
 	}
 
 	if (_instancer != nullptr) {
@@ -1609,6 +1591,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelServer::BlockMeshOutput &ob) {
 		block->set_material_override(_material_override);
 	}
 
+	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 	if (gen_collisions) {
 		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
 		block->set_collision_shape(

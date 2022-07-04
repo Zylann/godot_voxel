@@ -42,7 +42,6 @@ Dictionary to_dict(const zylann::voxel::VoxelServer::Stats::ThreadPoolStats &sta
 
 Dictionary to_dict(const zylann::voxel::VoxelServer::Stats &stats) {
 	Dictionary pools;
-	pools["streaming"] = to_dict(stats.streaming);
 	pools["general"] = to_dict(stats.general);
 
 	Dictionary tasks;

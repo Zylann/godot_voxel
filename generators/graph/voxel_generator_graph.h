@@ -207,6 +207,10 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+
+	// Gets a hash that attempts to only change if the output of the graph is different.
+	// This is computed from the editable graph data, not the compiled result.
+	uint64_t get_output_graph_hash() const;
 #endif
 
 private:

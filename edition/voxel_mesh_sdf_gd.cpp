@@ -289,8 +289,6 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			}
 		}
 
-		void apply_result() override {}
-
 	private:
 		void report_error() {
 			obj_to_notify->call_deferred("_on_bake_async_completed", Ref<gd::VoxelBuffer>(), Vector3(), Vector3());

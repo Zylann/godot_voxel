@@ -129,6 +129,13 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		const VoxelServer::ThreadsConfig threads_config = get_config_from_godot(main_thread_budget_usec);
 		VoxelServer::create_singleton(threads_config);
 		VoxelServer::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
+		// TODO Pick this from the current renderer + user option (at time of writing, Godot 4 has only one renderer and
+		// has not figured out how such option would be exposed).
+		// Could use `can_create_resources_async` but this is internal.
+		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
+		// resource creation.
+		VoxelServer::get_singleton().set_threaded_mesh_resource_building_enabled(
+				RenderingServer::get_singleton()->is_low_end() == false);
 
 		gd::VoxelServer::create_singleton();
 		Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));

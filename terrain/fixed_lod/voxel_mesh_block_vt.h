@@ -34,7 +34,10 @@ public:
 	}
 
 	void set_material_override(Ref<Material> material) {
-		_mesh_instance.set_material_override(material);
+		// Can be invalid if the mesh is empty, we don't create instances for empty meshes
+		if (_mesh_instance.is_valid()) {
+			_mesh_instance.set_material_override(material);
+		}
 	}
 
 private:
