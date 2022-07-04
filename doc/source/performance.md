@@ -83,7 +83,7 @@ If you move fast while near a terrain with a lot of chunks (mesh size 16 and hig
 
 This was observed by profiling with Tracy in a `release_debug` build (typical mode used for official optimized builds):
 
-![Screenshot of Tracy profiler showing slow buffer deallocation](images/tracy_profile_slow_vulkan_dealloc.png)
+![Screenshot of Tracy profiler showing slow buffer deallocation](images/tracy_profile_slow_vulkan_dealloc.webp)
 
 Lots of buffers get freed on the main thread at the end of the frame, and it can take a while, causing a CPU spike.
 On the other hand, there is no such issue when the same amount of meshes is allocated.
