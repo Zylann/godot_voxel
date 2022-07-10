@@ -28,6 +28,7 @@ public:
 	FreeMeshTask(Ref<Mesh> p_mesh) : mesh(p_mesh) {}
 
 	void run() override {
+		ZN_PROFILE_SCOPE();
 #ifdef DEBUG_ENABLED
 		if (mesh->reference_get_count() > 1) {
 			WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "

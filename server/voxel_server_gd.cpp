@@ -79,6 +79,23 @@ void VoxelServer::_on_rendering_server_frame_post_draw() {
 #endif
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelServer::set_editor_camera_info(Vector3 position, Vector3 direction) {
+	_editor_camera_position = position;
+	_editor_camera_direction = direction;
+}
+
+Vector3 VoxelServer::get_editor_camera_position() const {
+	return _editor_camera_position;
+}
+
+Vector3 VoxelServer::get_editor_camera_direction() const {
+	return _editor_camera_direction;
+}
+
+#endif
+
 void VoxelServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelServer::get_stats);
 }

@@ -1,5 +1,6 @@
 #include "voxel_terrain_editor_plugin.h"
 #include "../../generators/voxel_generator.h"
+#include "../../server/voxel_server_gd.h"
 #include "../../storage/modifiers_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
@@ -194,6 +195,8 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
 
 	if (_editor_viewer_follows_camera) {
 		VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		gd::VoxelServer::get_singleton()->set_editor_camera_info(
+				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
 
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;

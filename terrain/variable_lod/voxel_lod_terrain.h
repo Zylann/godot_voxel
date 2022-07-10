@@ -275,7 +275,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active);
+	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading);
 
 	void _on_stream_params_changed();
 
@@ -286,6 +286,13 @@ private:
 
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
+
+	struct LocalCameraInfo {
+		Vector3 position;
+		Vector3 forward;
+	};
+
+	LocalCameraInfo get_local_camera_info() const;
 
 	void _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
@@ -311,9 +318,33 @@ private:
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	Ref<Material> _material;
+	// The main reason this pool even exists is because of this: https://github.com/godotengine/godot/issues/34741
+	// Blocks need individual shader parameters for several features,
+	// so a lot of ShaderMaterial copies using the same shader are created.
+	// The terrain must be able to run in editor, but in that context, Godot connects a signal of Shader to
+	// every ShaderMaterial using it. Godot does that in order to update properties in THE inspector if the shader
+	// changes (which is debatable since only the edited material needs this, if it even is edited!).
+	// The problem is, that also means every time `ShaderMaterial::duplicate()` is called, when it assigns `shader`,
+	// it has to add a connection to a HUGE list. Which is very slow, enough to cause stutters.
 	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
 
 	FixedArray<VoxelMeshMap<VoxelMeshBlockVLT>, constants::MAX_LOD> _mesh_maps_per_lod;
+
+	// Copies of meshes just for fading out.
+	// Used when a transition mask changes. This can make holes appear if not smoothly faded.
+	struct FadingOutMesh {
+		// Position in space coordinates local to the volume
+		Vector3 local_position;
+		DirectMeshInstance mesh_instance;
+		// Changing properties is the reason we may want to fade the mesh, so we may hold on a copy of the material with
+		// properties before the fade starts.
+		Ref<ShaderMaterial> shader_material;
+		// Going from 1 to 0
+		float progress;
+	};
+
+	// These are "fire and forget"
+	std::vector<FadingOutMesh> _fading_out_meshes;
 
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;

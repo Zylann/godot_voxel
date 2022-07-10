@@ -15,19 +15,30 @@ namespace zylann::voxel::gd {
 class VoxelServer : public Object {
 	GDCLASS(VoxelServer, Object)
 public:
-	Dictionary get_stats() const;
-	void schedule_task(Ref<ZN_ThreadedTask> task);
-
-	VoxelServer();
-
 	static VoxelServer *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
+
+	VoxelServer();
+
+	Dictionary get_stats() const;
+	void schedule_task(Ref<ZN_ThreadedTask> task);
+
+#ifdef TOOLS_ENABLED
+	void set_editor_camera_info(Vector3 position, Vector3 direction);
+	Vector3 get_editor_camera_position() const;
+	Vector3 get_editor_camera_direction() const;
+#endif
 
 private:
 	void _on_rendering_server_frame_post_draw();
 
 	static void _bind_methods();
+
+#ifdef TOOLS_ENABLED
+	Vector3 _editor_camera_position;
+	Vector3 _editor_camera_direction;
+#endif
 };
 
 } // namespace zylann::voxel::gd

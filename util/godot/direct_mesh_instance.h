@@ -13,6 +13,7 @@ namespace zylann {
 class DirectMeshInstance : public NonCopyable {
 public:
 	DirectMeshInstance();
+	DirectMeshInstance(DirectMeshInstance &&src);
 	~DirectMeshInstance();
 
 	bool is_valid() const;
@@ -39,6 +40,8 @@ public:
 	Ref<Mesh> get_mesh() const;
 
 	// void move_to(DirectMeshInstance &dst);
+
+	void operator=(DirectMeshInstance &&src);
 
 private:
 	RID _mesh_instance;
