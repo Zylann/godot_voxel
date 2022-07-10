@@ -1405,7 +1405,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						activated_blocks.find(block) == activated_blocks.end() &&
 						tu.transition_mask != block->get_transition_mask()) {
 					//
-					const int mesh_block_size = get_mesh_block_size() << lod_index;
 					const Vector3 block_center = volume_transform.xform(
 							to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
 
