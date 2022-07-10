@@ -103,7 +103,6 @@ Godot 4 is required from this version.
 - Known issues
     - Some nodes and resources no longer start with predefined properties due to a warning introduced in Godot4 when properties are resources.
     - SDFGI does not work all the time and can only be forced to update by moving away and coming back, pre-generating the terrain, or toggling it off and on. This is a limitation of Godot not supporting well meshes created dynamically.
-    - Moving fast near a terrain with mesh size 16 can cause more noticeable slowdowns compared to Godot3. This is because Godot's Vulkan allocator is much slower to free mesh buffers. A mitigation is in place to smooth the slowdown but it is not avoidable.
 
 
 0.5.x - Legacy Godot 3 branch - `godot3.x`
