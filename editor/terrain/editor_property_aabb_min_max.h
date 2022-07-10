@@ -28,8 +28,8 @@ private:
 
 	static void _bind_methods();
 
-	FixedArray<EditorSpinSlider *, 6> _spin;
-	bool _setting = false;
+	FixedArray<EditorSpinSlider *, 6> _spinboxes;
+	bool _ignore_value_change = false;
 };
 
 } // namespace zylann
