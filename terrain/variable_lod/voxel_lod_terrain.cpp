@@ -1415,7 +1415,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						item.local_position = block->position * mesh_block_size;
 						item.progress = 1.f;
 
-						const unsigned int prev_transition_mask = block->get_transition_mask();
 						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
 						//item.shader_material = shader_material->duplicate(false);
 						item.shader_material = allocate_shader_material(_shader_material_pool, shader_material, 0);
