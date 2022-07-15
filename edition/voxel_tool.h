@@ -68,6 +68,7 @@ public:
 	virtual void do_circle(Vector3i pos, int radius, Vector3i direction);
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
+	void do_flatten(Vector3 center, float radius, Vector3 floor_normal);
 
 	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
 
