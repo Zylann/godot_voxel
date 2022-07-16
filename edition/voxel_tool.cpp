@@ -125,14 +125,6 @@ void VoxelTool::do_point(Vector3i pos) {
 	_post_edit(box);
 }
 
-void VoxelTool::do_line(Vector3i begin, Vector3i end) {
-	ERR_PRINT("Not implemented");
-}
-
-void VoxelTool::do_circle(Vector3i pos, int radius, Vector3i direction) {
-	ERR_PRINT("Not implemented");
-}
-
 uint64_t VoxelTool::_get_voxel(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return 0;
@@ -308,14 +300,6 @@ Ref<VoxelRaycastResult> VoxelTool::_b_raycast(Vector3 pos, Vector3 dir, float ma
 
 void VoxelTool::_b_do_point(Vector3i pos) {
 	do_point(pos);
-}
-
-void VoxelTool::_b_do_line(Vector3 begin, Vector3 end) {
-	do_line(math::floor_to_int(begin), math::floor_to_int(end));
-}
-
-void VoxelTool::_b_do_circle(Vector3 pos, float radius, Vector3 direction) {
-	do_circle(math::floor_to_int(pos), radius, math::floor_to_int(direction));
 }
 
 void VoxelTool::_b_do_sphere(Vector3 pos, float radius) {

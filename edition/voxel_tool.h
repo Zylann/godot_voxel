@@ -64,8 +64,6 @@ public:
 	virtual void set_voxel(Vector3i pos, uint64_t v);
 	virtual void set_voxel_f(Vector3i pos, float v);
 	virtual void do_point(Vector3i pos);
-	virtual void do_line(Vector3i begin, Vector3i end);
-	virtual void do_circle(Vector3i pos, int radius, Vector3i direction);
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
 
@@ -104,8 +102,6 @@ private:
 	void _b_set_voxel_f(Vector3i pos, float v);
 	Ref<VoxelRaycastResult> _b_raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 	void _b_do_point(Vector3i pos);
-	void _b_do_line(Vector3 begin, Vector3 end);
-	void _b_do_circle(Vector3 pos, float radius, Vector3 direction);
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
 	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
