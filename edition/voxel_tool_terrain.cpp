@@ -159,27 +159,58 @@ void VoxelToolTerrain::paste(
 }
 
 void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	if (_mode != MODE_TEXTURE_PAINT) {
-		VoxelTool::do_sphere(center, radius);
-		return;
-	}
+	ops::DoSphere op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_bounds());
+	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
 
-	ZN_PROFILE_SCOPE();
-
-	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
-
-	if (!is_area_editable(box)) {
+	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
-	_terrain->get_storage().write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
-			ops::TextureBlendSphereOp{ center, radius, _texture_params });
+	VoxelDataMap &data = _terrain->get_storage();
 
-	_post_edit(box);
+	op.blocks.reference_area(data, op.box);
+	op();
+
+	_post_edit(op.box);
+}
+
+void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	ops::DoHemisphere op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.flat_direction = flat_direction;
+	op.shape.plane_d = flat_direction.dot(center);
+	op.shape.smoothness = smoothness;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_bounds());
+	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+
+	if (!is_area_editable(op.box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelDataMap &data = _terrain->get_storage();
+
+	op.blocks.reference_area(data, op.box);
+	op();
+
+	_post_edit(op.box);
 }
 
 uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
@@ -432,6 +463,8 @@ void VoxelToolTerrain::_bind_methods() {
 			&VoxelToolTerrain::run_blocky_random_tick, DEFVAL(16));
 	ClassDB::bind_method(D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
+	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
+			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
 }
 
 } // namespace zylann::voxel

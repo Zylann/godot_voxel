@@ -172,6 +172,10 @@ inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
 }
 } // namespace
 
+// The following are default legacy implementations. They may be slower than specialized ones, so they can often be
+// defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
+// definition in all specialized classes.
+
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 

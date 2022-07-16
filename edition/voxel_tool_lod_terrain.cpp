@@ -94,7 +94,7 @@ float approximate_distance_to_isosurface_binary_search(
 Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated
-	// TODO Implement broad-phase on blocks to minimize locking and increase performance
+	// TODO Optimization: implement broad-phase on blocks to minimize locking and increase performance
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
 	struct RaycastPredicate {
@@ -166,72 +166,19 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return res;
 }
 
-namespace ops {
-
-struct DoSphere {
-	Vector3 center;
-	float radius;
-	VoxelTool::Mode mode;
-	VoxelDataGrid blocks;
-	float sdf_scale;
-	Box3i box;
-	TextureParams texture_params;
-
-	void operator()() {
-		ZN_PROFILE_SCOPE();
-
-		switch (mode) {
-			case VoxelTool::MODE_ADD: {
-				// TODO Support other depths, format should be accessible from the volume
-				SdfOperation16bit<SdfUnion, SdfSphere> op;
-				op.shape.center = center;
-				op.shape.radius = radius;
-				op.shape.scale = sdf_scale;
-				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-			} break;
-
-			case VoxelTool::MODE_REMOVE: {
-				SdfOperation16bit<SdfSubtract, SdfSphere> op;
-				op.shape.center = center;
-				op.shape.radius = radius;
-				op.shape.scale = sdf_scale;
-				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-			} break;
-
-			case VoxelTool::MODE_SET: {
-				SdfOperation16bit<SdfSet, SdfSphere> op;
-				op.shape.center = center;
-				op.shape.radius = radius;
-				op.shape.scale = sdf_scale;
-				blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-			} break;
-
-			case VoxelTool::MODE_TEXTURE_PAINT: {
-				blocks.write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
-						TextureBlendSphereOp{ center, radius, texture_params });
-			} break;
-
-			default:
-				ERR_PRINT("Unknown mode");
-				break;
-		}
-	}
-};
-
-} //namespace ops
-
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i::from_min_max( //
-			math::floor_to_int(center - Vector3(radius, radius, radius)),
-			math::ceil_to_int(center + Vector3(radius, radius, radius)))
-							  // That padding is for SDF to have some margin
-							  .padded(2)
-							  .clipped(_terrain->get_voxel_bounds());
+	ops::DoSphere op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
+	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
 
-	if (!is_area_editable(box)) {
+	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
@@ -240,22 +187,48 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(data == nullptr);
 	VoxelDataLodMap::Lod &data_lod = data->lods[0];
 
-	preload_box(*data, box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
+	preload_box(*data, op.box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
 
-	ops::DoSphere op;
-	op.box = box;
-	op.center = center;
-	op.mode = get_mode();
-	op.radius = radius;
-	op.sdf_scale = get_sdf_scale();
-	op.texture_params = _texture_params;
 	{
 		RWLockRead rlock(data_lod.map_lock);
-		op.blocks.reference_area(data_lod.map, box);
+		op.blocks.reference_area(data_lod.map, op.box);
 		op();
 	}
 
-	_post_edit(box);
+	_post_edit(op.box);
+}
+
+void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	ops::DoHemisphere op;
+	op.shape.center = center;
+	op.shape.flat_direction = flat_direction;
+	op.shape.plane_d = flat_direction.dot(center);
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
+	op.mode = ops::Mode(get_mode());
+
+	if (!is_area_editable(op.box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
+	ERR_FAIL_COND(data == nullptr);
+	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+
+	preload_box(*data, op.box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
+
+	{
+		RWLockRead rlock(data_lod.map_lock);
+		op.blocks.reference_area(data_lod.map, op.box);
+		op();
+	}
+
+	_post_edit(op.box);
 }
 
 template <typename Op_T>
@@ -297,28 +270,21 @@ private:
 void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	const Box3i box = Box3i(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2))
-							  .clipped(_terrain->get_voxel_bounds());
+	ops::DoSphere op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
+	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
 
-	if (!is_area_editable(box)) {
+	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
 	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
 	ERR_FAIL_COND(data == nullptr);
-
-	ops::DoSphere op;
-	op.box = box;
-	op.center = center;
-	op.mode = get_mode();
-	op.radius = radius;
-	op.sdf_scale = get_sdf_scale();
-	op.texture_params = _texture_params;
-
-	// TODO How do I use unique_ptr with Godot's memnew/memdelete instead?
-	// (without having to mention it everywhere I pass this around)
 
 	VoxelToolAsyncEdit<ops::DoSphere> *task = memnew(VoxelToolAsyncEdit<ops::DoSphere>(op, data));
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
@@ -809,6 +775,8 @@ void VoxelToolLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
 	ClassDB::bind_method(
 			D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &VoxelToolLodTerrain::stamp_sdf);
+	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
+			&VoxelToolLodTerrain::do_hemisphere, DEFVAL(0.0));
 }
 
 } // namespace zylann::voxel

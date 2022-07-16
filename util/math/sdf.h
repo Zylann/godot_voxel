@@ -10,6 +10,8 @@ namespace zylann::math {
 // Signed-distance-field functions.
 // For more, see https://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 
+// TODO Use `float`, or templatize SDF values. Doubles may prevent some SIMD optimizations.
+
 inline real_t sdf_box(const Vector3 pos, const Vector3 extents) {
 	const Vector3 d = pos.abs() - extents;
 	return minf(maxf(d.x, maxf(d.y, d.z)), 0) + Vector3(maxf(d.x, 0), maxf(d.y, 0), maxf(d.z, 0)).length();
@@ -37,6 +39,14 @@ inline Interval sdf_torus(
 		const Interval &x, const Interval &y, const Interval &z, const Interval r0, const Interval r1) {
 	const Interval qx = get_length(x, z) - r0;
 	return get_length(qx, y) - r1;
+}
+
+// Note: calculate `plane_d` as `dot(plane_normal, point_in_plane)`
+inline real_t sdf_plane(Vector3 pos, Vector3 plane_normal, real_t plane_d) {
+	// On Inigo's website it's a `+h`, but it seems to be backward because then if a plane has normal (0,1,0) and height
+	// 1, a point at (0,1,0) will give a dot of 1, + height will be 2, which is wrong because the expected SDF here
+	// would be 0.
+	return pos.dot(plane_normal) - plane_d;
 }
 
 inline real_t sdf_union(real_t a, real_t b) {

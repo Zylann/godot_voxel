@@ -30,6 +30,8 @@ public:
 
 	// Specialized API
 
+	void do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness);
+
 	void run_blocky_random_tick(
 			AABB voxel_area, int voxel_count, const Callable &callback, int block_batch_count) const;
 

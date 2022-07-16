@@ -21,11 +21,11 @@ namespace zylann::voxel {
 class VoxelTool : public RefCounted {
 	GDCLASS(VoxelTool, RefCounted)
 public:
-	enum Mode { //
-		MODE_ADD,
-		MODE_REMOVE,
-		MODE_SET,
-		MODE_TEXTURE_PAINT
+	enum Mode {
+		MODE_ADD = ops::MODE_ADD,
+		MODE_REMOVE = ops::MODE_REMOVE,
+		MODE_SET = ops::MODE_SET,
+		MODE_TEXTURE_PAINT = ops::MODE_TEXTURE_PAINT
 	};
 
 	VoxelTool();
