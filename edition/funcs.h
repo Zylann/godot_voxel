@@ -330,7 +330,7 @@ struct DoSphere {
 	void operator()() {
 		ZN_PROFILE_SCOPE();
 
-		if (channel = VoxelBufferInternal::CHANNEL_SDF) {
+		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
 			switch (mode) {
 				case MODE_ADD: {
 					// TODO Support other depths, format should be accessible from the volume
@@ -382,7 +382,7 @@ struct DoShape {
 	void operator()() {
 		ZN_PROFILE_SCOPE();
 
-		if (channel = VoxelBufferInternal::CHANNEL_SDF) {
+		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
 			switch (mode) {
 				case MODE_ADD: {
 					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
