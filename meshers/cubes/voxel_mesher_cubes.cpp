@@ -1060,11 +1060,11 @@ void VoxelMesherCubes::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelColorPalette::get_class_static()),
 			"set_palette", "get_palette");
-	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE,
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"_set_opaque_material", "_get_opaque_material");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE,
-						 Material::get_class_static()),
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"_set_transparent_material", "_get_transparent_material");
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);

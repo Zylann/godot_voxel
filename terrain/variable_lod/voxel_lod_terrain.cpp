@@ -2701,8 +2701,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
-
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"set_material", "get_material");
 
 	ADD_GROUP("Collisions", "");

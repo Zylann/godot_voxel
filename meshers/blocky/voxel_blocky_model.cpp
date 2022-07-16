@@ -110,7 +110,8 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 
 		for (unsigned int i = 0; i < _surface_count; ++i) {
 			p_list->push_back(PropertyInfo(Variant::OBJECT, String("material_override_{0}").format(varray(i)),
-					PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()));
+					PROPERTY_HINT_RESOURCE_TYPE,
+					BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()));
 		}
 
 		p_list->push_back(PropertyInfo(
