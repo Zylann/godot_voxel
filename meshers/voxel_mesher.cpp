@@ -18,7 +18,7 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Materi
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	int surface_index = 0;
+	int gd_surface_index = 0;
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
 		Output::Surface &surface = output.surfaces[i];
 		Array &arrays = surface.arrays;
@@ -33,16 +33,16 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Materi
 		}
 
 		Ref<Material> material;
-		if (int(i) < materials.size()) {
-			material = materials[i];
+		if (int(surface.material_index) < materials.size()) {
+			material = materials[surface.material_index];
 		}
 		if (material.is_null()) {
-			material = get_material_by_index(i);
+			material = get_material_by_index(surface.material_index);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);
-		mesh->surface_set_material(surface_index, material);
-		++surface_index;
+		mesh->surface_set_material(gd_surface_index, material);
+		++gd_surface_index;
 	}
 
 	return mesh;

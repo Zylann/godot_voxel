@@ -431,11 +431,8 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 		VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = mesh->surface_get_material(surface_index);
-		if (material.is_valid()) {
-			surface.material_id = materials.get_or_create_index(material);
-		} else {
-			surface.material_id = 0;
-		}
+		// Note, an empty material counts as "The default material".
+		surface.material_id = materials.get_or_create_index(material);
 
 		// PackedInt32Array::Read indices_read = indices.read();
 		// PackedVector3Array::Read positions_read = positions.read();
@@ -611,10 +608,8 @@ void VoxelBlockyModel::bake(BakedData &baked_data, int p_atlas_size, bool bake_t
 
 			BakedData::Surface &surface = model.surfaces[surface_index];
 
-			if (material.is_valid()) {
-				const unsigned int material_index = materials.get_or_create_index(material);
-				surface.material_id = material_index;
-			}
+			const unsigned int material_index = materials.get_or_create_index(material);
+			surface.material_id = material_index;
 
 			surface.collision_enabled = surface_params.collision_enabled;
 		}

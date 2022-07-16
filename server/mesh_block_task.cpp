@@ -177,9 +177,10 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		// won't be added to the mesh)
 		std::vector<uint8_t> &mesh_material_indices) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT(mesh_material_indices.size() == 0);
+
 	Ref<ArrayMesh> mesh;
 
-	unsigned int gd_surface_index = 0;
 	for (unsigned int i = 0; i < surfaces.size(); ++i) {
 		const VoxelMesher::Output::Surface &surface = surfaces[i];
 		Array arrays = surface.arrays;
@@ -200,10 +201,8 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		// TODO Use `add_surface`, it's about 20% faster after measuring in Tracy (though we may see if Godot 4 expects
 		// the same)
 		mesh->add_surface_from_arrays(primitive, arrays, Array(), Dictionary(), flags);
-		// No multi-material supported yet
-		++gd_surface_index;
 
-		mesh_material_indices.push_back(i);
+		mesh_material_indices.push_back(surface.material_index);
 	}
 
 	// Debug code to highlight vertex sharing

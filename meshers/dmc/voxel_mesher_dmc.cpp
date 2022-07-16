@@ -1518,6 +1518,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// surfaces[material][array_type], for now single material
 	Output::Surface output_surface;
 	output_surface.arrays = surface;
+	output_surface.material_index = 0;
 	output.surfaces.push_back(output_surface);
 
 	if (params.mesh_mode == MESH_NORMAL) {

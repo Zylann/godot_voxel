@@ -897,9 +897,8 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	for (unsigned int material_index = 0; material_index < MATERIAL_COUNT; ++material_index) {
 		const Arrays &arrays = cache.arrays_per_material[material_index];
 
-		Output::Surface surface;
-
 		if (arrays.positions.size() != 0) {
+			Output::Surface surface;
 			Array &mesh_arrays = surface.arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
@@ -929,12 +928,13 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			}
 
 			//surface.collision_enabled = (material_index == MATERIAL_OPAQUE);
+
+			surface.material_index = material_index;
+			output.surfaces.push_back(surface);
 		}
 		//  else {
 		// 	// Empty
 		// }
-
-		output.surfaces.push_back(surface);
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;

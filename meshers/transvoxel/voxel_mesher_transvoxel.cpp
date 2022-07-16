@@ -260,7 +260,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	Array gd_arrays;
 	fill_surface_arrays(gd_arrays, *combined_mesh_arrays);
-	output.surfaces.push_back({ gd_arrays });
+	output.surfaces.push_back({ gd_arrays, 0 });
 
 	// const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	// print_line(String("VoxelMesherTransvoxel spent {0} us").format(varray(time_spent)));
