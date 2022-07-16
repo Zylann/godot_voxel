@@ -6,7 +6,7 @@
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "save_block_data_task.h"
-#include "voxel_server.h"
+#include "voxel_engine.h"
 
 namespace zylann::voxel {
 
@@ -67,7 +67,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			SaveBlockDataTask *save_task =
 					memnew(SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
 
-			VoxelServer::get_singleton().push_async_task(save_task);
+			VoxelEngine::get_singleton().push_async_task(save_task);
 		}
 	}
 
@@ -88,14 +88,14 @@ bool GenerateBlockTask::is_cancelled() {
 void GenerateBlockTask::apply_result() {
 	bool aborted = true;
 
-	if (VoxelServer::get_singleton().is_volume_valid(volume_id)) {
+	if (VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		if (stream_dependency->valid) {
 			Ref<VoxelStream> stream = stream_dependency->stream;
 
-			VoxelServer::BlockDataOutput o;
+			VoxelEngine::BlockDataOutput o;
 			o.voxels = voxels;
 			o.position = position;
 			o.lod = lod;
@@ -103,14 +103,14 @@ void GenerateBlockTask::apply_result() {
 			if (stream.is_valid() && stream->get_save_generator_output()) {
 				// We can't consider the block as "generated" since there is no state to tell that once saved,
 				// so it has to be considered an edited block
-				o.type = VoxelServer::BlockDataOutput::TYPE_LOADED;
+				o.type = VoxelEngine::BlockDataOutput::TYPE_LOADED;
 			} else {
-				o.type = VoxelServer::BlockDataOutput::TYPE_GENERATED;
+				o.type = VoxelEngine::BlockDataOutput::TYPE_GENERATED;
 			}
 			o.max_lod_hint = max_lod_hint;
 			o.initial_load = false;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
+			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 

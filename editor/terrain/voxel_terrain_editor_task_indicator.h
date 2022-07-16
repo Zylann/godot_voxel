@@ -1,7 +1,7 @@
 #ifndef VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 #define VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 
-#include "../../server/voxel_server.h"
+#include "../../engine/voxel_engine.h"
 
 #include <editor/editor_scale.h>
 #include <scene/gui/box_container.h>
@@ -44,7 +44,7 @@ public:
 	}
 
 	void update_stats() {
-		const VoxelServer::Stats stats = VoxelServer::get_singleton().get_stats();
+		const VoxelEngine::Stats stats = VoxelEngine::get_singleton().get_stats();
 		set_stat(STAT_STREAM_TASKS, stats.streaming_tasks);
 		set_stat(STAT_GENERATE_TASKS, stats.generation_tasks);
 		set_stat(STAT_MESH_TASKS, stats.meshing_tasks);

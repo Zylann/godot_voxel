@@ -5,7 +5,7 @@
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "generate_block_task.h"
-#include "voxel_server.h"
+#include "voxel_engine.h"
 
 namespace zylann::voxel {
 
@@ -76,7 +76,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 			task->stream_dependency = _stream_dependency;
 			task->priority_dependency = _priority_dependency;
 
-			VoxelServer::get_singleton().push_async_task(task);
+			VoxelEngine::get_singleton().push_async_task(task);
 			_requested_generator_task = true;
 
 		} else {
@@ -120,12 +120,12 @@ bool LoadBlockDataTask::is_cancelled() {
 }
 
 void LoadBlockDataTask::apply_result() {
-	if (VoxelServer::get_singleton().is_volume_valid(_volume_id)) {
+	if (VoxelEngine::get_singleton().is_volume_valid(_volume_id)) {
 		// TODO Comparing pointer may not be guaranteed
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		if (_stream_dependency->valid && !_requested_generator_task) {
-			VoxelServer::BlockDataOutput o;
+			VoxelEngine::BlockDataOutput o;
 			o.voxels = _voxels;
 			o.instances = std::move(_instances);
 			o.position = _position;
@@ -133,9 +133,9 @@ void LoadBlockDataTask::apply_result() {
 			o.dropped = !_has_run;
 			o.max_lod_hint = _max_lod_hint;
 			o.initial_load = false;
-			o.type = VoxelServer::BlockDataOutput::TYPE_LOADED;
+			o.type = VoxelEngine::BlockDataOutput::TYPE_LOADED;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(_volume_id);
+			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(_volume_id);
 			CRASH_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 		}

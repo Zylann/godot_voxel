@@ -1,7 +1,7 @@
 #ifndef VOXEL_LOD_TERRAIN_UPDATE_TASK_H
 #define VOXEL_LOD_TERRAIN_UPDATE_TASK_H
 
-#include "../../server/priority_dependency.h"
+#include "../../engine/priority_dependency.h"
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_lod_terrain_update_data.h"
 

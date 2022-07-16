@@ -1,8 +1,8 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../../server/mesh_block_task.h"
-#include "../../server/voxel_server.h"
+#include "../../engine/mesh_block_task.h"
+#include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data_map.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
@@ -263,8 +263,8 @@ private:
 	void _process(float delta);
 	void apply_main_thread_update_tasks();
 
-	void apply_mesh_update(VoxelServer::BlockMeshOutput &ob);
-	void apply_data_block_response(VoxelServer::BlockDataOutput &ob);
+	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
+	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
 
 	void start_updater();
 	void stop_updater();
@@ -377,7 +377,7 @@ private:
 
 		uint32_t volume_id = 0;
 		VoxelLodTerrain *self = nullptr;
-		VoxelServer::BlockMeshOutput data;
+		VoxelEngine::BlockMeshOutput data;
 	};
 
 	FixedArray<std::unordered_map<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;

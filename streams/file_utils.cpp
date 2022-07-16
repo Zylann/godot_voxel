@@ -1,5 +1,5 @@
 #include "file_utils.h"
-#include "../server/voxel_server.h"
+#include "../engine/voxel_engine.h"
 #include <core/io/dir_access.h>
 
 namespace zylann {

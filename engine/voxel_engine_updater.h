@@ -5,18 +5,18 @@
 
 namespace zylann::voxel {
 
-// TODO Hack to make VoxelServer update... need ways to integrate callbacks from main loop!
-class VoxelServerUpdater : public Node {
-	GDCLASS(VoxelServerUpdater, Node)
+// TODO Hack to make VoxelEngine update... need ways to integrate callbacks from main loop!
+class VoxelEngineUpdater : public Node {
+	GDCLASS(VoxelEngineUpdater, Node)
 public:
-	~VoxelServerUpdater();
+	~VoxelEngineUpdater();
 	static void ensure_existence(SceneTree *st);
 
 protected:
 	void _notification(int p_what);
 
 private:
-	VoxelServerUpdater();
+	VoxelEngineUpdater();
 };
 
 } // namespace zylann::voxel

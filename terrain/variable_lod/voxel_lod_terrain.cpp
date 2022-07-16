@@ -1,11 +1,11 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../engine/load_all_blocks_data_task.h"
+#include "../../engine/voxel_engine_gd.h"
+#include "../../engine/voxel_engine_updater.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../../server/load_all_blocks_data_task.h"
-#include "../../server/voxel_server_gd.h"
-#include "../../server/voxel_server_updater.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
@@ -102,7 +102,7 @@ static inline uint64_t get_ticks_msec() {
 } // namespace
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
-	if (!VoxelServer::get_singleton().is_volume_valid(volume_id)) {
+	if (!VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// The node can have been destroyed while this task was still pending
 		ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
 		return;
@@ -146,18 +146,18 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_update_data->settings.bounds_in_voxels =
 			Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
-	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
+	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelEngine,
 	// but instead of using a reception buffer we use a callback,
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
-	VoxelServer::VolumeCallbacks callbacks;
+	VoxelEngine::VolumeCallbacks callbacks;
 	callbacks.data = this;
-	callbacks.mesh_output_callback = [](void *cb_data, VoxelServer::BlockMeshOutput &ob) {
+	callbacks.mesh_output_callback = [](void *cb_data, VoxelEngine::BlockMeshOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->get_volume_id();
 		task->self = self;
 		task->data = std::move(ob);
-		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
+		VoxelEngine::get_singleton().push_main_thread_time_spread_task(task);
 
 		// If two tasks are queued for the same mesh, cancel the old ones.
 		// This is for cases where creating the mesh is slower than the speed at which it is generated,
@@ -169,13 +169,13 @@ VoxelLodTerrain::VoxelLodTerrain() {
 			p.first->second.add();
 		}
 	};
-	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
+	callbacks.data_output_callback = [](void *cb_data, VoxelEngine::BlockDataOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton().add_volume(callbacks);
-	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
@@ -189,7 +189,7 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	abort_async_edits();
 	_streaming_dependency->valid = false;
 	_meshing_dependency->valid = false;
-	VoxelServer::get_singleton().remove_volume(_volume_id);
+	VoxelEngine::get_singleton().remove_volume(_volume_id);
 	// Instancer can take care of itself
 }
 
@@ -352,8 +352,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		}
 	}
 
-	// VoxelServer::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
-	// VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
+	// VoxelEngine::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
+	// VoxelEngine::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
 
 	reset_maps();
 	// TODO Size other than 16 is not really supported though.
@@ -788,13 +788,13 @@ void VoxelLodTerrain::start_updater() {
 		}
 	}
 
-	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, _mesher);
+	// VoxelEngine::get_singleton().set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelLodTerrain::stop_updater() {
 	// Invalidate pending tasks
 	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
-	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
+	// VoxelEngine::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
 	//_reception_buffers.mesh_output.clear();
@@ -815,8 +815,8 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	// VoxelServer::get_singleton().set_volume_stream(_volume_id, _stream);
-	// VoxelServer::get_singleton().set_volume_generator(_volume_id, _generator);
+	// VoxelEngine::get_singleton().set_volume_stream(_volume_id, _stream);
+	// VoxelEngine::get_singleton().set_volume_generator(_volume_id, _generator);
 
 	if (_update_data->settings.full_load_mode && _stream.is_valid()) {
 		// TODO May want to defer this to be sure it's not done multiple times.
@@ -829,13 +829,13 @@ void VoxelLodTerrain::start_streamer() {
 		task->volume_id = _volume_id;
 		task->stream_dependency = _streaming_dependency;
 
-		VoxelServer::get_singleton().push_async_io_task(task);
+		VoxelEngine::get_singleton().push_async_io_task(task);
 	}
 }
 
 void VoxelLodTerrain::stop_streamer() {
-	// VoxelServer::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
-	// VoxelServer::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
+	// VoxelEngine::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
+	// VoxelEngine::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	_update_data->wait_for_end_of_task();
 
@@ -860,7 +860,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 	_update_data->settings.lod_distance = lod_distance;
 	_update_data->state.force_update_octrees_next_update = true;
-	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_lod_distance(lod_distance);
@@ -1063,11 +1063,11 @@ float VoxelLodTerrain::get_collision_margin() const {
 }
 
 int VoxelLodTerrain::get_data_block_region_extent() const {
-	return VoxelServer::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
+	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
 }
 
 int VoxelLodTerrain::get_mesh_block_region_extent() const {
-	return VoxelServer::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
+	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
 }
 
 Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_index) const {
@@ -1100,7 +1100,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
-				VoxelServerUpdater::ensure_existence(get_tree());
+				VoxelEngineUpdater::ensure_existence(get_tree());
 				_process(get_process_delta_time());
 			}
 			break;
@@ -1111,7 +1111,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
-				VoxelServerUpdater::ensure_existence(get_tree());
+				VoxelEngineUpdater::ensure_existence(get_tree());
 				_process(get_physics_process_delta_time());
 				break;
 			}
@@ -1172,7 +1172,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
-			// VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
+			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
 				// The transform and other properties can be set by the scene loader,
@@ -1204,8 +1204,8 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelServer::get_singleton().for_each_viewer( //
-			[&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) { //
+	VoxelEngine::get_singleton().for_each_viewer( //
+			[&pos](const VoxelEngine::Viewer &viewer, uint32_t viewer_id) { //
 				pos = viewer.world_position;
 			});
 
@@ -1223,7 +1223,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 // 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 // 		BlockToSave &b = blocks_to_save[i];
 // 		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
-// 		VoxelServer::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
+// 		VoxelEngine::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 // 	}
 // }
 
@@ -1244,7 +1244,7 @@ void VoxelLodTerrain::_process(float delta) {
 	//process_block_loading_responses();
 
 	// TODO This could go into time spread tasks too
-	process_deferred_collision_updates(VoxelServer::get_singleton().get_main_thread_time_budget_usec());
+	process_deferred_collision_updates(VoxelEngine::get_singleton().get_main_thread_time_budget_usec());
 
 #ifdef TOOLS_ENABLED
 	if (debug_is_draw_enabled() && is_visible_in_tree()) {
@@ -1262,7 +1262,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 		// TODO Optimization: pool tasks instead of allocating?
 		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
-				_meshing_dependency, VoxelServer::get_singleton().get_shared_viewers_data_from_default_world(),
+				_meshing_dependency, VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world(),
 				viewer_pos, _instancer != nullptr, _volume_id, get_global_transform()));
 
 		_update_data->task_is_complete = false;
@@ -1270,7 +1270,7 @@ void VoxelLodTerrain::_process(float delta) {
 		if (_threaded_update_enabled) {
 			// Schedule task at the end, so it is less likely to have contention with other logic than if it was done at
 			// the beginnning of `_process`
-			VoxelServer::get_singleton().push_async_task(task);
+			VoxelEngine::get_singleton().push_async_task(task);
 
 		} else {
 			task->run(ThreadedTaskContext{ 0 });
@@ -1480,10 +1480,10 @@ bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mu
 	return it != set.end();
 }
 
-void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
+void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
-	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVED) {
+	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		// That's a save confirmation event.
 		// Note: in the future, if blocks don't get copied before being sent for saving,
 		// we will need to use block versionning to know when we can reset the `modified` flag properly
@@ -1537,7 +1537,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 		RWLockWrite wlock(data_lod.map_lock);
 		VoxelDataBlock *block = data_lod.map.set_block_buffer(ob.position, ob.voxels, false);
 		CRASH_COND(block == nullptr);
-		block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
+		block->set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
 
 	} else {
 		// Loading returned an empty block: that means we know the stream does not contain a block here.
@@ -1560,7 +1560,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	}
 }
 
-void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
+void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support everything done here.
 	// Building meshes can be done in the threaded task when using Vulkan, but not OpenGL.
 	// Setting up mesh instances might not be well threaded?
@@ -1594,7 +1594,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 			++_stats.dropped_block_meshs;
 			return;
 		}
-		if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
+		if (ob.type == VoxelEngine::BlockMeshOutput::TYPE_DROPPED) {
 			// That block is loaded, but its meshing request was dropped.
 			// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
 			ZN_PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
@@ -1882,8 +1882,8 @@ VoxelLodTerrain::LocalCameraInfo VoxelLodTerrain::get_local_camera_info() const 
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		// Falling back on the editor's camera
-		info.position = gd::VoxelServer::get_singleton()->get_editor_camera_position();
-		info.forward = gd::VoxelServer::get_singleton()->get_editor_camera_direction();
+		info.position = gd::VoxelEngine::get_singleton()->get_editor_camera_position();
+		info.forward = gd::VoxelEngine::get_singleton()->get_editor_camera_direction();
 		return info;
 	}
 #endif

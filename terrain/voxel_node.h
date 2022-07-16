@@ -1,9 +1,9 @@
 #ifndef VOXEL_NODE_H
 #define VOXEL_NODE_H
 
+#include "../engine/streaming_dependency.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
-#include "../server/streaming_dependency.h"
 #include "../streams/voxel_stream.h"
 
 #include <scene/3d/node_3d.h>

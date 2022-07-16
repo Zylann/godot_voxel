@@ -1,4 +1,4 @@
-# VoxelServer
+# VoxelEngine
 
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 

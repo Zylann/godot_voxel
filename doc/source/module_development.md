@@ -48,7 +48,7 @@ meshers/       | Only depends on voxel storage, math and some Godot graphics API
 streams/       | Files handling code. Only depends on filesystem and storage.
 util/          | Generic utility functions and structures. They don't depend on voxel stuff.
 thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
-server/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
+engine/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
 storage/       | Storage and memory data structures.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
 tests/         | Contains tests. These run when Godot starts if enabled in the build script.

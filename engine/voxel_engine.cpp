@@ -1,4 +1,4 @@
-#include "voxel_server.h"
+#include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
 #include "../util/log.h"
 #include "../util/macros.h"
@@ -12,25 +12,25 @@
 
 namespace zylann::voxel {
 
-VoxelServer *g_voxel_server = nullptr;
+VoxelEngine *g_voxel_engine = nullptr;
 
-VoxelServer &VoxelServer::get_singleton() {
-	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Accessing singleton while it's null");
-	return *g_voxel_server;
+VoxelEngine &VoxelEngine::get_singleton() {
+	ZN_ASSERT_MSG(g_voxel_engine != nullptr, "Accessing singleton while it's null");
+	return *g_voxel_engine;
 }
 
-void VoxelServer::create_singleton(ThreadsConfig threads_config) {
-	ZN_ASSERT_MSG(g_voxel_server == nullptr, "Creating singleton twice");
-	g_voxel_server = ZN_NEW(VoxelServer(threads_config));
+void VoxelEngine::create_singleton(ThreadsConfig threads_config) {
+	ZN_ASSERT_MSG(g_voxel_engine == nullptr, "Creating singleton twice");
+	g_voxel_engine = ZN_NEW(VoxelEngine(threads_config));
 }
 
-void VoxelServer::destroy_singleton() {
-	ZN_ASSERT_MSG(g_voxel_server != nullptr, "Destroying singleton twice");
-	ZN_DELETE(g_voxel_server);
-	g_voxel_server = nullptr;
+void VoxelEngine::destroy_singleton() {
+	ZN_ASSERT_MSG(g_voxel_engine != nullptr, "Destroying singleton twice");
+	ZN_DELETE(g_voxel_engine);
+	g_voxel_engine = nullptr;
 }
 
-VoxelServer::VoxelServer(ThreadsConfig threads_config) {
+VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	const int hw_threads_hint = Thread::get_hardware_concurrency();
 	ZN_PRINT_VERBOSE(format("Voxel: HW threads hint: {}", hw_threads_hint));
 
@@ -65,7 +65,7 @@ VoxelServer::VoxelServer(ThreadsConfig threads_config) {
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
 }
 
-VoxelServer::~VoxelServer() {
+VoxelEngine::~VoxelEngine() {
 	// The GDScriptLanguage singleton can get destroyed before ours, so any script referenced by tasks
 	// cannot be freed. To work this around, tasks are cleared when the scene tree autoload is destroyed.
 	// So normally there should not be any task left to clear here,
@@ -74,7 +74,7 @@ VoxelServer::~VoxelServer() {
 	wait_and_clear_all_tasks(true);
 }
 
-void VoxelServer::wait_and_clear_all_tasks(bool warn) {
+void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
 	_general_thread_pool.wait_for_all_tasks();
 
 	_general_thread_pool.dequeue_completed_tasks([warn](zylann::IThreadedTask *task) {
@@ -86,19 +86,19 @@ void VoxelServer::wait_and_clear_all_tasks(bool warn) {
 	});
 }
 
-uint32_t VoxelServer::add_volume(VolumeCallbacks callbacks) {
+uint32_t VoxelEngine::add_volume(VolumeCallbacks callbacks) {
 	ZN_ASSERT(callbacks.check_callbacks());
 	Volume volume;
 	volume.callbacks = callbacks;
 	return _world.volumes.create(volume);
 }
 
-VoxelServer::VolumeCallbacks VoxelServer::get_volume_callbacks(uint32_t volume_id) const {
+VoxelEngine::VolumeCallbacks VoxelEngine::get_volume_callbacks(uint32_t volume_id) const {
 	const Volume &volume = _world.volumes.get(volume_id);
 	return volume.callbacks;
 }
 
-void VoxelServer::remove_volume(uint32_t volume_id) {
+void VoxelEngine::remove_volume(uint32_t volume_id) {
 	_world.volumes.destroy(volume_id);
 	// TODO How to cancel meshing tasks?
 
@@ -109,120 +109,120 @@ void VoxelServer::remove_volume(uint32_t volume_id) {
 	}
 }
 
-bool VoxelServer::is_volume_valid(uint32_t volume_id) const {
+bool VoxelEngine::is_volume_valid(uint32_t volume_id) const {
 	return _world.volumes.is_valid(volume_id);
 }
 
-uint32_t VoxelServer::add_viewer() {
+uint32_t VoxelEngine::add_viewer() {
 	return _world.viewers.create(Viewer());
 }
 
-void VoxelServer::remove_viewer(uint32_t viewer_id) {
+void VoxelEngine::remove_viewer(uint32_t viewer_id) {
 	_world.viewers.destroy(viewer_id);
 }
 
-void VoxelServer::set_viewer_position(uint32_t viewer_id, Vector3 position) {
+void VoxelEngine::set_viewer_position(uint32_t viewer_id, Vector3 position) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.world_position = position;
 }
 
-void VoxelServer::set_viewer_distance(uint32_t viewer_id, unsigned int distance) {
+void VoxelEngine::set_viewer_distance(uint32_t viewer_id, unsigned int distance) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.view_distance = distance;
 }
 
-unsigned int VoxelServer::get_viewer_distance(uint32_t viewer_id) const {
+unsigned int VoxelEngine::get_viewer_distance(uint32_t viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
 	return viewer.view_distance;
 }
 
-void VoxelServer::set_viewer_requires_visuals(uint32_t viewer_id, bool enabled) {
+void VoxelEngine::set_viewer_requires_visuals(uint32_t viewer_id, bool enabled) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.require_visuals = enabled;
 }
 
-bool VoxelServer::is_viewer_requiring_visuals(uint32_t viewer_id) const {
+bool VoxelEngine::is_viewer_requiring_visuals(uint32_t viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
 	return viewer.require_visuals;
 }
 
-void VoxelServer::set_viewer_requires_collisions(uint32_t viewer_id, bool enabled) {
+void VoxelEngine::set_viewer_requires_collisions(uint32_t viewer_id, bool enabled) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.require_collisions = enabled;
 }
 
-bool VoxelServer::is_viewer_requiring_collisions(uint32_t viewer_id) const {
+bool VoxelEngine::is_viewer_requiring_collisions(uint32_t viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
 	return viewer.require_collisions;
 }
 
-void VoxelServer::set_viewer_requires_data_block_notifications(uint32_t viewer_id, bool enabled) {
+void VoxelEngine::set_viewer_requires_data_block_notifications(uint32_t viewer_id, bool enabled) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.requires_data_block_notifications = enabled;
 }
 
-bool VoxelServer::is_viewer_requiring_data_block_notifications(uint32_t viewer_id) const {
+bool VoxelEngine::is_viewer_requiring_data_block_notifications(uint32_t viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
 	return viewer.requires_data_block_notifications;
 }
 
-void VoxelServer::set_viewer_network_peer_id(uint32_t viewer_id, int peer_id) {
+void VoxelEngine::set_viewer_network_peer_id(uint32_t viewer_id, int peer_id) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
 	viewer.network_peer_id = peer_id;
 }
 
-int VoxelServer::get_viewer_network_peer_id(uint32_t viewer_id) const {
+int VoxelEngine::get_viewer_network_peer_id(uint32_t viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
 	return viewer.network_peer_id;
 }
 
-bool VoxelServer::viewer_exists(uint32_t viewer_id) const {
+bool VoxelEngine::viewer_exists(uint32_t viewer_id) const {
 	return _world.viewers.is_valid(viewer_id);
 }
 
-void VoxelServer::push_main_thread_time_spread_task(
+void VoxelEngine::push_main_thread_time_spread_task(
 		zylann::ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority) {
 	_time_spread_task_runner.push(task, priority);
 }
 
-void VoxelServer::push_main_thread_progressive_task(zylann::IProgressiveTask *task) {
+void VoxelEngine::push_main_thread_progressive_task(zylann::IProgressiveTask *task) {
 	_progressive_task_runner.push(task);
 }
 
-int VoxelServer::get_main_thread_time_budget_usec() const {
+int VoxelEngine::get_main_thread_time_budget_usec() const {
 	return _main_thread_time_budget_usec;
 }
 
-void VoxelServer::set_main_thread_time_budget_usec(unsigned int usec) {
+void VoxelEngine::set_main_thread_time_budget_usec(unsigned int usec) {
 	_main_thread_time_budget_usec = usec;
 }
 
-void VoxelServer::set_threaded_mesh_resource_building_enabled(bool enable) {
+void VoxelEngine::set_threaded_mesh_resource_building_enabled(bool enable) {
 	_threaded_mesh_resource_building_enabled = enable;
 }
 
-bool VoxelServer::is_threaded_mesh_resource_building_enabled() const {
+bool VoxelEngine::is_threaded_mesh_resource_building_enabled() const {
 	return _threaded_mesh_resource_building_enabled;
 }
 
-void VoxelServer::push_async_task(zylann::IThreadedTask *task) {
+void VoxelEngine::push_async_task(zylann::IThreadedTask *task) {
 	_general_thread_pool.enqueue(task, false);
 }
 
-void VoxelServer::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
+void VoxelEngine::push_async_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks, false);
 }
 
-void VoxelServer::push_async_io_task(zylann::IThreadedTask *task) {
+void VoxelEngine::push_async_io_task(zylann::IThreadedTask *task) {
 	// I/O tasks run in serial because they usually can't run well in parallel due to locking shared resources.
 	_general_thread_pool.enqueue(task, true);
 }
 
-void VoxelServer::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
+void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks, true);
 }
 
-void VoxelServer::process() {
+void VoxelEngine::process() {
 	ZN_PROFILE_SCOPE();
 	ZN_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
@@ -275,15 +275,15 @@ static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunn
 	return active_count;
 }
 
-static VoxelServer::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
-	VoxelServer::Stats::ThreadPoolStats d;
+static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
+	VoxelEngine::Stats::ThreadPoolStats d;
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
 	d.thread_count = pool.get_thread_count();
 	return d;
 }
 
-VoxelServer::Stats VoxelServer::get_stats() const {
+VoxelEngine::Stats VoxelEngine::get_stats() const {
 	Stats s;
 	s.general = debug_get_pool_stats(_general_thread_pool);
 	s.generation_tasks = GenerateBlockTask::debug_get_running_count();

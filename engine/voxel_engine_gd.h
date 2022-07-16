@@ -1,5 +1,5 @@
-#ifndef VOXEL_SERVER_GD_H
-#define VOXEL_SERVER_GD_H
+#ifndef VOXEL_ENGINE_GD_H
+#define VOXEL_ENGINE_GD_H
 
 #include "core/object/class_db.h"
 #include <core/object/object.h>
@@ -12,14 +12,14 @@ namespace zylann::voxel::gd {
 
 // Godot-facing singleton class.
 // the real class is internal and does not need anything from Object.
-class VoxelServer : public Object {
-	GDCLASS(VoxelServer, Object)
+class VoxelEngine : public Object {
+	GDCLASS(VoxelEngine, Object)
 public:
-	static VoxelServer *get_singleton();
+	static VoxelEngine *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
 
-	VoxelServer();
+	VoxelEngine();
 
 	Dictionary get_stats() const;
 	void schedule_task(Ref<ZN_ThreadedTask> task);
@@ -43,4 +43,4 @@ private:
 
 } // namespace zylann::voxel::gd
 
-#endif // VOXEL_SERVER_GD_H
+#endif // VOXEL_ENGINE_GD_H

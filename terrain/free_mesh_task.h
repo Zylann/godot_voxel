@@ -1,7 +1,7 @@
 #ifndef VOXEL_FREE_MESH_TASK_H
 #define VOXEL_FREE_MESH_TASK_H
 
-#include "../server/voxel_server.h"
+#include "../engine/voxel_engine.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/tasks/progressive_task_runner.h"
 
@@ -22,7 +22,7 @@ public:
 	static void add(Ref<Mesh> mesh) {
 		CRASH_COND(mesh.is_null());
 		FreeMeshTask *task = memnew(FreeMeshTask(mesh));
-		VoxelServer::get_singleton().push_main_thread_progressive_task(task);
+		VoxelEngine::get_singleton().push_main_thread_progressive_task(task);
 	}
 
 	FreeMeshTask(Ref<Mesh> p_mesh) : mesh(p_mesh) {}

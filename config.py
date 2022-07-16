@@ -23,10 +23,9 @@ def get_icons_path():
 
 def get_doc_classes():
     return [
-        "VoxelServer",
+        "VoxelEngine",
         "ZN_ThreadedTask",
 
-        "Voxel",
         "VoxelLibrary",
         "VoxelColorPalette",
         "VoxelInstanceLibrary",

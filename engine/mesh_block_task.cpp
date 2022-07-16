@@ -5,7 +5,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
-#include "voxel_server.h"
+#include "voxel_engine.h"
 
 namespace zylann::voxel {
 
@@ -301,7 +301,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		lod_index, collision_hint, lod_hint };
 	mesher->build(_surfaces_output, input);
 
-	if (VoxelServer::get_singleton().is_threaded_mesh_resource_building_enabled()) {
+	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
 		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);
@@ -325,18 +325,18 @@ bool MeshBlockTask::is_cancelled() {
 }
 
 void MeshBlockTask::apply_result() {
-	if (VoxelServer::get_singleton().is_volume_valid(volume_id)) {
+	if (VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
 		// It is assumed that if a dependency is changed, a new copy of it is made and the old one is marked invalid.
 		if (meshing_dependency->valid) {
-			VoxelServer::BlockMeshOutput o;
+			VoxelEngine::BlockMeshOutput o;
 			// TODO Check for invalidation due to property changes
 
 			if (_has_run) {
-				o.type = VoxelServer::BlockMeshOutput::TYPE_MESHED;
+				o.type = VoxelEngine::BlockMeshOutput::TYPE_MESHED;
 			} else {
-				o.type = VoxelServer::BlockMeshOutput::TYPE_DROPPED;
+				o.type = VoxelEngine::BlockMeshOutput::TYPE_DROPPED;
 			}
 
 			o.position = position;
@@ -346,7 +346,7 @@ void MeshBlockTask::apply_result() {
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
 
-			VoxelServer::VolumeCallbacks callbacks = VoxelServer::get_singleton().get_volume_callbacks(volume_id);
+			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);
 			ERR_FAIL_COND(callbacks.data == nullptr);
 			callbacks.mesh_output_callback(callbacks.data, o);

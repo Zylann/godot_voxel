@@ -1,5 +1,5 @@
-#ifndef VOXEL_SERVER_H
-#define VOXEL_SERVER_H
+#ifndef VOXEL_ENGINE_H
+#define VOXEL_ENGINE_H
 
 #include "../meshers/voxel_mesher.h"
 #include "../streams/instance_data.h"
@@ -14,7 +14,9 @@
 namespace zylann::voxel {
 
 // Singleton for common things, notably the task system and shared viewers list.
-class VoxelServer {
+// In Godot terminology this used to be called a "server", but I dont really agree with the term here, and it can be
+// confused with networking features.
+class VoxelEngine {
 public:
 	struct BlockMeshOutput {
 		enum Type {
@@ -94,7 +96,7 @@ public:
 		float thread_count_ratio_over_max = 0.5;
 	};
 
-	static VoxelServer &get_singleton();
+	static VoxelEngine &get_singleton();
 	static void create_singleton(ThreadsConfig threads_config);
 	static void destroy_singleton();
 
@@ -181,10 +183,10 @@ public:
 	Stats get_stats() const;
 
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
-	~VoxelServer();
+	~VoxelEngine();
 
 private:
-	VoxelServer(ThreadsConfig threads_config);
+	VoxelEngine(ThreadsConfig threads_config);
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -226,11 +228,11 @@ private:
 
 struct VoxelFileLockerRead {
 	VoxelFileLockerRead(const std::string &path) : _path(path) {
-		VoxelServer::get_singleton().get_file_locker().lock_read(path);
+		VoxelEngine::get_singleton().get_file_locker().lock_read(path);
 	}
 
 	~VoxelFileLockerRead() {
-		VoxelServer::get_singleton().get_file_locker().unlock(_path);
+		VoxelEngine::get_singleton().get_file_locker().unlock(_path);
 	}
 
 	std::string _path;
@@ -238,11 +240,11 @@ struct VoxelFileLockerRead {
 
 struct VoxelFileLockerWrite {
 	VoxelFileLockerWrite(const std::string &path) : _path(path) {
-		VoxelServer::get_singleton().get_file_locker().lock_write(path);
+		VoxelEngine::get_singleton().get_file_locker().lock_write(path);
 	}
 
 	~VoxelFileLockerWrite() {
-		VoxelServer::get_singleton().get_file_locker().unlock(_path);
+		VoxelEngine::get_singleton().get_file_locker().unlock(_path);
 	}
 
 	std::string _path;
@@ -262,8 +264,8 @@ public:
 	}
 
 	inline void flush() {
-		VoxelServer::get_singleton().push_async_tasks(to_span(_main_tasks));
-		VoxelServer::get_singleton().push_async_io_tasks(to_span(_io_tasks));
+		VoxelEngine::get_singleton().push_async_tasks(to_span(_main_tasks));
+		VoxelEngine::get_singleton().push_async_io_tasks(to_span(_io_tasks));
 		_main_tasks.clear();
 		_io_tasks.clear();
 	}
@@ -277,4 +279,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_SERVER_H
+#endif // VOXEL_ENGINE_H

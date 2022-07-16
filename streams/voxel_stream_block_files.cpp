@@ -1,5 +1,5 @@
 #include "voxel_stream_block_files.h"
-#include "../server/voxel_server.h"
+#include "../engine/voxel_engine.h"
 #include "voxel_block_serializer.h"
 
 #include <core/io/dir_access.h>

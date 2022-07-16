@@ -1,38 +1,38 @@
-#include "voxel_server_gd.h"
+#include "voxel_engine_gd.h"
 #include "../storage/voxel_memory_pool.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/tasks/godot/threaded_task_gd.h"
-#include "voxel_server.h"
+#include "voxel_engine.h"
 
 namespace zylann::voxel::gd {
-VoxelServer *g_voxel_server = nullptr;
+VoxelEngine *g_voxel_engine = nullptr;
 
-VoxelServer *VoxelServer::get_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Accessing singleton while it's null");
-	return g_voxel_server;
+VoxelEngine *VoxelEngine::get_singleton() {
+	CRASH_COND_MSG(g_voxel_engine == nullptr, "Accessing singleton while it's null");
+	return g_voxel_engine;
 }
 
-void VoxelServer::create_singleton() {
-	CRASH_COND_MSG(g_voxel_server != nullptr, "Creating singleton twice");
-	g_voxel_server = memnew(VoxelServer);
+void VoxelEngine::create_singleton() {
+	CRASH_COND_MSG(g_voxel_engine != nullptr, "Creating singleton twice");
+	g_voxel_engine = memnew(VoxelEngine);
 }
 
-void VoxelServer::destroy_singleton() {
-	CRASH_COND_MSG(g_voxel_server == nullptr, "Destroying singleton twice");
-	memdelete(g_voxel_server);
-	g_voxel_server = nullptr;
+void VoxelEngine::destroy_singleton() {
+	CRASH_COND_MSG(g_voxel_engine == nullptr, "Destroying singleton twice");
+	memdelete(g_voxel_engine);
+	g_voxel_engine = nullptr;
 }
 
-VoxelServer::VoxelServer() {
+VoxelEngine::VoxelEngine() {
 #ifdef ZN_PROFILER_ENABLED
 	CRASH_COND(RenderingServer::get_singleton() == nullptr);
 	RenderingServer::get_singleton()->connect(
-			SNAME("frame_post_draw"), callable_mp(this, &VoxelServer::_on_rendering_server_frame_post_draw));
+			SNAME("frame_post_draw"), callable_mp(this, &VoxelEngine::_on_rendering_server_frame_post_draw));
 #endif
 }
 
-Dictionary to_dict(const zylann::voxel::VoxelServer::Stats::ThreadPoolStats &stats) {
+Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats::ThreadPoolStats &stats) {
 	Dictionary d;
 	d["tasks"] = stats.tasks;
 	d["active_threads"] = stats.active_threads;
@@ -40,7 +40,7 @@ Dictionary to_dict(const zylann::voxel::VoxelServer::Stats::ThreadPoolStats &sta
 	return d;
 }
 
-Dictionary to_dict(const zylann::voxel::VoxelServer::Stats &stats) {
+Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats &stats) {
 	Dictionary pools;
 	pools["general"] = to_dict(stats.general);
 
@@ -63,17 +63,17 @@ Dictionary to_dict(const zylann::voxel::VoxelServer::Stats &stats) {
 	return d;
 }
 
-Dictionary VoxelServer::get_stats() const {
-	return to_dict(zylann::voxel::VoxelServer::get_singleton().get_stats());
+Dictionary VoxelEngine::get_stats() const {
+	return to_dict(zylann::voxel::VoxelEngine::get_singleton().get_stats());
 }
 
-void VoxelServer::schedule_task(Ref<ZN_ThreadedTask> task) {
+void VoxelEngine::schedule_task(Ref<ZN_ThreadedTask> task) {
 	ERR_FAIL_COND(task.is_null());
 	ERR_FAIL_COND_MSG(task->is_scheduled(), "Cannot schedule again a task that is already scheduled");
-	zylann::voxel::VoxelServer::get_singleton().push_async_task(task->create_task());
+	zylann::voxel::VoxelEngine::get_singleton().push_async_task(task->create_task());
 }
 
-void VoxelServer::_on_rendering_server_frame_post_draw() {
+void VoxelEngine::_on_rendering_server_frame_post_draw() {
 #ifdef ZN_PROFILER_ENABLED
 	ZN_PROFILE_MARK_FRAME();
 #endif
@@ -81,23 +81,23 @@ void VoxelServer::_on_rendering_server_frame_post_draw() {
 
 #ifdef TOOLS_ENABLED
 
-void VoxelServer::set_editor_camera_info(Vector3 position, Vector3 direction) {
+void VoxelEngine::set_editor_camera_info(Vector3 position, Vector3 direction) {
 	_editor_camera_position = position;
 	_editor_camera_direction = direction;
 }
 
-Vector3 VoxelServer::get_editor_camera_position() const {
+Vector3 VoxelEngine::get_editor_camera_position() const {
 	return _editor_camera_position;
 }
 
-Vector3 VoxelServer::get_editor_camera_direction() const {
+Vector3 VoxelEngine::get_editor_camera_direction() const {
 	return _editor_camera_direction;
 }
 
 #endif
 
-void VoxelServer::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelServer::get_stats);
+void VoxelEngine::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
 }
 
 } // namespace zylann::voxel::gd
