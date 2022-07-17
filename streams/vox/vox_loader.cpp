@@ -1,7 +1,7 @@
 #include "vox_loader.h"
-#include "../meshers/cubes/voxel_color_palette.h"
-#include "../storage/voxel_buffer_gd.h"
-#include "../util/dstack.h"
+#include "../../meshers/cubes/voxel_color_palette.h"
+#include "../../storage/voxel_buffer_gd.h"
+#include "../../util/dstack.h"
 #include "vox_data.h"
 
 namespace zylann::voxel {

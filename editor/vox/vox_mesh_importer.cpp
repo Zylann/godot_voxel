@@ -3,7 +3,7 @@
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../storage/voxel_memory_pool.h"
-#include "../../streams/vox_data.h"
+#include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"

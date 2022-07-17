@@ -26,7 +26,7 @@
 #include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
 #include "streams/sqlite/voxel_stream_sqlite.h"
-#include "streams/vox_loader.h"
+#include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"

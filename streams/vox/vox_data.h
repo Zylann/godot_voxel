@@ -1,11 +1,11 @@
 #ifndef VOX_DATA_H
 #define VOX_DATA_H
 
-#include "../util/fixed_array.h"
-#include "../util/godot/funcs.h"
-#include "../util/math/color8.h"
-#include "../util/math/vector3i.h"
-#include "../util/memory.h"
+#include "../../util/fixed_array.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/math/color8.h"
+#include "../../util/math/vector3i.h"
+#include "../../util/memory.h"
 
 #include <core/math/basis.h>
 #include <core/string/ustring.h>

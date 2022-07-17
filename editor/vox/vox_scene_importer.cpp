@@ -2,7 +2,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../streams/vox_data.h"
+#include "../../streams/vox/vox_data.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"

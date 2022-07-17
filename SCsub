@@ -22,6 +22,7 @@ voxel_files = [
 	"streams/*.cpp",
 	"streams/sqlite/*.cpp",
 	"streams/region/*.cpp",
+	"streams/vox/*.cpp",
 
 	"storage/*.cpp",
 
