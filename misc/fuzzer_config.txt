@@ -21,7 +21,6 @@ VoxelViewer # Cause freeze when using with VoxelTerrain, due iterating each cell
 VoxelInstancer
 VoxelStream
 VoxelStreamFile
-VoxelStreamBlockFiles
 VoxelStreamRegionFiles
 VoxelStreamSQLite
 VoxelStreamScript
