@@ -4,6 +4,9 @@
 #include "funcs.h"
 #include <core/math/vector3.h>
 
+// 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
+// This is the type to use for interoperating with Godot.
+
 namespace zylann::math {
 
 inline Vector3 fract(const Vector3 &p) {

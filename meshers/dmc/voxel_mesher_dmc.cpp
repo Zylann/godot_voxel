@@ -141,7 +141,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 }
 
 inline Vector3f get_center(const OctreeNode *node) {
-	return to_vec3f(node->origin) + 0.5 * Vector3f(node->size, node->size, node->size);
+	return to_vec3f(node->origin) + 0.5f * Vector3f(node->size, node->size, node->size);
 }
 
 class OctreeBuilderTopDown {
