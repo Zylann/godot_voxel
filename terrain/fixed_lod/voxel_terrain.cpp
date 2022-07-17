@@ -18,6 +18,9 @@
 #include "../../util/string_funcs.h"
 #include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
+#ifdef TOOLS_ENABLED
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
 
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
@@ -862,6 +865,17 @@ void VoxelTerrain::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
+#ifdef TOOLS_ENABLED
+			// In the editor, auto-configure a default mesher, for convenience.
+			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
+			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
+			// warning in Godot 4.
+			if (Engine::get_singleton()->is_editor_hint() && !get_mesher().is_valid()) {
+				Ref<VoxelMesherTransvoxel> mesher;
+				mesher.instantiate();
+				set_mesher(mesher);
+			}
+#endif
 			break;
 
 		case NOTIFICATION_PROCESS:

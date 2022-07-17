@@ -20,6 +20,9 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
+#ifdef TOOLS_ENABLED
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
 
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
@@ -1115,6 +1118,20 @@ void VoxelLodTerrain::_notification(int p_what) {
 				_process(get_physics_process_delta_time());
 				break;
 			}
+
+#ifdef TOOLS_ENABLED
+		case NOTIFICATION_ENTER_TREE:
+			// In the editor, auto-configure a default mesher, for convenience.
+			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
+			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
+			// warning in Godot 4.
+			if (Engine::get_singleton()->is_editor_hint() && !get_mesher().is_valid()) {
+				Ref<VoxelMesherTransvoxel> mesher;
+				mesher.instantiate();
+				set_mesher(mesher);
+			}
+			break;
+#endif
 
 		case NOTIFICATION_EXIT_TREE:
 			break;
