@@ -95,6 +95,7 @@ Godot 4 is required from this version.
     - `VoxelVoxImporter` was renamed `VoxelVoxSceneImporter`
     - `VoxelInstanceLibraryItem` was renamed `VoxelInstanceLibraryMultiMeshItem`
     - `VoxelInstanceLibraryItemBase` was renamed `VoxelInstanceLibraryItem`
+    - `VoxelServer`: renamed `VoxelEngine`
     - `VoxelStream`: renamed `emerge_block` => `load_voxel_block`
     - `VoxelStream`: renamed `immerge_block` => `save_voxel_block`
     - `VoxelStreamScript`: renamed `_emerge_block` => `_load_voxel_block`
