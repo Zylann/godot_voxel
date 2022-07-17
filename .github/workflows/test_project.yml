@@ -93,11 +93,11 @@ jobs:
       # Editor is quite complicated piece of software, so it is easy to introduce bug here
       - name: Open and close editor
         run: |
-          DRI_PRIME=0 xvfb-run bin/${{GODOT_BINARY_NAME}} --audio-driver Dummy -e -q --path test_project 2>&1 | tee sanitizers_log.txt || true
+          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} --audio-driver Dummy -e -q --path test_project 2>&1 | tee sanitizers_log.txt || true
           modules/voxel/misc/check_ci_log.py sanitizers_log.txt
 
       # Run test project
       - name: Run project
         run: |
-          DRI_PRIME=0 xvfb-run bin/${{GODOT_BINARY_NAME}} 30 --video-driver GLES3 --audio-driver Dummy --path test_project 2>&1 | tee sanitizers_log.txt || true
+          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} 30 --video-driver GLES3 --audio-driver Dummy --path test_project 2>&1 | tee sanitizers_log.txt || true
           modules/voxel/misc/check_ci_log.py sanitizers_log.txt
