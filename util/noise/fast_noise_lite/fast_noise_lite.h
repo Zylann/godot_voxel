@@ -31,8 +31,8 @@ namespace zylann {
 //   in the module's version, so it is not possible to do range analysis more precisely. This is important for
 //   `VoxelGeneratorGraph`.
 //
-// - Does not have direct editor preview, requires to use a NoiseTexture even if the use case doesn't need it
-
+// - Does not use GDVirtual, so it can only be extended by modules, and cannot be extended with GDExtensions
+//
 class ZN_FastNoiseLite : public Resource {
 	GDCLASS(ZN_FastNoiseLite, Resource)
 
@@ -82,6 +82,8 @@ public:
 
 	ZN_FastNoiseLite();
 
+	// Properties
+
 	void set_noise_type(NoiseType type);
 	NoiseType get_noise_type() const;
 
@@ -123,6 +125,8 @@ public:
 
 	void set_rotation_type_3d(RotationType3D type);
 	RotationType3D get_rotation_type_3d() const;
+
+	// Queries
 
 	inline float get_noise_2d(real_t x, real_t y) const {
 		if (_warp_noise.is_valid()) {
