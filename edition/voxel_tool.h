@@ -2,14 +2,11 @@
 #define VOXEL_TOOL_H
 
 #include "../storage/funcs.h"
+#include "../storage/voxel_buffer_gd.h"
 #include "../util/math/box3i.h"
 #include "../util/math/sdf.h"
 #include "funcs.h"
 #include "voxel_raycast_result.h"
-
-namespace zylann::voxel::gd {
-class VoxelBuffer;
-}
 
 // TODO Need to review VoxelTool to account for transformed volumes
 
@@ -33,8 +30,8 @@ public:
 	void set_value(uint64_t val);
 	uint64_t get_value() const;
 
-	void set_channel(int channel);
-	int get_channel() const;
+	void set_channel(VoxelBufferInternal::ChannelId p_channel);
+	VoxelBufferInternal::ChannelId get_channel() const;
 
 	void set_mode(Mode mode);
 	Mode get_mode() const;
@@ -109,11 +106,13 @@ private:
 	Variant _b_get_voxel_metadata(Vector3i pos) const;
 	void _b_set_voxel_metadata(Vector3i pos, Variant meta);
 	bool _b_is_area_editable(AABB box) const;
+	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
+	gd::VoxelBuffer::ChannelId _b_get_channel() const;
 
 protected:
 	uint64_t _value = 0;
 	uint64_t _eraser_value = 0; // air
-	int _channel = 0;
+	VoxelBufferInternal::ChannelId _channel = VoxelBufferInternal::CHANNEL_TYPE;
 	float _sdf_scale = 1.f;
 	Mode _mode = MODE_ADD;
 

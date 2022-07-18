@@ -1629,7 +1629,7 @@ Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	// Auto-pick first used channel
 	for (int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
 		if ((used_channels_mask & (1 << channel)) != 0) {
-			vt->set_channel(channel);
+			vt->set_channel(VoxelBufferInternal::ChannelId(channel));
 			break;
 		}
 	}

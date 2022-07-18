@@ -177,6 +177,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
+	op.channel = get_channel();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -210,6 +211,7 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = ops::Mode(get_mode());
+	op.channel = get_channel();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -369,7 +371,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	// TODO Do not assume channel, at the moment it's hardcoded for smooth terrain
 	static const int channels_mask = (1 << VoxelBufferInternal::CHANNEL_SDF);
-	static const int main_channel = VoxelBufferInternal::CHANNEL_SDF;
+	static const VoxelBufferInternal::ChannelId main_channel = VoxelBufferInternal::CHANNEL_SDF;
 
 	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
 	Ref<gd::VoxelBuffer> source_copy_buffer_ref;

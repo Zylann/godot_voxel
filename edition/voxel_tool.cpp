@@ -27,12 +27,12 @@ uint64_t VoxelTool::get_eraser_value() const {
 	return _eraser_value;
 }
 
-void VoxelTool::set_channel(int channel) {
-	ERR_FAIL_INDEX(channel, VoxelBufferInternal::MAX_CHANNELS);
-	_channel = channel;
+void VoxelTool::set_channel(VoxelBufferInternal::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+	_channel = p_channel;
 }
 
-int VoxelTool::get_channel() const {
+VoxelBufferInternal::ChannelId VoxelTool::get_channel() const {
 	return _channel;
 }
 
@@ -339,12 +339,20 @@ static int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
 
+void VoxelTool::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
+	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+}
+
+gd::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {
+	return gd::VoxelBuffer::ChannelId(get_channel());
+}
+
 void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_value", "v"), &VoxelTool::set_value);
 	ClassDB::bind_method(D_METHOD("get_value"), &VoxelTool::get_value);
 
-	ClassDB::bind_method(D_METHOD("set_channel", "v"), &VoxelTool::set_channel);
-	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelTool::get_channel);
+	ClassDB::bind_method(D_METHOD("set_channel", "v"), &VoxelTool::_b_set_channel);
+	ClassDB::bind_method(D_METHOD("get_channel"), &VoxelTool::_b_get_channel);
 
 	ClassDB::bind_method(D_METHOD("set_mode", "m"), &VoxelTool::set_mode);
 	ClassDB::bind_method(D_METHOD("get_mode"), &VoxelTool::get_mode);

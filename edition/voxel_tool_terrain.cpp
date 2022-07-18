@@ -170,6 +170,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
+	op.channel = get_channel();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -199,6 +200,7 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
+	op.channel = get_channel();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
