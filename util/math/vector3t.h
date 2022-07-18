@@ -145,12 +145,12 @@ namespace math {
 
 template <typename T>
 inline Vector3T<T> min(const Vector3T<T> a, const Vector3T<T> b) {
-	return Vector3f(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+	return Vector3T<T>(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
 }
 
 template <typename T>
 inline Vector3T<T> max(const Vector3T<T> a, const Vector3T<T> b) {
-	return Vector3f(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+	return Vector3T<T>(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
 }
 
 template <typename T>
