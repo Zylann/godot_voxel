@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESH_MAP_H
 #define VOXEL_MESH_MAP_H
 
-#include "../server/voxel_server.h"
+#include "../engine/voxel_engine.h"
 #include "../util/macros.h"
 
 #include <unordered_map>
@@ -185,7 +185,7 @@ private:
 		ERR_FAIL_COND(block == nullptr);
 		FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
 		task->block = block;
-		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
+		VoxelEngine::get_singleton().push_main_thread_time_spread_task(task);
 	}
 
 private:

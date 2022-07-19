@@ -1,6 +1,6 @@
 #include "voxel_mesh_sdf_gd.h"
-#include "../server/voxel_server.h"
-#include "../server/voxel_server_updater.h"
+#include "../engine/voxel_engine.h"
+#include "../engine/voxel_engine_updater.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
@@ -154,7 +154,7 @@ void VoxelMeshSDF::bake() {
 
 void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
-	VoxelServerUpdater::ensure_existence(scene_tree);
+	VoxelEngineUpdater::ensure_existence(scene_tree);
 
 	//ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
 
@@ -247,7 +247,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 						task->box = Box3i(Vector3i(0, 0, z), Vector3i(res.x, res.y, 1));
 						task->obj_to_notify = obj_to_notify;
 
-						VoxelServer::get_singleton().push_async_task(task);
+						VoxelEngine::get_singleton().push_async_task(task);
 					}
 				} break;
 
@@ -315,7 +315,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	task->surface = surface;
 	task->obj_to_notify.reference_ptr(this);
 	task->boundary_sign_fix = _boundary_sign_fix;
-	VoxelServer::get_singleton().push_async_task(task);
+	VoxelEngine::get_singleton().push_async_task(task);
 }
 
 void VoxelMeshSDF::_on_bake_async_completed(Ref<gd::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos) {

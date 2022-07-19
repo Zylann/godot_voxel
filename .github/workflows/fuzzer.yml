@@ -9,6 +9,9 @@ on:
 env:
   GODOT_BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
+  GODOT_BINARY_NAME: godot.linuxbsd.tools.64
+  # if we could compile with sanitisers
+  #GODOT_BINARY_NAME: godot.linuxbsd.tools.64s
 
 jobs:
   test-project:
@@ -86,12 +89,15 @@ jobs:
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        run: |
-          scons -j2 use_asan=yes use_ubsan=yes
+        # Had to give up making sanitized builds because the CI doesn't have enough memory to perform linking...
+        # TODO Use another linker like `mold`? Or wait till we use GDExtension to hope for a smaller link phase?
+        # (even though official Godot has no problem with it :shrug:)
+        #run: scons -j2 use_asan=yes use_ubsan=yes
+        run: scons -j2
 
       - name: Run fuzzer
         run: |
-          DRI_PRIME=0 xvfb-run bin/godot.x11.tools.64s FunctionExecutor.tscn 600 --audio-driver Dummy --video-driver GLES3 --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} FunctionExecutor.tscn 600 --audio-driver Dummy --video-driver GLES3 --path fuzzer 2>&1 | tee sanitizers_log.txt || true
           tail -n 300 sanitizers_log.txt > project_results.txt
 
       - name: Store project results

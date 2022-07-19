@@ -9,6 +9,9 @@ on:
 env:
   GODOT_BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
+  GODOT_BINARY_NAME: godot.linuxbsd.tools.64
+  # if we could compile with sanitisers
+  #GODOT_BINARY_NAME: godot.linuxbsd.tools.64s
 
 jobs:
   test-project:
@@ -74,8 +77,11 @@ jobs:
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        run: |
-          scons -j2 use_asan=yes use_ubsan=yes
+        # Had to give up making sanitized builds because the CI doesn't have enough memory to perform linking...
+        # TODO Use another linker like `mold`? Or wait till we use GDExtension to hope for a smaller link phase?
+        # (even though official Godot has no problem with it :shrug:)
+        #run: scons -j2 use_asan=yes use_ubsan=yes
+        run: scons -j2
 
       # Download and extract zip archive with project, folder is renamed to be able to easy change used project
       - name: Download test project
@@ -87,11 +93,11 @@ jobs:
       # Editor is quite complicated piece of software, so it is easy to introduce bug here
       - name: Open and close editor
         run: |
-          DRI_PRIME=0 xvfb-run bin/godot.x11.tools.64s --audio-driver Dummy -e -q --path test_project 2>&1 | tee sanitizers_log.txt || true
+          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} --audio-driver Dummy -e -q --path test_project 2>&1 | tee sanitizers_log.txt || true
           modules/voxel/misc/check_ci_log.py sanitizers_log.txt
 
       # Run test project
       - name: Run project
         run: |
-          DRI_PRIME=0 xvfb-run bin/godot.x11.tools.64s 30 --video-driver GLES3 --audio-driver Dummy --path test_project 2>&1 | tee sanitizers_log.txt || true
+          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} 30 --video-driver GLES3 --audio-driver Dummy --path test_project 2>&1 | tee sanitizers_log.txt || true
           modules/voxel/misc/check_ci_log.py sanitizers_log.txt

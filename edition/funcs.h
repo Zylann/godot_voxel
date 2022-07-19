@@ -2,9 +2,11 @@
 #define VOXEL_EDITION_FUNCS_H
 
 #include "../storage/funcs.h"
+#include "../storage/voxel_data_grid.h"
 #include "../util/fixed_array.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
+#include "../util/profiling.h"
 
 #include <core/math/transform_3d.h>
 
@@ -169,13 +171,71 @@ struct SdfSet {
 	}
 };
 
+template <typename Value_T, typename Shape_T>
+struct BlockySetOperation {
+	Shape_T shape;
+	Value_T value;
+	inline Value_T operator()(Vector3i pos, Value_T src) const {
+		return shape.is_inside(Vector3(pos)) ? value : src;
+	}
+};
+
+inline Box3i get_sdf_sphere_box(Vector3 center, real_t radius) {
+	return Box3i::from_min_max( //
+			math::floor_to_int(center - Vector3(radius, radius, radius)),
+			math::ceil_to_int(center + Vector3(radius, radius, radius)))
+			// That padding is for SDF to have some margin
+			.padded(2);
+}
+
 struct SdfSphere {
 	Vector3 center;
 	real_t radius;
-	real_t scale;
+	real_t sdf_scale;
 
 	inline real_t operator()(Vector3 pos) const {
-		return scale * zylann::math::sdf_sphere(pos, center, radius);
+		return sdf_scale * math::sdf_sphere(pos, center, radius);
+	}
+
+	inline bool is_inside(Vector3 pos) const {
+		// Faster than the true SDF, we avoid a square root
+		return center.distance_squared_to(pos) < radius * radius;
+	}
+
+	inline const char *name() const {
+		return "SdfSphere";
+	}
+
+	inline Box3i get_box() {
+		return get_sdf_sphere_box(center, radius);
+	}
+};
+
+struct SdfHemisphere {
+	Vector3 center;
+	Vector3 flat_direction;
+	real_t plane_d;
+	real_t radius;
+	real_t sdf_scale;
+	real_t smoothness;
+
+	inline real_t operator()(Vector3 pos) const {
+		return sdf_scale *
+				math::sdf_smooth_subtract( //
+						math::sdf_sphere(pos, center, radius), //
+						math::sdf_plane(pos, flat_direction, plane_d), smoothness);
+	}
+
+	inline bool is_inside(Vector3 pos) const {
+		return (*this)(pos) < 0;
+	}
+
+	inline const char *name() const {
+		return "SdfHemisphere";
+	}
+
+	inline Box3i get_box() {
+		return get_sdf_sphere_box(center, radius);
 	}
 };
 
@@ -196,6 +256,10 @@ struct SdfBufferShape {
 		}
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
+
+	inline const char *name() const {
+		return "SdfBufferShape";
+	}
 };
 
 struct TextureParams {
@@ -204,6 +268,7 @@ struct TextureParams {
 	unsigned int index = 0;
 };
 
+// Optimized for spheres
 struct TextureBlendSphereOp {
 	Vector3 center;
 	float radius;
@@ -219,6 +284,7 @@ struct TextureBlendSphereOp {
 
 	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
 		const float distance_squared = Vector3(pos).distance_squared_to(center);
+		// Avoiding square root on the hot path
 		if (distance_squared < radius_squared) {
 			const float distance_from_radius = radius - Math::sqrt(distance_squared);
 			const float target_weight =
@@ -227,6 +293,139 @@ struct TextureBlendSphereOp {
 		}
 	}
 };
+
+template <typename Shape_T>
+struct TextureBlendOp {
+	Shape_T shape;
+	TextureParams texture_params;
+
+	inline void operator()(Vector3i pos, uint16_t &indices, uint16_t &weights) const {
+		const float sd = shape(pos);
+		if (sd <= 0) {
+			// TODO We don't know the full size of the shape so sharpness may be adjusted
+			const float target_weight = texture_params.opacity * math::clamp(-sd * texture_params.sharpness, 0.f, 1.f);
+			blend_texture_packed_u16(texture_params.index, target_weight, indices, weights);
+		}
+	}
+};
+
+enum Mode { //
+	MODE_ADD,
+	MODE_REMOVE,
+	MODE_SET,
+	MODE_TEXTURE_PAINT
+};
+
+// This one is implemented manually for a fast-path in texture paint
+// TODO Find a nicer way to do this without copypasta
+struct DoSphere {
+	SdfSphere shape;
+	Mode mode;
+	VoxelDataGrid blocks;
+	Box3i box;
+	TextureParams texture_params;
+	VoxelBufferInternal::ChannelId channel;
+	uint32_t blocky_value;
+
+	void operator()() {
+		ZN_PROFILE_SCOPE();
+
+		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+			switch (mode) {
+				case MODE_ADD: {
+					// TODO Support other depths, format should be accessible from the volume
+					SdfOperation16bit<SdfUnion, SdfSphere> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_REMOVE: {
+					SdfOperation16bit<SdfSubtract, SdfSphere> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_SET: {
+					SdfOperation16bit<SdfSet, SdfSphere> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_TEXTURE_PAINT: {
+					blocks.write_box_2(box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
+							TextureBlendSphereOp(shape.center, shape.radius, texture_params));
+				} break;
+
+				default:
+					ERR_PRINT("Unknown mode");
+					break;
+			}
+		} else {
+			BlockySetOperation<uint32_t, SdfSphere> op;
+			op.shape = shape;
+			op.value = blocky_value;
+			blocks.write_box(box, channel, op);
+		}
+	}
+};
+
+template <typename Shape_T>
+struct DoShape {
+	Shape_T shape;
+	Mode mode;
+	VoxelDataGrid blocks;
+	Box3i box;
+	VoxelBufferInternal::ChannelId channel;
+	TextureParams texture_params;
+	uint32_t blocky_value;
+
+	void operator()() {
+		ZN_PROFILE_SCOPE();
+
+		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+			switch (mode) {
+				case MODE_ADD: {
+					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
+					SdfOperation16bit<SdfUnion, Shape_T> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_REMOVE: {
+					SdfOperation16bit<SdfSubtract, Shape_T> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_SET: {
+					SdfOperation16bit<SdfSet, Shape_T> op;
+					op.shape = shape;
+					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+				} break;
+
+				case MODE_TEXTURE_PAINT: {
+					TextureBlendOp<Shape_T> op;
+					op.shape = shape;
+					op.texture_params = texture_params;
+					blocks.write_box_2(
+							box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS, op);
+				} break;
+
+				default:
+					ERR_PRINT("Unknown mode");
+					break;
+			}
+
+		} else {
+			BlockySetOperation<uint32_t, Shape_T> op;
+			op.shape = shape;
+			op.value = blocky_value;
+			blocks.write_box(box, channel, op);
+		}
+	}
+};
+
+typedef DoShape<SdfHemisphere> DoHemisphere;
 
 }; // namespace zylann::voxel::ops
 

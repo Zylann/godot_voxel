@@ -19,17 +19,15 @@ public:
 
 	bool is_area_editable(const Box3i &box) const override;
 	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
-
-	int get_raycast_binary_search_iterations() const;
-	void set_raycast_binary_search_iterations(int iterations);
-
 	void do_sphere(Vector3 center, float radius) override;
-	void do_sphere_async(Vector3 center, float radius);
-
 	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const override;
 
 	// Specialized API
 
+	int get_raycast_binary_search_iterations() const;
+	void set_raycast_binary_search_iterations(int iterations);
+	void do_sphere_async(Vector3 center, float radius);
+	void do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness);
 	float get_voxel_f_interpolated(Vector3 position) const;
 	Array separate_floating_chunks(AABB world_box, Node *parent_node);
 	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);

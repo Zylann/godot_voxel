@@ -1,6 +1,7 @@
 #ifndef VOXEL_TERRAIN_EDITOR_PLUGIN_H
 #define VOXEL_TERRAIN_EDITOR_PLUGIN_H
 
+#include "voxel_terrain_editor_inspector_plugin.h"
 #include <editor/editor_plugin.h>
 
 class MenuButton;
@@ -56,6 +57,7 @@ private:
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
 	VoxelTerrainEditorTaskIndicator *_task_indicator = nullptr;
+	Ref<VoxelTerrainEditorInspectorPlugin> _inspector_plugin;
 };
 
 } // namespace zylann::voxel

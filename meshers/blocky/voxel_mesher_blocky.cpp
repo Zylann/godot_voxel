@@ -529,9 +529,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
 		const VoxelBlockyLibrary::BakedData &library_baked_data = params.library->get_baked_data();
 
-		// There must be at least one "material" in case none of them are assigned.
-		// This will produce a single surface, which will be rendered with a default material.
-		material_count = math::max(library_baked_data.indexed_materials_count, 1u);
+		material_count = library_baked_data.indexed_materials_count;
 
 		if (arrays_per_material.size() < material_count) {
 			arrays_per_material.resize(material_count);
@@ -553,15 +551,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				ERR_PRINT("Unsupported voxel depth");
 				return;
 		}
-
-		output.surfaces.resize(material_count);
 	}
 
 	// TODO Optimization: we could return a single byte array and use Mesh::add_surface down the line?
 	// That API does not seem to exist yet though.
 
-	for (unsigned int i = 0; i < material_count; ++i) {
-		const Arrays &arrays = arrays_per_material[i];
+	for (unsigned int material_index = 0; material_index < material_count; ++material_index) {
+		const Arrays &arrays = arrays_per_material[material_index];
 
 		if (arrays.positions.size() != 0) {
 			Array mesh_arrays;
@@ -593,9 +589,10 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				}
 			}
 
-			ZN_ASSERT(i < output.surfaces.size());
-			Output::Surface &surface = output.surfaces[i];
+			output.surfaces.push_back(Output::Surface());
+			Output::Surface &surface = output.surfaces.back();
 			surface.arrays = mesh_arrays;
+			surface.material_index = material_index;
 		}
 		//  else {
 		// 	// Empty

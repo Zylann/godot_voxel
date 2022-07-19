@@ -48,7 +48,7 @@ meshers/       | Only depends on voxel storage, math and some Godot graphics API
 streams/       | Files handling code. Only depends on filesystem and storage.
 util/          | Generic utility functions and structures. They don't depend on voxel stuff.
 thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
-server/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
+engine/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
 storage/       | Storage and memory data structures.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
 tests/         | Contains tests. These run when Godot starts if enabled in the build script.
@@ -80,9 +80,10 @@ Threads
 
 The module uses several background threads to process voxels. The number of threads can be adjusted in Project Settings.
 
-![Schema of threads](images/threads_schema.png)
+![Schema of threads](images/threads_schema.webp)
 
 There is one pool of threads. This pool can be given many tasks and distributes them to all its threads. So the more threads are available, the quicker large amounts of tasks get done. Tasks are also sorted by priority, so for example updating a mesh near a player will run before generating a voxel block 300 meters away.
+
 Some tasks are scheduled in a "serial" group, which means only one of them will run at a time (although any thread can run them). This is to avoid clogging up all the threads with waiting tasks if they all lock a shared resource. This is used for I/O such as loading and saving to disk.
 
 Threads are managed in [VoxelServer](api/VoxelServer.md).
@@ -263,7 +264,7 @@ Profile with Tracy
 
 This module contains macros to profile specific code sections. By default, these macros expand to [Tracy Profiler](https://github.com/wolfpld/tracy) zones. It allows to check how long code takes to run, and displays it in a timeline.
 
-![Tracy screenshot](images/tracy.png)
+![Tracy screenshot](images/tracy.webp)
 
 ### How to use profiler scopes
 

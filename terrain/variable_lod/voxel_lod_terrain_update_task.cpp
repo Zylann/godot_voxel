@@ -1,9 +1,9 @@
 #include "voxel_lod_terrain_update_task.h"
-#include "../../server/generate_block_task.h"
-#include "../../server/load_block_data_task.h"
-#include "../../server/mesh_block_task.h"
-#include "../../server/save_block_data_task.h"
-#include "../../server/voxel_server.h"
+#include "../../engine/generate_block_task.h"
+#include "../../engine/load_block_data_task.h"
+#include "../../engine/mesh_block_task.h"
+#include "../../engine/save_block_data_task.h"
+#include "../../engine/voxel_engine.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
 #include "../../util/math/conv.h"
@@ -223,7 +223,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	const int data_block_size = data.lods[0].map.get_block_size();
 	const int data_block_size_po2 = data.lods[0].map.get_block_size_pow2();
 	const int data_block_region_extent =
-			VoxelServer::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
+			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 
@@ -312,7 +312,7 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
 	const int mesh_block_size = 1 << mesh_block_size_po2;
 	const int mesh_block_region_extent =
-			VoxelServer::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
+			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
 
 	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 	// Instead, those blocks are unloaded by the octree forest management.
@@ -1061,7 +1061,7 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 	// This does not depend on viewer's view distance, but on LOD precision instead.
 	// TODO Should `data_block_size` be used here? Should it be mesh_block_size instead?
 	dep.drop_distance_squared = math::squared(2.f * transformed_block_radius *
-			VoxelServer::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size));
+			VoxelEngine::get_octree_lod_block_region_extent(octree_lod_distance, data_block_size));
 }
 
 // This is only if we want to cache voxel data
@@ -1187,7 +1187,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	//
-	ZN_PROFILE_SCOPE_NAMED("Send mesh requests");
+	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(data_ptr == nullptr);
 	const VoxelDataLodMap &data = *data_ptr;
@@ -1212,7 +1212,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			ERR_CONTINUE(mesh_block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
-			// VoxelServer::BlockMeshInput mesh_request;
+			// VoxelEngine::BlockMeshInput mesh_request;
 			// mesh_request.render_block_position = mesh_block_pos;
 			// mesh_request.lod = lod_index;
 
@@ -1324,7 +1324,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		// This may first run the generation tasks, and then the edits
 		tracker = make_shared_instance<AsyncDependencyTracker>(
 				todo.size(), next_tasks, [](Span<IThreadedTask *> p_next_tasks) {
-					VoxelServer::get_singleton().push_async_tasks(p_next_tasks);
+					VoxelEngine::get_singleton().push_async_tasks(p_next_tasks);
 				});
 
 		for (unsigned int i = 0; i < todo.size(); ++i) {
@@ -1336,7 +1336,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 
 	} else if (next_tasks.size() > 0) {
 		// Nothing to preload, we may schedule `next_tasks` right now
-		VoxelServer::get_singleton().push_async_tasks(next_tasks);
+		VoxelEngine::get_singleton().push_async_tasks(next_tasks);
 	}
 
 	return tracker;
@@ -1530,9 +1530,12 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	}
 	state.stats.time_io_requests = profiling_clock.restart();
 
-	// TODO Don't request meshes if there is no mesher
-	send_mesh_requests(_volume_id, state, settings, _data, _meshing_dependency, _shared_viewers_data, _volume_transform,
-			task_scheduler);
+	// TODO When no mesher is assigned, mesh requests are still accumulated but not being sent. A better way to support
+	// this is by allowing voxels-only/mesh-less viewers, similar to VoxelTerrain
+	if (_meshing_dependency->mesher.is_valid()) {
+		send_mesh_requests(_volume_id, state, settings, _data, _meshing_dependency, _shared_viewers_data,
+				_volume_transform, task_scheduler);
+	}
 
 	task_scheduler.flush();
 

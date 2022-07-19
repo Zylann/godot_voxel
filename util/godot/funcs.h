@@ -100,6 +100,10 @@ inline Vector2f to_vec2f(Vector2i v) {
 	return Vector2f(v.x, v.y);
 }
 
+inline Vector3 get_forward(const Transform3D &t) {
+	return -t.basis.get_column(Vector3::AXIS_Z);
+}
+
 inline Vector3 to_godot(const Vector3f v) {
 	return Vector3(v.x, v.y, v.z);
 }

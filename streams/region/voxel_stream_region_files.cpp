@@ -1,5 +1,5 @@
 #include "voxel_stream_region_files.h"
-#include "../../server/voxel_server.h"
+#include "../../engine/voxel_engine.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/math/box3i.h"

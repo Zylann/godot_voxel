@@ -250,7 +250,7 @@ inline Interval atan(const Interval &t) {
 
 struct OptionalInterval {
 	Interval value;
-	bool valid;
+	bool valid = false;
 };
 
 inline Interval atan2(const Interval &y, const Interval &x, OptionalInterval *secondary_output) {

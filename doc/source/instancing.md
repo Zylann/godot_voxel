@@ -22,7 +22,7 @@ In order to spawn items, `VoxelInstancer` needs a [VoxelInstanceLibrary](api/Vox
 
 Select a `VoxelInstancer`. In the inspector, assign a library to the `library` property, or create a new embedded one. Then click on the library resource. Buttons appear at the top of the inspector:
 
-![Screenshot of the VoxelInstanceLibrary menu](images/instance_library_menu.png)
+![Screenshot of the VoxelInstanceLibrary menu](images/instance_library_menu.webp)
 
 You can add items to the library by clicking the "+" icon, and choose `Add Multimesh item`.
 
@@ -36,15 +36,15 @@ Items created this way come with a default setup, so you should be able to see s
 
 The range at which items spawn is based on the LOD system of the voxel terrain itself. This is configured in the `lod_index` property of [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md). For example, choosing `0` will make the item spawn at the closest range, and fade quickly in the distance. Higher indexes will spawn on a larger range, so will also start to appear earlier as the player gets closer. Instances spawn in the same "blocks" as the ground.
 
-![Screenshot showing the effect of lod_index on the range of instances](images/instances_lod_index.png)
+![Screenshot showing the effect of lod_index on the range of instances](images/instances_lod_index.webp)
 
 Usually landscapes may be composed of multiple layers so that the closer you get, the more details come in. Bigger items use high lod indexes to be seen from far away, while smaller items may use lower indexes.
 
-![Screenshot of landscape using layers of instances](images/landscape_with_instances.png)
+![Screenshot of landscape using layers of instances](images/landscape_with_instances.webp)
 
 There is a balance to consider when choosing the appropriate `lod_index`: currently, larger indexes are *much more imprecise*, because they work on top of a lower-resolution mesh. When getting closer, it's possible that such instances are seen floating above ground, or sinking into it. This mostly happens in areas with sharp changes such as ridges, crevices or caves:
 
-![Screemshot of misaligned instances](images/misaligned_instances.png)
+![Screemshot of misaligned instances](images/misaligned_instances.webp)
 
 To combat this, you can adjust the `offset_along_normal` parameter in the `generator` associated to the item. This depends on the asset, so designing them such that they can have part of their bottom sunk into the ground can give some margin of error.
 
@@ -64,13 +64,13 @@ A secondary LOD system is included, which applies to meshes themselves, to some 
 
 To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLibraryItem`:
 
-![Screenshot of mesh LOD properties](images/mesh_lod_properties.png)
+![Screenshot of mesh LOD properties](images/mesh_lod_properties.webp)
 
 If only the `mesh` property is set, no LOD will be used.
 
 The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `split_scale` property of the parent voxel terrain.
 
-![Screenshot of mesh LODs with colors](images/mesh_lods.png)
+![Screenshot of mesh LODs with colors](images/mesh_lods.webp)
 
 If you need fewer LODs, you can assign twice the same mesh. This system is quite rigid because in Godot 4 it might be changed to only have a single slot dedicated to impostor meshes. Indeed, Godot 4 might support LOD on meshes, but it is not planned for the last LODs to become impostors, so this should still be possible to achieve.
 
@@ -137,7 +137,7 @@ Procedural generation
 
 ### Built-in generator
 
-![Screenshot of a layer of instances using noise](images/instances_procgen.png)
+![Screenshot of a layer of instances using noise](images/instances_procgen.webp)
 
 Items are added with a default built-in generator, so they will already spawn based on procedural rules rather than being painted manually. You can tweak the generator by inspecting the `generator` property of [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md).
 

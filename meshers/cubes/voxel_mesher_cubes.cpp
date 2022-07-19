@@ -897,9 +897,8 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	for (unsigned int material_index = 0; material_index < MATERIAL_COUNT; ++material_index) {
 		const Arrays &arrays = cache.arrays_per_material[material_index];
 
-		Output::Surface surface;
-
 		if (arrays.positions.size() != 0) {
+			Output::Surface surface;
 			Array &mesh_arrays = surface.arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
@@ -929,12 +928,13 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			}
 
 			//surface.collision_enabled = (material_index == MATERIAL_OPAQUE);
+
+			surface.material_index = material_index;
+			output.surfaces.push_back(surface);
 		}
 		//  else {
 		// 	// Empty
 		// }
-
-		output.surfaces.push_back(surface);
 	}
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
@@ -1060,11 +1060,11 @@ void VoxelMesherCubes::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelColorPalette::get_class_static()),
 			"set_palette", "get_palette");
-	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE,
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"_set_opaque_material", "_get_opaque_material");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE,
-						 Material::get_class_static()),
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"_set_transparent_material", "_get_transparent_material");
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);

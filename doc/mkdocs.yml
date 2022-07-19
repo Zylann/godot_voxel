@@ -62,7 +62,7 @@ nav:
     - api/VoxelMesherTransvoxel.md
     - api/VoxelNode.md
     - api/VoxelRaycastResult.md
-    - api/VoxelServer.md
+    - api/VoxelEngine.md
     - api/VoxelStream.md
     - api/VoxelStreamBlockFiles.md
     - api/VoxelStreamRegionFiles.md

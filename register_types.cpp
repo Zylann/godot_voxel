@@ -5,6 +5,7 @@
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
 #include "edition/voxel_tool_terrain.h"
+#include "engine/voxel_engine_gd.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/simple/voxel_generator_flat.h"
@@ -19,16 +20,14 @@
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "server/voxel_server_gd.h"
 #include "storage/modifiers_gd.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
 #include "streams/sqlite/voxel_stream_sqlite.h"
-#include "streams/vox_loader.h"
+#include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer_gd.h"
-#include "streams/voxel_stream_block_files.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
@@ -72,10 +71,10 @@
 
 namespace zylann::voxel {
 
-static VoxelServer::ThreadsConfig get_config_from_godot(unsigned int &out_main_thread_time_budget_usec) {
+static VoxelEngine::ThreadsConfig get_config_from_godot(unsigned int &out_main_thread_time_budget_usec) {
 	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
 
-	VoxelServer::ThreadsConfig config;
+	VoxelEngine::ThreadsConfig config;
 
 	// Compute thread count for general pool.
 	// Note that the I/O thread counts as one used thread and will always be present.
@@ -126,19 +125,19 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelGraphNodeDB::create_singleton();
 
 		unsigned int main_thread_budget_usec;
-		const VoxelServer::ThreadsConfig threads_config = get_config_from_godot(main_thread_budget_usec);
-		VoxelServer::create_singleton(threads_config);
-		VoxelServer::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
+		const VoxelEngine::ThreadsConfig threads_config = get_config_from_godot(main_thread_budget_usec);
+		VoxelEngine::create_singleton(threads_config);
+		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 		// TODO Pick this from the current renderer + user option (at time of writing, Godot 4 has only one renderer and
 		// has not figured out how such option would be exposed).
 		// Could use `can_create_resources_async` but this is internal.
 		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
 		// resource creation.
-		VoxelServer::get_singleton().set_threaded_mesh_resource_building_enabled(
+		VoxelEngine::get_singleton().set_threaded_mesh_resource_building_enabled(
 				RenderingServer::get_singleton()->is_low_end() == false);
 
-		gd::VoxelServer::create_singleton();
-		Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelServer", gd::VoxelServer::get_singleton()));
+		gd::VoxelEngine::create_singleton();
+		Engine::get_singleton()->add_singleton(Engine::Singleton("VoxelEngine", gd::VoxelEngine::get_singleton()));
 
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
@@ -147,7 +146,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not
 		// abstract?
-		ClassDB::register_class<gd::VoxelServer>();
+		ClassDB::register_class<gd::VoxelEngine>();
 
 		// Misc
 		ClassDB::register_class<VoxelBlockyModel>();
@@ -176,7 +175,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		// Streams
 		ClassDB::register_abstract_class<VoxelStream>();
-		ClassDB::register_class<VoxelStreamBlockFiles>();
 		ClassDB::register_class<VoxelStreamRegionFiles>();
 		ClassDB::register_class<VoxelStreamScript>();
 		ClassDB::register_class<VoxelStreamSQLite>();
@@ -271,17 +269,17 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
-		// That means it's impossible to free scripts still referenced by VoxelServer. And that can happen, because
+		// That means it's impossible to free scripts still referenced by VoxelEngine. And that can happen, because
 		// users can write custom generators, which run inside threads, and these threads are hosted in the server...
 		// See https://github.com/Zylann/godot_voxel/issues/189
 
 		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
 		VoxelGraphNodeDB::destroy_singleton();
-		gd::VoxelServer::destroy_singleton();
-		VoxelServer::destroy_singleton();
+		gd::VoxelEngine::destroy_singleton();
+		VoxelEngine::destroy_singleton();
 
-		// Do this last as VoxelServer might still be holding some refs to voxel blocks
+		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();
 		// TODO No remove?
 	}

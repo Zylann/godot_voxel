@@ -45,8 +45,8 @@ public:
 	struct Output {
 		struct Surface {
 			Array arrays;
+			uint8_t material_index = 0;
 		};
-		// Each surface correspond to a different material and can be empty.
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
@@ -94,8 +94,9 @@ public:
 		return true;
 	}
 
-	// Some meshers can provide materials themselves. These will be used for corresponding surfaces. Returns null if the
+	// Some meshers can provide materials themselves. The index may come from the built output. Returns null if the
 	// index does not have a material assigned. If not provided here, a default material may be used.
+	// An error can be produced if the index is out of bounds.
 	virtual Ref<Material> get_material_by_index(unsigned int i) const;
 
 #ifdef TOOLS_ENABLED

@@ -1,4 +1,5 @@
 #include "voxel_terrain_editor_plugin.h"
+#include "../../engine/voxel_engine_gd.h"
 #include "../../generators/voxel_generator.h"
 #include "../../storage/modifiers_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
@@ -73,14 +74,18 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
-			_editor_viewer_id = VoxelServer::get_singleton().add_viewer();
-			VoxelServer::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
+			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
+			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
 			// No collision needed in editor, also it updates faster without
-			VoxelServer::get_singleton().set_viewer_requires_collisions(_editor_viewer_id, false);
+			VoxelEngine::get_singleton().set_viewer_requires_collisions(_editor_viewer_id, false);
+
+			_inspector_plugin.instantiate();
+			add_inspector_plugin(_inspector_plugin);
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
-			VoxelServer::get_singleton().remove_viewer(_editor_viewer_id);
+			VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			remove_inspector_plugin(_inspector_plugin);
 			break;
 
 		case NOTIFICATION_PROCESS:
@@ -161,6 +166,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(true);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
@@ -189,11 +195,13 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelServer::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	if (_editor_viewer_follows_camera) {
-		VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		gd::VoxelEngine::get_singleton()->set_editor_camera_info(
+				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
 
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;
@@ -215,7 +223,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
 
 			if (_editor_viewer_follows_camera) {
-				VoxelServer::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+				VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 			}
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);

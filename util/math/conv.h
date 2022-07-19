@@ -13,14 +13,18 @@ namespace zylann {
 
 // Explicit conversion methods. Not in respective files because it would cause circular dependencies.
 
+// Godot => Godot
+
 // Note, in Godot this is an implicit conversion. But I dont like implicit
 inline Vector3i to_vec3i(Vector3 v) {
 	return Vector3i(v.x, v.y, v.z);
 }
 
-inline Vector3i to_vec3i(Vector3f v) {
-	return Vector3i(v.x, v.y, v.z);
+inline Vector3 to_vec3(const Vector3i v) {
+	return Vector3(v.x, v.y, v.z);
 }
+
+// Godot => ZN
 
 inline Vector3f to_vec3f(Vector3i v) {
 	return Vector3f(v.x, v.y, v.z);
@@ -30,20 +34,27 @@ inline Vector3f to_vec3f(Vector3 v) {
 	return Vector3f(v.x, v.y, v.z);
 }
 
-inline Vector3 to_vec3(const Vector3f v) {
-	return Vector3(v.x, v.y, v.z);
-}
-
-inline Vector3 to_vec3(const Vector3i v) {
-	return Vector3(v.x, v.y, v.z);
-}
-
-inline Vector3d to_vec3d(const Vector3f v) {
-	return Vector3d(v.x, v.y, v.z);
-}
-
 inline Vector3i16 to_vec3i16(const Vector3i v) {
 	return Vector3i16(v.x, v.y, v.z);
+}
+
+// ZN => Godot
+
+template <typename T>
+inline Vector3i to_vec3i(Vector3T<T> v) {
+	return Vector3i(v.x, v.y, v.z);
+}
+
+template <typename T>
+inline Vector3 to_vec3(const Vector3T<T> v) {
+	return Vector3(v.x, v.y, v.z);
+}
+
+// ZN => ZN
+
+template <typename T>
+inline Vector3d to_vec3d(const Vector3T<T> v) {
+	return Vector3d(v.x, v.y, v.z);
 }
 
 inline bool can_convert_to_i16(Vector3i p) {

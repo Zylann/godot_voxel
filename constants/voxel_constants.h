@@ -20,8 +20,8 @@ static const unsigned int MAX_BLOCK_COUNT_PER_REQUEST = 4 * 4 * 4;
 // Using a higher maximum can cause int32 overflows when calculating dimensions. There is no use case for it.
 static const unsigned int MAX_LOD = 24;
 
-static const unsigned int MAX_VOLUME_EXTENT = 0x1fffffff;
-static const unsigned int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxels
+static const int MAX_VOLUME_EXTENT = 0x1fffffff;
+static const int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxels
 
 static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;

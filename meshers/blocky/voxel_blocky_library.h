@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCKY_LIBRARY_H
 #define VOXEL_BLOCKY_LIBRARY_H
 
-#include "../../util/thread/rw_lock.h"
 #include "../../util/dynamic_bitset.h"
+#include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
 #include <core/object/ref_counted.h>
 
@@ -113,6 +113,8 @@ private:
 	// Used in multithread context by the mesher. Don't modify that outside of bake().
 	RWLock _baked_data_rw_lock;
 	BakedData _baked_data;
+	// One of the entries can be null to represent "The default material". If all non-empty models have materials, there
+	// won't be a null entry.
 	std::vector<Ref<Material>> _indexed_materials;
 };
 

@@ -426,6 +426,8 @@ Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel_by_name(StringName name) 
 }
 
 TypedArray<Material> VoxelBlockyLibrary::_b_get_materials() const {
+	// Note, if at least one non-empty voxel has no material, there will be one null entry in this list to represent
+	// "The default material".
 	TypedArray<Material> materials;
 	materials.resize(_indexed_materials.size());
 	for (size_t i = 0; i < _indexed_materials.size(); ++i) {

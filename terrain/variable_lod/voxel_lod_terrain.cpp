@@ -1,11 +1,11 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../engine/load_all_blocks_data_task.h"
+#include "../../engine/voxel_engine_gd.h"
+#include "../../engine/voxel_engine_updater.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../../server/load_all_blocks_data_task.h"
-#include "../../server/voxel_server_gd.h"
-#include "../../server/voxel_server_updater.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
@@ -20,16 +20,42 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
+#ifdef TOOLS_ENABLED
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#endif
 
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
+#include <scene/3d/camera_3d.h>
 #include <scene/3d/mesh_instance_3d.h>
+#include <scene/main/viewport.h>
 #include <scene/resources/concave_polygon_shape_3d.h>
 #include <scene/resources/packed_scene.h>
 
 namespace zylann::voxel {
 
 namespace {
+
+inline Ref<ShaderMaterial> allocate_shader_material(
+		std::vector<Ref<ShaderMaterial>> &pool, const Ref<ShaderMaterial> &original, unsigned int transition_mask) {
+	Ref<ShaderMaterial> sm;
+	if (pool.size() > 0) {
+		sm = pool.back();
+		// The joys of pooling materials.
+		sm->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, transition_mask);
+		sm->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+		pool.pop_back();
+	} else {
+		// Can get very slow due to https://github.com/godotengine/godot/issues/34741, but should be rare once
+		// enough materials have been created
+		sm = original->duplicate(false);
+	}
+	return sm;
+}
+
+inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
+	pool.push_back(material);
+}
 
 struct BeforeUnloadMeshAction {
 	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
@@ -39,7 +65,7 @@ struct BeforeUnloadMeshAction {
 		// Recycle material
 		Ref<ShaderMaterial> sm = block.get_shader_material();
 		if (sm.is_valid()) {
-			shader_material_pool.push_back(sm);
+			recycle_shader_material(shader_material_pool, sm);
 			block.set_shader_material(Ref<ShaderMaterial>());
 		}
 	}
@@ -79,7 +105,7 @@ static inline uint64_t get_ticks_msec() {
 } // namespace
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
-	if (!VoxelServer::get_singleton().is_volume_valid(volume_id)) {
+	if (!VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// The node can have been destroyed while this task was still pending
 		ZN_PRINT_VERBOSE("Cancelling ApplyMeshUpdateTask, volume_id is invalid");
 		return;
@@ -123,18 +149,18 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	_update_data->settings.bounds_in_voxels =
 			Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT));
 
-	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelServer,
+	// Mesh updates are spread over frames by scheduling them in a task runner of VoxelEngine,
 	// but instead of using a reception buffer we use a callback,
 	// because this kind of task scheduling would otherwise delay the update by 1 frame
-	VoxelServer::VolumeCallbacks callbacks;
+	VoxelEngine::VolumeCallbacks callbacks;
 	callbacks.data = this;
-	callbacks.mesh_output_callback = [](void *cb_data, VoxelServer::BlockMeshOutput &ob) {
+	callbacks.mesh_output_callback = [](void *cb_data, VoxelEngine::BlockMeshOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
 		task->volume_id = self->get_volume_id();
 		task->self = self;
 		task->data = std::move(ob);
-		VoxelServer::get_singleton().push_main_thread_time_spread_task(task);
+		VoxelEngine::get_singleton().push_main_thread_time_spread_task(task);
 
 		// If two tasks are queued for the same mesh, cancel the old ones.
 		// This is for cases where creating the mesh is slower than the speed at which it is generated,
@@ -146,13 +172,13 @@ VoxelLodTerrain::VoxelLodTerrain() {
 			p.first->second.add();
 		}
 	};
-	callbacks.data_output_callback = [](void *cb_data, VoxelServer::BlockDataOutput &ob) {
+	callbacks.data_output_callback = [](void *cb_data, VoxelEngine::BlockDataOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
 
-	_volume_id = VoxelServer::get_singleton().add_volume(callbacks);
-	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	// TODO Being able to set a LOD smaller than the stream is probably a bad idea,
 	// Because it prevents edits from propagating up to the last one, they will be left out of sync
@@ -166,7 +192,7 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 	abort_async_edits();
 	_streaming_dependency->valid = false;
 	_meshing_dependency->valid = false;
-	VoxelServer::get_singleton().remove_volume(_volume_id);
+	VoxelEngine::get_singleton().remove_volume(_volume_id);
 	// Instancer can take care of itself
 }
 
@@ -176,6 +202,7 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	// TODO Update existing block surfaces
+	// TODO What about the pool?
 	_material = p_material;
 
 #ifdef TOOLS_ENABLED
@@ -328,8 +355,8 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 		}
 	}
 
-	// VoxelServer::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
-	// VoxelServer::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
+	// VoxelEngine::get_singleton().set_volume_data_block_size(_volume_id, get_data_block_size());
+	// VoxelEngine::get_singleton().set_volume_render_block_size(_volume_id, get_mesh_block_size());
 
 	reset_maps();
 	// TODO Size other than 16 is not really supported though.
@@ -420,15 +447,38 @@ bool VoxelLodTerrain::is_threaded_update_enabled() const {
 	return _threaded_update_enabled;
 }
 
-void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool active) {
+void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading) {
 	if (block.active == active) {
 		return;
 	}
 
+	// TODO Shouldn't we switch colliders with `active` instead of `visible`?
 	block.active = active;
 
-	if (_lod_fade_duration == 0.f) {
+	if (!with_fading) {
 		block.set_visible(active);
+
+		// Cancel fading if already in progress
+		if (block.fading_state != VoxelMeshBlockVLT::FADING_NONE) {
+			block.fading_state = VoxelMeshBlockVLT::FADING_NONE;
+
+			_fading_blocks_per_lod[block.lod_index].erase(block.position);
+
+			Ref<ShaderMaterial> mat = block.get_shader_material();
+			if (mat.is_valid()) {
+				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+			}
+
+		} else if (active && _lod_fade_duration > 0.f) {
+			// WHen LOD fade is enabled, it is possible that a block is disabled with a fade out, but later has to be
+			// enabled without a fade-in (because behind the camera for example). In this case we have to reset the
+			// parameter. Otherwise, it would be active but invisible due to still being faded out.
+			Ref<ShaderMaterial> mat = block.get_shader_material();
+			if (mat.is_valid()) {
+				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+			}
+		}
+
 		return;
 	}
 
@@ -741,13 +791,13 @@ void VoxelLodTerrain::start_updater() {
 		}
 	}
 
-	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, _mesher);
+	// VoxelEngine::get_singleton().set_volume_mesher(_volume_id, _mesher);
 }
 
 void VoxelLodTerrain::stop_updater() {
 	// Invalidate pending tasks
 	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
-	// VoxelServer::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
+	// VoxelEngine::get_singleton().set_volume_mesher(_volume_id, Ref<VoxelMesher>());
 
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
 	//_reception_buffers.mesh_output.clear();
@@ -768,8 +818,8 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	// VoxelServer::get_singleton().set_volume_stream(_volume_id, _stream);
-	// VoxelServer::get_singleton().set_volume_generator(_volume_id, _generator);
+	// VoxelEngine::get_singleton().set_volume_stream(_volume_id, _stream);
+	// VoxelEngine::get_singleton().set_volume_generator(_volume_id, _generator);
 
 	if (_update_data->settings.full_load_mode && _stream.is_valid()) {
 		// TODO May want to defer this to be sure it's not done multiple times.
@@ -782,13 +832,13 @@ void VoxelLodTerrain::start_streamer() {
 		task->volume_id = _volume_id;
 		task->stream_dependency = _streaming_dependency;
 
-		VoxelServer::get_singleton().push_async_io_task(task);
+		VoxelEngine::get_singleton().push_async_io_task(task);
 	}
 }
 
 void VoxelLodTerrain::stop_streamer() {
-	// VoxelServer::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
-	// VoxelServer::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
+	// VoxelEngine::get_singleton().set_volume_stream(_volume_id, Ref<VoxelStream>());
+	// VoxelEngine::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 
 	_update_data->wait_for_end_of_task();
 
@@ -813,7 +863,7 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
 	_update_data->settings.lod_distance = lod_distance;
 	_update_data->state.force_update_octrees_next_update = true;
-	// VoxelServer::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	if (_instancer != nullptr) {
 		_instancer->set_mesh_lod_distance(lod_distance);
@@ -1016,11 +1066,11 @@ float VoxelLodTerrain::get_collision_margin() const {
 }
 
 int VoxelLodTerrain::get_data_block_region_extent() const {
-	return VoxelServer::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
+	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_data_block_size());
 }
 
 int VoxelLodTerrain::get_mesh_block_region_extent() const {
-	return VoxelServer::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
+	return VoxelEngine::get_octree_lod_block_region_extent(_update_data->settings.lod_distance, get_mesh_block_size());
 }
 
 Vector3i VoxelLodTerrain::voxel_to_data_block_position(Vector3 vpos, int lod_index) const {
@@ -1053,7 +1103,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
-				VoxelServerUpdater::ensure_existence(get_tree());
+				VoxelEngineUpdater::ensure_existence(get_tree());
 				_process(get_process_delta_time());
 			}
 			break;
@@ -1064,10 +1114,24 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
-				VoxelServerUpdater::ensure_existence(get_tree());
+				VoxelEngineUpdater::ensure_existence(get_tree());
 				_process(get_physics_process_delta_time());
 				break;
 			}
+
+#ifdef TOOLS_ENABLED
+		case NOTIFICATION_ENTER_TREE:
+			// In the editor, auto-configure a default mesher, for convenience.
+			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
+			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
+			// warning in Godot 4.
+			if (Engine::get_singleton()->is_editor_hint() && !get_mesher().is_valid()) {
+				Ref<VoxelMesherTransvoxel> mesher;
+				mesher.instantiate();
+				set_mesher(mesher);
+			}
+			break;
+#endif
 
 		case NOTIFICATION_EXIT_TREE:
 			break;
@@ -1125,7 +1189,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
-			// VoxelServer::get_singleton().set_volume_transform(_volume_id, transform);
+			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 
 			if (!is_inside_tree()) {
 				// The transform and other properties can be set by the scene loader,
@@ -1141,6 +1205,10 @@ void VoxelLodTerrain::_notification(int p_what) {
 					block.set_parent_transform(transform);
 				});
 			}
+
+			for (FadingOutMesh &item : _fading_out_meshes) {
+				item.mesh_instance.set_transform(transform * Transform3D(Basis(), item.local_position));
+			}
 		} break;
 
 		default:
@@ -1153,8 +1221,8 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 	Vector3 pos = _update_data->state.lods[0].last_viewer_data_block_pos << get_data_block_size_pow2();
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
-	VoxelServer::get_singleton().for_each_viewer( //
-			[&pos](const VoxelServer::Viewer &viewer, uint32_t viewer_id) { //
+	VoxelEngine::get_singleton().for_each_viewer( //
+			[&pos](const VoxelEngine::Viewer &viewer, uint32_t viewer_id) { //
 				pos = viewer.world_position;
 			});
 
@@ -1172,7 +1240,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 // 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 // 		BlockToSave &b = blocks_to_save[i];
 // 		ZN_PRINT_VERBOSE(String("Requesting save of block {0} lod {1}").format(varray(b.position, b.lod)));
-// 		VoxelServer::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
+// 		VoxelEngine::get_singleton().request_voxel_block_save(_volume_id, b.voxels, b.position, b.lod);
 // 	}
 // }
 
@@ -1192,10 +1260,8 @@ void VoxelLodTerrain::_process(float delta) {
 	// It should only happen on first load, though.
 	//process_block_loading_responses();
 
-	process_fading_blocks(delta);
-
 	// TODO This could go into time spread tasks too
-	process_deferred_collision_updates(VoxelServer::get_singleton().get_main_thread_time_budget_usec());
+	process_deferred_collision_updates(VoxelEngine::get_singleton().get_main_thread_time_budget_usec());
 
 #ifdef TOOLS_ENABLED
 	if (debug_is_draw_enabled() && is_visible_in_tree()) {
@@ -1213,7 +1279,7 @@ void VoxelLodTerrain::_process(float delta) {
 
 		// TODO Optimization: pool tasks instead of allocating?
 		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
-				_meshing_dependency, VoxelServer::get_singleton().get_shared_viewers_data_from_default_world(),
+				_meshing_dependency, VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world(),
 				viewer_pos, _instancer != nullptr, _volume_id, get_global_transform()));
 
 		_update_data->task_is_complete = false;
@@ -1221,13 +1287,28 @@ void VoxelLodTerrain::_process(float delta) {
 		if (_threaded_update_enabled) {
 			// Schedule task at the end, so it is less likely to have contention with other logic than if it was done at
 			// the beginnning of `_process`
-			VoxelServer::get_singleton().push_async_task(task);
+			VoxelEngine::get_singleton().push_async_task(task);
 
 		} else {
 			task->run(ThreadedTaskContext{ 0 });
 			memdelete(task);
 			apply_main_thread_update_tasks();
 		}
+	}
+
+	// Do it after we change mesh block states so materials are updated
+	process_fading_blocks(delta);
+}
+
+static void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst) {
+	Ref<Shader> shader = src.get_shader();
+	ZN_ASSERT_RETURN(shader.is_valid());
+	// Not using `Shader::get_param_list()` because it is not exposed to the script/extension API, and it prepends
+	// `shader_params/` to every parameter name, which is slow and not usable for our case.
+	List<PropertyInfo> properties;
+	RenderingServer::get_singleton()->shader_get_param_list(shader->get_rid(), &properties);
+	for (const PropertyInfo &property : properties) {
+		dst.set_shader_param(property.name, src.get_shader_param(property.name));
 	}
 }
 
@@ -1239,9 +1320,17 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 	VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
+	// Transitions and fading are visual things, in multiplayer servers they won't be used, so we can take a shortcut
+	// and use the camera for them.
+	const LocalCameraInfo camera = get_local_camera_info();
+	const Transform3D volume_transform = get_global_transform();
+
 	for (unsigned int lod_index = 0; lod_index < _update_data->settings.lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+		std::unordered_set<const VoxelMeshBlockVLT *> activated_blocks;
+
+		const int mesh_block_size = get_mesh_block_size() << lod_index;
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_activate.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_activate[i];
@@ -1251,7 +1340,15 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				continue;
 			}
 			//ERR_CONTINUE(block == nullptr);
-			set_mesh_block_active(*block, true);
+			bool with_fading = false;
+			if (_lod_fade_duration > 0.f) {
+				const Vector3 block_center = volume_transform.xform(
+						to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
+				// Don't start fading on blocks behind the camera
+				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
+			}
+			set_mesh_block_active(*block, true, with_fading);
+			activated_blocks.insert(block);
 		}
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_deactivate.size(); ++i) {
@@ -1262,7 +1359,14 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				continue;
 			}
 			//ERR_CONTINUE(block == nullptr);
-			set_mesh_block_active(*block, false);
+			bool with_fading = false;
+			if (_lod_fade_duration > 0.f) {
+				const Vector3 block_center = volume_transform.xform(
+						to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
+				// Don't start fading on blocks behind the camera
+				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
+			}
+			set_mesh_block_active(*block, false, with_fading);
 		}
 
 		lod.mesh_blocks_to_activate.clear();
@@ -1309,6 +1413,52 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			}
 			//CRASH_COND(block == nullptr);
 			if (block->active) {
+				Ref<ShaderMaterial> shader_material = block->get_shader_material();
+
+				// Fade stitching transitions to avoid cracks.
+				// This is done by triggering a fade-in on the block, while a copy of it fades out with the previous
+				// material settings. This causes a bit of overdraw, but LOD fading does anyways.
+				if (_lod_fade_duration > 0.f && shader_material.is_valid() &&
+						activated_blocks.find(block) == activated_blocks.end() &&
+						tu.transition_mask != block->get_transition_mask()) {
+					//
+					const Vector3 block_center = volume_transform.xform(
+							to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
+
+					// Dont do fading for blocks behind the camera
+					if (camera.forward.dot(block_center - camera.position) > 0.f) {
+						FadingOutMesh item;
+
+						item.local_position = block->position * mesh_block_size;
+						item.progress = 1.f;
+
+						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
+						//item.shader_material = shader_material->duplicate(false);
+						item.shader_material = allocate_shader_material(_shader_material_pool, shader_material, 0);
+						ZN_ASSERT(item.shader_material.is_valid());
+						copy_shader_params(**shader_material, **item.shader_material);
+
+						// item.shader_material->set_shader_param(
+						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
+
+						item.mesh_instance.create();
+						item.mesh_instance.set_mesh(block->get_mesh());
+						item.mesh_instance.set_gi_mode(DirectMeshInstance::GIMode(get_gi_mode()));
+						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
+						item.mesh_instance.set_material_override(item.shader_material);
+						item.mesh_instance.set_world(*get_world_3d());
+						item.mesh_instance.set_visible(true);
+
+						_fading_out_meshes.push_back(std::move(item));
+
+						if (block->fading_state == VoxelMeshBlockVLT::FADING_NONE) {
+							_fading_blocks_per_lod[lod_index].insert({ block->position, block });
+							block->fading_state = VoxelMeshBlockVLT::FADING_IN;
+							block->fading_progress = 0.f;
+						}
+					}
+				}
+
 				block->set_transition_mask(tu.transition_mask);
 			}
 		}
@@ -1347,10 +1497,10 @@ bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mu
 	return it != set.end();
 }
 
-void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob) {
+void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
-	if (ob.type == VoxelServer::BlockDataOutput::TYPE_SAVED) {
+	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		// That's a save confirmation event.
 		// Note: in the future, if blocks don't get copied before being sent for saving,
 		// we will need to use block versionning to know when we can reset the `modified` flag properly
@@ -1404,7 +1554,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 		RWLockWrite wlock(data_lod.map_lock);
 		VoxelDataBlock *block = data_lod.map.set_block_buffer(ob.position, ob.voxels, false);
 		CRASH_COND(block == nullptr);
-		block->set_edited(ob.type == VoxelServer::BlockDataOutput::TYPE_LOADED);
+		block->set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
 
 	} else {
 		// Loading returned an empty block: that means we know the stream does not contain a block here.
@@ -1427,7 +1577,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelServer::BlockDataOutput &ob
 	}
 }
 
-void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
+void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	// The following is done on the main thread because Godot doesn't really support everything done here.
 	// Building meshes can be done in the threaded task when using Vulkan, but not OpenGL.
 	// Setting up mesh instances might not be well threaded?
@@ -1461,7 +1611,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 			++_stats.dropped_block_meshs;
 			return;
 		}
-		if (ob.type == VoxelServer::BlockMeshOutput::TYPE_DROPPED) {
+		if (ob.type == VoxelEngine::BlockMeshOutput::TYPE_DROPPED) {
 			// That block is loaded, but its meshing request was dropped.
 			// TODO Not sure what to do in this case, the code sending update queries has to be tweaked
 			ZN_PRINT_VERBOSE("Received a block mesh drop while we were still expecting it");
@@ -1559,15 +1709,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelServer::BlockMeshOutput &ob) {
 			// Due to a signal used to keep the inspector up to date, even though these
 			// material copies will never be seen in the inspector
 			// See https://github.com/godotengine/godot/issues/34741
-			Ref<ShaderMaterial> sm;
-			if (_shader_material_pool.size() > 0) {
-				sm = _shader_material_pool.back();
-				// The joys of pooling materials
-				sm->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, 0);
-				_shader_material_pool.pop_back();
-			} else {
-				sm = shader_material->duplicate(false);
-			}
+			Ref<ShaderMaterial> sm = allocate_shader_material(_shader_material_pool, shader_material, 0);
 
 			// Set individual shader material, because each block can have dynamic parameters,
 			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
@@ -1698,27 +1840,82 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 
 	const float speed = _lod_fade_duration < 0.001f ? 99999.f : delta / _lod_fade_duration;
 
-	for (unsigned int lod_index = 0; lod_index < _fading_blocks_per_lod.size(); ++lod_index) {
-		std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
-		std::map<Vector3i, VoxelMeshBlockVLT *>::iterator it = fading_blocks.begin();
+	{
+		ZN_PROFILE_SCOPE();
+		for (unsigned int lod_index = 0; lod_index < _fading_blocks_per_lod.size(); ++lod_index) {
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
+			std::map<Vector3i, VoxelMeshBlockVLT *>::iterator it = fading_blocks.begin();
 
-		while (it != fading_blocks.end()) {
-			VoxelMeshBlockVLT *block = it->second;
-			ZN_ASSERT(block != nullptr);
-			// The collection of fading blocks must only contain fading blocks
-			ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
+			while (it != fading_blocks.end()) {
+				VoxelMeshBlockVLT *block = it->second;
+				ZN_ASSERT(block != nullptr);
+				// The collection of fading blocks must only contain fading blocks
+				ERR_FAIL_COND(block->fading_state == VoxelMeshBlockVLT::FADING_NONE);
 
-			const bool finished = block->update_fading(speed);
+				const bool finished = block->update_fading(speed);
 
-			if (finished) {
-				// `erase` returns the next iterator
-				it = fading_blocks.erase(it);
+				if (finished) {
+					// `erase` returns the next iterator
+					it = fading_blocks.erase(it);
 
-			} else {
-				++it;
+				} else {
+					++it;
+				}
 			}
 		}
 	}
+
+	{
+		ZN_PROFILE_SCOPE();
+		//ZN_PROFILE_PLOT("fading_out_meshes", int64_t(_fading_out_meshes.size()));
+		for (unsigned int i = 0; i < _fading_out_meshes.size();) {
+			FadingOutMesh &item = _fading_out_meshes[i];
+			item.progress -= speed;
+			if (item.progress <= 0.f) {
+				recycle_shader_material(_shader_material_pool, item.shader_material);
+				// TODO Optimize: mesh instances destroyed here can be really slow due to materials...
+				// Profiling has shown that `RendererSceneCull::free` of a mesh instance
+				// leads to `RendererRD::MaterialStorage::_update_queued_materials()` to be called, which internally
+				// updates hundreds of materials (supposedly from every block). Can take 1ms for a single instance,
+				// while the rest of the work is barely 1%! Why is Godot doing this? I tried resetting the material like
+				// with blocks, but that didn't improve anything...
+				//item.mesh_instance.set_material_override(Ref<Material>());
+				_fading_out_meshes[i] = std::move(_fading_out_meshes.back());
+				_fading_out_meshes.pop_back();
+			} else {
+				item.shader_material->set_shader_param(
+						VoxelStringNames::get_singleton().u_lod_fade, Vector2(1.f - item.progress, 0.f));
+				++i;
+			}
+		}
+	}
+}
+
+VoxelLodTerrain::LocalCameraInfo VoxelLodTerrain::get_local_camera_info() const {
+	LocalCameraInfo info;
+	if (!is_inside_tree()) {
+		return info;
+	}
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		// Falling back on the editor's camera
+		info.position = gd::VoxelEngine::get_singleton()->get_editor_camera_position();
+		info.forward = gd::VoxelEngine::get_singleton()->get_editor_camera_direction();
+		return info;
+	}
+#endif
+	const Viewport *vp = get_viewport();
+	if (vp == nullptr) {
+		return info;
+	}
+	const Camera3D *camera = vp->get_camera_3d();
+	if (camera == nullptr) {
+		return info;
+	}
+	Transform3D trans = camera->get_global_transform();
+	info.forward = get_forward(trans);
+	info.position = trans.get_origin();
+	return info;
 }
 
 void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
@@ -2519,11 +2716,11 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
-
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, Material::get_class_static()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
+						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"set_material", "get_material");
 
 	ADD_GROUP("Collisions", "");

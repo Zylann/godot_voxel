@@ -120,6 +120,7 @@ private:
 	}
 
 	// Flat grid indexed in ZXY order
+	// TODO Ability to use thread-local/stack pool allocator? Such grids are often temporary
 	std::vector<std::shared_ptr<VoxelBufferInternal>> _blocks;
 	// Size of the grid in blocks
 	Vector3i _size_in_blocks;

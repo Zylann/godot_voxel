@@ -22,6 +22,7 @@ voxel_files = [
 	"streams/*.cpp",
 	"streams/sqlite/*.cpp",
 	"streams/region/*.cpp",
+	"streams/vox/*.cpp",
 
 	"storage/*.cpp",
 
@@ -48,7 +49,7 @@ voxel_files = [
 	"terrain/fixed_lod/*.cpp",
 	"terrain/variable_lod/*.cpp",
 
-	"server/*.cpp",
+	"engine/*.cpp",
 	"edition/*.cpp",
 
 	"thirdparty/lz4/*.c",
