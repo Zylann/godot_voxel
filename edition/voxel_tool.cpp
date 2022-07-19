@@ -5,8 +5,6 @@
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 
-#include <core/math/plane.h>
-
 namespace zylann::voxel {
 
 VoxelTool::VoxelTool() {
@@ -255,40 +253,6 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
-void VoxelTool::do_flatten(Vector3 center, float radius, Vector3 floor_normal) {
-	ZN_PROFILE_SCOPE();
-
-	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
-
-	if (!is_area_editable(box)) {
-		ZN_PRINT_VERBOSE("Area not editable");
-		return;
-	}
-
-	const Plane plane(floor_normal);
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
-		box.for_each_cell([this, center, radius, plane](Vector3i pos) {
-			Mode mode = plane.is_point_over(pos - center) ? MODE_REMOVE : MODE_ADD;
-			float d = zylann::math::sdf_sphere(pos, center, radius);
-			float v = sdf_blend(d, get_voxel_f(pos), mode);
-			_set_voxel_f(pos, v);
-			//WARN_PRINT(String("VoxelTool::do_flatten - ") + String("{_}").format(d, "{_}") + " " + String("{0}").format(v, "{_}"));
-		});
-
-	} else {
-		box.for_each_cell([this, center, radius, plane](Vector3i pos) {
-			float d = Vector3(pos).distance_to(center);
-			if (d <= radius) {
-				int mode = plane.is_point_over(pos) ? _eraser_value : _value;
-				_set_voxel(pos, Mode(mode));
-			}
-		});
-	}
-
-	_post_edit(box);
-}
-
 void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 	ERR_PRINT("Not implemented");
@@ -415,7 +379,6 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
-	ClassDB::bind_method(D_METHOD("do_flatten", "center", "radius", "normal"), &VoxelTool::do_flatten);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
