@@ -63,27 +63,31 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	if (voxel_query_data.result == VoxelStream::RESULT_ERROR) {
 		ERR_PRINT("Error loading voxel block");
 
-	} else if (voxel_query_data.result == VoxelStream::RESULT_BLOCK_NOT_FOUND && _generate_cache_data) {
-		Ref<VoxelGenerator> generator = _stream_dependency->generator;
+	} else if (voxel_query_data.result == VoxelStream::RESULT_BLOCK_NOT_FOUND) {
+		if (_generate_cache_data) {
+			Ref<VoxelGenerator> generator = _stream_dependency->generator;
 
-		if (generator.is_valid()) {
-			GenerateBlockTask *task = memnew(GenerateBlockTask);
-			task->voxels = _voxels;
-			task->volume_id = _volume_id;
-			task->position = _position;
-			task->lod = _lod;
-			task->block_size = _block_size;
-			task->stream_dependency = _stream_dependency;
-			task->priority_dependency = _priority_dependency;
+			if (generator.is_valid()) {
+				GenerateBlockTask *task = memnew(GenerateBlockTask);
+				task->voxels = _voxels;
+				task->volume_id = _volume_id;
+				task->position = _position;
+				task->lod = _lod;
+				task->block_size = _block_size;
+				task->stream_dependency = _stream_dependency;
+				task->priority_dependency = _priority_dependency;
 
-			VoxelEngine::get_singleton().push_async_task(task);
-			_requested_generator_task = true;
+				VoxelEngine::get_singleton().push_async_task(task);
+				_requested_generator_task = true;
 
+			} else {
+				// If there is no generator... what do we do? What defines the format of that empty block?
+				// If the user leaves the defaults it's fine, but otherwise blocks of inconsistent format can
+				// end up in the volume and that can cause errors.
+				// TODO Define format on volume?
+			}
 		} else {
-			// If there is no generator... what do we do? What defines the format of that empty block?
-			// If the user leaves the defaults it's fine, but otherwise blocks of inconsistent format can
-			// end up in the volume and that can cause errors.
-			// TODO Define format on volume?
+			_voxels.reset();
 		}
 	}
 
