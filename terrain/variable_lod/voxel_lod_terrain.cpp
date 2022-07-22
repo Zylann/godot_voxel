@@ -2339,7 +2339,9 @@ void VoxelLodTerrain::debug_set_draw_enabled(bool enabled) {
 #ifdef TOOLS_ENABLED
 	_debug_draw_enabled = enabled;
 	if (_debug_draw_enabled) {
-		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		if (is_inside_tree()) {
+			_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		}
 	} else {
 		_debug_renderer.clear();
 		_debug_mesh_update_items.clear();
