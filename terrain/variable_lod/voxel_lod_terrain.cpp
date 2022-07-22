@@ -2457,10 +2457,12 @@ void VoxelLodTerrain::update_gizmos() {
 		RWLockRead rlock(data_lod.map_lock);
 		data_lod.map.for_each_block(
 				[&dr, parent_transform, data_block_size, basis](const Vector3i &bpos, const VoxelDataBlock &block) {
-					const Transform3D local_transform(basis, bpos * data_block_size);
-					const Transform3D t = parent_transform * local_transform;
-					const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
-					dr.draw_box_mm(t, c);
+					if (block.is_edited()) {
+						const Transform3D local_transform(basis, bpos * data_block_size);
+						const Transform3D t = parent_transform * local_transform;
+						const Color8 c = block.is_modified() ? Color8(255, 255, 0, 255) : Color8(0, 255, 0, 255);
+						dr.draw_box_mm(t, c);
+					}
 				});
 	}
 
