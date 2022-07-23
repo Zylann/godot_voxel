@@ -7,6 +7,7 @@ namespace zylann {
 
 // TODO Could use std::array, but due to how Godot compiles,
 // I couldn't find a way to enable boundary checks without failing to link my module with the rest of Godot...
+// See https://github.com/godotengine/godot/issues/31608
 template <typename T, unsigned int N>
 class FixedArray {
 public:
@@ -59,6 +60,43 @@ public:
 
 	inline unsigned int size() const {
 		return N;
+	}
+
+	class ConstIterator {
+	public:
+		inline ConstIterator(const T *p) : _current(p) {}
+
+		inline const T &operator*() {
+			return *_current;
+		}
+
+		inline const T *operator->() {
+			return _current;
+		}
+
+		inline ConstIterator &operator++() {
+			++_current;
+			return *this;
+		}
+
+		inline bool operator==(const ConstIterator other) const {
+			return _current == other._current;
+		}
+
+		inline bool operator!=(const ConstIterator other) const {
+			return _current != other._current;
+		}
+
+	private:
+		const T *_current;
+	};
+
+	inline ConstIterator begin() const {
+		return ConstIterator(_data);
+	}
+
+	inline ConstIterator end() const {
+		return ConstIterator(_data + N);
 	}
 
 private:
