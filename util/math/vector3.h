@@ -3,6 +3,7 @@
 
 #include "funcs.h"
 #include <core/math/vector3.h>
+#include <iosfwd>
 
 // 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
 // This is the type to use for interoperating with Godot.
@@ -30,5 +31,9 @@ inline Vector3 lerp(const Vector3 a, const Vector3 b, const Vector3 alpha) {
 }
 
 } // namespace zylann::math
+
+namespace zylann {
+std::stringstream &operator<<(std::stringstream &ss, const Vector3 &v);
+}
 
 #endif // ZN_VECTOR3_H
