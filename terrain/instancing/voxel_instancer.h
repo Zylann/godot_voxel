@@ -34,6 +34,7 @@ class VoxelTool;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
+// It is coupled to terrain at the moment because of performance.
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
@@ -87,10 +88,21 @@ public:
 	void debug_dump_as_scene(String fpath) const;
 	Node *debug_dump_as_nodes() const;
 
+	void debug_set_draw_enabled(bool enabled);
+	bool debug_is_draw_enabled() const;
+
+	enum DebugDrawFlag { //
+		DEBUG_DRAW_ALL_BLOCKS,
+		DEBUG_DRAW_EDITED_BLOCKS,
+		DEBUG_DRAW_FLAGS_COUNT
+	};
+
+	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
+	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
+
 	// Editor
 
 #ifdef TOOLS_ENABLED
-	void set_show_gizmos(bool enable);
 	TypedArray<String> get_configuration_warnings() const override;
 #endif
 
@@ -209,7 +221,7 @@ private:
 
 	FixedArray<Lod, MAX_LOD> _lods;
 
-	// Does not have nulls
+	// Does not have nulls. Indices matter.
 	std::vector<UniquePtr<Block>> _blocks;
 
 	// Each layer corresponds to a library item. Addresses of values in the map are expected to be stable.
@@ -227,11 +239,13 @@ private:
 #ifdef TOOLS_ENABLED
 	DebugRenderer _debug_renderer;
 	bool _gizmos_enabled = false;
+	uint8_t _debug_draw_flags = 0;
 #endif
 };
 
 } // namespace zylann::voxel
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H

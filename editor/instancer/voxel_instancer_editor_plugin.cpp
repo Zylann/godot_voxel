@@ -13,14 +13,15 @@ bool VoxelInstancerEditorPlugin::handles(Object *p_object) const {
 void VoxelInstancerEditorPlugin::edit(Object *p_object) {
 	VoxelInstancer *instancer = Object::cast_to<VoxelInstancer>(p_object);
 	ERR_FAIL_COND(instancer == nullptr);
-	instancer->set_show_gizmos(true);
+	instancer->debug_set_draw_enabled(true);
+	instancer->debug_set_draw_flag(VoxelInstancer::DEBUG_DRAW_ALL_BLOCKS, true);
 	_node = instancer;
 }
 
 void VoxelInstancerEditorPlugin::make_visible(bool visible) {
 	if (visible == false) {
 		if (_node != nullptr) {
-			_node->set_show_gizmos(false);
+			_node->debug_set_draw_enabled(false);
 			_node = nullptr;
 		}
 	}

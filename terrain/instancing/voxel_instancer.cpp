@@ -191,47 +191,66 @@ void VoxelInstancer::_notification(int p_what) {
 
 #ifdef TOOLS_ENABLED
 
-void VoxelInstancer::set_show_gizmos(bool enable) {
-	_gizmos_enabled = enable;
-	if (_gizmos_enabled) {
-		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
-	} else {
-		_debug_renderer.clear();
-	}
-}
-
 void VoxelInstancer::process_gizmos() {
+	struct L {
+		static inline void draw_box(DebugRenderer &dr, const Transform3D parent_transform, Vector3i bpos,
+				unsigned int lod_index, unsigned int base_block_size_po2, Color8 color) {
+			const int block_size_po2 = base_block_size_po2 + lod_index;
+			const int block_size = 1 << block_size_po2;
+			const Vector3 block_local_pos(bpos << block_size_po2);
+			const Transform3D box_transform(
+					parent_transform.basis * (Basis().scaled(Vector3(block_size, block_size, block_size))),
+					parent_transform.xform(block_local_pos));
+			dr.draw_box_mm(box_transform, color);
+		}
+	};
+
 	ERR_FAIL_COND(_parent == nullptr);
 	const Transform3D parent_transform = get_global_transform();
-	const int base_block_size_po2 = _parent_mesh_block_size_po2;
+	const int base_mesh_block_size_po2 = _parent_mesh_block_size_po2;
+	const int base_data_block_size_po2 = _parent_data_block_size_po2;
 
 	_debug_renderer.begin();
 
-	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		const Block &block = **it;
+	if (debug_get_draw_flag(DEBUG_DRAW_ALL_BLOCKS)) {
+		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
+			const Block &block = **it;
 
-		Color8 color(0, 255, 0, 255);
-		if (block.multimesh_instance.is_valid()) {
-			if (block.multimesh_instance.get_multimesh().is_null()) {
-				// Allocated but without multimesh (wut?)
-				color = Color8(128, 0, 0, 255);
-			} else if (get_visible_instance_count(**block.multimesh_instance.get_multimesh()) == 0) {
-				// Allocated but empty multimesh
-				color = Color8(255, 64, 0, 255);
+			Color8 color(0, 255, 0, 255);
+			if (block.multimesh_instance.is_valid()) {
+				if (block.multimesh_instance.get_multimesh().is_null()) {
+					// Allocated but without multimesh (wut?)
+					color = Color8(128, 0, 0, 255);
+				} else if (get_visible_instance_count(**block.multimesh_instance.get_multimesh()) == 0) {
+					// Allocated but empty multimesh
+					color = Color8(255, 64, 0, 255);
+				}
+			} else if (block.scene_instances.size() == 0) {
+				// Only draw blocks that are setup
+				continue;
 			}
-		} else if (block.scene_instances.size() == 0) {
-			// Only draw blocks that are setup
-			continue;
+
+			L::draw_box(_debug_renderer, parent_transform, block.grid_position, block.lod_index,
+					base_mesh_block_size_po2, color);
 		}
+	}
 
-		const int block_size_po2 = base_block_size_po2 + block.lod_index;
-		const int block_size = 1 << block_size_po2;
-		const Vector3 block_local_pos(block.grid_position << block_size_po2);
-		const Transform3D box_transform(
-				parent_transform.basis * (Basis().scaled(Vector3(block_size, block_size, block_size))),
-				parent_transform.xform(block_local_pos));
+	if (debug_get_draw_flag(DEBUG_DRAW_EDITED_BLOCKS)) {
+		for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+			const Lod &lod = _lods[lod_index];
 
-		_debug_renderer.draw_box_mm(box_transform, color);
+			const Color8 edited_color(0, 255, 0, 255);
+			const Color8 unsaved_color(255, 255, 0, 255);
+
+			for (auto it = lod.loaded_instances_data.begin(); it != lod.loaded_instances_data.end(); ++it) {
+				L::draw_box(_debug_renderer, parent_transform, it->first, lod_index, base_data_block_size_po2,
+						edited_color);
+			}
+
+			for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
+				L::draw_box(_debug_renderer, parent_transform, *it, lod_index, base_data_block_size_po2, unsaved_color);
+			}
+		}
 	}
 
 	_debug_renderer.end();
@@ -1649,6 +1668,45 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	return root;
 }
 
+void VoxelInstancer::debug_set_draw_enabled(bool enabled) {
+#ifdef TOOLS_ENABLED
+	_gizmos_enabled = enabled;
+	if (_gizmos_enabled) {
+		if (is_inside_tree()) {
+			_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		}
+	} else {
+		_debug_renderer.clear();
+	}
+#endif
+}
+
+bool VoxelInstancer::debug_is_draw_enabled() const {
+#ifdef TOOLS_ENABLED
+	return _gizmos_enabled;
+#endif
+}
+
+void VoxelInstancer::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled) {
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX(flag_index, DEBUG_DRAW_FLAGS_COUNT);
+	if (enabled) {
+		_debug_draw_flags |= (1 << flag_index);
+	} else {
+		_debug_draw_flags &= ~(1 << flag_index);
+	}
+#endif
+}
+
+bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX_V(flag_index, DEBUG_DRAW_FLAGS_COUNT, false);
+	return (_debug_draw_flags & (1 << flag_index)) != 0;
+#else
+	return false;
+#endif
+}
+
 #ifdef TOOLS_ENABLED
 
 TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
@@ -1677,6 +1735,10 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
 	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
 	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelInstancer::debug_set_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelInstancer::debug_is_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag", "enabled"), &VoxelInstancer::debug_set_draw_flag);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag"), &VoxelInstancer::debug_get_draw_flag);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelInstanceLibrary::get_class_static()),
@@ -1688,6 +1750,10 @@ void VoxelInstancer::_bind_methods() {
 
 	BIND_ENUM_CONSTANT(UP_MODE_POSITIVE_Y);
 	BIND_ENUM_CONSTANT(UP_MODE_SPHERE);
+
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_ALL_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 }
 
 } // namespace zylann::voxel
