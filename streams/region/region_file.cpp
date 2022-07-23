@@ -668,8 +668,8 @@ void RegionFile::debug_check() {
 		const size_t pos = f.get_position();
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
-			ZN_PRINT_ERROR(format("ERROR: LUT {} ({}): block size at offset {} is larger than remaining size {}",
-					lut_index, position, block_data_size, remaining_size));
+			ZN_PRINT_ERROR(format("ERROR: LUT {} ({}): block size {} at offset {} is larger than remaining size {}",
+					lut_index, position, block_data_size, block_begin, remaining_size));
 		}
 	}
 }
