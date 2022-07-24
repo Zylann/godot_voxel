@@ -791,7 +791,8 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 	for (data_grid_pos.z = data_min_pos.z; data_grid_pos.z < data_max_pos.z; ++data_grid_pos.z) {
 		for (data_grid_pos.y = data_min_pos.y; data_grid_pos.y < data_max_pos.y; ++data_grid_pos.y) {
 			for (data_grid_pos.x = data_min_pos.x; data_grid_pos.x < data_max_pos.x; ++data_grid_pos.x) {
-				// If we loaded data there but it was never used, we'll unload it either way
+				// If we loaded data there but it was never used, we'll unload it either way.
+				// Note, this data is what we loaded initially, it doesnt contain modifications.
 				lod.loaded_instances_data.erase(data_grid_pos);
 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
@@ -852,7 +853,7 @@ VoxelInstancer::SceneInstance VoxelInstancer::create_scene_instance(const VoxelI
 
 	instance.root->set_transform(transform);
 
-	// This is the SLOWEST part
+	// This is the SLOWEST part because Godot triggers all sorts of callbacks
 	add_child(instance.root);
 
 	return instance;
@@ -1049,16 +1050,17 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	ERR_FAIL_COND(maybe_world.is_null());
 	World3D &world = **maybe_world;
 
-	const int mesh_block_size = (1 << _parent_mesh_block_size_po2);
-	const int lod_block_size = mesh_block_size << lod_index;
-	const Transform3D block_local_transform = Transform3D(Basis(), render_grid_position * lod_block_size);
+	const int mesh_block_size_base = (1 << _parent_mesh_block_size_po2);
+	const int data_block_size_base = (1 << _parent_data_block_size_po2);
+	const int mesh_block_size = mesh_block_size_base << lod_index;
+	const int data_block_size = data_block_size_base << lod_index;
+
+	const Transform3D block_local_transform = Transform3D(Basis(), render_grid_position * mesh_block_size);
 	const Transform3D block_transform = parent_transform * block_local_transform;
 
-	const int render_to_data_factor = mesh_block_size / (1 << _parent_data_block_size_po2);
+	const int render_to_data_factor = mesh_block_size_base / data_block_size_base;
 	const Vector3i data_min_pos = render_grid_position * render_to_data_factor;
 	const Vector3i data_max_pos = data_min_pos + Vector3iUtil::create(render_to_data_factor);
-
-	const int lod_render_block_size = mesh_block_size << lod_index;
 
 	for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
 		const int layer_id = *layer_it;
@@ -1095,8 +1097,19 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 						}
 
 						for (auto it = layer_data->instances.begin(); it != layer_data->instances.end(); ++it) {
-							const InstanceBlockData::InstanceData &d = *it;
-							_transform_cache.push_back(d.transform);
+							_transform_cache.push_back(it->transform);
+						}
+
+						if (render_to_data_factor != 1) {
+							// Data blocks store instances relative to a smaller grid than render blocks.
+							// So we need to adjust their relative position.
+							const Vector3 rel = (data_grid_pos - data_min_pos) * data_block_size;
+							const size_t cache_begin_index = _transform_cache.size() - layer_data->instances.size();
+							ZN_ASSERT(cache_begin_index <= _transform_cache.size());
+							for (auto it = _transform_cache.begin() + cache_begin_index; it != _transform_cache.end();
+									++it) {
+								it->origin += rel;
+							}
 						}
 
 						// Unset bit for this octant so it won't be generated
@@ -1121,14 +1134,14 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 
 				ZN_PROFILE_SCOPE();
 
-				static thread_local std::vector<Transform3D> s_generated_transforms;
-				s_generated_transforms.clear();
+				static thread_local std::vector<Transform3D> tls_generated_transforms;
+				tls_generated_transforms.clear();
 
-				item->get_generator()->generate_transforms(s_generated_transforms, render_grid_position, lod_index,
+				item->get_generator()->generate_transforms(tls_generated_transforms, render_grid_position, lod_index,
 						layer_id, surface_arrays, block_local_transform,
-						static_cast<VoxelInstanceGenerator::UpMode>(_up_mode), gen_octant_mask, lod_render_block_size);
+						static_cast<VoxelInstanceGenerator::UpMode>(_up_mode), gen_octant_mask, mesh_block_size);
 
-				for (auto it = s_generated_transforms.begin(); it != s_generated_transforms.end(); ++it) {
+				for (auto it = tls_generated_transforms.begin(); it != tls_generated_transforms.end(); ++it) {
 					_transform_cache.push_back(*it);
 				}
 			}
@@ -1155,10 +1168,13 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	const int render_to_data_factor = (1 << _parent_mesh_block_size_po2) / (1 << _parent_data_block_size_po2);
 	ERR_FAIL_COND_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, "Unsupported block size");
 
-	const int half_render_block_size = (1 << _parent_mesh_block_size_po2) / 2;
+	const int render_block_size_base = (1 << _parent_mesh_block_size_po2);
+	const int render_block_size = render_block_size_base << lod_index;
+	const int half_render_block_size = render_block_size / 2;
 	const Vector3i render_block_pos = math::floordiv(data_grid_pos, render_to_data_factor);
 
-	const int octant_index = (data_grid_pos.x & 1) | ((data_grid_pos.y & 1) << 1) | ((data_grid_pos.z & 1) << 1);
+	const int octant_index =
+			VoxelInstanceGenerator::get_octant_index(data_grid_pos.x & 1, data_grid_pos.y & 1, data_grid_pos.z & 1);
 
 	for (auto it = lod.layers.begin(); it != lod.layers.end(); ++it) {
 		const int layer_id = *it;
@@ -1221,12 +1237,12 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 			} else if (render_to_data_factor == 2) {
 				for (int instance_index = 0; instance_index < instance_count; ++instance_index) {
 					// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
-					const Transform3D t = multimesh->get_instance_transform(instance_index);
-					const int instance_octant_index =
-							VoxelInstanceGenerator::get_octant_index(t.origin, half_render_block_size);
+					const Transform3D rendered_instance_transform = multimesh->get_instance_transform(instance_index);
+					const int instance_octant_index = VoxelInstanceGenerator::get_octant_index(
+							rendered_instance_transform.origin, half_render_block_size);
 					if (instance_octant_index == octant_index) {
 						InstanceBlockData::InstanceData d;
-						d.transform = t;
+						d.transform = rendered_instance_transform;
 						layer_data.instances.push_back(d);
 					}
 				}
@@ -1261,6 +1277,21 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 					}
 					// TODO Serialize state
 				}
+			}
+
+			// Make scene transforms relative to render block
+			const Vector3 render_block_origin = render_block_pos * render_block_size;
+			for (InstanceBlockData::InstanceData &d : layer_data.instances) {
+				d.transform.origin -= render_block_origin;
+			}
+		}
+
+		if (render_to_data_factor == 2) {
+			// Data blocks are on a smaller grid than render blocks so we may convert the relative position
+			// of the instances
+			const Vector3 rel = to_vec3(data_block_size * (data_grid_pos - render_block_pos * render_to_data_factor));
+			for (InstanceBlockData::InstanceData &d : layer_data.instances) {
+				d.transform.origin -= rel;
 			}
 		}
 	}

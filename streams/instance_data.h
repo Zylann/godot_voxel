@@ -9,6 +9,7 @@ namespace zylann::voxel {
 // Stores data to pass around until it either gets saved or turned into actual instances
 struct InstanceBlockData {
 	struct InstanceData {
+		// Transform of the instance, relative to the origin of the data block.
 		Transform3D transform;
 	};
 

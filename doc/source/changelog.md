@@ -48,6 +48,7 @@ Godot 4 is required from this version.
     - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
     - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
     - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
+    - `VoxelInstancer`: Changing mesh block size should no longer make saved instances invalid if they were saved with a different mesh block size
     - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
     - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
     - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
@@ -69,6 +70,8 @@ Godot 4 is required from this version.
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
     - `VoxelInstancer`: fix errors when removing scene instances
+    - `VoxelInstancer`: fix position issues when scene instances are saved
+    - `VoxelInstancer`: fix position issues when instances are saved while mesh block size is set to 32
     - `VoxelLodTerrain`: fix `lod_fade_duration` property was not accepting decimal numbers
     - `VoxelLodTerrain`: Cracks no longer appear at seams when LOD fading is enabled
     - `VoxelMesherCubes`: editor: color mode is now a proper dropdown
