@@ -1722,6 +1722,8 @@ void VoxelInstancer::debug_set_draw_enabled(bool enabled) {
 bool VoxelInstancer::debug_is_draw_enabled() const {
 #ifdef TOOLS_ENABLED
 	return _gizmos_enabled;
+#else
+	return false;
 #endif
 }
 
