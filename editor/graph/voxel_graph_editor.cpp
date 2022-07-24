@@ -37,7 +37,7 @@ static NodePath to_node_path(StringName sn) {
 
 VoxelGraphEditor::VoxelGraphEditor() {
 	VBoxContainer *vbox_container = memnew(VBoxContainer);
-	vbox_container->set_anchors_and_offsets_preset(Control::PRESET_WIDE);
+	vbox_container->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
 
 	{
 		HBoxContainer *toolbar = memnew(HBoxContainer);
@@ -92,7 +92,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	}
 
 	_graph_edit = memnew(GraphEdit);
-	_graph_edit->set_anchors_preset(Control::PRESET_WIDE);
+	_graph_edit->set_anchors_preset(Control::PRESET_FULL_RECT);
 	_graph_edit->set_right_disconnects(true);
 	_graph_edit->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	_graph_edit->connect("gui_input", callable_mp(this, &VoxelGraphEditor::_on_graph_edit_gui_input));
