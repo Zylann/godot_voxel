@@ -229,8 +229,6 @@ private:
 
 	Ref<VoxelInstanceLibrary> _library;
 
-	std::vector<Transform3D> _transform_cache;
-
 	VoxelNode *_parent = nullptr;
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;

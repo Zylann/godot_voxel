@@ -22,6 +22,10 @@
 
 namespace zylann::voxel {
 
+namespace {
+static thread_local std::vector<Transform3D> tls_transform_cache;
+}
+
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
@@ -542,7 +546,8 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			}
 		}
 
-		_transform_cache.clear();
+		std::vector<Transform3D> &transform_cache = tls_transform_cache;
+		transform_cache.clear();
 
 		Array surface_arrays;
 		if (parent_vlt != nullptr) {
@@ -556,18 +561,18 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		const Transform3D block_local_transform(Basis(), Vector3(block.grid_position * lod_block_size));
 		const Transform3D block_transform = parent_transform * block_local_transform;
 
-		item->get_generator()->generate_transforms(_transform_cache, block.grid_position, block.lod_index, layer_id,
+		item->get_generator()->generate_transforms(transform_cache, block.grid_position, block.lod_index, layer_id,
 				surface_arrays, block_local_transform, static_cast<VoxelInstanceGenerator::UpMode>(_up_mode),
 				octant_mask, lod_block_size);
 
 		if (render_to_data_factor == 2 && octant_mask != 0xff) {
 			// Complete transforms with edited ones
-			L::extract_octant_transforms(block, _transform_cache, ~octant_mask, mesh_block_size);
+			L::extract_octant_transforms(block, transform_cache, ~octant_mask, mesh_block_size);
 			// TODO What if these blocks had loaded data which wasn't yet uploaded for render?
 			// We may setup a local transform list as well since it's expensive to get it from VisualServer
 		}
 
-		update_block_from_transforms(block_index, to_span_const(_transform_cache), block.grid_position, layer, **item,
+		update_block_from_transforms(block_index, to_span_const(transform_cache), block.grid_position, layer, **item,
 				layer_id, world, block_transform);
 	}
 }
@@ -1062,6 +1067,8 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	const Vector3i data_min_pos = render_grid_position * render_to_data_factor;
 	const Vector3i data_max_pos = data_min_pos + Vector3iUtil::create(render_to_data_factor);
 
+	std::vector<Transform3D> &transform_cache = tls_transform_cache;
+
 	for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
 		const int layer_id = *layer_it;
 
@@ -1072,7 +1079,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 			continue;
 		}
 
-		_transform_cache.clear();
+		transform_cache.clear();
 
 		uint8_t gen_octant_mask = 0xff;
 
@@ -1097,16 +1104,16 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 						}
 
 						for (auto it = layer_data->instances.begin(); it != layer_data->instances.end(); ++it) {
-							_transform_cache.push_back(it->transform);
+							transform_cache.push_back(it->transform);
 						}
 
 						if (render_to_data_factor != 1) {
 							// Data blocks store instances relative to a smaller grid than render blocks.
 							// So we need to adjust their relative position.
 							const Vector3 rel = (data_grid_pos - data_min_pos) * data_block_size;
-							const size_t cache_begin_index = _transform_cache.size() - layer_data->instances.size();
-							ZN_ASSERT(cache_begin_index <= _transform_cache.size());
-							for (auto it = _transform_cache.begin() + cache_begin_index; it != _transform_cache.end();
+							const size_t cache_begin_index = transform_cache.size() - layer_data->instances.size();
+							ZN_ASSERT(cache_begin_index <= transform_cache.size());
+							for (auto it = transform_cache.begin() + cache_begin_index; it != transform_cache.end();
 									++it) {
 								it->origin += rel;
 							}
@@ -1142,12 +1149,12 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 						static_cast<VoxelInstanceGenerator::UpMode>(_up_mode), gen_octant_mask, mesh_block_size);
 
 				for (auto it = tls_generated_transforms.begin(); it != tls_generated_transforms.end(); ++it) {
-					_transform_cache.push_back(*it);
+					transform_cache.push_back(*it);
 				}
 			}
 		}
 
-		update_block_from_transforms(-1, to_span_const(_transform_cache), render_grid_position, layer, *item, layer_id,
+		update_block_from_transforms(-1, to_span_const(transform_cache), render_grid_position, layer, *item, layer_id,
 				world, block_transform);
 	}
 }
