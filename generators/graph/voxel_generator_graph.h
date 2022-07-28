@@ -123,6 +123,9 @@ public:
 	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
 	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
 
+	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
+	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
+
 	Vector2 get_node_gui_position(uint32_t node_id) const;
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
 

@@ -256,13 +256,20 @@ void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 	}
 }
 
+void ProgramGraph::find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_order) const {
+	std::vector<uint32_t> nodes_to_process;
+	nodes_to_process.push_back(node_id);
+	find_dependencies(nodes_to_process, out_order);
+}
+
+// Finds dependencies of the given nodes, and returns them in the order they should be processed.
+// Given nodes are included in the result.
 void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const {
-	// Finds dependencies of the given nodes, and returns them in the order they should be processed
 	std::unordered_set<uint32_t> visited_nodes;
 
 	while (nodes_to_process.size() > 0) {
 		const Node &node = get_node(nodes_to_process.back());
-		uint32_t nodes_to_process_begin = nodes_to_process.size();
+		const uint32_t nodes_to_process_begin = nodes_to_process.size();
 
 		// Find ancestors
 		for (uint32_t ii = 0; ii < node.inputs.size(); ++ii) {
@@ -418,6 +425,16 @@ uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		const Node *node = it->second;
 		if (node->name == name) {
+			return it->first;
+		}
+	}
+	return NULL_ID;
+}
+
+uint32_t ProgramGraph::find_node_by_type(uint32_t type_id) const {
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		const Node *node = it->second;
+		if (node->type_id == type_id) {
 			return it->first;
 		}
 	}

@@ -16,12 +16,12 @@ struct ExpandedNodeRemap {
 };
 
 struct GraphRemappingInfo {
-	std::vector<PortRemap> user_to_expanded_ports;
-	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
+	std::vector<PortRemap> user_to_expanded_ports; // Used for debug output previews in the editor
+	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids; // Used for error reporting
 };
 
-VoxelGraphRuntime::CompilationResult expand_expression_nodes(
-		ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info);
+VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info);
 
 // Functions usable by node implementations during the compilation stage
 class CompileContext {

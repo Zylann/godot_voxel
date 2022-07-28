@@ -291,23 +291,96 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 	return result;
 }
 
+// For each node with auto-connect enabled, if they have non-connected ports supporting auto-connect, connects them to a
+// default input node. If no such node exists in the graph, it is created.
+static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &type_db) {
+	// Copy ids first because we might create new nodes
+	std::vector<uint32_t> node_ids;
+	node_ids.reserve(graph.get_nodes_count());
+	graph.for_each_node_id([&node_ids](uint32_t id) { node_ids.push_back(id); });
+
+	for (const uint32_t node_id : node_ids) {
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+
+		if (node.autoconnect_default_inputs == false) {
+			// Explicit constants will be used instead
+			continue;
+		}
+
+		for (unsigned int input_index = 0; input_index < node.inputs.size(); ++input_index) {
+			const ProgramGraph::Port &input_port = node.inputs[input_index];
+			if (input_port.connections.size() > 0) {
+				// Already connected
+				continue;
+			}
+			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
+			VoxelGeneratorGraph::NodeTypeID src_type;
+			switch (auto_connect) {
+				case VoxelGraphNodeDB::AUTO_CONNECT_X:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_X;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_Y:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_Y;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_Z:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_Z;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_NONE:
+					continue;
+				default:
+					ZN_PRINT_ERROR("Unhandled autoconnect");
+					continue;
+			}
+			uint32_t src_node_id = graph.find_node_by_type(src_type);
+			if (src_node_id == ProgramGraph::NULL_ID) {
+				// Not found, create it then
+				const ProgramGraph::Node *src_node =
+						create_node_internal(graph, src_type, Vector2(), graph.generate_node_id(), false);
+				ZN_ASSERT_CONTINUE(src_node != nullptr);
+				src_node_id = src_node->id;
+			}
+			graph.connect(
+					ProgramGraph::PortLocation{ src_node_id, 0 }, ProgramGraph::PortLocation{ node_id, input_index });
+		}
+	}
+}
+
+VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+	// First make a copy of the graph which we'll modify
+	expanded_graph.copy_from(graph, false);
+
+	apply_auto_connects(expanded_graph, type_db);
+
+	// TODO Store a remapping to allow debugging with the expanded graph
+	const VoxelGraphRuntime::CompilationResult expand_result =
+			expand_expression_nodes(expanded_graph, type_db, remap_info);
+	if (!expand_result.success) {
+		return expand_result;
+	}
+	// Expanding a graph may produce more nodes, not remove any
+	ZN_ASSERT_RETURN_V(expanded_graph.get_nodes_count() >= graph.get_nodes_count(),
+			VoxelGraphRuntime::CompilationResult::make_error("Internal error"));
+
+	// TODO Merge equivalences, but needs to update remaps properly first
+	//merge_equivalences(expanded_graph, &remap_info);
+
+	return expand_result;
+}
+
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
 	ZN_PROFILE_SCOPE();
 
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
-	ProgramGraph expanded_graph;
-	expanded_graph.copy_from(p_graph, false);
-	// TODO Store a remapping to allow debugging with the expanded graph
 	GraphRemappingInfo remap_info;
+	ProgramGraph expanded_graph;
 	const VoxelGraphRuntime::CompilationResult expand_result =
-			expand_expression_nodes(expanded_graph, type_db, &remap_info);
+			expand_graph(p_graph, expanded_graph, type_db, &remap_info);
 	if (!expand_result.success) {
 		return expand_result;
 	}
-	// Expanding a graph may produce more nodes, not remove any
-	ERR_FAIL_COND_V(expanded_graph.get_nodes_count() < p_graph.get_nodes_count(),
-			CompilationResult::make_error("Internal error"));
 
 	const VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug, type_db);
 	if (!result.success) {
