@@ -116,6 +116,9 @@ You might notice that despite it being 3D, it still appears to produce a heightm
 
 ![Voxel graph 3D noise expanded](images/voxel_graph_noise3d_expanded.webp)
 
+!!! note
+    Some nodes have default connections. For example, with 3D noise, if you don't connect inputs, they will automatically assume (X,Y,Z) voxel position by default. If you need a specific constant in an input, this behavior can be opted out by turning off `autoconnect_default_inputs` in the inspector.
+
 #### Planet
 
 We are not actually forced to keep generating the world like a plane. We can go even crazier, and do planets. A good way to begin a planet is to make a sphere with the `SdfSphere` node:
