@@ -22,6 +22,9 @@ public:
 	void set_voxel_metadata(Vector3i pos, Variant meta) override;
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
+	void set_strength(float strength);
+	float get_strength() const;
+
 	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask,
 			uint64_t mask_value) override;
@@ -53,6 +56,7 @@ private:
 	static void _bind_methods();
 
 	VoxelTerrain *_terrain = nullptr;
+	float _strength = 1.f;
 };
 
 } // namespace zylann::voxel

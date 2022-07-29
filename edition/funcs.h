@@ -154,14 +154,16 @@ struct SdfOperation16bit {
 };
 
 struct SdfUnion {
+	real_t strength = 1.f;
 	inline real_t operator()(real_t a, real_t b) const {
-		return zylann::math::sdf_union(a, b);
+		return zylann::math::sdf_lerped_union(a, b, strength);
 	}
 };
 
 struct SdfSubtract {
+	real_t strength = 1.f;
 	inline real_t operator()(real_t a, real_t b) const {
-		return zylann::math::sdf_subtract(a, b);
+		return zylann::math::sdf_lerped_subtract(a, b, strength);
 	}
 };
 
@@ -326,6 +328,7 @@ struct DoSphere {
 	TextureParams texture_params;
 	VoxelBufferInternal::ChannelId channel;
 	uint32_t blocky_value;
+	real_t strength;
 
 	void operator()() {
 		ZN_PROFILE_SCOPE();
@@ -336,12 +339,14 @@ struct DoSphere {
 					// TODO Support other depths, format should be accessible from the volume
 					SdfOperation16bit<SdfUnion, SdfSphere> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_REMOVE: {
 					SdfOperation16bit<SdfSubtract, SdfSphere> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 

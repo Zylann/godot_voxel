@@ -170,6 +170,7 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
+	op.strength = _strength;
 	op.channel = get_channel();
 
 	if (!is_area_editable(op.box)) {
@@ -233,6 +234,14 @@ void VoxelToolTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->get_storage().set_voxel_f(v, pos, _channel);
+}
+
+void VoxelToolTerrain::set_strength(float strength) {
+	_strength = math::clamp(strength, 0.001f, 1.f);
+}
+
+float VoxelToolTerrain::get_strength() const {
+	return _strength;
 }
 
 void VoxelToolTerrain::_post_edit(const Box3i &box) {
@@ -467,6 +476,11 @@ void VoxelToolTerrain::_bind_methods() {
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
 			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
+
+	ClassDB::bind_method(D_METHOD("set_strength", "strength"), &VoxelToolTerrain::set_strength);
+	ClassDB::bind_method(D_METHOD("get_strength"), &VoxelToolTerrain::get_strength);
+
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "strength"), "set_strength", "get_strength");
 }
 
 } // namespace zylann::voxel
