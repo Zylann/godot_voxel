@@ -119,6 +119,7 @@ public:
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	void get_node_ids(std::vector<uint32_t> &node_ids) const;
 	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
 	// Finds first node having the given name and returns its ID. Returns NULL_ID if not found.

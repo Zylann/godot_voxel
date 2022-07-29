@@ -428,6 +428,14 @@ void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connec
 	}
 }
 
+void ProgramGraph::get_node_ids(std::vector<uint32_t> &node_ids) const {
+	ZN_ASSERT(node_ids.size() == 0);
+	node_ids.reserve(node_ids.size());
+	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+		node_ids.push_back(it->first);
+	}
+}
+
 uint32_t ProgramGraph::find_node_by_name(StringName name) const {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		const Node *node = it->second;

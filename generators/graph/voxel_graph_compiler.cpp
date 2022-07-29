@@ -296,8 +296,7 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &type_db) {
 	// Copy ids first because we might create new nodes
 	std::vector<uint32_t> node_ids;
-	node_ids.reserve(graph.get_nodes_count());
-	graph.for_each_node_id([&node_ids](uint32_t id) { node_ids.push_back(id); });
+	graph.get_node_ids(node_ids);
 
 	for (const uint32_t node_id : node_ids) {
 		const ProgramGraph::Node &node = graph.get_node(node_id);
