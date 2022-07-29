@@ -336,7 +336,7 @@ PackedInt32Array VoxelGeneratorGraph::get_node_ids() const {
 	return ids;
 }
 
-int VoxelGeneratorGraph::get_nodes_count() const {
+unsigned int VoxelGeneratorGraph::get_nodes_count() const {
 	return _graph.get_nodes_count();
 }
 

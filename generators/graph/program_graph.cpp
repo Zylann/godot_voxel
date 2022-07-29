@@ -474,7 +474,7 @@ uint32_t ProgramGraph::find_node_by_type(uint32_t type_id) const {
 //	}
 //}
 
-int ProgramGraph::get_nodes_count() const {
+unsigned int ProgramGraph::get_nodes_count() const {
 	return _nodes.size();
 }
 

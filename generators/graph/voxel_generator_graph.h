@@ -135,7 +135,7 @@ public:
 		return _graph.generate_node_id();
 	}
 
-	int get_nodes_count() const;
+	unsigned int get_nodes_count() const;
 
 	void load_plane_preset();
 

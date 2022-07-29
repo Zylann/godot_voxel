@@ -128,7 +128,7 @@ public:
 
 	uint32_t generate_node_id();
 
-	int get_nodes_count() const;
+	unsigned int get_nodes_count() const;
 
 	void debug_print_dot_file(String file_path) const;
 
