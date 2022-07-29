@@ -356,6 +356,28 @@ void test_voxel_graph_generator_default_graph_compilation() {
 			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 }
 
+void test_voxel_graph_invalid_connection() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+
+	const uint32_t n_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+	const uint32_t n_add1 = generator->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+	const uint32_t n_add2 = generator->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+	const uint32_t n_out = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+	generator->add_connection(n_x, 0, n_add1, 0);
+	generator->add_connection(n_add1, 0, n_add2, 0);
+	generator->add_connection(n_add2, 0, n_out, 0);
+
+	ZYLANN_TEST_ASSERT(generator->can_connect(n_add1, 0, n_add2, 1) == true);
+	ZYLANN_TEST_ASSERT_MSG(
+			generator->can_connect(n_add1, 0, n_add2, 0) == false, "Adding twice the same connection is not allowed");
+	ZYLANN_TEST_ASSERT_MSG(generator->can_connect(n_x, 0, n_add2, 0) == false,
+			"Adding a connection to a port already connected is not allowed");
+	ZYLANN_TEST_ASSERT_MSG(
+			generator->can_connect(n_add1, 0, n_add1, 1) == false, "Connecting a node to itself is not allowed");
+	ZYLANN_TEST_ASSERT_MSG(generator->can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
+}
+
 void test_voxel_graph_generator_expressions() {
 	{
 		Ref<VoxelGeneratorGraph> generator;
@@ -2234,6 +2256,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_data_map_copy);
 	VOXEL_TEST(test_encode_weights_packed_u16);
 	VOXEL_TEST(test_copy_3d_region_zxy);
+	VOXEL_TEST(test_voxel_graph_invalid_connection);
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);

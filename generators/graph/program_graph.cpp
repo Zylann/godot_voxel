@@ -127,6 +127,10 @@ bool ProgramGraph::is_connected(PortLocation src, PortLocation dst) const {
 }
 
 bool ProgramGraph::is_valid_connection(PortLocation src, PortLocation dst) const {
+	if (src.node_id == dst.node_id) {
+		// Can't connect to itself
+		return false;
+	}
 	if (has_path(dst.node_id, src.node_id)) {
 		// Would create a loop
 		return false;
@@ -139,7 +143,7 @@ bool ProgramGraph::can_connect(PortLocation src, PortLocation dst) const {
 		// Already exists
 		return false;
 	}
-	if (is_valid_connection(src, dst)) {
+	if (!is_valid_connection(src, dst)) {
 		return false;
 	}
 	const Node &dst_node = get_node(dst.node_id);
@@ -148,8 +152,9 @@ bool ProgramGraph::can_connect(PortLocation src, PortLocation dst) const {
 }
 
 void ProgramGraph::connect(PortLocation src, PortLocation dst) {
-	ZN_ASSERT_RETURN(!is_connected(src, dst));
-	ZN_ASSERT_RETURN(!has_path(dst.node_id, src.node_id));
+	ZN_ASSERT_RETURN_MSG(!is_connected(src, dst), "Cannot create the same connection twice.");
+	ZN_ASSERT_RETURN_MSG(src.node_id != dst.node_id, "Cannot connect a node to itself.");
+	ZN_ASSERT_RETURN_MSG(!has_path(dst.node_id, src.node_id), "Cannot add connection that would create a cycle.");
 	Node &src_node = get_node(src.node_id);
 	Node &dst_node = get_node(dst.node_id);
 	ZN_ASSERT_RETURN_MSG(
@@ -271,6 +276,7 @@ void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std
 	while (nodes_to_process.size() > 0) {
 		const Node &node = get_node(nodes_to_process.back());
 		const uint32_t nodes_to_process_begin = nodes_to_process.size();
+		ZN_ASSERT_MSG(nodes_to_process.size() <= get_nodes_count(), "Invalid graph?");
 
 		// Find ancestors
 		for (uint32_t ii = 0; ii < node.inputs.size(); ++ii) {
