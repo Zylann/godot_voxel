@@ -109,6 +109,7 @@ public:
 
 	int get_block_count() const;
 
+	// op(Vector3i bpos, VoxelDataBlock &block)
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
 		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
@@ -116,6 +117,7 @@ public:
 		}
 	}
 
+	// op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
 		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {

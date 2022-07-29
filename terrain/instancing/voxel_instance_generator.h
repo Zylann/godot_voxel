@@ -112,7 +112,11 @@ public:
 	float get_noise_on_scale() const;
 
 	static inline int get_octant_index(const Vector3 pos, float half_block_size) {
-		return (pos.x > half_block_size) | ((pos.y > half_block_size) << 1) | ((pos.z > half_block_size) << 2);
+		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
+	}
+
+	static inline int get_octant_index(bool x, bool y, bool z) {
+		return int(x) | (int(y) << 1) | (int(z) << 2);
 	}
 
 private:

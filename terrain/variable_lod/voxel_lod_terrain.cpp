@@ -2339,7 +2339,9 @@ void VoxelLodTerrain::debug_set_draw_enabled(bool enabled) {
 #ifdef TOOLS_ENABLED
 	_debug_draw_enabled = enabled;
 	if (_debug_draw_enabled) {
-		_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		if (is_inside_tree()) {
+			_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		}
 	} else {
 		_debug_renderer.clear();
 		_debug_mesh_update_items.clear();
@@ -2358,6 +2360,7 @@ bool VoxelLodTerrain::debug_is_draw_enabled() const {
 
 void VoxelLodTerrain::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled) {
 #ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX(flag_index, DEBUG_DRAW_FLAGS_COUNT);
 	if (enabled) {
 		_debug_draw_flags |= (1 << flag_index);
 	} else {
@@ -2368,6 +2371,7 @@ void VoxelLodTerrain::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled
 
 bool VoxelLodTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX_V(flag_index, DEBUG_DRAW_FLAGS_COUNT, false);
 	return (_debug_draw_flags & (1 << flag_index)) != 0;
 #else
 	return false;
@@ -2455,10 +2459,12 @@ void VoxelLodTerrain::update_gizmos() {
 		RWLockRead rlock(data_lod.map_lock);
 		data_lod.map.for_each_block(
 				[&dr, parent_transform, data_block_size, basis](const Vector3i &bpos, const VoxelDataBlock &block) {
-					const Transform3D local_transform(basis, bpos * data_block_size);
-					const Transform3D t = parent_transform * local_transform;
-					const Color8 c = Color8(block.is_modified() ? 255 : 0, 255, 0, 255);
-					dr.draw_box_mm(t, c);
+					if (block.is_edited()) {
+						const Transform3D local_transform(basis, bpos * data_block_size);
+						const Transform3D t = parent_transform * local_transform;
+						const Color8 c = block.is_modified() ? Color8(255, 255, 0, 255) : Color8(0, 255, 0, 255);
+						dr.draw_box_mm(t, c);
+					}
 				});
 	}
 

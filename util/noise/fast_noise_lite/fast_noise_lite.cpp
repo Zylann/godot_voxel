@@ -306,7 +306,8 @@ void ZN_FastNoiseLite::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), "set_fractal_gain",
+			"get_fractal_gain");
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"), "set_fractal_ping_pong_strength",
 			"get_fractal_ping_pong_strength");

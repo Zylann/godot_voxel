@@ -2,7 +2,7 @@
 #include "../constants/voxel_constants.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
-#include <core/variant/variant.h>
+#include "../util/string_funcs.h"
 
 namespace zylann::voxel {
 
@@ -62,7 +62,7 @@ bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uin
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
 	zylann::MemoryWriter w(dst, zylann::ENDIANESS_LITTLE_ENDIAN);
 
-	ERR_FAIL_COND_V(src.position_range < 0.f, false);
+	ZN_ASSERT_RETURN_V(src.position_range >= 0.f, false);
 	const float position_range = math::max(src.position_range, InstanceBlockData::POSITION_RANGE_MINIMUM);
 
 	w.store_8(INSTANCE_BLOCK_FORMAT_VERSION_1);
@@ -76,7 +76,7 @@ bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uin
 	for (size_t i = 0; i < src.layers.size(); ++i) {
 		const InstanceBlockData::LayerData &layer = src.layers[i];
 
-		ERR_FAIL_COND_V(layer.scale_max < layer.scale_min, false);
+		ZN_ASSERT_RETURN_V(layer.scale_max >= layer.scale_min, false);
 
 		float scale_min = layer.scale_min;
 		float scale_max = layer.scale_max;
@@ -127,7 +127,7 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 	if (version == INSTANCE_BLOCK_FORMAT_VERSION_0) {
 		r.endianess = zylann::ENDIANESS_BIG_ENDIAN;
 	} else {
-		ERR_FAIL_COND_V(version != expected_version, false);
+		ZN_ASSERT_RETURN_V(version == expected_version, false);
 	}
 
 	const uint8_t layers_count = r.get_8();
@@ -145,11 +145,11 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 
 		layer.scale_min = r.get_float();
 		layer.scale_max = r.get_float();
-		ERR_FAIL_COND_V(layer.scale_max < layer.scale_min, false);
+		ZN_ASSERT_RETURN_V(layer.scale_max >= layer.scale_min, false);
 		const float scale_range = layer.scale_max - layer.scale_min;
 
 		const uint8_t instance_format = r.get_8();
-		ERR_FAIL_COND_V(instance_format != expected_instance_format, false);
+		ZN_ASSERT_RETURN_V(instance_format == expected_instance_format, false);
 
 		for (size_t j = 0; j < layer.instances.size(); ++j) {
 			const float x = (static_cast<float>(r.get_16()) / 0xffff) * dst.position_range;
@@ -171,8 +171,8 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 	}
 
 	const uint32_t control_end = r.get_32();
-	ERR_FAIL_COND_V_MSG(control_end != TRAILING_MAGIC, false,
-			String("Expected {0}, found {1}").format(varray(TRAILING_MAGIC, control_end)));
+	ZN_ASSERT_RETURN_V_MSG(
+			control_end == TRAILING_MAGIC, false, format("Expected {}, found {}", TRAILING_MAGIC, control_end));
 
 	return true;
 }
