@@ -656,6 +656,72 @@ void test_voxel_graph_generator_texturing() {
 	}
 }
 
+void test_voxel_graph_equivalence_merging() {
+	{
+		// Basic graph with two equivalent branches
+
+		//        1
+		//         \
+		//    X --- +                         1
+		//           \             =>          \
+		//        1   + --- Out           X --- + === + --- Out
+		//         \ /
+		//    X --- +
+
+		Ref<VoxelGeneratorGraph> graph;
+		graph.instantiate();
+		const uint32_t n_x1 = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+		const uint32_t n_add1 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_x2 = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+		const uint32_t n_add2 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_add3 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_out = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+		graph->set_node_default_input(n_add1, 0, 1.0);
+		graph->set_node_default_input(n_add2, 0, 1.0);
+		graph->add_connection(n_x1, 0, n_add1, 1);
+		graph->add_connection(n_add1, 0, n_add3, 0);
+		graph->add_connection(n_x2, 0, n_add2, 1);
+		graph->add_connection(n_add2, 0, n_add3, 1);
+		graph->add_connection(n_add3, 0, n_out, 0);
+		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
+		ZYLANN_TEST_ASSERT(result.success);
+		ZYLANN_TEST_ASSERT(result.expanded_nodes_count == 4);
+		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
+		ZYLANN_TEST_ASSERT(value.f == 22);
+	}
+	{
+		// Same as previous but the X input node is shared
+
+		//          1
+		//           \
+		//    X ----- +
+		//     \       \
+		//      \   1   + --- Out
+		//       \   \ /
+		//        --- +
+
+		Ref<VoxelGeneratorGraph> graph;
+		graph.instantiate();
+		const uint32_t n_x = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+		const uint32_t n_add1 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_add2 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_add3 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+		const uint32_t n_out = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+		graph->set_node_default_input(n_add1, 0, 1.0);
+		graph->set_node_default_input(n_add2, 0, 1.0);
+		graph->add_connection(n_x, 0, n_add1, 1);
+		graph->add_connection(n_add1, 0, n_add3, 0);
+		graph->add_connection(n_x, 0, n_add2, 1);
+		graph->add_connection(n_add2, 0, n_add3, 1);
+		graph->add_connection(n_add3, 0, n_out, 0);
+		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
+		ZYLANN_TEST_ASSERT(result.success);
+		ZYLANN_TEST_ASSERT(result.expanded_nodes_count == 4);
+		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
+		ZYLANN_TEST_ASSERT(value.f == 22);
+	}
+}
+
 void test_island_finder() {
 	const char *cdata = "X X X - X "
 						"X X X - - "
@@ -2260,6 +2326,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
+	VOXEL_TEST(test_voxel_graph_equivalence_merging);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

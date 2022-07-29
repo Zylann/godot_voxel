@@ -35,6 +35,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
     - `VoxelGeneratorGraph`: Added "live update" option, to automatically re-generate the terrain when the graph is modified
     - `VoxelGeneratorGraph`: Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
+    - `VoxelGeneratorGraph`: Added minor optimization to share branches of nodes doing the same calculations
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 

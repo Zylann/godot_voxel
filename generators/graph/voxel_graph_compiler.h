@@ -16,10 +16,14 @@ struct ExpandedNodeRemap {
 };
 
 struct GraphRemappingInfo {
-	std::vector<PortRemap> user_to_expanded_ports; // Used for debug output previews in the editor
-	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids; // Used for error reporting
+	// Used for debug output previews in the editor
+	std::vector<PortRemap> user_to_expanded_ports;
+	// Used for error reporting
+	std::vector<ExpandedNodeRemap> expanded_to_user_node_ids;
 };
 
+// Pre-processes the graph and applies some optimizations before doing the main compilation pass.
+// This can involve some nodes getting removed or replaced with new ones.
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info);
 
