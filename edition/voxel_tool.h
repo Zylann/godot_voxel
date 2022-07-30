@@ -54,6 +54,9 @@ public:
 	void set_texture_falloff(float falloff);
 	float get_texture_falloff() const;
 
+	void set_sdf_strength(float strength);
+	float get_sdf_strength() const;
+
 	// TODO Methods working on a whole area must use an implementation that minimizes locking!
 
 	// The following methods represent one edit each. Pick the correct one for the job.
@@ -114,6 +117,7 @@ protected:
 	uint64_t _eraser_value = 0; // air
 	VoxelBufferInternal::ChannelId _channel = VoxelBufferInternal::CHANNEL_TYPE;
 	float _sdf_scale = 1.f;
+	float _sdf_strength = 1.f;
 	Mode _mode = MODE_ADD;
 
 	// Used on smooth terrain
