@@ -339,9 +339,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
 				// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
-				Ref<ImageTexture> texture;
-				texture.instantiate();
-				texture->create_from_image(atlas);
+				Ref<ImageTexture> texture = ImageTexture::create_from_image(atlas);
 				material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 				material->set_texture_filter(StandardMaterial3D::TEXTURE_FILTER_NEAREST);
 			}

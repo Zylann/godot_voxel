@@ -75,9 +75,7 @@ void VoxelMeshSDFViewer::update_view() {
 	float sdf_max;
 	vb->get_buffer().get_range_f(sdf_min, sdf_max, VoxelBufferInternal::CHANNEL_SDF);
 	Ref<Image> image = vb->debug_print_sdf_y_slice((sdf_max - sdf_min) / 2.0, _slice_y);
-	Ref<ImageTexture> texture;
-	texture.instantiate();
-	texture->create_from_image(image);
+	Ref<ImageTexture> texture = ImageTexture::create_from_image(image);
 	_texture_rect->set_texture(texture);
 
 	// TODO Implement a raymarched view.
