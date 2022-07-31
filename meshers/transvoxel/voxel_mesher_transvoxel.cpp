@@ -5,6 +5,7 @@
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
 #include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
@@ -187,6 +188,52 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 	}
 };
 
+static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
+	ZN_PROFILE_SCOPE();
+
+	static const int s_dx[4] = { -1, 1, 0, 0 };
+	static const int s_dy[4] = { 0, 0, -1, 1 };
+
+	struct NewNormal {
+		unsigned int loc;
+		Vector3f normal;
+	};
+	static thread_local std::vector<NewNormal> tls_new_normals;
+	tls_new_normals.clear();
+
+	unsigned int loc = 0;
+	for (int y = 0; y < size.y; ++y) {
+		for (int x = 0; x < size.x; ++x) {
+			if (normals[loc] != Vector3f()) {
+				++loc;
+				continue;
+			}
+			Vector3f sum;
+			int count = 0;
+			for (unsigned int di = 0; di < 4; ++di) {
+				const int nx = x + s_dx[di];
+				const int ny = y + s_dy[di];
+				if (nx >= 0 && nx < size.x && ny >= 0 && ny < size.y) {
+					const Vector3f nn = normals[nx + ny * size.y];
+					if (nn != Vector3f()) {
+						sum += nn;
+						++count;
+					}
+				}
+			}
+			if (count > 0) {
+				sum /= float(count);
+				tls_new_normals.push_back(NewNormal{ loc, sum });
+			}
+			++loc;
+		}
+	}
+
+	for (const NewNormal nn : tls_new_normals) {
+		normals[nn.loc] = nn.normal;
+	}
+}
+
 struct NormalMapData {
 	std::vector<Vector3f> normals;
 	struct Tile {
@@ -203,11 +250,6 @@ struct NormalMapData {
 	}
 };
 
-// inline uint8_t get_direction_id(Vector3f v) {
-// 	const Vector3f::Axis longest_axis = math::get_longest_axis(v);
-// 	return 2 * longest_axis + (v[longest_axis] >= 0.f);
-// }
-
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
@@ -215,29 +257,10 @@ static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const
 		Vector3i origin_in_voxels, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
 
-	normal_map_data.normals.reserve(math::squared(tile_resolution) * cell_infos.size());
+	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_infos.size());
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
-
-	// Each normal needs 4 samples:
-	// (x,   y,   z  )
-	// (x+s, y,   z  )
-	// (x,   y+s, z  )
-	// (x,   y,   z+s)
-	// We can avoid sampling neighbors multiple times.
-	// So the SDF buffer will store each sample of the tile with 1 extra neighbor in each axis: (res+1)*(res+1)*2
-	// Then we'll derive normals from neighbor differences.
-	const unsigned int buffer_size = math::squared(tile_resolution + 1) * 2;
-
-	static thread_local std::vector<float> tls_sdf_buffer;
-	static thread_local std::vector<float> tls_x_buffer;
-	static thread_local std::vector<float> tls_y_buffer;
-	static thread_local std::vector<float> tls_z_buffer;
-	tls_sdf_buffer.resize(buffer_size);
-	tls_x_buffer.resize(buffer_size);
-	tls_y_buffer.resize(buffer_size);
-	tls_z_buffer.resize(buffer_size);
 
 	normal_map_data.tiles.reserve(cell_infos.size());
 
@@ -246,6 +269,8 @@ static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const
 	for (unsigned int cell_index = 0; cell_index < cell_infos.size(); ++cell_index) {
 		const transvoxel::CellInfo cell_info = cell_infos[cell_index];
 		Vector3f normal_sum;
+		const unsigned int ii0 = ii;
+
 		for (unsigned int triangle_index = 0; triangle_index < cell_info.triangle_count; ++triangle_index) {
 			const unsigned vi0 = mesh.indices[ii];
 			const unsigned vi1 = mesh.indices[ii + 1];
@@ -275,7 +300,7 @@ static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const
 
 		normal_map_data.tiles.push_back(tile);
 
-		const Vector3f origin = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
+		const Vector3f cell_origin_world = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
 
 		unsigned int ax;
 		unsigned int ay;
@@ -301,68 +326,148 @@ static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const
 				ZN_CRASH();
 		}
 
-		Vector3f offset_origin = origin;
-		offset_origin[az] += cell_size * 0.5f;
+		Vector3f quad_origin_world = cell_origin_world;
+		quad_origin_world[az] += cell_size * 0.5f;
 
-		unsigned int bi = 0;
-		for (unsigned int zi = 0; zi < 2; ++zi) {
-			for (unsigned int yi = 0; yi < tile_resolution + 1; ++yi) {
-				for (unsigned int xi = 0; xi < tile_resolution + 1; ++xi) {
-					// TODO Add bias to center differences when calculating the normals?
-					// TODO Should we project to cell triangles instead of using a plane to get a more accurate result?
-					Vector3f pos = offset_origin;
-					// Casting to `int` here because even if the target is float, temporaries can be negative uints
-					pos[ax] += int(xi) * step;
-					pos[ay] += int(yi) * step;
-					pos[az] += int(zi) * step;
-					tls_x_buffer[bi] = pos.x;
-					tls_y_buffer[bi] = pos.y;
-					tls_z_buffer[bi] = pos.z;
-					++bi;
+		Vector3f direction;
+		direction[az] = 1.f;
+
+		static thread_local std::vector<Vector2i> tls_tile_sample_positions;
+		tls_tile_sample_positions.clear();
+		tls_tile_sample_positions.reserve(math::squared(tile_resolution));
+
+		// Each normal needs 4 samples:
+		// (x,   y,   z  )
+		// (x+s, y,   z  )
+		// (x,   y+s, z  )
+		// (x,   y,   z+s)
+		const unsigned int max_buffer_size = math::squared(tile_resolution) * 4;
+
+		static thread_local std::vector<float> tls_sdf_buffer;
+		static thread_local std::vector<float> tls_x_buffer;
+		static thread_local std::vector<float> tls_y_buffer;
+		static thread_local std::vector<float> tls_z_buffer;
+		tls_sdf_buffer.clear();
+		tls_x_buffer.clear();
+		tls_y_buffer.clear();
+		tls_z_buffer.clear();
+		tls_sdf_buffer.reserve(max_buffer_size);
+		tls_x_buffer.reserve(max_buffer_size);
+		tls_y_buffer.reserve(max_buffer_size);
+		tls_z_buffer.reserve(max_buffer_size);
+
+		// Fill query buffers
+		for (unsigned int yi = 0; yi < tile_resolution; ++yi) {
+			for (unsigned int xi = 0; xi < tile_resolution; ++xi) {
+				// TODO Add bias to center differences when calculating the normals?
+				Vector3f pos000 = quad_origin_world;
+				// Casting to `int` here because even if the target is float, temporaries can be negative uints
+				pos000[ax] += int(xi) * step;
+				pos000[ay] += int(yi) * step;
+
+				// Project to triangles
+				const Vector3f ray_origin_world = pos000 - direction * cell_size;
+				const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
+				unsigned int ii2 = ii0;
+				const float NO_HIT = 999999.f;
+				float nearest_hit_distance = NO_HIT;
+				for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
+#ifdef DEBUG_ENABLED
+					ZN_ASSERT(ii2 + 2 < mesh.indices.size());
+#endif
+					const unsigned vi0 = mesh.indices[ii2];
+					const unsigned vi1 = mesh.indices[ii2 + 1];
+					const unsigned vi2 = mesh.indices[ii2 + 2];
+					ii2 += 3;
+					Vector3f a = mesh.vertices[vi0];
+					Vector3f b = mesh.vertices[vi1];
+					Vector3f c = mesh.vertices[vi2];
+					// const Vector3f m = (a + b + c) * 0.3333f;
+					// a += 0.001f * (a - m);
+					// b += 0.001f * (b - m);
+					// c += 0.001f * (c - m);
+					const math::TriangleIntersectionResult result =
+							math::ray_intersects_triangle(ray_origin_mesh, direction, a, b, c);
+					if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
+							result.distance < nearest_hit_distance) {
+						nearest_hit_distance = result.distance;
+					}
 				}
+				if (nearest_hit_distance != NO_HIT) {
+					pos000 = ray_origin_world + direction * nearest_hit_distance;
+					tls_tile_sample_positions.push_back(Vector2i(xi, yi));
+				} else {
+					// Don't query if there is no triangle
+					continue;
+				}
+
+				// TODO I wish this was solved https://github.com/godotengine/godot/issues/31608
+				tls_x_buffer.push_back(pos000.x);
+				tls_y_buffer.push_back(pos000.y);
+				tls_z_buffer.push_back(pos000.z);
+
+				Vector3f pos100 = pos000;
+				pos100.x += step;
+				tls_x_buffer.push_back(pos100.x);
+				tls_y_buffer.push_back(pos100.y);
+				tls_z_buffer.push_back(pos100.z);
+
+				Vector3f pos010 = pos000;
+				pos010.y += step;
+				tls_x_buffer.push_back(pos010.x);
+				tls_y_buffer.push_back(pos010.y);
+				tls_z_buffer.push_back(pos010.z);
+
+				Vector3f pos001 = pos000;
+				pos001.z += step;
+				tls_x_buffer.push_back(pos001.x);
+				tls_y_buffer.push_back(pos001.y);
+				tls_z_buffer.push_back(pos001.z);
 			}
 		}
+
+		tls_sdf_buffer.resize(tls_x_buffer.size());
 
 		// TODO Support edited voxels
 		// TODO Support modifiers
-		// TODO `generate_block` could also work if `origin_in_voxels` was `Vector3` instead of `Vector3i`
 		generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-				VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), origin,
-				origin + float(tile_resolution + 1) * Vector3f(step, step, step));
+				VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), cell_origin_world,
+				cell_origin_world + Vector3f(cell_size));
 
-		for (unsigned int yi = 0; yi < tile_resolution; ++yi) {
-			for (unsigned int xi = 0; xi < tile_resolution; ++xi) {
-				const unsigned int bi000 = xi + yi * (tile_resolution + 1);
-				const unsigned int bi100 = bi000 + 1;
-				const unsigned int bi010 = bi000 + tile_resolution + 1;
-				const unsigned int bi001 = bi000 + math::squared(tile_resolution + 1);
+		// Compute normals from SDF results
+		unsigned int bi = 0;
+		unsigned int tile_begin = cell_index * math::squared(tile_resolution);
+		for (const Vector2i sample_position : tls_tile_sample_positions) {
+			const unsigned int bi000 = bi;
+			const unsigned int bi100 = bi + 1;
+			const unsigned int bi010 = bi + 2;
+			const unsigned int bi001 = bi + 3;
+			bi += 4;
 #ifdef DEBUG_ENABLED
-				ZN_ASSERT(bi000 < tls_sdf_buffer.size());
-				ZN_ASSERT(bi100 < tls_sdf_buffer.size());
-				ZN_ASSERT(bi010 < tls_sdf_buffer.size());
-				ZN_ASSERT(bi001 < tls_sdf_buffer.size());
+			ZN_ASSERT(bi000 < tls_sdf_buffer.size());
+			ZN_ASSERT(bi100 < tls_sdf_buffer.size());
+			ZN_ASSERT(bi010 < tls_sdf_buffer.size());
+			ZN_ASSERT(bi001 < tls_sdf_buffer.size());
 #endif
-				const float sd000 = tls_sdf_buffer[bi000];
-				const float sd100 = tls_sdf_buffer[bi100];
-				const float sd010 = tls_sdf_buffer[bi010];
-				const float sd001 = tls_sdf_buffer[bi001];
-				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
-				Vector3f cnormal;
-				cnormal.x = normal[ax];
-				cnormal.y = normal[ay];
-				cnormal.z = normal[az];
-				normal_map_data.normals.push_back(cnormal);
-			}
+			const float sd000 = tls_sdf_buffer[bi000];
+			const float sd100 = tls_sdf_buffer[bi100];
+			const float sd010 = tls_sdf_buffer[bi010];
+			const float sd001 = tls_sdf_buffer[bi001];
+			const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+			const unsigned int normal_index = tile_begin + sample_position.x + sample_position.y * tile_resolution;
+#ifdef DEBUG_ENABLED
+			ZN_ASSERT(normal_index < normal_map_data.normals.size());
+#endif
+			normal_map_data.normals[normal_index] = normal;
+		}
+
+		for (unsigned int dilation_steps = 0; dilation_steps < 2; ++dilation_steps) {
+			// Fill up some pixels around triangle borders, to give some margin when sampling near them in shader
+			dilate_normalmap(
+					to_span_from_position_and_size(normal_map_data.normals, tile_begin, math::squared(tile_resolution)),
+					Vector2i(tile_resolution, tile_resolution));
 		}
 	}
-
-	// FixedArray<unsigned int, Vector3f::AXIS_COUNT> axis_count;
-	// fill(axis_count, 0u);
-	// for (unsigned int i = 0; i < normal_map_data.tiles.size(); ++i) {
-	// 	const NormalMapData::Tile tile = normal_map_data.tiles[i];
-	// 	++axis_count[tile.axis];
-	// }
-	// println("Test");
 }
 
 struct NormalMapTextures {
@@ -508,6 +613,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		const Vector3i block_size =
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
 		// TODO This may be deferred to main thread when using GLES3
+		// TODO Link tile resolution to LOD level, with a cap
 		NormalMapTextures textures =
 				store_normalmap_data_to_textures(tls_normalmap_data, _normalmap_tile_resolution, block_size);
 		output.normalmap_atlas = textures.atlas;

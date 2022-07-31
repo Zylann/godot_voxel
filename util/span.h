@@ -2,8 +2,8 @@
 #define ZN_SPAN_H
 
 #include "fixed_array.h"
-#include <vector>
 #include <cstddef>
+#include <vector>
 
 namespace zylann {
 
@@ -128,9 +128,15 @@ Span<const T> to_span(const std::vector<T> &vec) {
 }
 
 template <typename T>
-Span<const T> const_span_from_position_and_size(const std::vector<T> &vec, unsigned int pos, unsigned int size) {
+Span<T> to_span_from_position_and_size(std::vector<T> &vec, unsigned int pos, unsigned int size) {
 	ZN_ASSERT(pos + size <= vec.size());
-	return Span<const T>(vec.data(), pos, pos + vec.size());
+	return Span<T>(vec.data(), pos, pos + size);
+}
+
+template <typename T>
+Span<const T> to_span_from_position_and_size(const std::vector<T> &vec, unsigned int pos, unsigned int size) {
+	ZN_ASSERT(pos + size <= vec.size());
+	return Span<const T>(vec.data(), pos, pos + size);
 }
 
 // TODO Deprecate, now Span has a conversion constructor that can allow doing that

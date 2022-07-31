@@ -1,5 +1,6 @@
 #include "voxel_blocky_library.h"
 #include "../../util/log.h"
+#include "../../util/math/triangle.h"
 #include "../../util/string_funcs.h"
 
 #include <core/math/geometry_2d.h>

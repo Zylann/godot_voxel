@@ -2,6 +2,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/math/box3i.h"
 #include "../util/math/conv.h"
+#include "../util/math/triangle.h"
 #include "../util/math/vector3d.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h" // Debug
@@ -29,106 +30,14 @@ namespace zylann::voxel::mesh_sdf {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct TriangleIntersectionResult {
-	enum Case { //
-		INTERSECTION,
-		PARALLEL,
-		NO_INTERSECTION
-	};
-
-	Case case_id;
-	double distance;
-};
-
-// Initially from Godot Engine, tweaked to suits needs
-inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from, const Vector3f &p_dir,
-		const Vector3f &p_v0, const Vector3f &p_v1, const Vector3f &p_v2) {
-	const Vector3f e1 = p_v1 - p_v0;
-	const Vector3f e2 = p_v2 - p_v0;
-	const Vector3f h = math::cross(p_dir, e2);
-	const float a = math::dot(e1, h);
-
-	if (Math::abs(a) < 0.00001f) {
-		return { TriangleIntersectionResult::PARALLEL, -1 };
-	}
-
-	const float f = 1.0f / a;
-
-	const Vector3f s = p_from - p_v0;
-	const float u = f * math::dot(s, h);
-
-	if ((u < 0.0f) || (u > 1.0f)) {
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-
-	const Vector3f q = math::cross(s, e1);
-
-	const float v = f * math::dot(p_dir, q);
-
-	if ((v < 0.0f) || (u + v > 1.0f)) {
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-
-	// At this stage we can compute t to find out where
-	// the intersection point is on the line.
-	const float t = f * math::dot(e2, q);
-
-	if (t > 0.00001f) { // ray intersection
-		//r_res = p_from + p_dir * t;
-		return { TriangleIntersectionResult::INTERSECTION, t };
-
-	} else { // This means that there is a line intersection but not a ray intersection.
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-}
-
-inline TriangleIntersectionResult ray_intersects_triangle(const Vector3d &p_from, const Vector3d &p_dir,
-		const Vector3d &p_v0, const Vector3d &p_v1, const Vector3d &p_v2) {
-	const Vector3d e1 = p_v1 - p_v0;
-	const Vector3d e2 = p_v2 - p_v0;
-	const Vector3d h = math::cross(p_dir, e2);
-	const double a = math::dot(e1, h);
-
-	if (Math::abs(a) < 0.000000001) { // Parallel test.
-		return { TriangleIntersectionResult::PARALLEL, -1 };
-	}
-
-	const double f = 1.0 / a;
-
-	const Vector3d s = p_from - p_v0;
-	const double u = f * math::dot(s, h);
-
-	if ((u < 0.0) || (u > 1.0)) {
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-
-	const Vector3d q = math::cross(s, e1);
-	const double v = f * math::dot(p_dir, q);
-
-	if ((v < 0.0) || (u + v > 1.0)) {
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-
-	// At this stage we can compute t to find out where
-	// the intersection point is on the line.
-	const double t = f * math::dot(e2, q);
-
-	if (t > 0.000000001) { // ray intersection
-		//r_res = p_from + p_dir * t;
-		return { TriangleIntersectionResult::INTERSECTION, t };
-
-	} else { // This means that there is a line intersection but not a ray intersection.
-		return { TriangleIntersectionResult::NO_INTERSECTION, -1 };
-	}
-}
-
 // First tries with floats, as it is the most common case when data is float.
 // In case of occasional parallel results, retry with doubles, as it often clears it up.
-TriangleIntersectionResult ray_intersects_triangle2(const Vector3f &p_from, const Vector3f &p_dir, const Vector3f &p_v0,
-		const Vector3f &p_v1, const Vector3f &p_v2) {
-	TriangleIntersectionResult r = ray_intersects_triangle(p_from, p_dir, p_v0, p_v1, p_v2);
-	if (r.case_id == TriangleIntersectionResult::PARALLEL) {
-		r = ray_intersects_triangle(to_vec3d(p_from), to_vec3d(p_dir), to_vec3d(p_v0), to_vec3d(p_v1), to_vec3d(p_v2));
+math::TriangleIntersectionResult ray_intersects_triangle2(const Vector3f &p_from, const Vector3f &p_dir,
+		const Vector3f &p_v0, const Vector3f &p_v1, const Vector3f &p_v2) {
+	math::TriangleIntersectionResult r = math::ray_intersects_triangle(p_from, p_dir, p_v0, p_v1, p_v2);
+	if (r.case_id == math::TriangleIntersectionResult::PARALLEL) {
+		r = math::ray_intersects_triangle(
+				to_vec3d(p_from), to_vec3d(p_dir), to_vec3d(p_v0), to_vec3d(p_v1), to_vec3d(p_v2));
 	}
 	return r;
 }
@@ -161,8 +70,8 @@ const Triangle *raycast(Span<const Triangle *const> triangles, Vector3f ray_posi
 
 	for (unsigned int i = 0; i < triangles.size(); ++i) {
 		const Triangle &t = *triangles[i];
-		const TriangleIntersectionResult r = ray_intersects_triangle2(ray_position, ray_dir, t.v1, t.v2, t.v3);
-		if (r.case_id == TriangleIntersectionResult::INTERSECTION) {
+		const math::TriangleIntersectionResult r = ray_intersects_triangle2(ray_position, ray_dir, t.v1, t.v2, t.v3);
+		if (r.case_id == math::TriangleIntersectionResult::INTERSECTION) {
 			if (r.distance < min_d) {
 				min_d = r.distance;
 				selected_triangle = &t;
