@@ -660,7 +660,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			collision_shape->set_position(offset);
 
 			RigidDynamicBody3D *rigid_body = memnew(RigidDynamicBody3D);
-			rigid_body->set_transform(transform * local_transform.translated(-offset));
+			rigid_body->set_transform(transform * local_transform.translated_local(-offset));
 			rigid_body->add_child(collision_shape);
 			rigid_body->set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_KINEMATIC);
 			rigid_body->set_freeze_enabled(true);
