@@ -1642,7 +1642,7 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 	memdelete(root);
 	ERR_FAIL_COND(pack_result != OK);
 
-	const Error save_result = ResourceSaver::save(fpath, packed_scene, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = ResourceSaver::save(packed_scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	ERR_FAIL_COND(save_result != OK);
 }
 
