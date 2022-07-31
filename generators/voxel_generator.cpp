@@ -15,6 +15,9 @@ int VoxelGenerator::get_used_channels_mask() const {
 }
 
 VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int channel) {
+	VoxelSingleValue v;
+	v.i = 0;
+	ZN_ASSERT_RETURN_V(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS, v);
 	// Default slow implementation
 	// TODO Optimize: a small part of the slowness is caused by the allocator.
 	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
@@ -23,13 +26,18 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 	buffer.create(1, 1, 1);
 	VoxelQueryData q{ buffer, pos, 0 };
 	generate_block(q);
-	VoxelSingleValue v;
 	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
 		v.f = buffer.get_voxel_f(0, 0, 0, channel);
 	} else {
 		v.i = buffer.get_voxel(0, 0, 0, channel);
 	}
 	return v;
+}
+
+void VoxelGenerator::generate_series(Span<const float> positions_x, Span<const float> positions_y,
+		Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+		Vector3f max_pos) {
+	ZN_PRINT_ERROR("Not implemented");
 }
 
 void VoxelGenerator::_b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {

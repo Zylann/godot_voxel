@@ -4,6 +4,7 @@
 #include "../../storage/voxel_data_map.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
@@ -186,6 +187,267 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 	}
 };
 
+struct NormalMapData {
+	std::vector<Vector3f> normals;
+	struct Tile {
+		uint8_t x;
+		uint8_t y;
+		uint8_t z;
+		uint8_t axis;
+	};
+	std::vector<Tile> tiles;
+
+	inline void clear() {
+		normals.clear();
+		tiles.clear();
+	}
+};
+
+// inline uint8_t get_direction_id(Vector3f v) {
+// 	const Vector3f::Axis longest_axis = math::get_longest_axis(v);
+// 	return 2 * longest_axis + (v[longest_axis] >= 0.f);
+// }
+
+// For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
+// Sample voxels inside the cell to compute a tile of world space normals from the SDF.
+static void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
+		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
+		Vector3i origin_in_voxels, unsigned int lod_index) {
+	ZN_PROFILE_SCOPE();
+
+	normal_map_data.normals.reserve(math::squared(tile_resolution) * cell_infos.size());
+
+	const unsigned int cell_size = 1 << lod_index;
+	const float step = float(cell_size) / tile_resolution;
+
+	// Each normal needs 4 samples:
+	// (x,   y,   z  )
+	// (x+s, y,   z  )
+	// (x,   y+s, z  )
+	// (x,   y,   z+s)
+	// We can avoid sampling neighbors multiple times.
+	// So the SDF buffer will store each sample of the tile with 1 extra neighbor in each axis: (res+1)*(res+1)*2
+	// Then we'll derive normals from neighbor differences.
+	const unsigned int buffer_size = math::squared(tile_resolution + 1) * 2;
+
+	static thread_local std::vector<float> tls_sdf_buffer;
+	static thread_local std::vector<float> tls_x_buffer;
+	static thread_local std::vector<float> tls_y_buffer;
+	static thread_local std::vector<float> tls_z_buffer;
+	tls_sdf_buffer.resize(buffer_size);
+	tls_x_buffer.resize(buffer_size);
+	tls_y_buffer.resize(buffer_size);
+	tls_z_buffer.resize(buffer_size);
+
+	normal_map_data.tiles.reserve(cell_infos.size());
+
+	unsigned int ii = 0;
+
+	for (unsigned int cell_index = 0; cell_index < cell_infos.size(); ++cell_index) {
+		const transvoxel::CellInfo cell_info = cell_infos[cell_index];
+		Vector3f normal_sum;
+		for (unsigned int triangle_index = 0; triangle_index < cell_info.triangle_count; ++triangle_index) {
+			const unsigned vi0 = mesh.indices[ii];
+			const unsigned vi1 = mesh.indices[ii + 1];
+			const unsigned vi2 = mesh.indices[ii + 2];
+			ii += 3;
+			const Vector3f normal0 = mesh.normals[vi0];
+			const Vector3f normal1 = mesh.normals[vi1];
+			const Vector3f normal2 = mesh.normals[vi2];
+			normal_sum += normal0;
+			normal_sum += normal1;
+			normal_sum += normal2;
+		}
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(cell_info.position.x >= 0);
+		ZN_ASSERT(cell_info.position.y >= 0);
+		ZN_ASSERT(cell_info.position.z >= 0);
+		ZN_ASSERT_CONTINUE(cell_info.position.x < 256);
+		ZN_ASSERT_CONTINUE(cell_info.position.y < 256);
+		ZN_ASSERT_CONTINUE(cell_info.position.z < 256);
+#endif
+		const NormalMapData::Tile tile{ //
+			uint8_t(cell_info.position.x), //
+			uint8_t(cell_info.position.y), //
+			uint8_t(cell_info.position.z), //
+			uint8_t(math::get_longest_axis(normal_sum))
+		};
+
+		normal_map_data.tiles.push_back(tile);
+
+		const Vector3f origin = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
+
+		unsigned int ax;
+		unsigned int ay;
+		unsigned int az;
+		// TODO I don't know yet if the chosen orientations will match triplanar conventions used in Godot
+		switch (tile.axis) {
+			case Vector3f::AXIS_X:
+				ax = Vector3f::AXIS_Z;
+				ay = Vector3f::AXIS_Y;
+				az = Vector3f::AXIS_X;
+				break;
+			case Vector3f::AXIS_Y:
+				ax = Vector3f::AXIS_X;
+				ay = Vector3f::AXIS_Z;
+				az = Vector3f::AXIS_Y;
+				break;
+			case Vector3f::AXIS_Z:
+				ax = Vector3f::AXIS_X;
+				ay = Vector3f::AXIS_Y;
+				az = Vector3f::AXIS_Z;
+				break;
+			default:
+				ZN_CRASH();
+		}
+
+		Vector3f offset_origin = origin;
+		offset_origin[az] += cell_size * 0.5f;
+
+		unsigned int bi = 0;
+		for (unsigned int zi = 0; zi < 2; ++zi) {
+			for (unsigned int yi = 0; yi < tile_resolution + 1; ++yi) {
+				for (unsigned int xi = 0; xi < tile_resolution + 1; ++xi) {
+					// TODO Add bias to center differences when calculating the normals?
+					// TODO Should we project to cell triangles instead of using a plane to get a more accurate result?
+					Vector3f pos = offset_origin;
+					// Casting to `int` here because even if the target is float, temporaries can be negative uints
+					pos[ax] += int(xi) * step;
+					pos[ay] += int(yi) * step;
+					pos[az] += int(zi) * step;
+					tls_x_buffer[bi] = pos.x;
+					tls_y_buffer[bi] = pos.y;
+					tls_z_buffer[bi] = pos.z;
+					++bi;
+				}
+			}
+		}
+
+		// TODO Support edited voxels
+		// TODO Support modifiers
+		// TODO `generate_block` could also work if `origin_in_voxels` was `Vector3` instead of `Vector3i`
+		generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
+				VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), origin,
+				origin + float(tile_resolution + 1) * Vector3f(step, step, step));
+
+		for (unsigned int yi = 0; yi < tile_resolution; ++yi) {
+			for (unsigned int xi = 0; xi < tile_resolution; ++xi) {
+				const unsigned int bi000 = xi + yi * (tile_resolution + 1);
+				const unsigned int bi100 = bi000 + 1;
+				const unsigned int bi010 = bi000 + tile_resolution + 1;
+				const unsigned int bi001 = bi000 + math::squared(tile_resolution + 1);
+#ifdef DEBUG_ENABLED
+				ZN_ASSERT(bi000 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi100 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi010 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi001 < tls_sdf_buffer.size());
+#endif
+				const float sd000 = tls_sdf_buffer[bi000];
+				const float sd100 = tls_sdf_buffer[bi100];
+				const float sd010 = tls_sdf_buffer[bi010];
+				const float sd001 = tls_sdf_buffer[bi001];
+				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+				Vector3f cnormal;
+				cnormal.x = normal[ax];
+				cnormal.y = normal[ay];
+				cnormal.z = normal[az];
+				normal_map_data.normals.push_back(cnormal);
+			}
+		}
+	}
+
+	// FixedArray<unsigned int, Vector3f::AXIS_COUNT> axis_count;
+	// fill(axis_count, 0u);
+	// for (unsigned int i = 0; i < normal_map_data.tiles.size(); ++i) {
+	// 	const NormalMapData::Tile tile = normal_map_data.tiles[i];
+	// 	++axis_count[tile.axis];
+	// }
+	// println("Test");
+}
+
+struct NormalMapTextures {
+	Ref<Texture2DArray> atlas;
+	Ref<Texture2D> lookup;
+};
+
+// Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
+static NormalMapTextures store_normalmap_data_to_textures(
+		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size) {
+	ZN_PROFILE_SCOPE();
+
+	NormalMapTextures textures;
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Atlas images");
+		Vector<Ref<Image>> images;
+		images.resize(data.tiles.size());
+
+		{
+			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+				Ref<Image> image;
+				image.instantiate();
+				// TODO Optimize: use octahedral encoding to use one less byte
+				image->create(tile_resolution, tile_resolution, false, Image::FORMAT_RGB8);
+
+				unsigned int normal_index = math::squared(tile_resolution) * tile_index;
+
+				for (unsigned int y = 0; y < tile_resolution; ++y) {
+					for (unsigned int x = 0; x < tile_resolution; ++x) {
+						ZN_ASSERT(normal_index < data.normals.size());
+						const Vector3f normal = data.normals[normal_index];
+						// TODO Optimize: create image from bytes directly, set_pixel is slower
+						image->set_pixel(
+								x, y, Color(0.5f + 0.5f * normal.x, 0.5f + 0.5f * normal.y, 0.5f + 0.5f * normal.z));
+						++normal_index;
+					}
+				}
+
+				images.write[tile_index] = image;
+				//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
+			}
+		}
+
+		{
+			ZN_PROFILE_SCOPE_NAMED("Atlas texture");
+			Ref<Texture2DArray> atlas;
+			atlas.instantiate();
+			const Error err = atlas->create_from_images(images);
+			ZN_ASSERT_RETURN_V(err == OK, textures);
+			textures.atlas = atlas;
+		}
+	}
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
+
+		Ref<Image> image;
+		image.instantiate();
+		const unsigned int sqri = Math::ceil(Math::sqrt(double(Vector3iUtil::get_volume(block_size))));
+		// RG: layer index
+		// B: projection direction
+		image->create(sqri, sqri, false, Image::FORMAT_RGB8);
+
+		const unsigned int deck_size = block_size.x * block_size.y;
+
+		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+			const NormalMapData::Tile tile = data.tiles[tile_index];
+			const unsigned int pi = tile.x + tile.y * block_size.x + tile.z * deck_size;
+			const unsigned int px = pi % sqri;
+			const unsigned int py = pi / sqri;
+			const float r = (tile_index & 0xff) / 255.f;
+			const float g = (tile_index >> 8) / 255.f;
+			const float b = tile.axis / 255.f;
+			// TODO Optimize: create image from bytes directly, set_pixel is slower and uneasy with floats
+			image->set_pixel(px, py, Color(r, g, b));
+		}
+
+		Ref<ImageTexture> lookup = ImageTexture::create_from_image(image);
+		textures.lookup = lookup;
+	}
+
+	return textures;
+}
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 
@@ -211,6 +473,12 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
+	static thread_local std::vector<transvoxel::CellInfo> tls_cell_infos;
+	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
+	if (_normalmap_enabled && input.generator != nullptr) {
+		tls_cell_infos.clear();
+		cell_infos = &tls_cell_infos;
+	}
 
 	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod > 0) {
 		const DeepSampler ds(*input.generator, *input.data, sdf_channel, input.origin_in_voxels);
@@ -219,15 +487,31 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// `generate_single` in between, knowing they will all be done within the specified area.
 
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, &ds);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, &ds, cell_infos);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, nullptr);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, nullptr, cell_infos);
 	}
 
 	if (tls_mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
 		return;
+	}
+
+	if (cell_infos != nullptr) {
+		ZN_PROFILE_SCOPE_NAMED("Normalmap");
+		static thread_local NormalMapData tls_normalmap_data;
+		tls_normalmap_data.clear();
+		ZN_ASSERT(input.generator != nullptr);
+		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, _normalmap_tile_resolution,
+				*input.generator, input.origin_in_voxels, input.lod);
+		const Vector3i block_size =
+				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
+		// TODO This may be deferred to main thread when using GLES3
+		NormalMapTextures textures =
+				store_normalmap_data_to_textures(tls_normalmap_data, _normalmap_tile_resolution, block_size);
+		output.normalmap_atlas = textures.atlas;
+		output.normalmap_lookup = textures.lookup;
 	}
 
 	transvoxel::MeshArrays *combined_mesh_arrays = &tls_mesh_arrays;
@@ -361,6 +645,22 @@ Ref<ShaderMaterial> VoxelMesherTransvoxel::get_default_lod_material() const {
 	return g_minimal_shader_material;
 }
 
+void VoxelMesherTransvoxel::set_normalmap_enabled(bool enable) {
+	_normalmap_enabled = enable;
+}
+
+bool VoxelMesherTransvoxel::is_normalmap_enabled() const {
+	return _normalmap_enabled;
+}
+
+void VoxelMesherTransvoxel::set_normalmap_tile_resolution(unsigned int resolution) {
+	_normalmap_tile_resolution = math::clamp(resolution, 1u, 128u);
+}
+
+unsigned int VoxelMesherTransvoxel::get_normalmap_tile_resolution() const {
+	return _normalmap_tile_resolution;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
 			&VoxelMesherTransvoxel::build_transition_mesh);
@@ -391,6 +691,14 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			D_METHOD("set_transitions_enabled", "enabled"), &VoxelMesherTransvoxel::set_transitions_enabled);
 	ClassDB::bind_method(D_METHOD("get_transitions_enabled"), &VoxelMesherTransvoxel::get_transitions_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &VoxelMesherTransvoxel::set_normalmap_enabled);
+	ClassDB::bind_method(D_METHOD("is_normalmap_enabled"), &VoxelMesherTransvoxel::is_normalmap_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution", "resolution"),
+			&VoxelMesherTransvoxel::set_normalmap_tile_resolution);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution"), &VoxelMesherTransvoxel::get_normalmap_tile_resolution);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
@@ -409,6 +717,10 @@ void VoxelMesherTransvoxel::_bind_methods() {
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution"), "set_normalmap_tile_resolution",
+			"get_normalmap_tile_resolution");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL

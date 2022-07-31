@@ -50,6 +50,12 @@ public:
 	void set_transitions_enabled(bool enable);
 	bool get_transitions_enabled() const;
 
+	void set_normalmap_enabled(bool enable);
+	bool is_normalmap_enabled() const;
+
+	void set_normalmap_tile_resolution(unsigned int resolution);
+	unsigned int get_normalmap_tile_resolution() const;
+
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
 	static void load_static_resources();
@@ -85,6 +91,11 @@ private:
 	bool _deep_sampling_enabled = false;
 
 	bool _transitions_enabled = true;
+
+	// If enabled, an atlas of normalmaps will be generated for each cell of the resulting mesh, in order to add more
+	// visual details using a shader.
+	bool _normalmap_enabled = false;
+	uint8_t _normalmap_tile_resolution = 8;
 };
 
 } // namespace zylann::voxel

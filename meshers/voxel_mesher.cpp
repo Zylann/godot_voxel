@@ -1,14 +1,33 @@
 #include "voxel_mesher.h"
+#include "../constants/voxel_string_names.h"
+#include "../generators/voxel_generator.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
 
 namespace zylann::voxel {
 
-Ref<Mesh> VoxelMesher::build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials) {
+template <typename T>
+T try_get(const Dictionary &d, String key) {
+	const Variant *v = d.getptr(key);
+	if (v == nullptr) {
+		return T();
+	}
+	return *v;
+}
+
+Ref<Mesh> VoxelMesher::build_mesh(
+		Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
-	Input input = { voxels->get_buffer(), 0 };
+	Input input = { voxels->get_buffer() };
+
+	if (additional_data.size() > 0) {
+		Ref<VoxelGenerator> generator = try_get<Ref<VoxelGenerator>>(additional_data, "generator");
+		input.generator = generator.ptr();
+		input.origin_in_voxels = try_get<Vector3i>(additional_data, "origin_in_voxels");
+	}
+
 	build(output, input);
 
 	if (output.surfaces.size() == 0) {
@@ -45,6 +64,13 @@ Ref<Mesh> VoxelMesher::build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Materi
 		++gd_surface_index;
 	}
 
+	if (output.normalmap_atlas.is_valid()) {
+		// That should be in return value, but for now I just want this for testing with GDScript, so it gotta go
+		// somewhere
+		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_atlas, output.normalmap_atlas);
+		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_lookup, output.normalmap_lookup);
+	}
+
 	return mesh;
 }
 
@@ -75,7 +101,9 @@ Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
 void VoxelMesher::_bind_methods() {
 	// Shortcut if you want to generate a mesh directly from a fixed grid of voxels.
 	// Useful for testing the different meshers.
-	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "materials"), &VoxelMesher::build_mesh);
+	// TODO Have an object type to specify input
+	ClassDB::bind_method(D_METHOD("build_mesh", "voxel_buffer", "materials", "additional_data"),
+			&VoxelMesher::build_mesh, DEFVAL(Dictionary()));
 	ClassDB::bind_method(D_METHOD("get_minimum_padding"), &VoxelMesher::get_minimum_padding);
 	ClassDB::bind_method(D_METHOD("get_maximum_padding"), &VoxelMesher::get_maximum_padding);
 }

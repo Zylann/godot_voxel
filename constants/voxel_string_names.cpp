@@ -38,6 +38,9 @@ VoxelStringNames::VoxelStringNames() {
 	u_block_local_transform = StaticCString::create("u_block_local_transform");
 	u_lod_fade = StaticCString::create("u_lod_fade");
 
+	voxel_normalmap_atlas = StaticCString::create("voxel_normalmap_atlas");
+	voxel_normalmap_lookup = StaticCString::create("voxel_normalmap_lookup");
+
 #ifdef DEBUG_ENABLED
 	_voxel_debug_vt_position = StaticCString::create("_voxel_debug_vt_position");
 #endif

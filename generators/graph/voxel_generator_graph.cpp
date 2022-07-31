@@ -1081,6 +1081,53 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	runtime.generate_set(cache.state, in_x, in_y, in_z, false, nullptr);
 }
 
+void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<const float> positions_y,
+		Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+		Vector3f max_pos) {
+	std::shared_ptr<Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	if (runtime_ptr == nullptr) {
+		return;
+	}
+
+	int buffer_index;
+	float defval = 0.f;
+	switch (channel) {
+		case VoxelBufferInternal::CHANNEL_SDF:
+			buffer_index = runtime_ptr->sdf_output_buffer_index;
+			defval = 1.f;
+			break;
+		case VoxelBufferInternal::CHANNEL_TYPE:
+			buffer_index = runtime_ptr->type_output_buffer_index;
+			break;
+		default:
+			ZN_PRINT_ERROR("Unexpected channel");
+			return;
+	}
+
+	if (buffer_index == -1) {
+		for (unsigned int i = 0; i < out_values.size(); ++i) {
+			out_values[i] = defval;
+		}
+		return;
+	}
+
+	{
+		// The implementation cannot guarantee constness at compile time, but it should not modifiy the data either way
+		float *ptr_x = const_cast<float *>(positions_x.data());
+		float *ptr_y = const_cast<float *>(positions_y.data());
+		float *ptr_z = const_cast<float *>(positions_z.data());
+		generate_set(Span<float>(ptr_x, positions_x.size()), Span<float>(ptr_y, positions_y.size()),
+				Span<float>(ptr_z, positions_z.size()));
+	}
+
+	const VoxelGraphRuntime::Buffer &buffer = _cache.state.get_buffer(buffer_index);
+	memcpy(out_values.data(), buffer.data, sizeof(float) * out_values.size());
+}
+
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
 	return _cache.state;
 }

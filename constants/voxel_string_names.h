@@ -33,6 +33,9 @@ public:
 	StringName u_block_local_transform;
 	StringName u_lod_fade;
 
+	StringName voxel_normalmap_atlas;
+	StringName voxel_normalmap_lookup;
+
 #ifdef DEBUG_ENABLED
 	StringName _voxel_debug_vt_position;
 #endif

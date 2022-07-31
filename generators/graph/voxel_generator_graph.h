@@ -168,7 +168,13 @@ public:
 	bool supports_single_generation() const override {
 		return true;
 	}
+	bool supports_series_generation() const override {
+		return true;
+	}
 	VoxelSingleValue generate_single(Vector3i position, unsigned int channel) override;
+
+	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
+			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
 
 	Ref<Resource> duplicate(bool p_subresources) const override;
 

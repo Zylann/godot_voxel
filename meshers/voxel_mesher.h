@@ -26,13 +26,13 @@ public:
 		const VoxelBufferInternal &voxels;
 		// When using LOD, some meshers can use the generator and edited voxels to affine results.
 		// If not provided, the mesher will only use `voxels`.
-		VoxelGenerator *generator;
-		const VoxelDataLodMap *data;
+		VoxelGenerator *generator = nullptr;
+		const VoxelDataLodMap *data = nullptr;
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
 		// Not initialized because it confused GCC (???)
-		uint8_t lod; // = 0;
+		uint8_t lod = 0;
 		// If true, collision information is required.
 		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
 		// but in other setups it can be different and will be returned in `collision_surface`.
@@ -67,13 +67,18 @@ public:
 		// May be used to store extra information needed in shader to render the mesh properly
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
+
+		// Normalmap atlas used for smooth voxels
+		// TODO Find a better organization to pass this around, also it can't always be created from a thread
+		Ref<Texture2DArray> normalmap_atlas;
+		Ref<Texture2D> normalmap_lookup;
 	};
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials);
+	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
