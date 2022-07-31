@@ -168,7 +168,7 @@ struct SdfSubtract {
 };
 
 struct SdfSet {
-	float strength;
+	real_t strength;
 	inline real_t operator()(real_t a, real_t b) const {
 		return Math::lerp(a, b, strength);
 	}
