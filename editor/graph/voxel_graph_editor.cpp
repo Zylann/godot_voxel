@@ -282,7 +282,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	VoxelGraphEditorNode *node_view = VoxelGraphEditorNode::create(**_graph, node_id);
 	node_view->set_name(ui_node_name);
-	node_view->connect("dragged", callable_mp(this, &VoxelGraphEditor::_on_graph_node_dragged), varray(node_id));
+	node_view->connect("dragged", callable_mp(this, &VoxelGraphEditor::_on_graph_node_dragged).bind(node_id));
 
 	_graph_edit->add_child(node_view);
 }

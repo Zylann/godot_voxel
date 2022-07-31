@@ -50,8 +50,8 @@ void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
 	button_remove->set_icon(icon_provider->get_theme_icon(SNAME("Remove"), SNAME("EditorIcons")));
 	button_remove->set_flat(true);
 	button_remove->connect("pressed",
-			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed),
-			varray(BUTTON_REMOVE_ITEM));
+			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed)
+					.bind(BUTTON_REMOVE_ITEM));
 	hb->add_child(button_remove);
 
 	Control *spacer = memnew(Control);
@@ -61,8 +61,8 @@ void VoxelInstanceLibraryEditorInspectorPlugin::add_buttons() {
 	Button *button_update = memnew(Button);
 	button_update->set_text(TTR("Update From Scene..."));
 	button_update->connect("pressed",
-			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed),
-			varray(BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE));
+			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed)
+					.bind(BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE));
 	hb->add_child(button_update);
 
 	add_custom_control(hb);
