@@ -257,6 +257,8 @@ struct SdfBufferShape {
 			// Outside the buffer
 			return 100;
 		}
+		// TODO Trilinear looks bad when the shape is scaled up.
+		// Use Hermite in 3D https://www.researchgate.net/publication/360206102_Hermite_interpolation_of_heightmaps
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
 
