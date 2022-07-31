@@ -411,7 +411,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 				Callable::CallError error;
 				Variant retval; // We don't care about the return value, Callable API requires it
 				const CallbackData *cd = (const CallbackData *)self;
-				cd->callable.call(args, 2, retval, error);
+				cd->callable.callp(args, 2, retval, error);
 				// TODO I would really like to know what's the correct way to report such errors...
 				// Examples I found in the engine are inconsistent
 				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
@@ -450,7 +450,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					const Variant *args[2] = { &key, &v };
 					Callable::CallError err;
 					Variant retval; // We don't care about the return value, Callable API requires it
-					callback.call(args, 2, retval, err);
+					callback.callp(args, 2, retval, err);
 
 					ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
 							String("Callable failed at {0}").format(varray(key)));
