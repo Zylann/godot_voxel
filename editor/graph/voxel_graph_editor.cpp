@@ -659,9 +659,13 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 		if (hash != _last_output_graph_hash) {
 			_last_output_graph_hash = hash;
-			// Re-generate the terrain.
-			// Only do that if the graph is valid.
-			_voxel_node->restart_stream();
+
+			// We could be editing the graph standalone with no terrain loaded
+			if (_voxel_node != nullptr) {
+				// Re-generate the terrain.
+				// Only do that if the graph is valid.
+				_voxel_node->restart_stream();
+			}
 		}
 	}
 }
