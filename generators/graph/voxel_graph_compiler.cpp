@@ -338,7 +338,7 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 			return false;
 		}
 		ZN_ASSERT_RETURN_V_MSG(
-				node1_input.connections.size() <= 1, "Multiple input connections isn't supported", false);
+				node1_input.connections.size() <= 1, false, "Multiple input connections isn't supported");
 		// TODO Some nodes like `*` and `+` have unordered inputs, we need to handle that
 		if (node1_input.connections.size() == 0) {
 			// No ancestor, check default inputs (autoconnect is ignored, it must have been applied earlier)
