@@ -8,6 +8,7 @@ class GraphEdit;
 class PopupMenu;
 class AcceptDialog;
 class UndoRedo;
+class Button;
 
 namespace zylann::voxel {
 
@@ -23,6 +24,7 @@ public:
 	static const char *SIGNAL_NODE_SELECTED;
 	static const char *SIGNAL_NOTHING_SELECTED;
 	static const char *SIGNAL_NODES_DELETED;
+	static const char *SIGNAL_REGENERATE_REQUESTED;
 
 	VoxelGraphEditor();
 
@@ -37,6 +39,8 @@ public:
 	// To be called when the number of inputs in a node changes.
 	// Rebuilds the node's internal controls, and updates GUI connections going to it from the graph.
 	void update_node_layout(uint32_t node_id);
+
+	bool is_pinned_hint() const;
 
 private:
 	void _notification(int p_what);
@@ -95,6 +99,7 @@ private:
 	VoxelGraphEditorShaderDialog *_shader_dialog = nullptr;
 	bool _live_update_enabled = false;
 	uint64_t _last_output_graph_hash = 0;
+	Button *_pin_button = nullptr;
 
 	enum PreviewAxes { //
 		PREVIEW_XY = 0,

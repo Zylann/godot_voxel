@@ -6,6 +6,7 @@
 namespace zylann::voxel {
 
 class VoxelGraphEditor;
+class VoxelNode;
 
 class VoxelGraphEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelGraphEditorPlugin, EditorPlugin)
@@ -20,6 +21,7 @@ private:
 	void _on_graph_editor_node_selected(uint32_t node_id);
 	void _on_graph_editor_nothing_selected();
 	void _on_graph_editor_nodes_deleted();
+	void _on_graph_editor_regenerate_requested();
 	void _hide_deferred();
 
 	static void _bind_methods();
@@ -27,6 +29,7 @@ private:
 	VoxelGraphEditor *_graph_editor = nullptr;
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
+	VoxelNode *_voxel_node = nullptr;
 };
 
 } // namespace zylann::voxel

@@ -41,6 +41,8 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODES_DELETED,
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 
@@ -87,6 +89,7 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 			break;
 		}
 	}
+	_voxel_node = voxel_node;
 	_graph_editor->set_voxel_node(voxel_node);
 }
 
@@ -96,13 +99,17 @@ void VoxelGraphEditorPlugin::make_visible(bool visible) {
 		make_bottom_panel_item_visible(_graph_editor);
 
 	} else {
-		_bottom_panel_button->hide();
+		_voxel_node = nullptr;
 		_graph_editor->set_voxel_node(nullptr);
 
-		// TODO Awful hack to handle the nonsense happening in `_on_graph_editor_node_selected`
-		if (!_deferred_visibility_scheduled) {
-			_deferred_visibility_scheduled = true;
-			call_deferred("_hide_deferred");
+		if (!_graph_editor->is_pinned_hint()) {
+			_bottom_panel_button->hide();
+
+			// TODO Awful hack to handle the nonsense happening in `_on_graph_editor_node_selected`
+			if (!_deferred_visibility_scheduled) {
+				_deferred_visibility_scheduled = true;
+				call_deferred("_hide_deferred");
+			}
 		}
 	}
 }
@@ -150,6 +157,38 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
 	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
 	ERR_FAIL_COND(graph.is_null());
 	get_editor_interface()->inspect_object(*graph);
+}
+
+template <typename F>
+void for_each_node(Node *parent, F action) {
+	action(parent);
+	for (int i = 0; i < parent->get_child_count(); ++i) {
+		for_each_node(parent->get_child(i), action);
+	}
+}
+
+void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
+	// We could be editing the graph standalone with no terrain loaded
+	if (_voxel_node != nullptr) {
+		// Re-generate the selected terrain.
+		_voxel_node->restart_stream();
+
+	} else {
+		// The node is not selected, but it might be in the tree
+		Node *root = get_editor_interface()->get_edited_scene_root();
+
+		if (root != nullptr) {
+			Ref<VoxelGeneratorGraph> generator = _graph_editor->get_graph();
+			ERR_FAIL_COND(generator.is_null());
+
+			for_each_node(root, [&generator](Node *node) {
+				VoxelNode *vnode = Object::cast_to<VoxelNode>(node);
+				if (vnode != nullptr && vnode->get_generator() == generator) {
+					vnode->restart_stream();
+				}
+			});
+		}
+	}
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {
