@@ -981,8 +981,8 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_node_layout", "node_id"), &VoxelGraphEditor::update_node_layout);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_id")));
-	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED, PropertyInfo(Variant::INT, "nothing_selected")));
-	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED, PropertyInfo(Variant::INT, "nodes_deleted")));
+	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED));
 }
 
 } // namespace zylann::voxel
