@@ -196,7 +196,6 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
 	const VoxelGraphNodeDB &db = VoxelGraphNodeDB::get_singleton();
-	const bool autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
 
 	uint32_t index;
 	if (db.try_get_param_index_from_name(node_type_id, p_name, index)) {

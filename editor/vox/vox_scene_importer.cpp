@@ -373,7 +373,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));
 		// `FLAG_CHANGE_PATH` did not do what I thought it did.
 		mesh->set_path(res_save_path);
-		const Error mesh_save_err = ResourceSaver::save(res_save_path, mesh);
+		const Error mesh_save_err = ResourceSaver::save(mesh, res_save_path);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(res_save_path)));
 	}
@@ -387,7 +387,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		scene.instantiate();
 		scene->pack(root_node);
 		String scene_save_path = p_save_path + ".tscn";
-		const Error save_err = ResourceSaver::save(scene_save_path, scene);
+		const Error save_err = ResourceSaver::save(scene, scene_save_path);
 		memdelete(root_node);
 		ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
 	}

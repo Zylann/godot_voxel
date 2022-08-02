@@ -156,9 +156,9 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 
 	if (_node != nullptr) {
 		_node->connect(
-				"tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered), varray(_node));
+				"tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered).bind(_node));
 		_node->connect(
-				"tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited), varray(_node));
+				"tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited).bind(_node));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 

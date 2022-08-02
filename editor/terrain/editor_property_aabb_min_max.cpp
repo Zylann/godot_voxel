@@ -23,7 +23,7 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 		EditorSpinSlider *sb = memnew(EditorSpinSlider);
 		sb->set_flat(true);
 		sb->set_h_size_flags(SIZE_EXPAND_FILL);
-		sb->connect("value_changed", callable_mp(this, &EditorPropertyAABBMinMax::_value_changed), varray(i));
+		sb->connect("value_changed", callable_mp(this, &EditorPropertyAABBMinMax::_value_changed).bind(i));
 		_spinboxes[i] = sb;
 
 		add_focusable(sb);

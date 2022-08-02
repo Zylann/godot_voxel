@@ -28,6 +28,8 @@ namespace zylann::voxel {
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
+const char *VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED = "regenerate_requested";
+const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
 
 static NodePath to_node_path(StringName sn) {
 	Vector<StringName> path;
@@ -87,6 +89,23 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		live_update_checkbox->set_pressed(_live_update_enabled);
 		live_update_checkbox->connect("toggled", callable_mp(this, &VoxelGraphEditor::_on_live_update_toggled));
 		toolbar->add_child(live_update_checkbox);
+
+		Control *spacer = memnew(Control);
+		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		toolbar->add_child(spacer);
+
+		_pin_button = memnew(Button);
+		_pin_button->set_flat(true);
+		_pin_button->set_toggle_mode(true);
+		_pin_button->set_tooltip(TTR("Pin AnimationPlayer"));
+		toolbar->add_child(_pin_button);
+		//_pin_button->connect("pressed", callable_mp(this, &AnimationPlayerEditor::_pin_pressed));
+
+		_popout_button = memnew(Button);
+		_popout_button->set_flat(true);
+		_popout_button->set_tooltip(TTR("Pop-out as separate window"));
+		_popout_button->connect("pressed", callable_mp(this, &VoxelGraphEditor::_on_popout_button_pressed));
+		toolbar->add_child(_popout_button);
 
 		vbox_container->add_child(toolbar);
 	}
@@ -195,6 +214,11 @@ void VoxelGraphEditor::_notification(int p_what) {
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			set_process_internal(is_visible());
 			break;
+
+		case NOTIFICATION_THEME_CHANGED:
+			_pin_button->set_icon(get_theme_icon(SNAME("Pin"), SNAME("EditorIcons")));
+			_popout_button->set_icon(get_theme_icon(SNAME("ExternalLink"), SNAME("EditorIcons")));
+			break;
 	}
 }
 
@@ -282,7 +306,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 	VoxelGraphEditorNode *node_view = VoxelGraphEditorNode::create(**_graph, node_id);
 	node_view->set_name(ui_node_name);
-	node_view->connect("dragged", callable_mp(this, &VoxelGraphEditor::_on_graph_node_dragged), varray(node_id));
+	node_view->connect("dragged", callable_mp(this, &VoxelGraphEditor::_on_graph_node_dragged).bind(node_id));
 
 	_graph_edit->add_child(node_view);
 }
@@ -369,6 +393,10 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 					node_to_gui_name(con.dst.node_id), con.dst.port_index);
 		}
 	}
+}
+
+bool VoxelGraphEditor::is_pinned_hint() const {
+	return _pin_button->is_pressed();
 }
 
 static bool is_nothing_selected(GraphEdit *graph_edit) {
@@ -659,9 +687,12 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 		if (hash != _last_output_graph_hash) {
 			_last_output_graph_hash = hash;
-			// Re-generate the terrain.
-			// Only do that if the graph is valid.
-			_voxel_node->restart_stream();
+
+			// Not calling into `_voxel_node` directly because the editor could be pinned and the terrain not actually
+			// selected. In this situation the plugin may reset the node to null. But it is desirable for terrains
+			// using the current graph to update if they are in the edited scene, so this may be delegated to the editor
+			// plugin. There isn't enough context from here to do this cleanly.
+			emit_signal(SIGNAL_REGENERATE_REQUESTED);
 		}
 	}
 }
@@ -968,6 +999,14 @@ void VoxelGraphEditor::_on_live_update_toggled(bool enabled) {
 	_live_update_enabled = enabled;
 }
 
+void VoxelGraphEditor::_on_popout_button_pressed() {
+	emit_signal(SIGNAL_POPOUT_REQUESTED);
+}
+
+void VoxelGraphEditor::set_popout_button_enabled(bool enable) {
+	_popout_button->set_visible(enable);
+}
+
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
@@ -977,8 +1016,10 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("update_node_layout", "node_id"), &VoxelGraphEditor::update_node_layout);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_id")));
-	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED, PropertyInfo(Variant::INT, "nothing_selected")));
-	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED, PropertyInfo(Variant::INT, "nodes_deleted")));
+	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_REGENERATE_REQUESTED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_POPOUT_REQUESTED));
 }
 
 } // namespace zylann::voxel

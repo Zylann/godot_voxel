@@ -662,7 +662,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			collision_shape->set_position(offset);
 
 			RigidDynamicBody3D *rigid_body = memnew(RigidDynamicBody3D);
-			rigid_body->set_transform(transform * local_transform.translated(-offset));
+			rigid_body->set_transform(transform * local_transform.translated_local(-offset));
 			rigid_body->add_child(collision_shape);
 			rigid_body->set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_KINEMATIC);
 			rigid_body->set_freeze_enabled(true);
@@ -672,7 +672,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", callable_mp(rigid_body, &RigidDynamicBody3D::set_freeze_enabled), varray(false));
+			timer->connect("timeout", callable_mp(rigid_body, &RigidDynamicBody3D::set_freeze_enabled).bind(false));
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);
