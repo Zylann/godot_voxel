@@ -10,6 +10,35 @@
 
 namespace zylann::voxel {
 
+// TODO It would be really nice if we were not forced to use an AcceptDialog for making a window.
+// AcceptDialog adds stuff I don't need, but Window is too low level.
+class VoxelGraphEditorWindow : public AcceptDialog {
+	GDCLASS(VoxelGraphEditorWindow, AcceptDialog)
+public:
+	VoxelGraphEditorWindow() {
+		set_exclusive(false);
+		set_close_on_escape(false);
+		get_ok_button()->hide();
+		set_min_size(Vector2(600, 300) * EDSCALE);
+		// I want the window to remain on top of the editor if the editor is given focus. `always_on_top` is the only
+		// property allowing that, but it requires `transient` to be `false`. Without `transient`, the window is no
+		// longer considered a child and won't give back focus to the editor when closed.
+		// So for now, the window will get hidden behind the editor if you click on the editor.
+		// you'll have to suffer moving popped out windows out of the editor area if you want to see them both...
+		//set_flag(Window::FLAG_ALWAYS_ON_TOP, true);
+	}
+
+	// void _notification(int p_what) {
+	// 	switch (p_what) {
+	// 		case NOTIFICATION_WM_CLOSE_REQUEST:
+	// 			call_deferred(SNAME("hide"));
+	// 			break;
+	// 	}
+	// }
+
+	static void _bind_methods() {}
+};
+
 // Changes string editors of the inspector to call setters only when enter key is pressed, similar to Unreal.
 // Because the default behavior of `EditorPropertyText` is to call the setter on every character typed, which is a
 // nightmare when editing an Expression node: inputs change constantly as the code is written which has much higher
@@ -43,6 +72,8 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED,
 			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested));
+	_graph_editor->connect(VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 
@@ -91,9 +122,17 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 	}
 	_voxel_node = voxel_node;
 	_graph_editor->set_voxel_node(voxel_node);
+
+	if (_graph_editor_window != nullptr) {
+		update_graph_editor_window_title();
+	}
 }
 
 void VoxelGraphEditorPlugin::make_visible(bool visible) {
+	if (_graph_editor_window != nullptr) {
+		return;
+	}
+
 	if (visible) {
 		_bottom_panel_button->show();
 		make_bottom_panel_item_visible(_graph_editor);
@@ -102,7 +141,8 @@ void VoxelGraphEditorPlugin::make_visible(bool visible) {
 		_voxel_node = nullptr;
 		_graph_editor->set_voxel_node(nullptr);
 
-		if (!_graph_editor->is_pinned_hint()) {
+		const bool pinned = _graph_editor_window != nullptr || _graph_editor->is_pinned_hint();
+		if (!pinned) {
 			_bottom_panel_button->hide();
 
 			// TODO Awful hack to handle the nonsense happening in `_on_graph_editor_node_selected`
@@ -189,6 +229,60 @@ void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 			});
 		}
 	}
+}
+
+void VoxelGraphEditorPlugin::_on_graph_editor_popout_requested() {
+	undock_graph_editor();
+}
+
+void VoxelGraphEditorPlugin::undock_graph_editor() {
+	ERR_FAIL_COND(_graph_editor_window != nullptr);
+	ZN_PRINT_VERBOSE("Undock voxel graph editor");
+
+	remove_control_from_bottom_panel(_graph_editor);
+	_bottom_panel_button = nullptr;
+
+	_graph_editor->set_popout_button_enabled(false);
+	_graph_editor->set_anchors_preset(Control::PRESET_FULL_RECT);
+	// I don't know what hides it but I needed to make it visible again
+	_graph_editor->show();
+
+	_graph_editor_window = memnew(VoxelGraphEditorWindow);
+	update_graph_editor_window_title();
+	_graph_editor_window->add_child(_graph_editor);
+	_graph_editor_window->connect("close_requested", callable_mp(this, &VoxelGraphEditorPlugin::dock_graph_editor));
+
+	Node *base_control = get_editor_interface()->get_base_control();
+	base_control->add_child(_graph_editor_window);
+
+	_graph_editor_window->popup_centered_ratio(0.6);
+}
+
+void VoxelGraphEditorPlugin::dock_graph_editor() {
+	ERR_FAIL_COND(_graph_editor_window == nullptr);
+	ZN_PRINT_VERBOSE("Dock voxel graph editor");
+
+	_graph_editor->get_parent()->remove_child(_graph_editor);
+	_graph_editor_window->queue_delete();
+	_graph_editor_window = nullptr;
+
+	_graph_editor->set_popout_button_enabled(true);
+
+	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, TTR("Voxel Graph"));
+
+	_bottom_panel_button->show();
+	make_bottom_panel_item_visible(_graph_editor);
+}
+
+void VoxelGraphEditorPlugin::update_graph_editor_window_title() {
+	ERR_FAIL_COND(_graph_editor_window == nullptr);
+	String title;
+	if (_graph_editor->get_graph().is_valid()) {
+		title = _graph_editor->get_graph()->get_path();
+		title += " - ";
+	}
+	title += VoxelGeneratorGraph::get_class_static();
+	_graph_editor_window->set_title(title);
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {

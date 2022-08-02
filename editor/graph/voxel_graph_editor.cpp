@@ -29,6 +29,7 @@ const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 const char *VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED = "regenerate_requested";
+const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
 
 static NodePath to_node_path(StringName sn) {
 	Vector<StringName> path;
@@ -99,6 +100,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button->set_tooltip(TTR("Pin AnimationPlayer"));
 		toolbar->add_child(_pin_button);
 		//_pin_button->connect("pressed", callable_mp(this, &AnimationPlayerEditor::_pin_pressed));
+
+		_popout_button = memnew(Button);
+		_popout_button->set_flat(true);
+		_popout_button->set_tooltip(TTR("Pop-out as separate window"));
+		_popout_button->connect("pressed", callable_mp(this, &VoxelGraphEditor::_on_popout_button_pressed));
+		toolbar->add_child(_popout_button);
 
 		vbox_container->add_child(toolbar);
 	}
@@ -210,6 +217,7 @@ void VoxelGraphEditor::_notification(int p_what) {
 
 		case NOTIFICATION_THEME_CHANGED:
 			_pin_button->set_icon(get_theme_icon(SNAME("Pin"), SNAME("EditorIcons")));
+			_popout_button->set_icon(get_theme_icon(SNAME("ExternalLink"), SNAME("EditorIcons")));
 			break;
 	}
 }
@@ -991,6 +999,14 @@ void VoxelGraphEditor::_on_live_update_toggled(bool enabled) {
 	_live_update_enabled = enabled;
 }
 
+void VoxelGraphEditor::_on_popout_button_pressed() {
+	emit_signal(SIGNAL_POPOUT_REQUESTED);
+}
+
+void VoxelGraphEditor::set_popout_button_enabled(bool enable) {
+	_popout_button->set_visible(enable);
+}
+
 void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
@@ -1003,6 +1019,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED));
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODES_DELETED));
 	ADD_SIGNAL(MethodInfo(SIGNAL_REGENERATE_REQUESTED));
+	ADD_SIGNAL(MethodInfo(SIGNAL_POPOUT_REQUESTED));
 }
 
 } // namespace zylann::voxel
