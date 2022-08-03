@@ -327,17 +327,16 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 	}
 }
 
-// Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
-NormalMapTextures store_normalmap_data_to_textures(
+NormalMapImages store_normalmap_data_to_images(
 		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size) {
 	ZN_PROFILE_SCOPE();
 
-	NormalMapTextures textures;
+	NormalMapImages images;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Atlas images");
-		Vector<Ref<Image>> images;
-		images.resize(data.tiles.size());
+		Vector<Ref<Image>> tile_images;
+		tile_images.resize(data.tiles.size());
 
 		{
 			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
@@ -353,19 +352,12 @@ NormalMapTextures store_normalmap_data_to_textures(
 				image.instantiate();
 				image->create_from_data(tile_resolution, tile_resolution, false, Image::FORMAT_RGB8, bytes);
 
-				images.write[tile_index] = image;
+				tile_images.write[tile_index] = image;
 				//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
 			}
 		}
 
-		{
-			ZN_PROFILE_SCOPE_NAMED("Atlas texture");
-			Ref<Texture2DArray> atlas;
-			atlas.instantiate();
-			const Error err = atlas->create_from_images(images);
-			ZN_ASSERT_RETURN_V(err == OK, textures);
-			textures.atlas = atlas;
-		}
+		images.atlas_images = tile_images;
 	}
 
 	{
@@ -401,8 +393,30 @@ NormalMapTextures store_normalmap_data_to_textures(
 		Ref<Image> image;
 		image.instantiate();
 		image->create_from_data(sqri, sqri, false, Image::FORMAT_RGB8, bytes);
+		images.lookup_image = image;
+	}
 
-		Ref<ImageTexture> lookup = ImageTexture::create_from_image(image);
+	return images;
+}
+
+// Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
+NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) {
+	ZN_PROFILE_SCOPE();
+
+	NormalMapTextures textures;
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Atlas texture");
+		Ref<Texture2DArray> atlas;
+		atlas.instantiate();
+		const Error err = atlas->create_from_images(data.atlas_images);
+		ZN_ASSERT_RETURN_V(err == OK, textures);
+		textures.atlas = atlas;
+	}
+
+	{
+		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
+		Ref<ImageTexture> lookup = ImageTexture::create_from_image(data.lookup_image);
 		textures.lookup = lookup;
 	}
 

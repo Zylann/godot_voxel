@@ -9,6 +9,7 @@
 
 class Texture2DArray;
 class Texture2D;
+class Image;
 
 namespace zylann::voxel {
 
@@ -47,19 +48,22 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
 		Vector3i origin_in_voxels, unsigned int lod_index);
 
-// struct NormalMapImages {
-// 	Vector<Ref<Image>> atlas_images;
-// 	Ref<Image> lookup_image;
-// };
+struct NormalMapImages {
+	Vector<Ref<Image>> atlas_images;
+	Ref<Image> lookup_image;
+};
 
 struct NormalMapTextures {
 	Ref<Texture2DArray> atlas;
 	Ref<Texture2D> lookup;
 };
 
-// Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
-NormalMapTextures store_normalmap_data_to_textures(
+NormalMapImages store_normalmap_data_to_images(
 		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size);
+
+// Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
+// This may not be allowed to run in a different thread than the main thread if the renderer is not using Vulkan.
+NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data);
 
 } // namespace zylann::voxel
 

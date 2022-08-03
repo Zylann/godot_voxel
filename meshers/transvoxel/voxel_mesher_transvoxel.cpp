@@ -249,8 +249,9 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
 		// TODO This may be deferred to main thread when using GLES3
 		// TODO Link tile resolution to LOD level, with a cap
-		NormalMapTextures textures =
-				store_normalmap_data_to_textures(tls_normalmap_data, _normalmap_tile_resolution, block_size);
+		NormalMapImages images =
+				store_normalmap_data_to_images(tls_normalmap_data, _normalmap_tile_resolution, block_size);
+		NormalMapTextures textures = store_normalmap_data_to_textures(images);
 		output.normalmap_atlas = textures.atlas;
 		output.normalmap_lookup = textures.lookup;
 	}
