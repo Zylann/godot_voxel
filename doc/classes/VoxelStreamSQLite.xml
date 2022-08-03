@@ -8,6 +8,12 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="flush_cache">
+			<return type="void" />
+			<description>
+				Flushes the cache to this VoxelStreamSQLite's connection.
+			</description>
+		</method>
 		<method name="is_key_cache_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
