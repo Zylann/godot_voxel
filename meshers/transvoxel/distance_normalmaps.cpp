@@ -113,7 +113,7 @@ void get_axis_indices(Vector3f::Axis axis, unsigned int &ax, unsigned int &ay, u
 typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, transvoxel::MAX_TRIANGLES_PER_CELL> CellTriangles;
 
 unsigned int prepare_triangles(unsigned int first_index, const transvoxel::CellInfo cell_info, const Vector3f direction,
-		CellTriangles baked_triangles, const transvoxel::MeshArrays &mesh) {
+		CellTriangles &baked_triangles, const transvoxel::MeshArrays &mesh) {
 	unsigned int triangle_count = 0;
 
 	unsigned int ii = first_index;
