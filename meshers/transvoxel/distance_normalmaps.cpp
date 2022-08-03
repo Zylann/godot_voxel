@@ -139,6 +139,14 @@ unsigned int prepare_triangles(unsigned int first_index, const transvoxel::CellI
 	return triangle_count;
 }
 
+inline uint8_t snorm_to_u8(float x) {
+	return math::clamp(127.f + 128.f * x, 0.f, 255.f);
+}
+
+inline NormalMapData::EncodedNormal encode_normal_xyz(const Vector3f n) {
+	return { snorm_to_u8(n.x), snorm_to_u8(n.y), snorm_to_u8(n.z) };
+}
+
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
@@ -268,8 +276,11 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 				VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), cell_origin_world,
 				cell_origin_world + Vector3f(cell_size));
 
+		static thread_local std::vector<Vector3f> tls_tile_normals;
+		tls_tile_normals.clear();
+		tls_tile_normals.resize(math::squared(tile_resolution));
+
 		// Compute normals from SDF results
-		unsigned int tile_begin = cell_index * math::squared(tile_resolution);
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compute normals");
 			unsigned int bi = 0;
@@ -291,19 +302,25 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 				const float sd010 = tls_sdf_buffer[bi010];
 				const float sd001 = tls_sdf_buffer[bi001];
 				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
-				const unsigned int normal_index = tile_begin + sample_position.x + sample_position.y * tile_resolution;
+				const unsigned int normal_index = sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
 				ZN_ASSERT(normal_index < normal_map_data.normals.size());
 #endif
-				normal_map_data.normals[normal_index] = normal;
+				tls_tile_normals[normal_index] = normal;
 			}
 		}
 
 		for (unsigned int dilation_steps = 0; dilation_steps < 2; ++dilation_steps) {
 			// Fill up some pixels around triangle borders, to give some margin when sampling near them in shader
-			dilate_normalmap(
-					to_span_from_position_and_size(normal_map_data.normals, tile_begin, math::squared(tile_resolution)),
-					Vector2i(tile_resolution, tile_resolution));
+			dilate_normalmap(to_span(tls_tile_normals), Vector2i(tile_resolution, tile_resolution));
+		}
+
+		// Encode normals
+		// TODO Optimize: use octahedral encoding to use one less byte
+		unsigned int tile_begin = cell_index * math::squared(tile_resolution);
+		for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
+			ZN_ASSERT(tile_begin + i < normal_map_data.normals.size());
+			normal_map_data.normals[tile_begin + i] = encode_normal_xyz(tls_tile_normals[i]);
 		}
 
 		first_index += 3 * cell_info.triangle_count;
@@ -324,23 +341,17 @@ NormalMapTextures store_normalmap_data_to_textures(
 
 		{
 			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+				PackedByteArray bytes;
+				{
+					const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
+					const unsigned int tile_size_in_bytes = tile_size_in_pixels * sizeof(NormalMapData::EncodedNormal);
+					bytes.resize(tile_size_in_bytes);
+					memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_pixels, tile_size_in_bytes);
+				}
+
 				Ref<Image> image;
 				image.instantiate();
-				// TODO Optimize: use octahedral encoding to use one less byte
-				image->create(tile_resolution, tile_resolution, false, Image::FORMAT_RGB8);
-
-				unsigned int normal_index = math::squared(tile_resolution) * tile_index;
-
-				for (unsigned int y = 0; y < tile_resolution; ++y) {
-					for (unsigned int x = 0; x < tile_resolution; ++x) {
-						ZN_ASSERT(normal_index < data.normals.size());
-						const Vector3f normal = data.normals[normal_index];
-						// TODO Optimize: create image from bytes directly, set_pixel is slower
-						image->set_pixel(
-								x, y, Color(0.5f + 0.5f * normal.x, 0.5f + 0.5f * normal.y, 0.5f + 0.5f * normal.z));
-						++normal_index;
-					}
-				}
+				image->create_from_data(tile_resolution, tile_resolution, false, Image::FORMAT_RGB8, bytes);
 
 				images.write[tile_index] = image;
 				//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
@@ -360,26 +371,36 @@ NormalMapTextures store_normalmap_data_to_textures(
 	{
 		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
 
+		const unsigned int sqri = Math::ceil(Math::sqrt(double(Vector3iUtil::get_volume(block_size))));
+
+		PackedByteArray bytes;
+		{
+			const unsigned int pixel_size = 3;
+			bytes.resize(math::squared(sqri) * pixel_size);
+
+			uint8_t *bytes_w = bytes.ptrw();
+			memset(bytes_w, 0, bytes.size());
+
+			const unsigned int deck_size = block_size.x * block_size.y;
+
+			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+				const NormalMapData::Tile tile = data.tiles[tile_index];
+				// RG: layer index
+				// B: projection direction
+				const uint8_t r = tile_index & 0xff;
+				const uint8_t g = tile_index >> 8;
+				const uint8_t b = tile.axis;
+				const unsigned int pi = pixel_size * (tile.x + tile.y * block_size.x + tile.z * deck_size);
+				ZN_ASSERT(pi < bytes.size());
+				bytes_w[pi] = r;
+				bytes_w[pi + 1] = g;
+				bytes_w[pi + 2] = b;
+			}
+		}
+
 		Ref<Image> image;
 		image.instantiate();
-		const unsigned int sqri = Math::ceil(Math::sqrt(double(Vector3iUtil::get_volume(block_size))));
-		// RG: layer index
-		// B: projection direction
-		image->create(sqri, sqri, false, Image::FORMAT_RGB8);
-
-		const unsigned int deck_size = block_size.x * block_size.y;
-
-		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
-			const NormalMapData::Tile tile = data.tiles[tile_index];
-			const unsigned int pi = tile.x + tile.y * block_size.x + tile.z * deck_size;
-			const unsigned int px = pi % sqri;
-			const unsigned int py = pi / sqri;
-			const float r = (tile_index & 0xff) / 255.f;
-			const float g = (tile_index >> 8) / 255.f;
-			const float b = tile.axis / 255.f;
-			// TODO Optimize: create image from bytes directly, set_pixel is slower and uneasy with floats
-			image->set_pixel(px, py, Color(r, g, b));
-		}
+		image->create_from_data(sqri, sqri, false, Image::FORMAT_RGB8, bytes);
 
 		Ref<ImageTexture> lookup = ImageTexture::create_from_image(image);
 		textures.lookup = lookup;

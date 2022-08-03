@@ -20,7 +20,13 @@ class VoxelGenerator;
 // triangles, and be stored in an atlas. A shader can then read the atlas using a lookup texture to find the tile.
 
 struct NormalMapData {
-	std::vector<Vector3f> normals;
+	struct EncodedNormal {
+		uint8_t x;
+		uint8_t y;
+		uint8_t z;
+	};
+	// Encoded normals
+	std::vector<EncodedNormal> normals;
 	struct Tile {
 		uint8_t x;
 		uint8_t y;
@@ -40,6 +46,11 @@ struct NormalMapData {
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
 		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
 		Vector3i origin_in_voxels, unsigned int lod_index);
+
+// struct NormalMapImages {
+// 	Vector<Ref<Image>> atlas_images;
+// 	Ref<Image> lookup_image;
+// };
 
 struct NormalMapTextures {
 	Ref<Texture2DArray> atlas;
