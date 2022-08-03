@@ -20,6 +20,8 @@ static const int MAX_PADDING = 2;
 static const unsigned int MAX_TEXTURES = 16;
 // How many textures can blend at once
 static const unsigned int MAX_TEXTURE_BLENDS = 4;
+// Transvoxel guarantees a maximum number of triangle generated for each 2x2x2 cell of voxels.
+static const unsigned int MAX_TRIANGLES_PER_CELL = 5;
 
 enum TexturingMode {
 	TEXTURES_NONE,

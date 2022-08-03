@@ -110,7 +110,6 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		unsigned int ax;
 		unsigned int ay;
 		unsigned int az;
-		// TODO I don't know yet if the chosen orientations will match triplanar conventions used in Godot
 		switch (tile.axis) {
 			case Vector3f::AXIS_X:
 				ax = Vector3f::AXIS_Z;
@@ -161,77 +160,92 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		tls_y_buffer.reserve(max_buffer_size);
 		tls_z_buffer.reserve(max_buffer_size);
 
-		// Fill query buffers
-		for (unsigned int yi = 0; yi < tile_resolution; ++yi) {
-			for (unsigned int xi = 0; xi < tile_resolution; ++xi) {
-				// TODO Add bias to center differences when calculating the normals?
-				Vector3f pos000 = quad_origin_world;
-				// Casting to `int` here because even if the target is float, temporaries can be negative uints
-				pos000[ax] += int(xi) * step;
-				pos000[ay] += int(yi) * step;
-
-				// Project to triangles
-				const Vector3f ray_origin_world = pos000 - direction * cell_size;
-				const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
-				unsigned int ii2 = ii0;
-				const float NO_HIT = 999999.f;
-				float nearest_hit_distance = NO_HIT;
-				for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
+		// Optimize triangles
+		FixedArray<math::BakedIntersectionTriangleForFixedDirection, transvoxel::MAX_TRIANGLES_PER_CELL>
+				baked_triangles;
+		unsigned int triangle_count = 0;
+		{
+			unsigned int ii2 = ii0;
+			for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
 #ifdef DEBUG_ENABLED
-					ZN_ASSERT(ii2 + 2 < mesh.indices.size());
+				ZN_ASSERT(ii2 + 2 < mesh.indices.size());
 #endif
-					const unsigned vi0 = mesh.indices[ii2];
-					const unsigned vi1 = mesh.indices[ii2 + 1];
-					const unsigned vi2 = mesh.indices[ii2 + 2];
-					ii2 += 3;
-					Vector3f a = mesh.vertices[vi0];
-					Vector3f b = mesh.vertices[vi1];
-					Vector3f c = mesh.vertices[vi2];
-					// const Vector3f m = (a + b + c) * 0.3333f;
-					// a += 0.001f * (a - m);
-					// b += 0.001f * (b - m);
-					// c += 0.001f * (c - m);
-					const math::TriangleIntersectionResult result =
-							math::ray_intersects_triangle(ray_origin_mesh, direction, a, b, c);
-					if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
-							result.distance < nearest_hit_distance) {
-						nearest_hit_distance = result.distance;
-					}
+				const unsigned vi0 = mesh.indices[ii2];
+				const unsigned vi1 = mesh.indices[ii2 + 1];
+				const unsigned vi2 = mesh.indices[ii2 + 2];
+				ii2 += 3;
+				const Vector3f a = mesh.vertices[vi0];
+				const Vector3f b = mesh.vertices[vi1];
+				const Vector3f c = mesh.vertices[vi2];
+				math::BakedIntersectionTriangleForFixedDirection baked_triangle;
+				// The triangle can be parallel to the direction
+				if (baked_triangle.bake(a, b, c, direction)) {
+					baked_triangles[triangle_count] = baked_triangle;
+					++triangle_count;
 				}
-				if (nearest_hit_distance != NO_HIT) {
+			}
+		}
+
+		// Fill query buffers
+		{
+			ZN_PROFILE_SCOPE_NAMED("Compute positions");
+			for (unsigned int yi = 0; yi < tile_resolution; ++yi) {
+				for (unsigned int xi = 0; xi < tile_resolution; ++xi) {
+					// TODO Add bias to center differences when calculating the normals?
+					Vector3f pos000 = quad_origin_world;
+					// Casting to `int` here because even if the target is float, temporaries can be negative uints
+					pos000[ax] += int(xi) * step;
+					pos000[ay] += int(yi) * step;
+
+					// Project to triangles
+					const Vector3f ray_origin_world = pos000 - direction * cell_size;
+					const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
+					const float NO_HIT = 999999.f;
+					float nearest_hit_distance = NO_HIT;
+					for (unsigned int ti = 0; ti < triangle_count; ++ti) {
+						const math::TriangleIntersectionResult result = baked_triangles[ti].intersect(ray_origin_mesh);
+						if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
+								result.distance < nearest_hit_distance) {
+							nearest_hit_distance = result.distance;
+						}
+					}
+
+					if (nearest_hit_distance == NO_HIT) {
+						// Don't query if there is no triangle
+						continue;
+					}
+
 					pos000 = ray_origin_world + direction * nearest_hit_distance;
 					tls_tile_sample_positions.push_back(Vector2i(xi, yi));
-				} else {
-					// Don't query if there is no triangle
-					continue;
+
+					tls_x_buffer.push_back(pos000.x);
+					tls_y_buffer.push_back(pos000.y);
+					tls_z_buffer.push_back(pos000.z);
+
+					Vector3f pos100 = pos000;
+					pos100.x += step;
+					tls_x_buffer.push_back(pos100.x);
+					tls_y_buffer.push_back(pos100.y);
+					tls_z_buffer.push_back(pos100.z);
+
+					Vector3f pos010 = pos000;
+					pos010.y += step;
+					tls_x_buffer.push_back(pos010.x);
+					tls_y_buffer.push_back(pos010.y);
+					tls_z_buffer.push_back(pos010.z);
+
+					Vector3f pos001 = pos000;
+					pos001.z += step;
+					tls_x_buffer.push_back(pos001.x);
+					tls_y_buffer.push_back(pos001.y);
+					tls_z_buffer.push_back(pos001.z);
 				}
-
-				tls_x_buffer.push_back(pos000.x);
-				tls_y_buffer.push_back(pos000.y);
-				tls_z_buffer.push_back(pos000.z);
-
-				Vector3f pos100 = pos000;
-				pos100.x += step;
-				tls_x_buffer.push_back(pos100.x);
-				tls_y_buffer.push_back(pos100.y);
-				tls_z_buffer.push_back(pos100.z);
-
-				Vector3f pos010 = pos000;
-				pos010.y += step;
-				tls_x_buffer.push_back(pos010.x);
-				tls_y_buffer.push_back(pos010.y);
-				tls_z_buffer.push_back(pos010.z);
-
-				Vector3f pos001 = pos000;
-				pos001.z += step;
-				tls_x_buffer.push_back(pos001.x);
-				tls_y_buffer.push_back(pos001.y);
-				tls_z_buffer.push_back(pos001.z);
 			}
 		}
 
 		tls_sdf_buffer.resize(tls_x_buffer.size());
 
+		// Query voxel data
 		// TODO Support edited voxels
 		// TODO Support modifiers
 		generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
@@ -239,31 +253,34 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 				cell_origin_world + Vector3f(cell_size));
 
 		// Compute normals from SDF results
-		unsigned int bi = 0;
 		unsigned int tile_begin = cell_index * math::squared(tile_resolution);
-		for (const Vector2i sample_position : tls_tile_sample_positions) {
-			const unsigned int bi000 = bi;
-			const unsigned int bi100 = bi + 1;
-			const unsigned int bi010 = bi + 2;
-			const unsigned int bi001 = bi + 3;
-			bi += 4;
-			// TODO I wish this was solved https://github.com/godotengine/godot/issues/31608
+		{
+			ZN_PROFILE_SCOPE_NAMED("Compute normals");
+			unsigned int bi = 0;
+			for (const Vector2i sample_position : tls_tile_sample_positions) {
+				const unsigned int bi000 = bi;
+				const unsigned int bi100 = bi + 1;
+				const unsigned int bi010 = bi + 2;
+				const unsigned int bi001 = bi + 3;
+				bi += 4;
+				// TODO I wish this was solved https://github.com/godotengine/godot/issues/31608
 #ifdef DEBUG_ENABLED
-			ZN_ASSERT(bi000 < tls_sdf_buffer.size());
-			ZN_ASSERT(bi100 < tls_sdf_buffer.size());
-			ZN_ASSERT(bi010 < tls_sdf_buffer.size());
-			ZN_ASSERT(bi001 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi000 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi100 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi010 < tls_sdf_buffer.size());
+				ZN_ASSERT(bi001 < tls_sdf_buffer.size());
 #endif
-			const float sd000 = tls_sdf_buffer[bi000];
-			const float sd100 = tls_sdf_buffer[bi100];
-			const float sd010 = tls_sdf_buffer[bi010];
-			const float sd001 = tls_sdf_buffer[bi001];
-			const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
-			const unsigned int normal_index = tile_begin + sample_position.x + sample_position.y * tile_resolution;
+				const float sd000 = tls_sdf_buffer[bi000];
+				const float sd100 = tls_sdf_buffer[bi100];
+				const float sd010 = tls_sdf_buffer[bi010];
+				const float sd001 = tls_sdf_buffer[bi001];
+				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+				const unsigned int normal_index = tile_begin + sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
-			ZN_ASSERT(normal_index < normal_map_data.normals.size());
+				ZN_ASSERT(normal_index < normal_map_data.normals.size());
 #endif
-			normal_map_data.normals[normal_index] = normal;
+				normal_map_data.normals[normal_index] = normal;
+			}
 		}
 
 		for (unsigned int dilation_steps = 0; dilation_steps < 2; ++dilation_steps) {
