@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="3.5">
+<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Graph-based generator for smooth voxel worlds.
 	</brief_description>
@@ -105,13 +105,12 @@
 		</method>
 		<method name="find_node_by_name" qualifiers="const">
 			<return type="int" />
-			<argument index="0" name="name" type="String" />
+			<argument index="0" name="name" type="StringName" />
 			<description>
 			</description>
 		</method>
-		<method name="generate_single">
-			<return type="float" />
-			<argument index="0" name="arg0" type="Vector3" />
+		<method name="generate_shader">
+			<return type="String" />
 			<description>
 			</description>
 		</method>
@@ -127,6 +126,12 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_node_default_inputs_autoconnect" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="node_id" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="get_node_gui_position" qualifiers="const">
 			<return type="Vector2" />
 			<argument index="0" name="node_id" type="int" />
@@ -134,7 +139,13 @@
 			</description>
 		</method>
 		<method name="get_node_ids" qualifiers="const">
-			<return type="PoolIntArray" />
+			<return type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_name" qualifiers="const">
+			<return type="StringName" />
+			<argument index="0" name="node_id" type="int" />
 			<description>
 			</description>
 		</method>
@@ -177,6 +188,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="set_expression_node_inputs">
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="names" type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
 		<method name="set_node_default_input">
 			<return type="void" />
 			<argument index="0" name="node_id" type="int" />
@@ -185,10 +203,24 @@
 			<description>
 			</description>
 		</method>
+		<method name="set_node_default_inputs_autoconnect">
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="set_node_gui_position">
 			<return type="void" />
 			<argument index="0" name="node_id" type="int" />
 			<argument index="1" name="position" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="set_node_name">
+			<return type="void" />
+			<argument index="0" name="node_id" type="int" />
+			<argument index="1" name="name" type="StringName" />
 			<description>
 			</description>
 		</method>
@@ -272,51 +304,59 @@
 		</constant>
 		<constant name="NODE_CLAMP" value="20" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_MIX" value="21" enum="NodeTypeID">
+		<constant name="NODE_MIX" value="22" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_REMAP" value="22" enum="NodeTypeID">
+		<constant name="NODE_REMAP" value="23" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SMOOTHSTEP" value="23" enum="NodeTypeID">
+		<constant name="NODE_SMOOTHSTEP" value="24" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_CURVE" value="24" enum="NodeTypeID">
+		<constant name="NODE_CURVE" value="25" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SELECT" value="25" enum="NodeTypeID">
+		<constant name="NODE_SELECT" value="26" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_NOISE_2D" value="26" enum="NodeTypeID">
+		<constant name="NODE_NOISE_2D" value="27" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_NOISE_3D" value="27" enum="NodeTypeID">
+		<constant name="NODE_NOISE_3D" value="28" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_IMAGE_2D" value="28" enum="NodeTypeID">
+		<constant name="NODE_IMAGE_2D" value="29" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_PLANE" value="29" enum="NodeTypeID">
+		<constant name="NODE_SDF_PLANE" value="30" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_BOX" value="30" enum="NodeTypeID">
+		<constant name="NODE_SDF_BOX" value="31" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_SPHERE" value="31" enum="NodeTypeID">
+		<constant name="NODE_SDF_SPHERE" value="32" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_TORUS" value="32" enum="NodeTypeID">
+		<constant name="NODE_SDF_TORUS" value="33" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_PREVIEW" value="33" enum="NodeTypeID">
+		<constant name="NODE_SDF_PREVIEW" value="34" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_SPHERE_HEIGHTMAP" value="34" enum="NodeTypeID">
+		<constant name="NODE_SDF_SPHERE_HEIGHTMAP" value="35" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_SMOOTH_UNION" value="35" enum="NodeTypeID">
+		<constant name="NODE_SDF_SMOOTH_UNION" value="36" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SDF_SMOOTH_SUBTRACT" value="36" enum="NodeTypeID">
+		<constant name="NODE_SDF_SMOOTH_SUBTRACT" value="37" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_NORMALIZE_3D" value="37" enum="NodeTypeID">
+		<constant name="NODE_NORMALIZE_3D" value="38" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2D" value="38" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_2D" value="39" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_3D" value="39" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_3D" value="40" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="40" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="41" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="41" enum="NodeTypeID">
+		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="42" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_OUTPUT_WEIGHT" value="42" enum="NodeTypeID">
+		<constant name="NODE_OUTPUT_WEIGHT" value="43" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_TYPE_COUNT" value="43" enum="NodeTypeID">
+		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="45" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_EXPRESSION" value="46" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_POWI" value="47" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_POW" value="48" enum="NodeTypeID">
+		</constant>
+		<constant name="NODE_TYPE_COUNT" value="49" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="VoxelNode" version="3.5">
+<class name="VoxelTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using constant level of detail.
 	</brief_description>
@@ -8,21 +8,28 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="_on_area_edited" qualifiers="virtual">
+			<return type="void" />
+			<argument index="0" name="area_origin" type="Vector3i" />
+			<argument index="1" name="area_size" type="Vector3i" />
+			<description>
+			</description>
+		</method>
+		<method name="_on_data_block_entered" qualifiers="virtual">
+			<return type="void" />
+			<argument index="0" name="info" type="VoxelDataBlockEnterInfo" />
+			<description>
+			</description>
+		</method>
 		<method name="data_block_to_voxel" qualifiers="const">
-			<return type="Vector3" />
-			<argument index="0" name="block_pos" type="Vector3" />
+			<return type="Vector3i" />
+			<argument index="0" name="block_pos" type="Vector3i" />
 			<description>
 				Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
 		</method>
 		<method name="get_data_block_size" qualifiers="const">
 			<return type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_material" qualifiers="const">
-			<return type="Material" />
-			<argument index="0" name="id" type="int" />
 			<description>
 			</description>
 		</method>
@@ -46,6 +53,13 @@
 				[/codeblock]
 			</description>
 		</method>
+		<method name="get_viewer_network_peer_ids_in_area" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<argument index="0" name="area_origin" type="Vector3i" />
+			<argument index="1" name="area_size" type="Vector3i" />
+			<description>
+			</description>
+		</method>
 		<method name="get_voxel_tool">
 			<return type="VoxelTool" />
 			<description>
@@ -53,9 +67,15 @@
 				You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 			</description>
 		</method>
+		<method name="has_data_block" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="block_position" type="Vector3i" />
+			<description>
+			</description>
+		</method>
 		<method name="save_block">
 			<return type="void" />
-			<argument index="0" name="position" type="Vector3" />
+			<argument index="0" name="position" type="Vector3i" />
 			<description>
 				Forces a specific block to be saved.
 				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
@@ -72,22 +92,28 @@
 				Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 			</description>
 		</method>
-		<method name="set_material">
-			<return type="void" />
-			<argument index="0" name="id" type="int" />
-			<argument index="1" name="material" type="Material" />
+		<method name="try_set_block_data">
+			<return type="bool" />
+			<argument index="0" name="position" type="Vector3i" />
+			<argument index="1" name="voxels" type="VoxelBuffer" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_data_block" qualifiers="const">
-			<return type="Vector3" />
+			<return type="Vector3i" />
 			<argument index="0" name="voxel_pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 )">
+		<member name="area_edit_notification_enabled" type="bool" setter="set_area_edit_notification_enabled" getter="is_area_edit_notification_enabled" default="false">
+		</member>
+		<member name="automatic_loading_enabled" type="bool" setter="set_automatic_loading_enabled" getter="is_automatic_loading_enabled" default="true">
+		</member>
+		<member name="block_enter_notification_enabled" type="bool" setter="set_block_enter_notification_enabled" getter="is_block_enter_notification_enabled" default="false">
+		</member>
+		<member name="bounds" type="AABB" setter="set_bounds" getter="get_bounds" default="AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)">
 			Defines the bounds within which the terrain is allowed to have voxels. If an infinite world generator is used, blocks will only generate within this region. Everything outside will be left empty.
 		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
@@ -100,6 +126,8 @@
 			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 			Note 1: you also need [VoxelViewer] to request collisions, otherwise they won't generate.
 			Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover] which may perform better in blocky worlds.
+		</member>
+		<member name="material_override" type="Material" setter="set_material_override" getter="get_material_override">
 		</member>
 		<member name="max_view_distance" type="int" setter="set_max_view_distance" getter="get_max_view_distance" default="128">
 			Sets the maximum distance this terrain can support. If a [VoxelViewer] requests more, it will be clamped.
@@ -127,6 +155,4 @@
 			</description>
 		</signal>
 	</signals>
-	<constants>
-	</constants>
 </class>

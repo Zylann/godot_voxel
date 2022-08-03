@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelViewer" inherits="Spatial" version="3.5">
+<class name="VoxelViewer" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Attach this as a child node of characters, so the voxel world will know where to load blocks around them.
 		If no viewer is present in the world, nothing will generate.
@@ -10,10 +10,23 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_network_peer_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_network_peer_id">
+			<return type="void" />
+			<argument index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="requires_collisions" type="bool" setter="set_requires_collisions" getter="is_requiring_collisions" default="true">
 			If set to [code]true[/code], the engine will generate classic collision shapes around this viewer.
+		</member>
+		<member name="requires_data_block_notifications" type="bool" setter="set_requires_data_block_notifications" getter="is_requiring_data_block_notifications" default="false">
 		</member>
 		<member name="requires_visuals" type="bool" setter="set_requires_visuals" getter="is_requiring_visuals" default="true">
 			If set to [code]true[/code], the engine will generate meshes around this viewer. This may be enabled for the local player.
@@ -22,6 +35,4 @@
 			How far should voxels generate around this viewer.
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Voxel" inherits="Resource" version="3.5">
+<class name="VoxelBlockyModel" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Model stored in [VoxelLibrary] and used by [VoxelMesherBlocky].
+		Model stored in [VoxelBlockyLibrary] and used by [VoxelMesherBlocky].
 	</brief_description>
 	<description>
-		Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelLibrary] to be used with [VoxelTerrain] or directly with a [VoxelMesherBlocky].
+		Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelBlockyLibrary] to be used with [VoxelTerrain] or directly with a [VoxelMesherBlocky].
 		Some other various properties also exist to make it easier to implement games based on this technique (such as Minecraft).
 	</description>
 	<tutorials>
@@ -15,8 +15,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="get_material_override" qualifiers="const">
+			<return type="Material" />
+			<argument index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="is_empty" qualifiers="const">
 			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_mesh_collision_enabled" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="arg0" type="int" />
 			<description>
 			</description>
 		</method>
@@ -26,20 +38,31 @@
 			<description>
 			</description>
 		</method>
+		<method name="set_material_override">
+			<return type="void" />
+			<argument index="0" name="index" type="int" />
+			<argument index="1" name="material" type="Material" />
+			<description>
+			</description>
+		</method>
+		<method name="set_mesh_collision_enabled">
+			<return type="void" />
+			<argument index="0" name="surface_index" type="int" />
+			<argument index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
-		<member name="collision_aabbs" type="Array" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[  ]">
+		<member name="collision_aabbs" type="Array" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>
-		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color( 1, 1, 1, 1 )">
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
 		</member>
 		<member name="custom_mesh" type="Mesh" setter="set_custom_mesh" getter="get_custom_mesh">
 		</member>
-		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="Voxel.GeometryType" default="0">
-		</member>
-		<member name="material_id" type="int" setter="set_material_id" getter="get_material_id" default="0">
-			ID of the material that will be used. It corresponds to the index of materials found on [VoxelTerrain].
+		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="VoxelBlockyModel.GeometryType" default="0">
 		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
 			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].
@@ -48,8 +71,8 @@
 		</member>
 		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
 		</member>
-		<member name="voxel_name" type="String" setter="set_voxel_name" getter="get_voxel_name" default="&quot;&quot;">
-			Name that can be used for convenience, when looking up a specific [Voxel] from [VoxelLibrary].
+		<member name="voxel_name" type="StringName" setter="set_voxel_name" getter="get_voxel_name" default="&amp;&quot;&quot;">
+			Name that can be used for convenience, when looking up a specific [VoxelBlockyModel] from [VoxelBlockyLibrary].
 		</member>
 	</members>
 	<constants>
