@@ -79,7 +79,6 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 
 // If you need to do a lot of raycasts on a triangle using the same direction every time
 struct BakedIntersectionTriangleForFixedDirection {
-	Vector3f dir;
 	Vector3f v0;
 	Vector3f e1;
 	Vector3f e2;
@@ -87,12 +86,11 @@ struct BakedIntersectionTriangleForFixedDirection {
 	float f;
 
 	bool bake(Vector3f p_v0, Vector3f p_v1, Vector3f p_v2, Vector3f p_dir) {
-		dir = p_dir;
 		v0 = p_v0;
 
 		e1 = p_v1 - v0;
 		e2 = p_v2 - v0;
-		h = math::cross(dir, e2);
+		h = math::cross(p_dir, e2);
 		const float a = math::dot(e1, h);
 		if (Math::abs(a) < 0.00001f) {
 			// Parallel, will never hit
@@ -102,7 +100,7 @@ struct BakedIntersectionTriangleForFixedDirection {
 		return true;
 	}
 
-	inline TriangleIntersectionResult intersect(const Vector3f &p_from) {
+	inline TriangleIntersectionResult intersect(const Vector3f &p_from, const Vector3f &p_dir) {
 		const Vector3f s = p_from - v0;
 		const float u = f * math::dot(s, h);
 
@@ -112,7 +110,7 @@ struct BakedIntersectionTriangleForFixedDirection {
 
 		const Vector3f q = math::cross(s, e1);
 
-		const float v = f * math::dot(dir, q);
+		const float v = f * math::dot(p_dir, q);
 
 		if ((v < 0.0f) || (u + v > 1.0f)) {
 			return { TriangleIntersectionResult::NO_INTERSECTION, -1 };

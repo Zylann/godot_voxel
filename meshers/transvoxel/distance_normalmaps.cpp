@@ -227,7 +227,8 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 					const float NO_HIT = 999999.f;
 					float nearest_hit_distance = NO_HIT;
 					for (unsigned int ti = 0; ti < triangle_count; ++ti) {
-						const math::TriangleIntersectionResult result = baked_triangles[ti].intersect(ray_origin_mesh);
+						const math::TriangleIntersectionResult result =
+								baked_triangles[ti].intersect(ray_origin_mesh, direction);
 						if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
 								result.distance < nearest_hit_distance) {
 							nearest_hit_distance = result.distance;
