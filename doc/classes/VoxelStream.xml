@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelStream" inherits="Resource" version="3.5">
+<class name="VoxelStream" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Implements loading and saving voxel blocks, mainly using files.
 	</brief_description>
@@ -9,7 +9,7 @@
 	</tutorials>
 	<methods>
 		<method name="emerge_block">
-			<return type="int" enum="VoxelStream.Result" />
+			<return type="int" enum="VoxelStream.ResultCode" />
 			<argument index="0" name="out_buffer" type="VoxelBuffer" />
 			<argument index="1" name="origin_in_voxels" type="Vector3" />
 			<argument index="2" name="lod" type="int" />
@@ -35,6 +35,22 @@
 				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 			</description>
 		</method>
+		<method name="load_voxel_block">
+			<return type="int" enum="VoxelStream.ResultCode" />
+			<argument index="0" name="out_buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3i" />
+			<argument index="2" name="lod" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="save_voxel_block">
+			<return type="void" />
+			<argument index="0" name="buffer" type="VoxelBuffer" />
+			<argument index="1" name="origin_in_voxels" type="Vector3i" />
+			<argument index="2" name="lod" type="int" />
+			<description>
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="save_generator_output" type="bool" setter="set_save_generator_output" getter="get_save_generator_output" default="false">
@@ -42,13 +58,13 @@
 		</member>
 	</members>
 	<constants>
-		<constant name="RESULT_ERROR" value="0" enum="Result">
+		<constant name="RESULT_ERROR" value="0" enum="ResultCode">
 			An error occurred when loading the block. The request will be aborted.
 		</constant>
-		<constant name="RESULT_BLOCK_FOUND" value="2" enum="Result">
+		<constant name="RESULT_BLOCK_FOUND" value="2" enum="ResultCode">
 			The block was found.
 		</constant>
-		<constant name="RESULT_BLOCK_NOT_FOUND" value="1" enum="Result">
+		<constant name="RESULT_BLOCK_NOT_FOUND" value="1" enum="ResultCode">
 			The block was not found. The requester may fallback on using the generator, if any.
 		</constant>
 	</constants>

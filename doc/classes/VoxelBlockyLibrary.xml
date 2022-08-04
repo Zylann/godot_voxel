@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLibrary" inherits="Resource" version="3.5">
+<class name="VoxelBlockyLibrary" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -13,27 +13,32 @@
 			</description>
 		</method>
 		<method name="create_voxel">
-			<return type="Voxel" />
+			<return type="VoxelBlockyModel" />
 			<argument index="0" name="id" type="int" />
 			<argument index="1" name="name" type="String" />
 			<description>
 			</description>
 		</method>
+		<method name="get_materials" qualifiers="const">
+			<return type="Material[]" />
+			<description>
+			</description>
+		</method>
 		<method name="get_voxel">
-			<return type="Voxel" />
+			<return type="VoxelBlockyModel" />
 			<argument index="0" name="id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="get_voxel_by_name">
-			<return type="Voxel" />
-			<argument index="0" name="name" type="String" />
+			<return type="VoxelBlockyModel" />
+			<argument index="0" name="name" type="StringName" />
 			<description>
 			</description>
 		</method>
 		<method name="get_voxel_index_from_name" qualifiers="const">
 			<return type="int" />
-			<argument index="0" name="name" type="String" />
+			<argument index="0" name="name" type="StringName" />
 			<description>
 			</description>
 		</method>

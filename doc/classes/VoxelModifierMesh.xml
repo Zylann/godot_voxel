@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelModifierMesh" inherits="VoxelModifier" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="isolevel" type="float" setter="set_isolevel" getter="get_isolevel" default="0.0">
+		</member>
+		<member name="mesh_sdf" type="VoxelMeshSDF" setter="set_mesh_sdf" getter="get_mesh_sdf">
+		</member>
+	</members>
+</class>

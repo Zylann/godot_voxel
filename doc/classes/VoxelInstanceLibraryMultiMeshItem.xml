@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelInstanceLibraryMultiMeshItem" inherits="VoxelInstanceLibraryItem" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_mesh" qualifiers="const">
+			<return type="Mesh" />
+			<argument index="0" name="mesh_lod_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_mesh">
+			<return type="void" />
+			<argument index="0" name="mesh" type="Mesh" />
+			<argument index="1" name="mesh_lod_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="setup_from_template">
+			<return type="void" />
+			<argument index="0" name="node" type="Node" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cast_shadow" type="int" setter="set_cast_shadows_setting" getter="get_cast_shadows_setting" enum="RenderingServer.ShadowCastingSetting" default="1">
+		</member>
+		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+		</member>
+		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+		</member>
+		<member name="collision_shapes" type="Array" setter="set_collision_shapes" getter="get_collision_shapes" default="[]">
+		</member>
+		<member name="material_override" type="Material" setter="set_material_override" getter="get_material_override">
+		</member>
+		<member name="mesh" type="Mesh" setter="_set_mesh_lod0" getter="_get_mesh_lod0">
+		</member>
+		<member name="mesh_lod1" type="Mesh" setter="_set_mesh_lod1" getter="_get_mesh_lod1">
+		</member>
+		<member name="mesh_lod2" type="Mesh" setter="_set_mesh_lod2" getter="_get_mesh_lod2">
+		</member>
+		<member name="mesh_lod3" type="Mesh" setter="_set_mesh_lod3" getter="_get_mesh_lod3">
+		</member>
+	</members>
+	<constants>
+		<constant name="MAX_MESH_LODS" value="4">
+		</constant>
+	</constants>
+</class>

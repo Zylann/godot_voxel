@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelRaycastResult" inherits="Reference" version="3.5">
+<class name="VoxelRaycastResult" inherits="RefCounted" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Result of a raycast performed with [method VoxelTool.raycast]
 	</brief_description>
@@ -7,18 +7,14 @@
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
-		<member name="distance" type="float" setter="" getter="get_distance" default="2.94273e-44">
+		<member name="distance" type="float" setter="" getter="get_distance" default="0.0">
 		</member>
-		<member name="position" type="Vector3" setter="" getter="get_position" default="Vector3( 0, 0, 0 )">
+		<member name="position" type="Vector3i" setter="" getter="get_position" default="Vector3i(0, 0, 0)">
 			Integer position of the voxel that was hit.
 		</member>
-		<member name="previous_position" type="Vector3" setter="" getter="get_previous_position" default="Vector3( 0, 0, 0 )">
+		<member name="previous_position" type="Vector3i" setter="" getter="get_previous_position" default="Vector3i(0, 0, 0)">
 			Integer position of the previous voxel along the ray before the final hit.
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>

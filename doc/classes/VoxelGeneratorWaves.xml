@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorWaves" inherits="VoxelGeneratorHeightmap" version="3.5">
+<class name="VoxelGeneratorWaves" inherits="VoxelGeneratorHeightmap" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
-		<member name="pattern_offset" type="Vector2" setter="set_pattern_offset" getter="get_pattern_offset" default="Vector2( 0, 0 )">
+		<member name="pattern_offset" type="Vector2" setter="set_pattern_offset" getter="get_pattern_offset" default="Vector2(0, 0)">
 		</member>
-		<member name="pattern_size" type="Vector2" setter="set_pattern_size" getter="get_pattern_size" default="Vector2( 30, 30 )">
+		<member name="pattern_size" type="Vector2" setter="set_pattern_size" getter="get_pattern_size" default="Vector2(30, 30)">
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>
