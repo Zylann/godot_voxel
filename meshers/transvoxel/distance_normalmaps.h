@@ -21,13 +21,8 @@ class VoxelGenerator;
 // triangles, and be stored in an atlas. A shader can then read the atlas using a lookup texture to find the tile.
 
 struct NormalMapData {
-	struct EncodedNormal {
-		uint8_t x;
-		uint8_t y;
-		uint8_t z;
-	};
 	// Encoded normals
-	std::vector<EncodedNormal> normals;
+	std::vector<uint8_t> normals;
 	struct Tile {
 		uint8_t x;
 		uint8_t y;
@@ -46,7 +41,7 @@ struct NormalMapData {
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
 		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
-		Vector3i origin_in_voxels, unsigned int lod_index);
+		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
 
 struct NormalMapImages {
 	Vector<Ref<Image>> atlas_images;
@@ -59,7 +54,7 @@ struct NormalMapTextures {
 };
 
 NormalMapImages store_normalmap_data_to_images(
-		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size);
+		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding);
 
 // Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
 // This may not be allowed to run in a different thread than the main thread if the renderer is not using Vulkan.

@@ -53,6 +53,9 @@ public:
 	void set_normalmap_enabled(bool enable);
 	bool is_normalmap_enabled() const;
 
+	void set_octahedral_normal_encoding(bool enable);
+	bool get_octahedral_normal_encoding() const;
+
 	void set_normalmap_tile_resolution(unsigned int resolution);
 	unsigned int get_normalmap_tile_resolution() const;
 
@@ -96,6 +99,7 @@ private:
 	// visual details using a shader.
 	bool _normalmap_enabled = false;
 	uint8_t _normalmap_tile_resolution = 8;
+	bool _octahedral_normal_encoding_enabled = true;
 };
 
 } // namespace zylann::voxel

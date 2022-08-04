@@ -244,13 +244,13 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		tls_normalmap_data.clear();
 		ZN_ASSERT(input.generator != nullptr);
 		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, _normalmap_tile_resolution,
-				*input.generator, input.origin_in_voxels, input.lod);
+				*input.generator, input.origin_in_voxels, input.lod, _octahedral_normal_encoding_enabled);
 		const Vector3i block_size =
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
 		// TODO This may be deferred to main thread when using GLES3
 		// TODO Link tile resolution to LOD level, with a cap
-		NormalMapImages images =
-				store_normalmap_data_to_images(tls_normalmap_data, _normalmap_tile_resolution, block_size);
+		NormalMapImages images = store_normalmap_data_to_images(
+				tls_normalmap_data, _normalmap_tile_resolution, block_size, _octahedral_normal_encoding_enabled);
 		NormalMapTextures textures = store_normalmap_data_to_textures(images);
 		output.normalmap_atlas = textures.atlas;
 		output.normalmap_lookup = textures.lookup;
@@ -403,6 +403,14 @@ unsigned int VoxelMesherTransvoxel::get_normalmap_tile_resolution() const {
 	return _normalmap_tile_resolution;
 }
 
+void VoxelMesherTransvoxel::set_octahedral_normal_encoding(bool enable) {
+	_octahedral_normal_encoding_enabled = enable;
+}
+
+bool VoxelMesherTransvoxel::get_octahedral_normal_encoding() const {
+	return _octahedral_normal_encoding_enabled;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("build_transition_mesh", "voxel_buffer", "direction"),
 			&VoxelMesherTransvoxel::build_transition_mesh);
@@ -441,6 +449,11 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("get_normalmap_tile_resolution"), &VoxelMesherTransvoxel::get_normalmap_tile_resolution);
 
+	ClassDB::bind_method(D_METHOD("set_octahedral_normal_encoding", "enabled"),
+			&VoxelMesherTransvoxel::set_octahedral_normal_encoding);
+	ClassDB::bind_method(
+			D_METHOD("get_octahedral_normal_encoding"), &VoxelMesherTransvoxel::get_octahedral_normal_encoding);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
@@ -463,6 +476,8 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution"), "set_normalmap_tile_resolution",
 			"get_normalmap_tile_resolution");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
+			"get_octahedral_normal_encoding");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL

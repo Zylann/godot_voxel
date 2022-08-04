@@ -239,8 +239,9 @@ inline void sort(T &a, T &b, T &c, T &d) {
 
 // Returns -1 if `x` is negative, and 1 otherwise.
 // Contrary to a usual version like GLSL, this one returns 1 when `x` is 0, instead of 0.
-inline float sign_nonzero(float x) {
-	return x < 0.f ? -1.f : 1.f;
+template <typename T>
+inline T sign_nonzero(T x) {
+	return x < 0 ? -1 : 1;
 }
 
 // Trilinear interpolation between corner values of a unit-sized cube.

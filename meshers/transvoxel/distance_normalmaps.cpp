@@ -139,22 +139,38 @@ unsigned int prepare_triangles(unsigned int first_index, const transvoxel::CellI
 	return triangle_count;
 }
 
-inline uint8_t snorm_to_u8(float x) {
-	return math::clamp(127.f + 128.f * x, 0.f, 255.f);
+inline uint8_t unorm_to_u8(float x) {
+	return math::clamp(255.f * x, 0.f, 255.f);
 }
 
-inline NormalMapData::EncodedNormal encode_normal_xyz(const Vector3f n) {
-	return { snorm_to_u8(n.x), snorm_to_u8(n.y), snorm_to_u8(n.z) };
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
+Vector2f octahedron_wrap(Vector2f v) {
+	return (Vector2f(1.f) - math::abs(Vector2f(v.y, v.x))) * math::sign_nonzero(v);
+}
+
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
+inline Vector2f encode_normal_octahedron(Vector3f n) {
+	const float sum = Math::abs(n.x) + Math::abs(n.y) + Math::abs(n.z);
+	n.x /= sum;
+	n.y /= sum;
+	Vector2f r = n.z >= 0.f ? Vector2f(n.x, n.y) : octahedron_wrap(Vector2f(n.x, n.y));
+	r = r * 0.5f + Vector2f(0.5f);
+	return r;
+}
+
+inline Vector3f encode_normal_xyz(const Vector3f n) {
+	return Vector3f(0.5f) + 0.5f * n;
 }
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
 		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
-		Vector3i origin_in_voxels, unsigned int lod_index) {
+		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
-	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_infos.size());
+	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
+	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_infos.size() * encoded_normal_size);
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
@@ -317,11 +333,24 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		}
 
 		// Encode normals
-		// TODO Optimize: use octahedral encoding to use one less byte
-		unsigned int tile_begin = cell_index * math::squared(tile_resolution);
-		for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
-			ZN_ASSERT(tile_begin + i < normal_map_data.normals.size());
-			normal_map_data.normals[tile_begin + i] = encode_normal_xyz(tls_tile_normals[i]);
+		const unsigned int tile_begin = cell_index * math::squared(tile_resolution) * encoded_normal_size;
+		if (octahedral_encoding) {
+			for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
+				const unsigned int offset = tile_begin + i * encoded_normal_size;
+				ZN_ASSERT(offset + encoded_normal_size <= normal_map_data.normals.size());
+				const Vector2f n = encode_normal_octahedron(tls_tile_normals[i]);
+				normal_map_data.normals[offset + 0] = unorm_to_u8(n.x);
+				normal_map_data.normals[offset + 1] = unorm_to_u8(n.y);
+			}
+		} else {
+			for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
+				const unsigned int offset = tile_begin + i * encoded_normal_size; //
+				ZN_ASSERT(offset + encoded_normal_size <= normal_map_data.normals.size());
+				const Vector3f n = encode_normal_xyz(tls_tile_normals[i]);
+				normal_map_data.normals[offset + 0] = unorm_to_u8(n.x);
+				normal_map_data.normals[offset + 1] = unorm_to_u8(n.y);
+				normal_map_data.normals[offset + 2] = unorm_to_u8(n.z);
+			}
 		}
 
 		first_index += 3 * cell_info.triangle_count;
@@ -329,7 +358,7 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 }
 
 NormalMapImages store_normalmap_data_to_images(
-		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size) {
+		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
 	NormalMapImages images;
@@ -340,18 +369,21 @@ NormalMapImages store_normalmap_data_to_images(
 		tile_images.resize(data.tiles.size());
 
 		{
+			const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
+			const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+
 			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
 				PackedByteArray bytes;
 				{
 					const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
-					const unsigned int tile_size_in_bytes = tile_size_in_pixels * sizeof(NormalMapData::EncodedNormal);
+					const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
 					bytes.resize(tile_size_in_bytes);
-					memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_pixels, tile_size_in_bytes);
+					memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
 				}
 
 				Ref<Image> image;
 				image.instantiate();
-				image->create_from_data(tile_resolution, tile_resolution, false, Image::FORMAT_RGB8, bytes);
+				image->create_from_data(tile_resolution, tile_resolution, false, format, bytes);
 
 				tile_images.write[tile_index] = image;
 				//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
