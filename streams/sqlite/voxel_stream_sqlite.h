@@ -108,7 +108,7 @@ private:
 
 	VoxelStreamSQLiteInternal *get_connection();
 	void recycle_connection(VoxelStreamSQLiteInternal *con);
-	void flush_cache(VoxelStreamSQLiteInternal *con);
+	void flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection);
 
 	static void _bind_methods();
 
