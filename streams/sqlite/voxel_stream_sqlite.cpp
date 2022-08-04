@@ -662,7 +662,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
 		if (con.open(cpath)) {
-			flush_cache(&con);
+			flush_cache_to_connection(&con);
 		}
 	}
 	for (auto it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
@@ -939,23 +939,23 @@ int VoxelStreamSQLite::get_used_channels_mask() const {
 void VoxelStreamSQLite::flush_cache() {
 	VoxelStreamSQLiteInternal *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
-	flush_cache(con);
+	flush_cache_to_connection(con);
 	recycle_connection(con);
 }
 
 // This function does not lock any mutex for internal use.
-void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
+void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection) {
 	ZN_PROFILE_SCOPE();
 	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
-	ERR_FAIL_COND(con == nullptr);
-	ERR_FAIL_COND(con->begin_transaction() == false);
+	ERR_FAIL_COND(p_connection == nullptr);
+	ERR_FAIL_COND(p_connection->begin_transaction() == false);
 
 	std::vector<uint8_t> &temp_data = tls_temp_block_data;
 	std::vector<uint8_t> &temp_compressed_data = tls_temp_compressed_block_data;
 
 	// TODO Needs better error rollback handling
-	_cache.flush([con, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {
+	_cache.flush([p_connection, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {
 		ERR_FAIL_COND(!BlockLocation::validate(block.position, block.lod));
 
 		BlockLocation loc;
@@ -968,11 +968,11 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 		if (block.has_voxels) {
 			if (block.voxels_deleted) {
 				const std::vector<uint8_t> empty;
-				con->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
 			} else {
 				BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block.voxels);
 				ERR_FAIL_COND(!res.success);
-				con->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
 			}
 		}
 
@@ -986,12 +986,12 @@ void VoxelStreamSQLite::flush_cache(VoxelStreamSQLiteInternal *con) {
 			ERR_FAIL_COND(!CompressedData::compress(
 					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE));
 		}
-		con->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
+		p_connection->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		// TODO Optimization: add a version of the query that can update both at once
 	});
 
-	ERR_FAIL_COND(con->end_transaction() == false);
+	ERR_FAIL_COND(p_connection->end_transaction() == false);
 }
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {

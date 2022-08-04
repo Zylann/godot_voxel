@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" version="3.5">
+<class name="VoxelLodTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -11,6 +11,7 @@
 		<method name="debug_dump_as_scene" qualifiers="const">
 			<return type="int" enum="Error" />
 			<argument index="0" name="path" type="String" />
+			<argument index="1" name="include_instancer" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -23,6 +24,12 @@
 			<return type="Dictionary" />
 			<argument index="0" name="block_pos" type="Vector3" />
 			<argument index="1" name="lod" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_get_draw_flag" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
 			<description>
 			</description>
 		</method>
@@ -43,10 +50,15 @@
 			<description>
 			</description>
 		</method>
-		<method name="debug_print_sdf_top_down" qualifiers="const">
+		<method name="debug_is_draw_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_print_sdf_top_down">
 			<return type="Array" />
-			<argument index="0" name="center" type="Vector3" />
-			<argument index="1" name="extents" type="Vector3" />
+			<argument index="0" name="center" type="Vector3i" />
+			<argument index="1" name="extents" type="Vector3i" />
 			<description>
 			</description>
 		</method>
@@ -54,6 +66,19 @@
 			<return type="Array" />
 			<argument index="0" name="origin" type="Vector3" />
 			<argument index="1" name="dir" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_enabled">
+			<return type="void" />
+			<argument index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_flag">
+			<return type="void" />
+			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
+			<argument index="1" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -67,8 +92,8 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_process_mode" qualifiers="const">
-			<return type="int" enum="VoxelLodTerrain.ProcessMode" />
+		<method name="get_process_callback" qualifiers="const">
+			<return type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
 			</description>
 		</method>
@@ -103,21 +128,21 @@
 			<description>
 			</description>
 		</method>
-		<method name="set_process_mode">
+		<method name="set_process_callback">
 			<return type="void" />
-			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessMode" />
+			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_data_block_position" qualifiers="const">
-			<return type="Vector3" />
+			<return type="Vector3i" />
 			<argument index="0" name="lod_index" type="Vector3" />
 			<argument index="1" name="arg1" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_mesh_block_position" qualifiers="const">
-			<return type="Vector3" />
+			<return type="Vector3i" />
 			<argument index="0" name="lod_index" type="Vector3" />
 			<argument index="1" name="arg1" type="int" />
 			<description>
@@ -135,6 +160,8 @@
 		</member>
 		<member name="collision_update_delay" type="int" setter="set_collision_update_delay" getter="get_collision_update_delay" default="0">
 		</member>
+		<member name="full_load_mode_enabled" type="bool" setter="set_full_load_mode_enabled" getter="is_full_load_mode_enabled" default="false">
+		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 		</member>
 		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="4">
@@ -147,20 +174,35 @@
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
 		</member>
-		<member name="mesher" type="VoxelMesher" setter="set_mesher" getter="get_mesher" override="true" />
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
+		</member>
+		<member name="threaded_update_enabled" type="bool" setter="set_threaded_update_enabled" getter="is_threaded_update_enabled" default="false">
 		</member>
 		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="512">
 		</member>
-		<member name="voxel_bounds" type="AABB" setter="set_voxel_bounds" getter="get_voxel_bounds" default="AABB( -5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09 )">
+		<member name="voxel_bounds" type="AABB" setter="set_voxel_bounds" getter="get_voxel_bounds" default="AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)">
 		</member>
 	</members>
 	<constants>
-		<constant name="PROCESS_MODE_IDLE" value="0" enum="ProcessMode">
+		<constant name="PROCESS_CALLBACK_IDLE" value="0" enum="ProcessCallback">
 		</constant>
-		<constant name="PROCESS_MODE_PHYSICS" value="1" enum="ProcessMode">
+		<constant name="PROCESS_CALLBACK_PHYSICS" value="1" enum="ProcessCallback">
 		</constant>
-		<constant name="PROCESS_MODE_DISABLED" value="2" enum="ProcessMode">
+		<constant name="PROCESS_CALLBACK_DISABLED" value="2" enum="ProcessCallback">
+		</constant>
+		<constant name="DEBUG_DRAW_OCTREE_NODES" value="0" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_OCTREE_BOUNDS" value="1" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_MESH_UPDATES" value="2" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_EDIT_BOXES" value="3" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_VOLUME_BOUNDS" value="4" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_EDITED_BLOCKS" value="5" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="6" enum="DebugDrawFlag">
 		</constant>
 	</constants>
 </class>

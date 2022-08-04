@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstancer" inherits="Spatial" version="3.5">
+<class name="VoxelInstancer" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Spawns items on top of voxel surfaces.
 	</brief_description>
@@ -9,13 +9,43 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="debug_dump_as_scene" qualifiers="const">
+			<return type="void" />
+			<argument index="0" name="fpath" type="String" />
+			<description>
+			</description>
+		</method>
 		<method name="debug_get_block_count" qualifiers="const">
 			<return type="int" />
 			<description>
 			</description>
 		</method>
+		<method name="debug_get_draw_flag" qualifiers="const">
+			<return type="bool" />
+			<argument index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
+			<description>
+			</description>
+		</method>
 		<method name="debug_get_instance_counts" qualifiers="const">
 			<return type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_is_draw_enabled" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_enabled">
+			<return type="void" />
+			<argument index="0" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_flag">
+			<return type="void" />
+			<argument index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
+			<argument index="1" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -32,6 +62,12 @@
 		<constant name="UP_MODE_POSITIVE_Y" value="0" enum="UpMode">
 		</constant>
 		<constant name="UP_MODE_SPHERE" value="1" enum="UpMode">
+		</constant>
+		<constant name="DEBUG_DRAW_ALL_BLOCKS" value="0" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_EDITED_BLOCKS" value="1" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="2" enum="DebugDrawFlag">
 		</constant>
 	</constants>
 </class>
