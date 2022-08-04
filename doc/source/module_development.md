@@ -239,8 +239,21 @@ If you debug the editor, Godot tends to print a lot more errors for things that 
 
 ### Debug print
 
+Godot:
+
 ```cpp
+#include <core/string/print_string.h>
+
 print_line(String("Hello {0}, my age is {1}").format(varray(name, age)));
+```
+
+Non-Godot:
+
+```cpp
+#include "util/log.h"
+#include "util/string_funcs.h"
+
+println(format("Hello {}, my age is {}", name, age));
 ```
 
 ### Pretty printing
