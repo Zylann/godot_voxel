@@ -154,22 +154,23 @@ struct SdfOperation16bit {
 };
 
 struct SdfUnion {
-	real_t strength = 1.f;
+	real_t strength;
 	inline real_t operator()(real_t a, real_t b) const {
-		return zylann::math::sdf_lerped_union(a, b, strength);
+		return Math::lerp(a, math::sdf_union(a, b), strength);
 	}
 };
 
 struct SdfSubtract {
-	real_t strength = 1.f;
+	real_t strength;
 	inline real_t operator()(real_t a, real_t b) const {
-		return zylann::math::sdf_lerped_subtract(a, b, strength);
+		return Math::lerp(a, math::sdf_subtract(a, b), strength);
 	}
 };
 
 struct SdfSet {
+	real_t strength;
 	inline real_t operator()(real_t a, real_t b) const {
-		return b;
+		return Math::lerp(a, b, strength);
 	}
 };
 
@@ -256,6 +257,8 @@ struct SdfBufferShape {
 			// Outside the buffer
 			return 100;
 		}
+		// TODO Trilinear looks bad when the shape is scaled up.
+		// Use Hermite in 3D https://www.researchgate.net/publication/360206102_Hermite_interpolation_of_heightmaps
 		return interpolate_trilinear(buffer, buffer_size, lpos) * sdf_scale - isolevel;
 	}
 
@@ -328,7 +331,7 @@ struct DoSphere {
 	TextureParams texture_params;
 	VoxelBufferInternal::ChannelId channel;
 	uint32_t blocky_value;
-	real_t strength;
+	float strength;
 
 	void operator()() {
 		ZN_PROFILE_SCOPE();
@@ -353,6 +356,7 @@ struct DoSphere {
 				case MODE_SET: {
 					SdfOperation16bit<SdfSet, SdfSphere> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 
@@ -383,6 +387,7 @@ struct DoShape {
 	VoxelBufferInternal::ChannelId channel;
 	TextureParams texture_params;
 	uint32_t blocky_value;
+	float strength;
 
 	void operator()() {
 		ZN_PROFILE_SCOPE();
@@ -393,18 +398,21 @@ struct DoShape {
 					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
 					SdfOperation16bit<SdfUnion, Shape_T> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_REMOVE: {
 					SdfOperation16bit<SdfSubtract, Shape_T> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 
 				case MODE_SET: {
 					SdfOperation16bit<SdfSet, Shape_T> op;
 					op.shape = shape;
+					op.op.strength = strength;
 					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
 				} break;
 

@@ -58,6 +58,8 @@ ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGrap
 		}
 	}
 
+	node->autoconnect_default_inputs = type.has_autoconnect_inputs();
+
 	for (size_t i = 0; i < type.inputs.size(); ++i) {
 		node->default_inputs[i] = type.inputs[i].default_value;
 	}
@@ -277,8 +279,25 @@ void VoxelGeneratorGraph::set_node_default_input(uint32_t node_id, uint32_t inpu
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
-	if (node->default_inputs[input_index] != value) {
-		node->default_inputs[input_index] = value;
+	Variant &defval = node->default_inputs[input_index];
+	if (defval != value) {
+		//node->autoconnect_default_inputs = false;
+		defval = value;
+		emit_changed();
+	}
+}
+
+bool VoxelGeneratorGraph::get_node_default_inputs_autoconnect(uint32_t node_id) const {
+	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_V(node == nullptr, false);
+	return node->autoconnect_default_inputs;
+}
+
+void VoxelGeneratorGraph::set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	if (node->autoconnect_default_inputs != enabled) {
+		node->autoconnect_default_inputs = enabled;
 		emit_changed();
 	}
 }
@@ -317,7 +336,7 @@ PackedInt32Array VoxelGeneratorGraph::get_node_ids() const {
 	return ids;
 }
 
-int VoxelGeneratorGraph::get_nodes_count() const {
+unsigned int VoxelGeneratorGraph::get_nodes_count() const {
 	return _graph.get_nodes_count();
 }
 
@@ -1465,6 +1484,10 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 			}
 		}
 
+		if (node->autoconnect_default_inputs) {
+			node_data["auto_connect"] = true;
+		}
+
 		// Dynamic inputs. Order matters.
 		Array dynamic_inputs_data;
 		for (size_t j = 0; j < node->inputs.size(); ++j) {
@@ -1542,6 +1565,12 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		// Don't create default param values, they will be assigned from serialized data
 		ProgramGraph::Node *node = create_node_internal(graph, type_id, gui_position, id, false);
 		ERR_FAIL_COND_V(node == nullptr, false);
+		// TODO Graphs made in older versions must have autoconnect always off
+
+		Variant *auto_connect_v = node_data.getptr("auto_connect");
+		if (auto_connect_v != nullptr) {
+			node->autoconnect_default_inputs = *auto_connect_v;
+		}
 
 		const Variant *param_key = nullptr;
 		while ((param_key = node_data.next(param_key))) {
@@ -1550,6 +1579,9 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 				continue;
 			}
 			if (param_name == "gui_position") {
+				continue;
+			}
+			if (param_name == "auto_connect") {
 				continue;
 			}
 			if (param_name == "dynamic_inputs") {
@@ -1574,9 +1606,11 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 			}
 			uint32_t param_index;
 			if (type_db.try_get_param_index_from_name(type_id, param_name, param_index)) {
+				ERR_CONTINUE(param_index < 0 || param_index >= node->params.size());
 				node->params[param_index] = node_data[*param_key];
 			}
 			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
+				ERR_CONTINUE(param_index < 0 || param_index >= node->default_inputs.size());
 				node->default_inputs[param_index] = node_data[*param_key];
 			}
 			const Variant *vname = node_data.getptr("name");
@@ -1991,6 +2025,10 @@ void VoxelGeneratorGraph::_bind_methods() {
 			D_METHOD("get_node_default_input", "node_id", "input_index"), &VoxelGeneratorGraph::get_node_default_input);
 	ClassDB::bind_method(D_METHOD("set_node_default_input", "node_id", "input_index", "value"),
 			&VoxelGeneratorGraph::set_node_default_input);
+	ClassDB::bind_method(D_METHOD("get_node_default_inputs_autoconnect", "node_id"),
+			&VoxelGeneratorGraph::get_node_default_inputs_autoconnect);
+	ClassDB::bind_method(D_METHOD("set_node_default_inputs_autoconnect", "node_id", "enabled"),
+			&VoxelGeneratorGraph::set_node_default_inputs_autoconnect);
 	ClassDB::bind_method(
 			D_METHOD("set_node_param_null", "node_id", "param_index"), &VoxelGeneratorGraph::_b_set_node_param_null);
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);

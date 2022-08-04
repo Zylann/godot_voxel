@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelModifier" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="operation" type="int" setter="set_operation" getter="get_operation" enum="VoxelModifier.Operation" default="0">
+		</member>
+		<member name="smoothness" type="float" setter="set_smoothness" getter="get_smoothness" default="0.0">
+		</member>
+	</members>
+</class>

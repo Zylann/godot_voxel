@@ -28,17 +28,22 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
     - `VoxelGeneratorGraph`: editor: replace existing connection if dragging from/to an input port having one already
     - `VoxelGeneratorGraph`: editor: creating noise and curve nodes now auto-create their resource instead of coming up null
+    - `VoxelGeneratorGraph`: editor: added pin button to keep the graph editor shown even after deselecting the terrain.
+    - `VoxelGeneratorGraph`: editor: added popout button to open the graph editor in a separate window
     - `VoxelGeneratorGraph`: added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
     - `VoxelGeneratorGraph`: added math expression node
     - `VoxelGeneratorGraph`: added Pow and Powi nodes
     - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
     - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
     - `VoxelGeneratorGraph`: Added "live update" option, to automatically re-generate the terrain when the graph is modified
+    - `VoxelGeneratorGraph`: Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
+    - `VoxelGeneratorGraph`: Added minor optimization to share branches of nodes doing the same calculations
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
+    - `VoxelTool`: Added `set_sdf_strength()` to control brush strength when sculpting smooth voxels (previously acted as if it was 1.0)
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelLodTerrain`: Editor: added option to show octree grid in editor, now off by default

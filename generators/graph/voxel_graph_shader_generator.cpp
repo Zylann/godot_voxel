@@ -22,15 +22,10 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	ProgramGraph expanded_graph;
-	expanded_graph.copy_from(p_graph, false);
-	const VoxelGraphRuntime::CompilationResult expand_result =
-			expand_expression_nodes(expanded_graph, type_db, nullptr);
+	const VoxelGraphRuntime::CompilationResult expand_result = expand_graph(p_graph, expanded_graph, type_db, nullptr);
 	if (!expand_result.success) {
 		return expand_result;
 	}
-	// Expanding a graph may produce more nodes, not remove any
-	ZN_ASSERT_RETURN_V(expanded_graph.get_nodes_count() >= p_graph.get_nodes_count(),
-			VoxelGraphRuntime::CompilationResult::make_error("Internal error"));
 
 	std::vector<uint32_t> order;
 	std::vector<uint32_t> terminal_nodes;

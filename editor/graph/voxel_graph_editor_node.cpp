@@ -179,7 +179,35 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph)
 			}
 
 		} else {
-			// There is no inbound connection, show the default value
+			if (graph.get_node_default_inputs_autoconnect(loc.node_id)) {
+				const VoxelGeneratorGraph::NodeTypeID node_type_id = graph.get_node_type_id(loc.node_id);
+				const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
+				const VoxelGraphNodeDB::Port &input_port = node_type.inputs[input_index];
+				if (input_port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
+					Variant value;
+					switch (input_port.auto_connect) {
+						case VoxelGraphNodeDB::AUTO_CONNECT_X:
+							value = "Auto X";
+							break;
+						case VoxelGraphNodeDB::AUTO_CONNECT_Y:
+							value = "Auto Y";
+							break;
+						case VoxelGraphNodeDB::AUTO_CONNECT_Z:
+							value = "Auto Z";
+							break;
+						default:
+							ERR_PRINT("Unhandled autoconnect");
+							value = int(input_port.auto_connect);
+							break;
+					}
+					if (input_hint.last_value != value) {
+						input_hint.label->set_text(prefix + value.stringify());
+						input_hint.last_value = value;
+					}
+					continue;
+				}
+			}
+			// There is no inbound connection nor autoconnect, show the default value
 			const Variant current_value = graph.get_node_default_input(loc.node_id, loc.port_index);
 			// Only update when it changes so we don't spam editor redraws
 			if (input_hint.last_value != current_value) {

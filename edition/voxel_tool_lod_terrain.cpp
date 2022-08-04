@@ -177,7 +177,9 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
+	op.blocky_value = _value;
 	op.channel = get_channel();
+	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -205,13 +207,17 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 
 	ops::DoHemisphere op;
 	op.shape.center = center;
+	op.shape.radius = radius;
 	op.shape.flat_direction = flat_direction;
 	op.shape.plane_d = flat_direction.dot(center);
-	op.shape.radius = radius;
+	op.shape.smoothness = smoothness;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
 	op.channel = get_channel();
+	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -279,6 +285,9 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -661,7 +670,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", callable_mp(rigid_body, &RigidDynamicBody3D::set_freeze_enabled), varray(false));
+			timer->connect("timeout", callable_mp(rigid_body, &RigidDynamicBody3D::set_freeze_enabled).bind(false));
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);

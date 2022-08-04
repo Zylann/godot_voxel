@@ -23,6 +23,7 @@ public:
 	struct CompilationResult {
 		bool success = false;
 		int node_id = -1;
+		int expanded_nodes_count = 0; // For testing and debugging
 		String message;
 
 		static CompilationResult make_error(const char *p_message, int p_node_id = -1) {

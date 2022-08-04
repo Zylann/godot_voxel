@@ -9,6 +9,10 @@
 
 namespace zylann::voxel {
 
+namespace {
+const char *AUTOCONNECT_PROPERY_NAME = "autoconnect_default_inputs";
+}
+
 void VoxelGraphNodeInspectorWrapper::setup(
 		Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur, VoxelGraphEditor *ed) {
 	_graph = p_graph;
@@ -60,12 +64,24 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	p_list->push_back(
 			PropertyInfo(Variant::NIL, "Input Defaults", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_CATEGORY));
 
+	const bool autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
+
 	for (size_t i = 0; i < node_type.inputs.size(); ++i) {
 		const VoxelGraphNodeDB::Port &port = node_type.inputs[i];
 		PropertyInfo pi;
 		pi.name = port.name;
 		pi.type = port.default_value.get_type();
+		if (autoconnect && port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
+			// This default value won't be used because the port will automatically connect when compiled
+			pi.usage |= PROPERTY_USAGE_READ_ONLY;
+		}
 		p_list->push_back(pi);
+	}
+
+	// Autoconnect
+
+	if (node_type.has_autoconnect_inputs()) {
+		p_list->push_back(PropertyInfo(Variant::BOOL, AUTOCONNECT_PROPERY_NAME));
 	}
 }
 
@@ -165,6 +181,18 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		return true;
 	}
 
+	if (p_name == AUTOCONNECT_PROPERY_NAME) {
+		ur.create_action(String("Set ") + AUTOCONNECT_PROPERY_NAME);
+		const bool prev_autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
+		ur.add_do_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, p_value);
+		ur.add_undo_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, prev_autoconnect);
+		// To update disabled default input values in the inspector
+		ur.add_do_method(this, "notify_property_list_changed");
+		ur.add_undo_method(this, "notify_property_list_changed");
+		ur.commit_action();
+		return true;
+	}
+
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
 	const VoxelGraphNodeDB &db = VoxelGraphNodeDB::get_singleton();
@@ -210,6 +238,11 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 
 	if (p_name == "name") {
 		r_ret = graph->get_node_name(_node_id);
+		return true;
+	}
+
+	if (p_name == AUTOCONNECT_PROPERY_NAME) {
+		r_ret = graph->get_node_default_inputs_autoconnect(_node_id);
 		return true;
 	}
 

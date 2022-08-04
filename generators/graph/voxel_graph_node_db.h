@@ -11,14 +11,26 @@ namespace zylann::voxel {
 
 class VoxelGraphNodeDB {
 public:
+	enum AutoConnect { //
+		AUTO_CONNECT_NONE,
+		AUTO_CONNECT_X,
+		AUTO_CONNECT_Y,
+		AUTO_CONNECT_Z
+	};
+
 	struct Port {
 		String name;
+		// Only relevant for inputs.
 		Variant default_value;
+		// Which connection will be automatically made if the input port is not connected and no fixed value has been
+		// explicitely specified. Only relevant for inputs.
+		AutoConnect auto_connect = AUTO_CONNECT_NONE;
 		//PortType port_type;
 
-		Port(String p_name) : name(p_name), default_value(0.f) {}
+		Port(String p_name, AutoConnect ac = AUTO_CONNECT_NONE) : name(p_name), default_value(0.f), auto_connect(ac) {}
 
-		Port(String p_name, float p_default_value) : name(p_name), default_value(p_default_value) {}
+		Port(String p_name, float p_default_value, AutoConnect ac = AUTO_CONNECT_NONE) :
+				name(p_name), default_value(p_default_value), auto_connect(ac) {}
 	};
 
 	typedef Variant (*DefaultValueFactory)();
@@ -67,9 +79,20 @@ public:
 		CompileFunc compile_func = nullptr;
 		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
 		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
+		// If available, name of the corresponding function to be used in expression nodes
 		const char *expression_func_name = nullptr;
+		// The Expression node can invoke the logic of other nodes, but it then needs a specific implementation
 		ExpressionParser::FunctionCallback expression_func = nullptr;
 		ShaderGenFunc shader_gen_func = nullptr;
+
+		inline bool has_autoconnect_inputs() const {
+			for (const Port &port : inputs) {
+				if (port.auto_connect != AUTO_CONNECT_NONE) {
+					return true;
+				}
+			}
+			return false;
+		}
 	};
 
 	VoxelGraphNodeDB();

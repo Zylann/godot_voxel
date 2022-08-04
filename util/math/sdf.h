@@ -58,15 +58,6 @@ inline real_t sdf_subtract(real_t a, real_t b) {
 	return max(a, -b);
 }
 
-inline real_t sdf_lerped_union(real_t a, real_t b, real_t s) {
-	return Math::lerp(a, min(a, b), s);
-}
-
-// Subtracts SDF b from SDF a
-inline real_t sdf_lerped_subtract(real_t a, real_t b, real_t s) {
-	return Math::lerp(a, max(a, -b), s);
-}
-
 inline real_t sdf_smooth_union(real_t a, real_t b, real_t s) {
 	const real_t h = clampf(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);
 	return Math::lerp(b, a, h) - s * h * (1.0 - h);

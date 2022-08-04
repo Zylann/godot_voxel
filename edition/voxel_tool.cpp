@@ -73,6 +73,14 @@ void VoxelTool::set_texture_falloff(float falloff) {
 	_texture_params.sharpness = 1.f / math::clamp(falloff, 0.001f, 1.f);
 }
 
+void VoxelTool::set_sdf_strength(float strength) {
+	_sdf_strength = math::clamp(strength, 0.f, 1.f);
+}
+
+float VoxelTool::get_sdf_strength() const {
+	return _sdf_strength;
+}
+
 float VoxelTool::get_texture_falloff() const {
 	ERR_FAIL_COND_V(_texture_params.sharpness < 1.f, 1.f);
 	return 1.f / _texture_params.sharpness;
@@ -363,6 +371,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_sdf_scale", "scale"), &VoxelTool::set_sdf_scale);
 	ClassDB::bind_method(D_METHOD("get_sdf_scale"), &VoxelTool::get_sdf_scale);
 
+	ClassDB::bind_method(D_METHOD("set_sdf_strength", "strength"), &VoxelTool::set_sdf_strength);
+	ClassDB::bind_method(D_METHOD("get_sdf_strength"), &VoxelTool::get_sdf_strength);
+
 	ClassDB::bind_method(D_METHOD("set_texture_index", "index"), &VoxelTool::set_texture_index);
 	ClassDB::bind_method(D_METHOD("get_texture_index"), &VoxelTool::get_texture_index);
 
@@ -399,7 +410,8 @@ void VoxelTool::_bind_methods() {
 			"set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sdf_strength"), "set_sdf_strength", "get_sdf_strength");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_index"), "set_texture_index", "get_texture_index");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texture_opacity"), "set_texture_opacity", "get_texture_opacity");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "texture_falloff"), "set_texture_falloff", "get_texture_falloff");

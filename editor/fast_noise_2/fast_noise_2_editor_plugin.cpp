@@ -119,9 +119,7 @@ private:
 			_noise->generate_image(im, false);
 		}
 
-		Ref<ImageTexture> tex;
-		tex.instantiate();
-		tex->create_from_image(im);
+		Ref<ImageTexture> tex = ImageTexture::create_from_image(im);
 		_texture_rect->set_texture(tex);
 	}
 

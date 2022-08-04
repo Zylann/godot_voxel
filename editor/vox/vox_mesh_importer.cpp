@@ -339,9 +339,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
 				// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
-				Ref<ImageTexture> texture;
-				texture.instantiate();
-				texture->create_from_image(atlas);
+				Ref<ImageTexture> texture = ImageTexture::create_from_image(atlas);
 				material->set_texture(StandardMaterial3D::TEXTURE_ALBEDO, texture);
 				material->set_texture_filter(StandardMaterial3D::TEXTURE_FILTER_NEAREST);
 			}
@@ -359,7 +357,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	{
 		ZN_PROFILE_SCOPE();
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
-		const Error mesh_save_err = ResourceSaver::save(mesh_save_path, mesh);
+		const Error mesh_save_err = ResourceSaver::save(mesh, mesh_save_path);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path)));
 	}

@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" version="3.5">
+<class name="VoxelGeneratorHeightmap" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
 		</member>
@@ -22,6 +20,4 @@
 			Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>

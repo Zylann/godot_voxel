@@ -260,6 +260,8 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 		ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
+	const unsigned int initial_node_count = graph.get_nodes_count();
+
 	// Gather expression node IDs first, as expansion could invalidate the iterator
 	std::vector<uint32_t> expression_node_ids;
 	graph.for_each_node([&expression_node_ids](ProgramGraph::Node &node) {
@@ -286,9 +288,237 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 		}
 	}
 
+	// Expanding expression nodes may produce more nodes, not remove any
+	ZN_ASSERT_RETURN_V(graph.get_nodes_count() >= initial_node_count,
+			VoxelGraphRuntime::CompilationResult::make_error("Internal error"));
+
 	VoxelGraphRuntime::CompilationResult result;
 	result.success = true;
 	return result;
+}
+
+struct NodePair {
+	uint32_t node1_id; // On node1's branch
+	uint32_t node2_id; // On node2's branch
+
+	inline bool operator!=(const NodePair &other) const {
+		return node1_id != other.node1_id || node2_id != other.node2_id;
+	}
+};
+
+static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::Node &node1,
+		const ProgramGraph::Node &node2, std::vector<NodePair> &equivalences) {
+	if (node1.id == node2.id) {
+		// They are the same node (this can happen while processing ancestors).
+		return true;
+	}
+	if (node1.type_id != node2.type_id) {
+		// Different type
+		return false;
+	}
+	// Note, some nodes can have dynamic inputs
+	if (node1.inputs.size() != node2.inputs.size()) {
+		// Different input count
+		return false;
+	}
+	ZN_ASSERT_RETURN_V(node1.params.size() == node2.params.size(), false);
+	for (unsigned int param_index = 0; param_index < node1.params.size(); ++param_index) {
+		const Variant v1 = node1.params[param_index];
+		const Variant v2 = node2.params[param_index];
+		// Not checking objects for now. i.e two equivalent Noise instances will not be considered equivalent.
+		if (v1 != v2) {
+			// Different parameter
+			return false;
+		}
+	}
+	for (unsigned int input_index = 0; input_index < node1.inputs.size(); ++input_index) {
+		const ProgramGraph::Port &node1_input = node1.inputs[input_index];
+		const ProgramGraph::Port &node2_input = node2.inputs[input_index];
+		if (node1_input.connections.size() != node2_input.connections.size()) {
+			return false;
+		}
+		ZN_ASSERT_RETURN_V_MSG(
+				node1_input.connections.size() <= 1, false, "Multiple input connections isn't supported");
+		// TODO Some nodes like `*` and `+` have unordered inputs, we need to handle that
+		if (node1_input.connections.size() == 0) {
+			// No ancestor, check default inputs (autoconnect is ignored, it must have been applied earlier)
+			const Variant v1 = node1.default_inputs[input_index];
+			const Variant v2 = node2.default_inputs[input_index];
+			if (v1 != v2) {
+				// Different default inputs
+				return false;
+			}
+		} else {
+			const ProgramGraph::PortLocation &node1_src = node1_input.connections[0];
+			const ProgramGraph::PortLocation &node2_src = node2_input.connections[0];
+			if (node1_src.port_index != node2_src.port_index) {
+				// Different ancestor output
+				return false;
+			}
+			const ProgramGraph::Node &ancestor1 = graph.get_node(node1_src.node_id);
+			const ProgramGraph::Node &ancestor2 = graph.get_node(node2_src.node_id);
+			if (!is_node_equivalent(graph, ancestor1, ancestor2, equivalences)) {
+				// Different ancestors
+				equivalences.clear();
+				return false;
+			}
+		}
+	}
+	NodePair equivalence{ node1.id, node2.id };
+#ifdef DEBUG_ENABLED
+	for (const NodePair &p : equivalences) {
+		ZN_ASSERT(p != equivalence);
+	}
+#endif
+	equivalences.push_back(equivalence);
+	return true;
+}
+
+static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
+	const ProgramGraph::Node &node1 = graph.get_node(node1_id);
+	const ProgramGraph::Node &node2 = graph.get_node(node2_id);
+	ZN_ASSERT_RETURN(node1.type_id == node2.type_id);
+	ZN_ASSERT_RETURN(node1.outputs.size() == node2.outputs.size());
+	// Remove 2, keep 1
+	for (unsigned int output_index = 0; output_index < node2.outputs.size(); ++output_index) {
+		// Remove output connections, re-create them on the equivalent node.
+		// Copy output connections because they will get modified while iterating.
+		std::vector<ProgramGraph::PortLocation> dsts = node2.outputs[output_index].connections;
+		for (ProgramGraph::PortLocation dst : dsts) {
+			graph.disconnect(ProgramGraph::PortLocation{ node2_id, output_index }, dst);
+			graph.connect(ProgramGraph::PortLocation{ node1_id, output_index }, dst);
+		}
+	}
+	if (remap_info != nullptr) {
+		for (PortRemap &remap : remap_info->user_to_expanded_ports) {
+			if (remap.expanded.node_id == node2_id) {
+				remap.expanded.node_id = node1_id;
+			}
+		}
+		for (ExpandedNodeRemap &remap : remap_info->expanded_to_user_node_ids) {
+			if (remap.expanded_node_id == node2_id) {
+				remap.expanded_node_id = node1_id;
+			}
+		}
+	}
+	graph.remove_node(node2_id);
+}
+
+// Finds nodes with equivalent parameters and equivalent ancestors, so they can be merged into a single branch.
+// This should be done preferably after expanding expressions and macros.
+// Automating this allows to create macros that use similar operations without loosing performance due to repetition.
+// For example, a SphereHeightNoise macro will want to normalize (X,Y,Z). Other branches may want to do this too,
+// so we should share that operation, but it's harder to do so with self-contained branches. So it's easier if that
+// can be delegated to an automated process.
+static void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
+	ZN_PROFILE_SCOPE();
+	std::vector<uint32_t> node_ids;
+	graph.get_node_ids(node_ids);
+
+	// Declaring here so we dont reallocate memory too much
+	std::vector<NodePair> equivalences;
+
+	// For each unique pair of nodes
+	for (unsigned int i = 0; i < node_ids.size(); ++i) {
+		// Nodes in the list might get removed in the process so we test if they still exist
+		const uint32_t node1_id = node_ids[i];
+		const ProgramGraph::Node *node1 = graph.try_get_node(node1_id);
+		if (node1 == nullptr) {
+			continue;
+		}
+		for (unsigned int j = i + 1; j < node_ids.size(); ++j) {
+			const uint32_t node2_id = node_ids[j];
+			const ProgramGraph::Node *node2 = graph.try_get_node(node2_id);
+			if (node2 == nullptr) {
+				// Can have been merged
+				continue;
+			}
+			equivalences.clear();
+			// Is the pair equivalent?
+			if (is_node_equivalent(graph, *node1, *node2, equivalences)) {
+				// Merge nodes to share their outputs
+				for (NodePair equivalence : equivalences) {
+					merge_node(graph, equivalence.node1_id, equivalence.node2_id, remap_info);
+				}
+				if (graph.try_get_node(node1_id) == nullptr) {
+					// Node 1 has been merged, stop looking for equivalences with it
+					break;
+				}
+			}
+		}
+	}
+}
+
+// For each node with auto-connect enabled, if they have non-connected ports supporting auto-connect, connects them to a
+// default input node. If no such node exists in the graph, it is created.
+static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &type_db) {
+	// Copy ids first because we might create new nodes
+	std::vector<uint32_t> node_ids;
+	graph.get_node_ids(node_ids);
+
+	for (const uint32_t node_id : node_ids) {
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+
+		if (node.autoconnect_default_inputs == false) {
+			// Explicit constants will be used instead
+			continue;
+		}
+
+		for (unsigned int input_index = 0; input_index < node.inputs.size(); ++input_index) {
+			const ProgramGraph::Port &input_port = node.inputs[input_index];
+			if (input_port.connections.size() > 0) {
+				// Already connected
+				continue;
+			}
+			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
+			VoxelGeneratorGraph::NodeTypeID src_type;
+			switch (auto_connect) {
+				case VoxelGraphNodeDB::AUTO_CONNECT_X:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_X;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_Y:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_Y;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_Z:
+					src_type = VoxelGeneratorGraph::NODE_INPUT_Z;
+					break;
+				case VoxelGraphNodeDB::AUTO_CONNECT_NONE:
+					continue;
+				default:
+					ZN_PRINT_ERROR("Unhandled autoconnect");
+					continue;
+			}
+			uint32_t src_node_id = graph.find_node_by_type(src_type);
+			if (src_node_id == ProgramGraph::NULL_ID) {
+				// Not found, create it then
+				const ProgramGraph::Node *src_node =
+						create_node_internal(graph, src_type, Vector2(), graph.generate_node_id(), false);
+				ZN_ASSERT_CONTINUE(src_node != nullptr);
+				src_node_id = src_node->id;
+			}
+			graph.connect(
+					ProgramGraph::PortLocation{ src_node_id, 0 }, ProgramGraph::PortLocation{ node_id, input_index });
+		}
+	}
+}
+
+VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+	// First make a copy of the graph which we'll modify
+	expanded_graph.copy_from(graph, false);
+
+	apply_auto_connects(expanded_graph, type_db);
+
+	const VoxelGraphRuntime::CompilationResult expand_result =
+			expand_expression_nodes(expanded_graph, type_db, remap_info);
+	if (!expand_result.success) {
+		return expand_result;
+	}
+
+	merge_equivalences(expanded_graph, remap_info);
+
+	return expand_result;
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
@@ -296,20 +526,15 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGra
 
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
-	ProgramGraph expanded_graph;
-	expanded_graph.copy_from(p_graph, false);
-	// TODO Store a remapping to allow debugging with the expanded graph
 	GraphRemappingInfo remap_info;
+	ProgramGraph expanded_graph;
 	const VoxelGraphRuntime::CompilationResult expand_result =
-			expand_expression_nodes(expanded_graph, type_db, &remap_info);
+			expand_graph(p_graph, expanded_graph, type_db, &remap_info);
 	if (!expand_result.success) {
 		return expand_result;
 	}
-	// Expanding a graph may produce more nodes, not remove any
-	ERR_FAIL_COND_V(expanded_graph.get_nodes_count() < p_graph.get_nodes_count(),
-			CompilationResult::make_error("Internal error"));
 
-	const VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug, type_db);
+	VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug, type_db);
 	if (!result.success) {
 		clear();
 	}
@@ -328,6 +553,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGra
 		}
 	}
 
+	result.expanded_nodes_count = expanded_graph.get_nodes_count();
 	return result;
 }
 

@@ -152,7 +152,7 @@ void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
-		callback.call(args, 2, retval, err);
+		callback.callp(args, 2, retval, err);
 
 		ERR_FAIL_COND_MSG(
 				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
@@ -174,7 +174,7 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
-		callback.call(args, 2, retval, err);
+		callback.callp(args, 2, retval, err);
 
 		ERR_FAIL_COND_MSG(
 				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));

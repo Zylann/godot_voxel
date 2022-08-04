@@ -170,8 +170,8 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	op.mode = ops::Mode(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
-	op.strength = _strength;
 	op.channel = get_channel();
+	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -202,6 +202,7 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
 	op.channel = get_channel();
+	op.strength = get_sdf_strength();
 
 	if (!is_area_editable(op.box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -234,14 +235,6 @@ void VoxelToolTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->get_storage().set_voxel_f(v, pos, _channel);
-}
-
-void VoxelToolTerrain::set_strength(float strength) {
-	_strength = math::clamp(strength, 0.001f, 1.f);
-}
-
-float VoxelToolTerrain::get_strength() const {
-	return _strength;
 }
 
 void VoxelToolTerrain::_post_edit(const Box3i &box) {
@@ -418,7 +411,7 @@ void VoxelToolTerrain::run_blocky_random_tick(
 				Callable::CallError error;
 				Variant retval; // We don't care about the return value, Callable API requires it
 				const CallbackData *cd = (const CallbackData *)self;
-				cd->callable.call(args, 2, retval, error);
+				cd->callable.callp(args, 2, retval, error);
 				// TODO I would really like to know what's the correct way to report such errors...
 				// Examples I found in the engine are inconsistent
 				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
@@ -457,7 +450,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					const Variant *args[2] = { &key, &v };
 					Callable::CallError err;
 					Variant retval; // We don't care about the return value, Callable API requires it
-					callback.call(args, 2, retval, err);
+					callback.callp(args, 2, retval, err);
 
 					ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
 							String("Callable failed at {0}").format(varray(key)));
@@ -476,11 +469,6 @@ void VoxelToolTerrain::_bind_methods() {
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
 			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
-
-	ClassDB::bind_method(D_METHOD("set_strength", "strength"), &VoxelToolTerrain::set_strength);
-	ClassDB::bind_method(D_METHOD("get_strength"), &VoxelToolTerrain::get_strength);
-
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "strength"), "set_strength", "get_strength");
 }
 
 } // namespace zylann::voxel

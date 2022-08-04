@@ -7,7 +7,8 @@ namespace zylann::voxel {
 VoxelGraphEditorNodePreview::VoxelGraphEditorNodePreview() {
 	_image.instantiate();
 	_image->create(RESOLUTION, RESOLUTION, false, Image::FORMAT_L8);
-	_texture.instantiate();
+	_image->fill(Color(0.5, 0.5, 0.5));
+	_texture = ImageTexture::create_from_image(_image);
 	update_texture();
 	_texture_rect = memnew(TextureRect);
 	_texture_rect->set_stretch_mode(TextureRect::STRETCH_SCALE);
@@ -22,7 +23,7 @@ Ref<Image> VoxelGraphEditorNodePreview::get_image() const {
 }
 
 void VoxelGraphEditorNodePreview::update_texture() {
-	_texture->create_from_image(_image);
+	_texture->update(_image);
 }
 
 } // namespace zylann::voxel

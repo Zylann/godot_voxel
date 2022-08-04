@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceGenerator" inherits="Resource" version="3.5">
+<class name="VoxelInstanceGenerator" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Decides where to spawn instances on top of a voxel surface.
 	</brief_description>
@@ -9,8 +9,6 @@
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
 		<member name="density" type="float" setter="set_density" getter="get_density" default="0.1">
 		</member>
@@ -28,7 +26,7 @@
 		</member>
 		<member name="min_slope_degrees" type="float" setter="set_min_slope_degrees" getter="get_min_slope_degrees" default="0.0">
 		</member>
-		<member name="noise" type="FastNoiseLite" setter="set_noise" getter="get_noise">
+		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
 		</member>
 		<member name="noise_dimension" type="int" setter="set_noise_dimension" getter="get_noise_dimension" enum="VoxelInstanceGenerator.Dimension" default="1">
 		</member>
