@@ -32,6 +32,7 @@ protected:
 	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
 	gd::VoxelBuffer::ChannelId _b_get_channel() const;
 
+	// float height_func(x, y)
 	template <typename Height_F>
 	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;

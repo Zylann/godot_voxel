@@ -26,7 +26,8 @@ public:
 
 		Type type;
 		VoxelMesher::Output surfaces;
-		// Only used if `has_mesh_resource` is true.
+		// Only used if `has_mesh_resource` is true (usually when meshes are allowed to be build in threads). Otherwise,
+		// mesh data will be in `surfaces` and has to be built on the main thread.
 		Ref<Mesh> mesh;
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of

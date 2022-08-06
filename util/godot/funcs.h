@@ -77,6 +77,7 @@ struct RefHasher {
 	}
 };
 
+// Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
 void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src);
 void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src);
 
