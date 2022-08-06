@@ -90,6 +90,36 @@ VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelGenerator::Vox
 	return result;
 }
 
+void VoxelGeneratorNoise2D::generate_series(Span<const float> positions_x, Span<const float> positions_y,
+		Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+		Vector3f max_pos) {
+	Parameters params;
+	{
+		RWLockRead rlock(_parameters_lock);
+		params = _parameters;
+	}
+
+	Result result;
+
+	ERR_FAIL_COND(params.noise.is_null());
+	Noise &noise = **params.noise;
+
+	if (_curve.is_null()) {
+		generate_series_template(
+				[&noise](float x, float z) { //
+					return 0.5 + 0.5 * noise.get_noise_2d(x, z);
+				},
+				positions_x, positions_y, positions_z, channel, out_values, min_pos, max_pos);
+	} else {
+		Curve &curve = **params.curve;
+		generate_series_template(
+				[&noise, &curve](float x, float z) { //
+					return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z));
+				},
+				positions_x, positions_y, positions_z, channel, out_values, min_pos, max_pos);
+	}
+}
+
 void VoxelGeneratorNoise2D::_on_noise_changed() {
 	ERR_FAIL_COND(_noise.is_null());
 	RWLockWrite wlock(_parameters_lock);
