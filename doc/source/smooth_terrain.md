@@ -588,8 +588,7 @@ void vertex() {
 	// [...]
 
 	// Note, if you use Transvoxel, this may be placed after modifications to `VERTEX`
-	vec3 world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	v_world_pos = world_pos;
+	v_vertex_pos_model = VERTEX;
 
 	// [...]
 }
