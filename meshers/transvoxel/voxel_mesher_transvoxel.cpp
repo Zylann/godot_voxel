@@ -526,20 +526,16 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
 
+	ADD_GROUP("Mesh optimization", "mesh_optimization_");
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "mesh_optimization_enabled"), "set_mesh_optimization_enabled",
 			"is_mesh_optimization_enabled");
-
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_error_threshold"),
 			"set_mesh_optimization_error_threshold", "get_mesh_optimization_error_threshold");
-
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_target_ratio"), "set_mesh_optimization_target_ratio",
 			"get_mesh_optimization_target_ratio");
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deep_sampling_enabled"), "set_deep_sampling_enabled",
-			"is_deep_sampling_enabled");
-
-	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
+	ADD_GROUP("Detail normalmaps", "normalmap_");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_min"), "set_normalmap_tile_resolution_min",
@@ -550,6 +546,13 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			"get_normalmap_begin_lod_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
 			"get_octahedral_normal_encoding");
+
+	ADD_GROUP("Advanced", "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deep_sampling_enabled"), "set_deep_sampling_enabled",
+			"is_deep_sampling_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL
