@@ -42,8 +42,8 @@ inline Ref<ShaderMaterial> allocate_shader_material(
 	if (pool.size() > 0) {
 		sm = pool.back();
 		// The joys of pooling materials.
-		sm->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, transition_mask);
-		sm->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+		sm->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, transition_mask);
+		sm->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 		pool.pop_back();
 	} else {
 		// Can get very slow due to https://github.com/godotengine/godot/issues/34741, but should be rare once
@@ -466,7 +466,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 
 		} else if (active && _lod_fade_duration > 0.f) {
@@ -475,7 +475,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 			// parameter. Otherwise, it would be active but invisible due to still being faded out.
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 		}
 
@@ -1306,9 +1306,9 @@ static void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst) {
 	// Not using `Shader::get_param_list()` because it is not exposed to the script/extension API, and it prepends
 	// `shader_params/` to every parameter name, which is slow and not usable for our case.
 	List<PropertyInfo> properties;
-	RenderingServer::get_singleton()->shader_get_param_list(shader->get_rid(), &properties);
+	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader->get_rid(), &properties);
 	for (const PropertyInfo &property : properties) {
-		dst.set_shader_param(property.name, src.get_shader_param(property.name));
+		dst.set_shader_uniform(property.name, src.get_shader_uniform(property.name));
 	}
 }
 
@@ -1883,7 +1883,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 				_fading_out_meshes[i] = std::move(_fading_out_meshes.back());
 				_fading_out_meshes.pop_back();
 			} else {
-				item.shader_material->set_shader_param(
+				item.shader_material->set_shader_uniform(
 						VoxelStringNames::get_singleton().u_lod_fade, Vector2(1.f - item.progress, 0.f));
 				++i;
 			}
