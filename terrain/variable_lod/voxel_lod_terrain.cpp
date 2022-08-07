@@ -2150,6 +2150,16 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
 			}
 		}
+		if (_generator.is_valid()) {
+			Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
+			if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled()) {
+				if (!_generator->supports_series_generation()) {
+					warnings.append(
+							TTR("The current mesher ({0}) requires the generator to be able to generate series of "
+								"positions with `generate_series`. The current generator ({1}) does not support it."));
+				}
+			}
+		}
 	}
 	return warnings;
 }
