@@ -418,7 +418,7 @@ NormalMapImages store_normalmap_data_to_images(
 				const uint8_t g = tile_index >> 8;
 				const uint8_t b = tile.axis;
 				const unsigned int pi = pixel_size * (tile.x + tile.y * block_size.x + tile.z * deck_size);
-				ZN_ASSERT(pi < bytes.size());
+				ZN_ASSERT(int(pi) < bytes.size());
 				bytes_w[pi] = r;
 				bytes_w[pi + 1] = g;
 				bytes_w[pi + 2] = b;

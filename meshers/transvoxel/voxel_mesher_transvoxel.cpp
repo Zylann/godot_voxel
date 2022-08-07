@@ -453,7 +453,7 @@ int VoxelMesherTransvoxel::get_normalmap_tile_resolution_max() const {
 }
 
 void VoxelMesherTransvoxel::set_normalmap_begin_lod_index(int lod_index) {
-	ERR_FAIL_INDEX(lod_index, constants::MAX_LOD);
+	ERR_FAIL_INDEX(lod_index, int(constants::MAX_LOD));
 	_normalmap_settings.begin_lod_index = lod_index;
 }
 
