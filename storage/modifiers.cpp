@@ -31,6 +31,20 @@ Span<const Vector3> get_positions_temporary(Vector3i buffer_size, Vector3 origin
 	return positions;
 }
 
+Span<const Vector3> get_positions_temporary(
+		Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer) {
+	ZN_ASSERT(x_buffer.size() == z_buffer.size() && y_buffer.size() == z_buffer.size());
+
+	tls_positions.resize(x_buffer.size());
+	Span<Vector3> positions = to_span(tls_positions);
+
+	for (unsigned int i = 0; i < x_buffer.size(); ++i) {
+		positions[i] = Vector3(x_buffer[i], y_buffer[i], z_buffer[i]);
+	}
+
+	return positions;
+}
+
 Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	ZN_DSTACK();
 	const Vector3i bs = voxels.get_size();
@@ -235,6 +249,31 @@ void VoxelModifierStack::apply(float &sdf, Vector3 position) const {
 	ctx.sdf = Span<float>(&sdf, 1);
 
 	const AABB aabb(position, Vector3(1, 1, 1));
+
+	for (unsigned int i = 0; i < _stack.size(); ++i) {
+		const VoxelModifier *modifier = _stack[i];
+		ZN_ASSERT(modifier != nullptr);
+
+		if (modifier->get_aabb().intersects(aabb)) {
+			modifier->apply(ctx);
+		}
+	}
+}
+
+void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer,
+		Span<float> sdf_buffer, Vector3f min_pos, Vector3f max_pos) const {
+	ZN_PROFILE_SCOPE();
+	RWLockRead lock(_stack_lock);
+
+	if (_stack.size() == 0) {
+		return;
+	}
+
+	VoxelModifierContext ctx;
+	ctx.positions = get_positions_temporary(x_buffer, y_buffer, z_buffer);
+	ctx.sdf = sdf_buffer;
+
+	const AABB aabb(to_vec3(min_pos), to_vec3(max_pos - min_pos));
 
 	for (unsigned int i = 0; i < _stack.size(); ++i) {
 		const VoxelModifier *modifier = _stack[i];

@@ -1,5 +1,6 @@
 #include "distance_normalmaps.h"
 #include "../../generators/voxel_generator.h"
+#include "../../storage/voxel_data_map.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
@@ -166,7 +167,8 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
 		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
-		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
+		const VoxelDataLodMap *voxel_data, Vector3i origin_in_voxels, unsigned int lod_index,
+		bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
@@ -289,11 +291,34 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		tls_sdf_buffer.resize(tls_x_buffer.size());
 
 		// Query voxel data
-		// TODO Support edited voxels
-		// TODO Support modifiers
-		generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-				VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), cell_origin_world,
-				cell_origin_world + Vector3f(cell_size));
+		{
+			const Vector3f query_min_pos = cell_origin_world;
+			const Vector3f query_max_pos = cell_origin_world + Vector3f(cell_size);
+
+			generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
+					VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), query_min_pos, query_max_pos);
+
+			if (voxel_data != nullptr) {
+				voxel_data->modifiers.apply(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
+						to_span(tls_sdf_buffer), query_min_pos, query_max_pos);
+
+				// TODO Support edited voxels
+				// Naive method:
+				// Do 4 single sample queries for every pixel. In each sample, check if there is edited data. If yes,
+				// interpolate linearly it with 8 neighbors. Neighbors are obtained through single queries too. If the
+				// sample is not edited, use the generator and modifiers.
+				// It seems extremely slow though...
+
+				// const Vector3i query_min_pos_i = math::floor_to_int(query_min_pos);
+				// const Vector3i query_max_pos_i = math::ceil_to_int(query_max_pos);
+				// VoxelDataGrid grid;
+				// {
+				// 	const VoxelDataLodMap::Lod &lod0 = voxel_data->lods[0];
+				// 	RWLockRead rlock(lod0.map_lock);
+				// 	grid.reference_area(lod0.map, Box3i::from_min_max(query_min_pos_i, query_max_pos_i));
+				// }
+			}
+		}
 
 		static thread_local std::vector<Vector3f> tls_tile_normals;
 		tls_tile_normals.clear();

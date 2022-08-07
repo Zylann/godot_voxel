@@ -281,7 +281,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// - So the mesh can be obtained sooner
 		// - And we can prevent it from updating as frequently as the mesh if repeatedly modified
 		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, tile_resolution, *input.generator,
-				input.origin_in_voxels + offset, input.lod, settings.octahedral_encoding_enabled);
+				input.data, input.origin_in_voxels + offset, input.lod, settings.octahedral_encoding_enabled);
 
 		const Vector3i block_size =
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
