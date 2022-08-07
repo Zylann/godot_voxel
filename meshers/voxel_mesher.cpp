@@ -1,6 +1,7 @@
 #include "voxel_mesher.h"
 #include "../constants/voxel_string_names.h"
 #include "../generators/voxel_generator.h"
+#include "../meshers/transvoxel/distance_normalmaps.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
 
@@ -64,11 +65,15 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		++gd_surface_index;
 	}
 
-	if (output.normalmap_atlas.is_valid()) {
+	if (output.cell_lookup_image.is_valid()) {
+		NormalMapImages images;
+		images.atlas_images = output.normalmap_atlas_images;
+		images.lookup_image = output.cell_lookup_image;
+		const NormalMapTextures textures = store_normalmap_data_to_textures(images);
 		// That should be in return value, but for now I just want this for testing with GDScript, so it gotta go
 		// somewhere
-		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_atlas, output.normalmap_atlas);
-		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_lookup, output.normalmap_lookup);
+		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_atlas, textures.atlas);
+		mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_lookup, textures.lookup);
 	}
 
 	return mesh;

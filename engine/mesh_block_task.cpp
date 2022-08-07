@@ -1,4 +1,5 @@
 #include "mesh_block_task.h"
+#include "../meshers/transvoxel/distance_normalmaps.h"
 #include "../storage/voxel_data_map.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
@@ -306,6 +307,19 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);
 		_has_mesh_resource = true;
+
+		if (_surfaces_output.cell_lookup_image.is_valid()) {
+			NormalMapImages images;
+			images.atlas_images = _surfaces_output.normalmap_atlas_images;
+			images.lookup_image = _surfaces_output.cell_lookup_image;
+			NormalMapTextures textures = store_normalmap_data_to_textures(images);
+			_surfaces_output.normalmap_atlas = textures.atlas;
+			_surfaces_output.cell_lookup = textures.lookup;
+			// No longer needed
+			_surfaces_output.atlas_image.unref();
+			_surfaces_output.cell_lookup_image.unref();
+		}
+
 	} else {
 		_has_mesh_resource = false;
 	}

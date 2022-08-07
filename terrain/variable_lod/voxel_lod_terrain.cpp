@@ -5,6 +5,7 @@
 #include "../../engine/voxel_engine_gd.h"
 #include "../../engine/voxel_engine_updater.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
+#include "../../meshers/transvoxel/distance_normalmaps.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
@@ -20,9 +21,6 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
-#ifdef TOOLS_ENABLED
-#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#endif
 
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
@@ -54,6 +52,11 @@ inline Ref<ShaderMaterial> allocate_shader_material(
 }
 
 inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
+	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
+	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
+	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
 	pool.push_back(material);
 }
 
@@ -1305,6 +1308,7 @@ static void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst) {
 	ZN_ASSERT_RETURN(shader.is_valid());
 	// Not using `Shader::get_param_list()` because it is not exposed to the script/extension API, and it prepends
 	// `shader_params/` to every parameter name, which is slow and not usable for our case.
+	// TBH List is slow too, I don't know why Godot uses that for lists of shader params.
 	List<PropertyInfo> properties;
 	RenderingServer::get_singleton()->shader_get_param_list(shader->get_rid(), &properties);
 	for (const PropertyInfo &property : properties) {
@@ -1762,6 +1766,31 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	block->set_parent_transform(get_global_transform());
+
+	// Distance normals
+	if (ob.surfaces.cell_lookup_image.is_valid() || ob.surfaces.cell_lookup.is_valid()) {
+		NormalMapTextures normalmap_textures;
+		normalmap_textures.atlas = ob.surfaces.normalmap_atlas;
+		normalmap_textures.lookup = ob.surfaces.cell_lookup;
+
+		if (normalmap_textures.lookup.is_null()) {
+			NormalMapImages normalmap_images;
+			normalmap_images.atlas_images = ob.surfaces.normalmap_atlas_images;
+			normalmap_images.lookup_image = ob.surfaces.cell_lookup_image;
+			normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
+		}
+
+		Ref<ShaderMaterial> material = block->get_shader_material();
+		if (material.is_valid()) {
+			material->set_shader_param(
+					VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, normalmap_textures.atlas);
+			material->set_shader_param(
+					VoxelStringNames::get_singleton().u_voxel_cell_lookup, normalmap_textures.lookup);
+			const int cell_size = 1 << ob.lod;
+			material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
+			material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
+		}
+	}
 
 #ifdef TOOLS_ENABLED
 	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_MESH_UPDATES)) {

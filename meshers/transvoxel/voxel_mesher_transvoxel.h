@@ -56,8 +56,14 @@ public:
 	void set_octahedral_normal_encoding(bool enable);
 	bool get_octahedral_normal_encoding() const;
 
-	void set_normalmap_tile_resolution(unsigned int resolution);
-	unsigned int get_normalmap_tile_resolution() const;
+	void set_normalmap_tile_resolution_min(int resolution);
+	int get_normalmap_tile_resolution_min() const;
+
+	void set_normalmap_tile_resolution_max(int resolution);
+	int get_normalmap_tile_resolution_max() const;
+
+	void set_normalmap_begin_lod_index(int lod_index);
+	int get_normalmap_begin_lod_index() const;
 
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
@@ -95,11 +101,22 @@ private:
 
 	bool _transitions_enabled = true;
 
-	// If enabled, an atlas of normalmaps will be generated for each cell of the resulting mesh, in order to add more
-	// visual details using a shader.
-	bool _normalmap_enabled = false;
-	uint8_t _normalmap_tile_resolution = 8;
-	bool _octahedral_normal_encoding_enabled = true;
+	struct NormalMapSettings {
+		// If enabled, an atlas of normalmaps will be generated for each cell of the resulting mesh, in order to add
+		// more visual details using a shader.
+		bool enabled = false;
+		// LOD index from which normalmaps will start being generated.
+		uint8_t begin_lod_index = 2;
+		// Tile resolution that will be used starting from the beginning LOD. Resolution will double at each following
+		// LOD index.
+		uint8_t tile_resolution_min = 4;
+		uint8_t tile_resolution_max = 8;
+		// If enabled, encodes normalmaps using octahedral compression, which trades a bit of quality for
+		// significantly reduced memory usage (using 2 bytes per pixel instead of 3).
+		bool octahedral_encoding_enabled = true;
+	};
+
+	NormalMapSettings _normalmap_settings;
 };
 
 } // namespace zylann::voxel

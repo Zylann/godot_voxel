@@ -1,4 +1,5 @@
 #include "voxel_mesher_transvoxel.h"
+#include "../../engine/voxel_engine.h"
 #include "../../generators/voxel_generator.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data_map.h"
@@ -188,6 +189,31 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 	}
 };
 
+/*static void debug_dump_atlas(Vector<Ref<Image>> images, String fpath) {
+	if (images.size() == 0) {
+		return;
+	}
+	const int tile_width = images[0]->get_width();
+	const int tile_height = images[0]->get_height();
+	const int sqri = int(Math::ceil(Math::sqrt(float(images.size()))));
+	const int atlas_width = sqri * tile_width;
+	const int atlas_height = sqri * tile_height;
+	Ref<Image> atlas;
+	atlas.instantiate();
+	atlas->create(atlas_width, atlas_height, false, images[0]->get_format());
+	for (int layer_index = 0; layer_index < images.size(); ++layer_index) {
+		Ref<Image> im = images[layer_index];
+		const int xi = layer_index % sqri;
+		const int yi = layer_index / sqri;
+		atlas->blit_rect(
+				im, Rect2(0, 0, im->get_width(), im->get_height()), Vector2(xi * tile_width, yi * tile_height));
+	}
+	const int err = atlas->save_png(fpath);
+	if (err != OK) {
+		print_line(String("Could not save {0}, err {1}").format(varray(fpath, err)));
+	}
+}*/
+
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 
@@ -215,7 +241,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	static thread_local std::vector<transvoxel::CellInfo> tls_cell_infos;
 	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
-	if (_normalmap_enabled && input.generator != nullptr) {
+	if (_normalmap_settings.enabled && input.generator != nullptr && input.lod >= _normalmap_settings.begin_lod_index) {
 		tls_cell_infos.clear();
 		cell_infos = &tls_cell_infos;
 	}
@@ -240,20 +266,35 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	if (cell_infos != nullptr) {
 		ZN_PROFILE_SCOPE_NAMED("Normalmap");
+		const NormalMapSettings &settings = _normalmap_settings;
+
+		const unsigned int relative_lod_index = input.lod - settings.begin_lod_index;
+		const unsigned int tile_resolution = math::clamp(int(settings.tile_resolution_min << relative_lod_index),
+				int(settings.tile_resolution_min), int(settings.tile_resolution_max));
+
 		static thread_local NormalMapData tls_normalmap_data;
 		tls_normalmap_data.clear();
 		ZN_ASSERT(input.generator != nullptr);
-		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, _normalmap_tile_resolution,
-				*input.generator, input.origin_in_voxels, input.lod, _octahedral_normal_encoding_enabled);
+
+		const Vector3i offset; // = Vector3iUtil::create(get_minimum_padding()) << input.lod;
+		// TODO Allow to defer this to a different task?
+		// - So the mesh can be obtained sooner
+		// - And we can prevent it from updating as frequently as the mesh if repeatedly modified
+		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, tile_resolution, *input.generator,
+				input.origin_in_voxels + offset, input.lod, settings.octahedral_encoding_enabled);
+
 		const Vector3i block_size =
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
-		// TODO This may be deferred to main thread when using GLES3
-		// TODO Link tile resolution to LOD level, with a cap
 		NormalMapImages images = store_normalmap_data_to_images(
-				tls_normalmap_data, _normalmap_tile_resolution, block_size, _octahedral_normal_encoding_enabled);
-		NormalMapTextures textures = store_normalmap_data_to_textures(images);
-		output.normalmap_atlas = textures.atlas;
-		output.normalmap_lookup = textures.lookup;
+				tls_normalmap_data, tile_resolution, block_size, settings.octahedral_encoding_enabled);
+
+		// debug_dump_atlas(images.atlas_images,
+		// 		String("debug_data/debug_lod{0}_x{1}_y{2}_z{3}.png")
+		// 				.format(varray(input.lod, input.origin_in_voxels.x, input.origin_in_voxels.y,
+		// 						input.origin_in_voxels.z)));
+
+		output.normalmap_atlas_images = images.atlas_images;
+		output.cell_lookup_image = images.lookup_image;
 	}
 
 	transvoxel::MeshArrays *combined_mesh_arrays = &tls_mesh_arrays;
@@ -388,27 +429,44 @@ Ref<ShaderMaterial> VoxelMesherTransvoxel::get_default_lod_material() const {
 }
 
 void VoxelMesherTransvoxel::set_normalmap_enabled(bool enable) {
-	_normalmap_enabled = enable;
+	_normalmap_settings.enabled = enable;
 }
 
 bool VoxelMesherTransvoxel::is_normalmap_enabled() const {
-	return _normalmap_enabled;
+	return _normalmap_settings.enabled;
 }
 
-void VoxelMesherTransvoxel::set_normalmap_tile_resolution(unsigned int resolution) {
-	_normalmap_tile_resolution = math::clamp(resolution, 1u, 128u);
+void VoxelMesherTransvoxel::set_normalmap_tile_resolution_min(int resolution) {
+	_normalmap_settings.tile_resolution_min = math::clamp(resolution, 1, 128);
 }
 
-unsigned int VoxelMesherTransvoxel::get_normalmap_tile_resolution() const {
-	return _normalmap_tile_resolution;
+int VoxelMesherTransvoxel::get_normalmap_tile_resolution_min() const {
+	return _normalmap_settings.tile_resolution_min;
+}
+
+void VoxelMesherTransvoxel::set_normalmap_tile_resolution_max(int resolution) {
+	_normalmap_settings.tile_resolution_max = math::clamp(resolution, 1, 128);
+}
+
+int VoxelMesherTransvoxel::get_normalmap_tile_resolution_max() const {
+	return _normalmap_settings.tile_resolution_max;
+}
+
+void VoxelMesherTransvoxel::set_normalmap_begin_lod_index(int lod_index) {
+	ERR_FAIL_INDEX(lod_index, constants::MAX_LOD);
+	_normalmap_settings.begin_lod_index = lod_index;
+}
+
+int VoxelMesherTransvoxel::get_normalmap_begin_lod_index() const {
+	return _normalmap_settings.begin_lod_index;
 }
 
 void VoxelMesherTransvoxel::set_octahedral_normal_encoding(bool enable) {
-	_octahedral_normal_encoding_enabled = enable;
+	_normalmap_settings.octahedral_encoding_enabled = enable;
 }
 
 bool VoxelMesherTransvoxel::get_octahedral_normal_encoding() const {
-	return _octahedral_normal_encoding_enabled;
+	return _normalmap_settings.octahedral_encoding_enabled;
 }
 
 void VoxelMesherTransvoxel::_bind_methods() {
@@ -444,10 +502,20 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &VoxelMesherTransvoxel::set_normalmap_enabled);
 	ClassDB::bind_method(D_METHOD("is_normalmap_enabled"), &VoxelMesherTransvoxel::is_normalmap_enabled);
 
-	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution", "resolution"),
-			&VoxelMesherTransvoxel::set_normalmap_tile_resolution);
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_min", "resolution"),
+			&VoxelMesherTransvoxel::set_normalmap_tile_resolution_min);
 	ClassDB::bind_method(
-			D_METHOD("get_normalmap_tile_resolution"), &VoxelMesherTransvoxel::get_normalmap_tile_resolution);
+			D_METHOD("get_normalmap_tile_resolution_min"), &VoxelMesherTransvoxel::get_normalmap_tile_resolution_min);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_max", "resolution"),
+			&VoxelMesherTransvoxel::set_normalmap_tile_resolution_max);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution_max"), &VoxelMesherTransvoxel::get_normalmap_tile_resolution_max);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_begin_lod_index", "lod_index"),
+			&VoxelMesherTransvoxel::set_normalmap_begin_lod_index);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_begin_lod_index"), &VoxelMesherTransvoxel::get_normalmap_begin_lod_index);
 
 	ClassDB::bind_method(D_METHOD("set_octahedral_normal_encoding", "enabled"),
 			&VoxelMesherTransvoxel::set_octahedral_normal_encoding);
@@ -474,8 +542,12 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution"), "set_normalmap_tile_resolution",
-			"get_normalmap_tile_resolution");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_min"), "set_normalmap_tile_resolution_min",
+			"get_normalmap_tile_resolution_min");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_max"), "set_normalmap_tile_resolution_max",
+			"get_normalmap_tile_resolution_max");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_begin_lod_index"), "set_normalmap_begin_lod_index",
+			"get_normalmap_begin_lod_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
 			"get_octahedral_normal_encoding");
 

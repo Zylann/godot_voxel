@@ -31,7 +31,7 @@ public:
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
-		// Not initialized because it confused GCC (???)
+		// TODO Rename `lod_index`
 		uint8_t lod = 0;
 		// If true, collision information is required.
 		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
@@ -68,10 +68,14 @@ public:
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 
-		// Normalmap atlas used for smooth voxels
-		// TODO Find a better organization to pass this around, also it can't always be created from a thread
+		// Normalmap atlas used for smooth voxels.
+		// If textures can't be created from threads, images are returned instead.
+		// TODO Find a better organization to pass this around, this struct is getting quite big
+		// TODO Might move out with the option of generating these separately
 		Ref<Texture2DArray> normalmap_atlas;
-		Ref<Texture2D> normalmap_lookup;
+		Vector<Ref<Image>> normalmap_atlas_images;
+		Ref<Texture2D> cell_lookup;
+		Ref<Image> cell_lookup_image;
 	};
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
