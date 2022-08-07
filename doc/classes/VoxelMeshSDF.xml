@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelMeshSDF" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="bake_async">
+			<return type="void" />
+			<argument index="0" name="scene_tree" type="SceneTree" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_check_sdf">
+			<return type="Array" />
+			<argument index="0" name="mesh" type="Mesh" />
+			<description>
+			</description>
+		</method>
+		<method name="get_aabb" qualifiers="const">
+			<return type="AABB" />
+			<description>
+			</description>
+		</method>
+		<method name="get_voxel_buffer" qualifiers="const">
+			<return type="VoxelBuffer" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="_data" type="Dictionary" setter="_set_data" getter="_get_data" default="{}">
+		</member>
+		<member name="bake_mode" type="int" setter="set_bake_mode" getter="get_bake_mode" enum="VoxelMeshSDF.BakeMode" default="1">
+		</member>
+		<member name="boundary_sign_fix_enabled" type="bool" setter="set_boundary_sign_fix_enabled" getter="is_boundary_sign_fix_enabled" default="true">
+		</member>
+		<member name="cell_count" type="int" setter="set_cell_count" getter="get_cell_count" default="64">
+		</member>
+		<member name="margin_ratio" type="float" setter="set_margin_ratio" getter="get_margin_ratio" default="0.25">
+		</member>
+		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
+		</member>
+		<member name="partition_subdiv" type="int" setter="set_partition_subdiv" getter="get_partition_subdiv" default="32">
+		</member>
+	</members>
+	<signals>
+		<signal name="baked">
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="BAKE_MODE_ACCURATE_NAIVE" value="0" enum="BakeMode">
+		</constant>
+		<constant name="BAKE_MODE_ACCURATE_PARTITIONED" value="1" enum="BakeMode">
+		</constant>
+		<constant name="BAKE_MODE_APPROX_INTERP" value="2" enum="BakeMode">
+		</constant>
+		<constant name="BAKE_MODE_APPROX_FLOODFILL" value="3" enum="BakeMode">
+		</constant>
+		<constant name="BAKE_MODE_COUNT" value="4" enum="BakeMode">
+		</constant>
+	</constants>
+</class>

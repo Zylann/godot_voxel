@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="3.5">
+<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
 		<member name="curve" type="Curve" setter="set_curve" getter="get_curve">
 		</member>
-		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" override="true" default="200.0" />
-		<member name="noise" type="OpenSimplexNoise" setter="set_noise" getter="get_noise">
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" overrides="VoxelGeneratorHeightmap" default="200.0" />
+		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>

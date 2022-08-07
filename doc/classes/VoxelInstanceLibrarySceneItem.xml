@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceLibrarySceneItem" inherits="VoxelInstanceLibraryItemBase" version="3.5">
+<class name="VoxelInstanceLibrarySceneItem" inherits="VoxelInstanceLibraryItem" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
 	</description>
 	<tutorials>
 	</tutorials>
-	<methods>
-	</methods>
 	<members>
 		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
 		</member>
 	</members>
-	<constants>
-	</constants>
 </class>

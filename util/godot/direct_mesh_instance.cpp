@@ -97,7 +97,7 @@ void DirectMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCasting
 void DirectMeshInstance::set_shader_instance_uniform(StringName key, Variant value) {
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
-	vs.instance_geometry_set_shader_parameter(_mesh_instance, key, value);
+	vs.instance_geometry_set_shader_uniform(_mesh_instance, key, value);
 }
 
 Ref<Mesh> DirectMeshInstance::get_mesh() const {

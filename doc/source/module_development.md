@@ -102,6 +102,8 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Constants, enums and macros `CAPSLOCK_CASE`
 - Other names `snake_case`
 - Globals prefixed with `g_`
+- Statics prefixed with `s_`
+- Thread-locals prefixed with `tls_`
 - Parameters prefixed with `p_`, but not really enforced so far. Matters for big functions.
 - Private and protected fields prefixed with `_`
 - Some private functions start with `_`, either to mimic Godot API, or if it's a re-used function that performs no checks
@@ -237,8 +239,21 @@ If you debug the editor, Godot tends to print a lot more errors for things that 
 
 ### Debug print
 
+Godot:
+
 ```cpp
+#include <core/string/print_string.h>
+
 print_line(String("Hello {0}, my age is {1}").format(varray(name, age)));
+```
+
+Non-Godot:
+
+```cpp
+#include "util/log.h"
+#include "util/string_funcs.h"
+
+println(format("Hello {}, my age is {}", name, age));
 ```
 
 ### Pretty printing

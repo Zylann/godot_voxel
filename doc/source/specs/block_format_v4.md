@@ -21,7 +21,7 @@ By default, little-endian.
 
 A block is usually serialized within a compressed data container.
 This is the format provided by the `VoxelBlockSerializer` utility class. If you don't use compression, the layout will correspond to `BlockData` described in the next listing, and won't have this wrapper.
-See [Compressed container format](#compressed-container) for specification.
+See [Compressed container format](compressed_container.md) for specification.
 
 ### Block format
 

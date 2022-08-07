@@ -80,6 +80,7 @@ nav:
     - 'specs/block_format_v1.md'
     - 'specs/block_format_v2.md'
     - 'specs/block_format_v3.md'
+    - 'specs/block_format_v4.md'
     - 'specs/compressed_container.md'
     - 'specs/instances_format_v0.md'
     - 'specs/instances_format_v1.md'
