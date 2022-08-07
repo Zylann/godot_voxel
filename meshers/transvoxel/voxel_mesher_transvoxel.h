@@ -113,7 +113,7 @@ private:
 		uint8_t tile_resolution_max = 8;
 		// If enabled, encodes normalmaps using octahedral compression, which trades a bit of quality for
 		// significantly reduced memory usage (using 2 bytes per pixel instead of 3).
-		bool octahedral_encoding_enabled = true;
+		bool octahedral_encoding_enabled = false;
 	};
 
 	NormalMapSettings _normalmap_settings;
