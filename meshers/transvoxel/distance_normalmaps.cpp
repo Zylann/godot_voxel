@@ -169,6 +169,8 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
+	ZN_ASSERT_RETURN(generator.supports_series_generation());
+
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
 	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_infos.size() * encoded_normal_size);
 
