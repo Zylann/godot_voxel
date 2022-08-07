@@ -52,11 +52,11 @@ inline Ref<ShaderMaterial> allocate_shader_material(
 }
 
 inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
-	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
-	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
-	material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
 	pool.push_back(material);
 }
 
@@ -1782,13 +1782,13 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 		Ref<ShaderMaterial> material = block->get_shader_material();
 		if (material.is_valid()) {
-			material->set_shader_param(
+			material->set_shader_uniform(
 					VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, normalmap_textures.atlas);
-			material->set_shader_param(
+			material->set_shader_uniform(
 					VoxelStringNames::get_singleton().u_voxel_cell_lookup, normalmap_textures.lookup);
 			const int cell_size = 1 << ob.lod;
-			material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
-			material->set_shader_param(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
+			material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
+			material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
 		}
 	}
 
