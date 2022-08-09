@@ -1,5 +1,7 @@
 #include "distance_normalmaps.h"
+#include "../../edition/funcs.h"
 #include "../../generators/voxel_generator.h"
+#include "../../storage/voxel_data_grid.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
@@ -163,6 +165,164 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 	return Vector3f(0.5f) + 0.5f * n;
 }
 
+void query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxel_data, const VoxelDataGrid &grid,
+		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
+		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
+	ZN_PROFILE_SCOPE();
+
+	// TODO Get scale properly
+	const float sdf_scale =
+			VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
+	const float sdf_scale_inv = 1.f / sdf_scale;
+
+	for (unsigned int query_index = 0; query_index < query_sdf_buffer.size(); ++query_index) {
+		const Vector3 posf(query_x_buffer[query_index], query_y_buffer[query_index], query_z_buffer[query_index]);
+
+		// TODO Optimize: broaden the amount of samples done at once to benefit more from bulk processing
+		// Attempting to evaluate multiple values at once when possible: 8 samples for cube of linear interpolation
+		FixedArray<float, 8> sd_samples;
+		FixedArray<float, 8> x_gen;
+		FixedArray<float, 8> y_gen;
+		FixedArray<float, 8> z_gen;
+		FixedArray<uint8_t, 8> i_gen;
+		unsigned int gen_count = 0;
+
+		const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+
+		const Vector3i posi0 = math::floor_to_int(posf);
+		unsigned int i = 0;
+
+		// Gather 8 samples from edited voxels
+		{
+			ZN_PROFILE_SCOPE();
+			for (int z = 0; z < 2; ++z) {
+				for (int y = 0; y < 2; ++y) {
+					for (int x = 0; x < 2; ++x) {
+						const Vector3i posi = posi0 + Vector3i(x, y, z);
+						// TODO Optimize: instead of locking for individual samples, lock the area with a spatial lock
+						//      (because we can't lock multiple blocks at once otherwise it causes deadlocks)
+						// TODO Optimize: the grid could be told to gather raw channels so we get direct access
+						//      (requires the former optimization)
+						if (grid.try_get_voxel_f(posi, sd_samples[i], channel)) {
+							sd_samples[i] *= sdf_scale_inv;
+						} else {
+							// Not edited, add to the list of voxels to generate
+							x_gen[gen_count] = posi.x;
+							y_gen[gen_count] = posi.y;
+							z_gen[gen_count] = posi.z;
+							i_gen[gen_count] = i;
+							++gen_count;
+						}
+						++i;
+					}
+				}
+			}
+		}
+
+		// Complete samples with generator. Note, these samples are not scaled since we are working with floats instead
+		// of encoded buffer values.
+		if (gen_count > 0) {
+			ZN_PROFILE_SCOPE();
+			FixedArray<float, 8> gen_samples;
+
+			generator.generate_series(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
+					channel, to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+
+			voxel_data.modifiers.apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
+					to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+
+			for (unsigned int j = 0; j < gen_count; ++j) {
+				sd_samples[i_gen[j]] = gen_samples[j];
+			}
+		}
+
+		// Interpolate
+		const float sd_interp = math::interpolate_trilinear(sd_samples[0], sd_samples[1], sd_samples[5], sd_samples[4],
+				sd_samples[2], sd_samples[3], sd_samples[7], sd_samples[6], math::fract(posf));
+
+		query_sdf_buffer[query_index] = sd_interp;
+	}
+}
+
+bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxel_data,
+		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
+		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
+	ZN_PROFILE_SCOPE();
+
+	// Pad by 1 in case there are neighboring edited voxels. If not done, it creates a grid pattern following LOD0 block
+	// boundaries because samples near there assume there was no edited neighbors when interpolating
+	const Vector3i query_min_pos_i = math::floor_to_int(query_min_pos) - Vector3iUtil::create(1);
+	const Vector3i query_max_pos_i = math::ceil_to_int(query_max_pos) + Vector3iUtil::create(1);
+
+	struct ClearOnExit {
+		VoxelDataGrid &grid;
+		inline ~ClearOnExit() {
+			grid.clear();
+		}
+	};
+
+	// Re-use memory because it will be used a lot
+	static thread_local VoxelDataGrid tls_grid;
+	// Ensure cleanup references to voxel buffers
+	ClearOnExit grid_clear_on_exit{ tls_grid };
+
+	{
+		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
+		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
+		if (Vector3iUtil::get_volume(voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2) > math::cubed(8)) {
+			// Box too big for quick sparse readings, won't handle edits
+			ZN_PRINT_VERBOSE("Box too big to render virtual normalmaps");
+			return false;
+		}
+
+		const VoxelDataLodMap::Lod &lod0 = voxel_data.lods[0];
+		RWLockRead rlock(lod0.map_lock);
+		tls_grid.reference_area(lod0.map, voxel_box);
+	}
+
+	if (!tls_grid.has_any_block()) {
+		// No edited voxels in the area, can use a faster path
+		return false;
+	}
+
+	query_sdf_with_edits(generator, voxel_data, tls_grid, query_x_buffer, query_y_buffer, query_z_buffer,
+			query_sdf_buffer, query_min_pos, query_max_pos);
+
+	return true;
+}
+
+inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_data, Span<const float> query_x_buffer,
+		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
+		Vector3f query_min_pos, Vector3f query_max_pos) {
+	ZN_PROFILE_SCOPE();
+	bool generator_only = true;
+
+	if (voxel_data != nullptr) {
+		// TODO Optimize: if there are no edited voxels in the entire mesh, completely skip this function.
+		//                Doing this efficiently requires an acceleration structure to do fast "exists" queries.
+		generator_only = !try_query_sdf_with_edits(generator, *voxel_data, query_x_buffer, query_y_buffer,
+				query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
+	}
+
+	if (generator_only) {
+		// Note, these samples are not scaled since we are working with floats instead of encoded buffer values.
+		generator.generate_series(query_x_buffer, query_y_buffer, query_z_buffer, VoxelBufferInternal::CHANNEL_SDF,
+				query_sdf_buffer, query_min_pos, query_max_pos);
+
+		if (voxel_data != nullptr) {
+			voxel_data->modifiers.apply(
+					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
+		}
+	}
+
+#if DEBUG_ENABLED
+	for (unsigned int i = 0; i < query_sdf_buffer.size(); ++i) {
+		const float sd = query_sdf_buffer[i];
+		ZN_ASSERT(!(Math::is_nan(sd) || Math::is_inf(sd)));
+	}
+#endif
+}
+
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
@@ -291,34 +451,8 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 		tls_sdf_buffer.resize(tls_x_buffer.size());
 
 		// Query voxel data
-		{
-			const Vector3f query_min_pos = cell_origin_world;
-			const Vector3f query_max_pos = cell_origin_world + Vector3f(cell_size);
-
-			generator.generate_series(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-					VoxelBufferInternal::CHANNEL_SDF, to_span(tls_sdf_buffer), query_min_pos, query_max_pos);
-
-			if (voxel_data != nullptr) {
-				voxel_data->modifiers.apply(to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-						to_span(tls_sdf_buffer), query_min_pos, query_max_pos);
-
-				// TODO Support edited voxels
-				// Naive method:
-				// Do 4 single sample queries for every pixel. In each sample, check if there is edited data. If yes,
-				// interpolate linearly it with 8 neighbors. Neighbors are obtained through single queries too. If the
-				// sample is not edited, use the generator and modifiers.
-				// It seems extremely slow though...
-
-				// const Vector3i query_min_pos_i = math::floor_to_int(query_min_pos);
-				// const Vector3i query_max_pos_i = math::ceil_to_int(query_max_pos);
-				// VoxelDataGrid grid;
-				// {
-				// 	const VoxelDataLodMap::Lod &lod0 = voxel_data->lods[0];
-				// 	RWLockRead rlock(lod0.map_lock);
-				// 	grid.reference_area(lod0.map, Box3i::from_min_max(query_min_pos_i, query_max_pos_i));
-				// }
-			}
-		}
+		query_sdf(generator, voxel_data, to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
+				to_span(tls_sdf_buffer), cell_origin_world, cell_origin_world + Vector3f(cell_size));
 
 		static thread_local std::vector<Vector3f> tls_tile_normals;
 		tls_tile_normals.clear();

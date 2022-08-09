@@ -91,6 +91,11 @@ inline T squared(const T x) {
 	return x * x;
 }
 
+template <typename T>
+inline T cubed(const T x) {
+	return x * x * x;
+}
+
 // Performs euclidean division, aka floored division.
 // This implementation expects a strictly positive divisor.
 //

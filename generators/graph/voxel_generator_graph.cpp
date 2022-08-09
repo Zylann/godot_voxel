@@ -1079,6 +1079,8 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 	runtime.prepare_state(cache.state, in_x.size(), false);
 	runtime.generate_set(cache.state, in_x, in_y, in_z, false, nullptr);
+	// Note, when generating SDF, we don't scale it because the return values are uncompressed floats. Scale only
+	// matters if we are storing it inside 16-bit or 8-bit VoxelBuffer.
 }
 
 void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<const float> positions_y,

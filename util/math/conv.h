@@ -81,6 +81,10 @@ inline Vector3i ceil_to_int(const Vector3 &f) {
 	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
 }
 
+inline Vector3i ceil_to_int(const Vector3f &f) {
+	return Vector3i(Math::ceil(f.x), Math::ceil(f.y), Math::ceil(f.z));
+}
+
 } // namespace math
 } // namespace zylann
 

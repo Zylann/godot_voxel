@@ -7,15 +7,16 @@ namespace zylann::voxel {
 
 // Stores blocks of voxel data in a finite grid.
 // This is used as temporary storage for some operations, to avoid holding exclusive locks on maps for too long.
+// TODO Have a readonly version to enforce no writes?
 class VoxelDataGrid {
 public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
-	inline void reference_area(VoxelDataMap &map, Box3i voxel_box) {
+	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box) {
 		const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
-			VoxelDataBlock *block = map.get_block(pos);
+			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,
 			// or make sure all blocks contain voxel data
 			if (block != nullptr && block->has_voxels()) {
@@ -24,6 +25,34 @@ public:
 				set_block(pos, nullptr);
 			}
 		});
+	}
+
+	inline bool has_any_block() const {
+		for (unsigned int i = 0; i < _blocks.size(); ++i) {
+			if (_blocks[i] != nullptr) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	inline bool try_get_voxel_f(Vector3i pos, float &out_value, VoxelBufferInternal::ChannelId channel) const {
+		const Vector3i bpos = (pos >> _block_size_po2) - _offset_in_blocks;
+		if (!is_valid_relative_block_position(bpos)) {
+			return false;
+		}
+		const unsigned int loc = Vector3iUtil::get_zxy_index(bpos, _size_in_blocks);
+		const VoxelBufferInternal *voxels = _blocks[loc].get();
+		if (voxels == nullptr) {
+			return false;
+		}
+		const unsigned int mask = (1 << _block_size_po2) - 1;
+		const Vector3i rpos = pos & mask;
+		{
+			RWLockRead rlock(voxels->get_lock());
+			out_value = voxels->get_voxel_f(rpos, channel);
+		}
+		return true;
 	}
 
 	// D action(Vector3i pos, D value)
@@ -51,6 +80,11 @@ public:
 	// 	CRASH_COND(index >= _blocks.size());
 	// 	return _blocks[index].get();
 	// }
+
+	inline void clear() {
+		_blocks.clear();
+		_size_in_blocks = Vector3i();
+	}
 
 private:
 	inline unsigned int get_block_size() const {
@@ -81,11 +115,6 @@ private:
 		}
 	}
 
-	inline void clear() {
-		_blocks.clear();
-		_size_in_blocks = Vector3i();
-	}
-
 	inline void create(Vector3i size, unsigned int block_size) {
 		_blocks.clear();
 		_blocks.resize(Vector3iUtil::get_volume(size));
@@ -93,8 +122,7 @@ private:
 		_block_size = block_size;
 	}
 
-	inline bool is_valid_position(Vector3i pos) const {
-		pos -= _offset_in_blocks;
+	inline bool is_valid_relative_block_position(Vector3i pos) const {
 		return pos.x >= 0 && //
 				pos.y >= 0 && //
 				pos.z >= 0 && //
@@ -103,8 +131,12 @@ private:
 				pos.z < _size_in_blocks.z;
 	}
 
+	inline bool is_valid_block_position(Vector3i pos) const {
+		return is_valid_relative_block_position(pos - _offset_in_blocks);
+	}
+
 	inline void set_block(Vector3i position, std::shared_ptr<VoxelBufferInternal> block) {
-		ZN_ASSERT_RETURN(is_valid_position(position));
+		ZN_ASSERT_RETURN(is_valid_block_position(position));
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
 		ZN_ASSERT(index < _blocks.size());
@@ -112,7 +144,7 @@ private:
 	}
 
 	inline VoxelBufferInternal *get_block(Vector3i position) {
-		ZN_ASSERT_RETURN_V(is_valid_position(position), nullptr);
+		ZN_ASSERT_RETURN_V(is_valid_block_position(position), nullptr);
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
 		ZN_ASSERT(index < _blocks.size());
@@ -128,6 +160,7 @@ private:
 	// of the area in memory so we can keep using the same coordinate space
 	Vector3i _offset_in_blocks;
 	// Size of a block in voxels
+	unsigned int _block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
 };
 

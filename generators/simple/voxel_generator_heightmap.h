@@ -124,7 +124,8 @@ protected:
 			for (unsigned int i = 0; i < out_values.size(); ++i) {
 				const float h = params.range.xform(height_func(positions_x[i], positions_z[i]));
 				const float sd = positions_y[i] - h;
-				out_values[i] = params.iso_scale * sd;
+				// Not scaling here, since the return values are uncompressed floats
+				out_values[i] = sd;
 			}
 		} else {
 			for (unsigned int i = 0; i < out_values.size(); ++i) {
