@@ -3,12 +3,20 @@
 
 #include <shared_mutex>
 
+//#define ZN_PROFILE_RWLOCK
+#ifdef ZN_PROFILE_RWLOCK
+#include "../profiling.h"
+#endif
+
 namespace zylann {
 
 class RWLock {
 public:
 	// Lock the rwlock, block if locked by someone else
 	void read_lock() const {
+#ifdef ZN_PROFILE_RWLOCK
+		ZN_PROFILE_SCOPE();
+#endif
 		_mutex.lock_shared();
 	}
 
@@ -24,6 +32,9 @@ public:
 
 	// Lock the rwlock, block if locked by someone else
 	void write_lock() {
+#ifdef ZN_PROFILE_RWLOCK
+		ZN_PROFILE_SCOPE();
+#endif
 		_mutex.lock();
 	}
 
