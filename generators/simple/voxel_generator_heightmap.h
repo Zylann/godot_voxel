@@ -151,7 +151,9 @@ private:
 		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		int matter_type = 1;
 		Range range;
-		float iso_scale = 0.1;
+		// TODO Get rid of that scale, apply it differently. It exists because of the compression format in 16-bit and
+		// 8-bit channels of VoxelBuffer
+		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;
 	};
 
 	RWLock _parameters_lock;
