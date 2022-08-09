@@ -30,7 +30,8 @@ static const float SQRT3 = 1.73205080757;
 
 // Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.
 // For storing SDF, we need a range of values that extends beyond that, in particular for better LOD.
-// So we can scale it to better fit the resolution.
+// So we can scale it to better fit the resolution. These scales were chosen arbitrarily, but they should work well for
+// the corresponding precisions.
 static const float QUANTIZED_SDF_8_BITS_SCALE = 0.1f;
 static const float QUANTIZED_SDF_8_BITS_SCALE_INV = 1.f / 0.1f;
 static const float QUANTIZED_SDF_16_BITS_SCALE = 0.002f;

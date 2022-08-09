@@ -52,6 +52,7 @@ inline Ref<ShaderMaterial> allocate_shader_material(
 }
 
 inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
+	// Reset textures to avoid hoarding them in the pool
 	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
 	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
