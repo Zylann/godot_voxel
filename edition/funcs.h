@@ -140,6 +140,22 @@ inline float interpolate_trilinear(Span<const float> grid, const Vector3i res, c
 			grid[i000], grid[i100], grid[i101], grid[i001], grid[i010], grid[i110], grid[i111], grid[i011], pf);
 }
 
+template <typename Volume_F>
+float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
+	const Vector3i c = math::floor_to_int(pos);
+
+	const float s000 = f(Vector3i(c.x, c.y, c.z));
+	const float s100 = f(Vector3i(c.x + 1, c.y, c.z));
+	const float s010 = f(Vector3i(c.x, c.y + 1, c.z));
+	const float s110 = f(Vector3i(c.x + 1, c.y + 1, c.z));
+	const float s001 = f(Vector3i(c.x, c.y, c.z + 1));
+	const float s101 = f(Vector3i(c.x + 1, c.y, c.z + 1));
+	const float s011 = f(Vector3i(c.x, c.y + 1, c.z + 1));
+	const float s111 = f(Vector3i(c.x + 1, c.y + 1, c.z + 1));
+
+	return math::interpolate_trilinear(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
+}
+
 } // namespace zylann::voxel
 
 namespace zylann::voxel::ops {

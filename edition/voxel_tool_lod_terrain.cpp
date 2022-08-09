@@ -29,22 +29,6 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	return _terrain->is_area_editable(box);
 }
 
-template <typename Volume_F>
-float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
-	const Vector3i c = math::floor_to_int(pos);
-
-	const float s000 = f(Vector3i(c.x, c.y, c.z));
-	const float s100 = f(Vector3i(c.x + 1, c.y, c.z));
-	const float s010 = f(Vector3i(c.x, c.y + 1, c.z));
-	const float s110 = f(Vector3i(c.x + 1, c.y + 1, c.z));
-	const float s001 = f(Vector3i(c.x, c.y, c.z + 1));
-	const float s101 = f(Vector3i(c.x + 1, c.y, c.z + 1));
-	const float s011 = f(Vector3i(c.x, c.y + 1, c.z + 1));
-	const float s111 = f(Vector3i(c.x + 1, c.y + 1, c.z + 1));
-
-	return math::interpolate_trilinear(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
-}
-
 // Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.
 // An alternative would be to polygonize a tiny area around the middle-phase hit position.
 // `d1` is how far from `pos0` along `dir` the binary search will take place.
