@@ -2129,28 +2129,85 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 
 #ifdef TOOLS_ENABLED
 
+static String get_missing_uniform_names(Span<const StringName> expected_uniforms, Shader &shader) {
+	String missing_uniforms;
+	for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
+		StringName uniform_name = expected_uniforms[i];
+		ZN_ASSERT_CONTINUE(uniform_name != StringName());
+		if (!shader.has_uniform(uniform_name)) {
+			if (missing_uniforms.size() > 0) {
+				missing_uniforms += ", ";
+			}
+			missing_uniforms += uniform_name;
+		}
+	}
+	return missing_uniforms;
+}
+
 TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	TypedArray<String> warnings = VoxelNode::get_configuration_warnings();
 	if (!warnings.is_empty()) {
 		return warnings;
 	}
+
 	Ref<VoxelMesher> mesher = get_mesher();
+
+	// Material
+	Ref<ShaderMaterial> shader_material = _material;
+	if (shader_material.is_valid() && shader_material->get_shader().is_null()) {
+		warnings.append(TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
+	}
+
 	if (mesher.is_valid()) {
+		// LOD support in mesher
 		if (!mesher->supports_lod()) {
 			warnings.append(
 					TTR("The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
 							.format(varray(mesher->get_class())));
 		}
+
+		// LOD support in shader
 		if (_material.is_valid() && mesher->get_default_lod_material().is_valid()) {
-			Ref<ShaderMaterial> sm = _material;
-			if (sm.is_null()) {
+			if (shader_material.is_null()) {
 				warnings.append(
 						TTR("The current mesher ({0}) requires custom shader code to render properly. The current "
 							"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
 							"default shader.")
 								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
+			} else {
+				Ref<Shader> shader = shader_material->get_shader();
+				if (shader.is_valid()) {
+					if (!shader->has_uniform(VoxelStringNames::get_singleton().u_transition_mask)) {
+						warnings.append(TTR(
+								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
+												.format(varray(mesher->get_class(),
+														VoxelStringNames::get_singleton().u_transition_mask)));
+					}
+				}
 			}
 		}
+
+		// LOD fading
+		if (get_lod_fade_duration() > 0.f) {
+			if (shader_material.is_null()) {
+				warnings.append(String("Lod fading is enabled but it requires a {0} to render properly.")
+										.format(varray(ShaderMaterial::get_class_static())));
+			} else {
+				Ref<Shader> shader = shader_material->get_shader();
+				if (shader.is_null()) {
+					warnings.append(String("Lod fading is enabled but the current material is missing a shader.")
+											.format(varray(ShaderMaterial::get_class_static())));
+				} else {
+					if (!shader->has_uniform(VoxelStringNames::get_singleton().u_lod_fade)) {
+						warnings.append(TTR(
+								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
+												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
+					}
+				}
+			}
+		}
+
+		// Virtual textures
 		if (_generator.is_valid()) {
 			Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 			if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled()) {
@@ -2158,6 +2215,25 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 					warnings.append(
 							TTR("The current mesher ({0}) requires the generator to be able to generate series of "
 								"positions with `generate_series`. The current generator ({1}) does not support it."));
+				}
+				if (shader_material.is_valid()) {
+					Ref<Shader> shader = shader_material->get_shader();
+
+					if (shader.is_valid()) {
+						FixedArray<StringName, 2> expected_uniforms;
+						expected_uniforms[0] = VoxelStringNames::get_singleton().u_voxel_normalmap_atlas;
+						expected_uniforms[1] = VoxelStringNames::get_singleton().u_voxel_cell_lookup;
+						// There is more but they are not absolutely required for the shader to be made working
+
+						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
+
+						if (missing_uniforms.size() != 0) {
+							warnings.append(
+									String(TTR("The current mesher settings requires to use a {0} with a shader having "
+											   "specific uniforms. Missing ones: {1}"))
+											.format(varray(ShaderMaterial::get_class_static(), missing_uniforms)));
+						}
+					}
 				}
 			}
 		}
