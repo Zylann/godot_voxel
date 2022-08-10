@@ -288,7 +288,7 @@ inline void sort_min_max(Vector3i &a, Vector3i &b) {
 // even though dense volumes of that size will rarely be encountered in this module
 inline int64_t get_volume(const Vector3i &v) {
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN_V(v.x >= 0 && v.y >= 0 && v.z > 0, 0);
+	ZN_ASSERT_RETURN_V(v.x >= 0 && v.y >= 0 && v.z >= 0, 0);
 #endif
 	return v.x * v.y * v.z;
 }
