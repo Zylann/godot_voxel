@@ -60,11 +60,12 @@ public:
 	// If no local optimization is done, this can remain the same for any position lists.
 	// If local optimization is used, it may be recomputed before each query.
 	struct ExecutionMap {
-		// TODO Typo?
+		// TODO Rename typo?
 		std::vector<uint16_t> operation_adresses;
 		// Stores node IDs referring to the user-facing graph.
 		// Each index corresponds to operation indices.
 		// The same node can appear twice, because sometimes a user-facing node compiles as multiple nodes.
+		// It can also include some nodes not explicitely present in the user graph (like auto-inputs).
 		std::vector<uint32_t> debug_nodes;
 		// From which index in the adress list operations will start depending on Y
 		unsigned int xzy_start_index = 0;
