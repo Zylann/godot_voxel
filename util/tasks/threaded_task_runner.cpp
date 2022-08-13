@@ -155,7 +155,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				// Pick best tasks
 				for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
 					size_t best_index = 0; // Take first by default, this is a valid index
-					int best_priority = 999999;
+					int best_priority = std::numeric_limits<int>::max();
 					bool picked_task = false;
 
 					// Find best task to pick
