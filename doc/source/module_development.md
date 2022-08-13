@@ -160,6 +160,7 @@ In performance-critical areas which run a lot:
 - Use data structures that are fit to the most frequent use over time (will often be either array, vector or hash map).
 - Consider statistics if their impact is negligible. It helps users to monitor how well the module performs even in release builds.
 - Profile your code, in release mode. This module is Tracy-friendly, see `util/profiling.hpp`.
+- Care about alignment when making data structures. For exmaple, pack fields smaller than 4 bytes so they use space better
 
 ### Godot API
 
