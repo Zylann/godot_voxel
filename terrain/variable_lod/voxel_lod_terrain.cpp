@@ -1628,12 +1628,16 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			++_stats.dropped_block_meshs;
 			return;
 		}
-		transition_mask = mesh_block_state_it->second.transition_mask;
+
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block_state = mesh_block_state_it->second;
+
+		transition_mask = mesh_block_state.transition_mask;
+
 		// The update task could be running at the same time, so we need to do this atomically.
 		// The state can become "up to date" only if no other unsent update was pending.
 		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
-		mesh_block_state_it->second.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
-		active = mesh_block_state_it->second.active;
+		mesh_block_state.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
+		active = mesh_block_state.active;
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -1848,6 +1852,22 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 	}
 	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
 	// textures goes in the bin. That should be a warning in the editor.
+
+	{
+		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		RWLockRead rlock(lod.mesh_map_state.map_lock);
+		auto mesh_block_state_it = lod.mesh_map_state.map.find(block.position);
+		if (mesh_block_state_it != lod.mesh_map_state.map.end()) {
+			VoxelLodTerrainUpdateData::VirtualTextureState expected_vt_state =
+					VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
+			// If it was PENDING, set it to IDLE.
+			mesh_block_state_it->second.virtual_texture_state.compare_exchange_strong(
+					expected_vt_state, VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_IDLE);
+			// TODO If the mesh was modified again since, we need to schedule an extra update for the virtual texture to
+			// catch up. But for now I'm not sure if there is much value in doing so. It can get updated by the next
+			// edit. Scheduling an update from here isn't mildly inconvenient due to threading.
+		}
+	}
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {

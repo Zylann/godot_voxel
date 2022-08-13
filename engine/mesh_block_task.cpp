@@ -309,7 +309,8 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 	if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled() && input.defer_virtual_texture &&
-			!mesh_is_empty && lod_index >= transvoxel_mesher->get_normalmap_begin_lod_index()) {
+			!mesh_is_empty && lod_index >= transvoxel_mesher->get_normalmap_begin_lod_index() &&
+			require_virtual_texture) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
 

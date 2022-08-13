@@ -33,7 +33,7 @@ public:
 	uint8_t data_block_size = 0;
 	bool collision_hint = false;
 	bool lod_hint = false;
-	//bool require_virtual_texture = false; // TODO Use this when tweaking frequency of updates
+	bool require_virtual_texture = false;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelDataLodMap> data;
