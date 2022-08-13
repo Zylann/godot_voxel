@@ -97,9 +97,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button = memnew(Button);
 		_pin_button->set_flat(true);
 		_pin_button->set_toggle_mode(true);
-		_pin_button->set_tooltip(TTR("Pin AnimationPlayer"));
+		_pin_button->set_tooltip(TTR("Pin VoxelGraphEditor"));
 		toolbar->add_child(_pin_button);
-		//_pin_button->connect("pressed", callable_mp(this, &AnimationPlayerEditor::_pin_pressed));
 
 		_popout_button = memnew(Button);
 		_popout_button->set_flat(true);
