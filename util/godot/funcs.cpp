@@ -19,6 +19,19 @@ bool is_surface_triangulated(Array surface) {
 	return positions.size() >= 3 && indices.size() >= 3;
 }
 
+bool is_mesh_empty(Span<const Array> surfaces) {
+	if (surfaces.size() == 0) {
+		return true;
+	}
+	for (int i = 0; i < surfaces.size(); ++i) {
+		Array surface = surfaces[i];
+		if (is_surface_triangulated(surface)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 bool is_mesh_empty(const Mesh &mesh) {
 	if (mesh.get_surface_count() == 0) {
 		return true;

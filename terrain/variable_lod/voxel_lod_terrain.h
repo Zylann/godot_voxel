@@ -265,6 +265,9 @@ private:
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
+	void apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob);
+	void apply_virtual_texture_update_to_block(
+			VoxelMeshBlockVLT &block, VoxelMesher::VirtualTextureOutput &ob, unsigned int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -358,6 +361,14 @@ private:
 	// thread that updates fading blocks. If a mesh block is destroyed, these maps should be updated at the same time.
 	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
 	FixedArray<std::map<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
+
+	struct FadingVirtualTexture {
+		Vector3i block_position;
+		uint32_t lod_index;
+		float progress;
+	};
+
+	std::vector<FadingVirtualTexture> _fading_virtual_textures;
 
 	VoxelInstancer *_instancer = nullptr;
 

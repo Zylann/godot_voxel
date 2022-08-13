@@ -67,8 +67,22 @@ public:
 
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
+	// Internal
+
 	static void load_static_resources();
 	static void free_static_resources();
+
+	// Exposed for a fast-path. Return values are only valid until the next invocation of build() in the calling thread.
+	static const transvoxel::MeshArrays &get_mesh_cache_from_current_thread();
+	static const Span<const transvoxel::CellInfo> get_cell_info_from_current_thread();
+
+	inline unsigned int get_virtual_texture_tile_resolution_for_lod(unsigned int lod_index) {
+		const unsigned int relative_lod_index = lod_index - _normalmap_settings.begin_lod_index;
+		const unsigned int tile_resolution =
+				math::clamp(int(_normalmap_settings.tile_resolution_min << relative_lod_index),
+						int(_normalmap_settings.tile_resolution_min), int(_normalmap_settings.tile_resolution_max));
+		return tile_resolution;
+	}
 
 	// Not sure if that's necessary, currently transitions are either combined or not generated
 	// enum TransitionMode {

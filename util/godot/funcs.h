@@ -20,6 +20,7 @@ namespace zylann {
 
 bool is_surface_triangulated(Array surface);
 bool is_mesh_empty(const Mesh &mesh);
+bool is_mesh_empty(Span<const Array> surfaces);
 
 // Combines all mesh surface arrays into one collider.
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);

@@ -58,6 +58,7 @@ inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
 	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
 	pool.push_back(material);
 }
 
@@ -179,6 +180,10 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	callbacks.data_output_callback = [](void *cb_data, VoxelEngine::BlockDataOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
+	};
+	callbacks.virtual_texture_output_callback = [](void *cb_data, VoxelEngine::BlockVirtualTextureOutput &ob) {
+		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
+		self->apply_virtual_texture_update(ob);
 	};
 
 	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
@@ -1665,6 +1670,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				_instancer->on_mesh_block_exit(ob.position, ob.lod);
 			}
 		}
+		// ZN_PRINT_VERBOSE(format("Empty block pos {} lod {} time {}", ob.position, int(ob.lod),
+		// 		Time::get_singleton()->get_ticks_msec()));
 		return;
 	}
 
@@ -1673,6 +1680,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->active = active;
 		block->set_visible(active);
 		mesh_map.set_block(ob.position, block);
+		// ZN_PRINT_VERBOSE(format("Created block pos {} lod {} time {}", ob.position, int(ob.lod),
+		// 		Time::get_singleton()->get_ticks_msec()));
 	}
 
 	bool has_collision = get_generate_collisions();
@@ -1768,29 +1777,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	block->set_parent_transform(get_global_transform());
 
-	// Distance normals
-	if (ob.surfaces.cell_lookup_image.is_valid() || ob.surfaces.cell_lookup.is_valid()) {
-		NormalMapTextures normalmap_textures;
-		normalmap_textures.atlas = ob.surfaces.normalmap_atlas;
-		normalmap_textures.lookup = ob.surfaces.cell_lookup;
-
-		if (normalmap_textures.lookup.is_null()) {
-			NormalMapImages normalmap_images;
-			normalmap_images.atlas_images = ob.surfaces.normalmap_atlas_images;
-			normalmap_images.lookup_image = ob.surfaces.cell_lookup_image;
-			normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
-		}
-
-		Ref<ShaderMaterial> material = block->get_shader_material();
-		if (material.is_valid()) {
-			material->set_shader_uniform(
-					VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, normalmap_textures.atlas);
-			material->set_shader_uniform(
-					VoxelStringNames::get_singleton().u_voxel_cell_lookup, normalmap_textures.lookup);
-			const int cell_size = 1 << ob.lod;
-			material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
-			material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
-		}
+	if (ob.surfaces.virtual_textures != nullptr && ob.surfaces.virtual_textures->valid) {
+		apply_virtual_texture_update_to_block(*block, *ob.surfaces.virtual_textures, ob.lod);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -1798,6 +1786,68 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
 	}
 #endif
+}
+
+void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob) {
+	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod_index];
+	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
+
+	// This can happen if:
+	// - Virtual texture rendering results are handled before the first meshing results which that have created the
+	//   block. In this case it will be applied when meshing results get handled, since the data is shared with it.
+	// - The block was indeed unloaded early.
+	if (block == nullptr) {
+		// ZN_PRINT_VERBOSE(format("Ignored virtual texture update, block not found. pos {} lod {} time {}",
+		// ob.position, 		ob.lod_index, Time::get_singleton()->get_ticks_msec()));
+		return;
+	}
+
+	ZN_ASSERT_RETURN(ob.virtual_textures != nullptr);
+	ZN_ASSERT_RETURN(ob.virtual_textures->valid);
+
+	apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod_index);
+}
+
+void VoxelLodTerrain::apply_virtual_texture_update_to_block(
+		VoxelMeshBlockVLT &block, VoxelMesher::VirtualTextureOutput &ob, unsigned int lod_index) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT(ob.valid);
+
+	NormalMapTextures normalmap_textures;
+	normalmap_textures.atlas = ob.normalmap_atlas;
+	normalmap_textures.lookup = ob.cell_lookup;
+
+	if (normalmap_textures.lookup.is_null()) {
+		// TODO When this code path is required, use a time-spread task to reduce stalls
+		NormalMapImages normalmap_images;
+		normalmap_images.atlas_images = ob.normalmap_atlas_images;
+		normalmap_images.lookup_image = ob.cell_lookup_image;
+		normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
+	}
+
+	Ref<ShaderMaterial> material = block.get_shader_material();
+	if (material.is_valid()) {
+		const bool had_texture =
+				material->get_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup) != Variant();
+		material->set_shader_uniform(
+				VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, normalmap_textures.atlas);
+		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, normalmap_textures.lookup);
+		const int cell_size = 1 << lod_index;
+		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
+		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
+
+		if (!had_texture) {
+			if (_lod_fade_duration > 0.f) {
+				// Fade-in to reduce "popping" details
+				_fading_virtual_textures.push_back(FadingVirtualTexture{ block.position, lod_index, 0.f });
+				material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+			} else {
+				material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 1.f);
+			}
+		}
+	}
+	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
+	// textures goes in the bin. That should be a warning in the editor.
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -1915,6 +1965,38 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			} else {
 				item.shader_material->set_shader_uniform(
 						VoxelStringNames::get_singleton().u_lod_fade, Vector2(1.f - item.progress, 0.f));
+				++i;
+			}
+		}
+	}
+
+	{
+		ZN_PROFILE_SCOPE();
+		const unsigned int lod_count = get_lod_count();
+
+		for (unsigned int i = 0; i < _fading_virtual_textures.size();) {
+			FadingVirtualTexture &item = _fading_virtual_textures[i];
+			bool remove = true;
+
+			if (item.lod_index < lod_count) {
+				VoxelMeshBlockVLT *block = _mesh_maps_per_lod[item.lod_index].get_block(item.block_position);
+
+				if (block != nullptr) {
+					Ref<ShaderMaterial> sm = block->get_shader_material();
+
+					if (sm.is_valid()) {
+						item.progress = math::min(item.progress + speed, 1.f);
+						remove = item.progress >= 1.f;
+						sm->set_shader_uniform(
+								VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, item.progress);
+					}
+				}
+			}
+
+			if (remove) {
+				_fading_virtual_textures[i] = _fading_virtual_textures.back();
+				_fading_virtual_textures.pop_back();
+			} else {
 				++i;
 			}
 		}

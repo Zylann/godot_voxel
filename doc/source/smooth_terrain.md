@@ -343,15 +343,16 @@ Shader API reference
 
 If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information. Some are necessary for features to work.
 
-Parameter name             | Type             | Description
----------------------------|------------------|-----------------------
-`u_lod_fade`               | `vec2`           | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
-`u_block_local_transform`  | `mat4`           | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
-`u_voxel_cell_lookup`      | `usampler2D`      | 3D texture where each pixel contains a cell index packed in bytes of `RG` (`r + (g << 8)`), and an axis index in `B`. The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
-`u_voxel_normalmap_atlas`  | `sampler2DArray` | Texture array where each layer is a tile containing a model-space normalmap. The layer index may be computed from `u_voxel_cell_lookup`. UVs are similar to triplanar mapping, but the axis is known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
-`u_voxel_cell_size`        | `float`          | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
-`u_voxel_block_size`       | `int`            | Size of the cubic block of voxels that the mesh represents, in voxels.
-`u_transition_mask`        | `int`            | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
+Parameter name                 | Type             | Description
+-------------------------------|------------------|------------------------------
+`u_lod_fade`                   | `vec2`           | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
+`u_block_local_transform`      | `mat4`           | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+`u_voxel_cell_lookup`          | `usampler2D`     | 3D texture where each pixel contains a cell index packed in bytes of `RG` (`r + (g << 8)`), and an axis index in `B`. The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_normalmap_atlas`      | `sampler2DArray` | Texture array where each layer is a tile containing a model-space normalmap. The layer index may be computed from `u_voxel_cell_lookup`. UVs are similar to triplanar mapping, but the axis is known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_cell_size`            | `float`          | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
+`u_voxel_block_size`           | `int`            | Size of the cubic block of voxels that the mesh represents, in voxels.
+`u_voxel_virtual_texture_fade` | `float`          | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in virtual textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no virtual textures.
+`u_transition_mask`            | `int`            | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
 
 
 Level of detail (LOD)
@@ -491,6 +492,8 @@ With the feature:
 The number of polygons is the same:
 
 ![Landscape wireframe](images/distance_normals_wireframe.webp)
+
+TODO: showcase an example with overhangs to emphasize that it works too
 
 This can be turned on in the inspector when using `VoxelMesherTransvoxel`. The cost is slower mesh generation and more memory usage to store normalmap textures.
 

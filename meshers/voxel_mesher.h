@@ -3,6 +3,7 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
+#include "../util/span.h"
 
 #include <scene/resources/mesh.h>
 #include <vector>
@@ -40,6 +41,22 @@ public:
 		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
 		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
 		bool lod_hint = false;
+		// If true, virtual textures won't be generated immediately from the mesher
+		// TODO I dont like this, there might be some refactoring to do
+		bool defer_virtual_texture = false;
+	};
+
+	struct VirtualTextureOutput {
+		// Normalmap atlas used for smooth voxels.
+		// If textures can't be created from threads, images are returned instead.
+		// TODO Find a better organization to pass this around, this struct is getting quite big
+		// TODO Might move out with the option of generating these separately
+		Ref<Texture2DArray> normalmap_atlas;
+		Vector<Ref<Image>> normalmap_atlas_images;
+		Ref<Texture2D> cell_lookup;
+		Ref<Image> cell_lookup_image;
+		// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
+		std::atomic_bool valid;
 	};
 
 	struct Output {
@@ -68,15 +85,11 @@ public:
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 
-		// Normalmap atlas used for smooth voxels.
-		// If textures can't be created from threads, images are returned instead.
-		// TODO Find a better organization to pass this around, this struct is getting quite big
-		// TODO Might move out with the option of generating these separately
-		Ref<Texture2DArray> normalmap_atlas;
-		Vector<Ref<Image>> normalmap_atlas_images;
-		Ref<Texture2D> cell_lookup;
-		Ref<Image> cell_lookup_image;
+		// Can be null.
+		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	};
+
+	static bool is_mesh_empty(const std::vector<Output::Surface> &surfaces);
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);

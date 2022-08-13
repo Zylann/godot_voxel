@@ -16,7 +16,10 @@ namespace zylann::voxel {
 class VoxelGenerator;
 struct VoxelDataLodMap;
 
-// TODO This system could be extended to more than just normals (texturing)
+// TODO This system could be extended to more than just normals
+// - Texturing data
+// - Color
+// - Some kind of depth (could be useful to fake water from far away)
 
 // UV-mapping a voxel mesh is not trivial, but if mapping is required, an alternative is to subdivide the mesh into a
 // grid of cells (we can use Transvoxel cells). In each cell, pick an axis-aligned projection working best with
@@ -42,9 +45,10 @@ struct NormalMapData {
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
-		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
-		const VoxelDataLodMap *voxel_data, Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
+void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, Span<const Vector3f> mesh_vertices,
+		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
+		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelDataLodMap *voxel_data,
+		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
 
 struct NormalMapImages {
 	Vector<Ref<Image>> atlas_images;

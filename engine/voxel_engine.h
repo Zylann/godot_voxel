@@ -61,14 +61,22 @@ public:
 		bool initial_load;
 	};
 
+	struct BlockVirtualTextureOutput {
+		std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures;
+		Vector3i position;
+		uint32_t lod_index;
+	};
+
 	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
+		void (*virtual_texture_output_callback)(void *, BlockVirtualTextureOutput &) = nullptr;
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {
 			ZN_ASSERT_RETURN_V(mesh_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data_output_callback != nullptr, false);
+			//ZN_ASSERT_RETURN_V(normalmap_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data != nullptr, false);
 			return true;
 		}
@@ -138,8 +146,10 @@ public:
 
 	// Allows/disallows building Mesh resources from inside threads. Depends on Godot's efficiency at doing so, and
 	// which renderer is used. For example, the OpenGL renderer does not support this well, but the Vulkan one should.
+	// TODO Rename `set_threaded_gpu_resource_building_enabled`, it applies to textures too
 	void set_threaded_mesh_resource_building_enabled(bool enable);
 	// This should be fast and safe to access from multiple threads.
+	// TODO Rename `is_threaded_gpu_resource_building_enabled`, it applies to textures too
 	bool is_threaded_mesh_resource_building_enabled() const;
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);

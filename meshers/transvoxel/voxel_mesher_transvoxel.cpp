@@ -15,6 +15,19 @@ namespace zylann::voxel {
 
 namespace {
 Ref<ShaderMaterial> g_minimal_shader_material;
+} //namespace
+
+namespace transvoxel {
+thread_local MeshArrays tls_mesh_arrays;
+thread_local std::vector<CellInfo> tls_cell_infos;
+} //namespace transvoxel
+
+const transvoxel::MeshArrays &VoxelMesherTransvoxel::get_mesh_cache_from_current_thread() {
+	return transvoxel::tls_mesh_arrays;
+}
+
+const Span<const transvoxel::CellInfo> VoxelMesherTransvoxel::get_cell_info_from_current_thread() {
+	return to_span(transvoxel::tls_cell_infos);
 }
 
 void VoxelMesherTransvoxel::load_static_resources() {
@@ -218,7 +231,6 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	ZN_PROFILE_SCOPE();
 
 	static thread_local transvoxel::Cache tls_cache;
-	static thread_local transvoxel::MeshArrays tls_mesh_arrays;
 	// static thread_local FixedArray<transvoxel::MeshArrays, Cube::SIDE_COUNT> tls_transition_mesh_arrays;
 	static thread_local transvoxel::MeshArrays tls_simplified_mesh_arrays;
 
@@ -228,7 +240,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// These vectors are re-used.
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
-	tls_mesh_arrays.clear();
+	transvoxel::MeshArrays &mesh_arrays = transvoxel::tls_mesh_arrays;
+	mesh_arrays.clear();
 
 	const VoxelBufferInternal &voxels = input.voxels;
 	if (voxels.is_uniform(sdf_channel)) {
@@ -239,11 +252,10 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
-	static thread_local std::vector<transvoxel::CellInfo> tls_cell_infos;
 	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
 	if (_normalmap_settings.enabled && input.generator != nullptr && input.lod >= _normalmap_settings.begin_lod_index) {
-		tls_cell_infos.clear();
-		cell_infos = &tls_cell_infos;
+		transvoxel::tls_cell_infos.clear();
+		cell_infos = &transvoxel::tls_cell_infos;
 	}
 
 	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod > 0) {
@@ -253,24 +265,22 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// `generate_single` in between, knowing they will all be done within the specified area.
 
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, &ds, cell_infos);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, &ds, cell_infos);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, nullptr, cell_infos);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, nullptr, cell_infos);
 	}
 
-	if (tls_mesh_arrays.vertices.size() == 0) {
+	if (mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
 		return;
 	}
 
-	if (cell_infos != nullptr) {
+	if (cell_infos != nullptr && !input.defer_virtual_texture) {
 		ZN_PROFILE_SCOPE_NAMED("Normalmap");
 		const NormalMapSettings &settings = _normalmap_settings;
 
-		const unsigned int relative_lod_index = input.lod - settings.begin_lod_index;
-		const unsigned int tile_resolution = math::clamp(int(settings.tile_resolution_min << relative_lod_index),
-				int(settings.tile_resolution_min), int(settings.tile_resolution_max));
+		const unsigned int tile_resolution = get_virtual_texture_tile_resolution_for_lod(input.lod);
 
 		static thread_local NormalMapData tls_normalmap_data;
 		tls_normalmap_data.clear();
@@ -280,8 +290,9 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// TODO Allow to defer this to a different task?
 		// - So the mesh can be obtained sooner
 		// - And we can prevent it from updating as frequently as the mesh if repeatedly modified
-		compute_normalmap(to_span(*cell_infos), tls_mesh_arrays, tls_normalmap_data, tile_resolution, *input.generator,
-				input.data, input.origin_in_voxels + offset, input.lod, settings.octahedral_encoding_enabled);
+		compute_normalmap(to_span(*cell_infos), to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
+				to_span(mesh_arrays.indices), tls_normalmap_data, tile_resolution, *input.generator, input.data,
+				input.origin_in_voxels + offset, input.lod, settings.octahedral_encoding_enabled);
 
 		const Vector3i block_size =
 				input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
@@ -293,16 +304,19 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// 				.format(varray(input.lod, input.origin_in_voxels.x, input.origin_in_voxels.y,
 		// 						input.origin_in_voxels.z)));
 
-		output.normalmap_atlas_images = images.atlas_images;
-		output.cell_lookup_image = images.lookup_image;
+		std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
+		virtual_textures->normalmap_atlas_images = images.atlas_images;
+		virtual_textures->cell_lookup_image = images.lookup_image;
+		virtual_textures->valid = true;
+		output.virtual_textures = virtual_textures;
 	}
 
-	transvoxel::MeshArrays *combined_mesh_arrays = &tls_mesh_arrays;
+	transvoxel::MeshArrays *combined_mesh_arrays = &mesh_arrays;
 	if (_mesh_optimization_params.enabled) {
 		// TODO When voxel texturing is enabled, this will decrease quality a lot.
 		// There is no support yet for taking textures into account when simplifying.
 		// See https://github.com/zeux/meshoptimizer/issues/158
-		simplify(tls_mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
+		simplify(mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
 				_mesh_optimization_params.error_threshold);
 
 		combined_mesh_arrays = &tls_simplified_mesh_arrays;

@@ -1,11 +1,14 @@
 #include "mesh_block_task.h"
 #include "../meshers/transvoxel/distance_normalmaps.h"
+#include "../meshers/transvoxel/generate_distance_normalmap_task.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_data_map.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
+//#include "../util/string_funcs.h" // Debug
 #include "voxel_engine.h"
 
 namespace zylann::voxel {
@@ -299,8 +302,55 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod_index);
 
 	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
-		lod_index, collision_hint, lod_hint };
+		lod_index, collision_hint, lod_hint, true };
 	mesher->build(_surfaces_output, input);
+
+	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
+
+	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
+	if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled() && input.defer_virtual_texture &&
+			!mesh_is_empty && lod_index >= transvoxel_mesher->get_normalmap_begin_lod_index()) {
+		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
+		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
+
+		const Span<const transvoxel::CellInfo> cell_infos = VoxelMesherTransvoxel::get_cell_info_from_current_thread();
+		std::vector<transvoxel::CellInfo> cell_infos_copy;
+		cell_infos_copy.resize(cell_infos.size());
+		for (unsigned int i = 0; i < cell_infos.size(); ++i) {
+			cell_infos_copy[i] = cell_infos[i];
+		}
+
+		ZN_ASSERT(cell_infos.size() > 0 && mesh_arrays.vertices.size() > 0);
+
+		const Vector3i block_size =
+				voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
+
+		ZN_ASSERT(_surfaces_output.virtual_textures == nullptr);
+		std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures =
+				make_shared_instance<VoxelMesher::VirtualTextureOutput>();
+		virtual_textures->valid = false;
+		// This is stored here in case virtual texture rendering completes before the output of the current task gets
+		// dequeued in the main thread, since it runs in a separate asynchronous task
+		_surfaces_output.virtual_textures = virtual_textures;
+
+		GenerateDistanceNormalmapTask *nm_task = ZN_NEW(GenerateDistanceNormalmapTask);
+		nm_task->cell_infos = std::move(cell_infos_copy);
+		nm_task->mesh_vertices = mesh_arrays.vertices;
+		nm_task->mesh_normals = mesh_arrays.normals;
+		nm_task->mesh_indices = mesh_arrays.indices;
+		nm_task->generator = meshing_dependency->generator;
+		nm_task->voxel_data = data;
+		nm_task->origin_in_voxels = origin_in_voxels;
+		nm_task->block_size = block_size;
+		nm_task->tile_resolution = transvoxel_mesher->get_virtual_texture_tile_resolution_for_lod(lod_index);
+		nm_task->lod_index = lod_index;
+		nm_task->octahedral_encoding = transvoxel_mesher->get_octahedral_normal_encoding();
+		nm_task->block_position = position;
+		nm_task->volume_id = volume_id;
+		nm_task->virtual_textures = virtual_textures;
+
+		VoxelEngine::get_singleton().push_async_task(nm_task);
+	}
 
 	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
@@ -308,16 +358,17 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 				_surfaces_output.mesh_flags, _mesh_material_indices);
 		_has_mesh_resource = true;
 
-		if (_surfaces_output.cell_lookup_image.is_valid()) {
+		if (!input.defer_virtual_texture && _surfaces_output.virtual_textures != nullptr) {
+			ZN_ASSERT(_surfaces_output.virtual_textures->valid);
 			NormalMapImages images;
-			images.atlas_images = _surfaces_output.normalmap_atlas_images;
-			images.lookup_image = _surfaces_output.cell_lookup_image;
+			images.atlas_images = _surfaces_output.virtual_textures->normalmap_atlas_images;
+			images.lookup_image = _surfaces_output.virtual_textures->cell_lookup_image;
 			NormalMapTextures textures = store_normalmap_data_to_textures(images);
-			_surfaces_output.normalmap_atlas = textures.atlas;
-			_surfaces_output.cell_lookup = textures.lookup;
+			_surfaces_output.virtual_textures->normalmap_atlas = textures.atlas;
+			_surfaces_output.virtual_textures->cell_lookup = textures.lookup;
 			// No longer needed
-			_surfaces_output.atlas_image.unref();
-			_surfaces_output.cell_lookup_image.unref();
+			_surfaces_output.virtual_textures->normalmap_atlas_images.clear();
+			_surfaces_output.virtual_textures->cell_lookup_image.unref();
 		}
 
 	} else {

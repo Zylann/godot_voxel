@@ -65,10 +65,10 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		++gd_surface_index;
 	}
 
-	if (output.cell_lookup_image.is_valid()) {
+	if (output.virtual_textures != nullptr && output.virtual_textures->valid) {
 		NormalMapImages images;
-		images.atlas_images = output.normalmap_atlas_images;
-		images.lookup_image = output.cell_lookup_image;
+		images.atlas_images = output.virtual_textures->normalmap_atlas_images;
+		images.lookup_image = output.virtual_textures->cell_lookup_image;
 		const NormalMapTextures textures = store_normalmap_data_to_textures(images);
 		// That should be in return value, but for now I just want this for testing with GDScript, so it gotta go
 		// somewhere
@@ -101,6 +101,18 @@ void VoxelMesher::set_padding(int minimum, int maximum) {
 Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
 	// May be implemented in some meshers
 	return Ref<Material>();
+}
+
+bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
+	if (surfaces.size() == 0) {
+		return true;
+	}
+	for (const Output::Surface &surface : surfaces) {
+		if (is_surface_triangulated(surface.arrays)) {
+			return false;
+		}
+	}
+	return true;
 }
 
 void VoxelMesher::_bind_methods() {

@@ -58,18 +58,18 @@ static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 	}
 }
 
-NormalMapData::Tile compute_tile_info(
-		const transvoxel::CellInfo cell_info, const transvoxel::MeshArrays &mesh, unsigned int first_index) {
+NormalMapData::Tile compute_tile_info(const transvoxel::CellInfo cell_info, Span<const Vector3f> mesh_normals,
+		Span<const int> mesh_indices, unsigned int first_index) {
 	Vector3f normal_sum;
 	unsigned int ii = first_index;
 	for (unsigned int triangle_index = 0; triangle_index < cell_info.triangle_count; ++triangle_index) {
-		const unsigned vi0 = mesh.indices[ii];
-		const unsigned vi1 = mesh.indices[ii + 1];
-		const unsigned vi2 = mesh.indices[ii + 2];
+		const unsigned vi0 = mesh_indices[ii];
+		const unsigned vi1 = mesh_indices[ii + 1];
+		const unsigned vi2 = mesh_indices[ii + 2];
 		ii += 3;
-		const Vector3f normal0 = mesh.normals[vi0];
-		const Vector3f normal1 = mesh.normals[vi1];
-		const Vector3f normal2 = mesh.normals[vi2];
+		const Vector3f normal0 = mesh_normals[vi0];
+		const Vector3f normal1 = mesh_normals[vi1];
+		const Vector3f normal2 = mesh_normals[vi2];
 		normal_sum += normal0;
 		normal_sum += normal1;
 		normal_sum += normal2;
@@ -116,21 +116,21 @@ void get_axis_indices(Vector3f::Axis axis, unsigned int &ax, unsigned int &ay, u
 typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, transvoxel::MAX_TRIANGLES_PER_CELL> CellTriangles;
 
 unsigned int prepare_triangles(unsigned int first_index, const transvoxel::CellInfo cell_info, const Vector3f direction,
-		CellTriangles &baked_triangles, const transvoxel::MeshArrays &mesh) {
+		CellTriangles &baked_triangles, Span<const Vector3f> mesh_vertices, Span<const int> mesh_indices) {
 	unsigned int triangle_count = 0;
 
 	unsigned int ii = first_index;
 	for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
 #ifdef DEBUG_ENABLED
-		ZN_ASSERT(ii + 2 < mesh.indices.size());
+		ZN_ASSERT(ii + 2 < mesh_indices.size());
 #endif
-		const unsigned vi0 = mesh.indices[ii];
-		const unsigned vi1 = mesh.indices[ii + 1];
-		const unsigned vi2 = mesh.indices[ii + 2];
+		const unsigned vi0 = mesh_indices[ii];
+		const unsigned vi1 = mesh_indices[ii + 1];
+		const unsigned vi2 = mesh_indices[ii + 2];
 		ii += 3;
-		const Vector3f a = mesh.vertices[vi0];
-		const Vector3f b = mesh.vertices[vi1];
-		const Vector3f c = mesh.vertices[vi2];
+		const Vector3f a = mesh_vertices[vi0];
+		const Vector3f b = mesh_vertices[vi1];
+		const Vector3f c = mesh_vertices[vi2];
 		math::BakedIntersectionTriangleForFixedDirection baked_triangle;
 		// The triangle can be parallel to the direction
 		if (baked_triangle.bake(a, b, c, direction)) {
@@ -325,10 +325,11 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_da
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transvoxel::MeshArrays &mesh,
-		NormalMapData &normal_map_data, unsigned int tile_resolution, VoxelGenerator &generator,
-		const VoxelDataLodMap *voxel_data, Vector3i origin_in_voxels, unsigned int lod_index,
-		bool octahedral_encoding) {
+// TODO Take an ICellIterator interface so we can make this independent from Transvoxel. Transvoxel is just a fastpath
+void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, Span<const Vector3f> mesh_vertices,
+		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
+		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelDataLodMap *voxel_data,
+		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
@@ -346,7 +347,7 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 	for (unsigned int cell_index = 0; cell_index < cell_infos.size(); ++cell_index) {
 		const transvoxel::CellInfo cell_info = cell_infos[cell_index];
 
-		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh, first_index);
+		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices, first_index);
 		normal_map_data.tiles.push_back(tile);
 
 		const Vector3f cell_origin_world = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
@@ -388,7 +389,8 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, const transv
 
 		// Optimize triangles
 		CellTriangles baked_triangles;
-		unsigned int triangle_count = prepare_triangles(first_index, cell_info, direction, baked_triangles, mesh);
+		unsigned int triangle_count =
+				prepare_triangles(first_index, cell_info, direction, baked_triangles, mesh_vertices, mesh_indices);
 
 		// Fill query buffers
 		{
