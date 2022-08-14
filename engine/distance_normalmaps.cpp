@@ -1,11 +1,11 @@
 #include "distance_normalmaps.h"
-#include "../../edition/funcs.h"
-#include "../../generators/voxel_generator.h"
-#include "../../storage/voxel_data_grid.h"
-#include "../../storage/voxel_data_map.h"
-#include "../../util/math/conv.h"
-#include "../../util/math/triangle.h"
-#include "../../util/profiling.h"
+#include "../edition/funcs.h"
+#include "../generators/voxel_generator.h"
+#include "../storage/voxel_data_grid.h"
+#include "../storage/voxel_data_map.h"
+#include "../util/math/conv.h"
+#include "../util/math/triangle.h"
+#include "../util/profiling.h"
 
 #include <core/io/image.h>
 #include <scene/resources/texture.h>

@@ -7,7 +7,6 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "distance_normalmaps.h"
 #include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
 

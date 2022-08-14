@@ -1,7 +1,7 @@
 #include "generate_distance_normalmap_task.h"
-#include "../../engine/voxel_engine.h"
-#include "../../util/profiling.h"
-//#include "../../util/string_funcs.h" // Debug
+#include "../util/profiling.h"
+#include "voxel_engine.h"
+//#include "../util/string_funcs.h" // Debug
 
 namespace zylann::voxel {
 

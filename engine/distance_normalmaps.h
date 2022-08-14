@@ -1,9 +1,9 @@
 #ifndef VOXEL_DISTANCE_NORMALMAPS_H
 #define VOXEL_DISTANCE_NORMALMAPS_H
 
-#include "../../util/fixed_array.h"
-#include "../../util/math/vector3f.h"
-#include "../../util/span.h"
+#include "../util/fixed_array.h"
+#include "../util/math/vector3f.h"
+#include "../util/span.h"
 
 #include <core/object/ref_counted.h>
 #include <vector>

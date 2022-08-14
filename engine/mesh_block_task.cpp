@@ -1,6 +1,4 @@
 #include "mesh_block_task.h"
-#include "../meshers/transvoxel/distance_normalmaps.h"
-#include "../meshers/transvoxel/generate_distance_normalmap_task.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_data_map.h"
 #include "../terrain/voxel_mesh_block.h"
@@ -8,6 +6,7 @@
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
+#include "generate_distance_normalmap_task.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "voxel_engine.h"

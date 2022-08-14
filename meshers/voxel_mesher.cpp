@@ -1,11 +1,11 @@
 #include "voxel_mesher.h"
 #include "../constants/voxel_string_names.h"
+#include "../engine/distance_normalmaps.h"
 #include "../generators/voxel_generator.h"
-#include "../meshers/transvoxel/distance_normalmaps.h"
-#include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
+#include "transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {
 

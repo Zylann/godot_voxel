@@ -2,9 +2,9 @@
 #define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
-#include "../meshers/transvoxel/distance_normalmaps.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/tasks/threaded_task.h"
+#include "distance_normalmaps.h"
 #include "meshing_dependency.h"
 #include "priority_dependency.h"
 

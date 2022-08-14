@@ -1,10 +1,10 @@
 #ifndef VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
 #define VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
 
-#include "../../generators/voxel_generator.h"
-#include "../../util/memory.h"
-#include "../../util/tasks/threaded_task.h"
-#include "../voxel_mesher.h"
+#include "../generators/voxel_generator.h"
+#include "../meshers/voxel_mesher.h"
+#include "../util/memory.h"
+#include "../util/tasks/threaded_task.h"
 #include "distance_normalmaps.h"
 
 namespace zylann::voxel {

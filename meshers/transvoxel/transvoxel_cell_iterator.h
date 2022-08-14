@@ -1,7 +1,7 @@
 #ifndef VOXEL_TRANSVOXEL_CELL_ITERATOR_H
 #define VOXEL_TRANSVOXEL_CELL_ITERATOR_H
 
-#include "distance_normalmaps.h"
+#include "../../engine/distance_normalmaps.h"
 #include "transvoxel.h"
 
 namespace zylann::voxel {
