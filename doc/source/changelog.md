@@ -39,6 +39,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
     - `VoxelGeneratorGraph`: Added minor optimization to share branches of nodes doing the same calculations
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
+    - `VoxelInstancer`: Editor: added basic UI to see how many instances exist
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
