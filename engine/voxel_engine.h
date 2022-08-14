@@ -9,6 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "distance_normalmaps.h"
 #include "priority_dependency.h"
 
 namespace zylann::voxel {
@@ -38,6 +39,9 @@ public:
 		uint8_t lod;
 		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
 		bool has_mesh_resource;
+		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
+		// starting from the mesh task, and it might complete earlier or later than the mesh.
+		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	};
 
 	struct BlockDataOutput {
@@ -62,7 +66,7 @@ public:
 	};
 
 	struct BlockVirtualTextureOutput {
-		std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures;
+		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 		Vector3i position;
 		uint32_t lod_index;
 	};

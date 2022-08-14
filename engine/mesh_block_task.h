@@ -49,6 +49,7 @@ private:
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
 	std::vector<uint8_t> _mesh_material_indices; // Indexed by mesh surface
+	std::shared_ptr<VirtualTextureOutput> _virtual_textures;
 };
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,

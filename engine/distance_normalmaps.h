@@ -85,8 +85,8 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
 
 struct NormalMapImages {
-	Vector<Ref<Image>> atlas_images;
-	Ref<Image> lookup_image;
+	Vector<Ref<Image>> atlas;
+	Ref<Image> lookup;
 };
 
 struct NormalMapTextures {
@@ -100,6 +100,15 @@ NormalMapImages store_normalmap_data_to_images(
 // Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
 // This may not be allowed to run in a different thread than the main thread if the renderer is not using Vulkan.
 NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data);
+
+struct VirtualTextureOutput {
+	// Normalmap atlas used for smooth voxels.
+	// If textures can't be created from threads, images are returned instead.
+	NormalMapImages normalmap_images;
+	NormalMapTextures normalmap_textures;
+	// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
+	std::atomic_bool valid;
+};
 
 } // namespace zylann::voxel
 

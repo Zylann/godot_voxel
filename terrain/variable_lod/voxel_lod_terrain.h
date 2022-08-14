@@ -282,7 +282,7 @@ private:
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
 	void apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob);
 	void apply_virtual_texture_update_to_block(
-			VoxelMeshBlockVLT &block, VoxelMesher::VirtualTextureOutput &ob, unsigned int lod_index);
+			VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index);
 
 	void start_updater();
 	void stop_updater();

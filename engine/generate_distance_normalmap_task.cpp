@@ -27,11 +27,9 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 
 	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
 		NormalMapTextures textures = store_normalmap_data_to_textures(images);
-		virtual_textures->normalmap_atlas = textures.atlas;
-		virtual_textures->cell_lookup = textures.lookup;
+		virtual_textures->normalmap_textures = textures;
 	} else {
-		virtual_textures->normalmap_atlas_images = images.atlas_images;
-		virtual_textures->cell_lookup_image = images.lookup_image;
+		virtual_textures->normalmap_images = images;
 	}
 
 	virtual_textures->valid = true;

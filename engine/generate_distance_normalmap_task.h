@@ -30,7 +30,7 @@ public:
 	NormalMapSettings virtual_texture_settings;
 
 	// Output (to be assigned so it can be populated)
-	std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures;
+	std::shared_ptr<VirtualTextureOutput> virtual_textures;
 
 	// Identification
 	Vector3i block_position;

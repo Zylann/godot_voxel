@@ -46,18 +46,6 @@ public:
 		bool virtual_texture_hint = false;
 	};
 
-	// TODO Might move out of meshers because it is baked (mostly) independtly from meshers.
-	struct VirtualTextureOutput {
-		// Normalmap atlas used for smooth voxels.
-		// If textures can't be created from threads, images are returned instead.
-		Ref<Texture2DArray> normalmap_atlas;
-		Vector<Ref<Image>> normalmap_atlas_images;
-		Ref<Texture2D> cell_lookup;
-		Ref<Image> cell_lookup_image;
-		// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
-		std::atomic_bool valid;
-	};
-
 	struct Output {
 		struct Surface {
 			Array arrays;
@@ -83,11 +71,6 @@ public:
 		// May be used to store extra information needed in shader to render the mesh properly
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
-
-		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously and
-		// it might complete earlier or later than the mesh.
-		// TODO Might be moved to meshing task output instead, meshers don't actually use this field.
-		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	};
 
 	static bool is_mesh_empty(const std::vector<Output::Surface> &surfaces);

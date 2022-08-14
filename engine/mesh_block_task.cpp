@@ -326,13 +326,11 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		const Vector3i block_size =
 				voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
 
-		ZN_ASSERT(_surfaces_output.virtual_textures == nullptr);
-		std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures =
-				make_shared_instance<VoxelMesher::VirtualTextureOutput>();
+		std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
 		virtual_textures->valid = false;
 		// This is stored here in case virtual texture rendering completes before the output of the current task gets
 		// dequeued in the main thread, since it runs in a separate asynchronous task
-		_surfaces_output.virtual_textures = virtual_textures;
+		_virtual_textures = virtual_textures;
 
 		GenerateDistanceNormalmapTask *nm_task = ZN_NEW(GenerateDistanceNormalmapTask);
 		nm_task->cell_iterator = std::move(cell_iterator);
@@ -397,6 +395,7 @@ void MeshBlockTask::apply_result() {
 			o.mesh = _mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
+			o.virtual_textures = _virtual_textures;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);

@@ -1781,8 +1781,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	block->set_parent_transform(get_global_transform());
 
-	if (ob.surfaces.virtual_textures != nullptr && ob.surfaces.virtual_textures->valid) {
-		apply_virtual_texture_update_to_block(*block, *ob.surfaces.virtual_textures, ob.lod);
+	if (ob.virtual_textures != nullptr && ob.virtual_textures->valid) {
+		apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -1813,19 +1813,15 @@ void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualText
 }
 
 void VoxelLodTerrain::apply_virtual_texture_update_to_block(
-		VoxelMeshBlockVLT &block, VoxelMesher::VirtualTextureOutput &ob, unsigned int lod_index) {
+		VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(ob.valid);
 
-	NormalMapTextures normalmap_textures;
-	normalmap_textures.atlas = ob.normalmap_atlas;
-	normalmap_textures.lookup = ob.cell_lookup;
+	NormalMapTextures normalmap_textures = ob.normalmap_textures;
 
 	if (normalmap_textures.lookup.is_null()) {
 		// TODO When this code path is required, use a time-spread task to reduce stalls
-		NormalMapImages normalmap_images;
-		normalmap_images.atlas_images = ob.normalmap_atlas_images;
-		normalmap_images.lookup_image = ob.cell_lookup_image;
+		NormalMapImages normalmap_images = ob.normalmap_images;
 		normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
 	}
 

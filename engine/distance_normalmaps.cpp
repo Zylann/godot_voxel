@@ -554,7 +554,7 @@ NormalMapImages store_normalmap_data_to_images(
 			}
 		}
 
-		images.atlas_images = tile_images;
+		images.atlas = tile_images;
 	}
 
 	{
@@ -590,7 +590,7 @@ NormalMapImages store_normalmap_data_to_images(
 		Ref<Image> image;
 		image.instantiate();
 		image->create_from_data(sqri, sqri, false, Image::FORMAT_RGB8, bytes);
-		images.lookup_image = image;
+		images.lookup = image;
 	}
 
 	return images;
@@ -606,14 +606,14 @@ NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) 
 		ZN_PROFILE_SCOPE_NAMED("Atlas texture");
 		Ref<Texture2DArray> atlas;
 		atlas.instantiate();
-		const Error err = atlas->create_from_images(data.atlas_images);
+		const Error err = atlas->create_from_images(data.atlas);
 		ZN_ASSERT_RETURN_V(err == OK, textures);
 		textures.atlas = atlas;
 	}
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
-		Ref<ImageTexture> lookup = ImageTexture::create_from_image(data.lookup_image);
+		Ref<ImageTexture> lookup = ImageTexture::create_from_image(data.lookup);
 		textures.lookup = lookup;
 	}
 
