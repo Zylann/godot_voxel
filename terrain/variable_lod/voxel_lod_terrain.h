@@ -90,6 +90,21 @@ public:
 	void set_threaded_update_enabled(bool enabled);
 	bool is_threaded_update_enabled() const;
 
+	void set_normalmap_enabled(bool enable);
+	bool is_normalmap_enabled() const;
+
+	void set_octahedral_normal_encoding(bool enable);
+	bool get_octahedral_normal_encoding() const;
+
+	void set_normalmap_tile_resolution_min(int resolution);
+	int get_normalmap_tile_resolution_min() const;
+
+	void set_normalmap_tile_resolution_max(int resolution);
+	int get_normalmap_tile_resolution_max() const;
+
+	void set_normalmap_begin_lod_index(int lod_index);
+	int get_normalmap_begin_lod_index() const;
+
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);

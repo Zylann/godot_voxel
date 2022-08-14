@@ -1227,18 +1227,14 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			task->data_block_size = data_block_size;
 			task->data = data_ptr;
 			task->collision_hint = settings.collision_enabled;
+			task->virtual_texture_settings = settings.virtual_texture_settings;
 
-			if (meshing_dependency->mesher.is_valid()) {
-				// Don't update a virtual texture if one update is already processing
-				// TODO Make this feature independent from Transvoxel
-				Ref<VoxelMesherTransvoxel> transvoxel_mesher = meshing_dependency->mesher;
-				if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled() &&
-						lod_index >= transvoxel_mesher->get_normalmap_begin_lod_index()) {
-					if (mesh_block.virtual_texture_state != VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING) {
-						mesh_block.virtual_texture_state = VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
-						task->require_virtual_texture = true;
-					}
-				}
+			// Don't update a virtual texture if one update is already processing
+			if (settings.virtual_texture_settings.enabled &&
+					lod_index >= settings.virtual_texture_settings.begin_lod_index &&
+					mesh_block.virtual_texture_state != VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING) {
+				mesh_block.virtual_texture_state = VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
+				task->require_virtual_texture = true;
 			}
 
 			const Box3i data_box =

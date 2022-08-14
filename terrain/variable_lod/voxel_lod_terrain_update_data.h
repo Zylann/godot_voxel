@@ -3,6 +3,7 @@
 
 #include "../../constants/voxel_constants.h"
 #include "../../generators/voxel_generator.h"
+#include "../../meshers/transvoxel/distance_normalmaps.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/fixed_array.h"
@@ -59,6 +60,7 @@ struct VoxelLodTerrainUpdateData {
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
 		unsigned int mesh_block_size_po2 = 4;
+		NormalMapSettings virtual_texture_settings;
 	};
 
 	enum MeshState {

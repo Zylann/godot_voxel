@@ -140,6 +140,15 @@ inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
 }
 
+template <typename T>
+inline T try_get(const Dictionary &d, String key) {
+	const Variant *v = d.getptr(key);
+	if (v == nullptr) {
+		return T();
+	}
+	return *v;
+}
+
 } // namespace zylann
 
 // Needed for `zylann::format()`.

@@ -495,7 +495,7 @@ The number of polygons is the same:
 
 TODO: showcase an example with overhangs to emphasize that it works too
 
-This can be turned on in the inspector when using `VoxelMesherTransvoxel`. The cost is slower mesh generation and more memory usage to store normalmap textures.
+This can be turned on in the inspector when using `VoxelLodTerrain`. The cost is slower mesh generation and more memory usage to store normalmap textures.
 
 This feature is only available in `VoxelLodTerrain`. It also works best with data streaming turned off (`full_load_mode_enabled`), because being able to see all details from far away requires to not unload edited blocks. It will still use the generator if data streaming is on, but you won't see edited regions.
 

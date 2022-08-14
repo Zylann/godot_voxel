@@ -2,6 +2,7 @@
 #define VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
 
 #include "../../generators/voxel_generator.h"
+#include "../../util/memory.h"
 #include "../../util/tasks/threaded_task.h"
 #include "../voxel_mesher.h"
 #include "distance_normalmaps.h"
@@ -15,7 +16,7 @@ class GenerateDistanceNormalmapTask : public IThreadedTask {
 public:
 	// Input
 
-	std::vector<transvoxel::CellInfo> cell_infos;
+	UniquePtr<ICellIterator> cell_iterator;
 	// TODO Optimize: perhaps we could find a way to not copy mesh data? The only reason is because Godot wants a
 	// slightly different data structure potentially taking unnecessary doubles because it uses `Vector3`...
 	std::vector<Vector3f> mesh_vertices;
@@ -25,9 +26,8 @@ public:
 	std::shared_ptr<VoxelDataLodMap> voxel_data;
 	Vector3i origin_in_voxels;
 	Vector3i block_size;
-	uint8_t tile_resolution;
 	uint8_t lod_index;
-	bool octahedral_encoding;
+	NormalMapSettings virtual_texture_settings;
 
 	// Output (to be assigned so it can be populated)
 	std::shared_ptr<VoxelMesher::VirtualTextureOutput> virtual_textures;
@@ -40,8 +40,6 @@ public:
 	void apply_result() override;
 	int get_priority() override;
 	bool is_cancelled() override;
-
-private:
 };
 
 } // namespace zylann::voxel

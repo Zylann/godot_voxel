@@ -50,21 +50,6 @@ public:
 	void set_transitions_enabled(bool enable);
 	bool get_transitions_enabled() const;
 
-	void set_normalmap_enabled(bool enable);
-	bool is_normalmap_enabled() const;
-
-	void set_octahedral_normal_encoding(bool enable);
-	bool get_octahedral_normal_encoding() const;
-
-	void set_normalmap_tile_resolution_min(int resolution);
-	int get_normalmap_tile_resolution_min() const;
-
-	void set_normalmap_tile_resolution_max(int resolution);
-	int get_normalmap_tile_resolution_max() const;
-
-	void set_normalmap_begin_lod_index(int lod_index);
-	int get_normalmap_begin_lod_index() const;
-
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
 	// Internal
@@ -74,15 +59,9 @@ public:
 
 	// Exposed for a fast-path. Return values are only valid until the next invocation of build() in the calling thread.
 	static const transvoxel::MeshArrays &get_mesh_cache_from_current_thread();
-	static const Span<const transvoxel::CellInfo> get_cell_info_from_current_thread();
-
-	inline unsigned int get_virtual_texture_tile_resolution_for_lod(unsigned int lod_index) {
-		const unsigned int relative_lod_index = lod_index - _normalmap_settings.begin_lod_index;
-		const unsigned int tile_resolution =
-				math::clamp(int(_normalmap_settings.tile_resolution_min << relative_lod_index),
-						int(_normalmap_settings.tile_resolution_min), int(_normalmap_settings.tile_resolution_max));
-		return tile_resolution;
-	}
+	// Exposed for a fast-path. Return values are only valid if `virtual_texture_hint` is true in the input given to
+	// `build`, and only remains valid until the next invocation of build() in the calling thread.
+	static Span<const transvoxel::CellInfo> get_cell_info_from_current_thread();
 
 	// Not sure if that's necessary, currently transitions are either combined or not generated
 	// enum TransitionMode {
@@ -114,23 +93,6 @@ private:
 	bool _deep_sampling_enabled = false;
 
 	bool _transitions_enabled = true;
-
-	struct NormalMapSettings {
-		// If enabled, an atlas of normalmaps will be generated for each cell of the resulting mesh, in order to add
-		// more visual details using a shader.
-		bool enabled = false;
-		// LOD index from which normalmaps will start being generated.
-		uint8_t begin_lod_index = 2;
-		// Tile resolution that will be used starting from the beginning LOD. Resolution will double at each following
-		// LOD index.
-		uint8_t tile_resolution_min = 4;
-		uint8_t tile_resolution_max = 8;
-		// If enabled, encodes normalmaps using octahedral compression, which trades a bit of quality for
-		// significantly reduced memory usage (using 2 bytes per pixel instead of 3).
-		bool octahedral_encoding_enabled = false;
-	};
-
-	NormalMapSettings _normalmap_settings;
 };
 
 } // namespace zylann::voxel

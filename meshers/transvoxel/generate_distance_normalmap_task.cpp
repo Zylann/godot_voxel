@@ -10,16 +10,20 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 	ZN_ASSERT_RETURN(generator.is_valid());
 	ZN_ASSERT_RETURN(virtual_textures != nullptr);
 	ZN_ASSERT_RETURN(virtual_textures->valid == false);
+	ZN_ASSERT_RETURN(cell_iterator != nullptr);
 
 	static thread_local NormalMapData tls_normalmap_data;
 	tls_normalmap_data.clear();
 
-	compute_normalmap(to_span(cell_infos), to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			tls_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
-			octahedral_encoding);
+	const unsigned int tile_resolution =
+			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
 
-	NormalMapImages images =
-			store_normalmap_data_to_images(tls_normalmap_data, tile_resolution, block_size, octahedral_encoding);
+	compute_normalmap(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
+			tls_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
+			virtual_texture_settings.octahedral_encoding_enabled);
+
+	NormalMapImages images = store_normalmap_data_to_images(
+			tls_normalmap_data, tile_resolution, block_size, virtual_texture_settings.octahedral_encoding_enabled);
 
 	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
 		NormalMapTextures textures = store_normalmap_data_to_textures(images);

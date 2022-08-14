@@ -41,16 +41,15 @@ public:
 		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
 		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
 		bool lod_hint = false;
-		// If true, virtual textures won't be generated immediately from the mesher
-		// TODO I dont like this, there might be some refactoring to do
-		bool defer_virtual_texture = false;
+		// If true, the mesher can collect some extra information which can be useful to speed up virtual texture
+		// baking. Depends on the mesher.
+		bool virtual_texture_hint = false;
 	};
 
+	// TODO Might move out of meshers because it is baked (mostly) independtly from meshers.
 	struct VirtualTextureOutput {
 		// Normalmap atlas used for smooth voxels.
 		// If textures can't be created from threads, images are returned instead.
-		// TODO Find a better organization to pass this around, this struct is getting quite big
-		// TODO Might move out with the option of generating these separately
 		Ref<Texture2DArray> normalmap_atlas;
 		Vector<Ref<Image>> normalmap_atlas_images;
 		Ref<Texture2D> cell_lookup;
@@ -85,7 +84,9 @@ public:
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;
 
-		// Can be null.
+		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously and
+		// it might complete earlier or later than the mesh.
+		// TODO Might be moved to meshing task output instead, meshers don't actually use this field.
 		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	};
 

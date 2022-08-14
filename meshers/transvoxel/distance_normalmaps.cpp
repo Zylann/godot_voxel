@@ -58,7 +58,7 @@ static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 	}
 }
 
-NormalMapData::Tile compute_tile_info(const transvoxel::CellInfo cell_info, Span<const Vector3f> mesh_normals,
+NormalMapData::Tile compute_tile_info(const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals,
 		Span<const int> mesh_indices, unsigned int first_index) {
 	Vector3f normal_sum;
 	unsigned int ii = first_index;
@@ -113,9 +113,9 @@ void get_axis_indices(Vector3f::Axis axis, unsigned int &ax, unsigned int &ay, u
 	}
 }
 
-typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, transvoxel::MAX_TRIANGLES_PER_CELL> CellTriangles;
+typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, CurrentCellInfo::MAX_TRIANGLES> CellTriangles;
 
-unsigned int prepare_triangles(unsigned int first_index, const transvoxel::CellInfo cell_info, const Vector3f direction,
+unsigned int prepare_triangles(unsigned int first_index, const CurrentCellInfo &cell_info, const Vector3f direction,
 		CellTriangles &baked_triangles, Span<const Vector3f> mesh_vertices, Span<const int> mesh_indices) {
 	unsigned int triangle_count = 0;
 
@@ -325,8 +325,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_da
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-// TODO Take an ICellIterator interface so we can make this independent from Transvoxel. Transvoxel is just a fastpath
-void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, Span<const Vector3f> mesh_vertices,
+void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelDataLodMap *voxel_data,
 		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
@@ -334,19 +333,20 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, Span<const V
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
 
+	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
-	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_infos.size() * encoded_normal_size);
+	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_count * encoded_normal_size);
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
 
-	normal_map_data.tiles.reserve(cell_infos.size());
+	normal_map_data.tiles.reserve(cell_count);
 
 	unsigned int first_index = 0;
+	unsigned int cell_index = 0;
+	CurrentCellInfo cell_info;
 
-	for (unsigned int cell_index = 0; cell_index < cell_infos.size(); ++cell_index) {
-		const transvoxel::CellInfo cell_info = cell_infos[cell_index];
-
+	while (cell_iterator.next(cell_info)) {
 		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices, first_index);
 		normal_map_data.tiles.push_back(tile);
 
@@ -517,6 +517,7 @@ void compute_normalmap(Span<const transvoxel::CellInfo> cell_infos, Span<const V
 		}
 
 		first_index += 3 * cell_info.triangle_count;
+		++cell_index;
 	}
 }
 
@@ -617,6 +618,13 @@ NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) 
 	}
 
 	return textures;
+}
+
+unsigned int get_virtual_texture_tile_resolution_for_lod(const NormalMapSettings &settings, unsigned int lod_index) {
+	const unsigned int relative_lod_index = lod_index - settings.begin_lod_index;
+	const unsigned int tile_resolution = math::clamp(int(settings.tile_resolution_min << relative_lod_index),
+			int(settings.tile_resolution_min), int(settings.tile_resolution_max));
+	return tile_resolution;
 }
 
 } // namespace zylann::voxel

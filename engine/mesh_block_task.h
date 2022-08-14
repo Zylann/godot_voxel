@@ -2,6 +2,7 @@
 #define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
+#include "../meshers/transvoxel/distance_normalmaps.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/tasks/threaded_task.h"
 #include "meshing_dependency.h"
@@ -33,10 +34,13 @@ public:
 	uint8_t data_block_size = 0;
 	bool collision_hint = false;
 	bool lod_hint = false;
+	// Virtual textures might be enabled, but we don't always want to update them in every mesh update.
+	// So this boolean is also checked to know if they should be computed.
 	bool require_virtual_texture = false;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelDataLodMap> data;
+	NormalMapSettings virtual_texture_settings;
 
 private:
 	bool _has_run = false;

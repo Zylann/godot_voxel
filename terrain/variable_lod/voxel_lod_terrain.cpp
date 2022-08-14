@@ -2229,6 +2229,47 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+void VoxelLodTerrain::set_normalmap_enabled(bool enable) {
+	_update_data->settings.virtual_texture_settings.enabled = enable;
+}
+
+bool VoxelLodTerrain::is_normalmap_enabled() const {
+	return _update_data->settings.virtual_texture_settings.enabled;
+}
+
+void VoxelLodTerrain::set_normalmap_tile_resolution_min(int resolution) {
+	_update_data->settings.virtual_texture_settings.tile_resolution_min = math::clamp(resolution, 1, 128);
+}
+
+int VoxelLodTerrain::get_normalmap_tile_resolution_min() const {
+	return _update_data->settings.virtual_texture_settings.tile_resolution_min;
+}
+
+void VoxelLodTerrain::set_normalmap_tile_resolution_max(int resolution) {
+	_update_data->settings.virtual_texture_settings.tile_resolution_max = math::clamp(resolution, 1, 128);
+}
+
+int VoxelLodTerrain::get_normalmap_tile_resolution_max() const {
+	return _update_data->settings.virtual_texture_settings.tile_resolution_max;
+}
+
+void VoxelLodTerrain::set_normalmap_begin_lod_index(int lod_index) {
+	ERR_FAIL_INDEX(lod_index, int(constants::MAX_LOD));
+	_update_data->settings.virtual_texture_settings.begin_lod_index = lod_index;
+}
+
+int VoxelLodTerrain::get_normalmap_begin_lod_index() const {
+	return _update_data->settings.virtual_texture_settings.begin_lod_index;
+}
+
+void VoxelLodTerrain::set_octahedral_normal_encoding(bool enable) {
+	_update_data->settings.virtual_texture_settings.octahedral_encoding_enabled = enable;
+}
+
+bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
+	return _update_data->settings.virtual_texture_settings.octahedral_encoding_enabled;
+}
+
 #ifdef TOOLS_ENABLED
 
 static String get_missing_uniform_names(Span<const StringName> expected_uniforms, Shader &shader) {
@@ -2311,13 +2352,20 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 
 		// Virtual textures
 		if (_generator.is_valid()) {
-			Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
-			if (transvoxel_mesher.is_valid() && transvoxel_mesher->is_normalmap_enabled()) {
+			if (is_normalmap_enabled()) {
 				if (!_generator->supports_series_generation()) {
-					warnings.append(
-							TTR("The current mesher ({0}) requires the generator to be able to generate series of "
-								"positions with `generate_series`. The current generator ({1}) does not support it."));
+					warnings.append(TTR(
+							"Normalmaps are enabled, but it requires the generator to be able to generate series of "
+							"positions with `generate_series`. The current generator ({1}) does not support it.")
+											.format(varray(_generator->get_class())));
 				}
+
+				if ((_generator->get_used_channels_mask() & VoxelBufferInternal::CHANNEL_SDF) == 0) {
+					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
+										"channel. The current generator ({1}) does not support it, or is not "
+										"configured to do so."));
+				}
+
 				if (shader_material.is_valid()) {
 					Ref<Shader> shader = shader_material->get_shader();
 
@@ -2330,10 +2378,11 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
 
 						if (missing_uniforms.size() != 0) {
-							warnings.append(
-									String(TTR("The current mesher settings requires to use a {0} with a shader having "
-											   "specific uniforms. Missing ones: {1}"))
-											.format(varray(ShaderMaterial::get_class_static(), missing_uniforms)));
+							warnings.append(String(
+									TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
+										"specific uniforms. Missing ones: {1}"))
+													.format(varray(
+															ShaderMaterial::get_class_static(), missing_uniforms)));
 						}
 					}
 				}
@@ -2832,11 +2881,20 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 }
 
 void VoxelLodTerrain::_bind_methods() {
+	// Material
+
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
 
+	// Bounds
+
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelLodTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelLodTerrain::get_view_distance);
+
+	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
+	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
+
+	// Collisions
 
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelLodTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelLodTerrain::set_generate_collisions);
@@ -2857,6 +2915,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_collision_update_delay", "delay_msec"), &VoxelLodTerrain::set_collision_update_delay);
 
+	// LOD
+
 	ClassDB::bind_method(D_METHOD("get_lod_fade_duration"), &VoxelLodTerrain::get_lod_fade_duration);
 	ClassDB::bind_method(D_METHOD("set_lod_fade_duration", "seconds"), &VoxelLodTerrain::set_lod_fade_duration);
 
@@ -2866,16 +2926,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_distance", "lod_distance"), &VoxelLodTerrain::set_lod_distance);
 	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
 
-	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
-	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &VoxelLodTerrain::set_mesh_block_size);
+	// Misc
 
-	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelLodTerrain::get_data_block_size);
-	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &VoxelLodTerrain::get_data_block_region_extent);
-
-	ClassDB::bind_method(D_METHOD("set_full_load_mode_enabled"), &VoxelLodTerrain::set_full_load_mode_enabled);
-	ClassDB::bind_method(D_METHOD("is_full_load_mode_enabled"), &VoxelLodTerrain::is_full_load_mode_enabled);
-
-	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 	ClassDB::bind_method(
 			D_METHOD("voxel_to_data_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_data_block_position);
 	ClassDB::bind_method(
@@ -2887,15 +2939,50 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelLodTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelLodTerrain::is_stream_running_in_editor);
 
-	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
-	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
+	// Normalmaps
 
-	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &VoxelLodTerrain::set_process_callback);
-	ClassDB::bind_method(D_METHOD("get_process_callback"), &VoxelLodTerrain::get_process_callback);
+	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &VoxelLodTerrain::set_normalmap_enabled);
+	ClassDB::bind_method(D_METHOD("is_normalmap_enabled"), &VoxelLodTerrain::is_normalmap_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_min", "resolution"),
+			&VoxelLodTerrain::set_normalmap_tile_resolution_min);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution_min"), &VoxelLodTerrain::get_normalmap_tile_resolution_min);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_max", "resolution"),
+			&VoxelLodTerrain::set_normalmap_tile_resolution_max);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution_max"), &VoxelLodTerrain::get_normalmap_tile_resolution_max);
+
+	ClassDB::bind_method(
+			D_METHOD("set_normalmap_begin_lod_index", "lod_index"), &VoxelLodTerrain::set_normalmap_begin_lod_index);
+	ClassDB::bind_method(D_METHOD("get_normalmap_begin_lod_index"), &VoxelLodTerrain::get_normalmap_begin_lod_index);
+
+	ClassDB::bind_method(
+			D_METHOD("set_octahedral_normal_encoding", "enabled"), &VoxelLodTerrain::set_octahedral_normal_encoding);
+	ClassDB::bind_method(D_METHOD("get_octahedral_normal_encoding"), &VoxelLodTerrain::get_octahedral_normal_encoding);
+
+	// Advanced
+
+	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
+	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &VoxelLodTerrain::set_mesh_block_size);
+
+	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelLodTerrain::get_data_block_size);
+	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &VoxelLodTerrain::get_data_block_region_extent);
+
+	ClassDB::bind_method(D_METHOD("set_full_load_mode_enabled"), &VoxelLodTerrain::set_full_load_mode_enabled);
+	ClassDB::bind_method(D_METHOD("is_full_load_mode_enabled"), &VoxelLodTerrain::is_full_load_mode_enabled);
 
 	ClassDB::bind_method(
 			D_METHOD("set_threaded_update_enabled", "enabled"), &VoxelLodTerrain::set_threaded_update_enabled);
 	ClassDB::bind_method(D_METHOD("is_threaded_update_enabled"), &VoxelLodTerrain::is_threaded_update_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &VoxelLodTerrain::set_process_callback);
+	ClassDB::bind_method(D_METHOD("get_process_callback"), &VoxelLodTerrain::get_process_callback);
+
+	// Debug
+
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 
 	ClassDB::bind_method(
 			D_METHOD("debug_raycast_mesh_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_mesh_block);
@@ -2945,6 +3032,18 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
 						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"set_material", "get_material");
+
+	ADD_GROUP("Detail normalmaps", "normalmap_");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_min"), "set_normalmap_tile_resolution_min",
+			"get_normalmap_tile_resolution_min");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_max"), "set_normalmap_tile_resolution_max",
+			"get_normalmap_tile_resolution_max");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_begin_lod_index"), "set_normalmap_begin_lod_index",
+			"get_normalmap_begin_lod_index");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
+			"get_octahedral_normal_encoding");
 
 	ADD_GROUP("Collisions", "");
 
