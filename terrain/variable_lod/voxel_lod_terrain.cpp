@@ -2395,7 +2395,7 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 											.format(varray(_generator->get_class())));
 				}
 
-				if ((_generator->get_used_channels_mask() & VoxelBufferInternal::CHANNEL_SDF) == 0) {
+				if ((_generator->get_used_channels_mask() & (1 << VoxelBufferInternal::CHANNEL_SDF)) == 0) {
 					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
 										"channel. The current generator ({0}) does not support it, or is not "
 										"configured to do so.")
