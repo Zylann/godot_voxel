@@ -2268,18 +2268,57 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 
 #ifdef TOOLS_ENABLED
 
-static String get_missing_uniform_names(Span<const StringName> expected_uniforms, Shader &shader) {
+// TODO Cannot use `Shader.has_uniform()` because it is unreliable.
+// See https://github.com/godotengine/godot/issues/64467
+static bool shader_has_uniform(const Shader &shader, StringName uniform_name) {
+	List<PropertyInfo> params;
+	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader.get_rid(), &params);
+	for (const PropertyInfo &pi : params) {
+		if (pi.name == uniform_name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static String get_missing_uniform_names(Span<const StringName> expected_uniforms, const Shader &shader) {
 	String missing_uniforms;
+
+	// TODO Cannot use `Shader.has_uniform()` because it is unreliable.
+	// See https://github.com/godotengine/godot/issues/64467
+	// for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
+	// 	StringName uniform_name = expected_uniforms[i];
+	// 	ZN_ASSERT_CONTINUE(uniform_name != StringName());
+	// 	if (!shader.has_uniform(uniform_name)) {
+	// 		if (missing_uniforms.size() > 0) {
+	// 			missing_uniforms += ", ";
+	// 		}
+	// 		missing_uniforms += uniform_name;
+	// 	}
+	// }
+
+	List<PropertyInfo> params;
+	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader.get_rid(), &params);
+
 	for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
-		StringName uniform_name = expected_uniforms[i];
-		ZN_ASSERT_CONTINUE(uniform_name != StringName());
-		if (!shader.has_uniform(uniform_name)) {
+		const String name = expected_uniforms[i];
+
+		bool found = false;
+		for (const PropertyInfo &pi : params) {
+			if (pi.name == name) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
 			if (missing_uniforms.size() > 0) {
 				missing_uniforms += ", ";
 			}
-			missing_uniforms += uniform_name;
+			missing_uniforms += name;
 		}
 	}
+
 	return missing_uniforms;
 }
 
@@ -2316,7 +2355,7 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 			} else {
 				Ref<Shader> shader = shader_material->get_shader();
 				if (shader.is_valid()) {
-					if (!shader->has_uniform(VoxelStringNames::get_singleton().u_transition_mask)) {
+					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
 						warnings.append(TTR(
 								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
 												.format(varray(mesher->get_class(),
@@ -2337,7 +2376,7 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 					warnings.append(String("Lod fading is enabled but the current material is missing a shader.")
 											.format(varray(ShaderMaterial::get_class_static())));
 				} else {
-					if (!shader->has_uniform(VoxelStringNames::get_singleton().u_lod_fade)) {
+					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
 						warnings.append(TTR(
 								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
 												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
