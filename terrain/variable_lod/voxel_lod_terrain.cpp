@@ -2352,14 +2352,15 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 				if (!_generator->supports_series_generation()) {
 					warnings.append(TTR(
 							"Normalmaps are enabled, but it requires the generator to be able to generate series of "
-							"positions with `generate_series`. The current generator ({1}) does not support it.")
+							"positions with `generate_series`. The current generator ({0}) does not support it.")
 											.format(varray(_generator->get_class())));
 				}
 
 				if ((_generator->get_used_channels_mask() & VoxelBufferInternal::CHANNEL_SDF) == 0) {
 					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
-										"channel. The current generator ({1}) does not support it, or is not "
-										"configured to do so."));
+										"channel. The current generator ({0}) does not support it, or is not "
+										"configured to do so.")
+											.format(varray(_generator->get_class())));
 				}
 
 				if (shader_material.is_valid()) {
