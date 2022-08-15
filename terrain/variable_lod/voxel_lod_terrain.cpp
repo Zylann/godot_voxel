@@ -10,6 +10,7 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/shader.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
@@ -2267,60 +2268,6 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 }
 
 #ifdef TOOLS_ENABLED
-
-// TODO Cannot use `Shader.has_uniform()` because it is unreliable.
-// See https://github.com/godotengine/godot/issues/64467
-static bool shader_has_uniform(const Shader &shader, StringName uniform_name) {
-	List<PropertyInfo> params;
-	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader.get_rid(), &params);
-	for (const PropertyInfo &pi : params) {
-		if (pi.name == uniform_name) {
-			return true;
-		}
-	}
-	return false;
-}
-
-static String get_missing_uniform_names(Span<const StringName> expected_uniforms, const Shader &shader) {
-	String missing_uniforms;
-
-	// TODO Cannot use `Shader.has_uniform()` because it is unreliable.
-	// See https://github.com/godotengine/godot/issues/64467
-	// for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
-	// 	StringName uniform_name = expected_uniforms[i];
-	// 	ZN_ASSERT_CONTINUE(uniform_name != StringName());
-	// 	if (!shader.has_uniform(uniform_name)) {
-	// 		if (missing_uniforms.size() > 0) {
-	// 			missing_uniforms += ", ";
-	// 		}
-	// 		missing_uniforms += uniform_name;
-	// 	}
-	// }
-
-	List<PropertyInfo> params;
-	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader.get_rid(), &params);
-
-	for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
-		const String name = expected_uniforms[i];
-
-		bool found = false;
-		for (const PropertyInfo &pi : params) {
-			if (pi.name == name) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			if (missing_uniforms.size() > 0) {
-				missing_uniforms += ", ";
-			}
-			missing_uniforms += name;
-		}
-	}
-
-	return missing_uniforms;
-}
 
 TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	TypedArray<String> warnings = VoxelNode::get_configuration_warnings();
