@@ -97,6 +97,11 @@ size_t find_duplicate(Span<const T> items) {
 	return items.size();
 }
 
+template <typename T>
+bool has_duplicate(Span<const T> items) {
+	return find_duplicate(items) != items.size();
+}
+
 // Tests if POD items in an array are all the same.
 // Better tailored for more than hundred items that have power-of-two size.
 template <typename Item_T>

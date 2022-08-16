@@ -722,6 +722,29 @@ void test_voxel_graph_equivalence_merging() {
 	}
 }
 
+// https://github.com/Zylann/godot_voxel/issues/427
+void test_voxel_graph_issue427() {
+	Ref<VoxelGeneratorGraph> graph;
+	graph.instantiate();
+
+	const uint32_t n_in_y = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2()); // 1
+	const uint32_t n_sub = graph->create_node(VoxelGeneratorGraph::NODE_SUBTRACT, Vector2()); // 2
+	const uint32_t n_out_sdf = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2()); // 3
+	const uint32_t n_mul = graph->create_node(VoxelGeneratorGraph::NODE_MULTIPLY, Vector2()); // 4
+	const uint32_t n_fn2_2d = graph->create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D, Vector2()); // 5
+	const uint32_t n_distance_3d = graph->create_node(VoxelGeneratorGraph::NODE_DISTANCE_3D, Vector2()); // 6
+
+	graph->add_connection(n_in_y, 0, n_sub, 0);
+	graph->add_connection(n_sub, 0, n_out_sdf, 0);
+	graph->add_connection(n_fn2_2d, 0, n_mul, 0);
+	graph->add_connection(n_distance_3d, 0, n_mul, 1);
+	// Was crashing after adding this connection
+	graph->add_connection(n_mul, 0, n_sub, 1);
+
+	VoxelGraphRuntime::CompilationResult result = graph->compile(true);
+	ZYLANN_TEST_ASSERT(result.success);
+}
+
 void test_island_finder() {
 	const char *cdata = "X X X - X "
 						"X X X - - "
@@ -2327,6 +2350,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_voxel_graph_equivalence_merging);
+	VOXEL_TEST(test_voxel_graph_issue427);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

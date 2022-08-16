@@ -88,7 +88,6 @@ public:
 	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_order) const;
 	void find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const;
 	void find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const;
-	void find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const;
 	void find_terminal_nodes(std::vector<uint32_t> &node_ids) const;
 
 	template <typename F>
