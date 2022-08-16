@@ -1,6 +1,7 @@
 #ifndef PRIORITY_DEPENDENCY_H
 #define PRIORITY_DEPENDENCY_H
 
+#include "../util/tasks/task_priority.h"
 #include <core/math/vector3.h>
 #include <memory>
 #include <vector>
@@ -23,12 +24,13 @@ struct PriorityDependency {
 	std::shared_ptr<ViewersData> shared;
 	// Position relative to the same space as viewers.
 	// TODO Won't update while in queue. Can it be bad?
+	// TODO May not be worth storing with double precision
 	Vector3 world_position;
 
 	// If the closest viewer is further away than this distance, the request can be cancelled as not worth it
 	float drop_distance_squared;
 
-	int evaluate(uint8_t lod_index, float *out_closest_distance_sq);
+	TaskPriority evaluate(uint8_t lod_index, uint8_t band2_priority, float *out_closest_distance_sq);
 };
 
 } // namespace zylann::voxel

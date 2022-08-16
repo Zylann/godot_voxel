@@ -16,7 +16,7 @@ public:
 	~GenerateBlockTask();
 
 	void run(ThreadedTaskContext ctx) override;
-	int get_priority() override;
+	TaskPriority get_priority() override;
 	bool is_cancelled() override;
 	void apply_result() override;
 

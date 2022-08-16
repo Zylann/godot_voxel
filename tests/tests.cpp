@@ -2306,6 +2306,13 @@ void test_threaded_task_runner() {
 	ZYLANN_TEST_ASSERT(serial_counter->current_count == 0);
 }
 
+void test_task_priority_values() {
+	ZYLANN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(1, 0, 0, 0));
+	ZYLANN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(0, 0, 0, 1));
+	ZYLANN_TEST_ASSERT(TaskPriority(10, 0, 0, 0) < TaskPriority(0, 10, 0, 0));
+	ZYLANN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -2349,6 +2356,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_buffer_metadata_gd);
 	VOXEL_TEST(test_voxel_mesher_cubes);
 	VOXEL_TEST(test_threaded_task_runner);
+	VOXEL_TEST(test_task_priority_values);
 
 	print_line("------------ Voxel tests end -------------");
 }

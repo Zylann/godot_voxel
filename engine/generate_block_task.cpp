@@ -74,9 +74,10 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	has_run = true;
 }
 
-int GenerateBlockTask::get_priority() {
+TaskPriority GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
-	const int p = priority_dependency.evaluate(lod, &closest_viewer_distance_sq);
+	const TaskPriority p =
+			priority_dependency.evaluate(lod, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
 	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }

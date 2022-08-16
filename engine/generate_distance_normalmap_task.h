@@ -6,6 +6,7 @@
 #include "../util/memory.h"
 #include "../util/tasks/threaded_task.h"
 #include "distance_normalmaps.h"
+#include "priority_dependency.h"
 
 namespace zylann::voxel {
 
@@ -35,10 +36,11 @@ public:
 	// Identification
 	Vector3i block_position;
 	uint32_t volume_id;
+	PriorityDependency priority_dependency;
 
 	void run(ThreadedTaskContext ctx) override;
 	void apply_result() override;
-	int get_priority() override;
+	TaskPriority get_priority() override;
 	bool is_cancelled() override;
 };
 

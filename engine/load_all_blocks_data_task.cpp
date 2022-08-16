@@ -18,8 +18,8 @@ void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
 	ZN_PRINT_VERBOSE(format("Loaded {} blocks for volume {}", _result.blocks.size(), volume_id));
 }
 
-int LoadAllBlocksDataTask::get_priority() {
-	return 0;
+TaskPriority LoadAllBlocksDataTask::get_priority() {
+	return TaskPriority();
 }
 
 bool LoadAllBlocksDataTask::is_cancelled() {

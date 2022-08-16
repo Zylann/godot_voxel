@@ -2,6 +2,7 @@
 #include "../util/profiling.h"
 #include "voxel_engine.h"
 //#include "../util/string_funcs.h" // Debug
+#include "../constants/voxel_constants.h"
 
 namespace zylann::voxel {
 
@@ -55,9 +56,10 @@ void GenerateDistanceNormalmapTask::apply_result() {
 	callbacks.virtual_texture_output_callback(callbacks.data, o);
 }
 
-int GenerateDistanceNormalmapTask::get_priority() {
-	// TODO Give a proper priority, we just want this task to be done last relative to meshing
-	return 99999999;
+TaskPriority GenerateDistanceNormalmapTask::get_priority() {
+	// Priority by distance, but after meshes
+	TaskPriority p = priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2, nullptr);
+	return p;
 }
 
 bool GenerateDistanceNormalmapTask::is_cancelled() {

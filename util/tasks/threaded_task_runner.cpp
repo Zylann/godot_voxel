@@ -155,7 +155,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				// Pick best tasks
 				for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
 					size_t best_index = 0; // Take first by default, this is a valid index
-					int best_priority = std::numeric_limits<int>::max();
+					TaskPriority highest_priority = TaskPriority::min();
 					bool picked_task = false;
 
 					// Find best task to pick
@@ -182,8 +182,8 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 
 						// Pick item if it has better priority.
 						// If the item is serial, there must not be a serial task already running.
-						if (item.cached_priority < best_priority && !(item.is_serial && _is_serial_task_running)) {
-							best_priority = item.cached_priority;
+						if (item.cached_priority > highest_priority && !(item.is_serial && _is_serial_task_running)) {
+							highest_priority = item.cached_priority;
 							// This index should remain valid even if some tasks are removed because the "remove and
 							// swap back" technique only affects items coming after
 							best_index = i;

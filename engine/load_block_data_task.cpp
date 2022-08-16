@@ -112,9 +112,10 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int LoadBlockDataTask::get_priority() {
+TaskPriority LoadBlockDataTask::get_priority() {
 	float closest_viewer_distance_sq;
-	const int p = _priority_dependency.evaluate(_lod, &closest_viewer_distance_sq);
+	const TaskPriority p =
+			_priority_dependency.evaluate(_lod, constants::TASK_PRIORITY_LOAD_BAND2, &closest_viewer_distance_sq);
 	_too_far = closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }

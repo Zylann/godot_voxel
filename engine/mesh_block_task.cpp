@@ -346,6 +346,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		nm_task->volume_id = volume_id;
 		nm_task->virtual_textures = virtual_textures;
 		nm_task->virtual_texture_settings = virtual_texture_settings;
+		nm_task->priority_dependency = priority_dependency;
 
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}
@@ -363,9 +364,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int MeshBlockTask::get_priority() {
+TaskPriority MeshBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
-	const int p = priority_dependency.evaluate(lod_index, &closest_viewer_distance_sq);
+	const TaskPriority p =
+			priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_MESH_BAND2, &closest_viewer_distance_sq);
 	_too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
