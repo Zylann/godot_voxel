@@ -235,6 +235,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMesher::Output: {}", sizeof(VoxelMesher::Output)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelEngine::BlockMeshOutput: {}", sizeof(VoxelEngine::BlockMeshOutput)));
+		if (RenderingDevice::get_singleton() != nullptr) {
+			ZN_PRINT_VERBOSE(format("TextureArray max layers: {}",
+					RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS)));
+		}
 
 #ifdef VOXEL_RUN_TESTS
 		zylann::voxel::tests::run_voxel_tests();

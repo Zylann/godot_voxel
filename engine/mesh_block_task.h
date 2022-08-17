@@ -27,7 +27,7 @@ public:
 	FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 	// TODO Need to provide format
 	//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
-	Vector3i position; // In mesh blocks of the specified lod
+	Vector3i mesh_block_position; // In mesh blocks of the specified lod
 	uint32_t volume_id;
 	uint8_t lod_index = 0;
 	uint8_t blocks_count = 0;

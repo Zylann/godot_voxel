@@ -25,8 +25,7 @@ public:
 	std::vector<int> mesh_indices;
 	Ref<VoxelGenerator> generator;
 	std::shared_ptr<VoxelDataLodMap> voxel_data;
-	Vector3i origin_in_voxels;
-	Vector3i block_size;
+	Vector3i mesh_block_size;
 	uint8_t lod_index;
 	NormalMapSettings virtual_texture_settings;
 
@@ -34,7 +33,7 @@ public:
 	std::shared_ptr<VirtualTextureOutput> virtual_textures;
 
 	// Identification
-	Vector3i block_position;
+	Vector3i mesh_block_position;
 	uint32_t volume_id;
 	PriorityDependency priority_dependency;
 

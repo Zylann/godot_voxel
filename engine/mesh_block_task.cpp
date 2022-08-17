@@ -264,7 +264,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
 			mesher->get_used_channels_mask(), meshing_dependency->generator, modifiers, data_block_size, lod_index,
-			position);
+			mesh_block_position);
 
 	// Could cache generator data from here if it was safe to write into the map
 	/*if (data != nullptr && cache_generated_blocks) {
@@ -299,7 +299,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		}
 	}*/
 
-	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod_index);
+	const Vector3i mesh_block_size =
+			voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
+
+	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
 	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
 		lod_index, collision_hint, lod_hint, true };
@@ -323,9 +326,6 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 
 		UniquePtr<TransvoxelCellIterator> cell_iterator = make_unique_instance<TransvoxelCellIterator>(cell_infos);
 
-		const Vector3i block_size =
-				voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
-
 		std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
 		virtual_textures->valid = false;
 		// This is stored here in case virtual texture rendering completes before the output of the current task gets
@@ -339,10 +339,9 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		nm_task->mesh_indices = mesh_arrays.indices;
 		nm_task->generator = meshing_dependency->generator;
 		nm_task->voxel_data = data;
-		nm_task->origin_in_voxels = origin_in_voxels;
-		nm_task->block_size = block_size;
+		nm_task->mesh_block_size = mesh_block_size;
 		nm_task->lod_index = lod_index;
-		nm_task->block_position = position;
+		nm_task->mesh_block_position = mesh_block_position;
 		nm_task->volume_id = volume_id;
 		nm_task->virtual_textures = virtual_textures;
 		nm_task->virtual_texture_settings = virtual_texture_settings;
@@ -391,7 +390,7 @@ void MeshBlockTask::apply_result() {
 				o.type = VoxelEngine::BlockMeshOutput::TYPE_DROPPED;
 			}
 
-			o.position = position;
+			o.position = mesh_block_position;
 			o.lod = lod_index;
 			o.surfaces = std::move(_surfaces_output);
 			o.mesh = _mesh;

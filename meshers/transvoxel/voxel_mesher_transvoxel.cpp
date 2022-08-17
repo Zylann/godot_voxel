@@ -201,31 +201,6 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 	}
 };
 
-/*static void debug_dump_atlas(Vector<Ref<Image>> images, String fpath) {
-	if (images.size() == 0) {
-		return;
-	}
-	const int tile_width = images[0]->get_width();
-	const int tile_height = images[0]->get_height();
-	const int sqri = int(Math::ceil(Math::sqrt(float(images.size()))));
-	const int atlas_width = sqri * tile_width;
-	const int atlas_height = sqri * tile_height;
-	Ref<Image> atlas;
-	atlas.instantiate();
-	atlas->create(atlas_width, atlas_height, false, images[0]->get_format());
-	for (int layer_index = 0; layer_index < images.size(); ++layer_index) {
-		Ref<Image> im = images[layer_index];
-		const int xi = layer_index % sqri;
-		const int yi = layer_index / sqri;
-		atlas->blit_rect(
-				im, Rect2(0, 0, im->get_width(), im->get_height()), Vector2(xi * tile_width, yi * tile_height));
-	}
-	const int err = atlas->save_png(fpath);
-	if (err != OK) {
-		print_line(String("Could not save {0}, err {1}").format(varray(fpath, err)));
-	}
-}*/
-
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 

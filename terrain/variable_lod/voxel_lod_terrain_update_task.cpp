@@ -1220,7 +1220,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 			MeshBlockTask *task = memnew(MeshBlockTask);
 			task->volume_id = volume_id;
-			task->position = mesh_block_pos;
+			task->mesh_block_position = mesh_block_pos;
 			task->lod_index = lod_index;
 			task->lod_hint = true;
 			task->meshing_dependency = meshing_dependency;
@@ -1258,8 +1258,11 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 				++task->blocks_count;
 			});
 
-			init_sparse_octree_priority_dependency(task->priority_dependency, task->position, task->lod_index,
-					mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
+			// TODO There is inconsistency with coordinates sent to this function.
+			// Sometimes we send data block coordinates, sometimes we send mesh block coordinates. They aren't always
+			// the same, it might cause issues in priority sorting?
+			init_sparse_octree_priority_dependency(task->priority_dependency, task->mesh_block_position,
+					task->lod_index, mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
 
 			task_scheduler.push_main_task(task);
 
