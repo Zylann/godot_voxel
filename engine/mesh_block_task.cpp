@@ -313,7 +313,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	// terrain.
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 
-	if (mesher.is_valid() && virtual_texture_settings.enabled && !mesh_is_empty &&
+	if (transvoxel_mesher.is_valid() && virtual_texture_settings.enabled && !mesh_is_empty &&
 			lod_index >= virtual_texture_settings.begin_lod_index && require_virtual_texture) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
 
