@@ -1869,7 +1869,7 @@ static uint64_t get_deep_hash(const Object &obj,
 			if (value.get_type() == Variant::OBJECT) {
 				const Object *obj_value = value.operator Object *();
 				if (obj_value != nullptr) {
-					value_hash = get_deep_hash(*obj_value, hash, property_usage);
+					value_hash = get_deep_hash(*obj_value, property_usage, hash);
 				}
 
 			} else {
