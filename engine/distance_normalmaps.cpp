@@ -564,32 +564,38 @@ NormalMapImages store_normalmap_data_to_images(
 
 		PackedByteArray bytes;
 		{
-			const unsigned int pixel_size = 3;
+			const unsigned int pixel_size = 2;
 			bytes.resize(math::squared(sqri) * pixel_size);
 
 			uint8_t *bytes_w = bytes.ptrw();
 			memset(bytes_w, 0, bytes.size());
 
 			const unsigned int deck_size = block_size.x * block_size.y;
+#ifdef DEBUG_ENABLED
+			bool tile_index_overflow = false;
+#endif
 
 			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
 				const NormalMapData::Tile tile = data.tiles[tile_index];
-				// RG: layer index
-				// B: projection direction
+				// RG: tttttttt aatttttt
 				const uint8_t r = tile_index & 0xff;
-				const uint8_t g = tile_index >> 8;
-				const uint8_t b = tile.axis;
+				const uint8_t g = ((tile_index >> 8) & 0x3f) | (tile.axis << 6);
+#ifdef DEBUG_ENABLED
+				if (tile_index > 0x3fff && !tile_index_overflow) {
+					tile_index_overflow = true;
+					ZN_PRINT_VERBOSE("Tile index overflow");
+				}
+#endif
 				const unsigned int pi = pixel_size * (tile.x + tile.y * block_size.x + tile.z * deck_size);
 				ZN_ASSERT(int(pi) < bytes.size());
 				bytes_w[pi] = r;
 				bytes_w[pi + 1] = g;
-				bytes_w[pi + 2] = b;
 			}
 		}
 
 		Ref<Image> image;
 		image.instantiate();
-		image->create_from_data(sqri, sqri, false, Image::FORMAT_RGB8, bytes);
+		image->create_from_data(sqri, sqri, false, Image::FORMAT_RG8, bytes);
 		images.lookup = image;
 	}
 

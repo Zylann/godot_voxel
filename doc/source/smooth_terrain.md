@@ -347,7 +347,7 @@ Parameter name                 | Type             | Description
 -------------------------------|------------------|------------------------------
 `u_lod_fade`                   | `vec2`           | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
 `u_block_local_transform`      | `mat4`           | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
-`u_voxel_cell_lookup`          | `usampler2D`     | 3D texture where each pixel contains a cell index packed in bytes of `RG` (`r + (g << 8)`), and an axis index in `B`. The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_cell_lookup`          | `usampler2D`     | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
 `u_voxel_normalmap_atlas`      | `sampler2DArray` | Texture array where each layer is a tile containing a model-space normalmap. The layer index may be computed from `u_voxel_cell_lookup`. UVs are similar to triplanar mapping, but the axis is known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
 `u_voxel_cell_size`            | `float`          | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
 `u_voxel_block_size`           | `int`            | Size of the cubic block of voxels that the mesh represents, in voxels.
@@ -549,10 +549,10 @@ vec3 get_voxel_normal_model() {
 	ivec2 lookup_pos = ivec2(cell_index % lookup_sqri, cell_index / lookup_sqri);
 	//uvec3 lookup_value = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
 	//vec3 lookup_valuef = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
-	vec3 lookup_valuef = texture(u_voxel_cell_lookup, (vec2(lookup_pos) + vec2(0.5)) / float(lookup_sqri)).rgb;
-	uvec3 lookup_value = uvec3(round(lookup_valuef * 255.0));
-	uint tile_index = lookup_value.r | (lookup_value.g << 8u);
-	uint tile_direction = lookup_value.b;
+	vec2 lookup_valuef = texture(u_voxel_cell_lookup, (vec2(lookup_pos) + vec2(0.5)) / float(lookup_sqri)).rg;
+	uvec2 lookup_value = uvec2(round(lookup_valuef * 255.0));
+	uint tile_index = lookup_value.r | ((lookup_value.g & uint(0x3f)) << 8u);
+	uint tile_direction = lookup_value.g >> 6u;
 	
 	vec3 tile_texcoord = vec3(0.0, 0.0, float(tile_index));
 	// TODO Could do it non-branching with weighted addition
