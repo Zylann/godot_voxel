@@ -1904,7 +1904,6 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 	std::vector<uint64_t> node_hashes;
 	uint64_t hash = hash_djb2_one_64(0);
 
-	// Connections should be implicitely hashed due to the order of iteration
 	for (uint32_t node_id : order) {
 		ProgramGraph::Node &node = _graph.get_node(node_id);
 		hash = hash_djb2_one_64(node.type_id, hash);
@@ -1924,6 +1923,12 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 
 		for (const Variant &v : node.default_inputs) {
 			hash = hash_djb2_one_float_64(v.hash(), hash);
+		}
+
+		for (const ProgramGraph::Port &port : node.inputs) {
+			for (const ProgramGraph::PortLocation src : port.connections) {
+				hash = hash_djb2_one_64(uint64_t(src.node_id) | (uint64_t(src.port_index) << 32), hash);
+			}
 		}
 	}
 
