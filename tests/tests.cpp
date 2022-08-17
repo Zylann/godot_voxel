@@ -722,6 +722,8 @@ void test_voxel_graph_equivalence_merging() {
 	}
 }
 
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+
 // https://github.com/Zylann/godot_voxel/issues/427
 void test_voxel_graph_issue427() {
 	Ref<VoxelGeneratorGraph> graph;
@@ -744,6 +746,8 @@ void test_voxel_graph_issue427() {
 	VoxelGraphRuntime::CompilationResult result = graph->compile(true);
 	ZYLANN_TEST_ASSERT(result.success);
 }
+
+#endif // VOXEL_ENABLE_FAST_NOISE_2
 
 void test_island_finder() {
 	const char *cdata = "X X X - X "
@@ -2350,7 +2354,9 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_voxel_graph_equivalence_merging);
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
+#endif
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);
