@@ -473,7 +473,7 @@ math::Interval FastNoise2::get_estimated_output_range() const {
 	// Most noises should have known bounds like FastNoiseLite, but the node-graph nature of this library
 	// can make it difficult to calculate. Would be nice if the library could provide that out of the box.
 	if (is_remap_enabled()) {
-		return math::Interval(get_remap_output_min(), get_remap_output_max());
+		return math::Interval::from_unordered_values(get_remap_output_min(), get_remap_output_max());
 	} else {
 		return math::Interval(-1.f, 1.f);
 	}
