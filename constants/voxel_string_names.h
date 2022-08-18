@@ -41,6 +41,7 @@ public:
 	StringName u_voxel_cell_size;
 	StringName u_voxel_block_size;
 	StringName u_voxel_virtual_texture_fade;
+	StringName u_voxel_virtual_texture_tile_size;
 
 #ifdef DEBUG_ENABLED
 	StringName _voxel_debug_vt_position;

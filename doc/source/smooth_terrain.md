@@ -343,16 +343,17 @@ Shader API reference
 
 If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information. Some are necessary for features to work.
 
-Parameter name                 | Type             | Description
--------------------------------|------------------|------------------------------
-`u_lod_fade`                   | `vec2`           | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
-`u_block_local_transform`      | `mat4`           | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
-`u_voxel_cell_lookup`          | `usampler2D`     | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
-`u_voxel_normalmap_atlas`      | `sampler2DArray` | Texture array where each layer is a tile containing a model-space normalmap. The layer index may be computed from `u_voxel_cell_lookup`. UVs are similar to triplanar mapping, but the axis is known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
-`u_voxel_cell_size`            | `float`          | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
-`u_voxel_block_size`           | `int`            | Size of the cubic block of voxels that the mesh represents, in voxels.
-`u_voxel_virtual_texture_fade` | `float`          | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in virtual textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no virtual textures.
-`u_transition_mask`            | `int`            | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
+Parameter name                      | Type         | Description
+------------------------------------|--------------|------------------------------
+`u_lod_fade`                        | `vec2`       | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
+`u_block_local_transform`           | `mat4`       | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+`u_voxel_cell_lookup`               | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_normalmap_atlas`           | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_virtual_texture_tile_size` | `int`        | Resolution in pixels of each tile in `u_voxel_normalmap_atlas`.
+`u_voxel_cell_size`                 | `float`      | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
+`u_voxel_block_size`                | `int`        | Size of the cubic block of voxels that the mesh represents, in voxels.
+`u_voxel_virtual_texture_fade`      | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in virtual textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no virtual textures.
+`u_transition_mask`                 | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
 
 
 Level of detail (LOD)
@@ -513,7 +514,8 @@ Rendering these normals requires special shader code in your terrain material.
 //uniform usampler2D u_voxel_cell_lookup;
 uniform sampler2D u_voxel_cell_lookup : filter_nearest;
 
-uniform sampler2DArray u_voxel_normalmap_atlas;
+uniform sampler2D u_voxel_normalmap_atlas;
+uniform int u_voxel_virtual_texture_tile_size;
 uniform float u_voxel_cell_size;
 uniform int u_voxel_block_size;
 
@@ -539,7 +541,7 @@ vec3 octahedron_decode(vec2 f) {
 vec3 get_voxel_normal_model() {
 	float cell_size = u_voxel_cell_size;
 	int block_size = u_voxel_block_size;
-	float normalmap_tile_size = float(textureSize(u_voxel_normalmap_atlas, 0).x);
+	int normalmap_tile_size = u_voxel_virtual_texture_tile_size;
 	
 	ivec3 cell_pos = ivec3(floor(v_vertex_pos_model / cell_size));
 	vec3 cell_fract = fract(v_vertex_pos_model / cell_size);
@@ -550,9 +552,9 @@ vec3 get_voxel_normal_model() {
 	//uvec3 lookup_value = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
 	//vec3 lookup_valuef = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
 	vec2 lookup_valuef = texture(u_voxel_cell_lookup, (vec2(lookup_pos) + vec2(0.5)) / float(lookup_sqri)).rg;
-	uvec2 lookup_value = uvec2(round(lookup_valuef * 255.0));
-	uint tile_index = lookup_value.r | ((lookup_value.g & uint(0x3f)) << 8u);
-	uint tile_direction = lookup_value.g >> 6u;
+	ivec2 lookup_value = ivec2(round(lookup_valuef * 255.0));
+	int tile_index = lookup_value.r | ((lookup_value.g & 0x3f) << 8);
+	int tile_direction = lookup_value.g >> 6;
 	
 	vec3 tile_texcoord = vec3(0.0, 0.0, float(tile_index));
 	// TODO Could do it non-branching with weighted addition
@@ -570,13 +572,17 @@ vec3 get_voxel_normal_model() {
 	float padding = 0.5 / normalmap_tile_size;
 	tile_texcoord.xy = pad_uv(tile_texcoord.xy, padding);
 
+	ivec2 atlas_size = textureSize(u_voxel_normalmap_atlas, 0);
+	int tiles_per_row = atlas_size.x / normalmap_tile_size;
+	ivec2 tile_pos_pixels = ivec2(tile_index % tiles_per_row, tile_index / tiles_per_row) * normalmap_tile_size;
+	vec2 atlas_texcoord = (vec2(tile_pos_pixels) + float(normalmap_tile_size) * tile_texcoord) / vec2(atlas_size);
+	vec3 encoded_normal = texture(u_voxel_normalmap_atlas, atlas_texcoord).rgb;
+
 	// You may switch between these two snippets depending on if you use octahedral compression or not
 	// 1) XYZ
-	vec3 encoded_normal = texture(u_voxel_normalmap_atlas, tile_texcoord).rgb;
 	vec3 tile_normal_model = 2.0 * encoded_normal - vec3(1.0);
 	// 2) Octahedral
-	// vec2 encoded_normal = texture(u_voxel_normalmap_atlas, tile_texcoord).rg;
-	// vec3 tile_normal_model = octahedron_decode(encoded_normal);
+	// vec3 tile_normal_model = octahedron_decode(encoded_normal.rg);
 
 	return tile_normal_model;
 }

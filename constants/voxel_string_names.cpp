@@ -46,6 +46,7 @@ VoxelStringNames::VoxelStringNames() {
 	u_voxel_cell_size = StaticCString::create("u_voxel_cell_size");
 	u_voxel_block_size = StaticCString::create("u_voxel_block_size");
 	u_voxel_virtual_texture_fade = StaticCString::create("u_voxel_virtual_texture_fade");
+	u_voxel_virtual_texture_tile_size = StaticCString::create("u_voxel_virtual_texture_tile_size");
 
 #ifdef DEBUG_ENABLED
 	_voxel_debug_vt_position = StaticCString::create("_voxel_debug_vt_position");

@@ -112,6 +112,10 @@ public:
 		}
 	}
 
+	inline bool overlaps(const Span<T> other) const {
+		return _ptr + _size > other._ptr && _ptr < other._ptr + other._size;
+	}
+
 private:
 	T *_ptr;
 	size_t _size;

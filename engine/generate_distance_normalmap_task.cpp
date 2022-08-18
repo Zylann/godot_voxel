@@ -58,6 +58,11 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 	// 		String("debug_data/debug_normalmap_atlas_{0}_{1}_{2}_lod{3}_n{4}.png")
 	// 				.format(varray(mesh_block_position.x, mesh_block_position.y, mesh_block_position.z, lod_index,
 	// 						images.atlas.size())));
+	// if (images.atlas.is_valid()) {
+	// 	images.atlas->save_png(String("debug_data/debug_normalmap_atlas_{0}_{1}_{2}_lod{3}_n{4}.png")
+	// 								   .format(varray(mesh_block_position.x, mesh_block_position.y,
+	// 										   mesh_block_position.z, lod_index, tls_normalmap_data.tiles.size())));
+	// }
 	// if (images.lookup.is_valid()) {
 	// 	images.lookup->save_png(String("debug_data/debug_lookup_{0}_{1}_{2}_lod{3}.png")
 	// 									.format(varray(mesh_block_position.x, mesh_block_position.y,

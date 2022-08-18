@@ -8,6 +8,10 @@
 #include <core/object/ref_counted.h>
 #include <vector>
 
+//#define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
+// Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens
+// too frequently with block size 32. So instead we have to keep using 2D atlases with padding.
+
 class Texture2DArray;
 class Texture2D;
 class Image;
@@ -85,12 +89,20 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
 
 struct NormalMapImages {
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 	Vector<Ref<Image>> atlas;
+#else
+	Ref<Image> atlas;
+#endif
 	Ref<Image> lookup;
 };
 
 struct NormalMapTextures {
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 	Ref<Texture2DArray> atlas;
+#else
+	Ref<Texture2D> atlas;
+#endif
 	Ref<Texture2D> lookup;
 };
 

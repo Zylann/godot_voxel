@@ -1828,23 +1828,26 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 
 	Ref<ShaderMaterial> material = block.get_shader_material();
 	if (material.is_valid()) {
-		const bool had_texture =
-				material->get_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup) != Variant();
-		material->set_shader_uniform(
-				VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, normalmap_textures.atlas);
-		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, normalmap_textures.lookup);
+		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+		const bool had_texture = material->get_shader_uniform(sn.u_voxel_cell_lookup) != Variant();
+		material->set_shader_uniform(sn.u_voxel_normalmap_atlas, normalmap_textures.atlas);
+		material->set_shader_uniform(sn.u_voxel_cell_lookup, normalmap_textures.lookup);
 		const int cell_size = 1 << lod_index;
-		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, cell_size);
-		material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_block_size, get_mesh_block_size());
+		material->set_shader_uniform(sn.u_voxel_cell_size, cell_size);
+		material->set_shader_uniform(sn.u_voxel_block_size, get_mesh_block_size());
 
 		if (!had_texture) {
 			if (_lod_fade_duration > 0.f) {
 				// Fade-in to reduce "popping" details
 				_fading_virtual_textures.push_back(FadingVirtualTexture{ block.position, lod_index, 0.f });
-				material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 0.f);
 			} else {
-				material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 1.f);
+				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 1.f);
 			}
+			const unsigned int tile_size = get_virtual_texture_tile_resolution_for_lod(
+					_update_data->settings.virtual_texture_settings, lod_index);
+			material->set_shader_uniform(sn.u_voxel_virtual_texture_tile_size, tile_size);
 		}
 	}
 	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these

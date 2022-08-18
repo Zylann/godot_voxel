@@ -521,6 +521,29 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 	}
 }
 
+inline void copy_2d_region(Span<uint8_t> dst, Vector2i dst_size, Span<const uint8_t> src, Vector2i src_size,
+		Vector2i dst_pos, unsigned int item_size_in_bytes) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);
+	ZN_ASSERT(dst_size.x >= 0 && dst_size.y >= 0);
+	ZN_ASSERT(dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
+			dst_pos.y + src_size.y <= dst_size.y);
+	ZN_ASSERT(src.size() == src_size.x * src_size.y * item_size_in_bytes);
+	ZN_ASSERT(dst.size() == dst_size.x * dst_size.y * item_size_in_bytes);
+	ZN_ASSERT(!src.overlaps(dst));
+#endif
+	const unsigned int dst_begin = (dst_pos.x + dst_pos.y * dst_size.x) * item_size_in_bytes;
+	const unsigned int src_row_size = src_size.x * item_size_in_bytes;
+	const unsigned int dst_row_size = dst_size.x * item_size_in_bytes;
+	uint8_t *dst_p = dst.data() + dst_begin;
+	const uint8_t *src_p = src.data();
+	for (unsigned int src_y = 0; src_y < (unsigned int)src_size.y; ++src_y) {
+		memcpy(dst_p, src_p, src_row_size);
+		dst_p += dst_row_size;
+		src_p += src_row_size;
+	}
+}
+
 NormalMapImages store_normalmap_data_to_images(
 		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
@@ -529,32 +552,57 @@ NormalMapImages store_normalmap_data_to_images(
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Atlas images");
+
+		const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
+		const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+		const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
+		const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
+
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
+
 		Vector<Ref<Image>> tile_images;
 		tile_images.resize(data.tiles.size());
 
-		{
-			const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
-			const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
-
-			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
-				PackedByteArray bytes;
-				{
-					const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
-					const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
-					bytes.resize(tile_size_in_bytes);
-					memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
-				}
-
-				Ref<Image> image;
-				image.instantiate();
-				image->create_from_data(tile_resolution, tile_resolution, false, format, bytes);
-
-				tile_images.write[tile_index] = image;
-				//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
+		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+			PackedByteArray bytes;
+			{
+				bytes.resize(tile_size_in_bytes);
+				memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
 			}
+
+			Ref<Image> image;
+			image.instantiate();
+			image->create_from_data(tile_resolution, tile_resolution, false, format, bytes);
+
+			tile_images.write[tile_index] = image;
+			//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
 		}
 
 		images.atlas = tile_images;
+
+#else
+		const unsigned int tiles_across = int(Math::ceil(Math::sqrt(float(data.tiles.size()))));
+		const unsigned int pixels_across = tiles_across * tile_resolution;
+
+		PackedByteArray bytes;
+		bytes.resize(math::squared(tiles_across) * tile_size_in_bytes);
+		Span<uint8_t> bytes_span(bytes.ptrw(), bytes.size());
+
+		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
+			const Vector2i tile_pos_pixels =
+					int(tile_resolution) * Vector2i(tile_index % tiles_across, tile_index / tiles_across);
+			Span<const uint8_t> tile =
+					to_span_from_position_and_size(data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
+			copy_2d_region(bytes_span, Vector2i(pixels_across, pixels_across), tile,
+					Vector2i(tile_resolution, tile_resolution), tile_pos_pixels, pixel_size);
+		}
+
+		Ref<Image> atlas;
+		atlas.instantiate();
+		atlas->create_from_data(pixels_across, pixels_across, false, format, bytes);
+		images.atlas = atlas;
+
+#endif // VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 	}
 
 	{
@@ -610,11 +658,15 @@ NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) 
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Atlas texture");
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 		Ref<Texture2DArray> atlas;
 		atlas.instantiate();
 		const Error err = atlas->create_from_images(data.atlas);
 		ZN_ASSERT_RETURN_V(err == OK, textures);
 		textures.atlas = atlas;
+#else
+		textures.atlas = ImageTexture::create_from_image(data.atlas);
+#endif
 	}
 
 	{
