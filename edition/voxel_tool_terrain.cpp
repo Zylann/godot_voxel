@@ -217,6 +217,39 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	_post_edit(op.box);
 }
 
+void VoxelToolTerrain::do_flatten_sphere(Vector3 center, float additive_radius, float removal_radius, Vector3 flat_direction, float smoothness) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	ops::DoFlattenSphere op;
+	op.add_shape.center = center;
+	op.add_shape.radius = additive_radius;
+	op.add_shape.flat_direction = flat_direction;
+	op.add_shape.plane_d = flat_direction.dot(center);
+	op.add_shape.smoothness = smoothness;
+	op.add_shape.sdf_scale = get_sdf_scale();
+
+	op.remove_shape.center = center;
+	op.remove_shape.radius = removal_radius;
+	op.remove_shape.sdf_scale = op.add_shape.sdf_scale;
+
+	op.box = op.remove_shape.get_box().clipped(_terrain->get_bounds());
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+
+	if (!is_area_editable(op.box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelDataMap &data = _terrain->get_storage();
+
+	op.blocks.reference_area(data, op.box);
+	op();
+
+	_post_edit(op.box);
+}
+
 uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	return _terrain->get_storage().get_voxel(pos, _channel);
@@ -469,6 +502,8 @@ void VoxelToolTerrain::_bind_methods() {
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
 			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
+	ClassDB::bind_method(D_METHOD("do_flatten_sphere", "center", "additive_radius", "removal_radius", "flat_direction", "smoothness"),
+			&VoxelToolTerrain::do_flatten_sphere, DEFVAL(0.0));
 }
 
 } // namespace zylann::voxel

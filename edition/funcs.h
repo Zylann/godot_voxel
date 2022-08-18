@@ -440,6 +440,45 @@ struct DoShape {
 
 typedef DoShape<SdfHemisphere> DoHemisphere;
 
+template <typename Shape_A, typename Shape_B>
+struct SdfFlattenOperation {
+	Shape_A add_shape;
+	Shape_B remove_shape;
+	real_t strength;
+
+	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
+		float src = s16_to_snorm(sdf);
+		Vector3 p = Vector3(pos);
+		return snorm_to_s16(Math::lerp(src, 
+			math::sdf_union(
+				math::sdf_subtract(
+					src,
+					remove_shape(p)),
+				add_shape(p)), strength));
+	}
+};
+
+struct DoFlattenSphere {
+	SdfSphere remove_shape;
+	SdfHemisphere add_shape;
+	VoxelDataGrid blocks;
+	Box3i box;
+	VoxelBufferInternal::ChannelId channel;
+	float strength;
+
+	void operator()() {
+		ZN_PROFILE_SCOPE();
+
+		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+			SdfFlattenOperation<SdfHemisphere, SdfSphere> op;
+			op.add_shape = add_shape;
+			op.remove_shape = remove_shape;
+			op.strength = strength;
+			blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
+		}
+	}
+};
+
 }; // namespace zylann::voxel::ops
 
 #endif // VOXEL_EDITION_FUNCS_H
