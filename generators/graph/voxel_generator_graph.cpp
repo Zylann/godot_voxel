@@ -1895,43 +1895,6 @@ void VoxelGeneratorGraph::get_configuration_warnings(TypedArray<String> &out_war
 	}
 }
 
-// Gets a hash of a given object from its properties. If properties are objects too, they are recursively parsed.
-// Note that restricting to editable properties is important to avoid costly properties with objects such as textures or
-// meshes
-static uint64_t get_deep_hash(const Object &obj,
-		uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0) {
-	ZN_PROFILE_SCOPE();
-
-	hash = hash_djb2_one_64(obj.get_class_name().hash(), hash);
-
-	List<PropertyInfo> properties;
-	obj.get_property_list(&properties, false);
-
-	// I'd like to use ConstIterator since I only read that list but that isn't possible :shrug:
-	for (List<PropertyInfo>::Iterator it = properties.begin(); it != properties.end(); ++it) {
-		const PropertyInfo property = *it;
-
-		if ((property.usage & property_usage) != 0) {
-			const Variant value = obj.get(property.name);
-			uint64_t value_hash = 0;
-
-			if (value.get_type() == Variant::OBJECT) {
-				const Object *obj_value = value.operator Object *();
-				if (obj_value != nullptr) {
-					value_hash = get_deep_hash(*obj_value, hash, property_usage);
-				}
-
-			} else {
-				value_hash = value.hash();
-			}
-
-			hash = hash_djb2_one_64(value_hash, hash);
-		}
-	}
-
-	return hash;
-}
-
 uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 	std::vector<uint32_t> terminal_nodes;
@@ -1953,7 +1916,6 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 	std::vector<uint64_t> node_hashes;
 	uint64_t hash = hash_djb2_one_64(0);
 
-	// Connections should be implicitely hashed due to the order of iteration
 	for (uint32_t node_id : order) {
 		ProgramGraph::Node &node = _graph.get_node(node_id);
 		hash = hash_djb2_one_64(node.type_id, hash);
@@ -1973,6 +1935,12 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 
 		for (const Variant &v : node.default_inputs) {
 			hash = hash_djb2_one_float_64(v.hash(), hash);
+		}
+
+		for (const ProgramGraph::Port &port : node.inputs) {
+			for (const ProgramGraph::PortLocation src : port.connections) {
+				hash = hash_djb2_one_64(uint64_t(src.node_id) | (uint64_t(src.port_index) << 32), hash);
+			}
 		}
 	}
 

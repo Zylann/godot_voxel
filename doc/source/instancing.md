@@ -68,7 +68,7 @@ To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLi
 
 If only the `mesh` property is set, no LOD will be used.
 
-The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `split_scale` property of the parent voxel terrain.
+The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `lod_distance` property of the parent voxel terrain.
 
 ![Screenshot of mesh LODs with colors](images/mesh_lods.webp)
 

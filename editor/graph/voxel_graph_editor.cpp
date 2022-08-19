@@ -97,9 +97,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button = memnew(Button);
 		_pin_button->set_flat(true);
 		_pin_button->set_toggle_mode(true);
-		_pin_button->set_tooltip(TTR("Pin AnimationPlayer"));
+		_pin_button->set_tooltip(TTR("Pin VoxelGraphEditor"));
 		toolbar->add_child(_pin_button);
-		//_pin_button->connect("pressed", callable_mp(this, &AnimationPlayerEditor::_pin_pressed));
 
 		_popout_button = memnew(Button);
 		_popout_button->set_flat(true);
@@ -730,8 +729,18 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	// Note, some nodes can appear twice in this map due to internal expansion.
 	Span<const uint32_t> execution_map = VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread();
 	for (unsigned int i = 0; i < execution_map.size(); ++i) {
-		const String node_view_path = node_to_gui_name(execution_map[i]);
-		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(node_view_path));
+		const uint32_t node_id = execution_map[i];
+		// Some returned nodes might not be in the user-facing graph because they get generated during compilation
+		if (!_graph->has_node(node_id)) {
+			ZN_PRINT_VERBOSE(
+					format("Ignoring node {} from range analysis results, not present in user graph", node_id));
+			continue;
+		}
+		const String node_view_path = node_to_gui_name(node_id);
+		Node *node = _graph_edit->get_node(node_view_path);
+		ZN_ASSERT_CONTINUE(node != nullptr);
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
+		ZN_ASSERT_CONTINUE(node_view != nullptr);
 		node_view->set_modulate(Color(1, 1, 1));
 	}
 }
@@ -947,6 +956,11 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 	}
 
 	for (const NodeRatio &nr : node_ratios) {
+		// Some nodes generated during compilation aren't present in the user-facing graph
+		if (!_graph->has_node(nr.node_id)) {
+			ZN_PRINT_VERBOSE(format("Ignoring node {} from profiling results, not present in user graph", nr.node_id));
+			continue;
+		}
 		const String ui_node_name = node_to_gui_name(nr.node_id);
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_node(ui_node_name));
 		ERR_CONTINUE(node_view == nullptr);

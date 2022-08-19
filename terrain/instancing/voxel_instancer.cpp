@@ -1605,28 +1605,33 @@ int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
 
-Dictionary VoxelInstancer::debug_get_instance_counts() const {
-	Dictionary d;
+void VoxelInstancer::debug_get_instance_counts(std::unordered_map<uint32_t, uint32_t> &counts_per_layer) const {
+	ZN_PROFILE_SCOPE();
+
+	counts_per_layer.clear();
 
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		Block &block = **it;
-		if (!block.multimesh_instance.is_valid()) {
-			continue;
+		const Block &block = **it;
+
+		uint32_t count = block.scene_instances.size();
+
+		if (block.multimesh_instance.is_valid()) {
+			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+			ZN_ASSERT_CONTINUE(multimesh.is_valid());
+
+			count += get_visible_instance_count(**multimesh);
 		}
 
-		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-		ERR_FAIL_COND_V(multimesh.is_null(), Dictionary());
+		counts_per_layer[block.layer_id] += count;
+	}
+}
 
-		const int count = get_visible_instance_count(**multimesh);
-
-		Variant *vptr = d.getptr(block.layer_id);
-		if (vptr == nullptr) {
-			d[block.layer_id] = count;
-
-		} else {
-			ERR_FAIL_COND_V(vptr->get_type() != Variant::INT, Dictionary());
-			*vptr = vptr->operator signed int() + count;
-		}
+Dictionary VoxelInstancer::_b_debug_get_instance_counts() const {
+	Dictionary d;
+	std::unordered_map<uint32_t, uint32_t> map;
+	debug_get_instance_counts(map);
+	for (auto it = map.begin(); it != map.end(); ++it) {
+		d[it->first] = it->second;
 	}
 	return d;
 }
@@ -1773,7 +1778,7 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_up_mode"), &VoxelInstancer::get_up_mode);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
-	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
+	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::_b_debug_get_instance_counts);
 	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
 	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelInstancer::debug_set_draw_enabled);
 	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelInstancer::debug_is_draw_enabled);

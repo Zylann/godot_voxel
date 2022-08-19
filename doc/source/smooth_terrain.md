@@ -214,8 +214,10 @@ Each index tell which texture needs to be used, and each weight respectively tel
 Here is the shader code you will need:
 
 ```glsl
+shader_type spatial;
+
 // Textures should preferably be in a TextureArray, so looking them up is cheap
-uniform sampler2DArray u_texture_array : hint_albedo;
+uniform sampler2DArray u_texture_array : source_color;
 
 // We'll need to pass data from the vertex shader to the fragment shader
 varying vec4 v_indices;

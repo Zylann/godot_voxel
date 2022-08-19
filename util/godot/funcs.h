@@ -117,6 +117,12 @@ inline Vector3 to_godot(const Vector3f v) {
 PackedStringArray to_godot(const std::vector<std::string_view> &svv);
 PackedStringArray to_godot(const std::vector<std::string> &sv);
 
+// Gets a hash of a given object from its properties. If properties are objects too, they are recursively parsed.
+// Note that restricting to editable properties is important to avoid costly properties with objects such as textures or
+// meshes.
+uint64_t get_deep_hash(
+		const Object &obj, uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0);
+
 #endif
 
 // template <typename T>
