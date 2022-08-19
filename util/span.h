@@ -116,6 +116,8 @@ public:
 		return _ptr + _size > other._ptr && _ptr < other._ptr + other._size;
 	}
 
+	// TODO Iterators
+
 private:
 	T *_ptr;
 	size_t _size;

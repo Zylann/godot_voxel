@@ -35,43 +35,15 @@ namespace zylann::voxel {
 
 namespace {
 
-inline Ref<ShaderMaterial> allocate_shader_material(
-		std::vector<Ref<ShaderMaterial>> &pool, const Ref<ShaderMaterial> &original, unsigned int transition_mask) {
-	Ref<ShaderMaterial> sm;
-	if (pool.size() > 0) {
-		sm = pool.back();
-		// The joys of pooling materials.
-		sm->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, transition_mask);
-		sm->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
-		pool.pop_back();
-	} else {
-		// Can get very slow due to https://github.com/godotengine/godot/issues/34741, but should be rare once
-		// enough materials have been created
-		sm = original->duplicate(false);
-	}
-	return sm;
-}
-
-inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
-	// Reset textures to avoid hoarding them in the pool
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
-	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
-	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
-	pool.push_back(material);
-}
-
 struct BeforeUnloadMeshAction {
-	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
+	ShaderMaterialPoolVLT &shader_material_pool;
 
 	void operator()(VoxelMeshBlockVLT &block) {
 		ZN_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
 		Ref<ShaderMaterial> sm = block.get_shader_material();
 		if (sm.is_valid()) {
-			recycle_shader_material(shader_material_pool, sm);
+			shader_material_pool.recycle(sm);
 			block.set_shader_material(Ref<ShaderMaterial>());
 		}
 	}
@@ -109,6 +81,24 @@ static inline uint64_t get_ticks_msec() {
 }
 
 } // namespace
+
+void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(material.is_valid());
+
+	// Reset textures to avoid hoarding them in the pool
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
+	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, 0);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+
+	ShaderMaterialPool::recycle(material);
+}
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
 	if (!VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
@@ -211,9 +201,14 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 }
 
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
+	if (_material == p_material) {
+		return;
+	}
+
 	// TODO Update existing block surfaces
-	// TODO What about the pool?
 	_material = p_material;
+
+	update_shader_material_pool_template();
 
 #ifdef TOOLS_ENABLED
 	// Create a fork of the default shader if a new empty ShaderMaterial is assigned
@@ -320,6 +315,14 @@ void VoxelLodTerrain::_on_gi_mode_changed() {
 	}
 }
 
+void VoxelLodTerrain::update_shader_material_pool_template() {
+	Ref<ShaderMaterial> shader_material = _material;
+	if (_material.is_null() && _mesher.is_valid()) {
+		Ref<ShaderMaterial> shader_material = _mesher->get_default_lod_material();
+	}
+	_shader_material_pool.set_template(shader_material);
+}
+
 void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	if (_mesher == p_mesher) {
 		return;
@@ -328,6 +331,8 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	stop_updater();
 
 	_mesher = p_mesher;
+
+	update_shader_material_pool_template();
 
 	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
 
@@ -1310,19 +1315,6 @@ void VoxelLodTerrain::_process(float delta) {
 	process_fading_blocks(delta);
 }
 
-static void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst) {
-	Ref<Shader> shader = src.get_shader();
-	ZN_ASSERT_RETURN(shader.is_valid());
-	// Not using `Shader::get_param_list()` because it is not exposed to the script/extension API, and it prepends
-	// `shader_params/` to every parameter name, which is slow and not usable for our case.
-	// TBH List is slow too, I don't know why Godot uses that for lists of shader params.
-	List<PropertyInfo> properties;
-	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader->get_rid(), &properties);
-	for (const PropertyInfo &property : properties) {
-		dst.set_shader_uniform(property.name, src.get_shader_uniform(property.name));
-	}
-}
-
 void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	ZN_PROFILE_SCOPE();
 	// Dequeue outputs of the threadable part of the update for actions taking place on the main thread
@@ -1445,9 +1437,10 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
 						//item.shader_material = shader_material->duplicate(false);
-						item.shader_material = allocate_shader_material(_shader_material_pool, shader_material, 0);
+						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());
-						copy_shader_params(**shader_material, **item.shader_material);
+						copy_shader_params(**shader_material, **item.shader_material,
+								_shader_material_pool.get_cached_shader_uniforms());
 
 						// item.shader_material->set_shader_param(
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
@@ -1712,23 +1705,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->set_parent_visible(is_visible());
 		block->set_world(get_world_3d());
 
-		Ref<ShaderMaterial> shader_material = _material;
-
-		if (_material.is_null()) {
-			Ref<ShaderMaterial> default_material = _mesher->get_default_lod_material();
-			if (default_material.is_valid()) {
-				shader_material = default_material;
-			}
-		}
-
-		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
+		if (_shader_material_pool.get_template().is_valid() && block->get_shader_material().is_null()) {
 			ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
 
 			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
 			// Due to a signal used to keep the inspector up to date, even though these
 			// material copies will never be seen in the inspector
 			// See https://github.com/godotengine/godot/issues/34741
-			Ref<ShaderMaterial> sm = allocate_shader_material(_shader_material_pool, shader_material, 0);
+			Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
 
 			// Set individual shader material, because each block can have dynamic parameters,
 			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
@@ -1972,7 +1956,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			FadingOutMesh &item = _fading_out_meshes[i];
 			item.progress -= speed;
 			if (item.progress <= 0.f) {
-				recycle_shader_material(_shader_material_pool, item.shader_material);
+				_shader_material_pool.recycle(item.shader_material);
 				// TODO Optimize: mesh instances destroyed here can be really slow due to materials...
 				// Profiling has shown that `RendererSceneCull::free` of a mesh instance
 				// leads to `RendererRD::MaterialStorage::_update_queued_materials()` to be called, which internally

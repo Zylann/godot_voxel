@@ -4,6 +4,7 @@
 #include "../../engine/mesh_block_task.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data_map.h"
+#include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "lod_octree.h"
@@ -22,6 +23,11 @@ namespace zylann::voxel {
 class VoxelTool;
 class VoxelStream;
 class VoxelInstancer;
+
+class ShaderMaterialPoolVLT : public ShaderMaterialPool {
+public:
+	void recycle(Ref<ShaderMaterial> material);
+};
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -297,6 +303,8 @@ private:
 
 	void _on_stream_params_changed();
 
+	void update_shader_material_pool_template();
+
 	void save_all_modified_blocks(bool with_copy);
 
 	// TODO Put in common with VoxelLodTerrainUpdateTask
@@ -336,6 +344,7 @@ private:
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	Ref<Material> _material;
+
 	// The main reason this pool even exists is because of this: https://github.com/godotengine/godot/issues/34741
 	// Blocks need individual shader parameters for several features,
 	// so a lot of ShaderMaterial copies using the same shader are created.
@@ -344,7 +353,7 @@ private:
 	// changes (which is debatable since only the edited material needs this, if it even is edited!).
 	// The problem is, that also means every time `ShaderMaterial::duplicate()` is called, when it assigns `shader`,
 	// it has to add a connection to a HUGE list. Which is very slow, enough to cause stutters.
-	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
+	ShaderMaterialPoolVLT _shader_material_pool;
 
 	FixedArray<VoxelMeshMap<VoxelMeshBlockVLT>, constants::MAX_LOD> _mesh_maps_per_lod;
 
