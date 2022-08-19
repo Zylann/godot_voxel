@@ -606,7 +606,7 @@ NormalMapImages store_normalmap_data_to_images(
 	}
 
 	{
-		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
+		ZN_PROFILE_SCOPE_NAMED("Lookup image");
 
 		const unsigned int sqri = Math::ceil(Math::sqrt(double(Vector3iUtil::get_volume(block_size))));
 
@@ -670,7 +670,7 @@ NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) 
 	}
 
 	{
-		ZN_PROFILE_SCOPE_NAMED("Lookup image+texture");
+		ZN_PROFILE_SCOPE_NAMED("Lookup texture");
 		Ref<ImageTexture> lookup = ImageTexture::create_from_image(data.lookup);
 		textures.lookup = lookup;
 	}
