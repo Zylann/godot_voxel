@@ -73,6 +73,8 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
+    - `VoxelGeneratorGraph`: some specific node graphs were not ordered properly
+    - `VoxelGeneratorGraph`: SmoothUnion and SmoothSubtract were causing branches to be incorrectly skipped by runtime optimization, leading to empty blocks
     - `VoxelGeneratorFlat`: fixed underground SDF values being 0 instead of negative
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
