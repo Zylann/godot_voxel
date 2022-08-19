@@ -318,7 +318,7 @@ void VoxelLodTerrain::_on_gi_mode_changed() {
 void VoxelLodTerrain::update_shader_material_pool_template() {
 	Ref<ShaderMaterial> shader_material = _material;
 	if (_material.is_null() && _mesher.is_valid()) {
-		Ref<ShaderMaterial> shader_material = _mesher->get_default_lod_material();
+		shader_material = _mesher->get_default_lod_material();
 	}
 	_shader_material_pool.set_template(shader_material);
 }
