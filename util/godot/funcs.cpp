@@ -23,7 +23,7 @@ bool is_mesh_empty(Span<const Array> surfaces) {
 	if (surfaces.size() == 0) {
 		return true;
 	}
-	for (int i = 0; i < surfaces.size(); ++i) {
+	for (unsigned int i = 0; i < surfaces.size(); ++i) {
 		Array surface = surfaces[i];
 		if (is_surface_triangulated(surface)) {
 			return false;
