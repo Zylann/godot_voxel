@@ -10,6 +10,7 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/node.h"
 #include "../../util/godot/shader.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"

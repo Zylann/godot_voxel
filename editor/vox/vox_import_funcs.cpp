@@ -1,6 +1,6 @@
 #include "vox_import_funcs.h"
 //#include "../../storage/voxel_buffer_internal.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/mesh.h"
 
 namespace zylann {
 

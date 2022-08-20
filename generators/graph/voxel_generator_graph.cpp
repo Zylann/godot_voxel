@@ -2,6 +2,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/container_funcs.h"
 #include "../../util/expression_parser.h"
+#include "../../util/godot/object.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"

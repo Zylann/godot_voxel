@@ -26,6 +26,10 @@ inline Vector3 to_vec3(const Vector3i v) {
 
 // Godot => ZN
 
+inline Vector2f to_vec2f(Vector2 v) {
+	return Vector2f(v.x, v.y);
+}
+
 inline Vector3f to_vec3f(Vector3i v) {
 	return Vector3f(v.x, v.y, v.z);
 }
@@ -39,6 +43,10 @@ inline Vector3i16 to_vec3i16(const Vector3i v) {
 }
 
 // ZN => Godot
+
+inline Vector2f to_vec2f(Vector2i v) {
+	return Vector2f(v.x, v.y);
+}
 
 template <typename T>
 inline Vector3i to_vec3i(Vector3T<T> v) {

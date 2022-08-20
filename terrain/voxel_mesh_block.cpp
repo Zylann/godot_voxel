@@ -1,6 +1,6 @@
 #include "voxel_mesh_block.h"
 #include "../constants/voxel_string_names.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/collision_shape.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "free_mesh_task.h"

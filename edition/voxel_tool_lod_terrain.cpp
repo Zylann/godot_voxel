@@ -3,7 +3,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/mesh.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
 #include "../util/tasks/async_dependency_tracker.h"

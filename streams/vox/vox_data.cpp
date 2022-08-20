@@ -1,5 +1,4 @@
 #include "vox_data.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"

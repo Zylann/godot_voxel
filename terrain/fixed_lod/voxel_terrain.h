@@ -3,7 +3,7 @@
 
 #include "../../engine/meshing_dependency.h"
 #include "../../storage/voxel_data_map.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/memory.h"
 #include "../voxel_data_block_enter_info.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"

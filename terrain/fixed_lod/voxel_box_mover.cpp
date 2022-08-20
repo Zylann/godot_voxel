@@ -1,7 +1,8 @@
 #include "voxel_box_mover.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/ref_counted.h"
+#include "voxel_terrain.h"
 
 namespace zylann::voxel {
 

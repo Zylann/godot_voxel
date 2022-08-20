@@ -3,7 +3,7 @@
 #include "../storage/voxel_data_map.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/mesh.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "generate_distance_normalmap_task.h"

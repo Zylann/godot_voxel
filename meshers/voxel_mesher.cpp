@@ -5,6 +5,7 @@
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/funcs.h"
+#include "../util/godot/mesh.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {

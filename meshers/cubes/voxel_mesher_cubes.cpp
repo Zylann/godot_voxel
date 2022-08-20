@@ -1,6 +1,7 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include <core/math/geometry_2d.h>
 
