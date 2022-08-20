@@ -288,7 +288,7 @@ A profiling scope bounds a section of code. It takes the time before, the time a
 
 The macros are profiler-agnostic, so if you want to use another profiler it is possible to change them.
 
-You need to include `utility/profiling.h` to access the macros.
+You need to include `util/profiling.h` to access the macros.
 
 To profile a whole function:
 ```cpp
