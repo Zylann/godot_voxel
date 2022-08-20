@@ -7,7 +7,7 @@ This page describes the binary format used by default in this module to serializ
 
 ### Changes from version 3
 
-- Metadata uses a new format which no longer depends on Godot Engine.
+- Metadata uses a new format which no longer has to depend on Godot Engine (can still use `Variant` but other options are available internally).
 
 
 Specification
