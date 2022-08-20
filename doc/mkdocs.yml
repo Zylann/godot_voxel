@@ -31,13 +31,14 @@ nav:
   - '___.md'
   - 'Scripting API':
     # <generated_class_list>
-    - api/FastNoiseLite.md
-    - api/FastNoiseLiteGradient.md
-    - api/Voxel.md
     - api/VoxelBlockSerializer.md
+    - api/VoxelBlockyLibrary.md
+    - api/VoxelBlockyModel.md
     - api/VoxelBoxMover.md
     - api/VoxelBuffer.md
     - api/VoxelColorPalette.md
+    - api/VoxelDataBlockEnterInfo.md
+    - api/VoxelEngine.md
     - api/VoxelGenerator.md
     - api/VoxelGeneratorFlat.md
     - api/VoxelGeneratorGraph.md
@@ -47,24 +48,26 @@ nav:
     - api/VoxelGeneratorNoise2D.md
     - api/VoxelGeneratorScript.md
     - api/VoxelGeneratorWaves.md
+    - api/VoxelInstanceComponent.md
     - api/VoxelInstanceGenerator.md
     - api/VoxelInstanceLibrary.md
     - api/VoxelInstanceLibraryItem.md
-    - api/VoxelInstanceLibraryItemBase.md
+    - api/VoxelInstanceLibraryMultiMeshItem.md
     - api/VoxelInstanceLibrarySceneItem.md
     - api/VoxelInstancer.md
-    - api/VoxelLibrary.md
     - api/VoxelLodTerrain.md
+    - api/VoxelMeshSDF.md
     - api/VoxelMesher.md
     - api/VoxelMesherBlocky.md
     - api/VoxelMesherCubes.md
     - api/VoxelMesherDMC.md
     - api/VoxelMesherTransvoxel.md
+    - api/VoxelModifier.md
+    - api/VoxelModifierMesh.md
+    - api/VoxelModifierSphere.md
     - api/VoxelNode.md
     - api/VoxelRaycastResult.md
-    - api/VoxelEngine.md
     - api/VoxelStream.md
-    - api/VoxelStreamBlockFiles.md
     - api/VoxelStreamRegionFiles.md
     - api/VoxelStreamSQLite.md
     - api/VoxelStreamScript.md
@@ -75,6 +78,9 @@ nav:
     - api/VoxelToolTerrain.md
     - api/VoxelViewer.md
     - api/VoxelVoxLoader.md
+    - api/ZN_FastNoiseLite.md
+    - api/ZN_FastNoiseLiteGradient.md
+    - api/ZN_ThreadedTask.md
     # </generated_class_list>
   - 'Serialization formats':
     - 'specs/block_format_v1.md'

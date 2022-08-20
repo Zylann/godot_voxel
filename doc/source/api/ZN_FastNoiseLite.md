@@ -1,4 +1,4 @@
-# FastNoiseLite
+# ZN_FastNoiseLite
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
@@ -8,22 +8,22 @@ Generates coherent and fractal noise using the [FastNoiseLite](https://github.co
 ## Properties: 
 
 
-Type                     | Name                                                         | Default 
------------------------- | ------------------------------------------------------------ | --------
-`int`                    | [cellular_distance_function](#i_cellular_distance_function)  | 1       
-`float`                  | [cellular_jitter](#i_cellular_jitter)                        | 1.0     
-`int`                    | [cellular_return_type](#i_cellular_return_type)              | 1       
-`float`                  | [fractal_gain](#i_fractal_gain)                              | 0.5     
-`float`                  | [fractal_lacunarity](#i_fractal_lacunarity)                  | 2.0     
-`int`                    | [fractal_octaves](#i_fractal_octaves)                        | 3       
-`float`                  | [fractal_ping_pong_strength](#i_fractal_ping_pong_strength)  | 2.0     
-`int`                    | [fractal_type](#i_fractal_type)                              | 1       
-`float`                  | [fractal_weighted_strength](#i_fractal_weighted_strength)    | 0.0     
-`int`                    | [noise_type](#i_noise_type)                                  | 0       
-`float`                  | [period](#i_period)                                          | 64.0    
-`int`                    | [rotation_type_3d](#i_rotation_type_3d)                      | 0       
-`int`                    | [seed](#i_seed)                                              | 0       
-`FastNoiseLiteGradient`  | [warp_noise](#i_warp_noise)                                  |         
+Type                        | Name                                                         | Default 
+--------------------------- | ------------------------------------------------------------ | --------
+`int`                       | [cellular_distance_function](#i_cellular_distance_function)  | 1       
+`float`                     | [cellular_jitter](#i_cellular_jitter)                        | 1.0     
+`int`                       | [cellular_return_type](#i_cellular_return_type)              | 1       
+`float`                     | [fractal_gain](#i_fractal_gain)                              | 0.5     
+`float`                     | [fractal_lacunarity](#i_fractal_lacunarity)                  | 2.0     
+`int`                       | [fractal_octaves](#i_fractal_octaves)                        | 3       
+`float`                     | [fractal_ping_pong_strength](#i_fractal_ping_pong_strength)  | 2.0     
+`int`                       | [fractal_type](#i_fractal_type)                              | 1       
+`float`                     | [fractal_weighted_strength](#i_fractal_weighted_strength)    | 0.0     
+`int`                       | [noise_type](#i_noise_type)                                  | 0       
+`float`                     | [period](#i_period)                                          | 64.0    
+`int`                       | [rotation_type_3d](#i_rotation_type_3d)                      | 0       
+`int`                       | [seed](#i_seed)                                              | 0       
+`ZN_FastNoiseLiteGradient`  | [warp_noise](#i_warp_noise)                                  |         
 <p></p>
 
 ## Methods: 
@@ -120,7 +120,7 @@ enum **CellularReturnType**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_seed"></span> **seed** = 0
 
 
-- [FastNoiseLiteGradient](FastNoiseLiteGradient.md)<span id="i_warp_noise"></span> **warp_noise**
+- [ZN_FastNoiseLiteGradient](ZN_FastNoiseLiteGradient.md)<span id="i_warp_noise"></span> **warp_noise**
 
 
 ## Method Descriptions
@@ -137,4 +137,4 @@ enum **CellularReturnType**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_3dv"></span> **get_noise_3dv**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

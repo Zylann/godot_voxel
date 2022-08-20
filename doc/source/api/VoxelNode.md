@@ -1,6 +1,6 @@
 # VoxelNode
 
-Inherits: [Spatial](https://docs.godotengine.org/en/stable/classes/class_spatial.html)
+Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
 
 Base class for voxel volumes.
@@ -11,6 +11,7 @@ Base class for voxel volumes.
 Type              | Name                       | Default 
 ----------------- | -------------------------- | --------
 `VoxelGenerator`  | [generator](#i_generator)  |         
+`int`             | [gi_mode](#i_gi_mode)      | 0       
 `VoxelMesher`     | [mesher](#i_mesher)        |         
 `VoxelStream`     | [stream](#i_stream)        |         
 <p></p>
@@ -21,6 +22,9 @@ Type              | Name                       | Default
 
 Procedural generator used to load voxel blocks when not present in the stream.
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 0
+
+
 - [VoxelMesher](VoxelMesher.md)<span id="i_mesher"></span> **mesher**
 
 Defines how voxels are transformed into visible meshes.
@@ -29,4 +33,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

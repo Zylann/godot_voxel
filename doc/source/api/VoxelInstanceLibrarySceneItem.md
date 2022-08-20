@@ -1,6 +1,6 @@
 # VoxelInstanceLibrarySceneItem
 
-Inherits: [VoxelInstanceLibraryItemBase](VoxelInstanceLibraryItemBase.md)
+Inherits: [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)
 
 
 
@@ -18,4 +18,4 @@ Type           | Name               | Default
 - [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

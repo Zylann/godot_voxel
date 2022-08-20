@@ -12,16 +12,16 @@ In order to be rendered by Godot, voxels can be transformed into a mesh. There a
 ## Methods: 
 
 
-Return                                                                  | Signature                                                                                                                                                       
------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)  | [build_mesh](#i_build_mesh) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) materials )  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [get_maximum_padding](#i_get_maximum_padding) ( ) const                                                                                                         
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [get_minimum_padding](#i_get_minimum_padding) ( ) const                                                                                                         
+Return                                                                  | Signature                                                                                                                                                                 
+----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)  | [build_mesh](#i_build_mesh) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html) materials )  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [get_maximum_padding](#i_get_maximum_padding) ( ) const                                                                                                                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)    | [get_minimum_padding](#i_get_minimum_padding) ( ) const                                                                                                                   
 <p></p>
 
 ## Method Descriptions
 
-- [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_build_mesh"></span> **build_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) materials ) 
+- [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_build_mesh"></span> **build_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html) materials ) 
 
 Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
 
@@ -33,4 +33,4 @@ Gets by how much voxels must be padded before their lower corner in order for th
 
 Gets by how much voxels must be padded after their upper corner in order for the mesher to work.
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_
