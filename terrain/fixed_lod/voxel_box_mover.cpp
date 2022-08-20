@@ -33,8 +33,8 @@ static AABB expand_with_vector(AABB box, Vector3 v) {
 static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
 	const real_t EPSILON = 0.001;
 
-	Vector3 other_end = other.position + other.size;
-	Vector3 box_end = box.position + box.size;
+	const Vector3 other_end = other.position + other.size;
+	const Vector3 box_end = box.position + box.size;
 
 	if (other_end[k] <= box.position[k] || other.position[k] >= box_end[k]) {
 		return motion;
@@ -45,14 +45,14 @@ static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int
 	}
 
 	if (motion > 0.0 && other_end[i] <= box.position[i]) {
-		real_t off = box.position[i] - other_end[i] - EPSILON;
+		const real_t off = box.position[i] - other_end[i] - EPSILON;
 		if (off < motion) {
 			motion = off;
 		}
 	}
 
 	if (motion < 0.0 && other.position[i] >= box_end[i]) {
-		real_t off = box_end[i] - other.position[i] + EPSILON;
+		const real_t off = box_end[i] - other.position[i] + EPSILON;
 		if (off > motion) {
 			motion = off;
 		}
