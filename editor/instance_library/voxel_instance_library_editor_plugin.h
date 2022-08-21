@@ -2,6 +2,8 @@
 #define VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H
 
 #include "../../terrain/instancing/voxel_instance_library.h"
+#include "voxel_instance_library_inspector_plugin.h"
+#include "voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include <editor/editor_plugin.h>
 
 class Control;
@@ -9,21 +11,6 @@ class MenuButton;
 class ConfirmationDialog;
 
 namespace zylann::voxel {
-
-class VoxelInstanceLibraryEditorPlugin;
-
-class VoxelInstanceLibraryEditorInspectorPlugin : public EditorInspectorPlugin {
-	GDCLASS(VoxelInstanceLibraryEditorInspectorPlugin, EditorInspectorPlugin)
-public:
-	Control *icon_provider = nullptr;
-	VoxelInstanceLibraryEditorPlugin *button_listener = nullptr;
-
-	bool can_handle(Object *p_object) override;
-	void parse_begin(Object *p_object) override;
-
-private:
-	void add_buttons();
-};
 
 class VoxelInstanceLibraryEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelInstanceLibraryEditorPlugin, EditorPlugin)
@@ -59,7 +46,8 @@ private:
 	int _last_used_button;
 
 	Ref<VoxelInstanceLibrary> _library;
-	Ref<VoxelInstanceLibraryEditorInspectorPlugin> _inspector_plugin;
+	Ref<VoxelInstanceLibraryInspectorPlugin> _inspector_plugin;
+	Ref<VoxelInstanceLibraryMultiMeshItemInspectorPlugin> _multimesh_item_inspector_plugin;
 };
 
 } // namespace zylann::voxel

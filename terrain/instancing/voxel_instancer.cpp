@@ -327,7 +327,8 @@ void VoxelInstancer::process_mesh_lods() {
 			// Not a multimesh item
 			continue;
 		}
-		const int mesh_lod_count = item->get_mesh_lod_count();
+		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+		const int mesh_lod_count = settings.mesh_lod_count;
 		if (mesh_lod_count <= 1) {
 			// This block has no LOD
 			// TODO Optimization: would be nice to not need this conditional by iterating only item types that define
@@ -354,7 +355,7 @@ void VoxelInstancer::process_mesh_lods() {
 			++block.current_mesh_lod;
 			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 			if (multimesh.is_valid()) {
-				multimesh->set_mesh(item->get_mesh(block.current_mesh_lod));
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
 			}
 		}
 
@@ -364,7 +365,7 @@ void VoxelInstancer::process_mesh_lods() {
 			--block.current_mesh_lod;
 			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 			if (multimesh.is_valid()) {
-				multimesh->set_mesh(item->get_mesh(block.current_mesh_lod));
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
 			}
 		}
 	}
@@ -585,20 +586,22 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(*item_base);
 	ERR_FAIL_COND(item == nullptr);
 
+	const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block &block = **it;
 		if (block.layer_id != layer_id || !block.multimesh_instance.is_valid()) {
 			continue;
 		}
-		block.multimesh_instance.set_material_override(item->get_material_override());
-		block.multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
+		block.multimesh_instance.set_material_override(settings.material_override);
+		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		if (multimesh.is_valid()) {
 			Ref<Mesh> mesh;
-			if (item->get_mesh_lod_count() <= 1) {
-				mesh = item->get_mesh(0);
+			if (settings.mesh_lod_count <= 1) {
+				mesh = settings.mesh_lods[0];
 			} else {
-				mesh = item->get_mesh(block.current_mesh_lod);
+				mesh = settings.mesh_lods[block.current_mesh_lod];
 			}
 			multimesh->set_mesh(mesh);
 		}
@@ -899,6 +902,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	// Update multimesh
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
+		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+
 		if (transforms.size() == 0) {
 			if (block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
@@ -922,8 +927,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			//multimesh->set_as_bulk_array(bulk_array);
 			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
-			if (item->get_mesh_lod_count() > 0) {
-				multimesh->set_mesh(item->get_mesh(item->get_mesh_lod_count() - 1));
+			if (settings.mesh_lod_count > 0) {
+				multimesh->set_mesh(settings.mesh_lods[settings.mesh_lod_count - 1]);
 			}
 
 			if (!block.multimesh_instance.is_valid()) {
@@ -933,13 +938,13 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			block.multimesh_instance.set_multimesh(multimesh);
 			block.multimesh_instance.set_world(&world);
 			block.multimesh_instance.set_transform(block_transform);
-			block.multimesh_instance.set_material_override(item->get_material_override());
-			block.multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
+			block.multimesh_instance.set_material_override(settings.material_override);
+			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 		}
 
 		// Update bodies
 		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
-				item->get_collision_shapes();
+				to_span(settings.collision_shapes);
 		if (collision_shapes.size() > 0) {
 			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 

@@ -8,149 +8,8 @@
 
 namespace zylann::voxel {
 
-void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
-	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lods.size()));
-	if (_mesh_lods[mesh_lod_index] == mesh) {
-		return;
-	}
-	_mesh_lods[mesh_lod_index] = mesh;
-
-	// Update count
-	unsigned int count = _mesh_lods.size();
-	for (unsigned int i = _mesh_lods.size() - 1; i > 0; --i) {
-		if (_mesh_lods[i].is_valid()) {
-			break;
-		}
-		--count;
-	}
-	_mesh_lod_count = count;
-
-	notify_listeners(CHANGE_VISUAL);
-}
-
-int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
-	return _mesh_lod_count;
-}
-
-Ref<Mesh> VoxelInstanceLibraryMultiMeshItem::get_mesh(int mesh_lod_index) const {
-	ERR_FAIL_INDEX_V(mesh_lod_index, static_cast<int>(_mesh_lods.size()), Ref<Mesh>());
-	return _mesh_lods[mesh_lod_index];
-}
-
-void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> material) {
-	if (material == _material_override) {
-		return;
-	}
-	_material_override = material;
-	notify_listeners(CHANGE_VISUAL);
-}
-
-Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
-	return _material_override;
-}
-
-void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
-	if (mode == _shadow_casting_setting) {
-		return;
-	}
-	_shadow_casting_setting = mode;
-	notify_listeners(CHANGE_VISUAL);
-}
-
-RenderingServer::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
-	return _shadow_casting_setting;
-}
-
-void VoxelInstanceLibraryMultiMeshItem::set_collision_layer(int collision_layer) {
-	_collision_layer = collision_layer;
-}
-
-int VoxelInstanceLibraryMultiMeshItem::get_collision_layer() const {
-	return _collision_layer;
-}
-
-void VoxelInstanceLibraryMultiMeshItem::set_collision_mask(int collision_mask) {
-	_collision_mask = collision_mask;
-}
-
-int VoxelInstanceLibraryMultiMeshItem::get_collision_mask() const {
-	return _collision_mask;
-}
-
-static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
-	switch (v) {
-		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
-			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
-
-		case GeometryInstance3D::SHADOW_CASTING_SETTING_ON:
-			return RenderingServer::SHADOW_CASTING_SETTING_ON;
-
-		case GeometryInstance3D::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
-			return RenderingServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
-
-		case GeometryInstance3D::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
-			return RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
-
-		default:
-			ERR_PRINT("Unknown ShadowCastingSetting value");
-			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
-	}
-}
-
-void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
-	struct L {
-		static unsigned int get_lod_index_from_name(const String &name) {
-			if (name.ends_with("LOD0")) {
-				return 0;
-			}
-			if (name.ends_with("LOD1")) {
-				return 1;
-			}
-			if (name.ends_with("LOD2")) {
-				return 2;
-			}
-			if (name.ends_with("LOD3")) {
-				return 3;
-			}
-			return 0;
-		}
-	};
-
-	ERR_FAIL_COND(root == nullptr);
-
-	_collision_shapes.clear();
-
-	PhysicsBody3D *physics_body = Object::cast_to<PhysicsBody3D>(root);
-	if (physics_body != nullptr) {
-		_collision_layer = physics_body->get_collision_layer();
-		_collision_mask = physics_body->get_collision_mask();
-	}
-
-	for (int i = 0; i < root->get_child_count(); ++i) {
-		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(root->get_child(i));
-		if (mi != nullptr) {
-			const unsigned int lod_index = L::get_lod_index_from_name(mi->get_name());
-			_mesh_lods[lod_index] = mi->get_mesh();
-			_mesh_lod_count = math::max(lod_index + 1, _mesh_lod_count);
-			_material_override = mi->get_material_override();
-			_shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
-		}
-
-		if (physics_body != nullptr) {
-			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
-
-			if (cs != nullptr) {
-				CollisionShapeInfo info;
-				info.shape = cs->get_shape();
-				info.transform = cs->get_transform();
-
-				_collision_shapes.push_back(info);
-			}
-		}
-	}
-
-	notify_listeners(CHANGE_VISUAL);
-}
+const char *VoxelInstanceLibraryMultiMeshItem::MANUAL_SETTINGS_GROUP_NAME = "Manual settings";
+const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scene properties";
 
 static Array serialize_collision_shape_infos(
 		const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
@@ -183,43 +42,314 @@ static bool deserialize_collision_shape_infos(
 	return false;
 }
 
-Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() const {
-	Array a;
-	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
-		a.push_back(_mesh_lods[i]);
+void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
+	Settings &settings = _manual_settings;
+	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(settings.mesh_lods.size()));
+	if (settings.mesh_lods[mesh_lod_index] == mesh) {
+		return;
 	}
-	a.push_back(_mesh_lod_count);
-	a.push_back(_material_override);
-	a.push_back(_shadow_casting_setting);
-	a.push_back(_collision_layer);
-	a.push_back(_collision_mask);
-	a.push_back(serialize_collision_shape_infos(_collision_shapes));
+	settings.mesh_lods[mesh_lod_index] = mesh;
+
+	// Update count
+	unsigned int count = settings.mesh_lods.size();
+	for (unsigned int i = settings.mesh_lods.size() - 1; i > 0; --i) {
+		if (settings.mesh_lods[i].is_valid()) {
+			break;
+		}
+		--count;
+	}
+	settings.mesh_lod_count = count;
+
+	notify_listeners(CHANGE_VISUAL);
+}
+
+int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
+	return _manual_settings.mesh_lod_count;
+}
+
+Ref<Mesh> VoxelInstanceLibraryMultiMeshItem::get_mesh(int mesh_lod_index) const {
+	const Settings &settings = _manual_settings;
+	ERR_FAIL_INDEX_V(mesh_lod_index, static_cast<int>(settings.mesh_lods.size()), Ref<Mesh>());
+	return settings.mesh_lods[mesh_lod_index];
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> material) {
+	Settings &settings = _manual_settings;
+	if (material == settings.material_override) {
+		return;
+	}
+	settings.material_override = material;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+Ref<Material> VoxelInstanceLibraryMultiMeshItem::get_material_override() const {
+	const Settings &settings = _manual_settings;
+	return settings.material_override;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode) {
+	Settings &settings = _manual_settings;
+	if (mode == settings.shadow_casting_setting) {
+		return;
+	}
+	settings.shadow_casting_setting = mode;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+RenderingServer::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
+	const Settings &settings = _manual_settings;
+	return settings.shadow_casting_setting;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_collision_layer(int collision_layer) {
+	Settings &settings = _manual_settings;
+	settings.collision_layer = collision_layer;
+}
+
+int VoxelInstanceLibraryMultiMeshItem::get_collision_layer() const {
+	const Settings &settings = _manual_settings;
+	return settings.collision_layer;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_collision_mask(int collision_mask) {
+	Settings &settings = _manual_settings;
+	settings.collision_mask = collision_mask;
+}
+
+int VoxelInstanceLibraryMultiMeshItem::get_collision_mask() const {
+	const Settings &settings = _manual_settings;
+	return settings.collision_mask;
+}
+
+namespace {
+static const char *CAST_SHADOW_ENUM_NAMES = "Off,On,Double-Sided,Shadows Only";
+}
+
+void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p_list) const {
+	if (_scene.is_valid()) {
+		// This is only so we have a preview of conversion results.
+
+		p_list->push_back(PropertyInfo(
+				Variant::NIL, SCENE_SETTINGS_GROUP_NAME, PROPERTY_HINT_NONE, "scene_", PROPERTY_USAGE_GROUP));
+
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh", PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE,
+				Mesh::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+
+		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_material_override", PROPERTY_HINT_RESOURCE_TYPE,
+				Material::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES,
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::ARRAY, "scene_collision_shapes", PROPERTY_HINT_NONE, "",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+	}
+}
+
+bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &r_ret) const {
+	if (_scene.is_valid()) {
+		if (p_name == "scene_mesh") {
+			r_ret = _scene_settings.mesh_lods[0];
+			return true;
+		}
+		if (p_name == "scene_mesh_lod1") {
+			r_ret = _scene_settings.mesh_lods[1];
+			return true;
+		}
+		if (p_name == "scene_mesh_lod2") {
+			r_ret = _scene_settings.mesh_lods[2];
+			return true;
+		}
+		if (p_name == "scene_mesh_lod3") {
+			r_ret = _scene_settings.mesh_lods[3];
+			return true;
+		}
+		if (p_name == "scene_material_override") {
+			r_ret = _scene_settings.material_override;
+			return true;
+		}
+		if (p_name == "scene_cast_shadow") {
+			r_ret = _scene_settings.shadow_casting_setting;
+			return true;
+		}
+		if (p_name == "scene_collision_layer") {
+			r_ret = _scene_settings.collision_layer;
+			return true;
+		}
+		if (p_name == "scene_collision_mask") {
+			r_ret = _scene_settings.collision_mask;
+			return true;
+		}
+		if (p_name == "scene_collision_shapes") {
+			r_ret = serialize_collision_shape_infos(_scene_settings.collision_shapes);
+			return true;
+		}
+	}
+	return false;
+}
+
+// bool VoxelInstanceLibraryMultiMeshItem::_set(const StringName &p_name, const Variant &p_value) {
+// 	return false;
+// }
+
+static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
+	switch (v) {
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
+			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
+
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_ON:
+			return RenderingServer::SHADOW_CASTING_SETTING_ON;
+
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_DOUBLE_SIDED:
+			return RenderingServer::SHADOW_CASTING_SETTING_DOUBLE_SIDED;
+
+		case GeometryInstance3D::SHADOW_CASTING_SETTING_SHADOWS_ONLY:
+			return RenderingServer::SHADOW_CASTING_SETTING_SHADOWS_ONLY;
+
+		default:
+			ERR_PRINT("Unknown ShadowCastingSetting value");
+			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
+	}
+}
+
+static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings &settings) {
+	struct L {
+		static unsigned int get_lod_index_from_name(const String &name) {
+			if (name.ends_with("LOD0")) {
+				return 0;
+			}
+			if (name.ends_with("LOD1")) {
+				return 1;
+			}
+			if (name.ends_with("LOD2")) {
+				return 2;
+			}
+			if (name.ends_with("LOD3")) {
+				return 3;
+			}
+			return 0;
+		}
+	};
+
+	ERR_FAIL_COND_V(root == nullptr, false);
+
+	settings.collision_shapes.clear();
+
+	PhysicsBody3D *physics_body = Object::cast_to<PhysicsBody3D>(root);
+	if (physics_body != nullptr) {
+		settings.collision_layer = physics_body->get_collision_layer();
+		settings.collision_mask = physics_body->get_collision_mask();
+	}
+
+	for (int i = 0; i < root->get_child_count(); ++i) {
+		MeshInstance3D *mi = Object::cast_to<MeshInstance3D>(root->get_child(i));
+		if (mi != nullptr) {
+			const unsigned int lod_index = L::get_lod_index_from_name(mi->get_name());
+			settings.mesh_lods[lod_index] = mi->get_mesh();
+			settings.mesh_lod_count = math::max(lod_index + 1, settings.mesh_lod_count);
+			settings.material_override = mi->get_material_override();
+			settings.shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
+		}
+
+		if (physics_body != nullptr) {
+			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
+
+			if (cs != nullptr) {
+				VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+				info.shape = cs->get_shape();
+				info.transform = cs->get_transform();
+
+				settings.collision_shapes.push_back(info);
+			}
+		}
+	}
+
+	return true;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
+	ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _manual_settings));
+	notify_listeners(CHANGE_VISUAL);
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_scene(Ref<PackedScene> scene) {
+	if (_scene == scene) {
+		return;
+	}
+	_scene = scene;
+	if (_scene.is_valid()) {
+		Node *root = _scene->instantiate();
+		ERR_FAIL_COND(root == nullptr);
+		ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _scene_settings));
+		memdelete(root);
+	}
+	notify_listeners(CHANGE_VISUAL);
+#ifdef TOOLS_ENABLED
+	notify_property_list_changed();
+#endif
+}
+
+Ref<PackedScene> VoxelInstanceLibraryMultiMeshItem::get_scene() const {
+	return _scene;
+}
+
+const VoxelInstanceLibraryMultiMeshItem::Settings &VoxelInstanceLibraryMultiMeshItem::get_multimesh_settings() const {
+	if (_scene.is_valid()) {
+		return _scene_settings;
+	} else {
+		return _manual_settings;
+	}
+}
+
+Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() const {
+	const Settings &settings = _manual_settings;
+	Array a;
+	for (unsigned int i = 0; i < settings.mesh_lods.size(); ++i) {
+		a.push_back(settings.mesh_lods[i]);
+	}
+	a.push_back(settings.mesh_lod_count);
+	a.push_back(settings.material_override);
+	a.push_back(settings.shadow_casting_setting);
+	a.push_back(settings.collision_layer);
+	a.push_back(settings.collision_mask);
+	a.push_back(serialize_collision_shape_infos(settings.collision_shapes));
 	return a;
 }
 
 void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Array a) {
-	ERR_FAIL_COND(a.size() != int(_mesh_lods.size()) + 6);
+	Settings &settings = _manual_settings;
+	ERR_FAIL_COND(a.size() != int(settings.mesh_lods.size()) + 6);
 	int ai = 0;
-	for (unsigned int i = 0; i < _mesh_lods.size(); ++i) {
-		_mesh_lods[i] = a[ai++];
+	for (unsigned int i = 0; i < settings.mesh_lods.size(); ++i) {
+		settings.mesh_lods[i] = a[ai++];
 	}
-	_mesh_lod_count = a[ai++];
-	_material_override = a[ai++];
-	_shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
-	_collision_layer = a[ai++];
-	_collision_mask = a[ai++];
-	_collision_shapes.clear();
-	deserialize_collision_shape_infos(a[ai++], _collision_shapes);
+	settings.mesh_lod_count = a[ai++];
+	settings.material_override = a[ai++];
+	settings.shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	settings.collision_layer = a[ai++];
+	settings.collision_mask = a[ai++];
+	settings.collision_shapes.clear();
+	deserialize_collision_shape_infos(a[ai++], settings.collision_shapes);
 	notify_listeners(CHANGE_VISUAL);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes(Array shape_infos) {
-	_collision_shapes.clear();
-	deserialize_collision_shape_infos(shape_infos, _collision_shapes);
+	Settings &settings = _manual_settings;
+	settings.collision_shapes.clear();
+	deserialize_collision_shape_infos(shape_infos, settings.collision_shapes);
 }
 
 Array VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes() const {
-	return serialize_collision_shape_infos(_collision_shapes);
+	const Settings &settings = _manual_settings;
+	return serialize_collision_shape_infos(settings.collision_shapes);
 }
 
 void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
@@ -260,23 +390,32 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("setup_from_template", "node"), &VoxelInstanceLibraryMultiMeshItem::setup_from_template);
 
+	ClassDB::bind_method(D_METHOD("get_scene"), &VoxelInstanceLibraryMultiMeshItem::get_scene);
+	ClassDB::bind_method(D_METHOD("set_scene", "scene"), &VoxelInstanceLibraryMultiMeshItem::set_scene);
+
 	// Used in editor only
 	ClassDB::bind_method(D_METHOD("_deserialize_multimesh_item_properties", "props"),
 			&VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "_set_mesh_lod0",
-			"_get_mesh_lod0");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "_set_mesh_lod1",
-			"_get_mesh_lod1");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "_set_mesh_lod2",
-			"_get_mesh_lod2");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE, "Mesh"), "_set_mesh_lod3",
-			"_get_mesh_lod3");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "scene", PROPERTY_HINT_RESOURCE_TYPE, PackedScene::get_class_static()),
+			"set_scene", "get_scene");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, "Material"),
+	ADD_GROUP(MANUAL_SETTINGS_GROUP_NAME, "");
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod0", "_get_mesh_lod0");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod1", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod1", "_get_mesh_lod1");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod2", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod2", "_get_mesh_lod2");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"_set_mesh_lod3", "_get_mesh_lod3");
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
+						 Material::get_class_static()),
 			"set_material_override", "get_material_override");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, "Off,On,Double-Sided,Shadows Only"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES),
 			"set_cast_shadows_setting", "get_cast_shadows_setting");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer",
