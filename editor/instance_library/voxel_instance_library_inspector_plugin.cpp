@@ -46,14 +46,6 @@ void VoxelInstanceLibraryInspectorPlugin::add_buttons() {
 	spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	hb->add_child(spacer);
 
-	Button *button_update = memnew(Button);
-	// TODO Move this to multimesh items?
-	button_update->set_text(TTR("Update From Scene..."));
-	button_update->connect("pressed",
-			callable_mp(button_listener, &VoxelInstanceLibraryEditorPlugin::_on_button_pressed)
-					.bind(BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE));
-	hb->add_child(button_update);
-
 	add_custom_control(hb);
 }
 

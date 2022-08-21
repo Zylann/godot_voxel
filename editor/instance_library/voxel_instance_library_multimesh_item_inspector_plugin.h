@@ -5,9 +5,13 @@
 
 namespace zylann::voxel {
 
+class VoxelInstanceLibraryMultiMeshItemEditorPlugin;
+
 class VoxelInstanceLibraryMultiMeshItemInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(VoxelInstanceLibraryMultiMeshItemInspectorPlugin, EditorInspectorPlugin)
 public:
+	VoxelInstanceLibraryMultiMeshItemEditorPlugin *listener = nullptr;
+
 	bool can_handle(Object *p_object) override;
 	void parse_group(Object *p_object, const String &p_group) override;
 	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,

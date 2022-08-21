@@ -52,12 +52,8 @@ void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
 		// otherwise `add_inspector_plugin` causes ANOTHER editor plugin to leak on exit... Oo
 		add_inspector_plugin(_inspector_plugin);
 
-		_multimesh_item_inspector_plugin.instantiate();
-		add_inspector_plugin(_multimesh_item_inspector_plugin);
-
 	} else if (p_what == NOTIFICATION_EXIT_TREE) {
 		remove_inspector_plugin(_inspector_plugin);
-		remove_inspector_plugin(_multimesh_item_inspector_plugin);
 	}
 }
 
@@ -86,15 +82,6 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 			ur.add_do_method(*_library, "add_item", item_id, item);
 			ur.add_undo_method(*_library, "remove_item", item_id);
 			ur.commit_action();
-		} break;
-
-		case VoxelInstanceLibraryInspectorPlugin::BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE: {
-			ERR_FAIL_COND(_library.is_null());
-			const int item_id = try_get_selected_item_id();
-			if (item_id != -1) {
-				_item_id_to_update = item_id;
-				_open_scene_dialog->popup_centered_ratio();
-			}
 		} break;
 
 		case VoxelInstanceLibraryInspectorPlugin::BUTTON_ADD_SCENE_ITEM: {
@@ -161,10 +148,6 @@ void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(Strin
 			add_scene_item(fpath);
 			break;
 
-		case VoxelInstanceLibraryInspectorPlugin::BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE:
-			update_multimesh_item_from_scene(fpath, _item_id_to_update);
-			break;
-
 		default:
 			ERR_PRINT("Invalid menu option");
 			break;
@@ -193,33 +176,6 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ur.create_action("Add scene item");
 	ur.add_do_method(_library.ptr(), "add_item", item_id, item);
 	ur.add_undo_method(_library.ptr(), "remove_item", item_id);
-	ur.commit_action();
-}
-
-void VoxelInstanceLibraryEditorPlugin::update_multimesh_item_from_scene(String fpath, int item_id) {
-	ERR_FAIL_COND(_library.is_null());
-
-	Ref<PackedScene> scene = ResourceLoader::load(fpath);
-	ERR_FAIL_COND(scene.is_null());
-
-	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(item_id);
-	ERR_FAIL_COND_MSG(item_base.is_null(), "Item not found");
-	Ref<VoxelInstanceLibraryMultiMeshItem> item = item_base;
-	ERR_FAIL_COND_MSG(item.is_null(), "Item not using multimeshes");
-
-	Node *node = scene->instantiate();
-	ERR_FAIL_COND(node == nullptr);
-
-	Variant data_before = item->serialize_multimesh_item_properties();
-	item->setup_from_template(node);
-	Variant data_after = item->serialize_multimesh_item_properties();
-
-	memdelete(node);
-
-	UndoRedo &ur = get_undo_redo();
-	ur.create_action("Update Multimesh Item From Scene");
-	ur.add_do_method(item.ptr(), "_deserialize_multimesh_item_properties", data_after);
-	ur.add_undo_method(item.ptr(), "_deserialize_multimesh_item_properties", data_before);
 	ur.commit_action();
 }
 

@@ -1,5 +1,7 @@
 #include "voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
+#include "voxel_instance_library_editor_plugin.h"
+#include "voxel_instance_library_multimesh_item_editor_plugin.h"
 
 namespace zylann::voxel {
 
@@ -11,6 +13,20 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::parse_group(Object *p_obj
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(p_object);
 	ERR_FAIL_COND(item == nullptr);
 	if (item->get_scene().is_null()) {
+		ERR_FAIL_COND(listener == nullptr);
+		// TODO I preferred  this at the end of the group, but Godot doesn't expose anything to do it.
+		// This is a legacy workflow, we'll see if it can be removed later.
+		Button *button = memnew(Button);
+		button->set_tooltip(TTR("Set properties based on an existing scene. This might copy mesh and material data if "
+								"the scene embeds them. Properties will not update if the scene changes later."));
+		button->set_text(TTR("Update from scene..."));
+		// Using a bind() instead of relying on "currently edited" item in the editor plugin allows to support multiple
+		// sub-inspectors. Plugins are not instanced per-inspected-object, but custom controls are.
+		button->connect("pressed",
+				callable_mp(
+						listener, &VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed)
+						.bind(item));
+		add_custom_control(button);
 		return;
 	}
 
@@ -20,7 +36,7 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::parse_group(Object *p_obj
 		add_custom_control(label);
 	}
 	// TODO Button to open scene in editor, since Godot doesn't have that in its resource picker menu?
-	// Perhaps it should rather be a feature request to Godot
+	// Perhaps it should rather be a feature request to Godot.
 	// else if (p_group == VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME) {
 	// 	ERR_FAIL_COND(listener == nullptr);
 	// 	Button *button = memnew(Button);

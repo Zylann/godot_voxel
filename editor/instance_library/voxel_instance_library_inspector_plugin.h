@@ -10,9 +10,8 @@ class VoxelInstanceLibraryEditorPlugin;
 class VoxelInstanceLibraryInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(VoxelInstanceLibraryInspectorPlugin, EditorInspectorPlugin)
 public:
-	enum Buttons {
+	enum Buttons { //
 		BUTTON_ADD_MULTIMESH_ITEM,
-		BUTTON_UPDATE_MULTIMESH_ITEM_FROM_SCENE,
 		BUTTON_ADD_SCENE_ITEM,
 		BUTTON_REMOVE_ITEM
 	};
