@@ -3,6 +3,8 @@
 
 namespace zylann {
 
+#ifdef TOOLS_ENABLED
+
 PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
 	PackedStringArray psa;
 	psa.resize(svv.size());
@@ -20,6 +22,8 @@ PackedStringArray to_godot(const std::vector<std::string> &sv) {
 	}
 	return psa;
 }
+
+#endif
 
 } // namespace zylann
 
