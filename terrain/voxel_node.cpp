@@ -182,6 +182,10 @@ void VoxelNode::_bind_methods() {
 			"set_mesher", "get_mesher");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
 			"get_gi_mode");
+
+	BIND_ENUM_CONSTANT(GI_MODE_DISABLED);
+	BIND_ENUM_CONSTANT(GI_MODE_BAKED);
+	BIND_ENUM_CONSTANT(GI_MODE_DYNAMIC);
 }
 
 } // namespace zylann::voxel
