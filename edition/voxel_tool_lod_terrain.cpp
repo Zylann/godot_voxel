@@ -854,11 +854,11 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 			// Transform positions to be local to the graph
 			for (unsigned int i = 0; i < deck_area; ++i) {
-				Vector3 pos(in_x[i], in_y[i], in_z[i]);
-				pos = inv_transform.xform(pos);
-				in_x[i] = pos.x;
-				in_y[i] = pos.y;
-				in_z[i] = pos.z;
+				Vector3 graph_local_pos(in_x[i], in_y[i], in_z[i]);
+				graph_local_pos = inv_transform.xform(pos);
+				in_x[i] = graph_local_pos.x;
+				in_y[i] = graph_local_pos.y;
+				in_z[i] = graph_local_pos.z;
 			}
 
 			// Get SDF input
