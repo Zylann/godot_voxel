@@ -79,7 +79,7 @@ public:
 	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
 			void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const;
 
-	void paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
+	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 			uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.

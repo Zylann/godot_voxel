@@ -260,8 +260,8 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 	}
 }
 
-void VoxelDataMap::paste(Vector3i min_pos, VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
-		uint64_t mask_value, bool create_new_blocks) {
+void VoxelDataMap::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
+		bool use_mask, uint64_t mask_value, bool create_new_blocks) {
 	//
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
 
