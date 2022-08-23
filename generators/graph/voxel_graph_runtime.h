@@ -159,8 +159,10 @@ public:
 	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
 	void generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const;
 
-	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
-			const ExecutionMap *execution_map) const;
+	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf,
+			bool skip_xz, const ExecutionMap *execution_map) const;
+
+	bool has_input(unsigned int node_type) const;
 
 	inline unsigned int get_output_count() const {
 		return _program.outputs_count;
@@ -173,7 +175,7 @@ public:
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	void analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const;
+	void analyze_range(State &state, Vector3i min_pos, Vector3i max_pos, math::Interval sdf_input_range) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
@@ -391,6 +393,8 @@ private:
 		int y_input_address = -1;
 		// Address within the State's array of buffers where the Z input may be.
 		int z_input_address = -1;
+		// Address within the State's array of buffers where the SDF input may be.
+		int sdf_input_address = -1;
 
 		FixedArray<OutputInfo, MAX_OUTPUTS> outputs;
 		unsigned int outputs_count = 0;
@@ -425,6 +429,7 @@ private:
 			x_input_address = -1;
 			y_input_address = -1;
 			z_input_address = -1;
+			sdf_input_address = -1;
 			outputs_count = 0;
 			compilation_result = CompilationResult();
 			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {

@@ -664,6 +664,7 @@ bool VoxelLodTerrain::try_set_voxel_without_update(Vector3i pos, unsigned int ch
 }
 
 void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask) {
+	ZN_PROFILE_SCOPE();
 	const VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 	VoxelModifierStack &modifiers = _data->modifiers;
 
@@ -689,6 +690,13 @@ void VoxelLodTerrain::copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_bu
 		// TODO Apply modifiers
 		data_lod0.map.copy(p_origin_voxels, dst_buffer, channels_mask);
 	}
+}
+
+void VoxelLodTerrain::paste(
+		Vector3i p_origin_voxels, const VoxelBufferInternal &src_buffer, unsigned int channels_mask) {
+	ZN_PROFILE_SCOPE();
+	VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
+	data_lod0.map.paste(p_origin_voxels, src_buffer, channels_mask, false, 0, false);
 }
 
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.

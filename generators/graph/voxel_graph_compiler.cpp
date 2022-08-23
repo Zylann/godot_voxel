@@ -755,6 +755,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				dg_node.is_input = true;
 				continue;
 
+			case VoxelGeneratorGraph::NODE_INPUT_SDF:
+				if (_program.sdf_input_address == -1) {
+					_program.sdf_input_address = mem.add_binding();
+				}
+				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.sdf_input_address;
+				dg_node.is_input = true;
+				continue;
+
 			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
 				continue;
 		}

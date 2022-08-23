@@ -115,6 +115,7 @@ public:
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
 	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
+	void paste(Vector3i p_origin_voxels, const VoxelBufferInternal &src_buffer, unsigned int channels_mask);
 
 	template <typename F>
 	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {

@@ -230,8 +230,9 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const {
+	float sd_in = 0.f;
 	generate_set(state, Span<float>(&position_f.x, 1), Span<float>(&position_f.y, 1), Span<float>(&position_f.z, 1),
-			false, execution_map);
+			Span<float>(&sd_in, 1), false, execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const {
@@ -241,7 +242,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 	}
 
 	// Note: this must be after we resize the vector
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers = to_span(state.buffers);
 	state.buffer_size = buffer_size;
 
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
@@ -251,10 +252,11 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 		if (buffer_spec.is_binding) {
 			if (buffer.is_binding) {
 				// Forgot to unbind?
-				CRASH_COND(buffer.data != nullptr);
+				ZN_ASSERT(buffer.data == nullptr);
 			} else if (buffer.data != nullptr) {
 				// Deallocate this buffer if it wasnt a binding and contained something
 				memfree(buffer.data);
+				buffer.data = nullptr;
 			}
 		}
 
@@ -271,7 +273,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 				continue;
 			}
 			// We don't expect previous stuff in those buffers since we just created their slots
-			CRASH_COND(buffer.data != nullptr);
+			ZN_ASSERT(buffer.data == nullptr);
 			// TODO Use pool?
 			// New buffers get an up-to-date size, but must also comply with common capacity
 			const unsigned int bs = math::max(state.buffer_capacity, buffer_size);
@@ -367,8 +369,24 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	return params;
 }
 
-void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
-		const ExecutionMap *execution_map) const {
+bool VoxelGraphRuntime::has_input(unsigned int node_type) const {
+	switch (node_type) {
+		case VoxelGeneratorGraph::NODE_INPUT_X:
+			return _program.x_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_Y:
+			return _program.y_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_Z:
+			return _program.z_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_SDF:
+			return _program.sdf_input_address != -1;
+		default:
+			ZN_PRINT_ERROR(format("Unknown input node type {}", node_type));
+			return false;
+	}
+}
+
+void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z,
+		Span<float> in_sdf, bool skip_xz, const ExecutionMap *execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
@@ -390,6 +408,9 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
 	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size()));
+	if (_program.sdf_input_address != -1) {
+		CRASH_COND(in_sdf.size() != in_x.size());
+	}
 #endif
 
 #ifdef TOOLS_ENABLED
@@ -422,6 +443,9 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	}
 	if (_program.z_input_address != -1) {
 		L::bind_buffer(buffers, _program.z_input_address, in_z);
+	}
+	if (_program.sdf_input_address != -1) {
+		L::bind_buffer(buffers, _program.sdf_input_address, in_sdf);
 	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
@@ -480,10 +504,14 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	if (_program.z_input_address != -1) {
 		L::unbind_buffer(buffers, _program.z_input_address);
 	}
+	if (_program.sdf_input_address != -1) {
+		L::unbind_buffer(buffers, _program.sdf_input_address);
+	}
 }
 
 // TODO Accept float bounds
-void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const {
+void VoxelGraphRuntime::analyze_range(
+		State &state, Vector3i min_pos, Vector3i max_pos, math::Interval sdf_input_range) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED
@@ -503,6 +531,9 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ranges[_program.x_input_address] = math::Interval(min_pos.x, max_pos.x);
 	ranges[_program.y_input_address] = math::Interval(min_pos.y, max_pos.y);
 	ranges[_program.z_input_address] = math::Interval(min_pos.z, max_pos.z);
+	if (_program.sdf_input_address != -1) {
+		ranges[_program.sdf_input_address] = sdf_input_range;
+	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 

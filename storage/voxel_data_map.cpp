@@ -392,6 +392,7 @@ void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generat
 		task.voxels->create(block_size);
 		// TODO Format?
 		if (generator != nullptr) {
+			ZN_PROFILE_SCOPE_NAMED("Generate");
 			VoxelGenerator::VoxelQueryData q{ *task.voxels, task.block_pos * (data_block_size << task.lod_index),
 				task.lod_index };
 			generator->generate_block(q);

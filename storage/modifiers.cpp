@@ -45,6 +45,7 @@ Span<const Vector3> get_positions_temporary(
 	return positions;
 }
 
+// TODO Use VoxelBufferInternal helper function
 Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	ZN_DSTACK();
 	const Vector3i bs = voxels.get_size();
@@ -97,51 +98,6 @@ Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	}
 
 	return sdf;
-}
-
-void store_sdf(VoxelBufferInternal &voxels, Span<float> sdf) {
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	const VoxelBufferInternal::Depth depth = voxels.get_channel_depth(channel);
-
-	const float scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
-	for (unsigned int i = 0; i < sdf.size(); ++i) {
-		sdf[i] *= scale;
-	}
-
-	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
-			Span<int8_t> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
-			for (unsigned int i = 0; i < sdf.size(); ++i) {
-				raw[i] = snorm_to_s8(sdf[i]);
-			}
-		} break;
-
-		case VoxelBufferInternal::DEPTH_16_BIT: {
-			Span<int16_t> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
-			for (unsigned int i = 0; i < sdf.size(); ++i) {
-				raw[i] = snorm_to_s16(sdf[i]);
-			}
-		} break;
-
-		case VoxelBufferInternal::DEPTH_32_BIT: {
-			Span<float> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
-			memcpy(raw.data(), sdf.data(), sizeof(float) * sdf.size());
-		} break;
-
-		case VoxelBufferInternal::DEPTH_64_BIT: {
-			Span<double> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
-			for (unsigned int i = 0; i < sdf.size(); ++i) {
-				raw[i] = sdf[i];
-			}
-		} break;
-
-		default:
-			ZN_CRASH();
-	}
 }
 
 } //namespace
@@ -231,7 +187,7 @@ void VoxelModifierStack::apply(VoxelBufferInternal &voxels, AABB aabb) const {
 	}
 
 	if (any_intersection) {
-		store_sdf(voxels, ctx.sdf);
+		scale_and_store_sdf(voxels, ctx.sdf);
 		voxels.compress_uniform_channels();
 	}
 }

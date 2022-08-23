@@ -301,6 +301,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("z"));
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_SDF];
+		t.name = "InputSDF";
+		t.category = CATEGORY_INPUT;
+		t.outputs.push_back(Port("sdf"));
+	}
+	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
 		t.name = "OutputSDF";
 		t.category = CATEGORY_OUTPUT;
@@ -309,6 +315,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			ZN_ASSERT(out.data != nullptr);
 			memcpy(out.data, input.data, input.size * sizeof(float));
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1256,7 +1263,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y", AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("z", AUTO_CONNECT_Z));
 		// TODO Is it worth it making radius an input?
-		t.inputs.push_back(Port("radius"));
+		t.inputs.push_back(Port("radius", 1.f));
 		t.outputs.push_back(Port("sdf"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);

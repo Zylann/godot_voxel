@@ -520,6 +520,9 @@ inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &vo
 	}
 }
 
+void get_unscaled_sdf(const VoxelBufferInternal &voxels, Span<float> sdf);
+void scale_and_store_sdf(VoxelBufferInternal &voxels, Span<float> sdf);
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_BUFFER_INTERNAL_H

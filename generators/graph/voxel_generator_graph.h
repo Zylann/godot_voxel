@@ -74,6 +74,7 @@ public:
 		NODE_EXPRESSION,
 		NODE_POWI, // pow(x, constant positive integer)
 		NODE_POW, // pow(x, y)
+		NODE_INPUT_SDF,
 
 		NODE_TYPE_COUNT
 	};
@@ -190,12 +191,14 @@ public:
 	bool is_good() const;
 
 	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
+	void generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf);
 
 	// Returns state from the last generator used in the current thread
 	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
 	static Span<const uint32_t> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
+	int get_sdf_output_port_address() const;
 
 	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
 
@@ -306,6 +309,7 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
+		std::vector<float> input_sdf_cache;
 		VoxelGraphRuntime::State state;
 		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
