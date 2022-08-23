@@ -5,11 +5,11 @@
 namespace zylann::voxel {
 
 void VoxelDataBlock::set_modified(bool modified) {
-#ifdef TOOLS_ENABLED
-	if (_modified == false && modified) {
-		ZN_PRINT_VERBOSE(format("Marking block {} as modified", size_t(this)));
-	}
-#endif
+	// #ifdef TOOLS_ENABLED
+	// 	if (_modified == false && modified) {
+	// 		ZN_PRINT_VERBOSE(format("Marking block {} as modified", size_t(this)));
+	// 	}
+	// #endif
 	_modified = modified;
 }
 
