@@ -786,7 +786,6 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
 	ERR_FAIL_COND(data == nullptr);
-	VoxelDataLodMap::Lod &data_lod = data->lods[0];
 
 	preload_box(*data, box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
 
