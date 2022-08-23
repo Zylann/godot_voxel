@@ -1,7 +1,9 @@
 #include "../../edition/voxel_tool.h"
 #include "../../engine/save_block_data_task.h"
 #include "../../util/container_funcs.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/multimesh.h"
+#include "../../util/godot/node.h"
+#include "../../util/godot/ref_counted.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -325,7 +327,8 @@ void VoxelInstancer::process_mesh_lods() {
 			// Not a multimesh item
 			continue;
 		}
-		const int mesh_lod_count = item->get_mesh_lod_count();
+		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+		const int mesh_lod_count = settings.mesh_lod_count;
 		if (mesh_lod_count <= 1) {
 			// This block has no LOD
 			// TODO Optimization: would be nice to not need this conditional by iterating only item types that define
@@ -352,7 +355,7 @@ void VoxelInstancer::process_mesh_lods() {
 			++block.current_mesh_lod;
 			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 			if (multimesh.is_valid()) {
-				multimesh->set_mesh(item->get_mesh(block.current_mesh_lod));
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
 			}
 		}
 
@@ -362,7 +365,7 @@ void VoxelInstancer::process_mesh_lods() {
 			--block.current_mesh_lod;
 			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 			if (multimesh.is_valid()) {
-				multimesh->set_mesh(item->get_mesh(block.current_mesh_lod));
+				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
 			}
 		}
 	}
@@ -583,20 +586,22 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(*item_base);
 	ERR_FAIL_COND(item == nullptr);
 
+	const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block &block = **it;
 		if (block.layer_id != layer_id || !block.multimesh_instance.is_valid()) {
 			continue;
 		}
-		block.multimesh_instance.set_material_override(item->get_material_override());
-		block.multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
+		block.multimesh_instance.set_material_override(settings.material_override);
+		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		if (multimesh.is_valid()) {
 			Ref<Mesh> mesh;
-			if (item->get_mesh_lod_count() <= 1) {
-				mesh = item->get_mesh(0);
+			if (settings.mesh_lod_count <= 1) {
+				mesh = settings.mesh_lods[0];
 			} else {
-				mesh = item->get_mesh(block.current_mesh_lod);
+				mesh = settings.mesh_lods[block.current_mesh_lod];
 			}
 			multimesh->set_mesh(mesh);
 		}
@@ -897,6 +902,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	// Update multimesh
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
+		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+
 		if (transforms.size() == 0) {
 			if (block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.set_multimesh(Ref<MultiMesh>());
@@ -920,8 +927,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			//multimesh->set_as_bulk_array(bulk_array);
 			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
-			if (item->get_mesh_lod_count() > 0) {
-				multimesh->set_mesh(item->get_mesh(item->get_mesh_lod_count() - 1));
+			if (settings.mesh_lod_count > 0) {
+				multimesh->set_mesh(settings.mesh_lods[settings.mesh_lod_count - 1]);
 			}
 
 			if (!block.multimesh_instance.is_valid()) {
@@ -931,13 +938,13 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			block.multimesh_instance.set_multimesh(multimesh);
 			block.multimesh_instance.set_world(&world);
 			block.multimesh_instance.set_transform(block_transform);
-			block.multimesh_instance.set_material_override(item->get_material_override());
-			block.multimesh_instance.set_cast_shadows_setting(item->get_cast_shadows_setting());
+			block.multimesh_instance.set_material_override(settings.material_override);
+			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 		}
 
 		// Update bodies
 		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
-				item->get_collision_shapes();
+				to_span(settings.collision_shapes);
 		if (collision_shapes.size() > 0) {
 			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
@@ -1605,28 +1612,33 @@ int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
 
-Dictionary VoxelInstancer::debug_get_instance_counts() const {
-	Dictionary d;
+void VoxelInstancer::debug_get_instance_counts(std::unordered_map<uint32_t, uint32_t> &counts_per_layer) const {
+	ZN_PROFILE_SCOPE();
+
+	counts_per_layer.clear();
 
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		Block &block = **it;
-		if (!block.multimesh_instance.is_valid()) {
-			continue;
+		const Block &block = **it;
+
+		uint32_t count = block.scene_instances.size();
+
+		if (block.multimesh_instance.is_valid()) {
+			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+			ZN_ASSERT_CONTINUE(multimesh.is_valid());
+
+			count += get_visible_instance_count(**multimesh);
 		}
 
-		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-		ERR_FAIL_COND_V(multimesh.is_null(), Dictionary());
+		counts_per_layer[block.layer_id] += count;
+	}
+}
 
-		const int count = get_visible_instance_count(**multimesh);
-
-		Variant *vptr = d.getptr(block.layer_id);
-		if (vptr == nullptr) {
-			d[block.layer_id] = count;
-
-		} else {
-			ERR_FAIL_COND_V(vptr->get_type() != Variant::INT, Dictionary());
-			*vptr = vptr->operator signed int() + count;
-		}
+Dictionary VoxelInstancer::_b_debug_get_instance_counts() const {
+	Dictionary d;
+	std::unordered_map<uint32_t, uint32_t> map;
+	debug_get_instance_counts(map);
+	for (auto it = map.begin(); it != map.end(); ++it) {
+		d[it->first] = it->second;
 	}
 	return d;
 }
@@ -1773,7 +1785,7 @@ void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_up_mode"), &VoxelInstancer::get_up_mode);
 
 	ClassDB::bind_method(D_METHOD("debug_get_block_count"), &VoxelInstancer::debug_get_block_count);
-	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::debug_get_instance_counts);
+	ClassDB::bind_method(D_METHOD("debug_get_instance_counts"), &VoxelInstancer::_b_debug_get_instance_counts);
 	ClassDB::bind_method(D_METHOD("debug_dump_as_scene", "fpath"), &VoxelInstancer::debug_dump_as_scene);
 	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelInstancer::debug_set_draw_enabled);
 	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelInstancer::debug_is_draw_enabled);

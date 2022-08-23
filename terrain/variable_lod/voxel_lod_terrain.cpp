@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../engine/distance_normalmaps.h"
 #include "../../engine/load_all_blocks_data_task.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../engine/voxel_engine_updater.h"
@@ -9,6 +10,8 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/node.h"
+#include "../../util/godot/shader.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
@@ -20,9 +23,6 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
-#ifdef TOOLS_ENABLED
-#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#endif
 
 #include <core/config/engine.h>
 #include <core/core_string_names.h>
@@ -36,36 +36,15 @@ namespace zylann::voxel {
 
 namespace {
 
-inline Ref<ShaderMaterial> allocate_shader_material(
-		std::vector<Ref<ShaderMaterial>> &pool, const Ref<ShaderMaterial> &original, unsigned int transition_mask) {
-	Ref<ShaderMaterial> sm;
-	if (pool.size() > 0) {
-		sm = pool.back();
-		// The joys of pooling materials.
-		sm->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, transition_mask);
-		sm->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
-		pool.pop_back();
-	} else {
-		// Can get very slow due to https://github.com/godotengine/godot/issues/34741, but should be rare once
-		// enough materials have been created
-		sm = original->duplicate(false);
-	}
-	return sm;
-}
-
-inline void recycle_shader_material(std::vector<Ref<ShaderMaterial>> &pool, Ref<ShaderMaterial> material) {
-	pool.push_back(material);
-}
-
 struct BeforeUnloadMeshAction {
-	std::vector<Ref<ShaderMaterial>> &shader_material_pool;
+	ShaderMaterialPoolVLT &shader_material_pool;
 
 	void operator()(VoxelMeshBlockVLT &block) {
 		ZN_PROFILE_SCOPE_NAMED("Recycle material");
 		// Recycle material
 		Ref<ShaderMaterial> sm = block.get_shader_material();
 		if (sm.is_valid()) {
-			recycle_shader_material(shader_material_pool, sm);
+			shader_material_pool.recycle(sm);
 			block.set_shader_material(Ref<ShaderMaterial>());
 		}
 	}
@@ -103,6 +82,24 @@ static inline uint64_t get_ticks_msec() {
 }
 
 } // namespace
+
+void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(material.is_valid());
+
+	// Reset textures to avoid hoarding them in the pool
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
+	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, 0);
+	material->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+
+	ShaderMaterialPool::recycle(material);
+}
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
 	if (!VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
@@ -176,6 +173,10 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
+	callbacks.virtual_texture_output_callback = [](void *cb_data, VoxelEngine::BlockVirtualTextureOutput &ob) {
+		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
+		self->apply_virtual_texture_update(ob);
+	};
 
 	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
@@ -201,9 +202,14 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 }
 
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
+	if (_material == p_material) {
+		return;
+	}
+
 	// TODO Update existing block surfaces
-	// TODO What about the pool?
 	_material = p_material;
+
+	update_shader_material_pool_template();
 
 #ifdef TOOLS_ENABLED
 	// Create a fork of the default shader if a new empty ShaderMaterial is assigned
@@ -310,6 +316,14 @@ void VoxelLodTerrain::_on_gi_mode_changed() {
 	}
 }
 
+void VoxelLodTerrain::update_shader_material_pool_template() {
+	Ref<ShaderMaterial> shader_material = _material;
+	if (_material.is_null() && _mesher.is_valid()) {
+		shader_material = _mesher->get_default_lod_material();
+	}
+	_shader_material_pool.set_template(shader_material);
+}
+
 void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	if (_mesher == p_mesher) {
 		return;
@@ -318,6 +332,8 @@ void VoxelLodTerrain::set_mesher(Ref<VoxelMesher> p_mesher) {
 	stop_updater();
 
 	_mesher = p_mesher;
+
+	update_shader_material_pool_template();
 
 	MeshingDependency::reset(_meshing_dependency, _mesher, _generator);
 
@@ -466,7 +482,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 
 		} else if (active && _lod_fade_duration > 0.f) {
@@ -475,7 +491,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 			// parameter. Otherwise, it would be active but invisible due to still being faded out.
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 		}
 
@@ -1300,18 +1316,6 @@ void VoxelLodTerrain::_process(float delta) {
 	process_fading_blocks(delta);
 }
 
-static void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst) {
-	Ref<Shader> shader = src.get_shader();
-	ZN_ASSERT_RETURN(shader.is_valid());
-	// Not using `Shader::get_param_list()` because it is not exposed to the script/extension API, and it prepends
-	// `shader_params/` to every parameter name, which is slow and not usable for our case.
-	List<PropertyInfo> properties;
-	RenderingServer::get_singleton()->shader_get_param_list(shader->get_rid(), &properties);
-	for (const PropertyInfo &property : properties) {
-		dst.set_shader_param(property.name, src.get_shader_param(property.name));
-	}
-}
-
 void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	ZN_PROFILE_SCOPE();
 	// Dequeue outputs of the threadable part of the update for actions taking place on the main thread
@@ -1434,9 +1438,10 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
 						//item.shader_material = shader_material->duplicate(false);
-						item.shader_material = allocate_shader_material(_shader_material_pool, shader_material, 0);
+						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());
-						copy_shader_params(**shader_material, **item.shader_material);
+						copy_shader_params(**shader_material, **item.shader_material,
+								_shader_material_pool.get_cached_shader_uniforms());
 
 						// item.shader_material->set_shader_param(
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
@@ -1618,12 +1623,16 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			++_stats.dropped_block_meshs;
 			return;
 		}
-		transition_mask = mesh_block_state_it->second.transition_mask;
+
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block_state = mesh_block_state_it->second;
+
+		transition_mask = mesh_block_state.transition_mask;
+
 		// The update task could be running at the same time, so we need to do this atomically.
 		// The state can become "up to date" only if no other unsent update was pending.
 		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
-		mesh_block_state_it->second.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
-		active = mesh_block_state_it->second.active;
+		mesh_block_state.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
+		active = mesh_block_state.active;
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -1660,6 +1669,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				_instancer->on_mesh_block_exit(ob.position, ob.lod);
 			}
 		}
+		// ZN_PRINT_VERBOSE(format("Empty block pos {} lod {} time {}", ob.position, int(ob.lod),
+		// 		Time::get_singleton()->get_ticks_msec()));
 		return;
 	}
 
@@ -1668,6 +1679,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->active = active;
 		block->set_visible(active);
 		mesh_map.set_block(ob.position, block);
+		// ZN_PRINT_VERBOSE(format("Created block pos {} lod {} time {}", ob.position, int(ob.lod),
+		// 		Time::get_singleton()->get_ticks_msec()));
 	}
 
 	bool has_collision = get_generate_collisions();
@@ -1693,23 +1706,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->set_parent_visible(is_visible());
 		block->set_world(get_world_3d());
 
-		Ref<ShaderMaterial> shader_material = _material;
-
-		if (_material.is_null()) {
-			Ref<ShaderMaterial> default_material = _mesher->get_default_lod_material();
-			if (default_material.is_valid()) {
-				shader_material = default_material;
-			}
-		}
-
-		if (shader_material.is_valid() && block->get_shader_material().is_null()) {
+		if (_shader_material_pool.get_template().is_valid() && block->get_shader_material().is_null()) {
 			ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
 
 			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
 			// Due to a signal used to keep the inspector up to date, even though these
 			// material copies will never be seen in the inspector
 			// See https://github.com/godotengine/godot/issues/34741
-			Ref<ShaderMaterial> sm = allocate_shader_material(_shader_material_pool, shader_material, 0);
+			Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
 
 			// Set individual shader material, because each block can have dynamic parameters,
 			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
@@ -1763,11 +1767,92 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	block->set_parent_transform(get_global_transform());
 
+	if (ob.virtual_textures != nullptr && ob.virtual_textures->valid) {
+		apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod);
+	}
+
 #ifdef TOOLS_ENABLED
 	if (debug_is_draw_enabled() && debug_get_draw_flag(DEBUG_DRAW_MESH_UPDATES)) {
 		_debug_mesh_update_items.push_back({ ob.position, ob.lod, DebugMeshUpdateItem::LINGER_FRAMES });
 	}
 #endif
+}
+
+void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob) {
+	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod_index];
+	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
+
+	// This can happen if:
+	// - Virtual texture rendering results are handled before the first meshing results which that have created the
+	//   block. In this case it will be applied when meshing results get handled, since the data is shared with it.
+	// - The block was indeed unloaded early.
+	if (block == nullptr) {
+		// ZN_PRINT_VERBOSE(format("Ignored virtual texture update, block not found. pos {} lod {} time {}",
+		// ob.position, 		ob.lod_index, Time::get_singleton()->get_ticks_msec()));
+		return;
+	}
+
+	ZN_ASSERT_RETURN(ob.virtual_textures != nullptr);
+	ZN_ASSERT_RETURN(ob.virtual_textures->valid);
+
+	apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod_index);
+}
+
+void VoxelLodTerrain::apply_virtual_texture_update_to_block(
+		VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT(ob.valid);
+
+	NormalMapTextures normalmap_textures = ob.normalmap_textures;
+
+	if (normalmap_textures.lookup.is_null()) {
+		// TODO When this code path is required, use a time-spread task to reduce stalls
+		NormalMapImages normalmap_images = ob.normalmap_images;
+		normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
+	}
+
+	Ref<ShaderMaterial> material = block.get_shader_material();
+	if (material.is_valid()) {
+		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+		const bool had_texture = material->get_shader_uniform(sn.u_voxel_cell_lookup) != Variant();
+		material->set_shader_uniform(sn.u_voxel_normalmap_atlas, normalmap_textures.atlas);
+		material->set_shader_uniform(sn.u_voxel_cell_lookup, normalmap_textures.lookup);
+		const int cell_size = 1 << lod_index;
+		material->set_shader_uniform(sn.u_voxel_cell_size, cell_size);
+		material->set_shader_uniform(sn.u_voxel_block_size, get_mesh_block_size());
+
+		if (!had_texture) {
+			if (_lod_fade_duration > 0.f) {
+				// Fade-in to reduce "popping" details
+				_fading_virtual_textures.push_back(FadingVirtualTexture{ block.position, lod_index, 0.f });
+				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 0.f);
+			} else {
+				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 1.f);
+			}
+			const unsigned int tile_size = get_virtual_texture_tile_resolution_for_lod(
+					_update_data->settings.virtual_texture_settings, lod_index);
+			material->set_shader_uniform(sn.u_voxel_virtual_texture_tile_size, tile_size);
+		}
+	}
+	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
+	// textures goes in the bin. That should be a warning in the editor.
+
+	{
+		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		RWLockRead rlock(lod.mesh_map_state.map_lock);
+		auto mesh_block_state_it = lod.mesh_map_state.map.find(block.position);
+		if (mesh_block_state_it != lod.mesh_map_state.map.end()) {
+			VoxelLodTerrainUpdateData::VirtualTextureState expected_vt_state =
+					VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
+			// If it was PENDING, set it to IDLE.
+			mesh_block_state_it->second.virtual_texture_state.compare_exchange_strong(
+					expected_vt_state, VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_IDLE);
+			// TODO If the mesh was modified again since, we need to schedule an extra update for the virtual texture to
+			// catch up. But for now I'm not sure if there is much value in doing so. It can get updated by the next
+			// edit. Scheduling an update from here isn't mildly inconvenient due to threading.
+		}
+	}
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -1872,7 +1957,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			FadingOutMesh &item = _fading_out_meshes[i];
 			item.progress -= speed;
 			if (item.progress <= 0.f) {
-				recycle_shader_material(_shader_material_pool, item.shader_material);
+				_shader_material_pool.recycle(item.shader_material);
 				// TODO Optimize: mesh instances destroyed here can be really slow due to materials...
 				// Profiling has shown that `RendererSceneCull::free` of a mesh instance
 				// leads to `RendererRD::MaterialStorage::_update_queued_materials()` to be called, which internally
@@ -1883,8 +1968,40 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 				_fading_out_meshes[i] = std::move(_fading_out_meshes.back());
 				_fading_out_meshes.pop_back();
 			} else {
-				item.shader_material->set_shader_param(
+				item.shader_material->set_shader_uniform(
 						VoxelStringNames::get_singleton().u_lod_fade, Vector2(1.f - item.progress, 0.f));
+				++i;
+			}
+		}
+	}
+
+	{
+		ZN_PROFILE_SCOPE();
+		const unsigned int lod_count = get_lod_count();
+
+		for (unsigned int i = 0; i < _fading_virtual_textures.size();) {
+			FadingVirtualTexture &item = _fading_virtual_textures[i];
+			bool remove = true;
+
+			if (item.lod_index < lod_count) {
+				VoxelMeshBlockVLT *block = _mesh_maps_per_lod[item.lod_index].get_block(item.block_position);
+
+				if (block != nullptr) {
+					Ref<ShaderMaterial> sm = block->get_shader_material();
+
+					if (sm.is_valid()) {
+						item.progress = math::min(item.progress + speed, 1.f);
+						remove = item.progress >= 1.f;
+						sm->set_shader_uniform(
+								VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, item.progress);
+					}
+				}
+			}
+
+			if (remove) {
+				_fading_virtual_textures[i] = _fading_virtual_textures.back();
+				_fading_virtual_textures.pop_back();
+			} else {
 				++i;
 			}
 		}
@@ -2097,6 +2214,47 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 	return _lod_fade_duration;
 }
 
+void VoxelLodTerrain::set_normalmap_enabled(bool enable) {
+	_update_data->settings.virtual_texture_settings.enabled = enable;
+}
+
+bool VoxelLodTerrain::is_normalmap_enabled() const {
+	return _update_data->settings.virtual_texture_settings.enabled;
+}
+
+void VoxelLodTerrain::set_normalmap_tile_resolution_min(int resolution) {
+	_update_data->settings.virtual_texture_settings.tile_resolution_min = math::clamp(resolution, 1, 128);
+}
+
+int VoxelLodTerrain::get_normalmap_tile_resolution_min() const {
+	return _update_data->settings.virtual_texture_settings.tile_resolution_min;
+}
+
+void VoxelLodTerrain::set_normalmap_tile_resolution_max(int resolution) {
+	_update_data->settings.virtual_texture_settings.tile_resolution_max = math::clamp(resolution, 1, 128);
+}
+
+int VoxelLodTerrain::get_normalmap_tile_resolution_max() const {
+	return _update_data->settings.virtual_texture_settings.tile_resolution_max;
+}
+
+void VoxelLodTerrain::set_normalmap_begin_lod_index(int lod_index) {
+	ERR_FAIL_INDEX(lod_index, int(constants::MAX_LOD));
+	_update_data->settings.virtual_texture_settings.begin_lod_index = lod_index;
+}
+
+int VoxelLodTerrain::get_normalmap_begin_lod_index() const {
+	return _update_data->settings.virtual_texture_settings.begin_lod_index;
+}
+
+void VoxelLodTerrain::set_octahedral_normal_encoding(bool enable) {
+	_update_data->settings.virtual_texture_settings.octahedral_encoding_enabled = enable;
+}
+
+bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
+	return _update_data->settings.virtual_texture_settings.octahedral_encoding_enabled;
+}
+
 #ifdef TOOLS_ENABLED
 
 TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
@@ -2104,21 +2262,101 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	if (!warnings.is_empty()) {
 		return warnings;
 	}
+
 	Ref<VoxelMesher> mesher = get_mesher();
+
+	// Material
+	Ref<ShaderMaterial> shader_material = _material;
+	if (shader_material.is_valid() && shader_material->get_shader().is_null()) {
+		warnings.append(TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
+	}
+
 	if (mesher.is_valid()) {
+		// LOD support in mesher
 		if (!mesher->supports_lod()) {
 			warnings.append(
 					TTR("The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
 							.format(varray(mesher->get_class())));
 		}
+
+		// LOD support in shader
 		if (_material.is_valid() && mesher->get_default_lod_material().is_valid()) {
-			Ref<ShaderMaterial> sm = _material;
-			if (sm.is_null()) {
+			if (shader_material.is_null()) {
 				warnings.append(
 						TTR("The current mesher ({0}) requires custom shader code to render properly. The current "
 							"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
 							"default shader.")
 								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
+			} else {
+				Ref<Shader> shader = shader_material->get_shader();
+				if (shader.is_valid()) {
+					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
+						warnings.append(TTR(
+								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
+												.format(varray(mesher->get_class(),
+														VoxelStringNames::get_singleton().u_transition_mask)));
+					}
+				}
+			}
+		}
+
+		// LOD fading
+		if (get_lod_fade_duration() > 0.f) {
+			if (shader_material.is_null()) {
+				warnings.append(String("Lod fading is enabled but it requires a {0} to render properly.")
+										.format(varray(ShaderMaterial::get_class_static())));
+			} else {
+				Ref<Shader> shader = shader_material->get_shader();
+				if (shader.is_null()) {
+					warnings.append(String("Lod fading is enabled but the current material is missing a shader.")
+											.format(varray(ShaderMaterial::get_class_static())));
+				} else {
+					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
+						warnings.append(TTR(
+								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
+												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
+					}
+				}
+			}
+		}
+
+		// Virtual textures
+		if (_generator.is_valid()) {
+			if (is_normalmap_enabled()) {
+				if (!_generator->supports_series_generation()) {
+					warnings.append(TTR(
+							"Normalmaps are enabled, but it requires the generator to be able to generate series of "
+							"positions with `generate_series`. The current generator ({0}) does not support it.")
+											.format(varray(_generator->get_class())));
+				}
+
+				if ((_generator->get_used_channels_mask() & (1 << VoxelBufferInternal::CHANNEL_SDF)) == 0) {
+					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
+										"channel. The current generator ({0}) does not support it, or is not "
+										"configured to do so.")
+											.format(varray(_generator->get_class())));
+				}
+
+				if (shader_material.is_valid()) {
+					Ref<Shader> shader = shader_material->get_shader();
+
+					if (shader.is_valid()) {
+						FixedArray<StringName, 2> expected_uniforms;
+						expected_uniforms[0] = VoxelStringNames::get_singleton().u_voxel_normalmap_atlas;
+						expected_uniforms[1] = VoxelStringNames::get_singleton().u_voxel_cell_lookup;
+						// There is more but they are not absolutely required for the shader to be made working
+
+						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
+
+						if (missing_uniforms.size() != 0) {
+							warnings.append(String(
+									TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
+										"specific uniforms. Missing ones: {1}"))
+													.format(varray(
+															ShaderMaterial::get_class_static(), missing_uniforms)));
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2614,11 +2852,20 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 }
 
 void VoxelLodTerrain::_bind_methods() {
+	// Material
+
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &VoxelLodTerrain::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &VoxelLodTerrain::get_material);
 
+	// Bounds
+
 	ClassDB::bind_method(D_METHOD("set_view_distance", "distance_in_voxels"), &VoxelLodTerrain::set_view_distance);
 	ClassDB::bind_method(D_METHOD("get_view_distance"), &VoxelLodTerrain::get_view_distance);
+
+	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
+	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
+
+	// Collisions
 
 	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelLodTerrain::get_generate_collisions);
 	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelLodTerrain::set_generate_collisions);
@@ -2639,6 +2886,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_collision_update_delay", "delay_msec"), &VoxelLodTerrain::set_collision_update_delay);
 
+	// LOD
+
 	ClassDB::bind_method(D_METHOD("get_lod_fade_duration"), &VoxelLodTerrain::get_lod_fade_duration);
 	ClassDB::bind_method(D_METHOD("set_lod_fade_duration", "seconds"), &VoxelLodTerrain::set_lod_fade_duration);
 
@@ -2648,16 +2897,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_distance", "lod_distance"), &VoxelLodTerrain::set_lod_distance);
 	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
 
-	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
-	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &VoxelLodTerrain::set_mesh_block_size);
+	// Misc
 
-	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelLodTerrain::get_data_block_size);
-	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &VoxelLodTerrain::get_data_block_region_extent);
-
-	ClassDB::bind_method(D_METHOD("set_full_load_mode_enabled"), &VoxelLodTerrain::set_full_load_mode_enabled);
-	ClassDB::bind_method(D_METHOD("is_full_load_mode_enabled"), &VoxelLodTerrain::is_full_load_mode_enabled);
-
-	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 	ClassDB::bind_method(
 			D_METHOD("voxel_to_data_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_data_block_position);
 	ClassDB::bind_method(
@@ -2669,15 +2910,50 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelLodTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelLodTerrain::is_stream_running_in_editor);
 
-	ClassDB::bind_method(D_METHOD("set_voxel_bounds"), &VoxelLodTerrain::_b_set_voxel_bounds);
-	ClassDB::bind_method(D_METHOD("get_voxel_bounds"), &VoxelLodTerrain::_b_get_voxel_bounds);
+	// Normalmaps
 
-	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &VoxelLodTerrain::set_process_callback);
-	ClassDB::bind_method(D_METHOD("get_process_callback"), &VoxelLodTerrain::get_process_callback);
+	ClassDB::bind_method(D_METHOD("set_normalmap_enabled", "enabled"), &VoxelLodTerrain::set_normalmap_enabled);
+	ClassDB::bind_method(D_METHOD("is_normalmap_enabled"), &VoxelLodTerrain::is_normalmap_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_min", "resolution"),
+			&VoxelLodTerrain::set_normalmap_tile_resolution_min);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution_min"), &VoxelLodTerrain::get_normalmap_tile_resolution_min);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_tile_resolution_max", "resolution"),
+			&VoxelLodTerrain::set_normalmap_tile_resolution_max);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_tile_resolution_max"), &VoxelLodTerrain::get_normalmap_tile_resolution_max);
+
+	ClassDB::bind_method(
+			D_METHOD("set_normalmap_begin_lod_index", "lod_index"), &VoxelLodTerrain::set_normalmap_begin_lod_index);
+	ClassDB::bind_method(D_METHOD("get_normalmap_begin_lod_index"), &VoxelLodTerrain::get_normalmap_begin_lod_index);
+
+	ClassDB::bind_method(
+			D_METHOD("set_octahedral_normal_encoding", "enabled"), &VoxelLodTerrain::set_octahedral_normal_encoding);
+	ClassDB::bind_method(D_METHOD("get_octahedral_normal_encoding"), &VoxelLodTerrain::get_octahedral_normal_encoding);
+
+	// Advanced
+
+	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
+	ClassDB::bind_method(D_METHOD("set_mesh_block_size"), &VoxelLodTerrain::set_mesh_block_size);
+
+	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelLodTerrain::get_data_block_size);
+	ClassDB::bind_method(D_METHOD("get_data_block_region_extent"), &VoxelLodTerrain::get_data_block_region_extent);
+
+	ClassDB::bind_method(D_METHOD("set_full_load_mode_enabled"), &VoxelLodTerrain::set_full_load_mode_enabled);
+	ClassDB::bind_method(D_METHOD("is_full_load_mode_enabled"), &VoxelLodTerrain::is_full_load_mode_enabled);
 
 	ClassDB::bind_method(
 			D_METHOD("set_threaded_update_enabled", "enabled"), &VoxelLodTerrain::set_threaded_update_enabled);
 	ClassDB::bind_method(D_METHOD("is_threaded_update_enabled"), &VoxelLodTerrain::is_threaded_update_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &VoxelLodTerrain::set_process_callback);
+	ClassDB::bind_method(D_METHOD("get_process_callback"), &VoxelLodTerrain::get_process_callback);
+
+	// Debug
+
+	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
 
 	ClassDB::bind_method(
 			D_METHOD("debug_raycast_mesh_block", "origin", "dir"), &VoxelLodTerrain::debug_raycast_mesh_block);
@@ -2728,6 +3004,18 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
 						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
 			"set_material", "get_material");
+
+	ADD_GROUP("Detail normalmaps", "normalmap_");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_enabled"), "set_normalmap_enabled", "is_normalmap_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_min"), "set_normalmap_tile_resolution_min",
+			"get_normalmap_tile_resolution_min");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_tile_resolution_max"), "set_normalmap_tile_resolution_max",
+			"get_normalmap_tile_resolution_max");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_begin_lod_index"), "set_normalmap_begin_lod_index",
+			"get_normalmap_begin_lod_index");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
+			"get_octahedral_normal_encoding");
 
 	ADD_GROUP("Collisions", "");
 

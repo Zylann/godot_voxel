@@ -1,6 +1,7 @@
 #ifndef THREADED_TASK_H
 #define THREADED_TASK_H
 
+#include "task_priority.h"
 #include <cstdint>
 
 namespace zylann {
@@ -25,9 +26,9 @@ public:
 	// Hints how soon this task will be executed after being scheduled. This is relevant when there are a lot of tasks.
 	// Lower values means higher priority.
 	// Can change between two calls. The thread pool will poll this value regularly over some time interval.
-	// TODO Should we disallow negative values? I can't think of a use for it.
-	virtual int get_priority() {
-		return 0;
+	virtual TaskPriority get_priority() {
+		// Defaulting to maximum priority as it's the most common expectation.
+		return TaskPriority::max();
 	}
 
 	// May return `true` in order for the thread pool to skip the task

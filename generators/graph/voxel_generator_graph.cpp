@@ -2,6 +2,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/container_funcs.h"
 #include "../../util/expression_parser.h"
+#include "../../util/godot/object.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
@@ -1079,6 +1080,55 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 	runtime.prepare_state(cache.state, in_x.size(), false);
 	runtime.generate_set(cache.state, in_x, in_y, in_z, false, nullptr);
+	// Note, when generating SDF, we don't scale it because the return values are uncompressed floats. Scale only
+	// matters if we are storing it inside 16-bit or 8-bit VoxelBuffer.
+}
+
+void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<const float> positions_y,
+		Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+		Vector3f max_pos) {
+	std::shared_ptr<Runtime> runtime_ptr;
+	{
+		RWLockRead rlock(_runtime_lock);
+		runtime_ptr = _runtime;
+	}
+	if (runtime_ptr == nullptr) {
+		return;
+	}
+
+	int buffer_index;
+	float defval = 0.f;
+	switch (channel) {
+		case VoxelBufferInternal::CHANNEL_SDF:
+			buffer_index = runtime_ptr->sdf_output_buffer_index;
+			defval = 1.f;
+			break;
+		case VoxelBufferInternal::CHANNEL_TYPE:
+			buffer_index = runtime_ptr->type_output_buffer_index;
+			break;
+		default:
+			ZN_PRINT_ERROR("Unexpected channel");
+			return;
+	}
+
+	if (buffer_index == -1) {
+		for (unsigned int i = 0; i < out_values.size(); ++i) {
+			out_values[i] = defval;
+		}
+		return;
+	}
+
+	{
+		// The implementation cannot guarantee constness at compile time, but it should not modifiy the data either way
+		float *ptr_x = const_cast<float *>(positions_x.data());
+		float *ptr_y = const_cast<float *>(positions_y.data());
+		float *ptr_z = const_cast<float *>(positions_z.data());
+		generate_set(Span<float>(ptr_x, positions_x.size()), Span<float>(ptr_y, positions_y.size()),
+				Span<float>(ptr_z, positions_z.size()));
+	}
+
+	const VoxelGraphRuntime::Buffer &buffer = _cache.state.get_buffer(buffer_index);
+	memcpy(out_values.data(), buffer.data, sizeof(float) * out_values.size());
 }
 
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
@@ -1846,43 +1896,6 @@ void VoxelGeneratorGraph::get_configuration_warnings(TypedArray<String> &out_war
 	}
 }
 
-// Gets a hash of a given object from its properties. If properties are objects too, they are recursively parsed.
-// Note that restricting to editable properties is important to avoid costly properties with objects such as textures or
-// meshes
-static uint64_t get_deep_hash(const Object &obj,
-		uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0) {
-	ZN_PROFILE_SCOPE();
-
-	hash = hash_djb2_one_64(obj.get_class_name().hash(), hash);
-
-	List<PropertyInfo> properties;
-	obj.get_property_list(&properties, false);
-
-	// I'd like to use ConstIterator since I only read that list but that isn't possible :shrug:
-	for (List<PropertyInfo>::Iterator it = properties.begin(); it != properties.end(); ++it) {
-		const PropertyInfo property = *it;
-
-		if ((property.usage & property_usage) != 0) {
-			const Variant value = obj.get(property.name);
-			uint64_t value_hash = 0;
-
-			if (value.get_type() == Variant::OBJECT) {
-				const Object *obj_value = value.operator Object *();
-				if (obj_value != nullptr) {
-					value_hash = get_deep_hash(*obj_value, hash, property_usage);
-				}
-
-			} else {
-				value_hash = value.hash();
-			}
-
-			hash = hash_djb2_one_64(value_hash, hash);
-		}
-	}
-
-	return hash;
-}
-
 uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 	std::vector<uint32_t> terminal_nodes;
@@ -1904,7 +1917,6 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 	std::vector<uint64_t> node_hashes;
 	uint64_t hash = hash_djb2_one_64(0);
 
-	// Connections should be implicitely hashed due to the order of iteration
 	for (uint32_t node_id : order) {
 		ProgramGraph::Node &node = _graph.get_node(node_id);
 		hash = hash_djb2_one_64(node.type_id, hash);
@@ -1924,6 +1936,12 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 
 		for (const Variant &v : node.default_inputs) {
 			hash = hash_djb2_one_float_64(v.hash(), hash);
+		}
+
+		for (const ProgramGraph::Port &port : node.inputs) {
+			for (const ProgramGraph::PortLocation src : port.connections) {
+				hash = hash_djb2_one_64(uint64_t(src.node_id) | (uint64_t(src.port_index) << 32), hash);
+			}
 		}
 	}
 

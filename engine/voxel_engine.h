@@ -9,6 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "distance_normalmaps.h"
 #include "priority_dependency.h"
 
 namespace zylann::voxel {
@@ -26,7 +27,8 @@ public:
 
 		Type type;
 		VoxelMesher::Output surfaces;
-		// Only used if `has_mesh_resource` is true.
+		// Only used if `has_mesh_resource` is true (usually when meshes are allowed to be build in threads). Otherwise,
+		// mesh data will be in `surfaces` and has to be built on the main thread.
 		Ref<Mesh> mesh;
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
@@ -37,6 +39,9 @@ public:
 		uint8_t lod;
 		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
 		bool has_mesh_resource;
+		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
+		// starting from the mesh task, and it might complete earlier or later than the mesh.
+		std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	};
 
 	struct BlockDataOutput {
@@ -60,14 +65,22 @@ public:
 		bool initial_load;
 	};
 
+	struct BlockVirtualTextureOutput {
+		std::shared_ptr<VirtualTextureOutput> virtual_textures;
+		Vector3i position;
+		uint32_t lod_index;
+	};
+
 	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
+		void (*virtual_texture_output_callback)(void *, BlockVirtualTextureOutput &) = nullptr;
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {
 			ZN_ASSERT_RETURN_V(mesh_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data_output_callback != nullptr, false);
+			//ZN_ASSERT_RETURN_V(normalmap_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data != nullptr, false);
 			return true;
 		}
@@ -137,8 +150,10 @@ public:
 
 	// Allows/disallows building Mesh resources from inside threads. Depends on Godot's efficiency at doing so, and
 	// which renderer is used. For example, the OpenGL renderer does not support this well, but the Vulkan one should.
+	// TODO Rename `set_threaded_gpu_resource_building_enabled`, it applies to textures too
 	void set_threaded_mesh_resource_building_enabled(bool enable);
 	// This should be fast and safe to access from multiple threads.
+	// TODO Rename `is_threaded_gpu_resource_building_enabled`, it applies to textures too
 	bool is_threaded_mesh_resource_building_enabled() const;
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);

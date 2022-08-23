@@ -58,23 +58,31 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 	dst.insert(dst.end(), src.begin(), src.end());
 }
 
+/*
 // Removes all items satisfying the given predicate.
 // This can reduce the size of the container. Items are moved to preserve order.
-// template <typename T, typename F>
-// inline void remove_if(std::vector<T> &vec, F predicate) {
-// 	unsigned int j = 0;
-// 	for (unsigned int i = 0; i < vec.size(); ++i) {
-// 		if (predicate(vec[i])) {
-// 			continue;
-// 		} else {
-// 			if (i != j) {
-// 				vec[j] = vec[i];
-// 			}
-// 			++j;
-// 		}
-// 	}
-// 	vec.resize(j);
-// }
+// More direct option than `vec.erase(std::remove_if(vec.begin(), vec.end(), predicate))`.
+template <typename T, typename F>
+inline void remove_if(std::vector<T> &vec, F predicate) {
+	unsigned int i = 0;
+	unsigned int j = 0;
+	for (; i < vec.size(); ++i) {
+		if (predicate(vec[i])) {
+			++i;
+			break;
+		}
+	}
+	for (; i < vec.size(); ++i) {
+		if (predicate(i)) {
+			continue;
+		} else {
+			vec[j] = vec[i];
+			++j;
+		}
+	}
+	vec.resize(j);
+}
+*/
 
 template <typename T>
 size_t find_duplicate(Span<const T> items) {
@@ -87,6 +95,11 @@ size_t find_duplicate(Span<const T> items) {
 		}
 	}
 	return items.size();
+}
+
+template <typename T>
+bool has_duplicate(Span<const T> items) {
+	return find_duplicate(items) != items.size();
 }
 
 // Tests if POD items in an array are all the same.

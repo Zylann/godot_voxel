@@ -32,6 +32,7 @@ protected:
 	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
 	gd::VoxelBuffer::ChannelId _b_get_channel() const;
 
+	// float height_func(x, y)
 	template <typename Height_F>
 	Result generate(VoxelBufferInternal &out_buffer, Height_F height_func, Vector3i origin, int lod) {
 		Parameters params;
@@ -105,6 +106,36 @@ protected:
 		return Result();
 	}
 
+	// float height_func(x, y)
+	template <typename Height_F>
+	void generate_series_template(Height_F height_func, Span<const float> positions_x, Span<const float> positions_y,
+			Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+			Vector3f max_pos) {
+		Parameters params;
+		{
+			RWLockRead rlock(_parameters_lock);
+			params = _parameters;
+		}
+
+		//const int channel = params.channel;
+		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+
+		if (use_sdf) {
+			for (unsigned int i = 0; i < out_values.size(); ++i) {
+				const float h = params.range.xform(height_func(positions_x[i], positions_z[i]));
+				const float sd = positions_y[i] - h;
+				// Not scaling here, since the return values are uncompressed floats
+				out_values[i] = sd;
+			}
+		} else {
+			for (unsigned int i = 0; i < out_values.size(); ++i) {
+				const float h = params.range.xform(height_func(positions_x[i], positions_z[i]));
+				const float sd = positions_y[i] - h;
+				out_values[i] = sd < 0.f ? params.matter_type : 0;
+			}
+		}
+	}
+
 private:
 	static void _bind_methods();
 
@@ -121,7 +152,9 @@ private:
 		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 		int matter_type = 1;
 		Range range;
-		float iso_scale = 0.1;
+		// TODO Get rid of that scale, apply it differently. It exists because of the compression format in 16-bit and
+		// 8-bit channels of VoxelBuffer
+		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;
 	};
 
 	RWLock _parameters_lock;

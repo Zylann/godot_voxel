@@ -25,4 +25,4 @@ Generates a block of voxels within the specified world area.
 
 `lod`: Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0.
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

@@ -1,6 +1,6 @@
 # VoxelBlockSerializer
 
-Inherits: [Reference](https://docs.godotengine.org/en/stable/classes/class_reference.html)
+Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
 
 
@@ -50,6 +50,6 @@ Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [StreamPeer](https://do
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize"></span> **serialize**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
 
-Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html).
+Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

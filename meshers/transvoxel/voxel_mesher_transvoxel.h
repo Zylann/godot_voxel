@@ -52,8 +52,16 @@ public:
 
 	Ref<ShaderMaterial> get_default_lod_material() const override;
 
+	// Internal
+
 	static void load_static_resources();
 	static void free_static_resources();
+
+	// Exposed for a fast-path. Return values are only valid until the next invocation of build() in the calling thread.
+	static const transvoxel::MeshArrays &get_mesh_cache_from_current_thread();
+	// Exposed for a fast-path. Return values are only valid if `virtual_texture_hint` is true in the input given to
+	// `build`, and only remains valid until the next invocation of build() in the calling thread.
+	static Span<const transvoxel::CellInfo> get_cell_info_from_current_thread();
 
 	// Not sure if that's necessary, currently transitions are either combined or not generated
 	// enum TransitionMode {

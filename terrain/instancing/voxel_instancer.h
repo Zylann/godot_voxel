@@ -84,7 +84,7 @@ public:
 	// Debug
 
 	int debug_get_block_count() const;
-	Dictionary debug_get_instance_counts() const;
+	void debug_get_instance_counts(std::unordered_map<uint32_t, uint32_t> &counts_per_layer) const;
 	void debug_dump_as_scene(String fpath) const;
 	Node *debug_dump_as_nodes() const;
 
@@ -160,6 +160,8 @@ private:
 
 	static void remove_floating_scene_instances(Block &block, const Transform3D &parent_transform, Box3i p_voxel_box,
 			const VoxelTool &voxel_tool, int block_size_po2);
+
+	Dictionary _b_debug_get_instance_counts() const;
 
 	static void _bind_methods();
 

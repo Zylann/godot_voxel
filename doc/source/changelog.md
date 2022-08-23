@@ -39,22 +39,25 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
     - `VoxelGeneratorGraph`: Added minor optimization to share branches of nodes doing the same calculations
     - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
+    - `VoxelInstancer`: Editor: added basic UI to see how many instances exist
+    - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
+    - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
+    - `VoxelInstancer`: Changing mesh block size should no longer make saved instances invalid if they were saved with a different mesh block size
+    - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
+    - `VoxelInstanceLibraryMultiMeshItem`: Support setting a scene directly, which is converted to multimesh at runtime (fixes a few workflow issues: updates automatically when scene changes, doesn't create mesh and texture copies in the `.tres` file when using imported scenes)
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
     - `VoxelTool`: Added `set_sdf_strength()` to control brush strength when sculpting smooth voxels (previously acted as if it was 1.0)
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
+    - `VoxelLodTerrain`: Added optional calculation of distant normalmaps to improve LOD quality.
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelLodTerrain`: Editor: added option to show octree grid in editor, now off by default
     - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
     - `VoxelLodTerrain`: added debug gizmos to see mesh updates
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
-    - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
-    - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
-    - `VoxelInstancer`: Changing mesh block size should no longer make saved instances invalid if they were saved with a different mesh block size
-    - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
     - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
     - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
 
@@ -71,6 +74,8 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
+    - `VoxelGeneratorGraph`: some specific node graphs were not ordered properly
+    - `VoxelGeneratorGraph`: SmoothUnion and SmoothSubtract were causing branches to be incorrectly skipped by runtime optimization, leading to empty blocks
     - `VoxelGeneratorFlat`: fixed underground SDF values being 0 instead of negative
     - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
     - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it

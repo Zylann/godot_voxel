@@ -16,8 +16,10 @@ public:
 		ref->mark_completed();
 	}
 
-	int get_priority() override {
-		return ref->get_priority();
+	TaskPriority get_priority() override {
+		TaskPriority priority;
+		priority.whole = ref->get_priority();
+		return priority;
 	}
 
 	bool is_cancelled() override {

@@ -37,7 +37,9 @@ Terrains can be very big, and sometimes Godot might prevent you from zooming out
 Editing
 --------
 
-Editing voxel volumes in the Godot Editor is not supported yet. This feature may be implemented in the future.
+Editing voxel volumes destructively in the Godot Editor is not supported yet. This feature may be implemented in the future.
 
-Terrains can be edited in-game using scripts and [VoxelTool](scripting.md).
+It is possible to use non-destructive [modifiers](generators.md#modifiers).
+
+Terrains can be fully edited in-game using scripts and [VoxelTool](scripting.md).
 

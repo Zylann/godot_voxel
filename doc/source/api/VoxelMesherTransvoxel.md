@@ -10,10 +10,12 @@ Implements isosurface generation (smooth voxels) using the [Transvoxel](https://
 
 Type     | Name                                                                       | Default 
 -------- | -------------------------------------------------------------------------- | --------
+`bool`   | [deep_sampling_enabled](#i_deep_sampling_enabled)                          | false   
 `bool`   | [mesh_optimization_enabled](#i_mesh_optimization_enabled)                  | false   
 `float`  | [mesh_optimization_error_threshold](#i_mesh_optimization_error_threshold)  | 0.005   
 `float`  | [mesh_optimization_target_ratio](#i_mesh_optimization_target_ratio)        | 0.0     
 `int`    | [texturing_mode](#i_texturing_mode)                                        | 0       
+`bool`   | [transitions_enabled](#i_transitions_enabled)                              | true    
 <p></p>
 
 ## Methods: 
@@ -34,6 +36,9 @@ enum **TexturingMode**:
 
 ## Property Descriptions
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_deep_sampling_enabled"></span> **deep_sampling_enabled** = false
+
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_mesh_optimization_enabled"></span> **mesh_optimization_enabled** = false
 
 
@@ -46,9 +51,12 @@ enum **TexturingMode**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texturing_mode"></span> **texturing_mode** = 0
 
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_transitions_enabled"></span> **transitions_enabled** = true
+
+
 ## Method Descriptions
 
 - [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

@@ -68,7 +68,7 @@ To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLi
 
 If only the `mesh` property is set, no LOD will be used.
 
-The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `split_scale` property of the parent voxel terrain.
+The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `lod_distance` property of the parent voxel terrain.
 
 ![Screenshot of mesh LODs with colors](images/mesh_lods.webp)
 
@@ -98,9 +98,14 @@ The save format is described in [this document](specs/instances_format.md).
 
 ### Setting up a Multimesh item from a scene
 
-It is possible to setup a Multimesh Item from an existing scene, as an alternative to setting it up in the inspector. One reason you could need this is to setup colliders, because although they are supported, it is not possible to set them in the inspector at the moment. It is also more convenient to design instances in the 3D editor using nodes.
+It is possible to setup a Multimesh Item from an existing scene, as an alternative to setting it up in the inspector. The scene will be converted to fit multimesh rendering. One reason you could need this is to setup colliders, because although they are supported, it is not possible to set them in the inspector at the moment. It is also more convenient to design instances in the 3D editor using nodes.
 
-This conversion process expects your scene to follow a specific structure:
+There are two ways of setting up from a scene:
+
+- Assign the `scene` property. This will convert the scene at runtime. The scene will be linked to the item, so it will stay updated if the scene changes.
+- Use the `Setup from scene` button on top of the inspector. This does not link the scene, and rather assigns manual properties doing the conversion in the editor. The item will not update if the scene change. If the scene embeds meshes, materials or textures, they might end up being copied into the item's resource file.
+
+The conversion process expects your scene to follow a specific structure:
 
 ```
 - PhysicsBody (StaticBody, RigidBody...)
@@ -122,7 +127,7 @@ Surface material properties on the `MeshInstance` node are not supported.
 
 ### Scene instances
 
-Multimesh items are fast and efficient, but are quite limited.
+Multimesh items are fast and efficient, but have limitations.
 
 Instancing scenes is supported by adding items of type `VoxelInstanceLibrarySceneItem`. Instead of spawning multimeshes, regular scene instances will be created as child of `VoxelInstancer`. The advantage is the ability to put much more varied behavior on them, such as scripts, sounds, animations, or even further spawning logic or interaction. The only constraint is, the root of the scene must be `Node3D` or derive from it.
 

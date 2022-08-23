@@ -4,6 +4,7 @@
 #include "../../engine/mesh_block_task.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data_map.h"
+#include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "lod_octree.h"
@@ -22,6 +23,11 @@ namespace zylann::voxel {
 class VoxelTool;
 class VoxelStream;
 class VoxelInstancer;
+
+class ShaderMaterialPoolVLT : public ShaderMaterialPool {
+public:
+	void recycle(Ref<ShaderMaterial> material);
+};
 
 // Paged terrain made of voxel blocks of variable level of detail.
 // Designed for highest view distances, preferably using smooth voxels.
@@ -89,6 +95,21 @@ public:
 
 	void set_threaded_update_enabled(bool enabled);
 	bool is_threaded_update_enabled() const;
+
+	void set_normalmap_enabled(bool enable);
+	bool is_normalmap_enabled() const;
+
+	void set_octahedral_normal_encoding(bool enable);
+	bool get_octahedral_normal_encoding() const;
+
+	void set_normalmap_tile_resolution_min(int resolution);
+	int get_normalmap_tile_resolution_min() const;
+
+	void set_normalmap_tile_resolution_max(int resolution);
+	int get_normalmap_tile_resolution_max() const;
+
+	void set_normalmap_begin_lod_index(int lod_index);
+	int get_normalmap_begin_lod_index() const;
 
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
@@ -265,6 +286,9 @@ private:
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
+	void apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob);
+	void apply_virtual_texture_update_to_block(
+			VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -278,6 +302,8 @@ private:
 	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading);
 
 	void _on_stream_params_changed();
+
+	void update_shader_material_pool_template();
 
 	void save_all_modified_blocks(bool with_copy);
 
@@ -318,6 +344,7 @@ private:
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	Ref<Material> _material;
+
 	// The main reason this pool even exists is because of this: https://github.com/godotengine/godot/issues/34741
 	// Blocks need individual shader parameters for several features,
 	// so a lot of ShaderMaterial copies using the same shader are created.
@@ -326,7 +353,7 @@ private:
 	// changes (which is debatable since only the edited material needs this, if it even is edited!).
 	// The problem is, that also means every time `ShaderMaterial::duplicate()` is called, when it assigns `shader`,
 	// it has to add a connection to a HUGE list. Which is very slow, enough to cause stutters.
-	std::vector<Ref<ShaderMaterial>> _shader_material_pool;
+	ShaderMaterialPoolVLT _shader_material_pool;
 
 	FixedArray<VoxelMeshMap<VoxelMeshBlockVLT>, constants::MAX_LOD> _mesh_maps_per_lod;
 
@@ -358,6 +385,14 @@ private:
 	// thread that updates fading blocks. If a mesh block is destroyed, these maps should be updated at the same time.
 	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
 	FixedArray<std::map<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
+
+	struct FadingVirtualTexture {
+		Vector3i block_position;
+		uint32_t lod_index;
+		float progress;
+	};
+
+	std::vector<FadingVirtualTexture> _fading_virtual_textures;
 
 	VoxelInstancer *_instancer = nullptr;
 

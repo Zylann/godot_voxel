@@ -85,8 +85,11 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int SaveBlockDataTask::get_priority() {
-	return 0;
+TaskPriority SaveBlockDataTask::get_priority() {
+	TaskPriority p;
+	p.band2 = constants::TASK_PRIORITY_SAVE_BAND2;
+	p.band3 = constants::TASK_PRIORITY_BAND3_DEFAULT;
+	return p;
 }
 
 bool SaveBlockDataTask::is_cancelled() {

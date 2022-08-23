@@ -1,6 +1,6 @@
 #include "voxel_stream_region_files.h"
 #include "../../engine/voxel_engine.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/string.h"
 #include "../../util/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"

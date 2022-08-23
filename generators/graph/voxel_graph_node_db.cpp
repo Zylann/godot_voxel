@@ -1374,10 +1374,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 						math::sdf_polynomial_smooth_union_side(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
-						ctx.ignore_input(0);
+						ctx.ignore_input(1);
 						break;
 					case math::SDF_ONLY_B:
-						ctx.ignore_input(1);
+						ctx.ignore_input(0);
 						break;
 					case math::SDF_BOTH:
 						break;
@@ -1391,10 +1391,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				const math::SdfAffectingArguments args = math::sdf_union_side(a, b);
 				switch (args) {
 					case math::SDF_ONLY_A:
-						ctx.ignore_input(0);
+						ctx.ignore_input(1);
 						break;
 					case math::SDF_ONLY_B:
-						ctx.ignore_input(1);
+						ctx.ignore_input(0);
 						break;
 					case math::SDF_BOTH:
 						break;
@@ -1468,10 +1468,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 						math::sdf_polynomial_smooth_subtract_side(a, b, params.smoothness);
 				switch (args) {
 					case math::SDF_ONLY_A:
-						ctx.ignore_input(0);
+						ctx.ignore_input(1);
 						break;
 					case math::SDF_ONLY_B:
-						ctx.ignore_input(1);
+						ctx.ignore_input(0);
 						break;
 					case math::SDF_BOTH:
 						break;
@@ -1485,10 +1485,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				const math::SdfAffectingArguments args = math::sdf_subtract_side(a, b);
 				switch (args) {
 					case math::SDF_ONLY_A:
-						ctx.ignore_input(0);
+						ctx.ignore_input(1);
 						break;
 					case math::SDF_ONLY_B:
-						ctx.ignore_input(1);
+						ctx.ignore_input(0);
 						break;
 					case math::SDF_BOTH:
 						break;

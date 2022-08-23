@@ -1,5 +1,7 @@
 #include "program_graph.h"
+#include "../../util/container_funcs.h"
 #include "../../util/errors.h"
+
 #include <core/io/file_access.h>
 #include <core/io/resource.h>
 #include <core/variant/variant.h>
@@ -274,33 +276,30 @@ void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std
 	std::unordered_set<uint32_t> visited_nodes;
 
 	while (nodes_to_process.size() > 0) {
+	found:
+		// The loop can come back multiple times to the same node, until all its dependencies have been processed.
 		const Node &node = get_node(nodes_to_process.back());
-		const uint32_t nodes_to_process_begin = nodes_to_process.size();
 		ZN_ASSERT_MSG(nodes_to_process.size() <= get_nodes_count(), "Invalid graph?");
 
-		// Find ancestors
-		for (uint32_t ii = 0; ii < node.inputs.size(); ++ii) {
-			const Port &p = node.inputs[ii];
-			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
-				const PortLocation src = *cit;
-				// A node can have two connections to the same destination node
-				if (range_contains(nodes_to_process, src.node_id, nodes_to_process_begin, nodes_to_process.size())) {
-					continue;
+		// Pick first non-visited dependency
+		for (const Port &port : node.inputs) {
+			for (const PortLocation src : port.connections) {
+				if (visited_nodes.find(src.node_id) == visited_nodes.end()) {
+					nodes_to_process.push_back(src.node_id);
+					goto found;
 				}
-				if (visited_nodes.find(src.node_id) != visited_nodes.end()) {
-					continue;
-				}
-				nodes_to_process.push_back(src.node_id);
 			}
 		}
 
-		if (nodes_to_process_begin == nodes_to_process.size()) {
-			// No ancestor to visit, process the node
-			out_order.push_back(node.id);
-			visited_nodes.insert(node.id);
-			nodes_to_process.pop_back();
-		}
+		// No dependencies left to visit, process node
+		out_order.push_back(node.id);
+		visited_nodes.insert(node.id);
+		nodes_to_process.pop_back();
 	}
+
+#if DEBUG_ENABLED
+	ZN_ASSERT(!has_duplicate(to_span_const(out_order)));
+#endif
 }
 
 void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const {
@@ -319,37 +318,6 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uin
 			}
 
 			deps.push_back(src.node_id);
-		}
-	}
-}
-
-void ProgramGraph::find_depth_first(uint32_t start_node_id, std::vector<uint32_t> &order) const {
-	// Finds each descendant from the given node, and returns them in the order they were found, depth-first.
-
-	std::vector<uint32_t> nodes_to_process;
-	std::unordered_set<uint32_t> visited_nodes;
-
-	nodes_to_process.push_back(start_node_id);
-
-	while (nodes_to_process.size() > 0) {
-		const Node &node = get_node(nodes_to_process.back());
-		nodes_to_process.pop_back();
-		uint32_t nodes_to_process_begin = nodes_to_process.size();
-		order.push_back(node.id);
-		visited_nodes.insert(node.id);
-
-		for (uint32_t oi = 0; oi < node.outputs.size(); ++oi) {
-			const Port &p = node.outputs[oi];
-			for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
-				PortLocation dst = *cit;
-				if (range_contains(nodes_to_process, dst.node_id, nodes_to_process_begin, nodes_to_process.size())) {
-					continue;
-				}
-				if (visited_nodes.find(dst.node_id) != visited_nodes.end()) {
-					continue;
-				}
-				nodes_to_process.push_back(dst.node_id);
-			}
 		}
 	}
 }

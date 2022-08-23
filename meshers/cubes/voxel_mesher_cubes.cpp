@@ -1,6 +1,7 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include <core/math/geometry_2d.h>
 
@@ -678,7 +679,7 @@ Ref<Image> make_greedy_atlas(
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 			const Vector2i dst_pos = result_points[i];
 			Span<const Color8> src_data =
-					const_span_from_position_and_size(atlas_data.colors, im.first_color_index, im.size_x * im.size_y);
+					to_span_from_position_and_size(atlas_data.colors, im.first_color_index, im.size_x * im.size_y);
 
 			// Blit rectangle
 			for (unsigned int y = 0; y < im.size_y; ++y) {

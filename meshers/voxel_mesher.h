@@ -3,6 +3,7 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
+#include "../util/span.h"
 
 #include <scene/resources/mesh.h>
 #include <vector>
@@ -26,13 +27,13 @@ public:
 		const VoxelBufferInternal &voxels;
 		// When using LOD, some meshers can use the generator and edited voxels to affine results.
 		// If not provided, the mesher will only use `voxels`.
-		VoxelGenerator *generator;
-		const VoxelDataLodMap *data;
+		VoxelGenerator *generator = nullptr;
+		const VoxelDataLodMap *data = nullptr;
 		// Origin of the block is required when doing deep sampling.
 		Vector3i origin_in_voxels;
 		// LOD index. 0 means highest detail. 1 means half detail etc.
-		// Not initialized because it confused GCC (???)
-		uint8_t lod; // = 0;
+		// TODO Rename `lod_index`
+		uint8_t lod = 0;
 		// If true, collision information is required.
 		// Sometimes it doesn't change anything as the rendering mesh can be used as collider,
 		// but in other setups it can be different and will be returned in `collision_surface`.
@@ -40,6 +41,9 @@ public:
 		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
 		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
 		bool lod_hint = false;
+		// If true, the mesher can collect some extra information which can be useful to speed up virtual texture
+		// baking. Depends on the mesher.
+		bool virtual_texture_hint = false;
 	};
 
 	struct Output {
@@ -69,11 +73,13 @@ public:
 		Ref<Image> atlas_image;
 	};
 
+	static bool is_mesh_empty(const std::vector<Output::Surface> &surfaces);
+
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials);
+	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error

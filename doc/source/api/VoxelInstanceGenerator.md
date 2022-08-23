@@ -14,24 +14,24 @@ Note: to generate voxels, see [VoxelGenerator](VoxelGenerator.md).
 ## Properties: 
 
 
-Type             | Name                                             | Default     
----------------- | ------------------------------------------------ | ------------
-`float`          | [density](#i_density)                            | 0.1         
-`int`            | [emit_mode](#i_emit_mode)                        | 0           
-`float`          | [max_height](#i_max_height)                      | 3.40282e+38 
-`float`          | [max_scale](#i_max_scale)                        | 1.0         
-`float`          | [max_slope_degrees](#i_max_slope_degrees)        | 180.0       
-`float`          | [min_height](#i_min_height)                      | 1.17549e-38 
-`float`          | [min_scale](#i_min_scale)                        | 1.0         
-`float`          | [min_slope_degrees](#i_min_slope_degrees)        | 0.0         
-`FastNoiseLite`  | [noise](#i_noise)                                |             
-`int`            | [noise_dimension](#i_noise_dimension)            | 1           
-`float`          | [noise_on_scale](#i_noise_on_scale)              | 0.0         
-`float`          | [offset_along_normal](#i_offset_along_normal)    | 0.0         
-`bool`           | [random_rotation](#i_random_rotation)            | true        
-`bool`           | [random_vertical_flip](#i_random_vertical_flip)  | false       
-`int`            | [scale_distribution](#i_scale_distribution)      | 1           
-`float`          | [vertical_alignment](#i_vertical_alignment)      | 1.0         
+Type     | Name                                             | Default     
+-------- | ------------------------------------------------ | ------------
+`float`  | [density](#i_density)                            | 0.1         
+`int`    | [emit_mode](#i_emit_mode)                        | 0           
+`float`  | [max_height](#i_max_height)                      | 3.40282e+38 
+`float`  | [max_scale](#i_max_scale)                        | 1.0         
+`float`  | [max_slope_degrees](#i_max_slope_degrees)        | 180.0       
+`float`  | [min_height](#i_min_height)                      | 1.17549e-38 
+`float`  | [min_scale](#i_min_scale)                        | 1.0         
+`float`  | [min_slope_degrees](#i_min_slope_degrees)        | 0.0         
+`Noise`  | [noise](#i_noise)                                |             
+`int`    | [noise_dimension](#i_noise_dimension)            | 1           
+`float`  | [noise_on_scale](#i_noise_on_scale)              | 0.0         
+`float`  | [offset_along_normal](#i_offset_along_normal)    | 0.0         
+`bool`   | [random_rotation](#i_random_rotation)            | true        
+`bool`   | [random_vertical_flip](#i_random_vertical_flip)  | false       
+`int`    | [scale_distribution](#i_scale_distribution)      | 1           
+`float`  | [vertical_alignment](#i_vertical_alignment)      | 1.0         
 <p></p>
 
 ## Enumerations: 
@@ -84,7 +84,7 @@ enum **Dimension**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_min_slope_degrees"></span> **min_slope_degrees** = 0.0
 
 
-- [FastNoiseLite](FastNoiseLite.md)<span id="i_noise"></span> **noise**
+- [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)<span id="i_noise"></span> **noise**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_dimension"></span> **noise_dimension** = 1
@@ -108,4 +108,4 @@ enum **Dimension**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_vertical_alignment"></span> **vertical_alignment** = 1.0
 
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

@@ -1490,7 +1490,7 @@ void VoxelTerrain::process_meshing() {
 			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
 			task->volume_id = _volume_id;
-			task->position = mesh_block_pos;
+			task->mesh_block_position = mesh_block_pos;
 			task->lod_index = 0;
 			task->meshing_dependency = _meshing_dependency;
 			task->data_block_size = get_data_block_size();
@@ -1523,8 +1523,8 @@ void VoxelTerrain::process_meshing() {
 			}
 #endif
 
-			init_sparse_grid_priority_dependency(task->priority_dependency, task->position, get_mesh_block_size(),
-					shared_viewers_data, volume_transform);
+			init_sparse_grid_priority_dependency(task->priority_dependency, task->mesh_block_position,
+					get_mesh_block_size(), shared_viewers_data, volume_transform);
 
 			VoxelEngine::get_singleton().push_async_task(task);
 

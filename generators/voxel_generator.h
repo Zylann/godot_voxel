@@ -1,6 +1,8 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
+#include "../util/math/vector3f.h"
+#include "../util/span.h"
 #include <core/io/resource.h>
 #include <core/math/vector3i.h>
 #include <core/variant/typed_array.h>
@@ -47,13 +49,16 @@ public:
 		return false;
 	}
 
+	virtual bool supports_series_generation() const {
+		return false;
+	}
+
 	// TODO Not sure if it's a good API regarding performance
 	virtual VoxelSingleValue generate_single(Vector3i pos, unsigned int channel);
 
-	// virtual void generate_series(
-	// 		Span<const Vector3> positions,
-	// 		Span<const uint8_t> channels,
-	// 		Span<Span<VoxelSingleValue>> out_values);
+	virtual void generate_series(Span<const float> positions_x, Span<const float> positions_y,
+			Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
+			Vector3f max_pos);
 
 	// Declares the channels this generator will use
 	virtual int get_used_channels_mask() const;

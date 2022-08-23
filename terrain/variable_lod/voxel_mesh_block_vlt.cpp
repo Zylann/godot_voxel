@@ -1,6 +1,6 @@
 #include "voxel_mesh_block_vlt.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/mesh.h"
 #include "../../util/profiling.h"
 #include "../free_mesh_task.h"
 
@@ -150,7 +150,8 @@ void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 
 	if (_shader_material.is_valid()) {
 		const Transform3D local_transform(Basis(), _position_in_voxels);
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
+		_shader_material->set_shader_uniform(
+				VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
 	}
 }
 
@@ -187,7 +188,7 @@ void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
 		tm |= bits[Cube::SIDE_POSITIVE_Z] << 5;
 
 		// TODO Godot 4: we may replace this with a per-instance parameter so we can lift material access limitation
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton().u_transition_mask, tm);
+		_shader_material->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 		DirectMeshInstance &mi = _transition_mesh_instances[dir];
@@ -286,7 +287,7 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 	}
 
 	if (_shader_material.is_valid()) {
-		_shader_material->set_shader_param(VoxelStringNames::get_singleton().u_lod_fade, p);
+		_shader_material->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, p);
 	}
 
 	return finished;

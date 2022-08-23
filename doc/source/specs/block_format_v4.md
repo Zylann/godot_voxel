@@ -7,7 +7,7 @@ This page describes the binary format used by default in this module to serializ
 
 ### Changes from version 3
 
-- Metadata uses a new format which no longer depends on Godot Engine.
+- Metadata uses a new format which no longer has to depend on Godot Engine (can still use `Variant` but other options are available internally).
 
 
 Specification
@@ -21,7 +21,7 @@ By default, little-endian.
 
 A block is usually serialized within a compressed data container.
 This is the format provided by the `VoxelBlockSerializer` utility class. If you don't use compression, the layout will correspond to `BlockData` described in the next listing, and won't have this wrapper.
-See [Compressed container format](#compressed-container) for specification.
+See [Compressed container format](compressed_container.md) for specification.
 
 ### Block format
 

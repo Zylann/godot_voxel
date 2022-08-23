@@ -2,6 +2,7 @@
 #define VOXEL_CONSTANTS_H
 
 #include <core/math/math_defs.h>
+#include <cstdint>
 
 namespace zylann::voxel::constants {
 
@@ -30,7 +31,8 @@ static const float SQRT3 = 1.73205080757;
 
 // Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.
 // For storing SDF, we need a range of values that extends beyond that, in particular for better LOD.
-// So we can scale it to better fit the resolution.
+// So we can scale it to better fit the resolution. These scales were chosen arbitrarily, but they should work well for
+// the corresponding precisions.
 static const float QUANTIZED_SDF_8_BITS_SCALE = 0.1f;
 static const float QUANTIZED_SDF_8_BITS_SCALE_INV = 1.f / 0.1f;
 static const float QUANTIZED_SDF_16_BITS_SCALE = 0.002f;
@@ -39,6 +41,18 @@ static const float QUANTIZED_SDF_16_BITS_SCALE_INV = 1.f / 0.002f;
 static const unsigned int DEFAULT_BLOCK_SIZE_PO2 = 4;
 
 static const float DEFAULT_COLLISION_MARGIN = 0.04f;
+
+// By default, tasks are sorted first by the value of band2.
+// When equal, they are sorted by band1, which usually depends on LOD.
+// When equal, they are sorted by band0, which depends on distance from viewer (when relevant).
+// band3 takes precedence over band2 but isn't used much for now.
+static const uint8_t TASK_PRIORITY_MESH_BAND2 = 10;
+static const uint8_t TASK_PRIORITY_GENERATE_BAND2 = 10;
+static const uint8_t TASK_PRIORITY_LOAD_BAND2 = 10;
+static const uint8_t TASK_PRIORITY_SAVE_BAND2 = 9;
+static const uint8_t TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2 = 8; // After meshes
+
+static const uint8_t TASK_PRIORITY_BAND3_DEFAULT = 10;
 
 } // namespace zylann::voxel::constants
 

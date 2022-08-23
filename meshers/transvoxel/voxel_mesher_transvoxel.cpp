@@ -1,9 +1,11 @@
 #include "voxel_mesher_transvoxel.h"
+#include "../../engine/voxel_engine.h"
 #include "../../generators/voxel_generator.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data_map.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
@@ -12,6 +14,19 @@ namespace zylann::voxel {
 
 namespace {
 Ref<ShaderMaterial> g_minimal_shader_material;
+} //namespace
+
+namespace transvoxel {
+thread_local MeshArrays tls_mesh_arrays;
+thread_local std::vector<CellInfo> tls_cell_infos;
+} //namespace transvoxel
+
+const transvoxel::MeshArrays &VoxelMesherTransvoxel::get_mesh_cache_from_current_thread() {
+	return transvoxel::tls_mesh_arrays;
+}
+
+Span<const transvoxel::CellInfo> VoxelMesherTransvoxel::get_cell_info_from_current_thread() {
+	return to_span(transvoxel::tls_cell_infos);
 }
 
 void VoxelMesherTransvoxel::load_static_resources() {
@@ -190,7 +205,6 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	ZN_PROFILE_SCOPE();
 
 	static thread_local transvoxel::Cache tls_cache;
-	static thread_local transvoxel::MeshArrays tls_mesh_arrays;
 	// static thread_local FixedArray<transvoxel::MeshArrays, Cube::SIDE_COUNT> tls_transition_mesh_arrays;
 	static thread_local transvoxel::MeshArrays tls_simplified_mesh_arrays;
 
@@ -200,7 +214,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// These vectors are re-used.
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
-	tls_mesh_arrays.clear();
+	transvoxel::MeshArrays &mesh_arrays = transvoxel::tls_mesh_arrays;
+	mesh_arrays.clear();
 
 	const VoxelBufferInternal &voxels = input.voxels;
 	if (voxels.is_uniform(sdf_channel)) {
@@ -211,6 +226,11 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
+	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
+	if (input.virtual_texture_hint) {
+		transvoxel::tls_cell_infos.clear();
+		cell_infos = &transvoxel::tls_cell_infos;
+	}
 
 	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod > 0) {
 		const DeepSampler ds(*input.generator, *input.data, sdf_channel, input.origin_in_voxels);
@@ -219,23 +239,23 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// `generate_single` in between, knowing they will all be done within the specified area.
 
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, &ds);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, &ds, cell_infos);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
-				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, tls_mesh_arrays, nullptr);
+				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, nullptr, cell_infos);
 	}
 
-	if (tls_mesh_arrays.vertices.size() == 0) {
+	if (mesh_arrays.vertices.size() == 0) {
 		// The mesh can be empty
 		return;
 	}
 
-	transvoxel::MeshArrays *combined_mesh_arrays = &tls_mesh_arrays;
+	transvoxel::MeshArrays *combined_mesh_arrays = &mesh_arrays;
 	if (_mesh_optimization_params.enabled) {
 		// TODO When voxel texturing is enabled, this will decrease quality a lot.
 		// There is no support yet for taking textures into account when simplifying.
 		// See https://github.com/zeux/meshoptimizer/issues/158
-		simplify(tls_mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
+		simplify(mesh_arrays, tls_simplified_mesh_arrays, _mesh_optimization_params.target_ratio,
 				_mesh_optimization_params.error_threshold);
 
 		combined_mesh_arrays = &tls_simplified_mesh_arrays;
@@ -395,18 +415,19 @@ void VoxelMesherTransvoxel::_bind_methods() {
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
 			"set_texturing_mode", "get_texturing_mode");
 
+	ADD_GROUP("Mesh optimization", "mesh_optimization_");
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "mesh_optimization_enabled"), "set_mesh_optimization_enabled",
 			"is_mesh_optimization_enabled");
-
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_error_threshold"),
 			"set_mesh_optimization_error_threshold", "get_mesh_optimization_error_threshold");
-
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "mesh_optimization_target_ratio"), "set_mesh_optimization_target_ratio",
 			"get_mesh_optimization_target_ratio");
 
+	ADD_GROUP("Advanced", "");
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deep_sampling_enabled"), "set_deep_sampling_enabled",
 			"is_deep_sampling_enabled");
-
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled");
 

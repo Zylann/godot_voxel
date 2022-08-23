@@ -102,6 +102,8 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Constants, enums and macros `CAPSLOCK_CASE`
 - Other names `snake_case`
 - Globals prefixed with `g_`
+- Statics prefixed with `s_`
+- Thread-locals prefixed with `tls_`
 - Parameters prefixed with `p_`, but not really enforced so far. Matters for big functions.
 - Private and protected fields prefixed with `_`
 - Some private functions start with `_`, either to mimic Godot API, or if it's a re-used function that performs no checks
@@ -158,6 +160,7 @@ In performance-critical areas which run a lot:
 - Use data structures that are fit to the most frequent use over time (will often be either array, vector or hash map).
 - Consider statistics if their impact is negligible. It helps users to monitor how well the module performs even in release builds.
 - Profile your code, in release mode. This module is Tracy-friendly, see `util/profiling.hpp`.
+- Care about alignment when making data structures. For exmaple, pack fields smaller than 4 bytes so they use space better
 
 ### Godot API
 
@@ -237,8 +240,21 @@ If you debug the editor, Godot tends to print a lot more errors for things that 
 
 ### Debug print
 
+Godot:
+
 ```cpp
+#include <core/string/print_string.h>
+
 print_line(String("Hello {0}, my age is {1}").format(varray(name, age)));
+```
+
+Non-Godot:
+
+```cpp
+#include "util/log.h"
+#include "util/string_funcs.h"
+
+println(format("Hello {}, my age is {}", name, age));
 ```
 
 ### Pretty printing
@@ -272,7 +288,7 @@ A profiling scope bounds a section of code. It takes the time before, the time a
 
 The macros are profiler-agnostic, so if you want to use another profiler it is possible to change them.
 
-You need to include `utility/profiling.h` to access the macros.
+You need to include `util/profiling.h` to access the macros.
 
 To profile a whole function:
 ```cpp

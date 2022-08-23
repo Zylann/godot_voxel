@@ -38,6 +38,16 @@ VoxelStringNames::VoxelStringNames() {
 	u_block_local_transform = StaticCString::create("u_block_local_transform");
 	u_lod_fade = StaticCString::create("u_lod_fade");
 
+	voxel_normalmap_atlas = StaticCString::create("voxel_normalmap_atlas");
+	voxel_normalmap_lookup = StaticCString::create("voxel_normalmap_lookup");
+
+	u_voxel_normalmap_atlas = StaticCString::create("u_voxel_normalmap_atlas");
+	u_voxel_cell_lookup = StaticCString::create("u_voxel_cell_lookup");
+	u_voxel_cell_size = StaticCString::create("u_voxel_cell_size");
+	u_voxel_block_size = StaticCString::create("u_voxel_block_size");
+	u_voxel_virtual_texture_fade = StaticCString::create("u_voxel_virtual_texture_fade");
+	u_voxel_virtual_texture_tile_size = StaticCString::create("u_voxel_virtual_texture_tile_size");
+
 #ifdef DEBUG_ENABLED
 	_voxel_debug_vt_position = StaticCString::create("_voxel_debug_vt_position");
 #endif

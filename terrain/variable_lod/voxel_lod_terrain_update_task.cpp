@@ -4,6 +4,7 @@
 #include "../../engine/mesh_block_task.h"
 #include "../../engine/save_block_data_task.h"
 #include "../../engine/voxel_engine.h"
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
 #include "../../util/math/conv.h"
@@ -1206,10 +1207,10 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 
 			auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
 			// A block must have been allocated before we ask for a mesh update
-			ERR_CONTINUE(mesh_block_it == lod.mesh_map_state.map.end());
+			ZN_ASSERT_CONTINUE(mesh_block_it != lod.mesh_map_state.map.end());
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
 			// All blocks we get here must be in the scheduled state
-			ERR_CONTINUE(mesh_block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
+			ZN_ASSERT_CONTINUE(mesh_block.state == VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT);
 
 			// Get block and its neighbors
 			// VoxelEngine::BlockMeshInput mesh_request;
@@ -1219,13 +1220,22 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 			MeshBlockTask *task = memnew(MeshBlockTask);
 			task->volume_id = volume_id;
-			task->position = mesh_block_pos;
+			task->mesh_block_position = mesh_block_pos;
 			task->lod_index = lod_index;
 			task->lod_hint = true;
 			task->meshing_dependency = meshing_dependency;
 			task->data_block_size = data_block_size;
 			task->data = data_ptr;
 			task->collision_hint = settings.collision_enabled;
+			task->virtual_texture_settings = settings.virtual_texture_settings;
+
+			// Don't update a virtual texture if one update is already processing
+			if (settings.virtual_texture_settings.enabled &&
+					lod_index >= settings.virtual_texture_settings.begin_lod_index &&
+					mesh_block.virtual_texture_state != VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING) {
+				mesh_block.virtual_texture_state = VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
+				task->require_virtual_texture = true;
+			}
 
 			const Box3i data_box =
 					Box3i(render_to_data_factor * mesh_block_pos, Vector3iUtil::create(render_to_data_factor))
@@ -1248,8 +1258,11 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 				++task->blocks_count;
 			});
 
-			init_sparse_octree_priority_dependency(task->priority_dependency, task->position, task->lod_index,
-					mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
+			// TODO There is inconsistency with coordinates sent to this function.
+			// Sometimes we send data block coordinates, sometimes we send mesh block coordinates. They aren't always
+			// the same, it might cause issues in priority sorting?
+			init_sparse_octree_priority_dependency(task->priority_dependency, task->mesh_block_position,
+					task->lod_index, mesh_block_size, shared_viewers_data, volume_transform, settings.lod_distance);
 
 			task_scheduler.push_main_task(task);
 

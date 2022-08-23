@@ -214,8 +214,10 @@ Each index tell which texture needs to be used, and each weight respectively tel
 Here is the shader code you will need:
 
 ```glsl
+shader_type spatial;
+
 // Textures should preferably be in a TextureArray, so looking them up is cheap
-uniform sampler2DArray u_texture_array : hint_albedo;
+uniform sampler2DArray u_texture_array : source_color;
 
 // We'll need to pass data from the vertex shader to the fragment shader
 varying vec4 v_indices;
@@ -338,14 +340,22 @@ This can be done by saturating SDF values in the voxel generator: they have to b
 You may also make shading hard-edged in your shader for better results.
 
 
-### Special uniforms
+Shader API reference
+----------------------
 
-If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information.
+If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information. Some are necessary for features to work.
 
-Parameter name             | Type     | Description
----------------------------|----------|-----------------------
-`u_lod_fade`               | `vec2`   | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
-`u_block_local_transform`  | `mat4`   | Transform of the rendered blockl, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+Parameter name                      | Type         | Description
+------------------------------------|--------------|------------------------------
+`u_lod_fade`                        | `vec2`       | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
+`u_block_local_transform`           | `mat4`       | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
+`u_voxel_cell_lookup`               | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_normalmap_atlas`           | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_virtual_texture_tile_size` | `int`        | Resolution in pixels of each tile in `u_voxel_normalmap_atlas`.
+`u_voxel_cell_size`                 | `float`      | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
+`u_voxel_block_size`                | `int`        | Size of the cubic block of voxels that the mesh represents, in voxels.
+`u_voxel_virtual_texture_fade`      | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in virtual textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no virtual textures.
+`u_transition_mask`                 | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
 
 
 Level of detail (LOD)
@@ -418,7 +428,7 @@ LOD applies both to meshes and to voxel data, keeping memory usage relatively co
 If this limitation isn't suitable for your game, a workaround is to enable `full_load_mode`. This will load all edited chunks present in the `stream` (if any), such that all the data is available and can be edited anywhere without wait. Non-edited chunks will cause the generator to be queried on the fly instead of being cached. Because data streaming won't take place, keep in mind more memory will be used the more edited chunks the terrain contains.
 
 
-### LOD fading (experimental)
+### LOD fading
 
 LOD changes can introduce some mild "popping" in the landscape, which might be a bit disturbing. One way to attenuate this problem is to fade meshes when they switch from two different levels of details. When a "parent" mesh subdivides into higher-resolution "child" meshes, they can be both rendered at the same time for a brief period of time, while the parent fades out and the children fade in, and vice-versa.
 This trick requires you to use a `ShaderMaterial` on `VoxelLodTerrain`, as the rendering part needs an extra bit of code inside the fragment shader.
@@ -463,8 +473,165 @@ Note: this is an example of implementation. There might be more optimized ways t
 
 This will discard such that pixels of the two meshes will be complementary without overlap. `discard` is used so the mesh can remain rendered in the same pass (usually the opaque pass).
 
-This technique is still imperfect because of several limitations:
+This technique has some limitations:
 
-- Transition meshes used to stitch blocks of different LOD are currently not faded. Doing so requires much more work, and in fact, the way these meshes are handled in the first place could be simplified if Godot allowed more fine-grained access to `ArrayMesh`, like switching to another index buffer without re-uploading the entire mesh.
-- Shadow maps still create self-shadowing. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off completely will make shadows pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
+- Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
 
+
+### Distance normals
+
+LOD decimates geometric details quite fast in the distance. It can be tuned up, but it quickly gets very expensive to generate and render a lot of polygons. An alternative is to generate normalmaps instead for medium/far meshes, to give the illusion of detail on otherwise flat polygons.
+
+This engine contains an implementation of such a technique adapted to voxel meshes (thanks to [Victor Careil](https://twitter.com/phyronnaz/status/1544005424495607809) for the insight!), so it can work even with overhangs.
+
+Here is a landscape without the feature:
+
+![Landscape without distance normals](images/distance_normals_off.webp)
+
+With the feature:
+
+![Landscape with distance normals](images/distance_normals_on.webp)
+
+The number of polygons is the same:
+
+![Landscape wireframe](images/distance_normals_wireframe.webp)
+
+This can be turned on in the inspector when using `VoxelLodTerrain`. The cost is slower mesh generation and more memory usage to store normalmap textures.
+
+This feature is only available in `VoxelLodTerrain`. It also works best with data streaming turned off (`full_load_mode_enabled`), because being able to see all details from far away requires to not unload edited blocks. It will still use the generator if data streaming is on, but you won't see edited regions.
+
+#### Shader 
+
+Rendering these normals requires special shader code in your terrain material.
+
+```glsl
+// NOTE: this is not a full shader code, just the part of it required for this feature
+
+// TODO Godot is not binding integer samplers properly.
+// See https://github.com/godotengine/godot/issues/57841
+// TODO Workaround using float texelFetch doesnt't work either...
+// See https://github.com/godotengine/godot/issues/31732
+//uniform usampler2D u_voxel_cell_lookup;
+uniform sampler2D u_voxel_cell_lookup : filter_nearest;
+
+uniform sampler2D u_voxel_normalmap_atlas;
+uniform int u_voxel_virtual_texture_tile_size;
+uniform float u_voxel_cell_size;
+uniform int u_voxel_block_size;
+
+varying vec3 v_vertex_pos_model;
+
+
+vec2 pad_uv(vec2 uv, float amount) {
+	return uv * (1.0 - 2.0 * amount) + vec2(amount);
+}
+
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
+vec3 octahedron_decode(vec2 f) {
+	f = f * 2.0 - 1.0;
+	// https://twitter.com/Stubbesaurus/status/937994790553227264
+	vec3 n = vec3(f.x, f.y, 1.0 - abs(f.x) - abs(f.y));
+	float t = clamp(-n.z, 0.0, 1.0);
+	// GLSL didn't accept the vector version of this. Any impact?
+	n.x += n.x >= 0.0 ? -t : t;
+	n.y += n.y >= 0.0 ? -t : t;
+	return /*f == vec2(0.0) ? vec3(0.0) : */normalize(n);
+}
+
+vec3 get_voxel_normal_model() {
+	float cell_size = u_voxel_cell_size;
+	int block_size = u_voxel_block_size;
+	int normalmap_tile_size = u_voxel_virtual_texture_tile_size;
+	
+	ivec3 cell_pos = ivec3(floor(v_vertex_pos_model / cell_size));
+	vec3 cell_fract = fract(v_vertex_pos_model / cell_size);
+	
+	int cell_index = cell_pos.x + cell_pos.y * block_size + cell_pos.z * block_size * block_size;
+	int lookup_sqri = int(ceil(sqrt(float(block_size * block_size * block_size))));
+	ivec2 lookup_pos = ivec2(cell_index % lookup_sqri, cell_index / lookup_sqri);
+	//uvec3 lookup_value = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
+	//vec3 lookup_valuef = texelFetch(u_voxel_cell_lookup, lookup_pos, 0).rgb;
+	vec2 lookup_valuef = texture(u_voxel_cell_lookup, (vec2(lookup_pos) + vec2(0.5)) / float(lookup_sqri)).rg;
+	ivec2 lookup_value = ivec2(round(lookup_valuef * 255.0));
+	int tile_index = lookup_value.r | ((lookup_value.g & 0x3f) << 8);
+	int tile_direction = lookup_value.g >> 6;
+	
+	vec3 tile_texcoord = vec3(0.0, 0.0, float(tile_index));
+	// TODO Could do it non-branching with weighted addition
+	switch(tile_direction) {
+		case 0:
+			tile_texcoord.xy = cell_fract.zy;
+			break;
+		case 1:
+			tile_texcoord.xy = cell_fract.xz;
+			break;
+		case 2:
+			tile_texcoord.xy = cell_fract.xy;
+			break;
+	}
+	float padding = 0.5 / normalmap_tile_size;
+	tile_texcoord.xy = pad_uv(tile_texcoord.xy, padding);
+
+	ivec2 atlas_size = textureSize(u_voxel_normalmap_atlas, 0);
+	int tiles_per_row = atlas_size.x / normalmap_tile_size;
+	ivec2 tile_pos_pixels = ivec2(tile_index % tiles_per_row, tile_index / tiles_per_row) * normalmap_tile_size;
+	vec2 atlas_texcoord = (vec2(tile_pos_pixels) + float(normalmap_tile_size) * tile_texcoord) / vec2(atlas_size);
+	vec3 encoded_normal = texture(u_voxel_normalmap_atlas, atlas_texcoord).rgb;
+
+	// You may switch between these two snippets depending on if you use octahedral compression or not
+	// 1) XYZ
+	vec3 tile_normal_model = 2.0 * encoded_normal - vec3(1.0);
+	// 2) Octahedral
+	// vec3 tile_normal_model = octahedron_decode(encoded_normal.rg);
+
+	return tile_normal_model;
+}
+
+vec3 get_voxel_normal_view(vec3 geometry_normal_view, mat4 model_to_view) {
+	if (u_voxel_cell_size == 0.0) {
+		// Virtual texture not available in this mesh
+		return geometry_normal_view;
+	}
+	vec3 debug;
+	vec3 tile_normal_model = get_voxel_normal_model(debug);
+	vec3 tile_normal_view = (model_to_view * vec4(tile_normal_model, 0.0)).xyz;
+	// In some edge cases the normal can be invalid (length close to zero), causing black artifacts.
+	// Workaround this by falling back on the geometry normal.
+	vec3 normal = mix(geometry_normal_view, tile_normal_view, dot(tile_normal_view, tile_normal_view));
+	return normal;
+}
+
+void vertex() {
+	// [...]
+
+	// Note, if you use Transvoxel, this may be placed after modifications to `VERTEX`
+	v_vertex_pos_model = VERTEX;
+
+	// [...]
+}
+
+void fragment() {
+	// [...]
+
+	NORMAL = get_voxel_normal_view(NORMAL, VIEW_MATRIX * MODEL_MATRIX);
+
+	// [...]
+}
+```
+
+#### Details on the technique
+
+Normal-mapping usually requires texture coordinates (UVs). However, smooth voxel meshes aren't trivial to UV-map at runtime. Some methods exist to generate UV-maps on completely arbitrary meshes, but they are too expensive for realtime, or inappropriate for seamless chunked terrain. So instead, we can use a form of "virtual texturing".
+
+The mesh is first subdivided into a grid of cells (we can use Transvoxel cells, which are ready to use). In each cell, we pick an axis-aligned projection working best with triangles of the cell using the average of their normals. A tile can then be generated by projecting its pixels on triangles, evaluating a normal from voxel data, and storing it in an atlas (a TextureArray could be used, but it has more limited number of layers). A shader can then read the atlas using a lookup texture to find the tile. The lookup texture is a 3D texture that tells for each "cell" where is the tile in the atlas (but it can be stored as a 2D texture).
+
+![Image of an atlas of voxel normals](images/virtual_normalmap.webp)
+
+To generate pixels of each tile, we need to access SDF data from two sources:
+
+- The procedural generator
+- Edited voxels at LOD 0
+
+A classic method is used to obtain normals: on the desired position, we take 4 samples offset by a small step, compute their difference, and normalize the result. It's known as "forward differences" (see [Inigo Quilez's article about SDF normals](https://iquilezles.org/articles/normalsSDF/)).
+
+Since every mesh will have its own textures, another technique that comes in handy is [Octahedral Compression](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/). These normals are world-space, and encoding them in a texture naively would require 3 bytes per pixel (for X, Y, Z). With octahedral compression, we trade off a bit of quality for a much smaller size of 2 bytes per pixels.

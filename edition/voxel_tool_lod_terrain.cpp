@@ -3,7 +3,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/mesh.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
 #include "../util/tasks/async_dependency_tracker.h"
@@ -27,22 +27,6 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) : _terrain(te
 bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
 	return _terrain->is_area_editable(box);
-}
-
-template <typename Volume_F>
-float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
-	const Vector3i c = math::floor_to_int(pos);
-
-	const float s000 = f(Vector3i(c.x, c.y, c.z));
-	const float s100 = f(Vector3i(c.x + 1, c.y, c.z));
-	const float s010 = f(Vector3i(c.x, c.y + 1, c.z));
-	const float s110 = f(Vector3i(c.x + 1, c.y + 1, c.z));
-	const float s001 = f(Vector3i(c.x, c.y, c.z + 1));
-	const float s101 = f(Vector3i(c.x + 1, c.y, c.z + 1));
-	const float s011 = f(Vector3i(c.x, c.y + 1, c.z + 1));
-	const float s111 = f(Vector3i(c.x + 1, c.y + 1, c.z + 1));
-
-	return math::interpolate_trilinear(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
 }
 
 // Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.
@@ -611,17 +595,19 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			for (int i = 0; i < materials.size(); ++i) {
 				Ref<ShaderMaterial> sm = materials[i];
 				if (sm.is_valid() && sm->get_shader().is_valid() &&
-						sm->get_shader()->has_param(VoxelStringNames::get_singleton().u_block_local_transform)) {
+						sm->get_shader()->has_uniform(VoxelStringNames::get_singleton().u_block_local_transform)) {
 					// That parameter should have a valid default value matching the local transform relative to the
 					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
 					// duplicate.
 					sm = sm->duplicate(false);
-					sm->set_shader_param(VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
+					sm->set_shader_uniform(VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
 					materials[i] = sm;
 				}
 			}
 
-			Ref<Mesh> mesh = mesher->build_mesh(info.voxels, materials);
+			// TODO If normalmapping is used here with the Transvoxel mesher, we need to either turn it off just for
+			// this call, or to pass the right options
+			Ref<Mesh> mesh = mesher->build_mesh(info.voxels, materials, Dictionary());
 			// The mesh is not supposed to be null,
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());

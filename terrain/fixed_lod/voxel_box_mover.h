@@ -1,10 +1,14 @@
 #ifndef VOXEL_BOX_MOVER_H
 #define VOXEL_BOX_MOVER_H
 
-#include "voxel_terrain.h"
 #include <core/math/aabb.h>
+#include <core/object/ref_counted.h>
+
+class Node;
 
 namespace zylann::voxel {
+
+class VoxelTerrain;
 
 // Helper to get simple AABB physics
 class VoxelBoxMover : public RefCounted {

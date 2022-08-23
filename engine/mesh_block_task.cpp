@@ -1,10 +1,14 @@
 #include "mesh_block_task.h"
+#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_data_map.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/mesh.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
+#include "generate_distance_normalmap_task.h"
+//#include "../util/string_funcs.h" // Debug
+#include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "voxel_engine.h"
 
 namespace zylann::voxel {
@@ -260,7 +264,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
 			mesher->get_used_channels_mask(), meshing_dependency->generator, modifiers, data_block_size, lod_index,
-			position);
+			mesh_block_position);
 
 	// Could cache generator data from here if it was safe to write into the map
 	/*if (data != nullptr && cache_generated_blocks) {
@@ -295,17 +299,63 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		}
 	}*/
 
-	const Vector3i origin_in_voxels = position * (int(data_block_size) << lod_index);
+	const Vector3i mesh_block_size =
+			voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
+
+	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
 	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
-		lod_index, collision_hint, lod_hint };
+		lod_index, collision_hint, lod_hint, true };
 	mesher->build(_surfaces_output, input);
+
+	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
+
+	// Currently, Transvoxel only is supported in combination with virtual normalmap texturing, because the algorithm
+	// provides a cheap source for cells subdividing the mesh. It should be possible to obtain cells from any mesh, but
+	// it is more expensive to find them from scratch, and for now Transvoxel is the most viable algorithm for smooth
+	// terrain.
+	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
+
+	if (transvoxel_mesher.is_valid() && virtual_texture_settings.enabled && !mesh_is_empty &&
+			lod_index >= virtual_texture_settings.begin_lod_index && require_virtual_texture) {
+		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
+
+		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
+		Span<const transvoxel::CellInfo> cell_infos = VoxelMesherTransvoxel::get_cell_info_from_current_thread();
+		ZN_ASSERT(cell_infos.size() > 0 && mesh_arrays.vertices.size() > 0);
+
+		UniquePtr<TransvoxelCellIterator> cell_iterator = make_unique_instance<TransvoxelCellIterator>(cell_infos);
+
+		std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
+		virtual_textures->valid = false;
+		// This is stored here in case virtual texture rendering completes before the output of the current task gets
+		// dequeued in the main thread, since it runs in a separate asynchronous task
+		_virtual_textures = virtual_textures;
+
+		GenerateDistanceNormalmapTask *nm_task = ZN_NEW(GenerateDistanceNormalmapTask);
+		nm_task->cell_iterator = std::move(cell_iterator);
+		nm_task->mesh_vertices = mesh_arrays.vertices;
+		nm_task->mesh_normals = mesh_arrays.normals;
+		nm_task->mesh_indices = mesh_arrays.indices;
+		nm_task->generator = meshing_dependency->generator;
+		nm_task->voxel_data = data;
+		nm_task->mesh_block_size = mesh_block_size;
+		nm_task->lod_index = lod_index;
+		nm_task->mesh_block_position = mesh_block_position;
+		nm_task->volume_id = volume_id;
+		nm_task->virtual_textures = virtual_textures;
+		nm_task->virtual_texture_settings = virtual_texture_settings;
+		nm_task->priority_dependency = priority_dependency;
+
+		VoxelEngine::get_singleton().push_async_task(nm_task);
+	}
 
 	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
 		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);
 		_has_mesh_resource = true;
+
 	} else {
 		_has_mesh_resource = false;
 	}
@@ -313,9 +363,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	_has_run = true;
 }
 
-int MeshBlockTask::get_priority() {
+TaskPriority MeshBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
-	const int p = priority_dependency.evaluate(lod_index, &closest_viewer_distance_sq);
+	const TaskPriority p =
+			priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_MESH_BAND2, &closest_viewer_distance_sq);
 	_too_far = closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
@@ -339,12 +390,13 @@ void MeshBlockTask::apply_result() {
 				o.type = VoxelEngine::BlockMeshOutput::TYPE_DROPPED;
 			}
 
-			o.position = position;
+			o.position = mesh_block_position;
 			o.lod = lod_index;
 			o.surfaces = std::move(_surfaces_output);
 			o.mesh = _mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
+			o.virtual_textures = _virtual_textures;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);

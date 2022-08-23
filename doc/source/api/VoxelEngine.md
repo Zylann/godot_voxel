@@ -3,14 +3,14 @@
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
 
-Singleton handling common voxel processing in background threads.
+Singleton handling common voxel processing tasks in background threads.
 
 ## Methods: 
 
 
-Return                                                                              | Signature                      
------------------------------------------------------------------------------------ | -------------------------------
-[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_stats](#i_get_stats) ( )  
+Return                                                                              | Signature                           
+----------------------------------------------------------------------------------- | ------------------------------------
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_stats](#i_get_stats) ( ) const 
 <p></p>
 
 ## Method Descriptions
@@ -48,4 +48,4 @@ The returned dictionary has the following structure:
 
 ```
 
-_Generated on Nov 06, 2021_
+_Generated on Aug 20, 2022_

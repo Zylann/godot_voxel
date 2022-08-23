@@ -203,7 +203,7 @@ void VoxelBufferInternal::set_default_values(FixedArray<uint64_t, VoxelBufferInt
 
 uint64_t VoxelBufferInternal::get_voxel(int x, int y, int z, unsigned int channel_index) const {
 	ZN_ASSERT_RETURN_V(channel_index < MAX_CHANNELS, 0);
-	ZN_ASSERT_RETURN_V_MSG(is_position_valid(x, y, z), 0, format("At position ({}, {}, {})", x, y, z));
+	ZN_ASSERT_RETURN_V_MSG(is_position_valid(x, y, z), 0, format("Invalid position ({}, {}, {})", x, y, z));
 
 	const Channel &channel = _channels[channel_index];
 

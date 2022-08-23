@@ -8,7 +8,7 @@ Explore categories on the left to get started!
 - [License](https://github.com/Zylann/godot_voxel/blob/master/LICENSE.md)
 
 !!! note
-    This module is under development. A lot of features are available and can be used for games, but some other parts still need work and can change, so it's possible some information is not much detailed yet.
+    This module is under development. A lot of features are available and can be used for games, but some other parts still need work and can change, so it's possible some information is not well detailed yet.
 
 ![Blocky screenshot](images/blocky_screenshot.webp)
 

@@ -11,10 +11,12 @@ namespace zylann {
 // shaders.
 template <typename T>
 struct Vector3T {
-	static const unsigned int AXIS_X = 0;
-	static const unsigned int AXIS_Y = 1;
-	static const unsigned int AXIS_Z = 2;
-	static const unsigned int AXIS_COUNT = 3;
+	enum Axis { //
+		AXIS_X = 0,
+		AXIS_Y = 1,
+		AXIS_Z = 2,
+		AXIS_COUNT = 3
+	};
 
 	union {
 		struct {
@@ -185,6 +187,26 @@ inline Vector3T<T> cross(const Vector3T<T> &a, const Vector3T<T> &b) {
 template <typename T>
 inline T dot(const Vector3T<T> &a, const Vector3T<T> &b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+template <typename T>
+inline Vector3T<T> abs(const Vector3T<T> v) {
+	return Vector3T<T>(Math::abs(v.x), Math::abs(v.y), Math::abs(v.z));
+}
+
+template <typename T>
+inline typename Vector3T<T>::Axis get_longest_axis(Vector3T<T> v) {
+	v = abs(v);
+	if (v.x > v.y) {
+		if (v.x > v.z) {
+			return Vector3T<T>::AXIS_X;
+		} else {
+			return Vector3T<T>::AXIS_Z;
+		}
+	} else if (v.y > v.z) {
+		return Vector3T<T>::AXIS_Y;
+	}
+	return Vector3T<T>::AXIS_Z;
 }
 
 } // namespace math

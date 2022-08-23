@@ -1,6 +1,8 @@
 #ifndef ZN_VECTOR2T_H
 #define ZN_VECTOR2T_H
 
+#include "funcs.h"
+
 namespace zylann {
 
 template <typename T>
@@ -18,6 +20,11 @@ struct Vector2T {
 	};
 
 	Vector2T() : x(0), y(0) {}
+
+	// It is recommended to use `explicit` because otherwise it would open the door to plenty of implicit conversions
+	// which would make many cases ambiguous.
+	explicit Vector2T(T p_v) : x(p_v), y(p_v) {}
+
 	Vector2T(T p_x, T p_y) : x(p_x), y(p_y) {}
 
 	inline const T &operator[](const unsigned int p_axis) const {
@@ -73,6 +80,16 @@ namespace math {
 template <typename T>
 T cross(const Vector2T<T> &a, const Vector2T<T> &b) {
 	return a.x * b.y - a.y * b.x;
+}
+
+template <typename T>
+inline Vector2T<T> abs(const Vector2T<T> v) {
+	return Vector2T<T>(Math::abs(v.x), Math::abs(v.y));
+}
+
+template <typename T>
+inline Vector2T<T> sign_nonzero(Vector2T<T> v) {
+	return Vector2T<T>(sign_nonzero(v.x), sign_nonzero(v.y));
 }
 
 } // namespace math
