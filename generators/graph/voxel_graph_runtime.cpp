@@ -432,7 +432,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 #endif
 #endif
 
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers = to_span(state.buffers);
 
 	// Bind inputs
 	if (_program.x_input_address != -1) {
@@ -518,8 +518,8 @@ void VoxelGraphRuntime::analyze_range(
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
 
-	Span<math::Interval> ranges(state.ranges, 0, state.ranges.size());
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<math::Interval> ranges = to_span(state.ranges);
+	Span<Buffer> buffers = to_span(state.buffers);
 
 	// Reset users count, as they might be decreased during the analysis
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {

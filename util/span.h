@@ -37,22 +37,6 @@ public:
 		_size = p_other.size();
 	}
 
-	// TODO Remove this one, prefer to_span() specializations
-	inline Span(std::vector<T> &vec, size_t p_begin, size_t p_end) {
-		ZN_ASSERT(p_end >= p_begin);
-		ZN_ASSERT(p_begin < vec.size());
-		ZN_ASSERT(p_end <= vec.size()); // `<=` because p_end is typically `p_begin + size`
-		_ptr = &vec[p_begin];
-		_size = p_end - p_begin;
-	}
-
-	// TODO Remove this one, prefer to_span() specializations
-	template <unsigned int N>
-	inline Span(FixedArray<T, N> &a) {
-		_ptr = a.data();
-		_size = a.size();
-	}
-
 	inline Span<T> sub(size_t from, size_t len) const {
 		ZN_ASSERT(from + len <= _size);
 		return Span<T>(_ptr + from, len);

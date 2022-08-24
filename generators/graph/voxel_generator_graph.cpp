@@ -1850,10 +1850,10 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 		src_y.resize(cube_volume);
 		src_z.resize(cube_volume);
 		src_sdf.resize(cube_volume);
-		Span<float> sx(src_x, 0, src_x.size());
-		Span<float> sy(src_y, 0, src_y.size());
-		Span<float> sz(src_z, 0, src_z.size());
-		Span<float> ssdf(src_sdf, 0, src_sdf.size());
+		Span<float> sx = to_span(src_x);
+		Span<float> sy = to_span(src_y);
+		Span<float> sz = to_span(src_z);
+		Span<float> ssdf = to_span(src_sdf);
 
 		const bool per_node_profiling = node_profiling_info != nullptr;
 		runtime.prepare_state(cache.state, sx.size(), per_node_profiling);
