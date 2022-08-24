@@ -881,10 +881,10 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			break;
 	}
 
-	if (input.lod > 0) {
+	if (input.lod_index > 0) {
 		// TODO This is very crude LOD, there will be cracks at the borders.
 		// One way would be to not cull faces on chunk borders if any neighbor face is air
-		const float lod_scale = 1 << input.lod;
+		const float lod_scale = 1 << input.lod_index;
 		for (unsigned int material_index = 0; material_index < cache.arrays_per_material.size(); ++material_index) {
 			Arrays &arrays = cache.arrays_per_material[material_index];
 			for (unsigned int i = 0; i < arrays.positions.size(); ++i) {

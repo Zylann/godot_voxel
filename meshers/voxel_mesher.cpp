@@ -79,7 +79,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 
 			compute_normalmap(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
 					to_span(mesh_arrays.indices), nm_data, virtual_texture_settings.tile_resolution_min,
-					*input.generator, nullptr, input.origin_in_voxels, input.lod,
+					*input.generator, nullptr, input.origin_in_voxels, input.lod_index,
 					virtual_texture_settings.octahedral_encoding_enabled);
 
 			const Vector3i block_size =

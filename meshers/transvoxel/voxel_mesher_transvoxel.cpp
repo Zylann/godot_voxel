@@ -232,16 +232,16 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		cell_infos = &transvoxel::tls_cell_infos;
 	}
 
-	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod > 0) {
+	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod_index > 0) {
 		const DeepSampler ds(*input.generator, *input.data, sdf_channel, input.origin_in_voxels);
 		// TODO Optimization: "area scope" feature on generators to optimize certain uses of `generate_single`.
 		// The idea is to call `begin_area(box)` and `end_area()`, so the generator can optimize random calls to
 		// `generate_single` in between, knowing they will all be done within the specified area.
 
-		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
+		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod_index,
 				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, &ds, cell_infos);
 	} else {
-		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod,
+		default_texture_indices_data = transvoxel::build_regular_mesh(voxels, sdf_channel, input.lod_index,
 				static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, mesh_arrays, nullptr, cell_infos);
 	}
 
@@ -272,7 +272,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
 			ZN_PROFILE_SCOPE();
 
-			transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod,
+			transvoxel::build_transition_mesh(voxels, sdf_channel, dir, input.lod_index,
 					static_cast<transvoxel::TexturingMode>(_texture_mode), tls_cache, *combined_mesh_arrays,
 					default_texture_indices_data);
 		}
