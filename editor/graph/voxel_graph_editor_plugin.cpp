@@ -106,7 +106,7 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 		}
 	}
 	Ref<VoxelGeneratorGraph> graph(graph_ptr);
-	_graph_editor->set_undo_redo(&get_undo_redo()); // UndoRedo isn't available in constructor
+	_graph_editor->set_undo_redo(get_undo_redo()); // UndoRedo isn't available in constructor
 	_graph_editor->set_graph(graph);
 
 	VoxelNode *voxel_node = nullptr;
@@ -171,7 +171,7 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
-	wrapper->setup(_graph_editor->get_graph(), node_id, &get_undo_redo(), _graph_editor);
+	wrapper->setup(_graph_editor->get_graph(), node_id, get_undo_redo(), _graph_editor);
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...

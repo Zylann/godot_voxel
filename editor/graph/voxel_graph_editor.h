@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_EDITOR_H
 
 #include "../voxel_debug.h"
+#include <editor/editor_undo_redo_manager.h>
 #include <scene/gui/control.h>
 
 class GraphEdit;
@@ -34,7 +35,7 @@ public:
 		return _graph;
 	}
 
-	void set_undo_redo(UndoRedo *undo_redo);
+	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
 	void set_voxel_node(VoxelNode *node);
 
 	// To be called when the number of inputs in a node changes.
@@ -93,7 +94,10 @@ private:
 	Label *_profile_label = nullptr;
 	Label *_compile_result_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
-	UndoRedo *_undo_redo = nullptr;
+	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
+	// VisualShader did it that way when this manager got introduced in place of the old global UndoRedo...
+	// there doesn't seem to be any documentation yet for this class
+	Ref<EditorUndoRedoManager> _undo_redo = nullptr;
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;

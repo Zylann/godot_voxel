@@ -189,7 +189,7 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
 	schedule_preview_update();
 }
 
-void VoxelGraphEditor::set_undo_redo(UndoRedo *undo_redo) {
+void VoxelGraphEditor::set_undo_redo(Ref<EditorUndoRedoManager> undo_redo) {
 	_undo_redo = undo_redo;
 }
 
