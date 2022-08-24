@@ -361,6 +361,7 @@ Constant              | Outputs a constant number.
 InputX                | Outputs the X coordinate of the current voxel.
 InputY                | Outputs the Y coordinate of the current voxel.
 InputZ                | Outputs the Z coordinate of the current voxel.
+InputSDF              | Outputs the existing signed distance at the current voxel. This may only be used in specific situations, such as using the graph as a procedural brush.
 
 
 ### Outputs
