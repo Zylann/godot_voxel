@@ -37,9 +37,7 @@ String get_missing_uniform_names(Span<const StringName> expected_uniforms, const
 	List<PropertyInfo> params;
 	RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader.get_rid(), &params);
 
-	for (unsigned int i = 0; i < expected_uniforms.size(); ++i) {
-		const String name = expected_uniforms[i];
-
+	for (const StringName &name : expected_uniforms) {
 		bool found = false;
 		for (const PropertyInfo &pi : params) {
 			if (pi.name == name) {

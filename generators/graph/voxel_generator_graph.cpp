@@ -1154,9 +1154,7 @@ void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<co
 
 	if (buffer_index == -1) {
 		// The graph does not define such output
-		for (unsigned int i = 0; i < out_values.size(); ++i) {
-			out_values[i] = defval;
-		}
+		out_values.fill(defval);
 		return;
 	}
 

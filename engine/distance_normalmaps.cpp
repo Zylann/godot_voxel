@@ -316,8 +316,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_da
 	}
 
 #if DEBUG_ENABLED
-	for (unsigned int i = 0; i < query_sdf_buffer.size(); ++i) {
-		const float sd = query_sdf_buffer[i];
+	for (const float sd : query_sdf_buffer) {
 		ZN_ASSERT(!(Math::is_nan(sd) || Math::is_inf(sd)));
 	}
 #endif

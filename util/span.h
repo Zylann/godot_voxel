@@ -116,7 +116,91 @@ public:
 		return _ptr + _size > other._ptr && _ptr < other._ptr + other._size;
 	}
 
-	// TODO Iterators
+	class Iterator {
+	public:
+		Iterator(T *p_ptr) : _elem_ptr(p_ptr) {}
+		Iterator(const Iterator &p_it) : _elem_ptr(p_it._elem_ptr) {}
+
+		inline T &operator*() const {
+			return *_elem_ptr;
+		}
+
+		inline T *operator->() const {
+			return _elem_ptr;
+		}
+
+		inline Iterator &operator++() {
+			_elem_ptr++;
+			return *this;
+		}
+
+		inline Iterator &operator--() {
+			_elem_ptr--;
+			return *this;
+		}
+
+		inline bool operator==(const Iterator &b) const {
+			return _elem_ptr == b._elem_ptr;
+		}
+
+		inline bool operator!=(const Iterator &b) const {
+			return _elem_ptr != b._elem_ptr;
+		}
+
+	private:
+		T *_elem_ptr = nullptr;
+	};
+
+	class ConstIterator {
+	public:
+		ConstIterator(const T *p_ptr) : _elem_ptr(p_ptr) {}
+		ConstIterator(const ConstIterator &p_it) : _elem_ptr(p_it._elem_ptr) {}
+
+		inline const T &operator*() const {
+			return *_elem_ptr;
+		}
+
+		inline const T *operator->() const {
+			return _elem_ptr;
+		}
+
+		inline ConstIterator &operator++() {
+			_elem_ptr++;
+			return *this;
+		}
+
+		inline ConstIterator &operator--() {
+			_elem_ptr--;
+			return *this;
+		}
+
+		inline bool operator==(const ConstIterator &b) const {
+			return _elem_ptr == b._elem_ptr;
+		}
+
+		inline bool operator!=(const ConstIterator &b) const {
+			return _elem_ptr != b._elem_ptr;
+		}
+
+	private:
+		const T *_elem_ptr = nullptr;
+	};
+
+	inline Iterator begin() {
+		return Iterator(_ptr);
+	}
+
+	inline Iterator end() {
+		return Iterator(_ptr + _size);
+	}
+
+	inline ConstIterator begin() const {
+		return ConstIterator(_ptr);
+	}
+
+	inline ConstIterator end() const {
+		return ConstIterator(_ptr + _size);
+	}
 
 private:
 	T *_ptr;

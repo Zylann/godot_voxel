@@ -8,7 +8,7 @@ class Mesh;
 
 namespace zylann {
 
-bool is_surface_triangulated(Array surface);
+bool is_surface_triangulated(const Array &surface);
 bool is_mesh_empty(const Mesh &mesh);
 bool is_mesh_empty(Span<const Array> surfaces);
 
