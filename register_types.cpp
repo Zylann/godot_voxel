@@ -134,7 +134,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Could use `can_create_resources_async` but this is internal.
 		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
 		// resource creation.
-		VoxelEngine::get_singleton().set_threaded_mesh_resource_building_enabled(
+		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
 				RenderingServer::get_singleton()->is_low_end() == false);
 
 		gd::VoxelEngine::create_singleton();

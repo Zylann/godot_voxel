@@ -350,7 +350,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}
 
-	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
+	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
 		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);

@@ -197,12 +197,12 @@ void VoxelEngine::set_main_thread_time_budget_usec(unsigned int usec) {
 	_main_thread_time_budget_usec = usec;
 }
 
-void VoxelEngine::set_threaded_mesh_resource_building_enabled(bool enable) {
-	_threaded_mesh_resource_building_enabled = enable;
+void VoxelEngine::set_threaded_graphics_resource_building_enabled(bool enable) {
+	_threaded_graphics_resource_building_enabled = enable;
 }
 
-bool VoxelEngine::is_threaded_mesh_resource_building_enabled() const {
-	return _threaded_mesh_resource_building_enabled;
+bool VoxelEngine::is_threaded_graphics_resource_building_enabled() const {
+	return _threaded_graphics_resource_building_enabled;
 }
 
 void VoxelEngine::push_async_task(zylann::IThreadedTask *task) {
