@@ -216,10 +216,10 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 				if (xzy_start_not_assigned && node.op_address >= program.xzy_start_op_address) {
 					// This should be correct as long as the list of nodes in the graph follows the same re-ordered
 					// optimization done in `compile()` such that all nodes not depending on Y come first
-					execution_map.xzy_start_index = execution_map.operation_adresses.size();
+					execution_map.xzy_start_index = execution_map.operation_addresses.size();
 					xzy_start_not_assigned = false;
 				}
-				execution_map.operation_adresses.push_back(node.op_address);
+				execution_map.operation_addresses.push_back(node.op_address);
 				break;
 
 			default:
@@ -450,13 +450,13 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr
-			? to_span_const(execution_map->operation_adresses)
-			: to_span_const(_program.default_execution_map.operation_adresses);
-	if (skip_xz && op_adresses.size() > 0) {
+	Span<const uint16_t> op_addresses = execution_map != nullptr
+			? to_span_const(execution_map->operation_addresses)
+			: to_span_const(_program.default_execution_map.operation_addresses);
+	if (skip_xz && op_addresses.size() > 0) {
 		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index
 															 : _program.default_execution_map.xzy_start_index;
-		op_adresses = op_adresses.sub(offset);
+		op_addresses = op_addresses.sub(offset);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -464,8 +464,8 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	const bool profile = state.debug_profiler_times.size() > 0;
 #endif
 
-	for (unsigned int execution_map_index = 0; execution_map_index < op_adresses.size(); ++execution_map_index) {
-		unsigned int pc = op_adresses[execution_map_index];
+	for (unsigned int execution_map_index = 0; execution_map_index < op_addresses.size(); ++execution_map_index) {
+		unsigned int pc = op_addresses[execution_map_index];
 
 		const uint16_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
