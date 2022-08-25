@@ -4,59 +4,88 @@
 		Decides where to spawn instances on top of a voxel surface.
 	</brief_description>
 	<description>
-		Generates the necessry information to spawn instances on top of a voxel surface. This may be used by a [VoxelInstancer].
+		Generates the necessary information to spawn instances on top of a voxel surface. This may be used by a [VoxelInstancer].
 		Note: to generate voxels, see [VoxelGenerator].
 	</description>
 	<tutorials>
 	</tutorials>
 	<members>
 		<member name="density" type="float" setter="set_density" getter="get_density" default="0.1">
+			Controls how many instances are generated. Might give different results depending on the type of emission chosen.
 		</member>
 		<member name="emit_mode" type="int" setter="set_emit_mode" getter="get_emit_mode" enum="VoxelInstanceGenerator.EmitMode" default="0">
+			In which way instances are primarily emitted. 
 		</member>
 		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
+			Instances will not be created above this height.
+			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
 		<member name="max_scale" type="float" setter="set_max_scale" getter="get_max_scale" default="1.0">
+			Minimum scale instances will be randomized with.
 		</member>
 		<member name="max_slope_degrees" type="float" setter="set_max_slope_degrees" getter="get_max_slope_degrees" default="180.0">
+			Instances will not spawn if the ground has a slope higher than this angle.
+			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
 		<member name="min_height" type="float" setter="set_min_height" getter="get_min_height" default="1.17549e-38">
+			Instances will not be created below this height. This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
 		<member name="min_scale" type="float" setter="set_min_scale" getter="get_min_scale" default="1.0">
+			Maximum scale instances will be randomized with.
 		</member>
 		<member name="min_slope_degrees" type="float" setter="set_min_slope_degrees" getter="get_min_slope_degrees" default="0.0">
+			Instances will not spawn if the ground has a slope lower than this angle.
+			This also depends on the chosen [member VoxelInstancer.up_mode].
 		</member>
 		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
+			Noise used to filter out spawned instances, so that they may spawn in patterns described by the noise.
 		</member>
 		<member name="noise_dimension" type="int" setter="set_noise_dimension" getter="get_noise_dimension" enum="VoxelInstanceGenerator.Dimension" default="1">
+			Which dimension should be used when evaluating [member noise].
 		</member>
 		<member name="noise_on_scale" type="float" setter="set_noise_on_scale" getter="get_noise_on_scale" default="0.0">
+			How much [member noise] also affects the scale of instances.
 		</member>
 		<member name="offset_along_normal" type="float" setter="set_offset_along_normal" getter="get_offset_along_normal" default="0.0">
+			Offsets spawned instances along the normal of the ground.
+			The normal depends on [member VoxelInstancer.up_node] and is also affected by [member vertical_alignment].
 		</member>
 		<member name="random_rotation" type="bool" setter="set_random_rotation" getter="get_random_rotation" default="true">
+			When enbabled, instances will be given a random rotation. If not, they will use a consistent rotation depending on the ground slope.
 		</member>
 		<member name="random_vertical_flip" type="bool" setter="set_random_vertical_flip" getter="get_random_vertical_flip" default="false">
+			When enabled, instances will randomly be flipped upside down. This can be useful with small rocks to create illusion of more variety.
 		</member>
 		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
+			Sets how random scales are distributed. 
 		</member>
 		<member name="vertical_alignment" type="float" setter="set_vertical_alignment" getter="get_vertical_alignment" default="1.0">
+			Sets how much instances will align with the ground.
+			If 0, they will completely align with the ground.
+			If 1, they will completely align with whichever direction is considered "up".
+			This depends on [member VoxelInstancer.up_node].
 		</member>
 	</members>
 	<constants>
 		<constant name="EMIT_FROM_VERTICES" value="0" enum="EmitMode">
+			Use vertices of the mesh to spawn instances. This is the fasted option, but can produce noticeable patterns.
 		</constant>
 		<constant name="EMIT_FROM_FACES_FAST" value="1" enum="EmitMode">
+			Uses faces of the mesh to spawn instances. It is a balanced option with some shortcuts taken, without causing too noticeable patterns.
 		</constant>
 		<constant name="EMIT_FROM_FACES" value="2" enum="EmitMode">
+			Uses faces of the mesh to spawn instances. This is the slowest option, but should produce no noticeable patterns.
 		</constant>
 		<constant name="EMIT_MODE_COUNT" value="3" enum="EmitMode">
 		</constant>
 		<constant name="DISTRIBUTION_LINEAR" value="0" enum="Distribution">
+			Uniform distribution.
 		</constant>
 		<constant name="DISTRIBUTION_QUADRATIC" value="1" enum="Distribution">
+			Distribution with more small items, and fewer big ones.
 		</constant>
 		<constant name="DISTRIBUTION_CUBIC" value="2" enum="Distribution">
+			Distribution with even more small items, and even fewer big ones.
 		</constant>
 		<constant name="DISTRIBUTION_QUINTIC" value="3" enum="Distribution">
 		</constant>

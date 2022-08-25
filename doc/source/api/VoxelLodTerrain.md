@@ -209,4 +209,4 @@ The returned dictionary has the following structure:
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_mesh_block_position"></span> **voxel_to_mesh_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg1 ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

@@ -3,7 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Contains a list of models that can be used by [VoxelInstancer](VoxelInstancer.md), associated with a unique ID
+Contains a list of models that can be used by [VoxelInstancer](VoxelInstancer.md), associated with a unique ID.
 
 ## Methods: 
 
@@ -38,4 +38,4 @@ Return                                                                | Signatur
 - [void](#)<span id="i_remove_item"></span> **remove_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

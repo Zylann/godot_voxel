@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelDataBlockEnterInfo" inherits="Object" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer].
 	</brief_description>
 	<description>
+		See [method VoxelTerrain._on_data_block_entered]
 	</description>
 	<tutorials>
 	</tutorials>
@@ -10,26 +12,31 @@
 		<method name="are_voxels_edited" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Tells if voxels in the block have ever been edited. If not, it means the same data can be obtained by running the generator.
 			</description>
 		</method>
 		<method name="get_lod_index" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets which LOD index the data block is in.
 			</description>
 		</method>
 		<method name="get_network_peer_id" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets the network peer ID of the [VoxelViewer] who caused the block to be referenced.
 			</description>
 		</method>
 		<method name="get_position" qualifiers="const">
 			<return type="Vector3i" />
 			<description>
+				Gets the position of the data block, in data block coordinates (voxel coordinates are obtained by multiplying these coordinates with data block size).
 			</description>
 		</method>
 		<method name="get_voxels" qualifiers="const">
 			<return type="VoxelBuffer" />
 			<description>
+				Gets access to the voxels in the block.
 			</description>
 		</method>
 	</methods>

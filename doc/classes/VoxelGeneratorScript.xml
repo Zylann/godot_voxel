@@ -2,9 +2,9 @@
 <class name="VoxelGeneratorScript" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Base class for custom generators defined with a script.
-		Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
 	</brief_description>
 	<description>
+		Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
 	</description>
 	<tutorials>
 	</tutorials>

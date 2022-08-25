@@ -5,6 +5,8 @@ Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 Base class for custom generators defined with a script.
 
+## Description: 
+
 Important: this engine makes heavy use of threads. Generators will run in one of them, so make sure you don't access the scene tree or other unsafe APIs from within a generator.
 
 ## Methods: 
@@ -30,4 +32,4 @@ Return                                                                | Signatur
 
 Use this to indicate which channels your generator will use. It returns a bitmask, so for example you may provide information like this: `(1 << channel1) | (1 << channel2)`
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

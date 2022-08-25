@@ -26,4 +26,4 @@ Return                                                                | Signatur
 - [void](#)<span id="i__save_voxel_block"></span> **_save_voxel_block**( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

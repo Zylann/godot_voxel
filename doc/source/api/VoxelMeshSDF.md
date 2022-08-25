@@ -86,4 +86,4 @@ enum **BakeMode**:
 - [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

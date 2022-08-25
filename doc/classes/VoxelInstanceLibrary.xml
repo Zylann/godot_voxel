@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelInstanceLibrary" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID
+		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID.
 	</brief_description>
 	<description>
 	</description>

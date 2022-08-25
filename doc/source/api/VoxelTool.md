@@ -141,4 +141,4 @@ Operate on a rectangular cuboid section of the terrain. `begin` and `end` are in
 - [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

@@ -18,4 +18,4 @@ Type           | Name               | Default
 - [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_
