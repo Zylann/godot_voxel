@@ -536,7 +536,7 @@ float VoxelInstanceGenerator::get_offset_along_normal() const {
 
 void VoxelInstanceGenerator::set_min_slope_degrees(float degrees) {
 	_min_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float max_surface_normal_y = math::min(1.f, Math::cos(Math::deg2rad(_min_slope_degrees)));
+	const float max_surface_normal_y = math::min(1.f, Math::cos(Math::deg_to_rad(_min_slope_degrees)));
 	if (max_surface_normal_y == _max_surface_normal_y) {
 		return;
 	}
@@ -550,7 +550,7 @@ float VoxelInstanceGenerator::get_min_slope_degrees() const {
 
 void VoxelInstanceGenerator::set_max_slope_degrees(float degrees) {
 	_max_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float min_surface_normal_y = math::max(-1.f, Math::cos(Math::deg2rad(_max_slope_degrees)));
+	const float min_surface_normal_y = math::max(-1.f, Math::cos(Math::deg_to_rad(_max_slope_degrees)));
 	if (min_surface_normal_y == _min_surface_normal_y) {
 		return;
 	}
