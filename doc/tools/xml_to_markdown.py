@@ -251,7 +251,7 @@ def process_xml(f_xml, f_out, module_class_names):
             # TODO Remove from list if it's a getter/setter of a property
             for method in methods:
                 signature = make_custom_internal_link(method.attrib['name']) + " "
-                args = method.findall('argument')
+                args = method.findall('param')
                 signature += make_arglist(args, module_class_names)
                 signature += " "
 
@@ -282,7 +282,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 out += "- "
                 out += signal.attrib['name']
 
-                args = signal.findall('argument')
+                args = signal.findall('param')
                 out += make_arglist(args, module_class_names)
                 out += " \n\n"
 
@@ -357,7 +357,7 @@ def process_xml(f_xml, f_out, module_class_names):
             return_node = method.find('return')
             out += "- " + make_type(return_node.attrib['type'], module_class_names) \
                 + make_custom_internal_anchor(method.attrib['name']) + " **" + method.attrib['name'] + "**"
-            args = method.findall('argument')
+            args = method.findall('param')
             out += make_arglist(args, module_class_names)
             out += " "
             if 'qualifiers' in method.attrib:
