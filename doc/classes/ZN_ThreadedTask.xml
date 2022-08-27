@@ -19,7 +19,7 @@
 		</method>
 		<method name="_run" qualifiers="virtual">
 			<return type="void" />
-			<argument index="0" name="thread_index" type="int" />
+			<param index="0" name="thread_index" type="int" />
 			<description>
 			</description>
 		</method>

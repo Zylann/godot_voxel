@@ -20,7 +20,7 @@
 		</method>
 		<method name="set_geometric_error">
 			<return type="void" />
-			<argument index="0" name="error" type="float" />
+			<param index="0" name="error" type="float" />
 			<description>
 			</description>
 		</method>

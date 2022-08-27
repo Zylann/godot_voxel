@@ -9,9 +9,9 @@
 	<methods>
 		<method name="load_from_file">
 			<return type="int" enum="Error" />
-			<argument index="0" name="fpath" type="String" />
-			<argument index="1" name="voxels" type="VoxelBuffer" />
-			<argument index="2" name="arg2" type="VoxelColorPalette" />
+			<param index="0" name="fpath" type="String" />
+			<param index="1" name="voxels" type="VoxelBuffer" />
+			<param index="2" name="_unnamed_arg2" type="VoxelColorPalette" />
 			<description>
 			</description>
 		</method>
