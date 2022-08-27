@@ -24,14 +24,16 @@ jobs:
           - name: Editor build
             target: release_debug
             tools: yes
-            cache_action: actions/cache@v2
+            #cache_action: actions/cache@v2
             executable_name: godot.windows.opt.tools.x86_64.exe
 
           - name: Release build
             target: release
             tools: no
             # TODO I don't remember why this one uses a different action?
-            cache_action: RevoluPowered/cache@v2.1
+            # Either way, Github Actions does not support matrix variables in `uses` yet.
+            # See https://github.com/orgs/community/discussions/9049
+            #cache_action: RevoluPowered/cache@v2.1
             executable_name: godot.windows.opt.x86_64.exe
 
     steps:
@@ -50,7 +52,8 @@ jobs:
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
         id: windows-editor-cache
-        uses: ${{matrix.cache_action}}
+        #uses: ${{matrix.cache_action}}
+        uses: actions/cache@v2
         with:
           path: /.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
