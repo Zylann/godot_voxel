@@ -10,28 +10,28 @@
 	<methods>
 		<method name="get_noise_2d">
 			<return type="float" />
-			<argument index="0" name="x" type="float" />
-			<argument index="1" name="y" type="float" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_2dv">
 			<return type="float" />
-			<argument index="0" name="position" type="Vector2" />
+			<param index="0" name="position" type="Vector2" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_3d">
 			<return type="float" />
-			<argument index="0" name="x" type="float" />
-			<argument index="1" name="y" type="float" />
-			<argument index="2" name="z" type="float" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<param index="2" name="z" type="float" />
 			<description>
 			</description>
 		</method>
 		<method name="get_noise_3dv">
 			<return type="float" />
-			<argument index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
 			<description>
 			</description>
 		</method>

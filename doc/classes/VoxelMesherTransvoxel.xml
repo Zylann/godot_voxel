@@ -10,8 +10,8 @@
 	<methods>
 		<method name="build_transition_mesh">
 			<return type="ArrayMesh" />
-			<argument index="0" name="voxel_buffer" type="VoxelBuffer" />
-			<argument index="1" name="direction" type="int" />
+			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="1" name="direction" type="int" />
 			<description>
 			</description>
 		</method>

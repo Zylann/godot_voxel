@@ -14,7 +14,7 @@
 			Controls how many instances are generated. Might give different results depending on the type of emission chosen.
 		</member>
 		<member name="emit_mode" type="int" setter="set_emit_mode" getter="get_emit_mode" enum="VoxelInstanceGenerator.EmitMode" default="0">
-			In which way instances are primarily emitted. 
+			In which way instances are primarily emitted.
 		</member>
 		<member name="max_height" type="float" setter="set_max_height" getter="get_max_height" default="3.40282e+38">
 			Instances will not be created above this height.
@@ -57,7 +57,7 @@
 			When enabled, instances will randomly be flipped upside down. This can be useful with small rocks to create illusion of more variety.
 		</member>
 		<member name="scale_distribution" type="int" setter="set_scale_distribution" getter="get_scale_distribution" enum="VoxelInstanceGenerator.Distribution" default="1">
-			Sets how random scales are distributed. 
+			Sets how random scales are distributed.
 		</member>
 		<member name="vertical_alignment" type="float" setter="set_vertical_alignment" getter="get_vertical_alignment" default="1.0">
 			Sets how much instances will align with the ground.
