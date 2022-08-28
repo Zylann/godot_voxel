@@ -227,6 +227,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
 		ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
 		ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
+		ZN_PRINT_VERBOSE(format("Size of RWLock: {}", sizeof(zylann::RWLock)));
 		ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
@@ -237,6 +238,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of VoxelData: {}", sizeof(VoxelData)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMesher::Output: {}", sizeof(VoxelMesher::Output)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelEngine::BlockMeshOutput: {}", sizeof(VoxelEngine::BlockMeshOutput)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelModifierStack: {}", sizeof(VoxelModifierStack)));
 		if (RenderingDevice::get_singleton() != nullptr) {
 			ZN_PRINT_VERBOSE(format("TextureArray max layers: {}",
 					RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS)));
