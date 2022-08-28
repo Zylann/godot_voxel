@@ -42,8 +42,8 @@ void VoxelModifier::set_operation(Operation op) {
 	if (_volume == nullptr) {
 		return;
 	}
-	std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
-	VoxelModifierStack &modifiers = data->modifiers;
+	VoxelData &data = _volume->get_storage();
+	VoxelModifierStack &modifiers = data.get_modifiers();
 	zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
 	ZN_ASSERT_RETURN(modifier != nullptr);
 	ZN_ASSERT_RETURN(modifier->is_sdf());
@@ -64,8 +64,8 @@ void VoxelModifier::set_smoothness(float s) {
 	if (_volume == nullptr) {
 		return;
 	}
-	std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
-	VoxelModifierStack &modifiers = data->modifiers;
+	VoxelData &data = _volume->get_storage();
+	VoxelModifierStack &modifiers = data.get_modifiers();
 	zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
 	ZN_ASSERT_RETURN(modifier != nullptr);
 	ZN_ASSERT_RETURN(modifier->is_sdf());
@@ -91,8 +91,8 @@ void VoxelModifier::_notification(int p_what) {
 			_volume = volume;
 
 			if (_volume != nullptr) {
-				std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
-				VoxelModifierStack &modifiers = data->modifiers;
+				VoxelData &data = _volume->get_storage();
+				VoxelModifierStack &modifiers = data.get_modifiers();
 				const uint32_t id = modifiers.allocate_id();
 				zylann::voxel::VoxelModifier *modifier = create(modifiers, id);
 
@@ -113,8 +113,8 @@ void VoxelModifier::_notification(int p_what) {
 
 		case Node::NOTIFICATION_UNPARENTED: {
 			if (_volume != nullptr) {
-				std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
-				VoxelModifierStack &modifiers = data->modifiers;
+				VoxelData &data = _volume->get_storage();
+				VoxelModifierStack &modifiers = data.get_modifiers();
 				zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
 				ZN_ASSERT_RETURN_MSG(modifier != nullptr, "The modifier node wasn't linked properly");
 				post_edit_modifier(*_volume, modifier->get_aabb());
@@ -126,8 +126,8 @@ void VoxelModifier::_notification(int p_what) {
 
 		case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
 			if (_volume != nullptr && is_inside_tree()) {
-				std::shared_ptr<VoxelDataLodMap> data = _volume->get_storage();
-				VoxelModifierStack &modifiers = data->modifiers;
+				VoxelData &data = _volume->get_storage();
+				VoxelModifierStack &modifiers = data.get_modifiers();
 				zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(_modifier_id);
 				ZN_ASSERT_RETURN(modifier != nullptr);
 
@@ -163,8 +163,8 @@ void VoxelModifier::_bind_methods() {
 
 template <typename T>
 T *get_modifier(VoxelLodTerrain &volume, uint32_t id, zylann::voxel::VoxelModifier::Type type) {
-	std::shared_ptr<VoxelDataLodMap> data = volume.get_storage();
-	VoxelModifierStack &modifiers = data->modifiers;
+	VoxelData &data = volume.get_storage();
+	VoxelModifierStack &modifiers = data.get_modifiers();
 	zylann::voxel::VoxelModifier *modifier = modifiers.get_modifier(id);
 	ZN_ASSERT_RETURN_V(modifier != nullptr, nullptr);
 	ZN_ASSERT_RETURN_V(modifier->get_type() == type, nullptr);

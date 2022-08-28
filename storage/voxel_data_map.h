@@ -212,7 +212,7 @@ private:
 	unsigned int _lod_index = 0;
 };
 
-struct VoxelDataLodMap {
+/*struct VoxelDataLodMap {
 	struct Lod {
 		VoxelDataMap map;
 		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
@@ -233,7 +233,7 @@ struct VoxelDataLodMap {
 void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator, bool is_streaming);
 
 // Clears voxel data from blocks that are pure results of generators and modifiers.
-void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box);
+void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box);*/
 
 } // namespace zylann::voxel
 

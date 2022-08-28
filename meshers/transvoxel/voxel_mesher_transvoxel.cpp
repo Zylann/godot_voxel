@@ -2,7 +2,7 @@
 #include "../../engine/voxel_engine.h"
 #include "../../generators/voxel_generator.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_data_map.h"
+#include "../../storage/voxel_data.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
@@ -166,17 +166,18 @@ static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArr
 
 struct DeepSampler : transvoxel::IDeepSDFSampler {
 	VoxelGenerator &generator;
-	const VoxelDataLodMap &data;
+	const VoxelData &data;
 	const VoxelBufferInternal::ChannelId sdf_channel;
 	const Vector3i origin;
 
-	DeepSampler(VoxelGenerator &p_generator, const VoxelDataLodMap &p_data,
-			VoxelBufferInternal::ChannelId p_sdf_channel, Vector3i p_origin) :
+	DeepSampler(VoxelGenerator &p_generator, const VoxelData &p_data, VoxelBufferInternal::ChannelId p_sdf_channel,
+			Vector3i p_origin) :
 			generator(p_generator), data(p_data), sdf_channel(p_sdf_channel), origin(p_origin) {}
 
 	float get_single(Vector3i position_in_voxels, uint32_t lod_index) const override {
 		position_in_voxels += origin;
-		const Vector3i lod_pos = position_in_voxels >> lod_index;
+		return data.get_voxel_f(position_in_voxels, sdf_channel);
+		/*const Vector3i lod_pos = position_in_voxels >> lod_index;
 		const VoxelDataLodMap::Lod &lod = data.lods[lod_index];
 		unsigned int bsm = 0;
 		std::shared_ptr<VoxelBufferInternal> voxels;
@@ -197,7 +198,7 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 			return voxels->get_voxel_f(lod_pos & bsm, sdf_channel);
 		} else {
 			return generator.generate_single(position_in_voxels, sdf_channel).f;
-		}
+		}*/
 	}
 };
 

@@ -334,7 +334,7 @@ bool VoxelDataMap::is_area_fully_loaded(const Box3i voxels_box) const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator, bool is_streaming) {
 	ZN_PROFILE_SCOPE();
 	//ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
@@ -442,5 +442,5 @@ void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box)
 		});
 	}
 }
-
+*/
 } // namespace zylann::voxel

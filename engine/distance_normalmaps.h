@@ -19,7 +19,7 @@ class Image;
 namespace zylann::voxel {
 
 class VoxelGenerator;
-struct VoxelDataLodMap;
+class VoxelData;
 
 // TODO This system could be extended to more than just normals
 // - Texturing data
@@ -85,8 +85,8 @@ public:
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
-		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelDataLodMap *voxel_data,
-		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding);
+		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
+		unsigned int lod_index, bool octahedral_encoding);
 
 struct NormalMapImages {
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY

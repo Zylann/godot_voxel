@@ -3,7 +3,7 @@
 
 #include "../../engine/mesh_block_task.h"
 #include "../../engine/voxel_engine.h"
-#include "../../storage/voxel_data_map.h"
+#include "../../storage/voxel_data.h"
 #include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
@@ -111,6 +111,7 @@ public:
 	void set_normalmap_begin_lod_index(int lod_index);
 	int get_normalmap_begin_lod_index() const;
 
+	/*
 	bool is_area_editable(Box3i p_box) const;
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
 	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
@@ -160,6 +161,7 @@ public:
 		}
 		post_edit_area(voxel_box);
 	}
+	*/
 
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
@@ -172,8 +174,8 @@ public:
 	void set_voxel_bounds(Box3i p_box);
 
 	inline Box3i get_voxel_bounds() const {
-		CRASH_COND(_update_data == nullptr);
-		return _update_data->settings.bounds_in_voxels;
+		ZN_ASSERT(_data != nullptr);
+		return _data->get_bounds();
 	}
 
 	void set_collision_update_delay(int delay_msec);
@@ -272,7 +274,12 @@ public:
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
 	void get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const;
 
-	std::shared_ptr<VoxelDataLodMap> get_storage() const {
+	inline VoxelData &get_storage() const {
+		ZN_ASSERT(_data != nullptr);
+		return *_data;
+	}
+
+	inline std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;
 	}
 
@@ -398,12 +405,12 @@ private:
 	VoxelInstancer *_instancer = nullptr;
 
 	Ref<VoxelMesher> _mesher;
-	Ref<VoxelGenerator> _generator;
-	Ref<VoxelStream> _stream;
+	// Ref<VoxelGenerator> _generator;
+	// Ref<VoxelStream> _stream;
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
 	bool _threaded_update_enabled = false;
-	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelData> _data;
 	std::shared_ptr<VoxelLodTerrainUpdateData> _update_data;
 	std::shared_ptr<StreamingDependency> _streaming_dependency;
 	std::shared_ptr<MeshingDependency> _meshing_dependency;

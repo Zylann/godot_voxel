@@ -36,6 +36,7 @@ public:
 		std::vector<uint8_t> mesh_material_indices;
 		// In mesh block coordinates
 		Vector3i position;
+		// TODO Rename lod_index
 		uint8_t lod;
 		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
 		bool has_mesh_resource;
@@ -57,6 +58,7 @@ public:
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		UniquePtr<InstanceBlockData> instances;
 		Vector3i position;
+		// TODO Rename lod_index
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;

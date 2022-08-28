@@ -24,7 +24,7 @@ public:
 	std::vector<Vector3f> mesh_normals;
 	std::vector<int> mesh_indices;
 	Ref<VoxelGenerator> generator;
-	std::shared_ptr<VoxelDataLodMap> voxel_data;
+	std::shared_ptr<VoxelData> voxel_data;
 	Vector3i mesh_block_size;
 	uint8_t lod_index;
 	NormalMapSettings virtual_texture_settings;

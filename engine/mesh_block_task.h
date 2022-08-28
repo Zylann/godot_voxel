@@ -10,6 +10,8 @@
 
 namespace zylann::voxel {
 
+class VoxelData;
+
 // Asynchronous task generating a mesh from voxel blocks and their neighbors, in a particular volume
 class MeshBlockTask : public IThreadedTask {
 public:
@@ -39,7 +41,7 @@ public:
 	bool require_virtual_texture = false;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
-	std::shared_ptr<VoxelDataLodMap> data;
+	std::shared_ptr<VoxelData> data;
 	NormalMapSettings virtual_texture_settings;
 
 private:

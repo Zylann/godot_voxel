@@ -20,7 +20,7 @@ struct MeshingDependency;
 //
 class VoxelLodTerrainUpdateTask : public IThreadedTask {
 public:
-	VoxelLodTerrainUpdateTask(std::shared_ptr<VoxelDataLodMap> p_data,
+	VoxelLodTerrainUpdateTask(std::shared_ptr<VoxelData> p_data,
 			std::shared_ptr<VoxelLodTerrainUpdateData> p_update_data,
 			std::shared_ptr<StreamingDependency> p_streaming_dependency,
 			std::shared_ptr<MeshingDependency> p_meshing_dependency,
@@ -41,8 +41,8 @@ public:
 
 	// Functions also used outside of this task
 
-	static void flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-			Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size);
+	static void flush_pending_lod_edits(
+			VoxelLodTerrainUpdateData::State &state, VoxelData &data, const int mesh_block_size);
 
 	static uint8_t get_transition_mask(
 			const VoxelLodTerrainUpdateData::State &state, Vector3i block_pos, int lod_index, unsigned int lod_count);
@@ -68,7 +68,7 @@ public:
 			BufferedTaskScheduler &task_scheduler);
 
 private:
-	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelData> _data;
 	std::shared_ptr<VoxelLodTerrainUpdateData> _update_data;
 	std::shared_ptr<StreamingDependency> _streaming_dependency;
 	std::shared_ptr<MeshingDependency> _meshing_dependency;

@@ -1,8 +1,8 @@
 #include "distance_normalmaps.h"
 #include "../edition/funcs.h"
 #include "../generators/voxel_generator.h"
+#include "../storage/voxel_data.h"
 #include "../storage/voxel_data_grid.h"
-#include "../storage/voxel_data_map.h"
 #include "../util/math/conv.h"
 #include "../util/math/triangle.h"
 #include "../util/profiling.h"
@@ -165,7 +165,7 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 	return Vector3f(0.5f) + 0.5f * n;
 }
 
-void query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxel_data, const VoxelDataGrid &grid,
+void query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data, const VoxelDataGrid &grid,
 		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
 		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
@@ -228,8 +228,8 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxe
 			generator.generate_series(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
 					channel, to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
 
-			voxel_data.modifiers.apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
-					to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+			voxel_data.get_modifiers().apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count),
+					to_span(z_gen, gen_count), to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
 
 			for (unsigned int j = 0; j < gen_count; ++j) {
 				sd_samples[i_gen[j]] = gen_samples[j];
@@ -244,9 +244,9 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxe
 	}
 }
 
-bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &voxel_data,
-		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
-		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
+bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data, Span<const float> query_x_buffer,
+		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
+		Vector3f query_min_pos, Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
 
 	// Pad by 1 in case there are neighboring edited voxels. If not done, it creates a grid pattern following LOD0 block
@@ -275,9 +275,10 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &
 			return false;
 		}
 
-		const VoxelDataLodMap::Lod &lod0 = voxel_data.lods[0];
-		RWLockRead rlock(lod0.map_lock);
-		tls_grid.reference_area(lod0.map, voxel_box);
+		voxel_data.get_blocks_grid(tls_grid, voxel_box, 0);
+		// const VoxelDataLodMap::Lod &lod0 = voxel_data.lods[0];
+		// RWLockRead rlock(lod0.map_lock);
+		// tls_grid.reference_area(lod0.map, voxel_box);
 	}
 
 	if (!tls_grid.has_any_block()) {
@@ -291,7 +292,7 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelDataLodMap &
 	return true;
 }
 
-inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_data, Span<const float> query_x_buffer,
+inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Span<const float> query_x_buffer,
 		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
 		Vector3f query_min_pos, Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
@@ -310,7 +311,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_da
 				query_sdf_buffer, query_min_pos, query_max_pos);
 
 		if (voxel_data != nullptr) {
-			voxel_data->modifiers.apply(
+			voxel_data->get_modifiers().apply(
 					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
 		}
 	}
@@ -326,8 +327,8 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataLodMap *voxel_da
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
-		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelDataLodMap *voxel_data,
-		Vector3i origin_in_voxels, unsigned int lod_index, bool octahedral_encoding) {
+		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
+		unsigned int lod_index, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());

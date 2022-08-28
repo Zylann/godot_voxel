@@ -4,7 +4,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../engine/distance_normalmaps.h"
 #include "../../generators/voxel_generator.h"
-#include "../../storage/voxel_data_map.h"
+#include "../../storage/voxel_data.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/fixed_array.h"
 #include "../voxel_mesh_map.h"
@@ -47,12 +47,13 @@ struct VoxelLodTerrainUpdateData {
 		// Area within which voxels can exist.
 		// Note, these bounds might not be exactly represented. This volume is chunk-based, so the result will be
 		// approximated to the closest chunk.
-		Box3i bounds_in_voxels;
-		unsigned int lod_count = 0;
+		// Box3i bounds_in_voxels;
+		// unsigned int lod_count = 0;
+
 		// Distance between a viewer and the end of LOD0
 		float lod_distance = 0.f;
 		unsigned int view_distance_voxels = 512;
-		bool full_load_mode = false;
+		// bool full_load_mode = false;
 		bool run_stream_in_editor = true;
 		// If true, try to generate blocks and store them in the data map before posting mesh requests.
 		// If false, everything will generate non-edited voxels on the fly instead.

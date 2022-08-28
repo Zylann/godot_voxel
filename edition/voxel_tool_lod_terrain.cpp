@@ -28,7 +28,7 @@ VoxelToolLodTerrain::VoxelToolLodTerrain(VoxelLodTerrain *terrain) : _terrain(te
 
 bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
-	return _terrain->is_area_editable(box);
+	return _terrain->get_storage().is_area_loaded(box);
 }
 
 // Binary search can be more accurate than linear regression because the SDF can be inaccurate in the first place.
@@ -80,17 +80,22 @@ float approximate_distance_to_isosurface_binary_search(
 Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
 	// TODO Transform input if the terrain is rotated
-	// TODO Optimization: implement broad-phase on blocks to minimize locking and increase performance
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
+	// TODO Optimization: voxel raycast uses `get_voxel` which is the slowest, but could be made faster.
+	// Instead, do a broad-phase on blocks. If a block's voxels need to be parsed, get all positions the ray could go
+	// through in that block, then query them all at once (better for bulk processing without going again through
+	// locking and data structures, and allows SIMD). Then check results in order.
+	// If no hit is found, carry on with next blocks.
+
 	struct RaycastPredicate {
-		VoxelLodTerrain *terrain;
+		VoxelData &data;
 
 		bool operator()(const VoxelRaycastState &rs) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			VoxelSingleValue defval;
 			defval.f = 1.f;
-			const VoxelSingleValue v = terrain->get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF, defval);
+			const VoxelSingleValue v = data.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF, defval);
 			return v.f < 0;
 		}
 	};
@@ -98,7 +103,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	Ref<VoxelRaycastResult> res;
 
 	// We use grid-raycast as a middle-phase to roughly detect where the hit will be
-	RaycastPredicate predicate = { _terrain };
+	RaycastPredicate predicate = { _terrain->get_storage() };
 	Vector3i hit_pos;
 	Vector3i prev_pos;
 	float hit_distance;
@@ -127,17 +132,17 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		if (_raycast_binary_search_iterations > 0) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			struct VolumeSampler {
-				VoxelLodTerrain *terrain;
+				VoxelData &data;
 
 				inline float operator()(const Vector3i &pos) const {
 					VoxelSingleValue defval;
 					defval.f = 1.f;
-					const VoxelSingleValue value = terrain->get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
+					const VoxelSingleValue value = data.get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
 					return value.f;
 				}
 			};
 
-			VolumeSampler sampler{ _terrain };
+			VolumeSampler sampler{ _terrain->get_storage() };
 			d = hit_distance_prev +
 					approximate_distance_to_isosurface_binary_search(sampler, pos + dir * hit_distance_prev, dir,
 							hit_distance - hit_distance_prev, _raycast_binary_search_iterations);
@@ -172,17 +177,11 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
-	ERR_FAIL_COND(data == nullptr);
-	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+	VoxelData &data = _terrain->get_storage();
 
-	preload_box(*data, op.box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
-
-	{
-		RWLockRead rlock(data_lod.map_lock);
-		op.blocks.reference_area(data_lod.map, op.box);
-		op();
-	}
+	data.pre_generate_box(op.box);
+	data.get_blocks_grid(op.blocks, op.box, 0);
+	op();
 
 	_post_edit(op.box);
 }
@@ -210,17 +209,11 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 		return;
 	}
 
-	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
-	ERR_FAIL_COND(data == nullptr);
-	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+	VoxelData &data = _terrain->get_storage();
 
-	preload_box(*data, op.box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
-
-	{
-		RWLockRead rlock(data_lod.map_lock);
-		op.blocks.reference_area(data_lod.map, op.box);
-		op();
-	}
+	data.pre_generate_box(op.box);
+	data.get_blocks_grid(op.blocks, op.box, 0);
+	op();
 
 	_post_edit(op.box);
 }
@@ -228,25 +221,20 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 template <typename Op_T>
 class VoxelToolAsyncEdit : public IThreadedTask {
 public:
-	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelDataLodMap> data) : _op(op), _data(data) {
+	VoxelToolAsyncEdit(Op_T op, std::shared_ptr<VoxelData> data) : _op(op), _data(data) {
 		_tracker = make_shared_instance<AsyncDependencyTracker>(1);
 	}
 
 	void run(ThreadedTaskContext ctx) override {
 		ZN_PROFILE_SCOPE();
-		CRASH_COND(_data == nullptr);
-		VoxelDataLodMap::Lod &data_lod = _data->lods[0];
-		{
-			// TODO Prefer a spatial lock?
-			// We want blocks inside the edited area to not be accessed by other threads,
-			// but this locks the entire map, not just our area. If we used a spatial lock we would only need to lock
-			// the map for the duration of `reference_area`.
-			RWLockRead rlock(data_lod.map_lock);
-			// TODO May want to fail if not all blocks were found
-			_op.blocks.reference_area(data_lod.map, _op.box);
-			// TODO Need to apply modifiers
-			_op();
-		}
+		ZN_ASSERT(_data != nullptr);
+		// TODO Thread-safety: not sure if this is entirely safe, VoxelDataBlock members aren't protected.
+		// Only the map and VoxelBuffers are. To fix this we could migrate to a spatial lock.
+
+		// TODO May want to fail if not all blocks were found
+		// TODO Need to apply modifiers
+		_data->get_blocks_grid(_op.blocks, _op.box, 0);
+		_op();
 		_tracker->post_complete();
 	}
 
@@ -257,7 +245,7 @@ public:
 private:
 	Op_T _op;
 	// We reference this just to keep map pointers alive
-	std::shared_ptr<VoxelDataLodMap> _data;
+	std::shared_ptr<VoxelData> _data;
 	std::shared_ptr<AsyncDependencyTracker> _tracker;
 };
 
@@ -280,8 +268,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 		return;
 	}
 
-	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
-	ERR_FAIL_COND(data == nullptr);
+	std::shared_ptr<VoxelData> data = _terrain->get_storage_shared();
 
 	VoxelToolAsyncEdit<ops::DoSphere> *task = memnew(VoxelToolAsyncEdit<ops::DoSphere>(op, data));
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
@@ -293,19 +280,20 @@ void VoxelToolLodTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t c
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->copy(pos, dst->get_buffer(), channels_mask);
+	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
 }
 
 float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	const int channel = get_channel();
-	VoxelLodTerrain *terrain = _terrain;
+	VoxelData &data = _terrain->get_storage();
 	// TODO Optimization: is it worth a making a fast-path for this?
 	return get_sdf_interpolated(
-			[terrain, channel](Vector3i ipos) {
+			[&data, channel](Vector3i ipos) {
 				VoxelSingleValue defval;
 				defval.f = 1.f;
-				VoxelSingleValue value = terrain->get_voxel(ipos, channel, defval);
+				VoxelSingleValue value = data.get_voxel(ipos, channel, defval);
 				return value.f;
 			},
 			position);
@@ -315,25 +303,27 @@ uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	VoxelSingleValue defval;
 	defval.i = 0;
-	return _terrain->get_voxel(pos, _channel, defval).i;
+	return _terrain->get_storage().get_voxel(pos, _channel, defval).i;
 }
 
 float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	VoxelSingleValue defval;
 	defval.f = 1.f;
-	return _terrain->get_voxel(pos, _channel, defval).f;
+	return _terrain->get_storage().get_voxel(pos, _channel, defval).f;
 }
 
 void VoxelToolLodTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_terrain->try_set_voxel_without_update(pos, _channel, v);
+	_terrain->get_storage().try_set_voxel(v, pos, _channel);
+	// No post_update, the parent class does it, it's a generic slow implemntation
 }
 
 void VoxelToolLodTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	// TODO Format should be accessible from terrain
-	_terrain->try_set_voxel_without_update(pos, _channel, snorm_to_s16(v));
+	_terrain->get_storage().try_set_voxel_f(v, pos, _channel);
+	// No post_update, the parent class does it, it's a generic slow implemntation
 }
 
 void VoxelToolLodTerrain::_post_edit(const Box3i &box) {
@@ -729,11 +719,9 @@ void VoxelToolLodTerrain::stamp_sdf(
 		return;
 	}
 
-	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
-	ERR_FAIL_COND(data == nullptr);
-	VoxelDataLodMap::Lod &data_lod = data->lods[0];
+	VoxelData &data = _terrain->get_storage();
 
-	preload_box(*data, voxel_box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
+	data.pre_generate_box(voxel_box);
 
 	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesnt intersect
 	// TODO Maybe we should scale SDF values based on the scale of the transform too
@@ -753,11 +741,8 @@ void VoxelToolLodTerrain::stamp_sdf(
 	ZN_ASSERT_RETURN(buffer.get_channel_data(channel, op.shape.buffer));
 
 	VoxelDataGrid grid;
-	{
-		RWLockRead rlock(data_lod.map_lock);
-		grid.reference_area(data_lod.map, voxel_box);
-		grid.write_box(voxel_box, VoxelBufferInternal::CHANNEL_SDF, op);
-	}
+	data.get_blocks_grid(grid, voxel_box, 0);
+	grid.write_box(voxel_box, VoxelBufferInternal::CHANNEL_SDF, op);
 
 	_post_edit(voxel_box);
 }
@@ -784,16 +769,15 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 		return;
 	}
 
-	std::shared_ptr<VoxelDataLodMap> data = _terrain->get_storage();
-	ERR_FAIL_COND(data == nullptr);
+	VoxelData &data = _terrain->get_storage();
 
-	preload_box(*data, box, _terrain->get_generator().ptr(), !_terrain->is_full_load_mode_enabled());
+	data.pre_generate_box(box);
 
 	const unsigned int channel_index = VoxelBufferInternal::CHANNEL_SDF;
 
 	VoxelBufferInternal buffer;
 	buffer.create(box.size);
-	_terrain->copy(box.pos, buffer, 1 << channel_index);
+	data.copy(box.pos, buffer, 1 << channel_index);
 
 	buffer.decompress_channel(channel_index);
 
@@ -880,7 +864,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	scale_and_store_sdf(buffer, in_sdf_full);
 
-	_terrain->paste(box.pos, buffer, 1 << channel_index);
+	data.paste(box.pos, buffer, 1 << channel_index, false, 0, false);
 
 	_post_edit(box);
 }
