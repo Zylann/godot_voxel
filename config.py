@@ -11,7 +11,7 @@ def configure(env):
     env_vars.Add(BoolVariable("voxel_tests", 
         "Build with tests for the voxel module, which will run on startup of the engine", False))
 
-    env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support", True))
+    env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
 
     env_vars.Update(env)
     Help(env_vars.GenerateHelpText(env))
