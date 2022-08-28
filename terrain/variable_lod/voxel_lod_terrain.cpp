@@ -2907,10 +2907,10 @@ void VoxelLodTerrain::_bind_methods() {
 
 	// Misc
 
-	ClassDB::bind_method(
-			D_METHOD("voxel_to_data_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_data_block_position);
-	ClassDB::bind_method(
-			D_METHOD("voxel_to_mesh_block_position", "lod_index"), &VoxelLodTerrain::voxel_to_mesh_block_position);
+	ClassDB::bind_method(D_METHOD("voxel_to_data_block_position", "voxel_position", "lod_index"),
+			&VoxelLodTerrain::voxel_to_data_block_position);
+	ClassDB::bind_method(D_METHOD("voxel_to_mesh_block_position", "voxel_position", "lod_index"),
+			&VoxelLodTerrain::voxel_to_mesh_block_position);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelLodTerrain::get_voxel_tool);
 	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelLodTerrain::_b_save_modified_blocks);
