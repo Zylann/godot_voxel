@@ -10,15 +10,8 @@
 namespace zylann::voxel {
 
 VoxelDataMap::VoxelDataMap() {
-	// TODO Make it configurable in editor (with all necessary notifications and updatings!)
+	// This is not planned to change at runtime at the moment.
 	set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
-
-	// Pick same defaults as VoxelBuffer
-	VoxelBufferInternal b;
-	b.create(1, 1, 1);
-	for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
-		_default_voxel[channel_index] = b.get_voxel(0, 0, 0, channel_index);
-	}
 }
 
 VoxelDataMap::~VoxelDataMap() {
@@ -55,7 +48,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	Vector3i bpos = voxel_to_block(pos);
 	const VoxelDataBlock *block = get_block(bpos);
 	if (block == nullptr || !block->has_voxels()) {
-		return _default_voxel[c];
+		return VoxelBufferInternal::get_default_value_static(c);
 	}
 	RWLockRead lock(block->get_voxels_const().get_lock());
 	return block->get_voxels_const().get_voxel(to_local(pos), c);
@@ -64,7 +57,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 	buffer->create(_block_size, _block_size, _block_size);
-	buffer->set_default_values(_default_voxel);
+	//buffer->set_default_values(_default_voxel);
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
 #endif
@@ -99,7 +92,7 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 	// TODO The generator needs to be invoked if the block has no voxels
 	if (block == nullptr || !block->has_voxels()) {
 		// TODO Not valid for a float return value
-		return _default_voxel[c];
+		return VoxelBufferInternal::get_default_value_static(c);
 	}
 	Vector3i lpos = to_local(pos);
 	RWLockRead lock(block->get_voxels_const().get_lock());
@@ -114,16 +107,6 @@ void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	VoxelBufferInternal &voxels = block->get_voxels();
 	RWLockWrite lock(voxels.get_lock());
 	voxels.set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
-}
-
-void VoxelDataMap::set_default_voxel(int value, unsigned int channel) {
-	ZN_ASSERT_RETURN(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS);
-	_default_voxel[channel] = value;
-}
-
-int VoxelDataMap::get_default_voxel(unsigned int channel) {
-	ZN_ASSERT_RETURN_V(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS, 0);
-	return _default_voxel[channel];
 }
 
 VoxelDataBlock *VoxelDataMap::get_block(Vector3i bpos) {
@@ -251,8 +234,8 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 						const uint8_t channel = channels[ci];
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						dst_buffer.fill_area(_default_voxel[channel], src_block_origin - min_pos,
-								src_block_origin - min_pos + block_size_v, channel);
+						dst_buffer.fill_area(VoxelBufferInternal::get_default_value_static(channel),
+								src_block_origin - min_pos, src_block_origin - min_pos + block_size_v, channel);
 					}
 				}
 			}

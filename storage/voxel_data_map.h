@@ -68,9 +68,6 @@ public:
 	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF) const;
 	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF);
 
-	void set_default_voxel(int value, unsigned int channel = 0);
-	int get_default_voxel(unsigned int channel = 0);
-
 	inline void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
 	}
@@ -186,9 +183,6 @@ private:
 	void set_block_size_pow2(unsigned int p);
 
 private:
-	// Voxel values that will be returned if access is out of map bounds
-	FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> _default_voxel;
-
 	// Blocks stored with a spatial hash in all 3D directions.
 	// This is dual storage: map and vector, for fast lookup and also fast iteration.
 	// Before I used Godot's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to

@@ -106,6 +106,21 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBufferInternal::Depth depth
 	}
 }
 
+namespace {
+uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
+	0, // TYPE
+	snorm_to_s16(1.f), // SDF
+	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
+	encode_weights_to_packed_u16(15, 0, 0, 0), // WEIGHTS
+	0, 0, 0, 0 //
+};
+}
+
+uint64_t VoxelBufferInternal::get_default_value_static(unsigned int channel_index) {
+	ZN_ASSERT(channel_index < MAX_CHANNELS);
+	return g_default_values[channel_index];
+}
+
 VoxelBufferInternal::VoxelBufferInternal() {
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
 	_channels[CHANNEL_TYPE].depth = DEFAULT_TYPE_CHANNEL_DEPTH;
