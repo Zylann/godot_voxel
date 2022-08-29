@@ -50,15 +50,15 @@ struct BeforeUnloadMeshAction {
 	}
 };
 
-struct ScheduleSaveAction {
-	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
+/*struct ScheduleSaveAction {
+	std::vector<VoxelData::BlockToSave> &blocks_to_save;
 
 	void operator()(const Vector3i &bpos, VoxelDataBlock &block) {
 		// Save if modified
 		// TODO Don't ask for save if the stream doesn't support it!
 		if (block.is_modified()) {
 			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelLodTerrainUpdateData::BlockToSave b;
+			VoxelData::BlockToSave b;
 
 			// If a modified block has no voxels, it is equivalent to removing the block from the stream
 			if (block.has_voxels()) {
@@ -70,12 +70,12 @@ struct ScheduleSaveAction {
 			}
 
 			b.position = bpos;
-			b.lod = block.get_lod_index();
+			b.lod_index = block.get_lod_index();
 			blocks_to_save.push_back(b);
 			block.set_modified(false);
 		}
 	}
-};
+};*/
 
 static inline uint64_t get_ticks_msec() {
 	return Time::get_singleton()->get_ticks_msec();
@@ -1566,8 +1566,8 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	}
 
 	if (ob.voxels != nullptr) {
-		if (!_data->try_set_block_buffer(
-					ob.position, ob.lod, ob.voxels, ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED)) {
+		if (_data->try_set_block_buffer(ob.position, ob.lod, ob.voxels,
+					ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED, false) == nullptr) {
 			++_stats.dropped_block_loads;
 			return;
 		}
@@ -2116,12 +2116,13 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	VoxelLodTerrainUpdateTask::flush_pending_lod_edits(_update_data->state, *_data, get_mesh_block_size());
 
-	std::vector<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save;
+	std::vector<VoxelData::BlockToSave> blocks_to_save;
 
 	Ref<VoxelStream> stream = get_stream();
 	if (stream.is_valid()) {
 		// That may cause a stutter, so should be used when the player won't notice
-		_data->for_each_block(ScheduleSaveAction{ blocks_to_save });
+		_data->consume_all_modifications(blocks_to_save, with_copy);
+
 		/*for (unsigned int i = 0; i < _data->lod_count; ++i) {
 			VoxelDataLodMap::Lod &data_lod = _data->lods[i];
 			RWLockRead rlock(data_lod.map_lock);

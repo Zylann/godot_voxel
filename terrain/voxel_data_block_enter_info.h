@@ -19,7 +19,7 @@ class VoxelDataBlockEnterInfo : public Object {
 public:
 	int network_peer_id = -1;
 	Vector3i block_position;
-	VoxelDataBlock *voxel_block = nullptr;
+	const VoxelDataBlock *voxel_block = nullptr;
 
 private:
 	int _b_get_network_peer_id() const;

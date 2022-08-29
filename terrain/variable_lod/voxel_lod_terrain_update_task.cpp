@@ -209,7 +209,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 	*/
 }
 
-struct BeforeUnloadDataAction {
+/*struct BeforeUnloadDataAction {
 	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
 	const Vector3i bpos;
 	bool save;
@@ -230,7 +230,7 @@ struct BeforeUnloadDataAction {
 			blocks_to_save.push_back(b);
 		}
 	}
-};
+};*/
 
 /*static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, VoxelDataLodMap::Lod &data_lod,
 		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
@@ -252,7 +252,7 @@ struct BeforeUnloadDataAction {
 }*/
 
 static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Vector3 p_viewer_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save,
+		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> &blocks_to_save, bool can_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
@@ -310,10 +310,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 			prev_box.difference_to_vec(new_box, tls_to_remove);
 
 			for (const Box3i bbox : tls_to_remove) {
-				data.unload_blocks(bbox, lod_index, //
-						[&blocks_to_save, can_save](VoxelDataBlock &block, Vector3i bpos) {
-							BeforeUnloadDataAction{ blocks_to_save, bpos, can_save }(block);
-						});
+				data.unload_blocks(bbox, lod_index, &blocks_to_save);
 			}
 
 			/*prev_box.difference(new_box, [&lod, &data_lod, &blocks_to_save, can_save](Box3i out_of_range_box) {
@@ -1268,14 +1265,13 @@ static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBu
 }
 
 void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
-		Span<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save,
-		std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
-		BufferedTaskScheduler &task_scheduler) {
+		Span<VoxelData::BlockToSave> blocks_to_save, std::shared_ptr<StreamingDependency> &stream_dependency,
+		unsigned int data_block_size, BufferedTaskScheduler &task_scheduler) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
-		VoxelLodTerrainUpdateData::BlockToSave &b = blocks_to_save[i];
-		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod));
+		VoxelData::BlockToSave &b = blocks_to_save[i];
+		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod_index));
 		request_voxel_block_save(
-				volume_id, b.voxels, b.position, b.lod, stream_dependency, data_block_size, task_scheduler);
+				volume_id, b.voxels, b.position, b.lod_index, stream_dependency, data_block_size, task_scheduler);
 	}
 }
 
@@ -1342,7 +1338,8 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			// Iteration order matters for thread access.
 			// The array also implicitely encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
-			task->blocks_count = data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
+			data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
+			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
 
 			/*const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			RWLockRead rlock(data_lod.map_lock);
@@ -1600,7 +1597,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	// Other mesh updates
 	process_changed_generated_areas(state, settings, lod_count);
 
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToSave> data_blocks_to_save;
+	static thread_local std::vector<VoxelData::BlockToSave> data_blocks_to_save;
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> data_blocks_to_load;
 	data_blocks_to_load.clear();
 

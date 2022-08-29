@@ -36,6 +36,10 @@ public:
 		return _lods[0].map.voxel_to_block(pos);
 	}
 
+	inline Vector3i block_to_voxel(Vector3i pos) const {
+		return _lods[0].map.block_to_voxel(pos);
+	}
+
 	void set_lod_count(unsigned int p_lod_count);
 
 	// Clears voxel data. Keeps modifiers, generator and settings.
@@ -82,7 +86,7 @@ public:
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Queries.
+	// Voxel queries.
 	// When not specified, the used LOD index is 0.
 
 	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel_index, VoxelSingleValue defval) const;
@@ -102,6 +106,8 @@ public:
 	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 			uint64_t mask_value, bool create_new_blocks);
 
+	// Tests if the given area is loaded at LOD0.
+	// This is necessary for editing destructively.
 	bool is_area_loaded(const Box3i p_voxels_box) const;
 
 	// Executes a read+write operation on all voxels in the given area, on a specific channel.
@@ -118,6 +124,7 @@ public:
 		Ref<VoxelGenerator> generator = _generator;
 		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
+			// New blocks can be created in the map so we have to lock for writing
 			RWLockWrite wlock(data_lod0.map_lock);
 			data_lod0.map.write_box(
 					voxel_box, channel_index, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
@@ -144,6 +151,7 @@ public:
 		Ref<VoxelGenerator> generator = _generator;
 		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
 		{
+			// New blocks can be created in the map so we have to lock for writing
 			RWLockWrite wlock(data_lod0.map_lock);
 			data_lod0.map.write_box_2(voxel_box, channel1_index, channel2_index, action,
 					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
@@ -165,6 +173,7 @@ public:
 
 	// Clears voxel data from blocks that are pure results of generators and modifiers.
 	// WARNING: this does not check if the area is editable.
+	// TODO Rename `clear_cached_voxel_data_in_area`
 	void clear_cached_blocks_in_voxel_area(Box3i p_voxel_box);
 
 	// Flags all blocks in the given area as modified at LOD0.
@@ -172,14 +181,17 @@ public:
 	// Optionally, returns a list of affected block positions which did not require LOD updates before.
 	void mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod);
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Block-aware API
+
 	// Sets voxel data at a block position. Also sets wether this is edited data (otherwise it is cached generator
 	// results).
-	// If the block has different size than expected, returns false and doesn't set the data.
-	// If the block already exists, it will not be overwritten, but still returns true.
-	// Otherwise, returns true.
-	// TODO Might need to expose a parameter for the overwriting behavior.
-	bool try_set_block_buffer(
-			Vector3i block_position, unsigned int lod_index, std::shared_ptr<VoxelBufferInternal> buffer, bool edited);
+	// If the block has different size than expected, returns nullptr and doesn't set the data.
+	// If the block already exists, it will be overwritten if `overwrite` is `true`.
+	// The block is returned if it exists.
+	// WARNING: the returned pointer may only be used if you know that this block won't get removed by another thread.
+	VoxelDataBlock *try_set_block_buffer(Vector3i block_position, unsigned int lod_index,
+			std::shared_ptr<VoxelBufferInternal> buffer, bool edited, bool overwrite);
 
 	// Sets empty voxel data at a block position. It means this block is known to have no edits and no cached generator
 	// data.
@@ -187,18 +199,18 @@ public:
 	// TODO Might need to expose a parameter for the overwriting behavior.
 	void set_empty_block_buffer(Vector3i block_position, unsigned int lod_index);
 
-	// void op(Vector3i bpos, VoxelDataBlock &block)
+	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
-	void for_each_block(F op) {
+	void for_each_block(F op) const {
 		const unsigned int lod_count = get_lod_count();
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			Lod &lod = _lods[lod_index];
+			const Lod &lod = _lods[lod_index];
 			RWLockRead rlock(lod.map_lock);
 			lod.map.for_each_block(op);
 		}
 	}
 
-	// void op(Vector3i bpos, VoxelDataBlock &block)
+	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
 	void for_each_block_at_lod(F op, unsigned int lod_index) const {
 		const Lod &lod = _lods[lod_index];
@@ -209,6 +221,14 @@ public:
 	// Tests if a block exists at the specified block position and LOD index.
 	// This is mainly used for debugging so it isn't optimal, don't use this if you plan to query many blocks.
 	bool has_block(Vector3i bpos, unsigned int lod_index) const;
+
+	// Gets a block directly from LOD0.
+	// WARNING: the returned pointer may only be used if you know that this block won't get removed by another thread.
+	// Prefer using other safe functions if possible.
+	//VoxelDataBlock *get_block(Vector3i bpos);
+
+	// Tests if all blocks in a LOD0 area are loaded. If any isn't, returns false. Otherwise, returns true.
+	bool has_all_blocks_in_area(Box3i data_blocks_box) const;
 
 	// Gets the total amount of allocated blocks. This includes blocks having no voxel data.
 	unsigned int get_block_count() const;
@@ -222,20 +242,33 @@ public:
 	// Optionally, returns a list of affected block positions.
 	void update_lods(Span<const Vector3i> modified_lod0_blocks, std::vector<BlockLocation> *out_updated_blocks);
 
-	// void action(VoxelDataBlock &block, Vector3i bpos)
-	template <typename F>
-	void unload_blocks(Box3i bbox, unsigned int lod_index, F action) {
-		Lod &lod = _lods[lod_index];
-		RWLockWrite wlock(lod.map_lock);
-		bbox.for_each_cell_zxy([&lod, &action](Vector3i bpos) {
-			lod.map.remove_block(bpos, [&action, bpos](VoxelDataBlock &block) { action(block, bpos); });
-		});
-	}
+	struct BlockToSave {
+		std::shared_ptr<VoxelBufferInternal> voxels;
+		Vector3i position;
+		uint32_t lod_index;
+	};
+
+	// Unloads data blocks in the specified area. If some of them were modified and `to_save` is not null, their data
+	// will be returned for the caller to save.
+	void unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<BlockToSave> *to_save);
+
+	// Unloads data blocks at specified positions of LOD0. If some of them were modified and `to_save` is not null,
+	// their data will be returned for the caller to save.
+	void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
+
+	// If the block at the specified LOD0 position exists and is modified, marks it as non-modified and returns a copy
+	// of its data to save. Returns true if there is something to save.
+	bool consume_block_modifications(Vector3i bpos, BlockToSave &out_to_save);
+
+	// Marks all modified blocks as unmodified and returns their data to save. if `with_copy` is true, the returned data
+	// will be a copy, otherwise it will reference voxel data. Prefer using references when about to quit for example.
+	void consume_all_modifications(std::vector<BlockToSave> &to_save, bool with_copy);
 
 	// Gets missing blocks out of the given block positions.
 	// WARNING: positions outside bounds will be considered missing too.
-	// TODO Don't consider positions outside bounds to be missing? This is only a byproduct of migrating old code.
-	// It doesnt check this because the code using this function already does it (a bit more efficiently, but still).
+	// TODO Don't consider positions outside bounds to be missing? This is only a byproduct of migrating old
+	// code. It doesnt check this because the code using this function already does it (a bit more efficiently,
+	// but still).
 	void get_missing_blocks(
 			Span<const Vector3i> block_positions, unsigned int lod_index, std::vector<Vector3i> &out_missing) const;
 
@@ -243,10 +276,36 @@ public:
 	// If the area intersects the outside of the bounds, it will be clipped.
 	void get_missing_blocks(Box3i p_blocks_box, unsigned int lod_index, std::vector<Vector3i> &out_missing) const;
 
-	unsigned int get_blocks_with_voxel_data(
+	// Gets blocks with voxel data in the given area in block coordinates.
+	// Voxel data references are returned in an array big enough to contain a grid of the size of the area.
+	// Blocks found will be placed at an index computed as if the array was a flat grid (ZXY).
+	// Entries without voxel data will be left to null.
+	void get_blocks_with_voxel_data(
 			Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBufferInternal>> out_blocks) const;
 
 	void get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const;
+
+	std::shared_ptr<VoxelBufferInternal> try_get_block_voxels(Vector3i bpos);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Reference-counted API (LOD0 only)
+
+	void view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
+			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock *> &found_blocks);
+
+	// void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
+	// 		std::vector<Vector3i> &blocks_without_viewers_positions,
+	// 		std::vector<VoxelDataBlock *> &blocks_without_viewers);
+
+	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &found_blocks,
+			std::vector<BlockToSave> *to_save);
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Metadata queries.
+	// Only at LOD0.
+
+	void set_voxel_metadata(Vector3i pos, Variant meta);
+	Variant get_voxel_metadata(Vector3i pos);
 
 private:
 	void reset_maps_no_settings_lock();
@@ -288,19 +347,21 @@ private:
 	//
 	// TODO Optimize: (low priority) this takes more than 5Kb in the object, even when not using LODs.
 	// Each LOD contains an RWLock, which is 242 bytes, so *24 it adds up quickly.
-	// A solution would be to allocate LODs dynamically in the constructor (the potential presence of LODs doesnt need
-	// to change after being constructed, there is no use case for that so far)
+	// A solution would be to allocate LODs dynamically in the constructor (the potential presence of LODs doesnt
+	// need to change after being constructed, there is no use case for that so far)
 	FixedArray<Lod, constants::MAX_LOD> _lods;
 
+	// Area within which voxels can exist.
+	// Note, these bounds might not be exactly represented. Volumes are chunk-based, so the result may be
+	// approximated to the closest chunk.
 	Box3i _bounds_in_voxels;
 
 	uint8_t _lod_count = 1;
 
-	// If enabled, some data blocks can have the "not loaded" and "loaded" status. Which means we can't assume what they
-	// contain, until we load them from the stream.
-	// If disabled, all edits are loaded in memory, and we know if a block isn't stored, it means we can use the
-	// generator and modifiers to obtain its data.
-	// This mostly changes how this class is used, streaming itself is not directly implemented in this class.
+	// If enabled, some data blocks can have the "not loaded" and "loaded" status. Which means we can't assume what
+	// they contain, until we load them from the stream. If disabled, all edits are loaded in memory, and we know if
+	// a block isn't stored, it means we can use the generator and modifiers to obtain its data. This mostly changes
+	// how this class is used, streaming itself is not directly implemented in this class.
 	bool _streaming_enabled = true;
 
 	// Procedural generation stack
@@ -317,7 +378,8 @@ private:
 	// It is not a RWLock because it may be locked for VERY short periods of time (just reading small values).
 	// In comparison, RWLock uses a `shared_timed_mutex` under the hood, and locking that for reading locks a
 	// mutex internally either way.
-	// There are times where locking can take longer, but it only happens rarely, when changing LOD count for example.
+	// There are times where locking can take longer, but it only happens rarely, when changing LOD count for
+	// example.
 	Mutex _settings_mutex;
 };
 

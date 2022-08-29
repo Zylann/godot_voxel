@@ -36,11 +36,11 @@ struct VoxelLodTerrainUpdateData {
 		uint8_t lod;
 	};
 
-	struct BlockToSave {
-		std::shared_ptr<VoxelBufferInternal> voxels;
-		Vector3i position;
-		uint8_t lod;
-	};
+	// struct BlockToSave {
+	// 	std::shared_ptr<VoxelBufferInternal> voxels;
+	// 	Vector3i position;
+	// 	uint8_t lod;
+	// };
 
 	// These values don't change during the update task.
 	struct Settings {

@@ -7,7 +7,7 @@ namespace zylann::voxel {
 
 class VoxelTerrain;
 class VoxelBlockyLibrary;
-class VoxelDataMap;
+class VoxelData;
 
 class VoxelToolTerrain : public VoxelTool {
 	GDCLASS(VoxelToolTerrain, VoxelTool)
@@ -37,7 +37,7 @@ public:
 
 	// For easier unit testing (the regular one needs a terrain setup etc, harder to test atm)
 	// The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
-	static void run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelBlockyLibrary &lib,
+	static void run_blocky_random_tick_static(VoxelData &data, Box3i voxel_box, const VoxelBlockyLibrary &lib,
 			int voxel_count, int batch_count, void *callback_data, bool (*callback)(void *, Vector3i, int64_t));
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);

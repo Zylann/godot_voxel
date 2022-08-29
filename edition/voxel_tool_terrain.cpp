@@ -2,6 +2,7 @@
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_data.h"
 #include "../storage/voxel_metadata_variant.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
 #include "../util/godot/ref_counted.h"
@@ -21,38 +22,45 @@ VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain) {
 bool VoxelToolTerrain::is_area_editable(const Box3i &box) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, false);
 	// TODO Take volume bounds into account
-	return _terrain->get_storage().is_area_fully_loaded(box);
+	return _terrain->get_storage().is_area_loaded(box);
 }
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
+	// TODO Optimization: voxel raycast uses `get_voxel` which is the slowest, but could be made faster.
+	// See `VoxelToolLodTerrain` for information about how to implement improvements.
+
 	struct RaycastPredicateColor {
-		const VoxelDataMap &map;
+		const VoxelData &data;
 
 		bool operator()(const VoxelRaycastState &rs) const {
-			const uint64_t v = map.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_COLOR);
+			VoxelSingleValue defval;
+			defval.i = 0;
+			const uint64_t v = data.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_COLOR, defval).i;
 			return v != 0;
 		}
 	};
 
 	struct RaycastPredicateSDF {
-		const VoxelDataMap &map;
+		const VoxelData &data;
 
 		bool operator()(const VoxelRaycastState &rs) const {
-			const float v = map.get_voxel_f(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF);
+			const float v = data.get_voxel_f(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF);
 			return v < 0;
 		}
 	};
 
 	struct RaycastPredicateBlocky {
-		const VoxelDataMap &map;
+		const VoxelData &data;
 		const VoxelBlockyLibrary &library;
 		const uint32_t collision_mask;
 
 		bool operator()(const VoxelRaycastState &rs) const {
-			const int v = map.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_TYPE);
+			VoxelSingleValue defval;
+			defval.i = 0;
+			const int v = data.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_TYPE, defval).i;
 
 			if (library.has_voxel(v) == false) {
 				return false;
@@ -178,9 +186,9 @@ void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	VoxelDataMap &data = _terrain->get_storage();
+	VoxelData &data = _terrain->get_storage();
 
-	op.blocks.reference_area(data, op.box);
+	data.get_blocks_grid(op.blocks, op.box, 0);
 	op();
 
 	_post_edit(op.box);
@@ -209,9 +217,9 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 		return;
 	}
 
-	VoxelDataMap &data = _terrain->get_storage();
+	VoxelData &data = _terrain->get_storage();
 
-	op.blocks.reference_area(data, op.box);
+	data.get_blocks_grid(op.blocks, op.box, 0);
 	op();
 
 	_post_edit(op.box);
@@ -219,7 +227,9 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 
 uint64_t VoxelToolTerrain::_get_voxel(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
-	return _terrain->get_storage().get_voxel(pos, _channel);
+	VoxelSingleValue defval;
+	defval.i = 0;
+	return _terrain->get_storage().get_voxel(pos, _channel, defval).i;
 }
 
 float VoxelToolTerrain::_get_voxel_f(Vector3i pos) const {
@@ -229,12 +239,12 @@ float VoxelToolTerrain::_get_voxel_f(Vector3i pos) const {
 
 void VoxelToolTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_terrain->get_storage().set_voxel(v, pos, _channel);
+	_terrain->get_storage().try_set_voxel(v, pos, _channel);
 }
 
 void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_terrain->get_storage().set_voxel_f(v, pos, _channel);
+	_terrain->get_storage().try_set_voxel_f(v, pos, _channel);
 }
 
 void VoxelToolTerrain::_post_edit(const Box3i &box) {
@@ -244,40 +254,25 @@ void VoxelToolTerrain::_post_edit(const Box3i &box) {
 
 void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	VoxelDataMap &map = _terrain->get_storage();
-	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
-	ERR_FAIL_COND_MSG(block == nullptr, "Area not editable");
-	// TODO In this situation, the generator would need to be invoked to fill in the blank
-	ERR_FAIL_COND_MSG(!block->has_voxels(), "Area not cached");
-	RWLockWrite lock(block->get_voxels().get_lock());
-	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(map.to_local(pos));
-	ERR_FAIL_COND(meta_storage == nullptr);
-	gd::set_as_variant(*meta_storage, meta);
+	VoxelData &data = _terrain->get_storage();
+	data.set_voxel_metadata(pos, meta);
 }
 
 Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, Variant());
-	VoxelDataMap &map = _terrain->get_storage();
-	VoxelDataBlock *block = map.get_block(map.voxel_to_block(pos));
-	ERR_FAIL_COND_V_MSG(block == nullptr, Variant(), "Area not editable");
-	// TODO In this situation, the generator would need to be invoked to fill in the blank
-	ERR_FAIL_COND_V_MSG(!block->has_voxels(), Variant(), "Area not cached");
-	RWLockRead lock(block->get_voxels().get_lock());
-	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(map.to_local(pos));
-	if (meta == nullptr) {
-		return Variant();
-	}
-	return gd::get_as_variant(*meta);
+	VoxelData &data = _terrain->get_storage();
+	return data.get_voxel_metadata(pos);
 }
 
-void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i voxel_box, const VoxelBlockyLibrary &lib,
+void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxel_box, const VoxelBlockyLibrary &lib,
 		int voxel_count, int batch_count, void *callback_data, bool (*callback)(void *, Vector3i, int64_t)) {
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
 	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
 	ERR_FAIL_COND(callback == nullptr);
 
-	const Box3i block_box = voxel_box.downscaled(map.get_block_size());
+	const unsigned int block_size = data.get_block_size();
+	const Box3i block_box = voxel_box.downscaled(block_size);
 
 	const int block_count = voxel_count / batch_count;
 	//const int bs_mask = map.get_block_size_mask();
@@ -290,7 +285,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 	static thread_local std::vector<Pick> picks;
 	picks.reserve(batch_count);
 
-	const float block_volume = map.get_block_size() * map.get_block_size() * map.get_block_size();
+	const float block_volume = math::cubed(block_size);
 	CRASH_COND(block_volume < 0.1f);
 
 	struct L {
@@ -309,15 +304,15 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 	for (int bi = 0; bi < block_count; ++bi) {
 		const Vector3i block_pos = block_box.pos + L::urand_vec3i(block_box.size);
 
-		const Vector3i block_origin = map.block_to_voxel(block_pos);
+		const Vector3i block_origin = data.block_to_voxel(block_pos);
 
-		VoxelDataBlock *block = map.get_block(block_pos);
+		std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
 
-		if (block != nullptr && block->has_voxels()) {
+		if (voxels_ptr != nullptr) {
 			// Doing ONLY reads here.
 			{
-				RWLockRead lock(block->get_voxels().get_lock());
-				const VoxelBufferInternal &voxels = block->get_voxels_const();
+				RWLockRead lock(voxels_ptr->get_lock());
+				const VoxelBufferInternal &voxels = *voxels_ptr;
 
 				if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
 					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
@@ -330,7 +325,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelDataMap &map, Box3i vo
 					}
 				}
 
-				Box3i block_voxel_box(block_origin, Vector3iUtil::create(map.get_block_size()));
+				const Box3i block_voxel_box(block_origin, Vector3iUtil::create(block_size));
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
 				local_voxel_box.pos -= block_origin;
 				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
@@ -398,11 +393,11 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	CallbackData cb_self{ callback };
 
 	const VoxelBlockyLibrary &lib = **get_voxel_library(*_terrain);
-	VoxelDataMap &map = _terrain->get_storage();
+	VoxelData &data = _terrain->get_storage();
 	const Box3i voxel_box(math::floor_to_int(voxel_area.position), math::floor_to_int(voxel_area.size));
 
 	run_blocky_random_tick_static(
-			map, voxel_box, lib, voxel_count, batch_count, &cb_self, [](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, lib, voxel_count, batch_count, &cb_self, [](void *self, Vector3i pos, int64_t val) {
 				const Variant vpos = pos;
 				const Variant vv = val;
 				const Variant *args[2];
@@ -430,20 +425,20 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 
 	const Box3i data_block_box = voxel_box.downscaled(_terrain->get_data_block_size());
 
-	VoxelDataMap &map = _terrain->get_storage();
+	VoxelData &data = _terrain->get_storage();
 
-	data_block_box.for_each_cell([&map, &callback, voxel_box](Vector3i block_pos) {
-		VoxelDataBlock *block = map.get_block(block_pos);
+	data_block_box.for_each_cell([&data, &callback, voxel_box](Vector3i block_pos) {
+		std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
 
-		if (block == nullptr || !block->has_voxels()) {
+		if (voxels_ptr == nullptr) {
 			return;
 		}
 
-		const Vector3i block_origin = block_pos * map.get_block_size();
+		const Vector3i block_origin = block_pos * data.get_block_size();
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 
-		block->get_voxels().for_each_voxel_metadata_in_area(
+		voxels_ptr->for_each_voxel_metadata_in_area(
 				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
 					Variant v = gd::get_as_variant(meta);
 					const Variant key = rel_pos + block_origin;
