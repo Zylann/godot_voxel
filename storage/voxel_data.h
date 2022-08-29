@@ -42,28 +42,28 @@ public:
 	void reset_maps();
 
 	inline unsigned int get_lod_count() const {
-		RWLockRead rlock(_rw_lock);
+		MutexLock rlock(_settings_mutex);
 		return _lod_count;
 	}
 
 	void set_bounds(Box3i bounds);
 
 	inline Box3i get_bounds() const {
-		RWLockRead rlock(_rw_lock);
+		MutexLock rlock(_settings_mutex);
 		return _bounds_in_voxels;
 	}
 
 	void set_generator(Ref<VoxelGenerator> generator);
 
 	inline Ref<VoxelGenerator> get_generator() const {
-		RWLockRead rlock(_rw_lock);
+		MutexLock rlock(_settings_mutex);
 		return _generator;
 	}
 
 	void set_stream(Ref<VoxelStream> stream);
 
 	inline Ref<VoxelStream> get_stream() const {
-		RWLockRead rlock(_rw_lock);
+		MutexLock rlock(_settings_mutex);
 		return _stream;
 	}
 
@@ -190,7 +190,8 @@ public:
 	// void op(Vector3i bpos, VoxelDataBlock &block)
 	template <typename F>
 	void for_each_block(F op) {
-		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		const unsigned int lod_count = get_lod_count();
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			Lod &lod = _lods[lod_index];
 			RWLockRead rlock(lod.map_lock);
 			lod.map.for_each_block(op);
@@ -248,7 +249,7 @@ public:
 	void get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const;
 
 private:
-	void reset_maps_no_lock();
+	void reset_maps_no_settings_lock();
 
 	struct Lod {
 		// Storage for edited and cached voxels.
@@ -282,8 +283,13 @@ private:
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is.
 	// LOD 0 is the primary storage for edited data. Higher indices are "mip-maps".
-	// A fixed array is used because it's often a small one, and it doesn't require locking by threads.
-	// Note that these LODs do not automatically update, it is up to users of the class to do this job.
+	// A fixed array is used because max lod count is small, and it doesn't require locking by threads.
+	// Note that these LODs do not automatically update, it is up to users of the class to trigger it.
+	//
+	// TODO Optimize: (low priority) this takes more than 5Kb in the object, even when not using LODs.
+	// Each LOD contains an RWLock, which is 242 bytes, so *24 it adds up quickly.
+	// A solution would be to allocate LODs dynamically in the constructor (the potential presence of LODs doesnt need
+	// to change after being constructed, there is no use case for that so far)
 	FixedArray<Lod, constants::MAX_LOD> _lods;
 
 	Box3i _bounds_in_voxels;
@@ -304,8 +310,15 @@ private:
 	// Persistent storage (file(s)).
 	Ref<VoxelStream> _stream;
 
-	// This should be locked when accessing configuration members.
-	RWLock _rw_lock;
+	// This should be locked when accessing settings members.
+	// If other locks are needed simultaneously such as voxel maps, they should always be locked AFTER, to prevent
+	// deadlocks.
+	//
+	// It is not a RWLock because it may be locked for VERY short periods of time (just reading small values).
+	// In comparison, RWLock uses a `shared_timed_mutex` under the hood, and locking that for reading locks a
+	// mutex internally either way.
+	// There are times where locking can take longer, but it only happens rarely, when changing LOD count for example.
+	Mutex _settings_mutex;
 };
 
 } // namespace zylann::voxel

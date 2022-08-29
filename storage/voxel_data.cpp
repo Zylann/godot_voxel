@@ -12,7 +12,10 @@ void VoxelData::set_lod_count(unsigned int p_lod_count) {
 	ZN_ASSERT(p_lod_count < constants::MAX_LOD);
 	ZN_ASSERT(p_lod_count >= 1);
 
-	RWLockWrite wlock(_rw_lock);
+	// This lock can be held for longer due to resetting the maps, but it is very rare.
+	// In games it is only used once on startup.
+	// In editor it is more frequent but still rare enough and shouldn't be too bad if hiccups occur.
+	MutexLock wlock(_settings_mutex);
 
 	if (p_lod_count == _lod_count) {
 		return;
@@ -21,17 +24,18 @@ void VoxelData::set_lod_count(unsigned int p_lod_count) {
 	_lod_count = p_lod_count;
 
 	// Not entirely required, but changing LOD count at runtime is rarely needed
-	reset_maps_no_lock();
+	reset_maps_no_settings_lock();
 }
 
 void VoxelData::reset_maps() {
-	RWLockWrite wlock(_rw_lock);
-	reset_maps_no_lock();
+	MutexLock wlock(_settings_mutex);
+	reset_maps_no_settings_lock();
 }
 
-void VoxelData::reset_maps_no_lock() {
+void VoxelData::reset_maps_no_settings_lock() {
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &data_lod = _lods[lod_index];
+		RWLockWrite wlock(data_lod.map_lock);
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < _lod_count) {
 			data_lod.map.create(lod_index);
@@ -42,17 +46,17 @@ void VoxelData::reset_maps_no_lock() {
 }
 
 void VoxelData::set_bounds(Box3i bounds) {
-	RWLockWrite wlock(_rw_lock);
+	MutexLock wlock(_settings_mutex);
 	_bounds_in_voxels = bounds;
 }
 
 void VoxelData::set_generator(Ref<VoxelGenerator> generator) {
-	RWLockWrite wlock(_rw_lock);
+	MutexLock wlock(_settings_mutex);
 	_generator = generator;
 }
 
 void VoxelData::set_stream(Ref<VoxelStream> stream) {
-	RWLockWrite wlock(_rw_lock);
+	MutexLock wlock(_settings_mutex);
 	_stream = stream;
 }
 
