@@ -20,4 +20,12 @@
 			Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 		</member>
 	</members>
+	<constants>
+		<constant name="GI_MODE_DISABLED" value="0" enum="GIMode">
+		</constant>
+		<constant name="GI_MODE_BAKED" value="1" enum="GIMode">
+		</constant>
+		<constant name="GI_MODE_DYNAMIC" value="2" enum="GIMode">
+		</constant>
+	</constants>
 </class>

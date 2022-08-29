@@ -237,14 +237,14 @@ void VoxelGraphEditorNode::update_range_analysis_tooltips(
 		}
 		const math::Interval range = state.get_range(address);
 		Control *label = _output_labels[port_index];
-		label->set_tooltip(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
+		label->set_tooltip_text(String("Min: {0}\nMax: {1}").format(varray(range.min, range.max)));
 	}
 }
 
 void VoxelGraphEditorNode::clear_range_analysis_tooltips() {
 	for (unsigned int i = 0; i < _output_labels.size(); ++i) {
 		Control *oc = _output_labels[i];
-		oc->set_tooltip("");
+		oc->set_tooltip_text("");
 	}
 }
 

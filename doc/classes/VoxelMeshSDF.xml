@@ -14,13 +14,13 @@
 		</method>
 		<method name="bake_async">
 			<return type="void" />
-			<argument index="0" name="scene_tree" type="SceneTree" />
+			<param index="0" name="scene_tree" type="SceneTree" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_check_sdf">
 			<return type="Array" />
-			<argument index="0" name="mesh" type="Mesh" />
+			<param index="0" name="mesh" type="Mesh" />
 			<description>
 			</description>
 		</method>
@@ -31,6 +31,16 @@
 		</method>
 		<method name="get_voxel_buffer" qualifiers="const">
 			<return type="VoxelBuffer" />
+			<description>
+			</description>
+		</method>
+		<method name="is_baked" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_baking" qualifiers="const">
+			<return type="bool" />
 			<description>
 			</description>
 		</method>

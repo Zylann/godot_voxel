@@ -11,9 +11,9 @@
 	<methods>
 		<method name="_generate_block" qualifiers="virtual">
 			<return type="void" />
-			<argument index="0" name="out_buffer" type="VoxelBuffer" />
-			<argument index="1" name="origin_in_voxels" type="Vector3i" />
-			<argument index="2" name="lod" type="int" />
+			<param index="0" name="out_buffer" type="VoxelBuffer" />
+			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<param index="2" name="lod" type="int" />
 			<description>
 				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
 				[code]origin_in_voxels[/code]: Coordinates of the lower corner of the box to generate, relative to LOD0. The size of the box is known from [code]out_buffer[/code].

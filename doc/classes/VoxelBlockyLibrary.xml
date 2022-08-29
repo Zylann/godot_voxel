@@ -19,12 +19,12 @@
 		</method>
 		<method name="create_voxel">
 			<return type="VoxelBlockyModel" />
-			<argument index="0" name="id" type="int" />
-				ID of the model. It must be comprised between 0 and [member voxel_count] excluded. This ID will be used in voxel data.
-			<argument index="1" name="name" type="String" />
-				Name of the model. It is convenient to give one for better organization.
+			<param index="0" name="id" type="int" />
+			<param index="1" name="name" type="String" />
 			<description>
 				Creates a new model attached to this library.
+				[code]id[/code]: ID of the model. It must be comprised between 0 and [member voxel_count] excluded. This ID will be used in voxel data.
+				[code]name[/code]: Name of the model. It is convenient to give one for better organization.
 			</description>
 		</method>
 		<method name="get_materials" qualifiers="const">
@@ -36,21 +36,21 @@
 		</method>
 		<method name="get_voxel">
 			<return type="VoxelBlockyModel" />
-			<argument index="0" name="id" type="int" />
+			<param index="0" name="id" type="int" />
 			<description>
 				Gets a model from its ID.
 			</description>
 		</method>
 		<method name="get_voxel_by_name">
 			<return type="VoxelBlockyModel" />
-			<argument index="0" name="name" type="StringName" />
+			<param index="0" name="name" type="StringName" />
 			<description>
 				Finds the first model having the specified name. If not found, returns [code]null[/code].
 			</description>
 		</method>
 		<method name="get_voxel_index_from_name" qualifiers="const">
 			<return type="int" />
-			<argument index="0" name="name" type="StringName" />
+			<param index="0" name="name" type="StringName" />
 			<description>
 				Finds the ID of the first model having the specified name. If not found, returns [code]null[/code].
 			</description>

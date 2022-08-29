@@ -11,7 +11,7 @@
 	<methods>
 		<method name="debug_dump_as_scene" qualifiers="const">
 			<return type="void" />
-			<argument index="0" name="fpath" type="String" />
+			<param index="0" name="fpath" type="String" />
 			<description>
 			</description>
 		</method>
@@ -22,7 +22,7 @@
 		</method>
 		<method name="debug_get_draw_flag" qualifiers="const">
 			<return type="bool" />
-			<argument index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
+			<param index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
 			<description>
 			</description>
 		</method>
@@ -38,14 +38,14 @@
 		</method>
 		<method name="debug_set_draw_enabled">
 			<return type="void" />
-			<argument index="0" name="enabled" type="bool" />
+			<param index="0" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_set_draw_flag">
 			<return type="void" />
-			<argument index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
-			<argument index="1" name="enabled" type="bool" />
+			<param index="0" name="flag" type="int" enum="VoxelInstancer.DebugDrawFlag" />
+			<param index="1" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>

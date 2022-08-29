@@ -17,8 +17,9 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::parse_group(Object *p_obj
 		// TODO I preferred  this at the end of the group, but Godot doesn't expose anything to do it.
 		// This is a legacy workflow, we'll see if it can be removed later.
 		Button *button = memnew(Button);
-		button->set_tooltip(TTR("Set properties based on an existing scene. This might copy mesh and material data if "
-								"the scene embeds them. Properties will not update if the scene changes later."));
+		button->set_tooltip_text(
+				TTR("Set properties based on an existing scene. This might copy mesh and material data if "
+					"the scene embeds them. Properties will not update if the scene changes later."));
 		button->set_text(TTR("Update from scene..."));
 		// Using a bind() instead of relying on "currently edited" item in the editor plugin allows to support multiple
 		// sub-inspectors. Plugins are not instanced per-inspected-object, but custom controls are.

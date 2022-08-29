@@ -12,7 +12,7 @@
 	<methods>
 		<method name="convert_files">
 			<return type="void" />
-			<argument index="0" name="new_settings" type="Dictionary" />
+			<param index="0" name="new_settings" type="Dictionary" />
 			<description>
 			</description>
 		</method>
