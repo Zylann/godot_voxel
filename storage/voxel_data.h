@@ -91,7 +91,14 @@ public:
 	float get_voxel_f(Vector3i pos, unsigned int channel_index) const;
 	bool try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel_index);
 
+	// Copies voxel data in a box from LOD0.
+	// `channels_mask` bits tell which channel is read.
 	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const;
+
+	// Pastes voxel data in a box at LOD0.
+	// `channels_mask` bits tell which channel is pasted.
+	// If `use_mask` is used, will only write voxels of the source buffer that are not equal to `mask_value`.
+	// If `create_new_blocks` is true, blocks will be created if not found in the area.
 	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
 			uint64_t mask_value, bool create_new_blocks);
 
@@ -180,6 +187,7 @@ public:
 	// TODO Might need to expose a parameter for the overwriting behavior.
 	void set_empty_block_buffer(Vector3i block_position, unsigned int lod_index);
 
+	// void op(Vector3i bpos, VoxelDataBlock &block)
 	template <typename F>
 	void for_each_block(F op) {
 		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
@@ -189,6 +197,7 @@ public:
 		}
 	}
 
+	// void op(Vector3i bpos, VoxelDataBlock &block)
 	template <typename F>
 	void for_each_block_at_lod(F op, unsigned int lod_index) const {
 		const Lod &lod = _lods[lod_index];
