@@ -85,7 +85,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 		CheckBox *live_update_checkbox = memnew(CheckBox);
 		live_update_checkbox->set_text(TTR("Live Update"));
-		live_update_checkbox->set_tooltip(TTR("Automatically re-generate the terrain when the generator is modified"));
+		live_update_checkbox->set_tooltip_text(
+				TTR("Automatically re-generate the terrain when the generator is modified"));
 		live_update_checkbox->set_pressed(_live_update_enabled);
 		live_update_checkbox->connect("toggled", callable_mp(this, &VoxelGraphEditor::_on_live_update_toggled));
 		toolbar->add_child(live_update_checkbox);
@@ -97,12 +98,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button = memnew(Button);
 		_pin_button->set_flat(true);
 		_pin_button->set_toggle_mode(true);
-		_pin_button->set_tooltip(TTR("Pin VoxelGraphEditor"));
+		_pin_button->set_tooltip_text(TTR("Pin VoxelGraphEditor"));
 		toolbar->add_child(_pin_button);
 
 		_popout_button = memnew(Button);
 		_popout_button->set_flat(true);
-		_popout_button->set_tooltip(TTR("Pop-out as separate window"));
+		_popout_button->set_tooltip_text(TTR("Pop-out as separate window"));
 		_popout_button->connect("pressed", callable_mp(this, &VoxelGraphEditor::_on_popout_button_pressed));
 		toolbar->add_child(_popout_button);
 
@@ -648,7 +649,7 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 
 		_compile_result_label->set_text(result.message);
-		_compile_result_label->set_tooltip(result.message);
+		_compile_result_label->set_tooltip_text(result.message);
 		_compile_result_label->set_modulate(Color(1, 0.3, 0.1));
 		_compile_result_label->show();
 
