@@ -10,9 +10,9 @@
 	<methods>
 		<method name="generate_block">
 			<return type="void" />
-			<argument index="0" name="out_buffer" type="VoxelBuffer" />
-			<argument index="1" name="origin_in_voxels" type="Vector3" />
-			<argument index="2" name="lod" type="int" />
+			<param index="0" name="out_buffer" type="VoxelBuffer" />
+			<param index="1" name="origin_in_voxels" type="Vector3" />
+			<param index="2" name="lod" type="int" />
 			<description>
 				Generates a block of voxels within the specified world area.
 				[code]out_buffer[/code]: Buffer in which voxel data will be generated. It should not be [code]null[/code] and should be given the requested size. Do not keep a reference on it after the call.

@@ -27,19 +27,19 @@
 	<methods>
 		<method name="deserialize">
 			<return type="void" />
-			<argument index="0" name="peer" type="StreamPeer" />
-			<argument index="1" name="voxel_buffer" type="VoxelBuffer" />
-			<argument index="2" name="size" type="int" />
-			<argument index="3" name="decompress" type="bool" />
+			<param index="0" name="peer" type="StreamPeer" />
+			<param index="1" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="2" name="size" type="int" />
+			<param index="3" name="decompress" type="bool" />
 			<description>
 				Reads the data of a [VoxelBuffer] from a [StreamPeer]. You must provide the number of bytes to read, and the destination buffer must have the expected size.
 			</description>
 		</method>
 		<method name="serialize">
 			<return type="int" />
-			<argument index="0" name="peer" type="StreamPeer" />
-			<argument index="1" name="voxel_buffer" type="VoxelBuffer" />
-			<argument index="2" name="compress" type="bool" />
+			<param index="0" name="peer" type="StreamPeer" />
+			<param index="1" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="2" name="compress" type="bool" />
 			<description>
 				Stores the data of a [VoxelBuffer] into a [StreamPeer]. Returns the number of written bytes.
 			</description>

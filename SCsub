@@ -1,8 +1,10 @@
-Import('env')
-Import('env_modules')
+Import("env")
+Import("env_modules")
 
-# Note, support for FastNoise2 requires C++17, and doesn't work yet on ARM.
+# Note, support for FastNoise2 requires C++17, and only works on x86.
 FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
+if not env["arch"].startswith("x86"):
+	FAST_NOISE_2_SRC = False
 
 RUN_TESTS = env["voxel_tests"]
 
@@ -107,7 +109,7 @@ if FAST_NOISE_2_SRC:
 		env_voxel.Append(CXXFLAGS=["-Wno-unknown-pragmas"])
 	
 	# Build from source. Should be the simplest, but requires C++17
-	SConscript('thirdparty/fast_noise_2/SConscript', exports = ["env", "env_voxel"])
+	SConscript("thirdparty/fast_noise_2/SConscript", exports = ["env", "env_voxel"])
 
 	env_voxel.Append(CPPPATH=["thirdparty/fast_noise_2/include"])
 	
@@ -128,12 +130,12 @@ for f in voxel_files:
 # TODO Check webassembly builds (`env["platform"] == "javascript"`)
 
 # Ignored clang warnings because Godot's codebase is old and isn't using override yet
-if env['platform'] in ['osx', 'android']:
-	env_voxel.Append(CXXFLAGS=['-Wno-inconsistent-missing-override'])
+if env["platform"] in ["osx", "android"]:
+	env_voxel.Append(CXXFLAGS=["-Wno-inconsistent-missing-override"])
 
 # Doesn't work, since the rest of Godot doesn't use this, linking fails.
 # No safe STL boundary checks for you.
-#if env['target'] == 'debug':
+#if env["target"] == "debug":
 #	if env.msvc:
 #		# Enable STL bound checks, Godot's master environment doesn't do it
-#		env_voxel.Append(CXXFLAGS=['/D_DEBUG'])
+#		env_voxel.Append(CXXFLAGS=["/D_DEBUG"])

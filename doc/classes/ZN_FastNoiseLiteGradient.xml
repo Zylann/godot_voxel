@@ -10,13 +10,13 @@
 	<methods>
 		<method name="warp_2d">
 			<return type="Vector2" />
-			<argument index="0" name="position" type="Vector2" />
+			<param index="0" name="position" type="Vector2" />
 			<description>
 			</description>
 		</method>
 		<method name="warp_3d">
 			<return type="Vector3" />
-			<argument index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
 			<description>
 			</description>
 		</method>

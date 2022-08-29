@@ -9,8 +9,8 @@
 	<methods>
 		<method name="set_material_by_index">
 			<return type="void" />
-			<argument index="0" name="id" type="int" enum="VoxelMesherCubes.Materials" />
-			<argument index="1" name="material" type="Material" />
+			<param index="0" name="id" type="int" enum="VoxelMesherCubes.Materials" />
+			<param index="1" name="material" type="Material" />
 			<description>
 			</description>
 		</method>

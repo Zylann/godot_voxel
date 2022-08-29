@@ -10,8 +10,8 @@
 	<methods>
 		<method name="debug_dump_as_scene" qualifiers="const">
 			<return type="int" enum="Error" />
-			<argument index="0" name="path" type="String" />
-			<argument index="1" name="include_instancer" type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="include_instancer" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -22,14 +22,14 @@
 		</method>
 		<method name="debug_get_data_block_info" qualifiers="const">
 			<return type="Dictionary" />
-			<argument index="0" name="block_pos" type="Vector3" />
-			<argument index="1" name="lod" type="int" />
+			<param index="0" name="block_pos" type="Vector3" />
+			<param index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_draw_flag" qualifiers="const">
 			<return type="bool" />
-			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
+			<param index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
 			<description>
 			</description>
 		</method>
@@ -40,8 +40,8 @@
 		</method>
 		<method name="debug_get_mesh_block_info" qualifiers="const">
 			<return type="Dictionary" />
-			<argument index="0" name="block_pos" type="Vector3" />
-			<argument index="1" name="lod" type="int" />
+			<param index="0" name="block_pos" type="Vector3" />
+			<param index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
@@ -57,28 +57,28 @@
 		</method>
 		<method name="debug_print_sdf_top_down">
 			<return type="Array" />
-			<argument index="0" name="center" type="Vector3i" />
-			<argument index="1" name="extents" type="Vector3i" />
+			<param index="0" name="center" type="Vector3i" />
+			<param index="1" name="extents" type="Vector3i" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_raycast_mesh_block" qualifiers="const">
 			<return type="Array" />
-			<argument index="0" name="origin" type="Vector3" />
-			<argument index="1" name="dir" type="Vector3" />
+			<param index="0" name="origin" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_set_draw_enabled">
 			<return type="void" />
-			<argument index="0" name="enabled" type="bool" />
+			<param index="0" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_set_draw_flag">
 			<return type="void" />
-			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
-			<argument index="1" name="enabled" type="bool" />
+			<param index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
+			<param index="1" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -130,21 +130,21 @@
 		</method>
 		<method name="set_process_callback">
 			<return type="void" />
-			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
+			<param index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_data_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="lod_index" type="Vector3" />
-			<argument index="1" name="arg1" type="int" />
+			<param index="0" name="lod_index" type="Vector3" />
+			<param index="1" name="_unnamed_arg1" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_mesh_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="lod_index" type="Vector3" />
-			<argument index="1" name="arg1" type="int" />
+			<param index="0" name="lod_index" type="Vector3" />
+			<param index="1" name="_unnamed_arg1" type="int" />
 			<description>
 			</description>
 		</method>
@@ -173,6 +173,16 @@
 		<member name="material" type="Material" setter="set_material" getter="get_material">
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
+		</member>
+		<member name="normalmap_begin_lod_index" type="int" setter="set_normalmap_begin_lod_index" getter="get_normalmap_begin_lod_index" default="2">
+		</member>
+		<member name="normalmap_enabled" type="bool" setter="set_normalmap_enabled" getter="is_normalmap_enabled" default="false">
+		</member>
+		<member name="normalmap_octahedral_encoding_enabled" type="bool" setter="set_octahedral_normal_encoding" getter="get_octahedral_normal_encoding" default="false">
+		</member>
+		<member name="normalmap_tile_resolution_max" type="int" setter="set_normalmap_tile_resolution_max" getter="get_normalmap_tile_resolution_max" default="8">
+		</member>
+		<member name="normalmap_tile_resolution_min" type="int" setter="set_normalmap_tile_resolution_min" getter="get_normalmap_tile_resolution_min" default="4">
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 		</member>

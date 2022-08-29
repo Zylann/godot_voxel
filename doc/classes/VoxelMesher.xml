@@ -11,8 +11,9 @@
 	<methods>
 		<method name="build_mesh">
 			<return type="Mesh" />
-			<argument index="0" name="voxel_buffer" type="VoxelBuffer" />
-			<argument index="1" name="materials" type="Material[]" />
+			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="1" name="materials" type="Material[]" />
+			<param index="2" name="additional_data" type="Dictionary" default="{}" />
 			<description>
 				Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
 			</description>
