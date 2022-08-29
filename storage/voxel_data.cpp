@@ -34,7 +34,7 @@ void VoxelData::reset_maps_no_lock() {
 		Lod &data_lod = _lods[lod_index];
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < _lod_count) {
-			data_lod.map.create(data_lod.map.get_block_size_pow2(), lod_index);
+			data_lod.map.create(lod_index);
 		} else {
 			data_lod.map.clear();
 		}

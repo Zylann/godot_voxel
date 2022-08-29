@@ -25,6 +25,11 @@ class VoxelGenerator;
 //
 class VoxelDataMap {
 public:
+	// This is block size in VOXELS. To convert to space units, use `block_size << lod_index`.
+	static const unsigned int BLOCK_SIZE_PO2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	static const unsigned int BLOCK_SIZE = 1 << BLOCK_SIZE_PO2;
+	static const unsigned int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;
+
 	// Converts voxel coodinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static inline Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
@@ -32,31 +37,31 @@ public:
 	}
 
 	inline Vector3i voxel_to_block(Vector3i pos) const {
-		return voxel_to_block_b(pos, _block_size_pow2);
+		return voxel_to_block_b(pos, BLOCK_SIZE_PO2);
 	}
 
 	inline Vector3i to_local(Vector3i pos) const {
-		return Vector3i(pos.x & _block_size_mask, pos.y & _block_size_mask, pos.z & _block_size_mask);
+		return Vector3i(pos.x & BLOCK_SIZE_MASK, pos.y & BLOCK_SIZE_MASK, pos.z & BLOCK_SIZE_MASK);
 	}
 
 	// Converts block coodinates into voxel coordinates
 	inline Vector3i block_to_voxel(Vector3i bpos) const {
-		return bpos * _block_size;
+		return bpos * BLOCK_SIZE;
 	}
 
 	VoxelDataMap();
 	~VoxelDataMap();
 
-	void create(unsigned int block_size_po2, int lod_index);
+	void create(unsigned int lod_index);
 
 	inline unsigned int get_block_size() const {
-		return _block_size;
+		return BLOCK_SIZE;
 	}
 	inline unsigned int get_block_size_pow2() const {
-		return _block_size_pow2;
+		return BLOCK_SIZE_PO2;
 	}
 	inline unsigned int get_block_size_mask() const {
-		return _block_size_mask;
+		return BLOCK_SIZE_MASK;
 	}
 
 	void set_lod_index(int lod_index);
@@ -180,7 +185,7 @@ private:
 	VoxelDataBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 	VoxelDataBlock *create_default_block(Vector3i bpos);
 
-	void set_block_size_pow2(unsigned int p);
+	//void set_block_size_pow2(unsigned int p);
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
@@ -197,11 +202,6 @@ private:
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
 	//mutable VoxelDataBlock *_last_accessed_block = nullptr;
-
-	// This is block size in VOXELS. To convert to space units, use `block_size << lod_index`.
-	unsigned int _block_size;
-	unsigned int _block_size_pow2;
-	unsigned int _block_size_mask;
 
 	unsigned int _lod_index = 0;
 };

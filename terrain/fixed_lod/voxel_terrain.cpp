@@ -184,7 +184,7 @@ Ref<VoxelGenerator> VoxelTerrain::get_generator() const {
 }*/
 
 void VoxelTerrain::_set_block_size_po2(int p_block_size_po2) {
-	_data_map.create(p_block_size_po2, 0);
+	_data_map.create(0);
 }
 
 unsigned int VoxelTerrain::get_data_block_size_pow2() const {
@@ -790,7 +790,7 @@ void VoxelTerrain::reset_map() {
 	_data_map.for_each_block([this](const Vector3i &bpos, VoxelDataBlock &block) { //
 		emit_data_block_unloaded(block, bpos);
 	});
-	_data_map.create(get_data_block_size_pow2(), 0);
+	_data_map.create(0);
 
 	_mesh_map.clear();
 

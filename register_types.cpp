@@ -228,6 +228,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
 		ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
 		ZN_PRINT_VERBOSE(format("Size of RWLock: {}", sizeof(zylann::RWLock)));
+		ZN_PRINT_VERBOSE(format("Size of Mutex: {}", sizeof(zylann::Mutex)));
+		ZN_PRINT_VERBOSE(format("Size of BinaryMutex: {}", sizeof(zylann::BinaryMutex)));
 		ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));

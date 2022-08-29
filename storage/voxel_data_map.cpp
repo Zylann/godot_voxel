@@ -11,27 +11,28 @@ namespace zylann::voxel {
 
 VoxelDataMap::VoxelDataMap() {
 	// This is not planned to change at runtime at the moment.
-	set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
+	//set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
 }
 
 VoxelDataMap::~VoxelDataMap() {
 	clear();
 }
 
-void VoxelDataMap::create(unsigned int block_size_po2, int lod_index) {
+void VoxelDataMap::create(unsigned int lod_index) {
+	ZN_ASSERT(lod_index < constants::MAX_LOD);
 	clear();
-	set_block_size_pow2(block_size_po2);
+	//set_block_size_pow2(block_size_po2);
 	set_lod_index(lod_index);
 }
 
-void VoxelDataMap::set_block_size_pow2(unsigned int p) {
-	ZN_ASSERT_RETURN_MSG(p >= 1, "Block size is too small");
-	ZN_ASSERT_RETURN_MSG(p <= 8, "Block size is too big");
+// void VoxelDataMap::set_block_size_pow2(unsigned int p) {
+// 	ZN_ASSERT_RETURN_MSG(p >= 1, "Block size is too small");
+// 	ZN_ASSERT_RETURN_MSG(p <= 8, "Block size is too big");
 
-	_block_size_pow2 = p;
-	_block_size = 1 << _block_size_pow2;
-	_block_size_mask = _block_size - 1;
-}
+// 	_block_size_pow2 = p;
+// 	_block_size = 1 << _block_size_pow2;
+// 	_block_size_mask = _block_size - 1;
+// }
 
 void VoxelDataMap::set_lod_index(int lod_index) {
 	ZN_ASSERT_RETURN_MSG(lod_index >= 0, "LOD index can't be negative");
@@ -56,7 +57,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
-	buffer->create(_block_size, _block_size, _block_size);
+	buffer->create(get_block_size(), get_block_size(), get_block_size());
 	//buffer->set_default_values(_default_voxel);
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
@@ -190,7 +191,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 	const Vector3i min_block_pos = voxel_to_block(min_pos);
 	const Vector3i max_block_pos = voxel_to_block(max_pos - Vector3i(1, 1, 1)) + Vector3i(1, 1, 1);
 
-	const Vector3i block_size_v(_block_size, _block_size, _block_size);
+	const Vector3i block_size_v(get_block_size(), get_block_size(), get_block_size());
 
 	unsigned int channels_count;
 	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
@@ -217,7 +218,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 					}
 
 				} else if (gen_func != nullptr) {
-					const Box3i box = Box3i(bpos << _block_size_pow2, Vector3iUtil::create(_block_size))
+					const Box3i box = Box3i(bpos << get_block_size_pow2(), block_size_v)
 											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
 
 					// TODO Format?
