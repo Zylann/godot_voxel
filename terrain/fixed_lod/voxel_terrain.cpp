@@ -1492,6 +1492,8 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 	{
 		ZN_PROFILE_SCOPE();
+		// TODO Optimize: initial loading can hang for a while here.
+		// Because lots of blocks are loaded at once, which leads to many block queries.
 		try_schedule_mesh_update_from_data(
 				Box3i(_data->block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size())));
 	}
@@ -1557,91 +1559,90 @@ bool VoxelTerrain::has_data_block(Vector3i position) const {
 }
 
 void VoxelTerrain::process_meshing() {
+	ZN_PROFILE_SCOPE();
 	ProfilingClock profiling_clock;
 
 	_stats.dropped_block_meshs = 0;
 
 	// Send mesh updates
-	{
+
+	const Transform3D volume_transform = get_global_transform();
+	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
+			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
+
+	//const int used_channels_mask = get_used_channels_mask();
+	const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
+
+	for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
 		ZN_PROFILE_SCOPE();
+		const Vector3i mesh_block_pos = _blocks_pending_update[bi];
 
-		const Transform3D volume_transform = get_global_transform();
-		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
-				VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
+		VoxelMeshBlockVT *mesh_block = _mesh_map.get_block(mesh_block_pos);
 
-		//const int used_channels_mask = get_used_channels_mask();
-		const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
+		// If we got here, it must have been because of scheduling an update
+		ERR_CONTINUE(mesh_block == nullptr);
+		ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
 
-		for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
-			const Vector3i mesh_block_pos = _blocks_pending_update[bi];
-
-			VoxelMeshBlockVT *mesh_block = _mesh_map.get_block(mesh_block_pos);
-
-			// If we got here, it must have been because of scheduling an update
-			ERR_CONTINUE(mesh_block == nullptr);
-			ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
-
-			// Pad by 1 because meshing requires neighbors
-			const Box3i data_box =
-					Box3i(mesh_block_pos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor)).padded(1);
+		// Pad by 1 because meshing requires neighbors
+		const Box3i data_box =
+				Box3i(mesh_block_pos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor)).padded(1);
 
 #ifdef DEBUG_ENABLED
-			// We must have picked up a valid data block
-			{
-				const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
-				ERR_CONTINUE(!_data->has_block(anchor_pos, 0));
-			}
-#endif
-
-			//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
-			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
-			task->volume_id = _volume_id;
-			task->mesh_block_position = mesh_block_pos;
-			task->lod_index = 0;
-			task->meshing_dependency = _meshing_dependency;
-			task->data_block_size = get_data_block_size();
-			task->collision_hint = _generate_collisions;
-
-			// This iteration order is specifically chosen to match VoxelEngine and threaded access
-			_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));
-			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
-			/*task->blocks_count = 0;
-			data_box.for_each_cell_zxy([this, task](Vector3i data_block_pos) {
-				VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
-				if (data_block != nullptr && data_block->has_voxels()) {
-					task->blocks[task->blocks_count] = data_block->get_voxels_shared();
-				}
-				++task->blocks_count;
-			});*/
-
-#ifdef DEBUG_ENABLED
-			{
-				unsigned int count = 0;
-				for (unsigned int i = 0; i < task->blocks_count; ++i) {
-					if (task->blocks[i] != nullptr) {
-						++count;
-					}
-				}
-				// Blocks that were in the list must have been scheduled because we have data for them!
-				if (count == 0) {
-					ZN_PRINT_ERROR("Unexpected empty block list in meshing block task");
-					ZN_DELETE(task);
-					continue;
-				}
-			}
-#endif
-
-			init_sparse_grid_priority_dependency(task->priority_dependency, task->mesh_block_position,
-					get_mesh_block_size(), shared_viewers_data, volume_transform);
-
-			VoxelEngine::get_singleton().push_async_task(task);
-
-			mesh_block->set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_SENT);
+		// We must have picked up a valid data block
+		{
+			const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
+			ERR_CONTINUE(!_data->has_block(anchor_pos, 0));
 		}
+#endif
 
-		_blocks_pending_update.clear();
+		//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
+		// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
+		MeshBlockTask *task = ZN_NEW(MeshBlockTask);
+		task->volume_id = _volume_id;
+		task->mesh_block_position = mesh_block_pos;
+		task->lod_index = 0;
+		task->meshing_dependency = _meshing_dependency;
+		task->data_block_size = get_data_block_size();
+		task->collision_hint = _generate_collisions;
+
+		// This iteration order is specifically chosen to match VoxelEngine and threaded access
+		_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));
+		task->blocks_count = Vector3iUtil::get_volume(data_box.size);
+		/*task->blocks_count = 0;
+		data_box.for_each_cell_zxy([this, task](Vector3i data_block_pos) {
+			VoxelDataBlock *data_block = _data_map.get_block(data_block_pos);
+			if (data_block != nullptr && data_block->has_voxels()) {
+				task->blocks[task->blocks_count] = data_block->get_voxels_shared();
+			}
+			++task->blocks_count;
+		});*/
+
+#ifdef DEBUG_ENABLED
+		{
+			unsigned int count = 0;
+			for (unsigned int i = 0; i < task->blocks_count; ++i) {
+				if (task->blocks[i] != nullptr) {
+					++count;
+				}
+			}
+			// Blocks that were in the list must have been scheduled because we have data for them!
+			if (count == 0) {
+				ZN_PRINT_ERROR("Unexpected empty block list in meshing block task");
+				ZN_DELETE(task);
+				continue;
+			}
+		}
+#endif
+
+		init_sparse_grid_priority_dependency(task->priority_dependency, task->mesh_block_position,
+				get_mesh_block_size(), shared_viewers_data, volume_transform);
+
+		VoxelEngine::get_singleton().push_async_task(task);
+
+		mesh_block->set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_SENT);
 	}
+
+	_blocks_pending_update.clear();
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
