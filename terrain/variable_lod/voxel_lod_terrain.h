@@ -111,58 +111,6 @@ public:
 	void set_normalmap_begin_lod_index(int lod_index);
 	int get_normalmap_begin_lod_index() const;
 
-	/*
-	bool is_area_editable(Box3i p_box) const;
-	VoxelSingleValue get_voxel(Vector3i pos, unsigned int channel, VoxelSingleValue defval);
-	bool try_set_voxel_without_update(Vector3i pos, unsigned int channel, uint64_t value);
-	void copy(Vector3i p_origin_voxels, VoxelBufferInternal &dst_buffer, uint8_t channels_mask);
-	void paste(Vector3i p_origin_voxels, const VoxelBufferInternal &src_buffer, unsigned int channels_mask);
-
-	template <typename F>
-	void write_box(const Box3i &p_voxel_box, unsigned int channel, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
-		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
-			ZN_PRINT_VERBOSE("Area not editable");
-			return;
-		}
-		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
-		{
-			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box(
-					voxel_box, channel, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-						if (generator.is_valid()) {
-							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-							generator->generate_block(q);
-						}
-					});
-		}
-		post_edit_area(voxel_box);
-	}
-
-	template <typename F>
-	void write_box_2(const Box3i &p_voxel_box, unsigned int channel1, unsigned int channel2, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(get_voxel_bounds());
-		if (is_full_load_mode_enabled() == false && !is_area_editable(voxel_box)) {
-			ZN_PRINT_VERBOSE("Area not editable");
-			return;
-		}
-		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
-		{
-			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box_2(
-					voxel_box, channel1, channel2, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-						if (generator.is_valid()) {
-							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-							generator->generate_block(q);
-						}
-					});
-		}
-		post_edit_area(voxel_box);
-	}
-	*/
-
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 	void post_edit_modifiers(Box3i p_voxel_box);
@@ -315,9 +263,6 @@ private:
 
 	void save_all_modified_blocks(bool with_copy);
 
-	// TODO Put in common with VoxelLodTerrainUpdateTask
-	// void send_block_save_requests(Span<BlockToSave> blocks_to_save);
-
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
 
@@ -405,8 +350,6 @@ private:
 	VoxelInstancer *_instancer = nullptr;
 
 	Ref<VoxelMesher> _mesher;
-	// Ref<VoxelGenerator> _generator;
-	// Ref<VoxelStream> _stream;
 
 	// Data stored with a shared pointer so it can be sent to asynchronous tasks
 	bool _threaded_update_enabled = false;
