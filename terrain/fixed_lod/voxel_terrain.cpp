@@ -1467,7 +1467,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	}*/
 
 	// Create or update block data
-	const bool was_not_loaded = _data->has_block(block_pos, 0);
+	const bool was_not_loaded = !_data->has_block(block_pos, 0);
 	VoxelDataBlock *block = _data->try_set_block_buffer(
 			block_pos, 0, ob.voxels, ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED, true);
 	if (block == nullptr) {
