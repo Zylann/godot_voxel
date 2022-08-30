@@ -165,8 +165,9 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 		// We might hit places where data isn't loaded, in this case we try to fallback on higher LOD indices
 		Vector3i voxel_pos = pos;
 		Ref<VoxelGenerator> generator = get_generator();
+		const unsigned int lod_count = get_lod_count();
 
-		for (unsigned int lod_index = 0; lod_index < _lod_count; ++lod_index) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const Lod &data_lod = _lods[lod_index];
 
 			std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod, block_pos, generate);
