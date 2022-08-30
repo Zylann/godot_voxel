@@ -289,14 +289,16 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Reference-counted API (LOD0 only)
+	// Data blocks have a reference count that can be optionally used.
 
+	// Increases the reference count of loaded blocks in the area.
+	// Returns positions where blocks were loaded, and where they were missing.
 	void view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
 			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock *> &found_blocks);
 
-	// void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-	// 		std::vector<Vector3i> &blocks_without_viewers_positions,
-	// 		std::vector<VoxelDataBlock *> &blocks_without_viewers);
-
+	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
+	// Returns positions where blocks were found, and where they were missing.
+	// If `to_save` is not null and some unloaded blocks contained modifications, their data will be returned too.
 	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &found_blocks,
 			std::vector<BlockToSave> *to_save);
 
