@@ -157,6 +157,9 @@ void VoxelModifier::_bind_methods() {
 			"get_operation");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "smoothness", PROPERTY_HINT_RANGE, "0.0, 100.0, 0.1"), "set_smoothness",
 			"get_smoothness");
+
+	BIND_ENUM_CONSTANT(OPERATION_ADD);
+	BIND_ENUM_CONSTANT(OPERATION_REMOVE);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
