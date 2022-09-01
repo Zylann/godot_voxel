@@ -81,8 +81,7 @@ VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelGenerator::Vox
 		Curve &curve = **params.curve;
 		result = VoxelGeneratorHeightmap::generate(
 				out_buffer,
-				[&noise, &curve](
-						int x, int z) { return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
+				[&noise, &curve](int x, int z) { return curve.sample_baked(0.5 + 0.5 * noise.get_noise_2d(x, z)); },
 				input.origin_in_voxels, input.lod);
 	}
 
@@ -114,7 +113,7 @@ void VoxelGeneratorNoise2D::generate_series(Span<const float> positions_x, Span<
 		Curve &curve = **params.curve;
 		generate_series_template(
 				[&noise, &curve](float x, float z) { //
-					return curve.interpolate_baked(0.5 + 0.5 * noise.get_noise_2d(x, z));
+					return curve.sample_baked(0.5 + 0.5 * noise.get_noise_2d(x, z));
 				},
 				positions_x, positions_y, positions_z, channel, out_values, min_pos, max_pos);
 	}
