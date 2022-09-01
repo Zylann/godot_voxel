@@ -263,11 +263,10 @@ private:
 	// The order in that list does not matter.
 	std::vector<VoxelData::BlockToSave> _blocks_to_save;
 
-	// Ref<VoxelStream> _stream;
 	Ref<VoxelMesher> _mesher;
-	// Ref<VoxelGenerator> _generator;
 
-	// Data stored with a shared pointer so it can be sent to asynchronous tasks
+	// Data stored with a shared pointer so it can be sent to asynchronous tasks, and these tasks can be cancelled by
+	// setting a bool to false and re-instantiating the structure
 	std::shared_ptr<StreamingDependency> _streaming_dependency;
 	std::shared_ptr<MeshingDependency> _meshing_dependency;
 
