@@ -1382,7 +1382,7 @@ void test_region_file() {
 	const char *region_file_name = "test_region_file.vxr";
 	zylann::testing::TestDirectory test_dir;
 	ZYLANN_TEST_ASSERT(test_dir.is_valid());
-	String region_file_path = test_dir.get_path().plus_file(region_file_name);
+	String region_file_path = test_dir.get_path().path_join(region_file_name);
 
 	struct RandomBlockGenerator {
 		RandomPCG rng;

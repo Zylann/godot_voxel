@@ -189,7 +189,7 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 		FileResult load_res = load_meta();
 		if (load_res != FILE_OK && load_res != FILE_CANT_OPEN) {
 			// The file is present but there is a problem with it
-			String meta_path = _directory_path.plus_file(META_FILE_NAME);
+			String meta_path = _directory_path.path_join(META_FILE_NAME);
 			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, zylann::to_string(load_res))));
 			return;
 		}
@@ -291,7 +291,7 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 		}
 	}
 
-	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.path_join(META_FILE_NAME);
 	const CharString meta_path_utf8 = meta_path.utf8();
 
 	Error err;
@@ -337,7 +337,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	// Ensure you cleanup previous world before loading another
 	CRASH_COND(_region_cache.size() > 0);
 
-	const String meta_path = _directory_path.plus_file(META_FILE_NAME);
+	const String meta_path = _directory_path.path_join(META_FILE_NAME);
 	String json_string;
 
 	{
@@ -423,7 +423,7 @@ String VoxelStreamRegionFiles::get_region_file_path(const Vector3i &region_pos, 
 	a[2] = region_pos.y;
 	a[3] = region_pos.z;
 	a[4] = RegionFormat::FILE_EXTENSION;
-	return _directory_path.plus_file(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
+	return _directory_path.path_join(String("regions/lod{0}/r.{1}.{2}.{3}.{4}").format(a));
 }
 
 VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::get_region_from_cache(const Vector3i pos, int lod) const {
@@ -614,7 +614,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	{
 		for (int lod = 0; lod < old_meta.lod_count; ++lod) {
 			const String lod_folder =
-					old_stream->_directory_path.plus_file("regions").plus_file("lod") + String::num_int64(lod);
+					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
 			Ref<DirAccess> da = DirAccess::open(lod_folder);
