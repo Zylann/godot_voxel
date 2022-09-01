@@ -22,7 +22,7 @@ void ChartView::set_points(Span<const Vector2> points) {
 		_points.write[i] = points[i];
 	}
 
-	update();
+	queue_redraw();
 }
 
 void ChartView::auto_fit_view(Vector2 margin_ratios) {
@@ -44,7 +44,7 @@ void ChartView::auto_fit_view(Vector2 margin_ratios) {
 	_view_min -= view_size * margin_ratios;
 	_view_max += view_size * margin_ratios;
 
-	update();
+	queue_redraw();
 }
 
 void ChartView::_notification(int p_what) {
