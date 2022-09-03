@@ -110,60 +110,6 @@ public:
 	// This is necessary for editing destructively.
 	bool is_area_loaded(const Box3i p_voxels_box) const;
 
-	// Executes a read+write operation on all voxels in the given area, on a specific channel.
-	// If the area intersects the boundaries of the volume, it will be clipped.
-	// If the area intersects blocks that aren't loaded, the operation will be cancelled.
-	// Returns the box of voxels which were effectively processed.
-	template <typename F>
-	Box3i write_box(const Box3i &p_voxel_box, unsigned int channel_index, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(get_bounds());
-		if (!is_area_loaded(voxel_box)) {
-			ZN_PRINT_VERBOSE("Area not editable");
-			return Box3i();
-		}
-		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
-		{
-			// New blocks can be created in the map so we have to lock for writing
-			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box(
-					voxel_box, channel_index, action, [&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-						if (generator.is_valid()) {
-							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-							generator->generate_block(q);
-						}
-					});
-		}
-		return voxel_box;
-	}
-
-	// Executes a read+write operation on all voxels in the given area, on two specific channels.
-	// If the area intersects the boundaries of the volume, it will be clipped.
-	// If the area intersects blocks that aren't loaded, the operation will be cancelled.
-	// Returns the box of voxels which were effectively processed.
-	template <typename F>
-	Box3i write_box_2(const Box3i &p_voxel_box, unsigned int channel1_index, unsigned int channel2_index, F action) {
-		const Box3i voxel_box = p_voxel_box.clipped(get_bounds());
-		if (!is_area_loaded(voxel_box)) {
-			ZN_PRINT_VERBOSE("Area not editable");
-			return Box3i();
-		}
-		Ref<VoxelGenerator> generator = _generator;
-		VoxelDataLodMap::Lod &data_lod0 = _data->lods[0];
-		{
-			// New blocks can be created in the map so we have to lock for writing
-			RWLockWrite wlock(data_lod0.map_lock);
-			data_lod0.map.write_box_2(voxel_box, channel1_index, channel2_index, action,
-					[&generator](VoxelBufferInternal &voxels, Vector3i pos) {
-						if (generator.is_valid()) {
-							VoxelGenerator::VoxelQueryData q{ voxels, pos, 0 };
-							generator->generate_block(q);
-						}
-					});
-		}
-		return voxel_box;
-	}
-
 	// Generates all non-present blocks in preparation for an edit.
 	// Every block intersecting with the box at every LOD will be checked.
 	// This function runs sequentially and should be thread-safe. May be used if blocks are immediately needed.
