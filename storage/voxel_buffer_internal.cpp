@@ -109,7 +109,12 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBufferInternal::Depth depth
 namespace {
 uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
 	0, // TYPE
-	snorm_to_s16(1.f), // SDF
+
+	// Casted explicitely to avoid warning about narrowing conversion, the intent is to store all bits of the value
+	// as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
+	// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
+	uint16_t(snorm_to_s16(1.f)), // SDF
+
 	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
 	encode_weights_to_packed_u16(15, 0, 0, 0), // WEIGHTS
 	0, 0, 0, 0 //
@@ -128,7 +133,7 @@ VoxelBufferInternal::VoxelBufferInternal() {
 
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
-	_channels[CHANNEL_SDF].defval = snorm_to_s16(1.f);
+	_channels[CHANNEL_SDF].defval = uint16_t(snorm_to_s16(1.f));
 
 	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
