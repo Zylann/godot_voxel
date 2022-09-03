@@ -61,7 +61,7 @@ bool create_clean_dir(const char *dirpath) {
 	const Error err = da->make_dir(dirpath);
 	ERR_FAIL_COND_V(err != OK, false);
 
-	ERR_FAIL_COND_V(!create_empty_file(String(dirpath).plus_file(".gdignore")), false);
+	ERR_FAIL_COND_V(!create_empty_file(String(dirpath).path_join(".gdignore")), false);
 
 	return true;
 }

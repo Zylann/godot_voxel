@@ -61,15 +61,15 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	ZN_ASSERT_RETURN(material.is_valid());
 
 	// Reset textures to avoid hoarding them in the pool
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
 
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_transition_mask, 0);
-	material->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_transition_mask, 0);
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 
 	ShaderMaterialPool::recycle(material);
 }
@@ -458,7 +458,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 
 		} else if (active && _lod_fade_duration > 0.f) {
@@ -467,7 +467,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 			// parameter. Otherwise, it would be active but invisible due to still being faded out.
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
-				mat->set_shader_uniform(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+				mat->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
 			}
 		}
 
@@ -1550,24 +1550,24 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 	if (material.is_valid()) {
 		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 
-		const bool had_texture = material->get_shader_uniform(sn.u_voxel_cell_lookup) != Variant();
-		material->set_shader_uniform(sn.u_voxel_normalmap_atlas, normalmap_textures.atlas);
-		material->set_shader_uniform(sn.u_voxel_cell_lookup, normalmap_textures.lookup);
+		const bool had_texture = material->get_shader_parameter(sn.u_voxel_cell_lookup) != Variant();
+		material->set_shader_parameter(sn.u_voxel_normalmap_atlas, normalmap_textures.atlas);
+		material->set_shader_parameter(sn.u_voxel_cell_lookup, normalmap_textures.lookup);
 		const int cell_size = 1 << lod_index;
-		material->set_shader_uniform(sn.u_voxel_cell_size, cell_size);
-		material->set_shader_uniform(sn.u_voxel_block_size, get_mesh_block_size());
+		material->set_shader_parameter(sn.u_voxel_cell_size, cell_size);
+		material->set_shader_parameter(sn.u_voxel_block_size, get_mesh_block_size());
 
 		if (!had_texture) {
 			if (_lod_fade_duration > 0.f) {
 				// Fade-in to reduce "popping" details
 				_fading_virtual_textures.push_back(FadingVirtualTexture{ block.position, lod_index, 0.f });
-				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 0.f);
+				material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 0.f);
 			} else {
-				material->set_shader_uniform(sn.u_voxel_virtual_texture_fade, 1.f);
+				material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
 			}
 			const unsigned int tile_size = get_virtual_texture_tile_resolution_for_lod(
 					_update_data->settings.virtual_texture_settings, lod_index);
-			material->set_shader_uniform(sn.u_voxel_virtual_texture_tile_size, tile_size);
+			material->set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 		}
 	}
 	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
@@ -1703,7 +1703,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 				_fading_out_meshes[i] = std::move(_fading_out_meshes.back());
 				_fading_out_meshes.pop_back();
 			} else {
-				item.shader_material->set_shader_uniform(
+				item.shader_material->set_shader_parameter(
 						VoxelStringNames::get_singleton().u_lod_fade, Vector2(1.f - item.progress, 0.f));
 				++i;
 			}
@@ -1727,7 +1727,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 					if (sm.is_valid()) {
 						item.progress = math::min(item.progress + speed, 1.f);
 						remove = item.progress >= 1.f;
-						sm->set_shader_uniform(
+						sm->set_shader_parameter(
 								VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, item.progress);
 					}
 				}

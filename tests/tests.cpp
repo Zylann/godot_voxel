@@ -1190,7 +1190,7 @@ void test_get_curve_monotonic_sections() {
 		{
 			math::Interval xi(0.2f, 0.8f);
 			math::Interval yi = get_curve_range(**curve, sections, xi);
-			math::Interval yi_expected(curve->interpolate_baked(xi.min), curve->interpolate_baked(xi.max));
+			math::Interval yi_expected(curve->sample_baked(xi.min), curve->sample_baked(xi.max));
 			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.min, yi_expected.min));
 			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.max, yi_expected.max));
 		}
@@ -1382,7 +1382,7 @@ void test_region_file() {
 	const char *region_file_name = "test_region_file.vxr";
 	zylann::testing::TestDirectory test_dir;
 	ZYLANN_TEST_ASSERT(test_dir.is_valid());
-	String region_file_path = test_dir.get_path().plus_file(region_file_name);
+	String region_file_path = test_dir.get_path().path_join(region_file_name);
 
 	struct RandomBlockGenerator {
 		RandomPCG rng;

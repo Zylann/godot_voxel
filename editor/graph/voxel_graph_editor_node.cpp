@@ -253,7 +253,7 @@ void VoxelGraphEditorNode::set_profiling_ratio_visible(bool visible) {
 		return;
 	}
 	_profiling_ratio_enabled = visible;
-	update();
+	queue_redraw();
 }
 
 void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
@@ -261,7 +261,7 @@ void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
 		return;
 	}
 	_profiling_ratio = ratio;
-	update();
+	queue_redraw();
 }
 
 // Color has no lerp??

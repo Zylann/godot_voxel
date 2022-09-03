@@ -587,12 +587,13 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			for (int i = 0; i < materials.size(); ++i) {
 				Ref<ShaderMaterial> sm = materials[i];
 				if (sm.is_valid() && sm->get_shader().is_valid() &&
-						sm->get_shader()->has_uniform(VoxelStringNames::get_singleton().u_block_local_transform)) {
+						sm->get_shader()->has_parameter(VoxelStringNames::get_singleton().u_block_local_transform)) {
 					// That parameter should have a valid default value matching the local transform relative to the
 					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
 					// duplicate.
 					sm = sm->duplicate(false);
-					sm->set_shader_uniform(VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
+					sm->set_shader_parameter(
+							VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
 					materials[i] = sm;
 				}
 			}
