@@ -1303,6 +1303,23 @@ void VoxelTerrain::process_viewers() {
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
 }
 
+void VoxelTerrain::refresh_voxel_viewer_data(uint32_t viewer_id) {
+	for (size_t i = 0; i < _paired_viewers.size(); ++i) {
+		const PairedViewer &viewer = _paired_viewers[i];
+		const uint32_t network_peer = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer.id);
+		const bool require_notifications = _block_enter_notification_enabled &&
+				VoxelEngine::get_singleton().is_viewer_requiring_data_block_notifications(viewer.id);
+
+		if (require_notifications && network_peer == viewer_id) {
+			const Box3i &data_box = viewer.state.data_box;
+			data_box.for_each_cell([this, &viewer, require_notifications](Vector3i bpos) { //
+				view_data_block(bpos, viewer.id, require_notifications);
+			});
+			return;
+		}
+	}
+}
+
 void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
@@ -1810,6 +1827,8 @@ void VoxelTerrain::_bind_methods() {
 			&VoxelTerrain::_b_get_viewer_network_peer_ids_in_area);
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
+
+	ClassDB::bind_method(D_METHOD("refresh_voxel_viewer_data", "network_peer"), &VoxelTerrain::refresh_voxel_viewer_data);
 
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
