@@ -14,7 +14,7 @@ void ShaderMaterialPool::set_template(Ref<ShaderMaterial> tpl) {
 
 		if (shader.is_valid()) {
 			List<PropertyInfo> params;
-			RenderingServer::get_singleton()->shader_get_shader_uniform_list(shader->get_rid(), &params);
+			RenderingServer::get_singleton()->get_shader_parameter_list(shader->get_rid(), &params);
 
 			for (const PropertyInfo &pi : params) {
 				_shader_params_cache.push_back(pi.name);
@@ -42,7 +42,7 @@ Ref<ShaderMaterial> ShaderMaterialPool::allocate() {
 	material->set_shader(_template_material->get_shader());
 	for (const StringName &name : _shader_params_cache) {
 		// Note, I don't need to make copies of textures. They are shared.
-		material->set_shader_uniform(name, _template_material->get_shader_uniform(name));
+		material->set_shader_parameter(name, _template_material->get_shader_parameter(name));
 	}
 	return material;
 }
@@ -71,7 +71,7 @@ void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst, Span<con
 	// }
 	for (unsigned int i = 0; i < params.size(); ++i) {
 		const StringName &name = params[i];
-		dst.set_shader_uniform(name, src.get_shader_uniform(name));
+		dst.set_shader_parameter(name, src.get_shader_parameter(name));
 	}
 }
 

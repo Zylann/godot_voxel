@@ -25,7 +25,7 @@ public:
 	void set_material_override(Ref<Material> material);
 	void set_visible(bool visible);
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
-	void set_shader_instance_uniform(StringName key, Variant value);
+	void set_shader_instance_parameter(StringName key, Variant value);
 
 	// Convenience
 	enum GIMode { //
