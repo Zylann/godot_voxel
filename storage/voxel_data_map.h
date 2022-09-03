@@ -206,29 +206,6 @@ private:
 	unsigned int _lod_index = 0;
 };
 
-/*struct VoxelDataLodMap {
-	struct Lod {
-		VoxelDataMap map;
-		// This lock should be locked in write mode only when the map gets modified (adding or removing blocks).
-		// Otherwise it may be locked in read mode.
-		// It is possible to unlock it after we are done querying the map.
-		RWLock map_lock;
-	};
-	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
-	FixedArray<Lod, constants::MAX_LOD> lods;
-	unsigned int lod_count = 1;
-	VoxelModifierStack modifiers;
-};
-
-// Generates all non-present blocks in preparation for an edit.
-// Every block intersecting with the box at every LOD will be checked.
-// This function runs sequentially and should be thread-safe. May be used if blocks are immediately needed.
-// It will block if other threads are accessing the same data.
-void preload_box(VoxelDataLodMap &data, Box3i voxel_box, VoxelGenerator *generator, bool is_streaming);
-
-// Clears voxel data from blocks that are pure results of generators and modifiers.
-void clear_cached_blocks_in_voxel_area(VoxelDataLodMap &data, Box3i p_voxel_box);*/
-
 } // namespace zylann::voxel
 
 #endif // VOXEL_MAP_H
