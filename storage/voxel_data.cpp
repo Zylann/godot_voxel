@@ -460,7 +460,7 @@ VoxelDataBlock *VoxelData::try_set_block_buffer(Vector3i block_position, unsigne
 	if (buffer->get_size() != Vector3iUtil::create(get_block_size())) {
 		// Voxel block size is incorrect, drop it
 		ERR_PRINT("Block is different from expected size");
-		return false;
+		return nullptr;
 	}
 
 	// Store buffer
