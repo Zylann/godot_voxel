@@ -5,6 +5,7 @@
 #include "../meshers/blocky/voxel_blocky_library.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_data.h"
 #include "../storage/voxel_data_map.h"
 #include "../storage/voxel_metadata_variant.h"
 #include "../streams/instance_data.h"
@@ -98,7 +99,7 @@ void test_voxel_data_map_paste_fill() {
 	buffer.fill(voxel_value, channel);
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
@@ -141,7 +142,7 @@ void test_voxel_data_map_paste_mask() {
 	}
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
@@ -200,7 +201,7 @@ void test_voxel_data_map_copy() {
 	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	Box3i box(10, 10, 10, 32, 16, 32);
 	VoxelBufferInternal buffer;
@@ -1572,13 +1573,12 @@ void test_run_blocky_random_tick() {
 	tickable_voxel->set_random_tickable(true);
 
 	// Create test map
-	VoxelDataMap map;
-	map.create(constants::DEFAULT_BLOCK_SIZE_PO2, 0);
+	VoxelData data;
 	{
 		// All blocks of this map will be the same,
 		// an interleaving of all block types
 		VoxelBufferInternal model_buffer;
-		model_buffer.create(Vector3iUtil::create(map.get_block_size()));
+		model_buffer.create(Vector3iUtil::create(data.get_block_size()));
 		for (int z = 0; z < model_buffer.get_size().z; ++z) {
 			for (int x = 0; x < model_buffer.get_size().x; ++x) {
 				for (int y = 0; y < model_buffer.get_size().y; ++y) {
@@ -1589,11 +1589,11 @@ void test_run_blocky_random_tick() {
 		}
 
 		const Box3i world_blocks_box(-4, -4, -4, 8, 8, 8);
-		world_blocks_box.for_each_cell_zxy([&map, &model_buffer](Vector3i block_pos) {
+		world_blocks_box.for_each_cell_zxy([&data, &model_buffer](Vector3i block_pos) {
 			std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 			buffer->create(model_buffer.get_size());
 			buffer->copy_from(model_buffer);
-			map.set_block_buffer(block_pos, buffer, false);
+			ZYLANN_TEST_ASSERT(data.try_set_block_buffer(block_pos, 0, buffer, true, false) != nullptr);
 		});
 	}
 
@@ -1630,7 +1630,7 @@ void test_run_blocky_random_tick() {
 	Math::seed(131183);
 
 	VoxelToolTerrain::run_blocky_random_tick_static(
-			map, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			});
