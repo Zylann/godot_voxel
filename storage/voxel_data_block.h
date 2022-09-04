@@ -108,9 +108,11 @@ public:
 	}
 
 private:
+	// Voxel data. If null, it means the data may be obtained with procedural generation.
 	std::shared_ptr<VoxelBufferInternal> _voxels;
 
-	// TODO Storing lod index here might not be necessary, it is known since we have to get the map first
+	// TODO Storing lod index here might not be necessary, it is known since we have to get the map first.
+	// For now it can remain here since in practice it doesn't cost space, due to other stored flags and alignment.
 	uint8_t _lod_index = 0;
 
 	// Indicates mipmaps need to be computed since this block was modified.

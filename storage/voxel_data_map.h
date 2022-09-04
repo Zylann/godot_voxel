@@ -189,10 +189,10 @@ private:
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
-	// This is dual storage: map and vector, for fast lookup and also fast iteration.
-	// Before I used Godot's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to
+	// Before I used Godot 3's HashMap with RELATIONSHIP = 2 because that delivers better performance compared to
 	// defaults, but it sometimes has very long stalls on removal, which std::unordered_map doesn't seem to have
 	// (not as badly). Also overall performance is slightly better.
+	// Note: pointers to elements remain valid when inserting or removing others (only iterators may be invalidated)
 	std::unordered_map<Vector3i, VoxelDataBlock> _blocks_map;
 
 	// This was a possible optimization in a single-threaded scenario, but it's not in multithread.
