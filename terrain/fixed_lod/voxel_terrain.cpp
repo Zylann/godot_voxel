@@ -1145,7 +1145,8 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
-			_data->unview_area(out_of_range_box, tls_missing_blocks, tls_found_blocks_positions, &_blocks_to_save);
+			_data->unview_area(out_of_range_box, tls_missing_blocks, tls_found_blocks_positions,
+					may_save ? &_blocks_to_save : nullptr);
 		});
 
 		// Remove loading blocks (those were loaded and had their refcount reach zero)
