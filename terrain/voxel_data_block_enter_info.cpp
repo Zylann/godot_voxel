@@ -1,6 +1,5 @@
 #include "voxel_data_block_enter_info.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../storage/voxel_data_block.h"
 
 namespace zylann::voxel {
 
@@ -9,9 +8,8 @@ int VoxelDataBlockEnterInfo::_b_get_network_peer_id() const {
 }
 
 Ref<gd::VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
-	ERR_FAIL_COND_V(voxel_block == nullptr, Ref<gd::VoxelBuffer>());
-	ERR_FAIL_COND_V(!voxel_block->has_voxels(), Ref<gd::VoxelBuffer>());
-	std::shared_ptr<VoxelBufferInternal> vbi = voxel_block->get_voxels_shared();
+	ERR_FAIL_COND_V(!voxel_block.has_voxels(), Ref<gd::VoxelBuffer>());
+	std::shared_ptr<VoxelBufferInternal> vbi = voxel_block.get_voxels_shared();
 	Ref<gd::VoxelBuffer> vb = gd::VoxelBuffer::create_shared(vbi);
 	return vb;
 }
@@ -21,13 +19,11 @@ Vector3i VoxelDataBlockEnterInfo::_b_get_position() const {
 }
 
 int VoxelDataBlockEnterInfo::_b_get_lod_index() const {
-	ERR_FAIL_COND_V(voxel_block == nullptr, 0);
-	return voxel_block->get_lod_index();
+	return voxel_block.get_lod_index();
 }
 
 bool VoxelDataBlockEnterInfo::_b_are_voxels_edited() const {
-	ERR_FAIL_COND_V(voxel_block == nullptr, false);
-	return voxel_block->is_edited();
+	return voxel_block.is_edited();
 }
 
 void VoxelDataBlockEnterInfo::_bind_methods() {

@@ -149,6 +149,13 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 	return block;
 }
 
+void VoxelDataMap::set_block(Vector3i bpos, const VoxelDataBlock &block) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(block.get_lod_index() == _lod_index);
+#endif
+	_blocks_map[bpos] = block;
+}
+
 VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
 	VoxelDataBlock *block = get_block(bpos);
 

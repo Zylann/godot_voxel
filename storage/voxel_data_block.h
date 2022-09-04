@@ -30,10 +30,28 @@ public:
 			_modified(src._modified),
 			_edited(src._edited) {}
 
+	VoxelDataBlock(const VoxelDataBlock &src) :
+			viewers(src.viewers),
+			_voxels(src._voxels),
+			_lod_index(src._lod_index),
+			_needs_lodding(src._needs_lodding),
+			_modified(src._modified),
+			_edited(src._edited) {}
+
 	VoxelDataBlock &operator=(VoxelDataBlock &&src) {
 		viewers = src.viewers;
 		_lod_index = src._lod_index;
 		_voxels = std::move(src._voxels);
+		_needs_lodding = src._needs_lodding;
+		_modified = src._modified;
+		_edited = src._edited;
+		return *this;
+	}
+
+	VoxelDataBlock operator=(const VoxelDataBlock &src) {
+		viewers = src.viewers;
+		_lod_index = src._lod_index;
+		_voxels = src._voxels;
 		_needs_lodding = src._needs_lodding;
 		_modified = src._modified;
 		_edited = src._edited;

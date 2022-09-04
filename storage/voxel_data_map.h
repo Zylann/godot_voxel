@@ -87,6 +87,7 @@ public:
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
 	VoxelDataBlock *set_empty_block(Vector3i bpos, bool overwrite);
+	void set_block(Vector3i bpos, const VoxelDataBlock &block);
 
 	struct NoAction {
 		inline void operator()(VoxelDataBlock &block) {}

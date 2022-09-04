@@ -1292,17 +1292,21 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		return;
 	}
 
-	if (ob.voxels != nullptr) {
-		if (_data->try_set_block_buffer(ob.position, ob.lod, ob.voxels,
-					ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED, false) == nullptr) {
-			++_stats.dropped_block_loads;
-			return;
-		}
+	VoxelDataBlock block(ob.voxels, ob.lod);
+	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
 
-	} else {
-		// Loading returned an empty block: that means we know the stream does not contain a block here.
-		// When doing data streaming, we'll generate on the fly if this block is queried.
-		_data->set_empty_block_buffer(ob.position, ob.lod);
+	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
+		// Voxel block size is incorrect, drop it
+		ZN_PRINT_ERROR("Block is different from expected size");
+		++_stats.dropped_block_loads;
+		return;
+	}
+
+	const bool inserted = _data->try_set_block(ob.position, block);
+	// TODO Might not ignore these blocks in the future, see `VoxelTerrain`
+	if (!inserted) {
+		++_stats.dropped_block_loads;
+		return;
 	}
 
 	{

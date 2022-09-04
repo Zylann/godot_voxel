@@ -130,20 +130,29 @@ public:
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Block-aware API
 
-	// Sets voxel data at a block position. Also sets wether this is edited data (otherwise it is cached generator
-	// results).
-	// If the block has different size than expected, returns nullptr and doesn't set the data.
-	// If the block already exists, it will be overwritten if `overwrite` is `true`.
-	// The block is returned if it exists.
-	// WARNING: the returned pointer may only be used if you know that this block won't get removed by another thread.
-	VoxelDataBlock *try_set_block_buffer(Vector3i block_position, unsigned int lod_index,
-			std::shared_ptr<VoxelBufferInternal> buffer, bool edited, bool overwrite);
+	// Sets all the data of a block.
+	// If the block already exists, returns false. Otherwise, returns true.
+	bool try_set_block(Vector3i block_position, const VoxelDataBlock &block);
 
-	// Sets empty voxel data at a block position. It means this block is known to have no edits and no cached generator
-	// data.
-	// If the block already exists, it is not overwritten.
-	// TODO Might need to expose a parameter for the overwriting behavior.
-	void set_empty_block_buffer(Vector3i block_position, unsigned int lod_index);
+	// Sets all the data of a block.
+	// If the block already exists, `action_when_exists` is called.
+	// `void action_when_exists(VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block)`
+	template <typename F>
+	void try_set_block(Vector3i block_position, const VoxelDataBlock &block, F action_when_exists) {
+		Lod &lod = _lods[block.get_lod_index()];
+#ifdef DEBUG_ENABLED
+		if (block.has_voxels()) {
+			ZN_ASSERT(block.get_voxels_const().get_size() == Vector3iUtil::create(get_block_size()));
+		}
+#endif
+		RWLockWrite wlock(lod.map_lock);
+		VoxelDataBlock *existing_block = lod.map.get_block(block_position);
+		if (existing_block != nullptr) {
+			action_when_exists(*existing_block, block);
+		} else {
+			lod.map.set_block(block_position, block);
+		}
+	}
 
 	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
@@ -167,11 +176,6 @@ public:
 	// Tests if a block exists at the specified block position and LOD index.
 	// This is mainly used for debugging so it isn't optimal, don't use this if you plan to query many blocks.
 	bool has_block(Vector3i bpos, unsigned int lod_index) const;
-
-	// Gets a block directly from LOD0.
-	// WARNING: the returned pointer may only be used if you know that this block won't get removed by another thread.
-	// Prefer using other safe functions if possible.
-	//VoxelDataBlock *get_block(Vector3i bpos);
 
 	// Tests if all blocks in a LOD0 area are loaded. If any isn't, returns false. Otherwise, returns true.
 	bool has_all_blocks_in_area(Box3i data_blocks_box) const;

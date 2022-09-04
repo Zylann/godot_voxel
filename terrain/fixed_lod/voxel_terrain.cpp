@@ -910,7 +910,7 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 		_data_block_enter_info_obj = gd_make_unique<VoxelDataBlockEnterInfo>();
 	}
 	_data_block_enter_info_obj->network_peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_id);
-	_data_block_enter_info_obj->voxel_block = &block;
+	_data_block_enter_info_obj->voxel_block = block;
 	_data_block_enter_info_obj->block_position = bpos;
 
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get())) {
@@ -1292,27 +1292,29 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 
 	CRASH_COND(ob.voxels == nullptr);
 
-	// Create or update block data
-	const bool was_not_loaded = !_data->has_block(block_pos, 0);
-	VoxelDataBlock *block = _data->try_set_block_buffer(
-			block_pos, 0, ob.voxels, ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED, true);
-	if (block == nullptr) {
-		// An error occurred
-		ERR_PRINT("Error occured when applying loaded data block.");
+	VoxelDataBlock block(ob.voxels, ob.lod);
+	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
+	// Viewers will be set only if the block doesn't already exist
+	block.viewers = loading_block.viewers;
+
+	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
+		// Voxel block size is incorrect, drop it
+		ZN_PRINT_ERROR("Block is different from expected size");
 		++_stats.dropped_block_loads;
 		return;
 	}
 
-	if (was_not_loaded) {
-		// Set viewers count that are currently expecting the block
-		block->viewers = loading_block.viewers;
-	}
+	_data->try_set_block(
+			block_pos, block, [&block](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+				existing_block.set_voxels(incoming_block.get_voxels_shared());
+				existing_block.set_edited(incoming_block.is_edited());
+			});
 
 	emit_data_block_loaded(block_pos);
 
 	for (unsigned int i = 0; i < loading_block.viewers_to_notify.size(); ++i) {
 		const uint32_t viewer_id = loading_block.viewers_to_notify[i];
-		notify_data_block_enter(*block, block_pos, viewer_id);
+		notify_data_block_enter(block, block_pos, viewer_id);
 	}
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
@@ -1366,12 +1368,17 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 	// Cancel loading version if any
 	_loading_blocks.erase(position);
 
-	// Create or update block data
+	VoxelDataBlock block(voxel_data, 0);
 	// TODO How to set the `edited` flag? Does it matter in use cases for this function?
-	const bool edited = true;
-	VoxelDataBlock *block = _data->try_set_block_buffer(position, 0, voxel_data, edited, true);
-	CRASH_COND(block == nullptr);
-	block->viewers = refcount;
+	block.set_edited(true);
+	block.viewers = refcount;
+
+	// Create or update block data
+	_data->try_set_block(
+			position, block, [&block](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+				existing_block.set_voxels(incoming_block.get_voxels_shared());
+				existing_block.set_edited(incoming_block.is_edited());
+			});
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 	try_schedule_mesh_update_from_data(

@@ -1,11 +1,10 @@
 #ifndef VOXEL_DATA_BLOCK_ENTER_INFO_H
 #define VOXEL_DATA_BLOCK_ENTER_INFO_H
 
+#include "../storage/voxel_data_block.h"
 #include <core/object/ref_counted.h>
 
 namespace zylann::voxel {
-
-class VoxelDataBlock;
 
 namespace gd {
 class VoxelBuffer;
@@ -19,7 +18,9 @@ class VoxelDataBlockEnterInfo : public Object {
 public:
 	int network_peer_id = -1;
 	Vector3i block_position;
-	const VoxelDataBlock *voxel_block = nullptr;
+	// Shallow copy of the block. We don't use a pointer due to thread-safety, so this information represents only the
+	// moment where the block was inserted into the map.
+	VoxelDataBlock voxel_block;
 
 private:
 	int _b_get_network_peer_id() const;

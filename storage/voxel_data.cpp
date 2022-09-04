@@ -456,32 +456,11 @@ void VoxelData::mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod
 	}
 }
 
-VoxelDataBlock *VoxelData::try_set_block_buffer(Vector3i block_position, unsigned int lod_index,
-		std::shared_ptr<VoxelBufferInternal> buffer, bool edited, bool overwrite) {
-	Lod &data_lod = _lods[lod_index];
-
-	if (buffer->get_size() != Vector3iUtil::create(get_block_size())) {
-		// Voxel block size is incorrect, drop it
-		ERR_PRINT("Block is different from expected size");
-		return nullptr;
-	}
-
-	// Store buffer
-	RWLockWrite wlock(data_lod.map_lock);
-	// TODO Expose `overwrite` as parameter?
-	VoxelDataBlock *block = data_lod.map.set_block_buffer(block_position, buffer, overwrite);
-	ZN_ASSERT(block != nullptr);
-	block->set_edited(edited);
-
-	return block;
-}
-
-void VoxelData::set_empty_block_buffer(Vector3i block_position, unsigned int lod_index) {
-	Lod &data_lod = _lods[lod_index];
-	RWLockWrite wlock(data_lod.map_lock);
-	// TODO Expose `overwrite` as parameter?
-	VoxelDataBlock *block = data_lod.map.set_empty_block(block_position, false);
-	ZN_ASSERT(block != nullptr);
+bool VoxelData::try_set_block(Vector3i block_position, const VoxelDataBlock &block) {
+	bool inserted = true;
+	try_set_block(block_position, block,
+			[&inserted](VoxelDataBlock &existing, const VoxelDataBlock &incoming) { inserted = false; });
+	return inserted;
 }
 
 bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
@@ -489,12 +468,6 @@ bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
 	RWLockRead rlock(data_lod.map_lock);
 	return data_lod.map.has_block(bpos);
 }
-
-// VoxelDataBlock *VoxelData::get_block(Vector3i bpos) {
-// 	Lod &data_lod = _lods[0];
-// 	RWLockRead rlock(data_lod.map_lock);
-// 	return data_lod.map.get_block(bpos);
-// }
 
 bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box) const {
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
