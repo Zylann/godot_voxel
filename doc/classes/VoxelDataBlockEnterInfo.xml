@@ -4,7 +4,8 @@
 		Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer].
 	</brief_description>
 	<description>
-		See [method VoxelTerrain._on_data_block_entered]
+		Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer]. See [method VoxelTerrain._on_data_block_entered].
+		Instances of this class must not be stored, as they will become invalid after the call they come from.
 	</description>
 	<tutorials>
 	</tutorials>

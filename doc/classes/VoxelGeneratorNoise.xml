@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGeneratorNoise" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Voxel generator producing overhanging shapes using 3D noise.
 	</brief_description>
 	<description>
 	</description>
@@ -8,12 +9,17 @@
 	</tutorials>
 	<members>
 		<member name="channel" type="int" setter="set_channel" getter="get_channel" enum="VoxelBuffer.ChannelId" default="1">
+			Channel into which the generator will produce voxel data. This depends on the type of meshing you need.
 		</member>
 		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" default="300.0">
+			Range of altitudes within which the shape variations will be found. The higher this range, the more overhangs there will be.
+			Shapes will start at maximum density near the base of the shape (low probability to find air), and progressively loose density until it reaches maximum height.
 		</member>
 		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="0.0">
+			Base of the shape. Everything below it will be filled with ground.
 		</member>
 		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
+			Noise used as density function. It is required for the generator to work.
 		</member>
 	</members>
 </class>

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Graph-based generator for smooth voxel worlds.
+		Graph-based voxel generator.
 	</brief_description>
 	<description>
-		Generates SDF voxel data from a graph of per-voxel operations.
+		Generates voxel data from a graph of per-voxel operations.
 		The graph must be created, compiled, and only then blocks can be generated.
+		It can be used with SDF-based smooth terrain, and also blocky terrains.
 		Warning: methods to modify the graph should only be called from the main thread.
 	</description>
 	<tutorials>
@@ -18,6 +19,7 @@
 			<param index="2" name="dst_node_id" type="int" />
 			<param index="3" name="dst_port_index" type="int" />
 			<description>
+				Connects the outputs of a node to the input of another node. Connecting a node to itself, or in a way that can lead it back to itself, is not supported.
 			</description>
 		</method>
 		<method name="bake_sphere_bumpmap">
@@ -27,6 +29,9 @@
 			<param index="2" name="sdf_min" type="float" />
 			<param index="3" name="sdf_max" type="float" />
 			<description>
+				Bakes a spherical bumpmap (or heightmap) using SDF output produced by the generator, if any. The bumpmap uses a panorama projection.
+				[code]ref_radius[/code]: radius of the sphere on which heights will be sampled.
+				[code]strength[/code]: strength of produced normals, may default to 1.0.
 			</description>
 		</method>
 		<method name="bake_sphere_normalmap">
@@ -35,6 +40,10 @@
 			<param index="1" name="ref_radius" type="float" />
 			<param index="2" name="strength" type="float" />
 			<description>
+				Bakes a spherical normalmap using SDF output produced by the generator, if any. The normalmap uses a panorama projection. It is assumed the generator produces a spherical shape (like a planet). Such normalmap can be used to add more detail to distant views of a terrain using this generator.
+				[code]ref_radius[/code]: radius of the sphere on which normals will be sampled.
+				[code]strength[/code]: strength of produced normals, may default to 1.0.
+				Note: an alternative is to use distance normals feature with [VoxelLodTerrain].
 			</description>
 		</method>
 		<method name="can_connect" qualifiers="const">
@@ -180,12 +189,14 @@
 			<param index="2" name="dst_node_id" type="int" />
 			<param index="3" name="dst_port_index" type="int" />
 			<description>
+				Removes an existing connection between two nodes of the graph.
 			</description>
 		</method>
 		<method name="remove_node">
 			<return type="void" />
 			<param index="0" name="node_id" type="int" />
 			<description>
+				Removes a node from the graph.
 			</description>
 		</method>
 		<method name="set_expression_node_inputs">
@@ -193,6 +204,8 @@
 			<param index="0" name="node_id" type="int" />
 			<param index="1" name="names" type="PackedStringArray" />
 			<description>
+				Configures inputs for an Expression node. [code]names[/code] is the list of input names used in the expression.
+				If you create an Expression node from code, you may want to use this function, as inputs will not be setup automatically.
 			</description>
 		</method>
 		<method name="set_node_default_input">
@@ -201,6 +214,8 @@
 			<param index="1" name="input_index" type="int" />
 			<param index="2" name="value" type="Variant" />
 			<description>
+				Sets the value that will be used on an input of a node that has no inbound connection.
+				[code]value[/code] may be a [code]float[/code] for now.
 			</description>
 		</method>
 		<method name="set_node_default_inputs_autoconnect">
@@ -208,6 +223,8 @@
 			<param index="0" name="node_id" type="int" />
 			<param index="1" name="enabled" type="bool" />
 			<description>
+				Sets wether a node input with no inbound connection will automatically create a default connection when the graph is compiled.
+				This is only available on specific nodes. On other nodes, it has no effect.
 			</description>
 		</method>
 		<method name="set_node_gui_position">
@@ -215,6 +232,7 @@
 			<param index="0" name="node_id" type="int" />
 			<param index="1" name="position" type="Vector2" />
 			<description>
+				Sets the visual position of a node of the graph, as it will appear in the editor.
 			</description>
 		</method>
 		<method name="set_node_name">
@@ -222,6 +240,7 @@
 			<param index="0" name="node_id" type="int" />
 			<param index="1" name="name" type="StringName" />
 			<description>
+				Sets a custom name for a node.
 			</description>
 		</method>
 		<method name="set_node_param">
@@ -242,16 +261,22 @@
 	</methods>
 	<members>
 		<member name="debug_block_clipping" type="bool" setter="set_debug_clipped_blocks" getter="is_debug_clipped_blocks" default="false">
+			When enabled, if the graph outputs SDF data, generated blocks that would otherwise be clipped will be inverted. This has the effect of them showing up as "walls artifacts", which is useful to visualize where the optimization occurs.
 		</member>
 		<member name="sdf_clip_threshold" type="float" setter="set_sdf_clip_threshold" getter="get_sdf_clip_threshold" default="1.5">
+			When generating SDF blocks for a terrain, if the range analysis of a block is beyond this threshold, its SDF data will be considered either fully 1, or fully -1. This optimizes memory and processing time.
 		</member>
 		<member name="subdivision_size" type="int" setter="set_subdivision_size" getter="get_subdivision_size" default="16">
+			When generating SDF blocks for a terrain, and if block size is divisible by this value, range analysis will operate on such subdivision. This allows to optimize away more precise areas. However, it may not be set too small otherwise overhead will outweight the benefits.
 		</member>
 		<member name="use_optimized_execution_map" type="bool" setter="set_use_optimized_execution_map" getter="is_using_optimized_execution_map" default="true">
+			If enabled, when generating blocks for a terrain, the generator will attempt to skip specific nodes if they are found to have no importance in specific areas.
 		</member>
 		<member name="use_subdivision" type="bool" setter="set_use_subdivision" getter="is_using_subdivision" default="true">
+			If enabled, [member subdivision_size] will be used.
 		</member>
 		<member name="use_xz_caching" type="bool" setter="set_use_xz_caching" getter="is_using_xz_caching" default="true">
+			If enabled, the generator will run only once branches of the graph that only depend on X and Z. This is effective when part of the graph generates a heightmap, as this part is not volumetric.
 		</member>
 	</members>
 	<signals>
