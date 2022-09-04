@@ -287,6 +287,7 @@ void VoxelData::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, u
 
 bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	if (is_streaming_enabled() == false) {
+		// TODO Actually, there is still a check to make because loading still takes time
 		return true;
 	}
 	const Box3i voxel_box = p_voxels_box.clipped(get_bounds());
@@ -294,6 +295,8 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	{
 		RWLockRead rlock(data_lod0.map_lock);
 		const bool all_blocks_present = data_lod0.map.is_area_fully_loaded(voxel_box);
+		// In a multi-LOD context, it is assumed the parent LOD follows the rule of covering all its children.
+		// In other words, all parent LODs are assumed to be loaded.
 		return all_blocks_present;
 	}
 }
@@ -330,8 +333,8 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 				// We don't check "loading blocks", because this function wants to complete the task right now.
 				const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
 				if (streaming) {
-					// Non-resident blocks must not be touched because we don't know what's in them.
-					// We can generate caches if resident ones have no voxel data.
+					// Non-loaded blocks must not be touched because we don't know what's in them.
+					// We can generate caches if loaded ones have no voxel data.
 					if (block != nullptr && !block->has_voxels()) {
 						todo.push_back(Task{ block_pos, lod_index, nullptr });
 					}
