@@ -744,7 +744,7 @@ void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsign
 }
 
 void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-		std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock *> &found_blocks) {
+		std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks) {
 	ZN_PROFILE_SCOPE();
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
@@ -756,7 +756,7 @@ void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_block
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.add();
-			found_blocks.push_back(block);
+			found_blocks.push_back(*block);
 			found_blocks_positions.push_back(bpos);
 		} else {
 			missing_blocks.push_back(bpos);

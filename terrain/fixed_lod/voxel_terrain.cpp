@@ -1188,7 +1188,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 		const bool require_notifications = _block_enter_notification_enabled &&
 				VoxelEngine::get_singleton().is_viewer_requiring_data_block_notifications(viewer_id);
 
-		static thread_local std::vector<VoxelDataBlock *> tls_found_blocks;
+		static thread_local std::vector<VoxelDataBlock> tls_found_blocks;
 
 		tls_missing_blocks.clear();
 		tls_found_blocks.clear();
@@ -1228,13 +1228,10 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 		if (require_notifications) {
 			// Notifications for blocks that were already loaded
-			// Note, we carry pointers to blocks up to here because we assume it won't get removed or invalidated by a
-			// different thread. The only place where we remove blocks is in the current thread.
 			for (unsigned int i = 0; i < tls_found_blocks.size(); ++i) {
 				const Vector3i bpos = tls_found_blocks_positions[i];
-				const VoxelDataBlock *block = tls_found_blocks[i];
-				ZN_ASSERT(block != nullptr);
-				notify_data_block_enter(*block, bpos, viewer_id);
+				const VoxelDataBlock &block = tls_found_blocks[i];
+				notify_data_block_enter(block, bpos, viewer_id);
 			}
 		}
 

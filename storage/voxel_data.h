@@ -243,8 +243,9 @@ public:
 
 	// Increases the reference count of loaded blocks in the area.
 	// Returns positions where blocks were loaded, and where they were missing.
+	// Shallow copies of found blocks are returned (voxel data is referenced).
 	void view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock *> &found_blocks);
+			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
 	// Returns positions where blocks were found, and where they were missing.
