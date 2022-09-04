@@ -93,7 +93,7 @@ public:
 		return _voxels;
 	}
 
-	void set_voxels(std::shared_ptr<VoxelBufferInternal> &buffer) {
+	void set_voxels(const std::shared_ptr<VoxelBufferInternal> &buffer) {
 		ZN_ASSERT_RETURN(buffer != nullptr);
 		_voxels = buffer;
 	}
