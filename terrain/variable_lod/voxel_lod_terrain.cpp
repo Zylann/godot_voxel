@@ -2701,6 +2701,7 @@ void VoxelLodTerrain::_bind_methods() {
 			D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &VoxelLodTerrain::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &VoxelLodTerrain::debug_get_draw_flag);
 
+	ClassDB::bind_method(D_METHOD("restart_stream"), &VoxelLodTerrain::restart_stream);
 	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_IDLE);
