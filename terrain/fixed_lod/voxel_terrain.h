@@ -179,9 +179,9 @@ private:
 	void try_schedule_mesh_update(VoxelMeshBlockVT &block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
-	void save_all_modified_blocks(bool with_copy);
+	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> *out_tracker);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
-	void send_block_data_requests();
+	void send_block_data_requests(std::shared_ptr<AsyncDependencyTracker> *out_saving_tracker);
 
 	void emit_data_block_loaded(Vector3i bpos);
 	void emit_data_block_unloaded(Vector3i bpos);

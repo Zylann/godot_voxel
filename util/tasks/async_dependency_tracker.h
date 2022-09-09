@@ -10,6 +10,7 @@ namespace zylann {
 class IThreadedTask;
 
 // Tracks the status of one or more tasks.
+// This should be referenced by tasks using a shared pointer.
 class AsyncDependencyTracker {
 public:
 	// Creates a tracker which will track `initial_count` tasks.

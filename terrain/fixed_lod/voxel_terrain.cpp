@@ -480,7 +480,7 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	}
 }
 
-void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
+void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> *out_tracker) {
 	ZN_PROFILE_SCOPE();
 	Ref<VoxelStream> stream = get_stream();
 	ERR_FAIL_COND_MSG(stream.is_null(), "Attempting to save modified blocks, but there is no stream to save them to.");
@@ -493,7 +493,7 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
 	}
 
 	// And flush immediately
-	send_block_data_requests();
+	send_block_data_requests(out_tracker);
 }
 
 const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
@@ -823,42 +823,52 @@ static void request_block_load(uint32_t volume_id, std::shared_ptr<StreamingDepe
 }
 
 static void request_voxel_block_save(uint32_t volume_id, const std::shared_ptr<VoxelBufferInternal> &voxels,
-		Vector3i block_pos, std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size) {
+		Vector3i block_pos, std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
+		std::shared_ptr<AsyncDependencyTracker> tracker) {
 	//
 	ZN_ASSERT(stream_dependency != nullptr);
 	ZN_ASSERT_RETURN(stream_dependency->stream.is_valid());
 
 	SaveBlockDataTask *task =
-			ZN_NEW(SaveBlockDataTask(volume_id, block_pos, 0, data_block_size, voxels, stream_dependency));
+			ZN_NEW(SaveBlockDataTask(volume_id, block_pos, 0, data_block_size, voxels, stream_dependency, tracker));
 
 	// No priority data, saving doesnt need sorting
 
 	VoxelEngine::get_singleton().push_async_io_task(task);
 }
 
-void VoxelTerrain::send_block_data_requests() {
+void VoxelTerrain::send_block_data_requests(std::shared_ptr<AsyncDependencyTracker> *out_saving_tracker) {
 	ZN_PROFILE_SCOPE();
 
-	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
-			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
+	if (_blocks_pending_load.size() > 0) {
+		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
+				VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
-	const Transform3D volume_transform = get_global_transform();
+		const Transform3D volume_transform = get_global_transform();
 
-	// Blocks to load
-	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-		const Vector3i block_pos = _blocks_pending_load[i];
-		// TODO Optimization: Batch request
-		request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
-				volume_transform, _instancer != nullptr);
+		// Blocks to load
+		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+			const Vector3i block_pos = _blocks_pending_load[i];
+			// TODO Optimization: Batch request
+			request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
+					volume_transform, _instancer != nullptr);
+		}
 	}
 
 	// Blocks to save
 	if (get_stream().is_valid()) {
+		std::shared_ptr<AsyncDependencyTracker> tracker;
+		if (out_saving_tracker != nullptr) {
+			tracker = make_shared_instance<AsyncDependencyTracker>(_blocks_to_save.size());
+			*out_saving_tracker = tracker;
+		}
+
 		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", _blocks_to_save[i].position));
 			const VoxelData::BlockToSave b = _blocks_to_save[i];
 			// TODO Optimization: Batch request
-			request_voxel_block_save(_volume_id, b.voxels, b.position, _streaming_dependency, get_data_block_size());
+			request_voxel_block_save(
+					_volume_id, b.voxels, b.position, _streaming_dependency, get_data_block_size(), tracker);
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {
@@ -1122,7 +1132,7 @@ void VoxelTerrain::process_viewers() {
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (can_load_blocks) {
-		send_block_data_requests();
+		send_block_data_requests(nullptr);
 	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
@@ -1623,8 +1633,23 @@ Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
 	return _data->block_to_voxel(pos);
 }
 
-void VoxelTerrain::_b_save_modified_blocks() {
-	save_all_modified_blocks(true);
+class VoxelSaveCompletionTracker : public RefCounted {
+	GDCLASS(VoxelSaveCompletionTracker)
+public:
+	void initialize(std::shared_ptr<AsyncDependencyTracker> tracker);
+	bool is_complete();
+	bool is_aborted();
+	int get_total_tasks();
+	int get_remaining_tasks();
+
+private:
+	std::shared_ptr<AsyncDependencyTracker> _tracker;
+};
+
+Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker;
+	save_all_modified_blocks(true, &tracker);
+	ZN_ASSERT_RETURN(tracker != nullptr);
 }
 
 // Explicitely ask to save a block if it was modified

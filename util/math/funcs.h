@@ -49,7 +49,8 @@ inline T max(const T a, const T b, const T c, const T d, const T e, const T f, c
 }
 
 // template versions require explicit types.
-// float versions do not require casting all the time, so optional double-precision support with `real_t` is easier.
+// float versions do not require casting all the time, so optional double-precision support with `real_t` is easier when
+// using arguments of different precision.
 
 inline float minf(float a, float b) {
 	return a < b ? a : b;

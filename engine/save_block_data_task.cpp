@@ -13,7 +13,8 @@ std::atomic_int g_debug_save_block_tasks_count;
 }
 
 SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency) :
+		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -21,13 +22,15 @@ SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos,
 		_block_size(p_block_size),
 		_save_instances(false),
 		_save_voxels(true),
-		_stream_dependency(p_stream_dependency) {
+		_stream_dependency(p_stream_dependency),
+		_tracker(p_tracker) {
 	//
 	++g_debug_save_block_tasks_count;
 }
 
 SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
-		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency) :
+		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -35,7 +38,8 @@ SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos,
 		_block_size(p_block_size),
 		_save_instances(true),
 		_save_voxels(false),
-		_stream_dependency(p_stream_dependency) {
+		_stream_dependency(p_stream_dependency),
+		_tracker(p_tracker) {
 	//
 	++g_debug_save_block_tasks_count;
 }
@@ -56,7 +60,11 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	CRASH_COND(stream.is_null());
 
 	if (_save_voxels) {
-		ERR_FAIL_COND(_voxels == nullptr);
+		if (_voxels == nullptr && _tracker != nullptr) {
+			_tracker->abort();
+		}
+		ZN_ASSERT_RETURN(_voxels == nullptr);
+
 		VoxelBufferInternal voxels_copy;
 		{
 			RWLockRead lock(_voxels->get_lock());
@@ -80,6 +88,10 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod };
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
+	}
+
+	if (_tracker != nullptr) {
+		_tracker->post_complete();
 	}
 
 	_has_run = true;
