@@ -19,6 +19,7 @@
 #include "../../util/string_funcs.h"
 #include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
+#include "../voxel_save_completion_tracker.h"
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
@@ -1633,23 +1634,11 @@ Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
 	return _data->block_to_voxel(pos);
 }
 
-class VoxelSaveCompletionTracker : public RefCounted {
-	GDCLASS(VoxelSaveCompletionTracker)
-public:
-	void initialize(std::shared_ptr<AsyncDependencyTracker> tracker);
-	bool is_complete();
-	bool is_aborted();
-	int get_total_tasks();
-	int get_remaining_tasks();
-
-private:
-	std::shared_ptr<AsyncDependencyTracker> _tracker;
-};
-
 Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
 	std::shared_ptr<AsyncDependencyTracker> tracker;
 	save_all_modified_blocks(true, &tracker);
-	ZN_ASSERT_RETURN(tracker != nullptr);
+	ZN_ASSERT_RETURN(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 // Explicitely ask to save a block if it was modified
