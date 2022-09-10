@@ -41,27 +41,27 @@ void test_box3i_intersects() {
 	{
 		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
 		Box3i b(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
-		ZYLANN_TEST_ASSERT(a.intersects(b));
+		ZN_TEST_ASSERT(a.intersects(b));
 	}
 	{
 		Box3i a(Vector3i(0, 0, 0), Vector3i(1, 1, 1));
 		Box3i b(Vector3i(1, 0, 0), Vector3i(1, 1, 1));
-		ZYLANN_TEST_ASSERT(a.intersects(b) == false);
+		ZN_TEST_ASSERT(a.intersects(b) == false);
 	}
 	{
 		Box3i a(Vector3i(0, 0, 0), Vector3i(2, 2, 2));
 		Box3i b(Vector3i(1, 0, 0), Vector3i(2, 2, 2));
-		ZYLANN_TEST_ASSERT(a.intersects(b));
+		ZN_TEST_ASSERT(a.intersects(b));
 	}
 	{
 		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
 		Box3i b(Vector3i(0, -5, 0), Vector3i(1, 10, 1));
-		ZYLANN_TEST_ASSERT(a.intersects(b));
+		ZN_TEST_ASSERT(a.intersects(b));
 	}
 	{
 		Box3i a(Vector3i(-5, 0, 0), Vector3i(10, 1, 1));
 		Box3i b(Vector3i(0, -5, 1), Vector3i(1, 10, 1));
-		ZYLANN_TEST_ASSERT(a.intersects(b) == false);
+		ZN_TEST_ASSERT(a.intersects(b) == false);
 	}
 }
 
@@ -78,14 +78,14 @@ void test_box3i_for_inner_outline() {
 
 	box.for_inner_outline([&expected_coords](Vector3i pos) {
 		auto it = expected_coords.find(pos);
-		ZYLANN_TEST_ASSERT_MSG(it != expected_coords.end(), "Position must be on the inner outline");
-		ZYLANN_TEST_ASSERT_MSG(it->second == false, "Position must be unique");
+		ZN_TEST_ASSERT_MSG(it != expected_coords.end(), "Position must be on the inner outline");
+		ZN_TEST_ASSERT_MSG(it->second == false, "Position must be unique");
 		it->second = true;
 	});
 
 	for (auto it = expected_coords.begin(); it != expected_coords.end(); ++it) {
 		const bool v = it->second;
-		ZYLANN_TEST_ASSERT_MSG(v, "All expected coordinates must have been found");
+		ZN_TEST_ASSERT_MSG(v, "All expected coordinates must have been found");
 	}
 }
 
@@ -109,7 +109,7 @@ void test_voxel_data_map_paste_fill() {
 	const bool is_match =
 			box.all_cells_match([&map](const Vector3i &pos) { return map.get_voxel(pos, channel) == voxel_value; });
 
-	ZYLANN_TEST_ASSERT(is_match);
+	ZN_TEST_ASSERT(is_match);
 
 	// Check neighbor voxels to make sure they were not changed
 	const Box3i padded_box = box.padded(1);
@@ -120,7 +120,7 @@ void test_voxel_data_map_paste_fill() {
 		}
 	});
 
-	ZYLANN_TEST_ASSERT(outside_is_ok);
+	ZN_TEST_ASSERT(outside_is_ok);
 }
 
 void test_voxel_data_map_paste_mask() {
@@ -182,7 +182,7 @@ void test_voxel_data_map_paste_mask() {
 		print_line(line);
 	}*/
 
-	ZYLANN_TEST_ASSERT(is_match);
+	ZN_TEST_ASSERT(is_match);
 
 	// Now check the outline voxels, they should be the same as before
 	bool outside_is_ok = true;
@@ -192,7 +192,7 @@ void test_voxel_data_map_paste_mask() {
 		}
 	});
 
-	ZYLANN_TEST_ASSERT(outside_is_ok);
+	ZN_TEST_ASSERT(outside_is_ok);
 }
 
 void test_voxel_data_map_copy() {
@@ -239,7 +239,7 @@ void test_voxel_data_map_copy() {
 	// 	print_line(line);
 	// }
 
-	ZYLANN_TEST_ASSERT(buffer.equals(buffer2));
+	ZN_TEST_ASSERT(buffer.equals(buffer2));
 }
 
 void test_encode_weights_packed_u16() {
@@ -253,7 +253,7 @@ void test_encode_weights_packed_u16() {
 	weights[3] = 15 << 4;
 	const uint16_t encoded_weights = encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
 	FixedArray<uint8_t, 4> decoded_weights = decode_weights_from_packed_u16(encoded_weights);
-	ZYLANN_TEST_ASSERT(weights == decoded_weights);
+	ZN_TEST_ASSERT(weights == decoded_weights);
 }
 
 void test_copy_3d_region_zxy() {
@@ -266,7 +266,7 @@ void test_copy_3d_region_zxy() {
 					for (pos.y = src_min.y; pos.y < src_max.y; ++pos.y) {
 						const uint16_t srcv = srcs[Vector3iUtil::get_zxy_index(pos, src_size)];
 						const uint16_t dstv = dsts[Vector3iUtil::get_zxy_index(pos - src_min + dst_min, dst_size)];
-						ZYLANN_TEST_ASSERT(srcv == dstv);
+						ZN_TEST_ASSERT(srcv == dstv);
 					}
 				}
 			}
@@ -353,7 +353,7 @@ void test_voxel_graph_generator_default_graph_compilation() {
 	generator.instantiate();
 	generator->load_plane_preset();
 	VoxelGraphRuntime::CompilationResult result = generator->compile(false);
-	ZYLANN_TEST_ASSERT_MSG(
+	ZN_TEST_ASSERT_MSG(
 			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 }
 
@@ -369,14 +369,14 @@ void test_voxel_graph_invalid_connection() {
 	generator->add_connection(n_add1, 0, n_add2, 0);
 	generator->add_connection(n_add2, 0, n_out, 0);
 
-	ZYLANN_TEST_ASSERT(generator->can_connect(n_add1, 0, n_add2, 1) == true);
-	ZYLANN_TEST_ASSERT_MSG(
+	ZN_TEST_ASSERT(generator->can_connect(n_add1, 0, n_add2, 1) == true);
+	ZN_TEST_ASSERT_MSG(
 			generator->can_connect(n_add1, 0, n_add2, 0) == false, "Adding twice the same connection is not allowed");
-	ZYLANN_TEST_ASSERT_MSG(generator->can_connect(n_x, 0, n_add2, 0) == false,
+	ZN_TEST_ASSERT_MSG(generator->can_connect(n_x, 0, n_add2, 0) == false,
 			"Adding a connection to a port already connected is not allowed");
-	ZYLANN_TEST_ASSERT_MSG(
+	ZN_TEST_ASSERT_MSG(
 			generator->can_connect(n_add1, 0, n_add1, 1) == false, "Connecting a node to itself is not allowed");
-	ZYLANN_TEST_ASSERT_MSG(generator->can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
+	ZN_TEST_ASSERT_MSG(generator->can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
 }
 
 void test_voxel_graph_generator_expressions() {
@@ -403,7 +403,7 @@ void test_voxel_graph_generator_expressions() {
 		generator->add_connection(n_expression, 0, out_sdf, 0);
 
 		VoxelGraphRuntime::CompilationResult result = generator->compile(false);
-		ZYLANN_TEST_ASSERT_MSG(result.success,
+		ZN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 	}
 	Ref<ZN_FastNoiseLite> zfnl;
@@ -457,20 +457,20 @@ void test_voxel_graph_generator_expressions() {
 		generator->add_connection(n_expr, 0, out_sdf, 0);
 
 		VoxelGraphRuntime::CompilationResult result = generator->compile(true);
-		ZYLANN_TEST_ASSERT_MSG(result.success,
+		ZN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 
 		generator->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
 
 		std::vector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
 		generator->debug_measure_microseconds_per_voxel(false, &profiling_info);
-		ZYLANN_TEST_ASSERT(profiling_info.size() >= 4);
+		ZN_TEST_ASSERT(profiling_info.size() >= 4);
 		for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
-			ZYLANN_TEST_ASSERT(generator->has_node(info.node_id));
+			ZN_TEST_ASSERT(generator->has_node(info.node_id));
 		}
 	}
-	ZYLANN_TEST_ASSERT(zfnl.is_valid());
-	ZYLANN_TEST_ASSERT(zfnl->reference_get_count() == 1);
+	ZN_TEST_ASSERT(zfnl.is_valid());
+	ZN_TEST_ASSERT(zfnl->reference_get_count() == 1);
 }
 
 void test_voxel_graph_generator_texturing() {
@@ -516,7 +516,7 @@ void test_voxel_graph_generator_texturing() {
 	generator->add_connection(n_clamp, 0, out_weight1, 0);
 
 	VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
-	ZYLANN_TEST_ASSERT_MSG(compilation_result.success,
+	ZN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));
 
@@ -526,49 +526,49 @@ void test_voxel_graph_generator_texturing() {
 				generator->generate_single(Vector3i(-2, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 		const float sdf_must_be_in_ground =
 				generator->generate_single(Vector3i(2, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
-		ZYLANN_TEST_ASSERT(sdf_must_be_in_air > 0.f);
-		ZYLANN_TEST_ASSERT(sdf_must_be_in_ground < 0.f);
+		ZN_TEST_ASSERT(sdf_must_be_in_air > 0.f);
+		ZN_TEST_ASSERT(sdf_must_be_in_ground < 0.f);
 
 		uint32_t out_weight0_buffer_index;
 		uint32_t out_weight1_buffer_index;
-		ZYLANN_TEST_ASSERT(generator->try_get_output_port_address(
+		ZN_TEST_ASSERT(generator->try_get_output_port_address(
 				ProgramGraph::PortLocation{ out_weight0, 0 }, out_weight0_buffer_index));
-		ZYLANN_TEST_ASSERT(generator->try_get_output_port_address(
+		ZN_TEST_ASSERT(generator->try_get_output_port_address(
 				ProgramGraph::PortLocation{ out_weight1, 0 }, out_weight1_buffer_index));
 
 		// Sample two points 1 unit below ground at to heights on the slope
 
 		{
 			const float sdf = generator->generate_single(Vector3i(-2, -3, 0), VoxelBufferInternal::CHANNEL_SDF).f;
-			ZYLANN_TEST_ASSERT(sdf < 0.f);
+			ZN_TEST_ASSERT(sdf < 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 			const VoxelGraphRuntime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
 			const VoxelGraphRuntime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
 
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.size >= 1);
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.data[0] >= 1.f);
+			ZN_TEST_ASSERT(out_weight0_buffer.size >= 1);
+			ZN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
+			ZN_TEST_ASSERT(out_weight0_buffer.data[0] >= 1.f);
 
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.size >= 1);
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.data != nullptr);
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.data[0] <= 0.f);
+			ZN_TEST_ASSERT(out_weight1_buffer.size >= 1);
+			ZN_TEST_ASSERT(out_weight1_buffer.data != nullptr);
+			ZN_TEST_ASSERT(out_weight1_buffer.data[0] <= 0.f);
 		}
 		{
 			const float sdf = generator->generate_single(Vector3i(2, 1, 0), VoxelBufferInternal::CHANNEL_SDF).f;
-			ZYLANN_TEST_ASSERT(sdf < 0.f);
+			ZN_TEST_ASSERT(sdf < 0.f);
 			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 			const VoxelGraphRuntime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
 			const VoxelGraphRuntime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
 
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.size >= 1);
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
-			ZYLANN_TEST_ASSERT(out_weight0_buffer.data[0] <= 0.f);
+			ZN_TEST_ASSERT(out_weight0_buffer.size >= 1);
+			ZN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
+			ZN_TEST_ASSERT(out_weight0_buffer.data[0] <= 0.f);
 
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.size >= 1);
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.data != nullptr);
-			ZYLANN_TEST_ASSERT(out_weight1_buffer.data[0] >= 1.f);
+			ZN_TEST_ASSERT(out_weight1_buffer.size >= 1);
+			ZN_TEST_ASSERT(out_weight1_buffer.data != nullptr);
+			ZN_TEST_ASSERT(out_weight1_buffer.data[0] >= 1.f);
 		}
 	}
 
@@ -588,16 +588,16 @@ void test_voxel_graph_generator_texturing() {
 					switch (indices[i]) {
 						case 0:
 							if (weight0_must_be_1) {
-								ZYLANN_TEST_ASSERT(weights[i] >= WEIGHT_MAX);
+								ZN_TEST_ASSERT(weights[i] >= WEIGHT_MAX);
 							} else {
-								ZYLANN_TEST_ASSERT(weights[i] <= 0);
+								ZN_TEST_ASSERT(weights[i] <= 0);
 							}
 							break;
 						case 1:
 							if (weight1_must_be_1) {
-								ZYLANN_TEST_ASSERT(weights[i] >= WEIGHT_MAX);
+								ZN_TEST_ASSERT(weights[i] >= WEIGHT_MAX);
 							} else {
-								ZYLANN_TEST_ASSERT(weights[i] <= 0);
+								ZN_TEST_ASSERT(weights[i] <= 0);
 							}
 							break;
 						default:
@@ -685,10 +685,10 @@ void test_voxel_graph_equivalence_merging() {
 		graph->add_connection(n_add2, 0, n_add3, 1);
 		graph->add_connection(n_add3, 0, n_out, 0);
 		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
-		ZYLANN_TEST_ASSERT(result.success);
-		ZYLANN_TEST_ASSERT(result.expanded_nodes_count == 4);
+		ZN_TEST_ASSERT(result.success);
+		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
-		ZYLANN_TEST_ASSERT(value.f == 22);
+		ZN_TEST_ASSERT(value.f == 22);
 	}
 	{
 		// Same as previous but the X input node is shared
@@ -716,10 +716,10 @@ void test_voxel_graph_equivalence_merging() {
 		graph->add_connection(n_add2, 0, n_add3, 1);
 		graph->add_connection(n_add3, 0, n_out, 0);
 		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
-		ZYLANN_TEST_ASSERT(result.success);
-		ZYLANN_TEST_ASSERT(result.expanded_nodes_count == 4);
+		ZN_TEST_ASSERT(result.success);
+		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
-		ZYLANN_TEST_ASSERT(value.f == 22);
+		ZN_TEST_ASSERT(value.f == 22);
 	}
 }
 
@@ -745,7 +745,7 @@ void test_voxel_graph_issue427() {
 	graph->add_connection(n_mul, 0, n_sub, 1);
 
 	VoxelGraphRuntime::CompilationResult result = graph->compile(true);
-	ZYLANN_TEST_ASSERT(result.success);
+	ZN_TEST_ASSERT(result.success);
 }
 
 #ifdef TOOLS_ENABLED
@@ -766,7 +766,7 @@ void test_voxel_graph_hash() {
 	// Setting a default input on a node that isn't connected yet to the output
 	graph->set_node_default_input(n_mul, 1, 2);
 	const uint64_t hash1 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash1 == hash0);
+	ZN_TEST_ASSERT(hash1 == hash0);
 
 	// Adding connections up to the output
 	graph->add_connection(n_in_y, 0, n_add, 0);
@@ -774,29 +774,29 @@ void test_voxel_graph_hash() {
 	graph->add_connection(n_add, 0, n_mul, 0);
 	graph->add_connection(n_mul, 0, n_out_sdf, 0);
 	const uint64_t hash2 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash2 != hash0);
+	ZN_TEST_ASSERT(hash2 != hash0);
 
 	// Adding only one connection, creating a diamond
 	graph->add_connection(n_fn2_2d, 0, n_mul, 1);
 	const uint64_t hash3 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash3 != hash2);
+	ZN_TEST_ASSERT(hash3 != hash2);
 
 	// Setting a default input
 	graph->set_node_default_input(n_mul, 1, 4);
 	const uint64_t hash4 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash4 != hash3);
+	ZN_TEST_ASSERT(hash4 != hash3);
 
 	// Setting a noise resource property
 	Ref<FastNoise2> noise = graph->get_node_param(n_fn2_2d, 0);
 	noise->set_period(noise->get_period() + 10.f);
 	const uint64_t hash5 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash5 != hash4);
+	ZN_TEST_ASSERT(hash5 != hash4);
 
 	// Setting a different noise instance with the same properties
 	Ref<FastNoise2> noise2 = noise->duplicate();
 	graph->set_node_param(n_fn2_2d, 0, noise2);
 	const uint64_t hash6 = graph->get_output_graph_hash();
-	ZYLANN_TEST_ASSERT(hash6 == hash5);
+	ZN_TEST_ASSERT(hash6 == hash5);
 }
 
 #endif // TOOLS_ENABLED
@@ -836,7 +836,7 @@ void test_island_finder() {
 			;
 
 	const Vector3i grid_size(5, 5, 5);
-	ZYLANN_TEST_ASSERT(Vector3iUtil::get_volume(grid_size) == strlen(cdata) / 2);
+	ZN_TEST_ASSERT(Vector3iUtil::get_volume(grid_size) == strlen(cdata) / 2);
 
 	std::vector<int> grid;
 	grid.resize(Vector3iUtil::get_volume(grid_size));
@@ -878,7 +878,7 @@ void test_island_finder() {
 	// 	print_line("//");
 	// }
 
-	ZYLANN_TEST_ASSERT(label_count == 3);
+	ZN_TEST_ASSERT(label_count == 3);
 }
 
 void test_unordered_remove_if() {
@@ -903,8 +903,8 @@ void test_unordered_remove_if() {
 
 		unordered_remove_if(vec, [](int v) { return v == 0; });
 
-		ZYLANN_TEST_ASSERT(vec.size() == 3);
-		ZYLANN_TEST_ASSERT(
+		ZN_TEST_ASSERT(vec.size() == 3);
+		ZN_TEST_ASSERT(
 				L::count(vec, 0) == 0 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 1);
 	}
 	// Remove one in middle
@@ -917,8 +917,8 @@ void test_unordered_remove_if() {
 
 		unordered_remove_if(vec, [](int v) { return v == 2; });
 
-		ZYLANN_TEST_ASSERT(vec.size() == 3);
-		ZYLANN_TEST_ASSERT(
+		ZN_TEST_ASSERT(vec.size() == 3);
+		ZN_TEST_ASSERT(
 				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1);
 	}
 	// Remove one at end
@@ -931,8 +931,8 @@ void test_unordered_remove_if() {
 
 		unordered_remove_if(vec, [](int v) { return v == 3; });
 
-		ZYLANN_TEST_ASSERT(vec.size() == 3);
-		ZYLANN_TEST_ASSERT(
+		ZN_TEST_ASSERT(vec.size() == 3);
+		ZN_TEST_ASSERT(
 				L::count(vec, 0) == 1 && L::count(vec, 1) == 1 && L::count(vec, 2) == 1 && L::count(vec, 3) == 0);
 	}
 	// Remove multiple
@@ -945,8 +945,8 @@ void test_unordered_remove_if() {
 
 		unordered_remove_if(vec, [](int v) { return v == 1 || v == 2; });
 
-		ZYLANN_TEST_ASSERT(vec.size() == 2);
-		ZYLANN_TEST_ASSERT(
+		ZN_TEST_ASSERT(vec.size() == 2);
+		ZN_TEST_ASSERT(
 				L::count(vec, 0) == 1 && L::count(vec, 1) == 0 && L::count(vec, 2) == 0 && L::count(vec, 3) == 1);
 	}
 	// Remove last
@@ -956,7 +956,7 @@ void test_unordered_remove_if() {
 
 		unordered_remove_if(vec, [](int v) { return v == 0; });
 
-		ZYLANN_TEST_ASSERT(vec.size() == 0);
+		ZN_TEST_ASSERT(vec.size() == 0);
 	}
 }
 
@@ -1001,15 +1001,15 @@ void test_instance_data_serialization() {
 
 	std::vector<uint8_t> serialized_data;
 
-	ZYLANN_TEST_ASSERT(serialize_instance_block_data(src_data, serialized_data));
+	ZN_TEST_ASSERT(serialize_instance_block_data(src_data, serialized_data));
 
 	InstanceBlockData dst_data;
-	ZYLANN_TEST_ASSERT(deserialize_instance_block_data(dst_data, to_span_const(serialized_data)));
+	ZN_TEST_ASSERT(deserialize_instance_block_data(dst_data, to_span_const(serialized_data)));
 
 	// Compare blocks
-	ZYLANN_TEST_ASSERT(src_data.layers.size() == dst_data.layers.size());
-	ZYLANN_TEST_ASSERT(dst_data.position_range >= 0.f);
-	ZYLANN_TEST_ASSERT(dst_data.position_range == src_data.position_range);
+	ZN_TEST_ASSERT(src_data.layers.size() == dst_data.layers.size());
+	ZN_TEST_ASSERT(dst_data.position_range >= 0.f);
+	ZN_TEST_ASSERT(dst_data.position_range == src_data.position_range);
 
 	const float distance_error = math::max(src_data.position_range, InstanceBlockData::POSITION_RANGE_MINIMUM) /
 			float(InstanceBlockData::POSITION_RESOLUTION);
@@ -1019,14 +1019,14 @@ void test_instance_data_serialization() {
 		const InstanceBlockData::LayerData &src_layer = src_data.layers[layer_index];
 		const InstanceBlockData::LayerData &dst_layer = dst_data.layers[layer_index];
 
-		ZYLANN_TEST_ASSERT(src_layer.id == dst_layer.id);
+		ZN_TEST_ASSERT(src_layer.id == dst_layer.id);
 		if (src_layer.scale_max - src_layer.scale_min < InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) {
-			ZYLANN_TEST_ASSERT(src_layer.scale_min == dst_layer.scale_min);
+			ZN_TEST_ASSERT(src_layer.scale_min == dst_layer.scale_min);
 		} else {
-			ZYLANN_TEST_ASSERT(src_layer.scale_min == dst_layer.scale_min);
-			ZYLANN_TEST_ASSERT(src_layer.scale_max == dst_layer.scale_max);
+			ZN_TEST_ASSERT(src_layer.scale_min == dst_layer.scale_min);
+			ZN_TEST_ASSERT(src_layer.scale_max == dst_layer.scale_max);
 		}
-		ZYLANN_TEST_ASSERT(src_layer.instances.size() == dst_layer.instances.size());
+		ZN_TEST_ASSERT(src_layer.instances.size() == dst_layer.instances.size());
 
 		const float scale_error = math::max(src_layer.scale_max - src_layer.scale_min,
 										  InstanceBlockData::SIMPLE_11B_V1_SCALE_RANGE_MINIMUM) /
@@ -1039,12 +1039,11 @@ void test_instance_data_serialization() {
 			const InstanceBlockData::InstanceData &src_instance = src_layer.instances[instance_index];
 			const InstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
 
-			ZYLANN_TEST_ASSERT(
-					src_instance.transform.origin.distance_to(dst_instance.transform.origin) <= distance_error);
+			ZN_TEST_ASSERT(src_instance.transform.origin.distance_to(dst_instance.transform.origin) <= distance_error);
 
 			const Vector3 src_scale = src_instance.transform.basis.get_scale();
 			const Vector3 dst_scale = dst_instance.transform.basis.get_scale();
-			ZYLANN_TEST_ASSERT(src_scale.distance_to(dst_scale) <= scale_error);
+			ZN_TEST_ASSERT(src_scale.distance_to(dst_scale) <= scale_error);
 
 			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even
 			// uniformly)
@@ -1054,10 +1053,10 @@ void test_instance_data_serialization() {
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);
 			const float rot_dw = Math::abs(src_rot.w - dst_rot.w);
-			ZYLANN_TEST_ASSERT(rot_dx <= rotation_error);
-			ZYLANN_TEST_ASSERT(rot_dy <= rotation_error);
-			ZYLANN_TEST_ASSERT(rot_dz <= rotation_error);
-			ZYLANN_TEST_ASSERT(rot_dw <= rotation_error);
+			ZN_TEST_ASSERT(rot_dx <= rotation_error);
+			ZN_TEST_ASSERT(rot_dy <= rotation_error);
+			ZN_TEST_ASSERT(rot_dz <= rotation_error);
+			ZN_TEST_ASSERT(rot_dw <= rotation_error);
 		}
 	}
 }
@@ -1077,7 +1076,7 @@ void test_transform_3d_array_zxy() {
 	const int volume = Vector3iUtil::get_volume(src_size);
 
 	FixedArray<int, 24> dst_grid;
-	ZYLANN_TEST_ASSERT(dst_grid.size() == volume);
+	ZN_TEST_ASSERT(dst_grid.size() == volume);
 
 	{
 		int expected_dst_grid[] = {
@@ -1100,10 +1099,10 @@ void test_transform_3d_array_zxy() {
 		const Vector3i dst_size =
 				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
-		ZYLANN_TEST_ASSERT(dst_size == expected_dst_size);
+		ZN_TEST_ASSERT(dst_size == expected_dst_size);
 
 		for (unsigned int i = 0; i < volume; ++i) {
-			ZYLANN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
+			ZN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
 		}
 	}
 	{
@@ -1125,10 +1124,10 @@ void test_transform_3d_array_zxy() {
 		const Vector3i dst_size =
 				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
-		ZYLANN_TEST_ASSERT(dst_size == expected_dst_size);
+		ZN_TEST_ASSERT(dst_size == expected_dst_size);
 
 		for (unsigned int i = 0; i < volume; ++i) {
-			ZYLANN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
+			ZN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
 		}
 	}
 	{
@@ -1150,10 +1149,10 @@ void test_transform_3d_array_zxy() {
 		const Vector3i dst_size =
 				transform_3d_array_zxy(Span<const int>(src_grid, 0, volume), to_span(dst_grid), src_size, basis);
 
-		ZYLANN_TEST_ASSERT(dst_size == expected_dst_size);
+		ZN_TEST_ASSERT(dst_size == expected_dst_size);
 
 		for (unsigned int i = 0; i < volume; ++i) {
-			ZYLANN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
+			ZN_TEST_ASSERT(dst_grid[i] == expected_dst_grid[i]);
 		}
 	}
 }
@@ -1173,27 +1172,27 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 1);
-		ZYLANN_TEST_ASSERT(sections[0].x_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[0].x_max == 1.f);
-		ZYLANN_TEST_ASSERT(sections[0].y_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[0].y_max == 1.f);
+		ZN_TEST_ASSERT(sections.size() == 1);
+		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
+		ZN_TEST_ASSERT(sections[0].x_max == 1.f);
+		ZN_TEST_ASSERT(sections[0].y_min == 0.f);
+		ZN_TEST_ASSERT(sections[0].y_max == 1.f);
 		{
 			math::Interval yi = get_curve_range(**curve, sections, math::Interval(0.f, 1.f));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.min, 0.f));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.max, 1.f));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.min, 0.f));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.max, 1.f));
 		}
 		{
 			math::Interval yi = get_curve_range(**curve, sections, math::Interval(-2.f, 2.f));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.min, 0.f));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.max, 1.f));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.min, 0.f));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.max, 1.f));
 		}
 		{
 			math::Interval xi(0.2f, 0.8f);
 			math::Interval yi = get_curve_range(**curve, sections, xi);
 			math::Interval yi_expected(curve->sample_baked(xi.min), curve->sample_baked(xi.max));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.min, yi_expected.min));
-			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.max, yi_expected.max));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.min, yi_expected.min));
+			ZN_TEST_ASSERT(L::is_equal_approx(yi.max, yi_expected.max));
 		}
 	}
 	{
@@ -1204,11 +1203,11 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 1);
-		ZYLANN_TEST_ASSERT(sections[0].x_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[0].x_max == 1.f);
-		ZYLANN_TEST_ASSERT(sections[0].y_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[0].y_max == 0.f);
+		ZN_TEST_ASSERT(sections.size() == 1);
+		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
+		ZN_TEST_ASSERT(sections[0].x_max == 1.f);
+		ZN_TEST_ASSERT(sections[0].y_min == 0.f);
+		ZN_TEST_ASSERT(sections[0].y_max == 0.f);
 	}
 	{
 		// Two segments: going up, then flat
@@ -1219,7 +1218,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 1);
+		ZN_TEST_ASSERT(sections.size() == 1);
 	}
 	{
 		// Two segments: flat, then up
@@ -1230,7 +1229,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 1);
+		ZN_TEST_ASSERT(sections.size() == 1);
 	}
 	{
 		// Three segments: flat, then up, then flat
@@ -1242,7 +1241,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 1);
+		ZN_TEST_ASSERT(sections.size() == 1);
 	}
 	{
 		// Three segments: up, down, up
@@ -1254,9 +1253,9 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 1));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 3);
-		ZYLANN_TEST_ASSERT(sections[0].x_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[2].x_max == 1.f);
+		ZN_TEST_ASSERT(sections.size() == 3);
+		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
+		ZN_TEST_ASSERT(sections[2].x_max == 1.f);
 	}
 	{
 		// Two segments: going up, then down
@@ -1267,7 +1266,7 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 2);
+		ZN_TEST_ASSERT(sections.size() == 2);
 	}
 	{
 		// One segment, curved as a parabola going up then down
@@ -1277,10 +1276,10 @@ void test_get_curve_monotonic_sections() {
 		curve->add_point(Vector2(1, 0));
 		std::vector<CurveMonotonicSection> sections;
 		get_curve_monotonic_sections(**curve, sections);
-		ZYLANN_TEST_ASSERT(sections.size() == 2);
-		ZYLANN_TEST_ASSERT(sections[0].x_min == 0.f);
-		ZYLANN_TEST_ASSERT(sections[0].y_max >= 0.1f);
-		ZYLANN_TEST_ASSERT(sections[1].x_max == 1.f);
+		ZN_TEST_ASSERT(sections.size() == 2);
+		ZN_TEST_ASSERT(sections[0].x_min == 0.f);
+		ZN_TEST_ASSERT(sections[0].y_max >= 0.1f);
+		ZN_TEST_ASSERT(sections[1].x_max == 1.f);
 	}
 }
 
@@ -1310,33 +1309,33 @@ void test_block_serializer() {
 	{
 		// Serialize without compression wrapper
 		BlockSerializer::SerializeResult result = BlockSerializer::serialize(voxel_buffer);
-		ZYLANN_TEST_ASSERT(result.success);
+		ZN_TEST_ASSERT(result.success);
 		std::vector<uint8_t> data = result.data;
 
-		ZYLANN_TEST_ASSERT(data.size() > 0);
-		ZYLANN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
+		ZN_TEST_ASSERT(data.size() > 0);
+		ZN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
 
 		// Deserialize
 		VoxelBufferInternal deserialized_voxel_buffer;
-		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
+		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
 
 		// Must be equal
-		ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+		ZN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
 	}
 	{
 		// Serialize
 		BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
-		ZYLANN_TEST_ASSERT(result.success);
+		ZN_TEST_ASSERT(result.success);
 		std::vector<uint8_t> data = result.data;
 
-		ZYLANN_TEST_ASSERT(data.size() > 0);
+		ZN_TEST_ASSERT(data.size() > 0);
 
 		// Deserialize
 		VoxelBufferInternal deserialized_voxel_buffer;
-		ZYLANN_TEST_ASSERT(BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
+		ZN_TEST_ASSERT(BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
 
 		// Must be equal
-		ZYLANN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
+		ZN_TEST_ASSERT(voxel_buffer.equals(deserialized_voxel_buffer));
 	}
 }
 
@@ -1374,7 +1373,7 @@ void test_block_serializer_stream_peer() {
 
 	serializer2->deserialize(peer2, voxel_buffer2, size, true);
 
-	ZYLANN_TEST_ASSERT(voxel_buffer2->get_buffer().equals(voxel_buffer->get_buffer()));
+	ZN_TEST_ASSERT(voxel_buffer2->get_buffer().equals(voxel_buffer->get_buffer()));
 }
 
 void test_region_file() {
@@ -1382,7 +1381,7 @@ void test_region_file() {
 	const int block_size = 1 << block_size_po2;
 	const char *region_file_name = "test_region_file.vxr";
 	zylann::testing::TestDirectory test_dir;
-	ZYLANN_TEST_ASSERT(test_dir.is_valid());
+	ZN_TEST_ASSERT(test_dir.is_valid());
 	String region_file_path = test_dir.get_path().path_join(region_file_name);
 
 	struct RandomBlockGenerator {
@@ -1418,23 +1417,23 @@ void test_region_file() {
 		for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
 			region_format.channel_depths[channel_index] = voxel_buffer.get_channel_depth(channel_index);
 		}
-		ZYLANN_TEST_ASSERT(region_file.set_format(region_format));
+		ZN_TEST_ASSERT(region_file.set_format(region_format));
 
 		// Open file
 		const Error open_error = region_file.open(region_file_path, true);
-		ZYLANN_TEST_ASSERT(open_error == OK);
+		ZN_TEST_ASSERT(open_error == OK);
 
 		// Save block
 		const Error save_error = region_file.save_block(Vector3i(1, 2, 3), voxel_buffer);
-		ZYLANN_TEST_ASSERT(save_error == OK);
+		ZN_TEST_ASSERT(save_error == OK);
 
 		// Read back
 		VoxelBufferInternal loaded_voxel_buffer;
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
-		ZYLANN_TEST_ASSERT(load_error == OK);
+		ZN_TEST_ASSERT(load_error == OK);
 
 		// Must be equal
-		ZYLANN_TEST_ASSERT(voxel_buffer.equals(loaded_voxel_buffer));
+		ZN_TEST_ASSERT(voxel_buffer.equals(loaded_voxel_buffer));
 	}
 	// Load again but using a new region file object
 	{
@@ -1442,15 +1441,15 @@ void test_region_file() {
 
 		// Open file
 		const Error open_error = region_file.open(region_file_path, false);
-		ZYLANN_TEST_ASSERT(open_error == OK);
+		ZN_TEST_ASSERT(open_error == OK);
 
 		// Read back
 		VoxelBufferInternal loaded_voxel_buffer;
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
-		ZYLANN_TEST_ASSERT(load_error == OK);
+		ZN_TEST_ASSERT(load_error == OK);
 
 		// Must be equal
-		ZYLANN_TEST_ASSERT(voxel_buffer.equals(loaded_voxel_buffer));
+		ZN_TEST_ASSERT(voxel_buffer.equals(loaded_voxel_buffer));
 	}
 	// Save many blocks
 	{
@@ -1458,7 +1457,7 @@ void test_region_file() {
 
 		// Open file
 		const Error open_error = region_file.open(region_file_path, false);
-		ZYLANN_TEST_ASSERT(open_error == OK);
+		ZN_TEST_ASSERT(open_error == OK);
 
 		RandomPCG rng;
 
@@ -1475,7 +1474,7 @@ void test_region_file() {
 
 			// Save block
 			const Error save_error = region_file.save_block(pos, voxel_buffer);
-			ZYLANN_TEST_ASSERT(save_error == OK);
+			ZN_TEST_ASSERT(save_error == OK);
 
 			// Note, the same position can occur twice, we just overwrite
 			buffers[pos] = std::move(voxel_buffer);
@@ -1485,23 +1484,23 @@ void test_region_file() {
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
 			VoxelBufferInternal loaded_voxel_buffer;
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
-			ZYLANN_TEST_ASSERT(load_error == OK);
-			ZYLANN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
+			ZN_TEST_ASSERT(load_error == OK);
+			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
 		}
 
 		const Error close_error = region_file.close();
-		ZYLANN_TEST_ASSERT(close_error == OK);
+		ZN_TEST_ASSERT(close_error == OK);
 
 		// Open file
 		const Error open_error2 = region_file.open(region_file_path, false);
-		ZYLANN_TEST_ASSERT(open_error2 == OK);
+		ZN_TEST_ASSERT(open_error2 == OK);
 
 		// Read back again
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
 			VoxelBufferInternal loaded_voxel_buffer;
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
-			ZYLANN_TEST_ASSERT(load_error == OK);
-			ZYLANN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
+			ZN_TEST_ASSERT(load_error == OK);
+			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
 		}
 	}
 }
@@ -1512,7 +1511,7 @@ void test_voxel_stream_region_files() {
 	const int block_size = 1 << block_size_po2;
 
 	zylann::testing::TestDirectory test_dir;
-	ZYLANN_TEST_ASSERT(test_dir.is_valid());
+	ZN_TEST_ASSERT(test_dir.is_valid());
 
 	Ref<VoxelStreamRegionFiles> stream;
 	stream.instantiate();
@@ -1595,7 +1594,7 @@ void test_run_blocky_random_tick() {
 			buffer->copy_from(model_buffer);
 			VoxelDataBlock block(buffer, 0);
 			block.set_edited(true);
-			ZYLANN_TEST_ASSERT(data.try_set_block(block_pos, block));
+			ZN_TEST_ASSERT(data.try_set_block(block_pos, block));
 		});
 	}
 
@@ -1615,8 +1614,8 @@ void test_run_blocky_random_tick() {
 		}
 
 		inline bool _exec(Vector3i pos, int block_id) {
-			ZYLANN_TEST_ASSERT_V(block_id == TICKABLE_ID, false);
-			ZYLANN_TEST_ASSERT_V(voxel_box.contains(pos), false);
+			ZN_TEST_ASSERT_V(block_id == TICKABLE_ID, false);
+			ZN_TEST_ASSERT_V(voxel_box.contains(pos), false);
 			if (first_pick) {
 				first_pick = false;
 				pick_box = Box3i(pos, Vector3i(1, 1, 1));
@@ -1637,10 +1636,10 @@ void test_run_blocky_random_tick() {
 				return cb->exec(pos, val);
 			});
 
-	ZYLANN_TEST_ASSERT(cb.ok);
+	ZN_TEST_ASSERT(cb.ok);
 
 	// Even though there is randomness, we expect to see at least one hit
-	ZYLANN_TEST_ASSERT_MSG(!cb.first_pick, "At least one hit is expected, not none");
+	ZN_TEST_ASSERT_MSG(!cb.first_pick, "At least one hit is expected, not none");
 
 	// Check that the points were more or less uniformly sparsed within the provided box.
 	// They should, because we populated the world with a checkerboard of tickable voxels.
@@ -1651,8 +1650,8 @@ void test_run_blocky_random_tick() {
 		const int nd = cb.pick_box.pos[axis_index] - voxel_box.pos[axis_index];
 		const int pd = cb.pick_box.pos[axis_index] + cb.pick_box.size[axis_index] -
 				(voxel_box.pos[axis_index] + voxel_box.size[axis_index]);
-		ZYLANN_TEST_ASSERT(Math::abs(nd) <= error_margin);
-		ZYLANN_TEST_ASSERT(Math::abs(pd) <= error_margin);
+		ZN_TEST_ASSERT(Math::abs(nd) <= error_margin);
+		ZN_TEST_ASSERT(Math::abs(pd) <= error_margin);
 	}
 }
 
@@ -1674,14 +1673,14 @@ void test_flat_map() {
 
 	struct L {
 		static bool validate_map(const FlatMap<int, Value> &map, const std::vector<Pair> &sorted_pairs) {
-			ZYLANN_TEST_ASSERT_V(sorted_pairs.size() == map.size(), false);
+			ZN_TEST_ASSERT_V(sorted_pairs.size() == map.size(), false);
 			for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 				const Pair expected_pair = sorted_pairs[i];
-				ZYLANN_TEST_ASSERT_V(map.has(expected_pair.key), false);
-				ZYLANN_TEST_ASSERT_V(map.find(expected_pair.key) != nullptr, false);
+				ZN_TEST_ASSERT_V(map.has(expected_pair.key), false);
+				ZN_TEST_ASSERT_V(map.find(expected_pair.key) != nullptr, false);
 				const Value *value = map.find(expected_pair.key);
-				ZYLANN_TEST_ASSERT_V(value != nullptr, false);
-				ZYLANN_TEST_ASSERT_V(*value == expected_pair.value, false);
+				ZN_TEST_ASSERT_V(value != nullptr, false);
+				ZN_TEST_ASSERT_V(*value == expected_pair.value, false);
 			}
 			return true;
 		}
@@ -1702,41 +1701,41 @@ void test_flat_map() {
 		FlatMap<int, Value> map;
 		for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 			const Pair pair = sorted_pairs[i];
-			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
+			ZN_TEST_ASSERT(map.insert(pair.key, pair.value));
 		}
-		ZYLANN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
+		ZN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
 	}
 	{
 		// Insert random pairs
 		FlatMap<int, Value> map;
 		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
 			const Pair pair = shuffled_pairs[i];
-			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
+			ZN_TEST_ASSERT(map.insert(pair.key, pair.value));
 		}
-		ZYLANN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
+		ZN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
 	}
 	{
 		// Insert random pairs with duplicates
 		FlatMap<int, Value> map;
 		for (size_t i = 0; i < shuffled_pairs.size(); ++i) {
 			const Pair pair = shuffled_pairs[i];
-			ZYLANN_TEST_ASSERT(map.insert(pair.key, pair.value));
-			ZYLANN_TEST_ASSERT_MSG(!map.insert(pair.key, pair.value), "Inserting the key a second time should fail");
+			ZN_TEST_ASSERT(map.insert(pair.key, pair.value));
+			ZN_TEST_ASSERT_MSG(!map.insert(pair.key, pair.value), "Inserting the key a second time should fail");
 		}
-		ZYLANN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
+		ZN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
 	}
 	{
 		// Init from collection
 		FlatMap<int, Value> map;
 		map.clear_and_insert(to_span(shuffled_pairs));
-		ZYLANN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
+		ZN_TEST_ASSERT(L::validate_map(map, sorted_pairs));
 	}
 	{
 		// Inexistent items
 		FlatMap<int, Value> map;
 		map.clear_and_insert(to_span(shuffled_pairs));
-		ZYLANN_TEST_ASSERT(!map.has(inexistent_key1));
-		ZYLANN_TEST_ASSERT(!map.has(inexistent_key2));
+		ZN_TEST_ASSERT(!map.has(inexistent_key1));
+		ZN_TEST_ASSERT(!map.has(inexistent_key2));
 	}
 	{
 		// Iteration
@@ -1744,10 +1743,10 @@ void test_flat_map() {
 		map.clear_and_insert(to_span(shuffled_pairs));
 		size_t i = 0;
 		for (FlatMap<int, Value>::ConstIterator it = map.begin(); it != map.end(); ++it) {
-			ZYLANN_TEST_ASSERT(i < sorted_pairs.size());
+			ZN_TEST_ASSERT(i < sorted_pairs.size());
 			const Pair expected_pair = sorted_pairs[i];
-			ZYLANN_TEST_ASSERT(expected_pair.key == it->key);
-			ZYLANN_TEST_ASSERT(expected_pair.value == it->value);
+			ZN_TEST_ASSERT(expected_pair.key == it->key);
+			ZN_TEST_ASSERT(expected_pair.value == it->value);
 			++i;
 		}
 	}
@@ -1758,98 +1757,98 @@ void test_expression_parser() {
 
 	{
 		Result result = parse("", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("   ", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("42", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
 	}
 	{
 		Result result = parse("()", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("((()))", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("42)", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNEXPECTED_TOKEN);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_UNEXPECTED_TOKEN);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("(42)", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 42.f));
 	}
 	{
 		Result result = parse("(", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("(666", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_UNCLOSED_PARENTHESIS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("1+", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("++", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_MISSING_OPERAND_ARGUMENTS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("1 2 3", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_MULTIPLE_OPERANDS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_MULTIPLE_OPERANDS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("???", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_INVALID_TOKEN);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_INVALID_TOKEN);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		Result result = parse("1+2-3*4/5", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 0.6f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 0.6f));
 	}
 	{
 		Result result = parse("1*2-3/4+5", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 6.25f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 6.25f));
 	}
 	{
 		Result result = parse("(5 - 3)^2 + 2.5/(4 + 6)", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.25f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.25f));
 	}
 	{
 		/*
@@ -1883,8 +1882,8 @@ void test_expression_parser() {
 				make_unique_instance<OperatorNode>(OperatorNode::SUBTRACT, std::move(node_mul), std::move(node_sub));
 
 		Result result = parse("4*(a+b)^2-(c-d)", Span<const Function>());
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
 		// {
 		// 	const std::string s1 = tree_to_string(*expected_root, Span<const Function>());
 		// 	print_line(String(s1.c_str()));
@@ -1892,7 +1891,7 @@ void test_expression_parser() {
 		// 	const std::string s2 = tree_to_string(*result.root, Span<const Function>());
 		// 	print_line(String(s2.c_str()));
 		// }
-		ZYLANN_TEST_ASSERT(is_tree_equal(*result.root, *expected_root, Span<const Function>()));
+		ZN_TEST_ASSERT(is_tree_equal(*result.root, *expected_root, Span<const Function>()));
 	}
 	{
 		FixedArray<Function, 2> functions;
@@ -1919,11 +1918,11 @@ void test_expression_parser() {
 		}
 
 		Result result = parse("clamp(sqrt(20 + sqrt(25)), 1, 2.0 * 2.0)", to_span_const(functions));
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_NONE);
-		ZYLANN_TEST_ASSERT(result.root != nullptr);
-		ZYLANN_TEST_ASSERT(result.root->type == Node::NUMBER);
+		ZN_TEST_ASSERT(result.error.id == ERROR_NONE);
+		ZN_TEST_ASSERT(result.root != nullptr);
+		ZN_TEST_ASSERT(result.root->type == Node::NUMBER);
 		const NumberNode &nn = static_cast<NumberNode &>(*result.root);
-		ZYLANN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.f));
+		ZN_TEST_ASSERT(Math::is_equal_approx(nn.value, 4.f));
 	}
 	{
 		FixedArray<Function, 2> functions;
@@ -1954,8 +1953,8 @@ void test_expression_parser() {
 
 		Result result = parse("x+sin(y, clamp(z, 0, 1))", to_span_const(functions));
 
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_TOO_MANY_ARGUMENTS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_TOO_MANY_ARGUMENTS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		FixedArray<Function, 1> functions;
@@ -1975,8 +1974,8 @@ void test_expression_parser() {
 
 		Result result = parse("clamp(z,", to_span_const(functions));
 
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		FixedArray<Function, 1> functions;
@@ -1996,8 +1995,8 @@ void test_expression_parser() {
 
 		Result result = parse("clamp(z)", to_span_const(functions));
 
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_TOO_FEW_ARGUMENTS);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_TOO_FEW_ARGUMENTS);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 	{
 		FixedArray<Function, 1> functions;
@@ -2017,8 +2016,8 @@ void test_expression_parser() {
 
 		Result result = parse("clamp(z,)", to_span_const(functions));
 
-		ZYLANN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
-		ZYLANN_TEST_ASSERT(result.root == nullptr);
+		ZN_TEST_ASSERT(result.error.id == ERROR_EXPECTED_ARGUMENT);
+		ZN_TEST_ASSERT(result.root == nullptr);
 	}
 }
 
@@ -2068,13 +2067,13 @@ void test_voxel_buffer_metadata() {
 		vb.create(10, 10, 10);
 
 		VoxelMetadata *meta = vb.get_or_create_voxel_metadata(Vector3i(1, 2, 3));
-		ZYLANN_TEST_ASSERT(meta != nullptr);
+		ZN_TEST_ASSERT(meta != nullptr);
 		meta->set_u64(1234567890);
 
 		const VoxelMetadata *meta2 = vb.get_voxel_metadata(Vector3i(1, 2, 3));
-		ZYLANN_TEST_ASSERT(meta2 != nullptr);
-		ZYLANN_TEST_ASSERT(meta2->get_type() == meta->get_type());
-		ZYLANN_TEST_ASSERT(meta2->get_u64() == meta->get_u64());
+		ZN_TEST_ASSERT(meta2 != nullptr);
+		ZN_TEST_ASSERT(meta2->get_type() == meta->get_type());
+		ZN_TEST_ASSERT(meta2->get_u64() == meta->get_u64());
 	}
 	// Serialization
 	{
@@ -2083,13 +2082,13 @@ void test_voxel_buffer_metadata() {
 
 		{
 			VoxelMetadata *meta0 = vb.get_or_create_voxel_metadata(Vector3i(1, 2, 3));
-			ZYLANN_TEST_ASSERT(meta0 != nullptr);
+			ZN_TEST_ASSERT(meta0 != nullptr);
 			meta0->set_u64(1234567890);
 		}
 
 		{
 			VoxelMetadata *meta1 = vb.get_or_create_voxel_metadata(Vector3i(4, 5, 6));
-			ZYLANN_TEST_ASSERT(meta1 != nullptr);
+			ZN_TEST_ASSERT(meta1 != nullptr);
 			meta1->clear();
 		}
 
@@ -2102,7 +2101,7 @@ void test_voxel_buffer_metadata() {
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<CustomMetadataTest>(CustomMetadataTest::ID);
 		{
 			VoxelMetadata *meta2 = vb.get_or_create_voxel_metadata(Vector3i(7, 8, 9));
-			ZYLANN_TEST_ASSERT(meta2 != nullptr);
+			ZN_TEST_ASSERT(meta2 != nullptr);
 			CustomMetadataTest *custom = ZN_NEW(CustomMetadataTest);
 			custom->a = 10;
 			custom->b = 20;
@@ -2111,37 +2110,37 @@ void test_voxel_buffer_metadata() {
 		}
 
 		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb);
-		ZYLANN_TEST_ASSERT(sresult.success);
+		ZN_TEST_ASSERT(sresult.success);
 		std::vector<uint8_t> bytes = sresult.data;
 
 		VoxelBufferInternal rvb;
-		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), rvb));
+		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), rvb));
 
 		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb_meta_map = vb.get_voxel_metadata();
 		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &rvb_meta_map = rvb.get_voxel_metadata();
 
-		ZYLANN_TEST_ASSERT(vb_meta_map.size() == rvb_meta_map.size());
+		ZN_TEST_ASSERT(vb_meta_map.size() == rvb_meta_map.size());
 
 		for (auto it = vb_meta_map.begin(); it != vb_meta_map.end(); ++it) {
 			const VoxelMetadata &meta = it->value;
 			const VoxelMetadata *rmeta = rvb_meta_map.find(it->key);
 
-			ZYLANN_TEST_ASSERT(rmeta != nullptr);
-			ZYLANN_TEST_ASSERT(rmeta->get_type() == meta.get_type());
+			ZN_TEST_ASSERT(rmeta != nullptr);
+			ZN_TEST_ASSERT(rmeta->get_type() == meta.get_type());
 
 			switch (meta.get_type()) {
 				case VoxelMetadata::TYPE_EMPTY:
 					break;
 				case VoxelMetadata::TYPE_U64:
-					ZYLANN_TEST_ASSERT(meta.get_u64() == rmeta->get_u64());
+					ZN_TEST_ASSERT(meta.get_u64() == rmeta->get_u64());
 					break;
 				case CustomMetadataTest::ID: {
 					const CustomMetadataTest &custom = static_cast<const CustomMetadataTest &>(meta.get_custom());
 					const CustomMetadataTest &rcustom = static_cast<const CustomMetadataTest &>(rmeta->get_custom());
-					ZYLANN_TEST_ASSERT(custom == rcustom);
+					ZN_TEST_ASSERT(custom == rcustom);
 				} break;
 				default:
-					ZYLANN_TEST_ASSERT(false);
+					ZN_TEST_ASSERT(false);
 					break;
 			}
 		}
@@ -2163,8 +2162,8 @@ void test_voxel_buffer_metadata_gd() {
 		vb->set_voxel_metadata(Vector3i(1, 2, 3), meta);
 
 		Array read_meta = vb->get_voxel_metadata(Vector3i(1, 2, 3));
-		ZYLANN_TEST_ASSERT(read_meta.size() == meta.size());
-		ZYLANN_TEST_ASSERT(read_meta == meta);
+		ZN_TEST_ASSERT(read_meta.size() == meta.size());
+		ZN_TEST_ASSERT(read_meta == meta);
 	}
 	// Serialization (Godot)
 	{
@@ -2188,15 +2187,15 @@ void test_voxel_buffer_metadata_gd() {
 		}
 
 		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb->get_buffer());
-		ZYLANN_TEST_ASSERT(sresult.success);
+		ZN_TEST_ASSERT(sresult.success);
 		std::vector<uint8_t> bytes = sresult.data;
 
 		Ref<gd::VoxelBuffer> vb2;
 		vb2.instantiate();
 
-		ZYLANN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), vb2->get_buffer()));
+		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), vb2->get_buffer()));
 
-		ZYLANN_TEST_ASSERT(vb2->get_buffer().equals(vb->get_buffer()));
+		ZN_TEST_ASSERT(vb2->get_buffer().equals(vb->get_buffer()));
 
 		// `equals` does not compare metadata at the moment, mainly because it's not trivial and there is no use case
 		// for it apart from this test, so do it manually
@@ -2204,19 +2203,19 @@ void test_voxel_buffer_metadata_gd() {
 		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb_meta_map = vb->get_buffer().get_voxel_metadata();
 		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb2_meta_map = vb2->get_buffer().get_voxel_metadata();
 
-		ZYLANN_TEST_ASSERT(vb_meta_map.size() == vb2_meta_map.size());
+		ZN_TEST_ASSERT(vb_meta_map.size() == vb2_meta_map.size());
 
 		for (auto it = vb_meta_map.begin(); it != vb_meta_map.end(); ++it) {
 			const VoxelMetadata &meta = it->value;
-			ZYLANN_TEST_ASSERT(meta.get_type() == gd::METADATA_TYPE_VARIANT);
+			ZN_TEST_ASSERT(meta.get_type() == gd::METADATA_TYPE_VARIANT);
 
 			const VoxelMetadata *meta2 = vb2_meta_map.find(it->key);
-			ZYLANN_TEST_ASSERT(meta2 != nullptr);
-			ZYLANN_TEST_ASSERT(meta2->get_type() == meta.get_type());
+			ZN_TEST_ASSERT(meta2 != nullptr);
+			ZN_TEST_ASSERT(meta2->get_type() == meta.get_type());
 
 			const gd::VoxelMetadataVariant &metav = static_cast<const gd::VoxelMetadataVariant &>(meta.get_custom());
 			const gd::VoxelMetadataVariant &meta2v = static_cast<const gd::VoxelMetadataVariant &>(meta2->get_custom());
-			ZYLANN_TEST_ASSERT(metav.data == meta2v.data);
+			ZN_TEST_ASSERT(metav.data == meta2v.data);
 		}
 	}
 }
@@ -2240,9 +2239,9 @@ void test_voxel_mesher_cubes() {
 	const unsigned int opaque_surface_index = VoxelMesherCubes::MATERIAL_OPAQUE;
 	const unsigned int transparent_surface_index = VoxelMesherCubes::MATERIAL_TRANSPARENT;
 
-	ZYLANN_TEST_ASSERT(output.surfaces.size() == 2);
-	ZYLANN_TEST_ASSERT(output.surfaces[0].arrays.size() > 0);
-	ZYLANN_TEST_ASSERT(output.surfaces[1].arrays.size() > 0);
+	ZN_TEST_ASSERT(output.surfaces.size() == 2);
+	ZN_TEST_ASSERT(output.surfaces[0].arrays.size() > 0);
+	ZN_TEST_ASSERT(output.surfaces[1].arrays.size() > 0);
 
 	const PackedVector3Array surface0_vertices = output.surfaces[opaque_surface_index].arrays[Mesh::ARRAY_VERTEX];
 	const unsigned int surface0_vertices_count = surface0_vertices.size();
@@ -2261,10 +2260,10 @@ void test_voxel_mesher_cubes() {
 
 	// Greedy meshing with two cubes of the same color next to each other means it will be a single box.
 	// Each side has different normals, so vertices have to be repeated. 6 sides * 4 vertices = 24.
-	ZYLANN_TEST_ASSERT(surface0_vertices_count == 24);
+	ZN_TEST_ASSERT(surface0_vertices_count == 24);
 	// The transparent cube has less vertices because one of its faces overlaps with a neighbor solid face,
 	// so it is culled
-	ZYLANN_TEST_ASSERT(surface1_vertices_count == 20);
+	ZN_TEST_ASSERT(surface1_vertices_count == 20);
 }
 
 void test_threaded_task_runner() {
@@ -2311,7 +2310,7 @@ void test_threaded_task_runner() {
 		}
 
 		void apply_result() override {
-			ZYLANN_TEST_ASSERT(completed);
+			ZN_TEST_ASSERT(completed);
 		}
 	};
 
@@ -2348,9 +2347,9 @@ void test_threaded_task_runner() {
 
 	runner.wait_for_all_tasks();
 	L::dequeue_tasks(runner);
-	ZYLANN_TEST_ASSERT(parallel_counter->completed_count == 16);
-	ZYLANN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
-	ZYLANN_TEST_ASSERT(parallel_counter->current_count == 0);
+	ZN_TEST_ASSERT(parallel_counter->completed_count == 16);
+	ZN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
+	ZN_TEST_ASSERT(parallel_counter->current_count == 0);
 
 	// Serial tasks only
 
@@ -2360,9 +2359,9 @@ void test_threaded_task_runner() {
 
 	runner.wait_for_all_tasks();
 	L::dequeue_tasks(runner);
-	ZYLANN_TEST_ASSERT(serial_counter->completed_count == 16);
-	ZYLANN_TEST_ASSERT(serial_counter->max_count == 1);
-	ZYLANN_TEST_ASSERT(serial_counter->current_count == 0);
+	ZN_TEST_ASSERT(serial_counter->completed_count == 16);
+	ZN_TEST_ASSERT(serial_counter->max_count == 1);
+	ZN_TEST_ASSERT(serial_counter->current_count == 0);
 
 	// Interleaved
 
@@ -2379,19 +2378,19 @@ void test_threaded_task_runner() {
 
 	runner.wait_for_all_tasks();
 	L::dequeue_tasks(runner);
-	ZYLANN_TEST_ASSERT(parallel_counter->completed_count == 16);
-	ZYLANN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
-	ZYLANN_TEST_ASSERT(parallel_counter->current_count == 0);
-	ZYLANN_TEST_ASSERT(serial_counter->completed_count == 16);
-	ZYLANN_TEST_ASSERT(serial_counter->max_count == 1);
-	ZYLANN_TEST_ASSERT(serial_counter->current_count == 0);
+	ZN_TEST_ASSERT(parallel_counter->completed_count == 16);
+	ZN_TEST_ASSERT(parallel_counter->max_count <= test_thread_count);
+	ZN_TEST_ASSERT(parallel_counter->current_count == 0);
+	ZN_TEST_ASSERT(serial_counter->completed_count == 16);
+	ZN_TEST_ASSERT(serial_counter->max_count == 1);
+	ZN_TEST_ASSERT(serial_counter->current_count == 0);
 }
 
 void test_task_priority_values() {
-	ZYLANN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(1, 0, 0, 0));
-	ZYLANN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(0, 0, 0, 1));
-	ZYLANN_TEST_ASSERT(TaskPriority(10, 0, 0, 0) < TaskPriority(0, 10, 0, 0));
-	ZYLANN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
+	ZN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(1, 0, 0, 0));
+	ZN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(0, 0, 0, 1));
+	ZN_TEST_ASSERT(TaskPriority(10, 0, 0, 0) < TaskPriority(0, 10, 0, 0));
+	ZN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
