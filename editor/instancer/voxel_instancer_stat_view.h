@@ -16,7 +16,8 @@ public:
 		_tree->set_columns(2);
 		_tree->set_select_mode(Tree::SELECT_ROW);
 		_tree->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-		_tree->set_column_expand_ratio(0, 0.25f);
+		_tree->set_column_expand_ratio(0, 1);
+		_tree->set_column_expand_ratio(1, 3);
 		add_child(_tree);
 	}
 
