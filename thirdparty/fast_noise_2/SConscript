@@ -4,7 +4,7 @@ Import("env")
 Import("env_voxel")
 
 
-if env["use_lto"]:
+if env["lto"]:
     # TODO Auburn warned about issues with LTO and static builds of FastNoise2
     # Need to either produce an error, fallback on Scalar, or turn off support entirely?
     pass
