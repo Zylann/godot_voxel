@@ -5,6 +5,7 @@
 #include "../meshers/blocky/voxel_blocky_library.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../storage/voxel_data.h"
 #include "../storage/voxel_data_map.h"
 #include "../storage/voxel_metadata_variant.h"
 #include "../streams/instance_data.h"
@@ -98,7 +99,7 @@ void test_voxel_data_map_paste_fill() {
 	buffer.fill(voxel_value, channel);
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
@@ -141,7 +142,7 @@ void test_voxel_data_map_paste_mask() {
 	}
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	const Box3i box(Vector3i(10, 10, 10), buffer.get_size());
 
@@ -200,7 +201,7 @@ void test_voxel_data_map_copy() {
 	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	VoxelDataMap map;
-	map.create(4, 0);
+	map.create(0);
 
 	Box3i box(10, 10, 10, 32, 16, 32);
 	VoxelBufferInternal buffer;
@@ -1190,7 +1191,7 @@ void test_get_curve_monotonic_sections() {
 		{
 			math::Interval xi(0.2f, 0.8f);
 			math::Interval yi = get_curve_range(**curve, sections, xi);
-			math::Interval yi_expected(curve->interpolate_baked(xi.min), curve->interpolate_baked(xi.max));
+			math::Interval yi_expected(curve->sample_baked(xi.min), curve->sample_baked(xi.max));
 			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.min, yi_expected.min));
 			ZYLANN_TEST_ASSERT(L::is_equal_approx(yi.max, yi_expected.max));
 		}
@@ -1382,7 +1383,7 @@ void test_region_file() {
 	const char *region_file_name = "test_region_file.vxr";
 	zylann::testing::TestDirectory test_dir;
 	ZYLANN_TEST_ASSERT(test_dir.is_valid());
-	String region_file_path = test_dir.get_path().plus_file(region_file_name);
+	String region_file_path = test_dir.get_path().path_join(region_file_name);
 
 	struct RandomBlockGenerator {
 		RandomPCG rng;
@@ -1572,13 +1573,12 @@ void test_run_blocky_random_tick() {
 	tickable_voxel->set_random_tickable(true);
 
 	// Create test map
-	VoxelDataMap map;
-	map.create(constants::DEFAULT_BLOCK_SIZE_PO2, 0);
+	VoxelData data;
 	{
 		// All blocks of this map will be the same,
 		// an interleaving of all block types
 		VoxelBufferInternal model_buffer;
-		model_buffer.create(Vector3iUtil::create(map.get_block_size()));
+		model_buffer.create(Vector3iUtil::create(data.get_block_size()));
 		for (int z = 0; z < model_buffer.get_size().z; ++z) {
 			for (int x = 0; x < model_buffer.get_size().x; ++x) {
 				for (int y = 0; y < model_buffer.get_size().y; ++y) {
@@ -1589,11 +1589,13 @@ void test_run_blocky_random_tick() {
 		}
 
 		const Box3i world_blocks_box(-4, -4, -4, 8, 8, 8);
-		world_blocks_box.for_each_cell_zxy([&map, &model_buffer](Vector3i block_pos) {
+		world_blocks_box.for_each_cell_zxy([&data, &model_buffer](Vector3i block_pos) {
 			std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 			buffer->create(model_buffer.get_size());
 			buffer->copy_from(model_buffer);
-			map.set_block_buffer(block_pos, buffer, false);
+			VoxelDataBlock block(buffer, 0);
+			block.set_edited(true);
+			ZYLANN_TEST_ASSERT(data.try_set_block(block_pos, block));
 		});
 	}
 
@@ -1630,7 +1632,7 @@ void test_run_blocky_random_tick() {
 	Math::seed(131183);
 
 	VoxelToolTerrain::run_blocky_random_tick_static(
-			map, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			});

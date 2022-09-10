@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelColorPalette" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Limited list of colors that can be indexed quickly.
 	</brief_description>
 	<description>
+		Contains a list of colors that can be accessed quickly by their index. This is useful to store colored voxels with small memory footprint.
+		It can be used with [VoxelMesherCubes].
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
 		<method name="get_color" qualifiers="const">
 			<return type="Color" />
-			<argument index="0" name="arg0" type="int" />
+			<param index="0" name="_unnamed_arg0" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_color">
 			<return type="void" />
-			<argument index="0" name="color" type="int" />
-			<argument index="1" name="arg1" type="Color" />
+			<param index="0" name="color" type="int" />
+			<param index="1" name="_unnamed_arg1" type="Color" />
 			<description>
 			</description>
 		</method>

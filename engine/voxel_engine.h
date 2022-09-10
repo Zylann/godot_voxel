@@ -36,6 +36,7 @@ public:
 		std::vector<uint8_t> mesh_material_indices;
 		// In mesh block coordinates
 		Vector3i position;
+		// TODO Rename lod_index
 		uint8_t lod;
 		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
 		bool has_mesh_resource;
@@ -57,6 +58,7 @@ public:
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		UniquePtr<InstanceBlockData> instances;
 		Vector3i position;
+		// TODO Rename lod_index
 		uint8_t lod;
 		bool dropped;
 		bool max_lod_hint;
@@ -148,13 +150,12 @@ public:
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
-	// Allows/disallows building Mesh resources from inside threads. Depends on Godot's efficiency at doing so, and
-	// which renderer is used. For example, the OpenGL renderer does not support this well, but the Vulkan one should.
-	// TODO Rename `set_threaded_gpu_resource_building_enabled`, it applies to textures too
-	void set_threaded_mesh_resource_building_enabled(bool enable);
+	// Allows/disallows building Mesh and Texture resources from inside threads.
+	// Depends on Godot's efficiency at doing so, and which renderer is used.
+	// For example, the OpenGL renderer does not support this well, but the Vulkan one should.
+	void set_threaded_graphics_resource_building_enabled(bool enable);
 	// This should be fast and safe to access from multiple threads.
-	// TODO Rename `is_threaded_gpu_resource_building_enabled`, it applies to textures too
-	bool is_threaded_mesh_resource_building_enabled() const;
+	bool is_threaded_graphics_resource_building_enabled() const;
 
 	void push_main_thread_progressive_task(IProgressiveTask *task);
 
@@ -238,7 +239,7 @@ private:
 
 	FileLocker _file_locker;
 
-	bool _threaded_mesh_resource_building_enabled = false;
+	bool _threaded_graphics_resource_building_enabled = false;
 };
 
 struct VoxelFileLockerRead {

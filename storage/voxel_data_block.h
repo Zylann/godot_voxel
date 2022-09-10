@@ -30,10 +30,28 @@ public:
 			_modified(src._modified),
 			_edited(src._edited) {}
 
+	VoxelDataBlock(const VoxelDataBlock &src) :
+			viewers(src.viewers),
+			_voxels(src._voxels),
+			_lod_index(src._lod_index),
+			_needs_lodding(src._needs_lodding),
+			_modified(src._modified),
+			_edited(src._edited) {}
+
 	VoxelDataBlock &operator=(VoxelDataBlock &&src) {
 		viewers = src.viewers;
 		_lod_index = src._lod_index;
 		_voxels = std::move(src._voxels);
+		_needs_lodding = src._needs_lodding;
+		_modified = src._modified;
+		_edited = src._edited;
+		return *this;
+	}
+
+	VoxelDataBlock operator=(const VoxelDataBlock &src) {
+		viewers = src.viewers;
+		_lod_index = src._lod_index;
+		_voxels = src._voxels;
 		_needs_lodding = src._needs_lodding;
 		_modified = src._modified;
 		_edited = src._edited;
@@ -75,7 +93,7 @@ public:
 		return _voxels;
 	}
 
-	void set_voxels(std::shared_ptr<VoxelBufferInternal> &buffer) {
+	void set_voxels(const std::shared_ptr<VoxelBufferInternal> &buffer) {
 		ZN_ASSERT_RETURN(buffer != nullptr);
 		_voxels = buffer;
 	}
@@ -108,9 +126,11 @@ public:
 	}
 
 private:
+	// Voxel data. If null, it means the data may be obtained with procedural generation.
 	std::shared_ptr<VoxelBufferInternal> _voxels;
 
-	// TODO Storing lod index here might not be necessary, it is known since we have to get the map first
+	// TODO Storing lod index here might not be necessary, it is known since we have to get the map first.
+	// For now it can remain here since in practice it doesn't cost space, due to other stored flags and alignment.
 	uint8_t _lod_index = 0;
 
 	// Indicates mipmaps need to be computed since this block was modified.

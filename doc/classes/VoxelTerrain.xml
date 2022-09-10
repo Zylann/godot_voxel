@@ -10,20 +10,20 @@
 	<methods>
 		<method name="_on_area_edited" qualifiers="virtual">
 			<return type="void" />
-			<argument index="0" name="area_origin" type="Vector3i" />
-			<argument index="1" name="area_size" type="Vector3i" />
+			<param index="0" name="area_origin" type="Vector3i" />
+			<param index="1" name="area_size" type="Vector3i" />
 			<description>
 			</description>
 		</method>
 		<method name="_on_data_block_entered" qualifiers="virtual">
 			<return type="void" />
-			<argument index="0" name="info" type="VoxelDataBlockEnterInfo" />
+			<param index="0" name="info" type="VoxelDataBlockEnterInfo" />
 			<description>
 			</description>
 		</method>
 		<method name="data_block_to_voxel" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="block_pos" type="Vector3i" />
+			<param index="0" name="block_pos" type="Vector3i" />
 			<description>
 				Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
@@ -55,8 +55,8 @@
 		</method>
 		<method name="get_viewer_network_peer_ids_in_area" qualifiers="const">
 			<return type="PackedInt32Array" />
-			<argument index="0" name="area_origin" type="Vector3i" />
-			<argument index="1" name="area_size" type="Vector3i" />
+			<param index="0" name="area_origin" type="Vector3i" />
+			<param index="1" name="area_size" type="Vector3i" />
 			<description>
 			</description>
 		</method>
@@ -69,13 +69,13 @@
 		</method>
 		<method name="has_data_block" qualifiers="const">
 			<return type="bool" />
-			<argument index="0" name="block_position" type="Vector3i" />
+			<param index="0" name="block_position" type="Vector3i" />
 			<description>
 			</description>
 		</method>
 		<method name="save_block">
 			<return type="void" />
-			<argument index="0" name="position" type="Vector3i" />
+			<param index="0" name="position" type="Vector3i" />
 			<description>
 				Forces a specific block to be saved.
 				Note 1: all modified blocks are automatically saved before the terrain is destroyed.
@@ -94,14 +94,14 @@
 		</method>
 		<method name="try_set_block_data">
 			<return type="bool" />
-			<argument index="0" name="position" type="Vector3i" />
-			<argument index="1" name="voxels" type="VoxelBuffer" />
+			<param index="0" name="position" type="Vector3i" />
+			<param index="1" name="voxels" type="VoxelBuffer" />
 			<description>
 			</description>
 		</method>
 		<method name="voxel_to_data_block" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="voxel_pos" type="Vector3" />
+			<param index="0" name="voxel_pos" type="Vector3" />
 			<description>
 			</description>
 		</method>
@@ -142,14 +142,14 @@
 	</members>
 	<signals>
 		<signal name="block_loaded">
-			<argument index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
 			<description>
 				Emitted when a new data block is loaded from stream.
 				Note: it might be not visible yet.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
-			<argument index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
 			<description>
 				Emitted when a data block is unloaded due to being outside view distance.
 			</description>

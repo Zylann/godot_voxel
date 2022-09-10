@@ -173,7 +173,7 @@ void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const 
 }
 
 void VoxelInstanceLibrary::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("add_item", "id"), &VoxelInstanceLibrary::add_item);
+	ClassDB::bind_method(D_METHOD("add_item", "id", "item"), &VoxelInstanceLibrary::add_item);
 	ClassDB::bind_method(D_METHOD("remove_item", "id"), &VoxelInstanceLibrary::remove_item);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelInstanceLibrary::clear);
 	ClassDB::bind_method(D_METHOD("find_item_by_name", "name"), &VoxelInstanceLibrary::find_item_by_name);

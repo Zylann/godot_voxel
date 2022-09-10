@@ -14,221 +14,63 @@
 
 namespace zylann::voxel {
 
-void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		Ref<VoxelGenerator> generator, bool full_load_mode, const int mesh_block_size) {
+void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
+		VoxelLodTerrainUpdateData::State &state, VoxelData &data, const int mesh_block_size) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	// Propagates edits performed so far to other LODs.
-	// These LODs must be currently in memory, otherwise terrain data will miss it.
-	// This is currently ensured by the fact we load blocks in a "pyramidal" way,
-	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
-	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
-	const int data_block_size = data.lods[0].map.get_block_size();
-	const int data_block_size_po2 = data.lods[0].map.get_block_size_pow2();
+	static thread_local std::vector<Vector3i> tls_modified_lod0_blocks;
+	static thread_local std::vector<VoxelData::BlockLocation> tls_updated_block_locations;
+
+	const int data_block_size = data.get_block_size();
 	const int data_to_mesh_factor = mesh_block_size / data_block_size;
-	const unsigned int lod_count = data.lod_count;
 
-	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD> tls_blocks_to_process_per_lod;
-
-	// Make sure LOD0 gets updates even if _lod_count is 1
-	VoxelLodTerrainUpdateData::Lod &lod0 = state.lods[0];
 	{
-		// Consume scheduled positions from LOD0
-		std::vector<Vector3i> &dst_lod0 = tls_blocks_to_process_per_lod[0];
-
 		MutexLock lock(state.blocks_pending_lodding_lod0_mutex);
-
 		// Not sure if could just use `=`? What would std::vector do with capacity?
-		dst_lod0.resize(state.blocks_pending_lodding_lod0.size());
-		memcpy(dst_lod0.data(), state.blocks_pending_lodding_lod0.data(), dst_lod0.size() * sizeof(Vector3i));
+		tls_modified_lod0_blocks.resize(state.blocks_pending_lodding_lod0.size());
+		memcpy(tls_modified_lod0_blocks.data(), state.blocks_pending_lodding_lod0.data(),
+				state.blocks_pending_lodding_lod0.size() * sizeof(Vector3i));
 
-		// Make sure LOD0 has its list cleared, because in case there is only 1 LOD,
-		// the chain of updates will not be entered
 		state.blocks_pending_lodding_lod0.clear();
 	}
-	{
-		VoxelDataLodMap::Lod &data_lod0 = data.lods[0];
-		RWLockRead rlock(data_lod0.map_lock);
 
-		std::vector<Vector3i> &blocks_pending_lodding_lod0 = tls_blocks_to_process_per_lod[0];
+	tls_updated_block_locations.clear();
+	data.update_lods(to_span(tls_modified_lod0_blocks), &tls_updated_block_locations);
 
-		for (unsigned int i = 0; i < blocks_pending_lodding_lod0.size(); ++i) {
-			const Vector3i data_block_pos = blocks_pending_lodding_lod0[i];
-			VoxelDataBlock *data_block = data_lod0.map.get_block(data_block_pos);
-			ERR_CONTINUE(data_block == nullptr);
-			data_block->set_needs_lodding(false);
+	// Schedule mesh updates at every affected LOD
+	for (const VoxelData::BlockLocation loc : tls_updated_block_locations) {
+		const Vector3i mesh_block_pos = math::floordiv(loc.position, data_to_mesh_factor);
+		VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[loc.lod_index];
 
-			const Vector3i mesh_block_pos = math::floordiv(data_block_pos, data_to_mesh_factor);
-			auto mesh_block_it = lod0.mesh_map_state.map.find(mesh_block_pos);
-			if (mesh_block_it != lod0.mesh_map_state.map.end()) {
-				// If a mesh exists here, it will need an update.
-				// If there is no mesh, it will probably get created later when we come closer to it
-				schedule_mesh_update(mesh_block_it->second, mesh_block_pos, lod0.blocks_pending_update);
-			}
+		auto mesh_block_it = dst_lod.mesh_map_state.map.find(mesh_block_pos);
+		if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
+			// If a mesh exists here, it will need an update.
+			// If there is no mesh, it will probably get created later when we come closer to it
+			schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
 		}
 	}
-
-	const int half_bs = data_block_size >> 1;
-
-	// Process downscales upwards in pairs of consecutive LODs.
-	// This ensures we don't process multiple times the same blocks.
-	// Only LOD0 is editable at the moment, so we'll downscale from there
-	for (uint8_t dst_lod_index = 1; dst_lod_index < lod_count; ++dst_lod_index) {
-		const uint8_t src_lod_index = dst_lod_index - 1;
-		std::vector<Vector3i> &src_lod_blocks_to_process = tls_blocks_to_process_per_lod[src_lod_index];
-		std::vector<Vector3i> &dst_lod_blocks_to_process = tls_blocks_to_process_per_lod[dst_lod_index];
-
-		VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[dst_lod_index];
-
-		VoxelDataLodMap::Lod &src_data_lod = data.lods[src_lod_index];
-		RWLockRead src_data_lod_map_rlock(src_data_lod.map_lock);
-
-		VoxelDataLodMap::Lod &dst_data_lod = data.lods[dst_lod_index];
-		// TODO Could take long locking this, we may generate things first and assign to the map at the end.
-		// Besides, in per-block streaming mode, it is not needed because blocks are supposed to be present
-		RWLockRead wlock(dst_data_lod.map_lock);
-
-		for (unsigned int i = 0; i < src_lod_blocks_to_process.size(); ++i) {
-			const Vector3i src_bpos = src_lod_blocks_to_process[i];
-			const Vector3i dst_bpos = src_bpos >> 1;
-
-			VoxelDataBlock *src_block = src_data_lod.map.get_block(src_bpos);
-			VoxelDataBlock *dst_block = dst_data_lod.map.get_block(dst_bpos);
-
-			src_block->set_needs_lodding(false);
-
-			if (dst_block == nullptr) {
-				if (full_load_mode) {
-					// TODO Doing this on the main thread can be very demanding and cause a stall.
-					// We should find a way to make it asynchronous, not need mips, or not edit outside viewers area.
-					std::shared_ptr<VoxelBufferInternal> voxels = make_shared_instance<VoxelBufferInternal>();
-					voxels->create(Vector3iUtil::create(data_block_size));
-					VoxelGenerator::VoxelQueryData q{ //
-						*voxels, //
-						dst_bpos << (dst_lod_index + data_block_size_po2), //
-						dst_lod_index
-					};
-					if (generator.is_valid()) {
-						ZN_PROFILE_SCOPE_NAMED("Generate");
-						generator->generate_block(q);
-					}
-					data.modifiers.apply(
-							q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << dst_lod_index));
-
-					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);
-
-				} else {
-					ERR_PRINT(String("Destination block {0} not found when cascading edits on LOD {1}")
-									  .format(varray(dst_bpos, dst_lod_index)));
-					continue;
-				}
-			}
-
-			// The block and its lower LOD indices are expected to be available.
-			// Otherwise it means the function was called too late?
-			ZN_ASSERT(src_block != nullptr);
-			//ZN_ASSERT(dst_block != nullptr);
-			// The block should have voxels if it has been edited or mipped.
-			ZN_ASSERT(src_block->has_voxels());
-
-			{
-				const Vector3i mesh_block_pos = math::floordiv(dst_bpos, data_to_mesh_factor);
-				auto mesh_block_it = dst_lod.mesh_map_state.map.find(mesh_block_pos);
-				if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
-					schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
-				}
-				// If there is no mesh, it will probably get created later when we come closer to it
-			}
-
-			dst_block->set_modified(true);
-
-			if (dst_lod_index != lod_count - 1 && !dst_block->get_needs_lodding()) {
-				dst_block->set_needs_lodding(true);
-				dst_lod_blocks_to_process.push_back(dst_bpos);
-			}
-
-			const Vector3i rel = src_bpos - (dst_bpos << 1);
-
-			// Update lower LOD
-			// This must always be done after an edit before it gets saved, otherwise LODs won't match and it will look
-			// ugly.
-			// TODO Optimization: try to narrow to edited region instead of taking whole block
-			{
-				ZN_PROFILE_SCOPE_NAMED("Downscale");
-				RWLockRead rlock(src_block->get_voxels().get_lock());
-				src_block->get_voxels().downscale_to(
-						dst_block->get_voxels(), Vector3i(), src_block->get_voxels_const().get_size(), rel * half_bs);
-			}
-		}
-
-		src_lod_blocks_to_process.clear();
-		// No need to clear the last list because we never add blocks to it
-	}
-
-	//	uint64_t time_spent = profiling_clock.restart();
-	//	if (time_spent > 10) {
-	//		print_line(String("Took {0} us to update lods").format(varray(time_spent)));
-	//	}
 }
 
-struct BeforeUnloadDataAction {
-	std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save;
-	const Vector3i bpos;
-	bool save;
-
-	void operator()(VoxelDataBlock &block) {
-		// Save if modified
-		// TODO Don't ask for save if the stream doesn't support it!
-		if (save && block.is_modified()) {
-			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
-			VoxelLodTerrainUpdateData::BlockToSave b;
-			// We don't copy since the block will be unloaded anyways.
-			// If a modified block has no voxels, it is equivalent to removing the block from the stream
-			if (block.has_voxels()) {
-				b.voxels = block.get_voxels_shared();
-			}
-			b.position = bpos;
-			b.lod = block.get_lod_index();
-			blocks_to_save.push_back(b);
-		}
-	}
-};
-
-static void unload_data_block_no_lock(VoxelLodTerrainUpdateData::Lod &lod, VoxelDataLodMap::Lod &data_lod,
-		Vector3i block_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save) {
-	ZN_PROFILE_SCOPE();
-
-	data_lod.map.remove_block(block_pos, BeforeUnloadDataAction{ blocks_to_save, block_pos, can_save });
-
-	//print_line(String("Unloading data block {0} lod {1}").format(varray(block_pos.to_vec3(), lod_index)));
-	MutexLock lock(lod.loading_blocks_mutex);
-	lod.loading_blocks.erase(block_pos);
-
-	// if (_instancer != nullptr) {
-	// 	_instancer->on_block_exit(block_pos, lod_index);
-	// }
-
-	// No need to remove things from blocks_pending_load,
-	// This vector is filled and cleared immediately in the main process.
-	// It is a member only to re-use its capacity memory over frames.
-}
-
-static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		Vector3 p_viewer_pos, std::vector<VoxelLodTerrainUpdateData::BlockToSave> &blocks_to_save, bool can_save,
+static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
+		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> &blocks_to_save, bool can_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
 	// This should be the same distance relatively to each LOD
-	const int data_block_size = data.lods[0].map.get_block_size();
-	const int data_block_size_po2 = data.lods[0].map.get_block_size_pow2();
+	const int data_block_size = data.get_block_size();
+	const int data_block_size_po2 = data.get_block_size_po2();
 	const int data_block_region_extent =
 			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, data_block_size);
+	const Box3i bounds_in_voxels = data.get_bounds();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 
-	const int lod_count = data.lod_count;
+	const int lod_count = data.get_lod_count();
+
+	static thread_local std::vector<Box3i> tls_to_remove;
+	tls_to_remove.clear();
 
 	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 	// Instead, those blocks are unloaded by the octree forest management.
@@ -245,8 +87,8 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 				VoxelDataMap::voxel_to_block_b(math::floor_to_int(p_viewer_pos), block_size_po2);
 
 		const Box3i bounds_in_blocks = Box3i( //
-				settings.bounds_in_voxels.pos >> block_size_po2, //
-				settings.bounds_in_voxels.size >> block_size_po2);
+				bounds_in_voxels.pos >> block_size_po2, //
+				bounds_in_voxels.size >> block_size_po2);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(data_block_region_extent));
@@ -262,14 +104,15 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 
 		if (prev_box != new_box) {
 			ZN_PROFILE_SCOPE_NAMED("Unload data");
-			VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
-			RWLockWrite wlock(data_lod.map_lock);
-			prev_box.difference(new_box, [&lod, &data_lod, &blocks_to_save, can_save](Box3i out_of_range_box) {
-				out_of_range_box.for_each_cell([&lod, &data_lod, &blocks_to_save, can_save](Vector3i pos) {
-					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-					unload_data_block_no_lock(lod, data_lod, pos, blocks_to_save, can_save);
-				});
-			});
+			// VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
+			// RWLockWrite wlock(data_lod.map_lock);
+
+			tls_to_remove.clear();
+			prev_box.difference_to_vec(new_box, tls_to_remove);
+
+			for (const Box3i bbox : tls_to_remove) {
+				data.unload_blocks(bbox, lod_index, &blocks_to_save);
+			}
 		}
 
 		{
@@ -305,7 +148,7 @@ static void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 }
 
 static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector3 p_viewer_pos,
-		const VoxelLodTerrainUpdateData::Settings &settings) {
+		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelData &data) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box mesh unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
@@ -314,11 +157,13 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 	const int mesh_block_size = 1 << mesh_block_size_po2;
 	const int mesh_block_region_extent =
 			VoxelEngine::get_octree_lod_block_region_extent(settings.lod_distance, mesh_block_size);
+	const int lod_count = data.get_lod_count();
+	const Box3i bounds_in_voxels = data.get_bounds();
 
 	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 	// Instead, those blocks are unloaded by the octree forest management.
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-	for (int lod_index = settings.lod_count - 2; lod_index >= 0; --lod_index) {
+	for (int lod_index = lod_count - 2; lod_index >= 0; --lod_index) {
 		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
@@ -326,8 +171,8 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 		const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
 
 		const Box3i bounds_in_blocks = Box3i( //
-				settings.bounds_in_voxels.pos >> block_size_po2, //
-				settings.bounds_in_voxels.size >> block_size_po2);
+				bounds_in_voxels.pos >> block_size_po2, //
+				bounds_in_voxels.size >> block_size_po2);
 
 		const Box3i new_box =
 				Box3i::from_center_extents(viewer_block_pos_within_lod, Vector3iUtil::create(mesh_block_region_extent));
@@ -368,19 +213,20 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 }
 
 void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector3 p_viewer_pos,
-		const VoxelLodTerrainUpdateData::Settings &settings) {
+		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelData &data) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box octrees");
 	// TODO Investigate if multi-octree can produce cracks in the terrain (so far I haven't noticed)
 
+	const unsigned int lod_count = data.get_lod_count();
 	const unsigned int mesh_block_size_po2 = settings.mesh_block_size_po2;
-	const unsigned int octree_size_po2 = LodOctree::get_octree_size_po2(mesh_block_size_po2, settings.lod_count);
+	const unsigned int octree_size_po2 = LodOctree::get_octree_size_po2(mesh_block_size_po2, lod_count);
 	const unsigned int octree_size = 1 << octree_size_po2;
 	const unsigned int octree_region_extent = 1 + settings.view_distance_voxels / (1 << octree_size_po2);
 
 	const Vector3i viewer_octree_pos =
 			(math::floor_to_int(p_viewer_pos) + Vector3iUtil::create(octree_size / 2)) >> octree_size_po2;
 
-	const Box3i bounds_in_octrees = settings.bounds_in_voxels.downscaled(octree_size);
+	const Box3i bounds_in_octrees = data.get_bounds().downscaled(octree_size);
 
 	const Box3i new_box = Box3i::from_center_extents(viewer_octree_pos, Vector3iUtil::create(octree_region_extent))
 								  .clipped(bounds_in_octrees);
@@ -454,12 +300,12 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 			}
 		};
 
-		ExitAction exit_action{ state, settings.lod_count };
-		EnterAction enter_action{ state, settings.lod_count };
+		ExitAction exit_action{ state, lod_count };
+		EnterAction enter_action{ state, lod_count };
 		{
 			ZN_PROFILE_SCOPE_NAMED("Unload octrees");
 
-			const unsigned int last_lod_index = settings.lod_count - 1;
+			const unsigned int last_lod_index = lod_count - 1;
 			VoxelLodTerrainUpdateData::Lod &last_lod = state.lods[last_lod_index];
 			RWLockWrite wlock(last_lod.mesh_map_state.map_lock);
 
@@ -503,56 +349,12 @@ static void add_transition_updates_around(VoxelLodTerrainUpdateData::Lod &lod, V
 	// or maybe get_transition_mask needs a different approach that also looks at higher lods?
 }
 
-void try_schedule_loading_with_neighbors_no_lock(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
-		const Vector3i &p_data_block_pos, uint8_t lod_index,
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load, const Box3i &bounds_in_voxels) {
-	//
-	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-	const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
-
-	const int p = data_lod.map.get_block_size_pow2() + lod_index;
-
-	const int bound_min_x = bounds_in_voxels.pos.x >> p;
-	const int bound_min_y = bounds_in_voxels.pos.y >> p;
-	const int bound_min_z = bounds_in_voxels.pos.z >> p;
-	const int bound_max_x = (bounds_in_voxels.pos.x + bounds_in_voxels.size.x) >> p;
-	const int bound_max_y = (bounds_in_voxels.pos.y + bounds_in_voxels.size.y) >> p;
-	const int bound_max_z = (bounds_in_voxels.pos.z + bounds_in_voxels.size.z) >> p;
-
-	const int min_x = math::max(p_data_block_pos.x - 1, bound_min_x);
-	const int min_y = math::max(p_data_block_pos.y - 1, bound_min_y);
-	const int min_z = math::max(p_data_block_pos.z - 1, bound_min_z);
-	const int max_x = math::min(p_data_block_pos.x + 2, bound_max_x);
-	const int max_y = math::min(p_data_block_pos.y + 2, bound_max_y);
-	const int max_z = math::min(p_data_block_pos.z + 2, bound_max_z);
-
-	// Not locking here, we assume it's done by the caller
-	//RWLockRead rlock(data_lod.map_lock);
-
-	Vector3i bpos;
-	MutexLock lock(lod.loading_blocks_mutex);
-	for (bpos.y = min_y; bpos.y < max_y; ++bpos.y) {
-		for (bpos.z = min_z; bpos.z < max_z; ++bpos.z) {
-			for (bpos.x = min_x; bpos.x < max_x; ++bpos.x) {
-				const VoxelDataBlock *block = data_lod.map.get_block(bpos);
-
-				if (block == nullptr) {
-					if (!lod.has_loading_block(bpos)) {
-						blocks_to_load.push_back({ bpos, lod_index });
-						lod.loading_blocks.insert(bpos);
-					}
-				}
-			}
-		}
-	}
-}
-
 inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 	return (data_block_size == 16 || data_block_size == 32) && (mesh_block_size == 16 || mesh_block_size == 32) &&
 			mesh_block_size >= data_block_size;
 }
 
-bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelDataLodMap &data,
+bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const VoxelData &data,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
@@ -565,42 +367,46 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, VoxelData
 	switch (mesh_state) {
 		case VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED:
 		case VoxelLodTerrainUpdateData::MESH_NEED_UPDATE: {
-			const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-			const int data_block_size = data.lods[0].map.get_block_size();
-#ifdef DEBUG_ENABLED
-			ERR_FAIL_COND_V(!check_block_sizes(data_block_size, mesh_block_size), false);
-#endif
-			// Find data block neighbors positions
-			const int factor = mesh_block_size / data_block_size;
-			const Vector3i data_block_pos0 = factor * mesh_block_pos;
-			const Box3i data_box(data_block_pos0 - Vector3i(1, 1, 1), Vector3iUtil::create(factor) + Vector3i(2, 2, 2));
-			const Box3i bounds = settings.bounds_in_voxels.downscaled(data_block_size);
-			FixedArray<Vector3i, 56> neighbor_positions;
-			unsigned int neighbor_positions_count = 0;
-			data_box.for_inner_outline([bounds, &neighbor_positions, &neighbor_positions_count](Vector3i pos) {
-				if (bounds.contains(pos)) {
-					neighbor_positions[neighbor_positions_count] = pos;
-					++neighbor_positions_count;
-				}
-			});
-
 			bool surrounded = true;
-			if (settings.full_load_mode == false) {
-				const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
+			if (data.is_streaming_enabled()) {
+				const int mesh_block_size = 1 << settings.mesh_block_size_po2;
+				const int data_block_size = data.get_block_size();
+#ifdef DEBUG_ENABLED
+				ERR_FAIL_COND_V(!check_block_sizes(data_block_size, mesh_block_size), false);
+#endif
+				// TODO Why are we only checking neighbors?
+				// This is also redundant when called from `check_block_loaded_and_meshed`
+
+				// Find data block neighbors positions
+				const int factor = mesh_block_size / data_block_size;
+				const Vector3i data_block_pos0 = factor * mesh_block_pos;
+				const Box3i data_box(
+						data_block_pos0 - Vector3i(1, 1, 1), Vector3iUtil::create(factor) + Vector3i(2, 2, 2));
+				const Box3i bounds = data.get_bounds().downscaled(data_block_size);
+				// 56 is the maximum amount of positions that can be gathered this way with mesh block size 32.
+				FixedArray<Vector3i, 56> neighbor_positions;
+				unsigned int neighbor_positions_count = 0;
+				data_box.for_inner_outline([bounds, &neighbor_positions, &neighbor_positions_count](Vector3i pos) {
+					if (bounds.contains(pos)) {
+						neighbor_positions[neighbor_positions_count] = pos;
+						++neighbor_positions_count;
+					}
+				});
+
+				static thread_local std::vector<Vector3i> tls_missing;
+				tls_missing.clear();
+
 				// Check if neighbors are loaded
-				RWLockRead rlock(data_lod.map_lock);
-				// TODO Optimization: could put in a temp vector and insert in one go after the loop?
+				data.get_missing_blocks(to_span(neighbor_positions, neighbor_positions_count), lod_index, tls_missing);
+
+				surrounded = tls_missing.size() == 0;
+
+				// Schedule loading for missing neighbors
 				MutexLock lock(lod.loading_blocks_mutex);
-				for (unsigned int i = 0; i < neighbor_positions_count; ++i) {
-					const Vector3i npos = neighbor_positions[i];
-					if (!data_lod.map.has_block(npos)) {
-						// That neighbor is not loaded
-						surrounded = false;
-						if (!lod.has_loading_block(npos)) {
-							// Schedule loading for that neighbor
-							blocks_to_load.push_back({ npos, lod_index });
-							lod.loading_blocks.insert(npos);
-						}
+				for (const Vector3i &missing_pos : tls_missing) {
+					if (!lod.has_loading_block(missing_pos)) {
+						blocks_to_load.push_back({ missing_pos, lod_index });
+						lod.loading_blocks.insert(missing_pos);
 					}
 				}
 			}
@@ -651,63 +457,42 @@ VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 }
 
 static bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, const Vector3i &p_mesh_block_pos,
+		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelData &data, const Vector3i &p_mesh_block_pos,
 		uint8_t lod_index, std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load) {
 	//
-	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-	const int data_block_size = data.lods[0].map.get_block_size();
+	if (data.is_streaming_enabled()) {
+		const int mesh_block_size = 1 << settings.mesh_block_size_po2;
+		const int data_block_size = data.get_block_size();
 
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND_V(!check_block_sizes(data_block_size, mesh_block_size), false);
+		ERR_FAIL_COND_V(!check_block_sizes(data_block_size, mesh_block_size), false);
 #endif
-
-	if (settings.full_load_mode == false) {
 		// We want to know everything about the data intersecting this mesh block.
 		// This is not known in advance when we stream it, it has to be requested.
 		// When not streaming, `block == null` is the same as `!block->has_voxels()` so we wouldn't need to enter here.
 
-		VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
+		static thread_local std::vector<Vector3i> tls_missing;
+		tls_missing.clear();
 
-		if (mesh_block_size > data_block_size) {
-			const int factor = mesh_block_size / data_block_size;
-			const Vector3i data_block_pos0 = p_mesh_block_pos * factor;
+		const int factor = mesh_block_size / data_block_size;
+		const Box3i data_blocks_box = Box3i(p_mesh_block_pos * factor, Vector3iUtil::create(factor)).padded(1);
 
-			bool loaded = true;
+		data.get_missing_blocks(data_blocks_box, lod_index, tls_missing);
 
-			RWLockRead rlock(data_lod.map_lock);
-			for (int z = 0; z < factor; ++z) {
-				for (int x = 0; x < factor; ++x) {
-					for (int y = 0; y < factor; ++y) {
-						const Vector3i data_block_pos(data_block_pos0 + Vector3i(x, y, z));
-						VoxelDataBlock *data_block = data_lod.map.get_block(data_block_pos);
-
-						if (data_block == nullptr) {
-							loaded = false;
-							// TODO Optimization: this iterates too many blocks, if we ask for 8 blocks in an octant.
-							try_schedule_loading_with_neighbors_no_lock(
-									state, data, data_block_pos, lod_index, blocks_to_load, settings.bounds_in_voxels);
-						}
-					}
+		if (tls_missing.size() > 0) {
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+			for (const Vector3i &missing_bpos : tls_missing) {
+				if (!lod.has_loading_block(missing_bpos)) {
+					blocks_to_load.push_back({ missing_bpos, lod_index });
+					lod.loading_blocks.insert(missing_bpos);
 				}
 			}
-
-			if (!loaded) {
-				return false;
-			}
-
-		} else if (mesh_block_size == data_block_size) {
-			const Vector3i data_block_pos = p_mesh_block_pos;
-			RWLockRead rlock(data_lod.map_lock);
-			VoxelDataBlock *block = data_lod.map.get_block(data_block_pos);
-			if (block == nullptr) {
-				try_schedule_loading_with_neighbors_no_lock(
-						state, data, data_block_pos, lod_index, blocks_to_load, settings.bounds_in_voxels);
-				return false;
-			}
+			return false;
 		}
 	}
+
+	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 	VoxelLodTerrainUpdateData::MeshBlockState *mesh_block = nullptr;
 	auto mesh_block_it = lod.mesh_map_state.map.find(p_mesh_block_pos);
@@ -806,13 +591,14 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 }
 
 static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, VoxelDataLodMap &data, Vector3 p_viewer_pos,
+		const VoxelLodTerrainUpdateData::Settings &settings, VoxelData &data, Vector3 p_viewer_pos,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
 	//
 	ZN_PROFILE_SCOPE();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int octree_leaf_node_size = mesh_block_size;
+	const unsigned int lod_count = data.get_lod_count();
 
 	const bool force_update_octrees = state.force_update_octrees_next_update;
 	state.force_update_octrees_next_update = false;
@@ -839,14 +625,14 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 	unsigned int blocked_octree_nodes = 0;
 
-	// TODO Maintain a vector to make iteration faster?
+	// TODO Optimization: Maintain a vector to make iteration faster?
 	for (auto octree_it = state.lod_octrees.begin(); octree_it != state.lod_octrees.end(); ++octree_it) {
 		ZN_PROFILE_SCOPE();
 
 		struct OctreeActions {
 			VoxelLodTerrainUpdateData::State &state;
 			const VoxelLodTerrainUpdateData::Settings &settings;
-			VoxelDataLodMap &data;
+			VoxelData &data;
 			std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
@@ -985,7 +771,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		};
 
 		const Vector3i block_pos_maxlod = octree_it->first;
-		const Vector3i block_offset_lod0 = block_pos_maxlod << (settings.lod_count - 1);
+		const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 		const Vector3 relative_viewer_pos = p_viewer_pos - Vector3(mesh_block_size * block_offset_lod0);
 
 		OctreeActions octree_actions{ //
@@ -1029,7 +815,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 				if (mesh_block.active) {
 					const uint8_t mask =
-							VoxelLodTerrainUpdateTask::get_transition_mask(state, bpos, lod_index, settings.lod_count);
+							VoxelLodTerrainUpdateTask::get_transition_mask(state, bpos, lod_index, lod_count);
 					mesh_block.transition_mask = mask;
 					lod.mesh_blocks_to_update_transitions.push_back(
 							VoxelLodTerrainUpdateData::TransitionUpdate{ bpos, mask });
@@ -1067,7 +853,7 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 
 // This is only if we want to cache voxel data
 static void request_block_generate(uint32_t volume_id, unsigned int data_block_size,
-		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelDataLodMap> &data,
+		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		Vector3i block_pos, int lod, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
 		const Transform3D &volume_transform, float lod_distance, std::shared_ptr<AsyncDependencyTracker> tracker,
 		bool allow_drop, BufferedTaskScheduler &task_scheduler) {
@@ -1096,7 +882,7 @@ static void request_block_generate(uint32_t volume_id, unsigned int data_block_s
 
 // Used only when streaming block by block
 static void request_block_load(uint32_t volume_id, unsigned int data_block_size,
-		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelDataLodMap> &data,
+		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		Vector3i block_pos, int lod, bool request_instances,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler) {
@@ -1126,7 +912,7 @@ static void request_block_load(uint32_t volume_id, unsigned int data_block_size,
 
 static void send_block_data_requests(uint32_t volume_id,
 		Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
-		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelDataLodMap> &data,
+		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
 		bool request_instances, const Transform3D &volume_transform,
 		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler) {
@@ -1139,18 +925,17 @@ static void send_block_data_requests(uint32_t volume_id,
 }
 
 static void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
-		VoxelDataLodMap &data, VoxelLodTerrainUpdateData::State &state) {
+		VoxelData &data, VoxelLodTerrainUpdateData::State &state) {
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const VoxelLodTerrainUpdateData::BlockLocation loc = blocks_to_load[i];
-		VoxelDataLodMap::Lod &data_lod = data.lods[loc.lod];
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[loc.lod];
 		{
 			MutexLock mlock(lod.loading_blocks_mutex);
 			lod.loading_blocks.erase(loc.position);
 		}
 		{
-			RWLockWrite wlock(data_lod.map_lock);
-			data_lod.map.set_empty_block(loc.position, false);
+			VoxelDataBlock empty_block(0);
+			data.try_set_block(loc.position, empty_block);
 		}
 	}
 }
@@ -1171,33 +956,33 @@ static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBu
 }
 
 void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
-		Span<VoxelLodTerrainUpdateData::BlockToSave> blocks_to_save,
-		std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
-		BufferedTaskScheduler &task_scheduler) {
+		Span<VoxelData::BlockToSave> blocks_to_save, std::shared_ptr<StreamingDependency> &stream_dependency,
+		unsigned int data_block_size, BufferedTaskScheduler &task_scheduler) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
-		VoxelLodTerrainUpdateData::BlockToSave &b = blocks_to_save[i];
-		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod));
+		VoxelData::BlockToSave &b = blocks_to_save[i];
+		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod_index));
 		request_voxel_block_save(
-				volume_id, b.voxels, b.position, b.lod, stream_dependency, data_block_size, task_scheduler);
+				volume_id, b.voxels, b.position, b.lod_index, stream_dependency, data_block_size, task_scheduler);
 	}
 }
 
 static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> &data_ptr,
+		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> &data_ptr,
 		std::shared_ptr<MeshingDependency> meshing_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	//
 	ZN_PROFILE_SCOPE();
 
-	CRASH_COND(data_ptr == nullptr);
-	const VoxelDataLodMap &data = *data_ptr;
+	ZN_ASSERT(data_ptr != nullptr);
+	const VoxelData &data = *data_ptr;
 
-	const int data_block_size = data.lods[0].map.get_block_size();
+	const int data_block_size = data.get_block_size();
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	const int render_to_data_factor = mesh_block_size / data_block_size;
+	const unsigned int lod_count = data.get_lod_count();
 
-	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
@@ -1241,22 +1026,11 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 					Box3i(render_to_data_factor * mesh_block_pos, Vector3iUtil::create(render_to_data_factor))
 							.padded(1);
 
-			const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
-			RWLockRead rlock(data_lod.map_lock);
-
 			// Iteration order matters for thread access.
 			// The array also implicitely encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
-			task->blocks_count = 0;
-			data_box.for_each_cell_zxy([task, &data_lod](Vector3i data_block_pos) {
-				const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
-				// The block can actually be null on some occasions. Not sure yet if it's that bad
-				//CRASH_COND(nblock == nullptr);
-				if (nblock != nullptr && nblock->has_voxels()) {
-					task->blocks[task->blocks_count] = nblock->get_voxels_shared();
-				}
-				++task->blocks_count;
-			});
+			data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
+			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
 
 			// TODO There is inconsistency with coordinates sent to this function.
 			// Sometimes we send data block coordinates, sometimes we send mesh block coordinates. They aren't always
@@ -1277,14 +1051,18 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 // This function schedules one parallel task for every block.
 // The returned tracker may be polled to detect when it is complete.
 static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> data_ptr,
+		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> data_ptr,
 		Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks, uint32_t volume_id,
 		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	ZN_PROFILE_SCOPE();
 
-	ERR_FAIL_COND_V_MSG(settings.full_load_mode == false, nullptr, "This function can only be used in full load mode");
+	ZN_ASSERT(data_ptr != nullptr);
+	VoxelData &data = *data_ptr;
+
+	ZN_ASSERT_RETURN_V_MSG(
+			data.is_streaming_enabled() == false, nullptr, "This function can only be used in full load mode");
 
 	struct TaskArguments {
 		Vector3i block_pos;
@@ -1293,11 +1071,10 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 
 	std::vector<TaskArguments> todo;
 
-	ZN_ASSERT(data_ptr != nullptr);
-	VoxelDataLodMap &data = *data_ptr;
-	const unsigned int data_block_size = data.lods[0].map.get_block_size();
+	const unsigned int data_block_size = data.get_block_size();
+	const unsigned int lod_count = data.get_lod_count();
 
-	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		for (unsigned int box_index = 0; box_index < voxel_boxes.size(); ++box_index) {
 			ZN_PROFILE_SCOPE_NAMED("Box");
 
@@ -1308,16 +1085,16 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 			// ZN_PRINT_VERBOSE(String("Preloading box {0} at lod {1}")
 			// 						.format(varray(block_box.to_string(), lod_index)));
 
-			const VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
-			RWLockRead rlock(data_lod.map_lock);
-			MutexLock lock(lod.loading_blocks_mutex);
+			static thread_local std::vector<Vector3i> tls_missing;
+			tls_missing.clear();
+			data.get_missing_blocks(block_box, lod_index, tls_missing);
 
-			block_box.for_each_cell([&lod, &data_lod, lod_index, &todo](Vector3i block_pos) {
-				if (!data_lod.map.has_block(block_pos) && !lod.has_loading_block(block_pos)) {
-					todo.push_back({ block_pos, lod_index });
-					lod.loading_blocks.insert(block_pos);
+			for (const Vector3i &missing_bpos : tls_missing) {
+				if (!lod.has_loading_block(missing_bpos)) {
+					todo.push_back(TaskArguments{ missing_bpos, lod_index });
+					lod.loading_blocks.insert(missing_bpos);
 				}
-			});
+			}
 		}
 	}
 
@@ -1356,8 +1133,8 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 }
 
 static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelDataLodMap> &data,
-		uint32_t volume_id, std::shared_ptr<StreamingDependency> &stream_dependency,
+		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> &data, uint32_t volume_id,
+		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
 	ZN_PROFILE_SCOPE();
@@ -1395,8 +1172,8 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 	}
 }
 
-static void process_changed_generated_areas(
-		VoxelLodTerrainUpdateData::State &state, const VoxelLodTerrainUpdateData::Settings &settings) {
+static void process_changed_generated_areas(VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings, unsigned int lod_count) {
 	const unsigned int mesh_block_size = 1 << settings.mesh_block_size_po2;
 
 	MutexLock lock(state.changed_generated_areas_mutex);
@@ -1404,7 +1181,7 @@ static void process_changed_generated_areas(
 		return;
 	}
 
-	for (unsigned int lod_index = 0; lod_index < settings.lod_count; ++lod_index) {
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
 		for (auto box_it = state.changed_generated_areas.begin(); box_it != state.changed_generated_areas.end();
@@ -1449,7 +1226,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	VoxelLodTerrainUpdateData &update_data = *_update_data;
 	VoxelLodTerrainUpdateData::State &state = update_data.state;
 	const VoxelLodTerrainUpdateData::Settings &settings = update_data.settings;
-	VoxelDataLodMap &data = *_data;
+	VoxelData &data = *_data;
 	Ref<VoxelGenerator> generator = _streaming_dependency->generator;
 	Ref<VoxelStream> stream = _streaming_dependency->stream;
 	ProfilingClock profiling_clock;
@@ -1459,7 +1236,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	const bool stream_enabled = (stream.is_valid() || generator.is_valid()) &&
 			(Engine::get_singleton()->is_editor_hint() == false || settings.run_stream_in_editor);
 
-	CRASH_COND(data.lod_count != update_data.settings.lod_count);
+	const unsigned int lod_count = data.get_lod_count();
 
 	for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 		const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
@@ -1478,29 +1255,29 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 	// These are deferred from edits so we can batch them.
 	// It has to happen first because blocks can be unloaded afterwards.
 	// This is also what causes meshes to update after edits.
-	flush_pending_lod_edits(state, data, generator, settings.full_load_mode, 1 << settings.mesh_block_size_po2);
+	flush_pending_lod_edits(state, data, 1 << settings.mesh_block_size_po2);
 
 	// Other mesh updates
-	process_changed_generated_areas(state, settings);
+	process_changed_generated_areas(state, settings, lod_count);
 
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToSave> data_blocks_to_save;
+	static thread_local std::vector<VoxelData::BlockToSave> data_blocks_to_save;
 	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> data_blocks_to_load;
 	data_blocks_to_load.clear();
 
 	profiling_clock.restart();
 	{
 		// Unload data blocks falling out of block region extent
-		if (update_data.settings.full_load_mode == false) {
+		if (data.is_streaming_enabled()) {
 			process_unload_data_blocks_sliding_box(
 					state, data, _viewer_pos, data_blocks_to_save, stream.is_valid(), settings);
 		}
 
 		// Unload mesh blocks falling out of block region extent
-		process_unload_mesh_blocks_sliding_box(state, _viewer_pos, settings);
+		process_unload_mesh_blocks_sliding_box(state, _viewer_pos, settings, data);
 
 		// Create and remove octrees in a grid around the viewer.
 		// Mesh blocks drive the loading of voxel data and visuals.
-		process_octrees_sliding_box(state, _viewer_pos, settings);
+		process_octrees_sliding_box(state, _viewer_pos, settings, data);
 
 		state.stats.blocked_lods = 0;
 
@@ -1521,7 +1298,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
 		ZN_PROFILE_SCOPE_NAMED("IO requests");
 		// It's possible the user didn't set a stream yet, or it is turned off
 		if (stream_enabled) {
-			const unsigned int data_block_size = data.lods[0].map.get_block_size();
+			const unsigned int data_block_size = data.get_block_size();
 
 			if (stream.is_null() && !settings.cache_generated_blocks) {
 				// TODO Optimization: not ideal because a bit delayed. It requires a second update cycle for meshes to

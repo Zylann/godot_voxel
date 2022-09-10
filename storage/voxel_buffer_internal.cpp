@@ -106,6 +106,26 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBufferInternal::Depth depth
 	}
 }
 
+namespace {
+uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
+	0, // TYPE
+
+	// Casted explicitely to avoid warning about narrowing conversion, the intent is to store all bits of the value
+	// as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
+	// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
+	uint16_t(snorm_to_s16(1.f)), // SDF
+
+	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
+	encode_weights_to_packed_u16(15, 0, 0, 0), // WEIGHTS
+	0, 0, 0, 0 //
+};
+}
+
+uint64_t VoxelBufferInternal::get_default_value_static(unsigned int channel_index) {
+	ZN_ASSERT(channel_index < MAX_CHANNELS);
+	return g_default_values[channel_index];
+}
+
 VoxelBufferInternal::VoxelBufferInternal() {
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
 	_channels[CHANNEL_TYPE].depth = DEFAULT_TYPE_CHANNEL_DEPTH;
@@ -113,7 +133,7 @@ VoxelBufferInternal::VoxelBufferInternal() {
 
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
-	_channels[CHANNEL_SDF].defval = snorm_to_s16(1.f);
+	_channels[CHANNEL_SDF].defval = uint16_t(snorm_to_s16(1.f));
 
 	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
@@ -953,6 +973,110 @@ void VoxelBufferInternal::copy_voxel_metadata(const VoxelBufferInternal &src_buf
 	}
 
 	_block_metadata.copy_from(src_buffer._block_metadata);
+}
+
+void get_unscaled_sdf(const VoxelBufferInternal &voxels, Span<float> sdf) {
+	ZN_PROFILE_SCOPE();
+	ZN_DSTACK();
+	const uint64_t volume = Vector3iUtil::get_volume(voxels.get_size());
+	ZN_ASSERT_RETURN(volume == sdf.size());
+
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::Depth depth = voxels.get_channel_depth(channel);
+
+	const float inv_scale = 1.f / VoxelBufferInternal::get_sdf_quantization_scale(depth);
+
+	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+		const float uniform_value = inv_scale * voxels.get_voxel_f(0, 0, 0, channel);
+		sdf.fill(uniform_value);
+		return;
+	}
+
+	switch (depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
+			Span<int8_t> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				sdf[i] = s8_to_snorm(raw[i]);
+			}
+		} break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT: {
+			Span<int16_t> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				sdf[i] = s16_to_snorm(raw[i]);
+			}
+		} break;
+
+		case VoxelBufferInternal::DEPTH_32_BIT: {
+			Span<float> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			memcpy(sdf.data(), raw.data(), sizeof(float) * sdf.size());
+		} break;
+
+		case VoxelBufferInternal::DEPTH_64_BIT: {
+			Span<double> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				sdf[i] = raw[i];
+			}
+		} break;
+
+		default:
+			ZN_CRASH();
+	}
+
+	for (unsigned int i = 0; i < sdf.size(); ++i) {
+		sdf[i] *= inv_scale;
+	}
+}
+
+void scale_and_store_sdf(VoxelBufferInternal &voxels, Span<float> sdf) {
+	ZN_PROFILE_SCOPE();
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::Depth depth = voxels.get_channel_depth(channel);
+	ZN_ASSERT_RETURN(voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_NONE);
+
+	const float scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	for (unsigned int i = 0; i < sdf.size(); ++i) {
+		sdf[i] *= scale;
+	}
+
+	switch (depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
+			Span<int8_t> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				raw[i] = snorm_to_s8(sdf[i]);
+			}
+		} break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT: {
+			Span<int16_t> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				raw[i] = snorm_to_s16(sdf[i]);
+			}
+		} break;
+
+		case VoxelBufferInternal::DEPTH_32_BIT: {
+			Span<float> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			memcpy(raw.data(), sdf.data(), sizeof(float) * sdf.size());
+		} break;
+
+		case VoxelBufferInternal::DEPTH_64_BIT: {
+			Span<double> raw;
+			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			for (unsigned int i = 0; i < sdf.size(); ++i) {
+				raw[i] = sdf[i];
+			}
+		} break;
+
+		default:
+			ZN_CRASH();
+	}
 }
 
 } // namespace zylann::voxel

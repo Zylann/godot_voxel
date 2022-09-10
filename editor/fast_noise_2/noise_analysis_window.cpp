@@ -109,8 +109,9 @@ NoiseAnalysisWindow::NoiseAnalysisWindow() {
 	{
 		Label *label = memnew(Label);
 		label->set_text(TTR("Maximum derivative over step length*:"));
-		label->set_tooltip(TTR("Depending on the noise type, this measure can vary due to very small discontinuities, "
-							   "so it may be interesting to try multiple step lengths, from shortest to longest."));
+		label->set_tooltip_text(
+				TTR("Depending on the noise type, this measure can vary due to very small discontinuities, "
+					"so it may be interesting to try multiple step lengths, from shortest to longest."));
 		label->set_mouse_filter(Control::MOUSE_FILTER_STOP);
 		vbox_container->add_child(label);
 	}

@@ -1471,7 +1471,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 
 	if (root != nullptr) {
 		if (params.mesh_mode == MESH_DEBUG_OCTREE) {
-			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod);
+			surface = dmc::generate_debug_octree_mesh(root, 1 << input.lod_index);
 
 		} else {
 			time_before = Time::get_singleton()->get_ticks_usec();
@@ -1483,7 +1483,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 			stats.dualgrid_derivation_time = Time::get_singleton()->get_ticks_usec() - time_before;
 
 			if (params.mesh_mode == MESH_DEBUG_DUAL_GRID) {
-				surface = dmc::generate_debug_dual_grid_mesh(cache.dual_grid, 1 << input.lod);
+				surface = dmc::generate_debug_dual_grid_mesh(cache.dual_grid, 1 << input.lod_index);
 
 			} else {
 				time_before = Time::get_singleton()->get_ticks_usec();
@@ -1507,8 +1507,8 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 
 	if (surface.is_empty()) {
 		time_before = Time::get_singleton()->get_ticks_usec();
-		if (input.lod > 0) {
-			cache.mesh_builder.scale(1 << input.lod);
+		if (input.lod_index > 0) {
+			cache.mesh_builder.scale(1 << input.lod_index);
 		}
 		surface = cache.mesh_builder.commit(params.mesh_mode == MESH_WIREFRAME);
 		stats.commit_time = Time::get_singleton()->get_ticks_usec() - time_before;

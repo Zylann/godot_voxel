@@ -7,7 +7,7 @@
 
 namespace zylann {
 
-bool is_surface_triangulated(Array surface) {
+bool is_surface_triangulated(const Array &surface) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 	PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
 	return positions.size() >= 3 && indices.size() >= 3;
@@ -17,8 +17,7 @@ bool is_mesh_empty(Span<const Array> surfaces) {
 	if (surfaces.size() == 0) {
 		return true;
 	}
-	for (unsigned int i = 0; i < surfaces.size(); ++i) {
-		Array surface = surfaces[i];
+	for (const Array &surface : surfaces) {
 		if (is_surface_triangulated(surface)) {
 			return false;
 		}

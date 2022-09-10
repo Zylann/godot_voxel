@@ -9,19 +9,27 @@
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="do_graph">
+			<return type="void" />
+			<param index="0" name="graph" type="VoxelGeneratorGraph" />
+			<param index="1" name="transform" type="Transform3D" />
+			<param index="2" name="area_size" type="Vector3" />
+			<description>
+			</description>
+		</method>
 		<method name="do_hemisphere">
 			<return type="void" />
-			<argument index="0" name="center" type="Vector3" />
-			<argument index="1" name="radius" type="float" />
-			<argument index="2" name="flat_direction" type="Vector3" />
-			<argument index="3" name="smoothness" type="float" default="0.0" />
+			<param index="0" name="center" type="Vector3" />
+			<param index="1" name="radius" type="float" />
+			<param index="2" name="flat_direction" type="Vector3" />
+			<param index="3" name="smoothness" type="float" default="0.0" />
 			<description>
 			</description>
 		</method>
 		<method name="do_sphere_async">
 			<return type="void" />
-			<argument index="0" name="center" type="Vector3" />
-			<argument index="1" name="radius" type="float" />
+			<param index="0" name="center" type="Vector3" />
+			<param index="1" name="radius" type="float" />
 			<description>
 			</description>
 		</method>
@@ -32,14 +40,14 @@
 		</method>
 		<method name="get_voxel_f_interpolated" qualifiers="const">
 			<return type="float" />
-			<argument index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="separate_floating_chunks">
 			<return type="Array" />
-			<argument index="0" name="box" type="AABB" />
-			<argument index="1" name="parent_node" type="Node" />
+			<param index="0" name="box" type="AABB" />
+			<param index="1" name="parent_node" type="Node" />
 			<description>
 				Turns floating voxels into RigidBodies.
 				Chunks of floating voxels are detected within a box. The box is relative to the voxel volume this VoxelTool is attached to. Chunks have to be contained entirely within that box to be considered floating. Chunks are removed from the source volume and transformed into RigidBodies with convex collision shapes. They will be added as child of the provided node. They will start "kinematic", and turn "rigid" after a short time, to allow the terrain to update its colliders after the removal (otherwise they will overlap). The function returns an array of these rigid bodies, which you can use to attach further behavior to them (such as disappearing after some time or distance for example).
@@ -48,16 +56,16 @@
 		</method>
 		<method name="set_raycast_binary_search_iterations">
 			<return type="void" />
-			<argument index="0" name="iterations" type="int" />
+			<param index="0" name="iterations" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="stamp_sdf">
 			<return type="void" />
-			<argument index="0" name="mesh_sdf" type="VoxelMeshSDF" />
-			<argument index="1" name="transform" type="Transform3D" />
-			<argument index="2" name="isolevel" type="float" />
-			<argument index="3" name="sdf_scale" type="float" />
+			<param index="0" name="mesh_sdf" type="VoxelMeshSDF" />
+			<param index="1" name="transform" type="Transform3D" />
+			<param index="2" name="isolevel" type="float" />
+			<param index="3" name="sdf_scale" type="float" />
 			<description>
 			</description>
 		</method>

@@ -69,7 +69,7 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 	// 											mesh_block_position.z, lod_index)));
 	// }
 
-	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
+	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		NormalMapTextures textures = store_normalmap_data_to_textures(images);
 		virtual_textures->normalmap_textures = textures;
 	} else {

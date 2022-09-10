@@ -8,7 +8,7 @@
 
 namespace zylann::voxel {
 
-struct VoxelDataLodMap;
+class VoxelData;
 
 class GenerateBlockTask : public IThreadedTask {
 public:
@@ -33,7 +33,7 @@ public:
 	bool drop_beyond_max_distance = true;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<StreamingDependency> stream_dependency;
-	std::shared_ptr<VoxelDataLodMap> data;
+	std::shared_ptr<VoxelData> data;
 	std::shared_ptr<AsyncDependencyTracker> tracker;
 };
 

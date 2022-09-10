@@ -427,6 +427,9 @@ void VoxelMeshSDF::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("bake"), &VoxelMeshSDF::bake);
 	ClassDB::bind_method(D_METHOD("bake_async", "scene_tree"), &VoxelMeshSDF::bake_async);
 
+	ClassDB::bind_method(D_METHOD("is_baked"), &VoxelMeshSDF::is_baked);
+	ClassDB::bind_method(D_METHOD("is_baking"), &VoxelMeshSDF::is_baking);
+
 	ClassDB::bind_method(D_METHOD("get_mesh"), &VoxelMeshSDF::get_mesh);
 	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &VoxelMeshSDF::set_mesh);
 

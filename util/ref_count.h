@@ -10,7 +10,7 @@ namespace zylann {
 class RefCount {
 public:
 	RefCount() {}
-	RefCount(unsigned int initial_count): _count(initial_count) {}
+	RefCount(unsigned int initial_count) : _count(initial_count) {}
 
 	inline void add() {
 		++_count;

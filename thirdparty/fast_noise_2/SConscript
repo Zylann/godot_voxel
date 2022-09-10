@@ -4,7 +4,7 @@ Import("env")
 Import("env_voxel")
 
 
-if env["use_lto"]:
+if env["lto"]:
     # TODO Auburn warned about issues with LTO and static builds of FastNoise2
     # Need to either produce an error, fallback on Scalar, or turn off support entirely?
     pass
@@ -70,7 +70,7 @@ env_fn2_arm = env_fn2.Clone()
 # TODO NEON?
 
 if env.msvc:
-    if env["bits"] == "32":
+    if env["arch"] == "x86_32":
         # MSVC/64 warns:
         # ignoring unknown option "/arch:SSE2" as 64 bit already has SSE2 built in
         env_fn2_scalar.Append(CCFLAGS=["/arch:SSE"])
@@ -87,7 +87,7 @@ else: # Clang, GCC, AppleClang
     # TODO The Cmake build script still has a big `if(MSVC)` in that section.
     # what does it mean?
 
-    if env["bits"] == "32":
+    if env["arch"] == "x86_32":
         env_fn2_scalar.Append(CCFLAGS=["-msse"])
         env_fn2_sse2.Append(CCFLAGS=["-msse2"])
 

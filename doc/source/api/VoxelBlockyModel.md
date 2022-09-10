@@ -46,7 +46,7 @@ Return                                                                          
 enum **GeometryType**: 
 
 - **GEOMETRY_NONE** = **0** --- Don't produce any geometry. The voxel will be invisible.
-- **GEOMETRY_CUBE** = **1** --- Use the shape of a generated cube. It is useful for testing and quick configuration.
+- **GEOMETRY_CUBE** = **1** --- Use the shape of a generated cube. It is useful for testing and quick configuration. In this mode, tile positions for sides of the cube are made available in the editor. They refer to coordinates of tiles in a texture atlas. You may use an atlas in order to use them. The size of the atlas may be set in [member VoxelBlockyLibrary.atlas_size].
 - **GEOMETRY_CUSTOM_MESH** = **2** --- Use the mesh specified in the [member mesh] property. This is the most versatile way to create shapes.
 - **GEOMETRY_MAX** = **3** --- How many geometry modes there are.
 
@@ -65,18 +65,23 @@ enum **Side**:
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
 
+List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover](VoxelBoxMover.md). They are not used with mesh-based collision.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
 
+Collision mask used for box-based collision [VoxelBoxMover](VoxelBoxMover.md) and voxel raycasts ([VoxelToolTerrain](VoxelToolTerrain.md)). It is not used for mesh-based collisions.
 
 - [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_color"></span> **color** = Color(1, 1, 1, 1)
 
+Color of the model. It will be used to modulate its color when built into a voxel mesh.
 
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_custom_mesh"></span> **custom_mesh**
 
+Specifies the mesh of the model. Ultimately, all models use a mesh.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_geometry_type"></span> **geometry_type** = 0
 
+Tells which geometry type to use. Most of the time you may use constant GEOMETRY_CUSTOM_MESH, but some shortcuts can be used for cubes or empty models.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_tickable"></span> **random_tickable** = false
 
@@ -84,9 +89,15 @@ If enabled, voxels having this ID in the TYPE channel will be used by method Vox
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_transparency_index"></span> **transparency_index** = 0
 
+Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
+
+Equal indices culls the face, different indexes doesn't.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_transparent"></span> **transparent** = false
 
+Tells if the model is transparent in the context of sides being culled by neighbor voxels.
+
+This is a legacy property, member transparency_index may be used instead.
 
 - [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)<span id="i_voxel_name"></span> **voxel_name** = &""
 
@@ -96,23 +107,32 @@ Name that can be used for convenience, when looking up a specific [VoxelBlockyMo
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_id"></span> **get_id**( ) 
 
+Gets the ID of the model. This ID is used in voxel data.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_get_material_override"></span> **get_material_override**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) 
 
+Gets the material override for a specific surface of the model.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_empty"></span> **is_empty**( ) 
 
+Tells if the model contains any geometry.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_mesh_collision_enabled"></span> **is_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg0 ) 
 
+Tells if a specific surface produces mesh-based collisions.
 
 - [void](#)<span id="i_set_id"></span> **set_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
+Sets the ID of the model.
+
+This method is deprecated. Changing the ID of a model after it's been added to a library is not supported.
 
 - [void](#)<span id="i_set_material_override"></span> **set_material_override**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
+Sets a material override for a specific surface of the model. It allows to use the same mesh on multiple models, but using different materials on each.
 
 - [void](#)<span id="i_set_mesh_collision_enabled"></span> **set_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
+Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

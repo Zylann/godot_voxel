@@ -472,7 +472,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 	const VoxelBufferInternal &voxels = input.voxels;
 #ifdef TOOLS_ENABLED
-	if (input.lod != 0) {
+	if (input.lod_index != 0) {
 		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
 	}
 #endif

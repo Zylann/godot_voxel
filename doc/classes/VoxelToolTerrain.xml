@@ -11,17 +11,17 @@
 	<methods>
 		<method name="do_hemisphere">
 			<return type="void" />
-			<argument index="0" name="center" type="Vector3" />
-			<argument index="1" name="radius" type="float" />
-			<argument index="2" name="flat_direction" type="Vector3" />
-			<argument index="3" name="smoothness" type="float" default="0.0" />
+			<param index="0" name="center" type="Vector3" />
+			<param index="1" name="radius" type="float" />
+			<param index="2" name="flat_direction" type="Vector3" />
+			<param index="3" name="smoothness" type="float" default="0.0" />
 			<description>
 			</description>
 		</method>
 		<method name="for_each_voxel_metadata_in_area">
 			<return type="void" />
-			<argument index="0" name="voxel_area" type="AABB" />
-			<argument index="1" name="callback" type="Callable" />
+			<param index="0" name="voxel_area" type="AABB" />
+			<param index="1" name="callback" type="Callable" />
 			<description>
 				Executes a function for each voxel holding metadata in the given area.
 				The given callback takes two arguments: voxel position (Vector3i), voxel metadata (Variant).
@@ -30,10 +30,10 @@
 		</method>
 		<method name="run_blocky_random_tick" qualifiers="const">
 			<return type="void" />
-			<argument index="0" name="area" type="AABB" />
-			<argument index="1" name="voxel_count" type="int" />
-			<argument index="2" name="callback" type="Callable" />
-			<argument index="3" name="batch_count" type="int" default="16" />
+			<param index="0" name="area" type="AABB" />
+			<param index="1" name="voxel_count" type="int" />
+			<param index="2" name="callback" type="Callable" />
+			<param index="3" name="batch_count" type="int" default="16" />
 			<description>
 				Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky]. Only voxels where [member Voxel.random_tickable] is [code]true[/code] will be picked.
 				The given callback takes two arguments: voxel position (Vector3i), voxel value (int).

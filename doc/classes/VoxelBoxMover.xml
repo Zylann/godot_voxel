@@ -17,6 +17,8 @@
 		<method name="get_collision_mask" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets the collision mask used to detect collidable voxels.
+				This collision mask is specific to this collision system, and is defined in [member VoxelBlockyModel.collision_mask].
 			</description>
 		</method>
 		<method name="get_max_step_height" qualifiers="const">
@@ -26,10 +28,10 @@
 		</method>
 		<method name="get_motion">
 			<return type="Vector3" />
-			<argument index="0" name="pos" type="Vector3" />
-			<argument index="1" name="motion" type="Vector3" />
-			<argument index="2" name="aabb" type="AABB" />
-			<argument index="3" name="terrain" type="Node" />
+			<param index="0" name="pos" type="Vector3" />
+			<param index="1" name="motion" type="Vector3" />
+			<param index="2" name="aabb" type="AABB" />
+			<param index="3" name="terrain" type="Node" />
 			<description>
 				Given a motion vector, returns a modified vector telling you by how much to move your character. This is similar to [method KinematicBody.move_and_slide], except you have to apply the movement.
 			</description>
@@ -37,29 +39,37 @@
 		<method name="has_stepped_up" qualifiers="const">
 			<return type="bool" />
 			<description>
+				When step climbing is enabled, tells when the last call to [method get_motion] caused climbing to occur.
+				Climbing modifies the motion vector upwards so that the body is snapped on top of the step. This can have implications in character controller code, such as considering the character to be on the floor instead of having jumped.
 			</description>
 		</method>
 		<method name="is_step_climbing_enabled" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Tells if step climbing is enabled.
 			</description>
 		</method>
 		<method name="set_collision_mask">
 			<return type="void" />
-			<argument index="0" name="mask" type="int" />
+			<param index="0" name="mask" type="int" />
 			<description>
+				Sets the collision mask used to detect collidable voxels.
+				Only voxels sharing at least one bit between the masks will be detected.
+				This collision mask is specific to this collision system, and is defined in [member VoxelBlockyModel.collision_mask].
 			</description>
 		</method>
 		<method name="set_max_step_height">
 			<return type="void" />
-			<argument index="0" name="height" type="float" />
+			<param index="0" name="height" type="float" />
 			<description>
+				Sets the maximum height that can be climbed like "stairs".
 			</description>
 		</method>
 		<method name="set_step_climbing_enabled">
 			<return type="void" />
-			<argument index="0" name="enabled" type="bool" />
+			<param index="0" name="enabled" type="bool" />
 			<description>
+				When enabled, [method get_motion] will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 			</description>
 		</method>
 	</methods>

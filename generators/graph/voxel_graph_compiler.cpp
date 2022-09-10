@@ -755,6 +755,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				dg_node.is_input = true;
 				continue;
 
+			case VoxelGeneratorGraph::NODE_INPUT_SDF:
+				if (_program.sdf_input_address == -1) {
+					_program.sdf_input_address = mem.add_binding();
+				}
+				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.sdf_input_address;
+				dg_node.is_input = true;
+				continue;
+
 			case VoxelGeneratorGraph::NODE_SDF_PREVIEW:
 				continue;
 		}
@@ -764,9 +772,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 		CRASH_COND(node.type_id > 0xff);
 
 		if (order_index == xzy_start_index) {
-			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operation_adresses.size();
+			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operation_addresses.size();
 		}
-		_program.default_execution_map.operation_adresses.push_back(operations.size());
+		_program.default_execution_map.operation_addresses.push_back(operations.size());
 		if (debug) {
 			// Will be remapped later if the node is an expanded one
 			_program.default_execution_map.debug_nodes.push_back(node_id);

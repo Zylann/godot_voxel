@@ -3,7 +3,7 @@
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
 
-Singleton handling common voxel processing tasks in background threads.
+Singleton holding common settings and handling voxel processing tasks in background threads.
 
 ## Methods: 
 
@@ -24,11 +24,6 @@ The returned dictionary has the following structure:
 ```gdscript
 {
 	"thread_pools": {
-		"streaming": {
-			"tasks": int,
-			"active_threads": int,
-			"thread_count": int
-		},
 		"general": {
 			"tasks": int,
 			"active_threads": int,
@@ -38,14 +33,16 @@ The returned dictionary has the following structure:
 	"tasks": {
 		"streaming": int,
 		"meshing": int,
-		"generation": int
+		"generation": int,
+		"main_thread": int
 	},
 	"memory_pools": {
 		"voxel_used": int,
-		"voxel_total": int
+		"voxel_total": int,
+		"block_count": int
 	}
 }
 
 ```
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

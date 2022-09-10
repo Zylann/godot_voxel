@@ -4,14 +4,15 @@
 		Voxel volume using variable level of detail.
 	</brief_description>
 	<description>
+		Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel].
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
 		<method name="debug_dump_as_scene" qualifiers="const">
 			<return type="int" enum="Error" />
-			<argument index="0" name="path" type="String" />
-			<argument index="1" name="include_instancer" type="bool" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="include_instancer" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -22,14 +23,14 @@
 		</method>
 		<method name="debug_get_data_block_info" qualifiers="const">
 			<return type="Dictionary" />
-			<argument index="0" name="block_pos" type="Vector3" />
-			<argument index="1" name="lod" type="int" />
+			<param index="0" name="block_pos" type="Vector3" />
+			<param index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_get_draw_flag" qualifiers="const">
 			<return type="bool" />
-			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
+			<param index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
 			<description>
 			</description>
 		</method>
@@ -40,8 +41,8 @@
 		</method>
 		<method name="debug_get_mesh_block_info" qualifiers="const">
 			<return type="Dictionary" />
-			<argument index="0" name="block_pos" type="Vector3" />
-			<argument index="1" name="lod" type="int" />
+			<param index="0" name="block_pos" type="Vector3" />
+			<param index="1" name="lod" type="int" />
 			<description>
 			</description>
 		</method>
@@ -57,28 +58,28 @@
 		</method>
 		<method name="debug_print_sdf_top_down">
 			<return type="Array" />
-			<argument index="0" name="center" type="Vector3i" />
-			<argument index="1" name="extents" type="Vector3i" />
+			<param index="0" name="center" type="Vector3i" />
+			<param index="1" name="extents" type="Vector3i" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_raycast_mesh_block" qualifiers="const">
 			<return type="Array" />
-			<argument index="0" name="origin" type="Vector3" />
-			<argument index="1" name="dir" type="Vector3" />
+			<param index="0" name="origin" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_set_draw_enabled">
 			<return type="void" />
-			<argument index="0" name="enabled" type="bool" />
+			<param index="0" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
 		<method name="debug_set_draw_flag">
 			<return type="void" />
-			<argument index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
-			<argument index="1" name="enabled" type="bool" />
+			<param index="0" name="flag_index" type="int" enum="VoxelLodTerrain.DebugDrawFlag" />
+			<param index="1" name="enabled" type="bool" />
 			<description>
 			</description>
 		</method>
@@ -90,11 +91,13 @@
 		<method name="get_data_block_size" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets the size of one cunic data block in voxels.
 			</description>
 		</method>
 		<method name="get_process_callback" qualifiers="const">
 			<return type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
+				Gets which callback is used to run the main thread update of this node.
 			</description>
 		</method>
 		<method name="get_statistics" qualifiers="const">
@@ -121,6 +124,7 @@
 		<method name="get_voxel_tool">
 			<return type="VoxelTool" />
 			<description>
+				Gets an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
 			</description>
 		</method>
 		<method name="restart_stream">
@@ -132,69 +136,113 @@
 		<method name="save_modified_blocks">
 			<return type="void" />
 			<description>
+				Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
+				There is currently no reliable way to tell if saving has completed.
+				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
 		</method>
 		<method name="set_process_callback">
 			<return type="void" />
-			<argument index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
+			<param index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
+				Sets which process callback is used to run the main thread update of this node. By default, it uses [code]_process[/code].
 			</description>
 		</method>
 		<method name="voxel_to_data_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="lod_index" type="Vector3" />
-			<argument index="1" name="arg1" type="int" />
+			<param index="0" name="lod_index" type="Vector3" />
+			<param index="1" name="_unnamed_arg1" type="int" />
 			<description>
+				Converts a voxel position into a data block position for a specific LOD index.
 			</description>
 		</method>
 		<method name="voxel_to_mesh_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<argument index="0" name="lod_index" type="Vector3" />
-			<argument index="1" name="arg1" type="int" />
+			<param index="0" name="lod_index" type="Vector3" />
+			<param index="1" name="_unnamed_arg1" type="int" />
 			<description>
+				Converts a voxel position into a mesh block position for a specific LOD index.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
+			Collision layer used by generated colliders. Check Godot documentation for more information.
 		</member>
 		<member name="collision_lod_count" type="int" setter="set_collision_lod_count" getter="get_collision_lod_count" default="0">
+			How many LOD levels are set to generate colliders, starting from LOD 0.
 		</member>
 		<member name="collision_margin" type="float" setter="set_collision_margin" getter="get_collision_margin" default="0.04">
+			Collision margin used by generated colliders. Note that it may depend on which physics engine is used under the hood, as some don't use margins.
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+			Collision mask used by generated colliders. Check Godot documentation for more information.
 		</member>
 		<member name="collision_update_delay" type="int" setter="set_collision_update_delay" getter="get_collision_update_delay" default="0">
+			How long to wait before updating colliders after an edit, in milliseconds. Collider generation is expensive, so the intent is to smooth it out.
 		</member>
 		<member name="full_load_mode_enabled" type="bool" setter="set_full_load_mode_enabled" getter="is_full_load_mode_enabled" default="false">
+			If enabled, data streaming will be turned off, and all voxel data will be loaded from the [member stream] into memory.
+			This removes several constraints, such as being able to edit anywhere and allowing distant normalmaps to include edited regions. This comes at the expense of more memory usage. However, only edited regions use memory, so in practice it can be good enough.
 		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
+			If enabled, chunked colliders will be generated from meshes.
 		</member>
 		<member name="lod_count" type="int" setter="set_lod_count" getter="get_lod_count" default="4">
+			How many LOD levels to use. This should be tuned alongside [member lod_distance]: if you want to see very far, you need more LOD levels. This allows blocks to become larger the further away they are, to keep their numbers to an acceptable amount. In contrast, too few LOD levels means regions far away will have to use too many small blocks, which can affect performance.
 		</member>
 		<member name="lod_distance" type="float" setter="set_lod_distance" getter="get_lod_distance" default="48.0">
+			How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [member full_load_mode_enabled] is disabled, this also defines how far edits are allowed.
 		</member>
 		<member name="lod_fade_duration" type="float" setter="set_lod_fade_duration" getter="get_lod_fade_duration" default="0.0">
+			When set greater than 0, enables LOD fading. When mesh blocks get split/merged as level of detail changes, they will fade to make the transition less noticeable (or at least more pleasant). This feature requires to use a specific shader, check the online documentation or examples for more information.
 		</member>
 		<member name="material" type="Material" setter="set_material" getter="get_material">
+			Material used for the surface of the volume. The main usage of this node is with smooth voxels, which means if you want more than one "material" on the ground, you need to use splatmapping techniques with a shader. In addition, many features require shaders to work properly. Check the online documentation or examples for more information.
 		</member>
 		<member name="mesh_block_size" type="int" setter="set_mesh_block_size" getter="get_mesh_block_size" default="16">
+			Size of meshes used for chunks of this volume, in voxels. Can only be set to either 16 or 32. Using 32 is expected to increase rendering performance, and slightly increase the cost of edits.
+		</member>
+		<member name="normalmap_begin_lod_index" type="int" setter="set_normalmap_begin_lod_index" getter="get_normalmap_begin_lod_index" default="2">
+			From which LOD index normalmaps will be generated. There won't be normalmaps below this index.
+		</member>
+		<member name="normalmap_enabled" type="bool" setter="set_normalmap_enabled" getter="is_normalmap_enabled" default="false">
+			Enables generation of distant normalmaps. This is a feature used with smooth terrain only (SDF). It is an expensive feature but allows to bring a lot more detail to distant ground.
+			This feature requires to use a specific shader, check the online documentation or examples for more information.
+		</member>
+		<member name="normalmap_octahedral_encoding_enabled" type="bool" setter="set_octahedral_normal_encoding" getter="get_octahedral_normal_encoding" default="false">
+			Enables octahedral compression of normalmaps, which reduces memory usage caused by distant normalmaps by about 33%, with some impact on visual quality. Your shader may be modified accordingly to decode them.
+		</member>
+		<member name="normalmap_tile_resolution_max" type="int" setter="set_normalmap_tile_resolution_max" getter="get_normalmap_tile_resolution_max" default="8">
+			Maximum resolution of tiles in distant normalmaps.
+		</member>
+		<member name="normalmap_tile_resolution_min" type="int" setter="set_normalmap_tile_resolution_min" getter="get_normalmap_tile_resolution_min" default="4">
+			Minimum resolution of tiles in distant normalmaps.
+			This is the resolution at which normalmaps will begin with, at the LOD level defined in [member normalmap_begin_lod_index]. Resolutions will double at each LOD level, until they reach [member normalmap_tile_resolution_max].
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
+			Sets wether the [member generator] and the [member stream] will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
 		</member>
 		<member name="threaded_update_enabled" type="bool" setter="set_threaded_update_enabled" getter="is_threaded_update_enabled" default="false">
+			When enabled, this node will run a large part of its update cycle in a separate thread. Otherwise, it will run on the main thread.
 		</member>
 		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="512">
+			Maximum distance where terrain will load around viewers. If your terrain size is finite (like for a planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains.
 		</member>
 		<member name="voxel_bounds" type="AABB" setter="set_voxel_bounds" getter="get_voxel_bounds" default="AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09)">
+			Bounds within which volume data can exist (loaded or not), in voxels. By default, it is pseudo-infinite. If you make a planet, island or some sort of arena, you may want to choose a finite size.
+			Note, because this volume uses chunks with LOD, these bounds will snap to the closest chunk boundary.
 		</member>
 	</members>
 	<constants>
 		<constant name="PROCESS_CALLBACK_IDLE" value="0" enum="ProcessCallback">
+			The node will use [code]_process[/code] for the part of its logic running on the main thread.
 		</constant>
 		<constant name="PROCESS_CALLBACK_PHYSICS" value="1" enum="ProcessCallback">
+			The node will use [code]_physics_process[/code] for the part of its logic running on the main thread.
 		</constant>
 		<constant name="PROCESS_CALLBACK_DISABLED" value="2" enum="ProcessCallback">
+			The node will not update. Use with caution!
 		</constant>
 		<constant name="DEBUG_DRAW_OCTREE_NODES" value="0" enum="DebugDrawFlag">
 		</constant>

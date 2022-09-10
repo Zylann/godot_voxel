@@ -59,7 +59,7 @@ private:
 		CRASH_COND(stat.label != nullptr);
 		Label *name_label = memnew(Label);
 		name_label->set_text(short_name);
-		name_label->set_tooltip(long_name);
+		name_label->set_tooltip_text(long_name);
 		name_label->set_mouse_filter(Control::MOUSE_FILTER_PASS); // Necessary for tooltip to work
 		add_child(name_label);
 		stat.label = memnew(Label);

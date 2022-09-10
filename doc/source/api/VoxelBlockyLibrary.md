@@ -3,7 +3,15 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
+Contains a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
+## Description: 
+
+Provides a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlocky.md). Each model corresponds to an ID in voxel data, and is generally defined from a mesh. Some extra properties can also be defined, such as how sides get culled by neighbor voxels, or how it is treated by some functionality of the voxel engine.
+
+If you create this library from code, it needs to be baked at the end using the method bake function.
+
+The first model (at index 0) is conventionally used for "air" or "empty".
 
 ## Properties: 
 
@@ -36,6 +44,9 @@ Return                                                                          
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_atlas_size"></span> **atlas_size** = 16
 
+Sets a reference size of texture atlas. This is only used on models which have a geometry mode set to `GEOMETRY_CUBE`.
+
+This property is old and might be removed or changed in the future, as it only works in specific setups.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_bake_tangents"></span> **bake_tangents** = true
 
@@ -43,25 +54,34 @@ Enable this option if you need normal mapping on your voxels. If you don't need 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_count"></span> **voxel_count** = 0
 
+How many models the library can contain. You may set it first before adding models from a script.
 
 ## Method Descriptions
 
 - [void](#)<span id="i_bake"></span> **bake**( ) 
 
+Bakes the library. The data of models is optimized in order to combine them more efficiently when generating voxel meshes.
 
 - [VoxelBlockyModel](VoxelBlockyModel.md)<span id="i_create_voxel"></span> **create_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) 
 
+Creates a new model attached to this library.
 
 - [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html)<span id="i_get_materials"></span> **get_materials**( ) 
 
+Gets a list of all distinct materials found in all models of the library.
+
+Note, if at least one non-empty model has no material, there will be one `null` entry in this list to represent "The default material".
 
 - [VoxelBlockyModel](VoxelBlockyModel.md)<span id="i_get_voxel"></span> **get_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
+Gets a model from its ID.
 
 - [VoxelBlockyModel](VoxelBlockyModel.md)<span id="i_get_voxel_by_name"></span> **get_voxel_by_name**( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) name ) 
 
+Finds the first model having the specified name. If not found, returns `null`.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_index_from_name"></span> **get_voxel_index_from_name**( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) name ) 
 
+Finds the ID of the first model having the specified name. If not found, returns `null`.
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

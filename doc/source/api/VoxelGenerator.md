@@ -3,7 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from. All implementations must be thread safe.
+Base class to all voxel procedural generators.
 
 ## Methods: 
 
@@ -25,4 +25,4 @@ Generates a block of voxels within the specified world area.
 
 `lod`: Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0.
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

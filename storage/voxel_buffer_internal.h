@@ -125,6 +125,8 @@ public:
 
 	void set_default_values(FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> values);
 
+	static uint64_t get_default_value_static(unsigned int channel_index);
+
 	uint64_t get_voxel(int x, int y, int z, unsigned int channel_index) const;
 	void set_voxel(uint64_t value, int x, int y, int z, unsigned int channel_index);
 
@@ -505,6 +507,7 @@ private:
 	// TODO It may be preferable to actually move away from storing an RWLock in every buffer in the future.
 	// We should be able to find a solution because very few of these locks are actually used at a given time.
 	// It worked so far on PC but other platforms like the PS5 might have a pretty low limit (8K?)
+	// Also it's a heavy data structure, on Windows sizeof(RWLock) is 244.
 	RWLock _rw_lock;
 };
 
@@ -519,6 +522,9 @@ inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &vo
 		}
 	}
 }
+
+void get_unscaled_sdf(const VoxelBufferInternal &voxels, Span<float> sdf);
+void scale_and_store_sdf(VoxelBufferInternal &voxels, Span<float> sdf);
 
 } // namespace zylann::voxel
 

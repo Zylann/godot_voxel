@@ -75,7 +75,7 @@ Error VoxelVoxLoader::load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels
 }
 
 void VoxelVoxLoader::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels"), &VoxelVoxLoader::load_from_file);
+	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels", "palette"), &VoxelVoxLoader::load_from_file);
 }
 
 } // namespace zylann::voxel

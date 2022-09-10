@@ -676,7 +676,8 @@ void VoxelBlockyModel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_mesh_collision_enabled", "surface_index", "enabled"),
 			&VoxelBlockyModel::set_mesh_collision_enabled);
-	ClassDB::bind_method(D_METHOD("is_mesh_collision_enabled"), &VoxelBlockyModel::is_mesh_collision_enabled);
+	ClassDB::bind_method(
+			D_METHOD("is_mesh_collision_enabled", "surface_index"), &VoxelBlockyModel::is_mesh_collision_enabled);
 
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &VoxelBlockyModel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &VoxelBlockyModel::_b_get_collision_aabbs);

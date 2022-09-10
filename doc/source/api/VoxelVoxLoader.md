@@ -18,4 +18,4 @@ Return                                                                | Signatur
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_from_file"></span> **load_from_file**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) arg2 ) 
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

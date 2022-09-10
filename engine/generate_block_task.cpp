@@ -1,6 +1,6 @@
 #include "generate_block_task.h"
 #include "../storage/voxel_buffer_internal.h"
-#include "../storage/voxel_data_map.h"
+#include "../storage/voxel_data.h"
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
@@ -45,7 +45,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	max_lod_hint = result.max_lod_hint;
 
 	if (data != nullptr) {
-		data->modifiers.apply(
+		data->get_modifiers().apply(
 				query_data.voxel_buffer, AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << lod));
 	}
 

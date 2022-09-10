@@ -1,6 +1,6 @@
 #include "mesh_block_task.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../storage/voxel_data_map.h"
+#include "../storage/voxel_data.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
 #include "../util/godot/mesh.h"
@@ -133,7 +133,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 					for (unsigned int box_index = 0; box_index < count; ++box_index) {
 						Box3i box = boxes_to_generate[box_index];
-						box.difference(block_box, boxes_to_generate);
+						box.difference_to_vec(block_box, boxes_to_generate);
 #ifdef DEBUG_ENABLED
 						CRASH_COND(box_index >= boxes_to_generate.size());
 #endif
@@ -259,7 +259,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	const VoxelModifierStack *modifiers = data != nullptr ? &data->modifiers : nullptr;
+	const VoxelModifierStack *modifiers = data != nullptr ? &data->get_modifiers() : nullptr;
 
 	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
@@ -350,7 +350,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}
 
-	if (VoxelEngine::get_singleton().is_threaded_mesh_resource_building_enabled()) {
+	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
 		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);

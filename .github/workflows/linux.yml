@@ -22,19 +22,19 @@ jobs:
             float: 32
             target: debug
             production: no
-            executable_name: godot.linuxbsd.tools.64
+            executable_name: godot.linuxbsd.tools.x86_64
 
           - name: Editor build
             float: 32
             target: release_debug
             production: yes
-            executable_name: godot.linuxbsd.opt.tools.64
+            executable_name: godot.linuxbsd.opt.tools.x86_64
 
           - name: Editor build with 64-bit floats
             float: 64
             target: release_debug
             production: yes
-            executable_name: godot.linuxbsd.double.opt.tools.64
+            executable_name: godot.linuxbsd.double.opt.tools.x86_64
 
     steps:
       # Clone Godot

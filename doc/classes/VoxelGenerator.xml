@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelGenerator" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Base class to all voxel procedural generators. If you want to define a custom one with a script, this is the class you should extend from. All implementations must be thread safe.
+		Base class to all voxel procedural generators.
 	</brief_description>
 	<description>
 	</description>
@@ -10,9 +10,9 @@
 	<methods>
 		<method name="generate_block">
 			<return type="void" />
-			<argument index="0" name="out_buffer" type="VoxelBuffer" />
-			<argument index="1" name="origin_in_voxels" type="Vector3" />
-			<argument index="2" name="lod" type="int" />
+			<param index="0" name="out_buffer" type="VoxelBuffer" />
+			<param index="1" name="origin_in_voxels" type="Vector3" />
+			<param index="2" name="lod" type="int" />
 			<description>
 				Generates a block of voxels within the specified world area.
 				[code]out_buffer[/code]: Buffer in which voxel data will be generated. It should not be [code]null[/code] and should be given the requested size. Do not keep a reference on it after the call.

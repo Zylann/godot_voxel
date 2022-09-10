@@ -134,7 +134,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Could use `can_create_resources_async` but this is internal.
 		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
 		// resource creation.
-		VoxelEngine::get_singleton().set_threaded_mesh_resource_building_enabled(
+		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
 				RenderingServer::get_singleton()->is_low_end() == false);
 
 		gd::VoxelEngine::create_singleton();
@@ -227,6 +227,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
 		ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
 		ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
+		ZN_PRINT_VERBOSE(format("Size of RWLock: {}", sizeof(zylann::RWLock)));
+		ZN_PRINT_VERBOSE(format("Size of Mutex: {}", sizeof(zylann::Mutex)));
+		ZN_PRINT_VERBOSE(format("Size of BinaryMutex: {}", sizeof(zylann::BinaryMutex)));
 		ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
@@ -234,8 +237,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelInstancer: {}", sizeof(VoxelInstancer)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelDataMap: {}", sizeof(VoxelDataMap)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelData: {}", sizeof(VoxelData)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelMesher::Output: {}", sizeof(VoxelMesher::Output)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelEngine::BlockMeshOutput: {}", sizeof(VoxelEngine::BlockMeshOutput)));
+		ZN_PRINT_VERBOSE(format("Size of VoxelModifierStack: {}", sizeof(VoxelModifierStack)));
 		if (RenderingDevice::get_singleton() != nullptr) {
 			ZN_PRINT_VERBOSE(format("TextureArray max layers: {}",
 					RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS)));

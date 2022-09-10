@@ -148,7 +148,7 @@ void VoxelMeshSDFViewer::update_slice_spinbox() {
 	_slice_spinbox->set_editable(true);
 	_slice_spinbox->set_min(0);
 	Ref<gd::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
-	_slice_spinbox->set_max(vb->get_size_y());
+	_slice_spinbox->set_max(vb->get_size().y);
 	_slice_spinbox->set_step(1);
 	_slice_spinbox->set_value(_slice_y);
 
@@ -157,7 +157,7 @@ void VoxelMeshSDFViewer::update_slice_spinbox() {
 
 void VoxelMeshSDFViewer::center_slice_y() {
 	ZN_ASSERT_RETURN(_mesh_sdf.is_valid() && _mesh_sdf->is_baked());
-	const int size_y = _mesh_sdf->get_voxel_buffer()->get_size_y();
+	const int size_y = _mesh_sdf->get_voxel_buffer()->get_size().y;
 	const int slice_y = size_y / 2;
 	_slice_y = slice_y;
 }

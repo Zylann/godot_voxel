@@ -7,12 +7,12 @@
 namespace zylann::voxel {
 
 // Provides collision to VoxelInstancer multimesh instances
-class VoxelInstancerRigidBody : public RigidDynamicBody3D {
-	GDCLASS(VoxelInstancerRigidBody, RigidDynamicBody3D);
+class VoxelInstancerRigidBody : public RigidBody3D {
+	GDCLASS(VoxelInstancerRigidBody, RigidBody3D);
 
 public:
 	VoxelInstancerRigidBody() {
-		set_freeze_mode(RigidDynamicBody3D::FREEZE_MODE_STATIC);
+		set_freeze_mode(RigidBody3D::FREEZE_MODE_STATIC);
 		set_freeze_enabled(true);
 	}
 

@@ -16,7 +16,25 @@ jobs:
   windows-editor:
     # Windows 10 with latest image
     runs-on: "windows-latest"
-    name: Editor
+    name: ${{matrix.name}}
+
+    strategy:
+      matrix:
+        include:
+          - name: Editor build
+            target: release_debug
+            tools: yes
+            #cache_action: actions/cache@v2
+            executable_name: godot.windows.opt.tools.x86_64.exe
+
+          - name: Release build
+            target: release
+            tools: no
+            # TODO I don't remember why this one uses a different action?
+            # Either way, Github Actions does not support matrix variables in `uses` yet.
+            # See https://github.com/orgs/community/discussions/9049
+            #cache_action: RevoluPowered/cache@v2.1
+            executable_name: godot.windows.opt.x86_64.exe
 
     steps:
       # Clone Godot
@@ -34,6 +52,7 @@ jobs:
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
         id: windows-editor-cache
+        #uses: ${{matrix.cache_action}}
         uses: actions/cache@v2
         with:
           path: /.scons_cache/
@@ -65,7 +84,7 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=yes tests=no target=release_debug
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=${{matrix.tools}} tests=no target=${{matrix.target}}
 
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
@@ -76,71 +95,6 @@ jobs:
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: godot.windows.opt.tools.64.exe
-          path: bin/godot.windows.opt.tools.64.exe
+          name: ${{matrix.executable_name}}
+          path: bin/${{matrix.executable_name}}
 
-  windows-template:
-    # Windows 10 with latest image
-    runs-on: "windows-latest"
-    name: Release
-
-    steps:
-      # Clone Godot
-      - uses: actions/checkout@v2
-        with:
-          repository: godotengine/godot
-          ref: master
-
-      # Clone our module under the correct directory
-      - uses: actions/checkout@v2
-        with:
-          path: modules/voxel
-
-      # Upload cache on completion and check it out now
-      # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
-      - name: Load .scons_cache directory
-        id: windows-editor-cache
-        uses: RevoluPowered/cache@v2.1
-        with:
-          path: /.scons_cache/
-          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-          restore-keys: |
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
-
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons pywin32
-          python --version
-          scons --version
-
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
-      - name: Compilation
-        env:
-          SCONS_CACHE: /.scons_cache/
-        run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=no tests=no target=release
-
-      # TODO Such tests are able to run from Godot 4.0 only
-      # Execute unit tests for the editor
-      #- name: Unit Tests
-      #  run: |
-      #    ./bin/godot.windows.opt.tools.64.exe --test
-
-      # Make build available
-      - uses: actions/upload-artifact@v2
-        with:
-          name: godot.windows.opt.64.exe
-          path: bin/godot.windows.opt.64.exe

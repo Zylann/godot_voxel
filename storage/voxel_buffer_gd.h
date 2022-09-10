@@ -89,16 +89,6 @@ public:
 	Vector3i get_size() const {
 		return _buffer->get_size();
 	}
-	// TODO Deprecate
-	int get_size_x() const {
-		return _buffer->get_size().x;
-	}
-	int get_size_y() const {
-		return _buffer->get_size().x;
-	}
-	int get_size_z() const {
-		return _buffer->get_size().x;
-	}
 
 	void create(int x, int y, int z) {
 		_buffer->create(x, y, z);

@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelInstanceComponent" inherits="Node" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		This node gets attached to scene items instanced by [VoxelInstancer].
 	</brief_description>
 	<description>
+		[VoxelInstancer] internally adds this node to instanced scenes, so it can track when they get destroyed or removed from the scene tree.
 	</description>
 	<tutorials>
 	</tutorials>

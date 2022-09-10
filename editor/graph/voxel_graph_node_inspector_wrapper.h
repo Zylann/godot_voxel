@@ -3,8 +3,7 @@
 
 #include "../../generators/graph/voxel_generator_graph.h"
 #include <core/object/ref_counted.h>
-
-class UndoRedo;
+#include <editor/editor_undo_redo_manager.h>
 
 namespace zylann::voxel {
 
@@ -16,7 +15,8 @@ class VoxelGraphEditor;
 class VoxelGraphNodeInspectorWrapper : public RefCounted {
 	GDCLASS(VoxelGraphNodeInspectorWrapper, RefCounted)
 public:
-	void setup(Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur, VoxelGraphEditor *ed);
+	void setup(
+			Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed);
 	inline Ref<VoxelGeneratorGraph> get_graph() const {
 		return _graph;
 	}
@@ -32,7 +32,10 @@ private:
 
 	Ref<VoxelGeneratorGraph> _graph;
 	uint32_t _node_id = ProgramGraph::NULL_ID;
-	UndoRedo *_undo_redo = nullptr;
+	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
+	// DictionaryPropertyEdit kept using this manager when it got introduced in place of the old global UndoRedo...
+	// there doesn't seem to be any documentation yet for this class
+	Ref<EditorUndoRedoManager> _undo_redo;
 	VoxelGraphEditor *_graph_editor = nullptr;
 };
 

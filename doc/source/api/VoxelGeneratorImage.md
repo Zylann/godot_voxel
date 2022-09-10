@@ -26,4 +26,4 @@ Type     | Name                             | Default
 - [Image](https://docs.godotengine.org/en/stable/classes/class_image.html)<span id="i_image"></span> **image**
 
 
-_Generated on Aug 20, 2022_
+_Generated on Aug 25, 2022_

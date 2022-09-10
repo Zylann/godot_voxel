@@ -13,63 +13,80 @@
 		<method name="get_id" qualifiers="const">
 			<return type="int" />
 			<description>
+				Gets the ID of the model. This ID is used in voxel data.
 			</description>
 		</method>
 		<method name="get_material_override" qualifiers="const">
 			<return type="Material" />
-			<argument index="0" name="index" type="int" />
+			<param index="0" name="index" type="int" />
 			<description>
+				Gets the material override for a specific surface of the model.
 			</description>
 		</method>
 		<method name="is_empty" qualifiers="const">
 			<return type="bool" />
 			<description>
+				Tells if the model contains any geometry.
 			</description>
 		</method>
 		<method name="is_mesh_collision_enabled" qualifiers="const">
 			<return type="bool" />
-			<argument index="0" name="arg0" type="int" />
+			<param index="0" name="_unnamed_arg0" type="int" />
 			<description>
+				Tells if a specific surface produces mesh-based collisions.
 			</description>
 		</method>
 		<method name="set_id">
 			<return type="void" />
-			<argument index="0" name="id" type="int" />
+			<param index="0" name="id" type="int" />
 			<description>
+				Sets the ID of the model.
+				This method is deprecated. Changing the ID of a model after it's been added to a library is not supported.
 			</description>
 		</method>
 		<method name="set_material_override">
 			<return type="void" />
-			<argument index="0" name="index" type="int" />
-			<argument index="1" name="material" type="Material" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="material" type="Material" />
 			<description>
+				Sets a material override for a specific surface of the model. It allows to use the same mesh on multiple models, but using different materials on each.
 			</description>
 		</method>
 		<method name="set_mesh_collision_enabled">
 			<return type="void" />
-			<argument index="0" name="surface_index" type="int" />
-			<argument index="1" name="enabled" type="bool" />
+			<param index="0" name="surface_index" type="int" />
+			<param index="1" name="enabled" type="bool" />
 			<description>
+				Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 			</description>
 		</method>
 	</methods>
 	<members>
 		<member name="collision_aabbs" type="Array" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
+			List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover]. They are not used with mesh-based collision.
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
+			Collision mask used for box-based collision [VoxelBoxMover] and voxel raycasts ([VoxelToolTerrain]). It is not used for mesh-based collisions.
 		</member>
 		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
+			Color of the model. It will be used to modulate its color when built into a voxel mesh.
 		</member>
 		<member name="custom_mesh" type="Mesh" setter="set_custom_mesh" getter="get_custom_mesh">
+			Specifies the mesh of the model. Ultimately, all models use a mesh.
 		</member>
 		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="VoxelBlockyModel.GeometryType" default="0">
+			Tells which geometry type to use. Most of the time you may use [constant GEOMETRY_CUSTOM_MESH], but some shortcuts can be used for cubes or empty models.
 		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
 			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].
 		</member>
 		<member name="transparency_index" type="int" setter="set_transparency_index" getter="get_transparency_index" default="0">
+			Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
+			Equal indices culls the face, different indexes doesn't.
 		</member>
 		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
+			Tells if the model is transparent in the context of sides being culled by neighbor voxels.
+			This is a legacy property, [member transparency_index] may be used instead.
 		</member>
 		<member name="voxel_name" type="StringName" setter="set_voxel_name" getter="get_voxel_name" default="&amp;&quot;&quot;">
 			Name that can be used for convenience, when looking up a specific [VoxelBlockyModel] from [VoxelBlockyLibrary].
@@ -81,6 +98,7 @@
 		</constant>
 		<constant name="GEOMETRY_CUBE" value="1" enum="GeometryType">
 			Use the shape of a generated cube. It is useful for testing and quick configuration.
+			In this mode, tile positions for sides of the cube are made available in the editor. They refer to coordinates of tiles in a texture atlas. You may use an atlas in order to use them. The size of the atlas may be set in [member VoxelBlockyLibrary.atlas_size].
 		</constant>
 		<constant name="GEOMETRY_CUSTOM_MESH" value="2" enum="GeometryType">
 			Use the mesh specified in the [member mesh] property. This is the most versatile way to create shapes.

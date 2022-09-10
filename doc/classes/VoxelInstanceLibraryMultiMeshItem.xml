@@ -9,20 +9,20 @@
 	<methods>
 		<method name="get_mesh" qualifiers="const">
 			<return type="Mesh" />
-			<argument index="0" name="mesh_lod_index" type="int" />
+			<param index="0" name="mesh_lod_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_mesh">
 			<return type="void" />
-			<argument index="0" name="mesh" type="Mesh" />
-			<argument index="1" name="mesh_lod_index" type="int" />
+			<param index="0" name="mesh" type="Mesh" />
+			<param index="1" name="mesh_lod_index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="setup_from_template">
 			<return type="void" />
-			<argument index="0" name="node" type="Node" />
+			<param index="0" name="node" type="Node" />
 			<description>
 			</description>
 		</method>
@@ -45,6 +45,8 @@
 		<member name="mesh_lod2" type="Mesh" setter="_set_mesh_lod2" getter="_get_mesh_lod2">
 		</member>
 		<member name="mesh_lod3" type="Mesh" setter="_set_mesh_lod3" getter="_get_mesh_lod3">
+		</member>
+		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
 		</member>
 	</members>
 	<constants>

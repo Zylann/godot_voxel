@@ -14,7 +14,7 @@ const char *AUTOCONNECT_PROPERY_NAME = "autoconnect_default_inputs";
 }
 
 void VoxelGraphNodeInspectorWrapper::setup(
-		Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, UndoRedo *ur, VoxelGraphEditor *ed) {
+		Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed) {
 	_graph = p_graph;
 	_node_id = p_node_id;
 	_undo_redo = ur;
@@ -89,8 +89,8 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 // Contrary to VisualScript (for which this has to be done manually to the user), submitting the text field containing
 // the expression's code also changes dynamic inputs of the node and reconnects existing connections, all as one
 // UndoRedo action.
-static void update_expression_inputs(
-		VoxelGeneratorGraph &generator, uint32_t node_id, String code, UndoRedo &ur, VoxelGraphEditor &graph_editor) {
+static void update_expression_inputs(VoxelGeneratorGraph &generator, uint32_t node_id, String code,
+		EditorUndoRedoManager &ur, VoxelGraphEditor &graph_editor) {
 	//
 	const CharString code_utf8 = code.utf8();
 	std::vector<std::string_view> new_input_names;
@@ -168,7 +168,7 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	ERR_FAIL_COND_V(graph.is_null(), false);
 
 	ERR_FAIL_COND_V(_undo_redo == nullptr, false);
-	UndoRedo &ur = *_undo_redo;
+	EditorUndoRedoManager &ur = **_undo_redo;
 
 	if (p_name == "name") {
 		String previous_name = graph->get_node_name(_node_id);

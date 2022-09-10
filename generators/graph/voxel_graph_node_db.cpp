@@ -301,6 +301,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.outputs.push_back(Port("z"));
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_SDF];
+		t.name = "InputSDF";
+		t.category = CATEGORY_INPUT;
+		t.outputs.push_back(Port("sdf"));
+	}
+	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
 		t.name = "OutputSDF";
 		t.category = CATEGORY_OUTPUT;
@@ -309,6 +315,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			ZN_ASSERT(out.data != nullptr);
 			memcpy(out.data, input.data, input.size * sizeof(float));
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -1026,14 +1033,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = p.curve->interpolate_baked(a.data[i]);
+				out.data[i] = p.curve->sample_baked(a.data[i]);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			const Params p = ctx.get_params<Params>();
 			if (a.is_single_value()) {
-				const float v = p.curve->interpolate_baked(a.min);
+				const float v = p.curve->sample_baked(a.min);
 				ctx.set_output(0, Interval::from_single_value(v));
 			} else {
 				const Interval r = get_curve_range(*p.curve, p.curve_range_data->sections, a);
@@ -1256,7 +1263,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.inputs.push_back(Port("y", AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("z", AUTO_CONNECT_Z));
 		// TODO Is it worth it making radius an input?
-		t.inputs.push_back(Port("radius"));
+		t.inputs.push_back(Port("radius", 1.f));
 		t.outputs.push_back(Port("sdf"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);

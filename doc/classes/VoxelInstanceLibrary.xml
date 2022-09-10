@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelInstanceLibrary" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID
+		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID.
 	</brief_description>
 	<description>
 	</description>
@@ -10,8 +10,8 @@
 	<methods>
 		<method name="add_item">
 			<return type="void" />
-			<argument index="0" name="id" type="int" />
-			<argument index="1" name="arg1" type="VoxelInstanceLibraryItem" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="_unnamed_arg1" type="VoxelInstanceLibraryItem" />
 			<description>
 			</description>
 		</method>
@@ -22,19 +22,19 @@
 		</method>
 		<method name="find_item_by_name" qualifiers="const">
 			<return type="int" />
-			<argument index="0" name="name" type="String" />
+			<param index="0" name="name" type="String" />
 			<description>
 			</description>
 		</method>
 		<method name="get_item" qualifiers="const">
 			<return type="VoxelInstanceLibraryItem" />
-			<argument index="0" name="id" type="int" />
+			<param index="0" name="id" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="remove_item">
 			<return type="void" />
-			<argument index="0" name="id" type="int" />
+			<param index="0" name="id" type="int" />
 			<description>
 			</description>
 		</method>

@@ -58,6 +58,7 @@ Godot 4 is required from this version.
     - `VoxelLodTerrain`: added debug gizmos to see mesh updates
     - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
     - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
+    - `VoxelToolLodTerrain`: added `do_graph` to run a custom brush based on `VoxelGeneratorGraph` in a specific area. An `InputSDF` node was added in order to support SDF modifications.
     - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
     - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
 

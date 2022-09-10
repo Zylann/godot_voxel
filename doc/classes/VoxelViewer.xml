@@ -17,7 +17,7 @@
 		</method>
 		<method name="set_network_peer_id">
 			<return type="void" />
-			<argument index="0" name="id" type="int" />
+			<param index="0" name="id" type="int" />
 			<description>
 			</description>
 		</method>

@@ -216,10 +216,10 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 				if (xzy_start_not_assigned && node.op_address >= program.xzy_start_op_address) {
 					// This should be correct as long as the list of nodes in the graph follows the same re-ordered
 					// optimization done in `compile()` such that all nodes not depending on Y come first
-					execution_map.xzy_start_index = execution_map.operation_adresses.size();
+					execution_map.xzy_start_index = execution_map.operation_addresses.size();
 					xzy_start_not_assigned = false;
 				}
-				execution_map.operation_adresses.push_back(node.op_address);
+				execution_map.operation_addresses.push_back(node.op_address);
 				break;
 
 			default:
@@ -230,8 +230,9 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const {
+	float sd_in = 0.f;
 	generate_set(state, Span<float>(&position_f.x, 1), Span<float>(&position_f.y, 1), Span<float>(&position_f.z, 1),
-			false, execution_map);
+			Span<float>(&sd_in, 1), false, execution_map);
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const {
@@ -241,7 +242,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 	}
 
 	// Note: this must be after we resize the vector
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers = to_span(state.buffers);
 	state.buffer_size = buffer_size;
 
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
@@ -251,10 +252,11 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 		if (buffer_spec.is_binding) {
 			if (buffer.is_binding) {
 				// Forgot to unbind?
-				CRASH_COND(buffer.data != nullptr);
+				ZN_ASSERT(buffer.data == nullptr);
 			} else if (buffer.data != nullptr) {
 				// Deallocate this buffer if it wasnt a binding and contained something
 				memfree(buffer.data);
+				buffer.data = nullptr;
 			}
 		}
 
@@ -271,7 +273,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 				continue;
 			}
 			// We don't expect previous stuff in those buffers since we just created their slots
-			CRASH_COND(buffer.data != nullptr);
+			ZN_ASSERT(buffer.data == nullptr);
 			// TODO Use pool?
 			// New buffers get an up-to-date size, but must also comply with common capacity
 			const unsigned int bs = math::max(state.buffer_capacity, buffer_size);
@@ -367,8 +369,24 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	return params;
 }
 
-void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, bool skip_xz,
-		const ExecutionMap *execution_map) const {
+bool VoxelGraphRuntime::has_input(unsigned int node_type) const {
+	switch (node_type) {
+		case VoxelGeneratorGraph::NODE_INPUT_X:
+			return _program.x_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_Y:
+			return _program.y_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_Z:
+			return _program.z_input_address != -1;
+		case VoxelGeneratorGraph::NODE_INPUT_SDF:
+			return _program.sdf_input_address != -1;
+		default:
+			ZN_PRINT_ERROR(format("Unknown input node type {}", node_type));
+			return false;
+	}
+}
+
+void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z,
+		Span<float> in_sdf, bool skip_xz, const ExecutionMap *execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
@@ -390,6 +408,9 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
 	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size()));
+	if (_program.sdf_input_address != -1) {
+		CRASH_COND(in_sdf.size() != in_x.size());
+	}
 #endif
 
 #ifdef TOOLS_ENABLED
@@ -411,7 +432,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 #endif
 #endif
 
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<Buffer> buffers = to_span(state.buffers);
 
 	// Bind inputs
 	if (_program.x_input_address != -1) {
@@ -423,16 +444,19 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	if (_program.z_input_address != -1) {
 		L::bind_buffer(buffers, _program.z_input_address, in_z);
 	}
+	if (_program.sdf_input_address != -1) {
+		L::bind_buffer(buffers, _program.sdf_input_address, in_sdf);
+	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr
-			? to_span_const(execution_map->operation_adresses)
-			: to_span_const(_program.default_execution_map.operation_adresses);
-	if (skip_xz && op_adresses.size() > 0) {
+	Span<const uint16_t> op_addresses = execution_map != nullptr
+			? to_span_const(execution_map->operation_addresses)
+			: to_span_const(_program.default_execution_map.operation_addresses);
+	if (skip_xz && op_addresses.size() > 0) {
 		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index
 															 : _program.default_execution_map.xzy_start_index;
-		op_adresses = op_adresses.sub(offset);
+		op_addresses = op_addresses.sub(offset);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -440,8 +464,8 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	const bool profile = state.debug_profiler_times.size() > 0;
 #endif
 
-	for (unsigned int execution_map_index = 0; execution_map_index < op_adresses.size(); ++execution_map_index) {
-		unsigned int pc = op_adresses[execution_map_index];
+	for (unsigned int execution_map_index = 0; execution_map_index < op_addresses.size(); ++execution_map_index) {
+		unsigned int pc = op_addresses[execution_map_index];
 
 		const uint16_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
@@ -480,18 +504,22 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	if (_program.z_input_address != -1) {
 		L::unbind_buffer(buffers, _program.z_input_address);
 	}
+	if (_program.sdf_input_address != -1) {
+		L::unbind_buffer(buffers, _program.sdf_input_address);
+	}
 }
 
 // TODO Accept float bounds
-void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i max_pos) const {
+void VoxelGraphRuntime::analyze_range(
+		State &state, Vector3i min_pos, Vector3i max_pos, math::Interval sdf_input_range) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED
 	ERR_FAIL_COND(state.ranges.size() != _program.buffer_count);
 #endif
 
-	Span<math::Interval> ranges(state.ranges, 0, state.ranges.size());
-	Span<Buffer> buffers(state.buffers, 0, state.buffers.size());
+	Span<math::Interval> ranges = to_span(state.ranges);
+	Span<Buffer> buffers = to_span(state.buffers);
 
 	// Reset users count, as they might be decreased during the analysis
 	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
@@ -503,6 +531,9 @@ void VoxelGraphRuntime::analyze_range(State &state, Vector3i min_pos, Vector3i m
 	ranges[_program.x_input_address] = math::Interval(min_pos.x, max_pos.x);
 	ranges[_program.y_input_address] = math::Interval(min_pos.y, max_pos.y);
 	ranges[_program.z_input_address] = math::Interval(min_pos.z, max_pos.z);
+	if (_program.sdf_input_address != -1) {
+		ranges[_program.sdf_input_address] = sdf_input_range;
+	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
