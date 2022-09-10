@@ -5,7 +5,11 @@
 #include "../util/tasks/threaded_task.h"
 #include "streaming_dependency.h"
 
-namespace zylann::voxel {
+namespace zylann {
+
+class AsyncDependencyTracker;
+
+namespace voxel {
 
 class SaveBlockDataTask : public IThreadedTask {
 public:
@@ -43,6 +47,7 @@ private:
 	std::shared_ptr<AsyncDependencyTracker> _tracker;
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
 #endif // SAVE_BLOCK_DATA_TASK_H

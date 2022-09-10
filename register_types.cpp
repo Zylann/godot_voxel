@@ -36,11 +36,13 @@
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/variable_lod/voxel_lod_terrain.h"
 #include "terrain/voxel_mesh_block.h"
+#include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 #include "util/string_funcs.h"
+#include "util/tasks/async_dependency_tracker.h"
 #include "util/tasks/godot/threaded_task_gd.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
@@ -228,6 +230,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of RefCounted: {}", sizeof(RefCounted)));
 		ZN_PRINT_VERBOSE(format("Size of Node: {}", sizeof(Node)));
 		ZN_PRINT_VERBOSE(format("Size of Node3D: {}", sizeof(Node3D)));
+
 		ZN_PRINT_VERBOSE(format("Size of RWLock: {}", sizeof(zylann::RWLock)));
 		ZN_PRINT_VERBOSE(format("Size of Mutex: {}", sizeof(zylann::Mutex)));
 		ZN_PRINT_VERBOSE(format("Size of BinaryMutex: {}", sizeof(zylann::BinaryMutex)));
@@ -242,6 +245,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ZN_PRINT_VERBOSE(format("Size of VoxelMesher::Output: {}", sizeof(VoxelMesher::Output)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelEngine::BlockMeshOutput: {}", sizeof(VoxelEngine::BlockMeshOutput)));
 		ZN_PRINT_VERBOSE(format("Size of VoxelModifierStack: {}", sizeof(VoxelModifierStack)));
+		ZN_PRINT_VERBOSE(format("Size of AsyncDependencyTracker: {}", sizeof(AsyncDependencyTracker)));
+
 		if (RenderingDevice::get_singleton() != nullptr) {
 			ZN_PRINT_VERBOSE(format("TextureArray max layers: {}",
 					RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS)));

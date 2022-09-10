@@ -1,6 +1,7 @@
 #include "../../edition/voxel_tool.h"
 #include "../../engine/save_block_data_task.h"
 #include "../../util/container_funcs.h"
+#include "../../util/dstack.h"
 #include "../../util/godot/multimesh.h"
 #include "../../util/godot/node.h"
 #include "../../util/godot/ref_counted.h"
@@ -792,6 +793,8 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 	Lod &lod = _lods[lod_index];
 
+	BufferedTaskScheduler &tasks = BufferedTaskScheduler::get_for_current_thread();
+
 	// Remove data blocks
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_data_block_size_po2);
 	ERR_FAIL_COND(render_to_data_factor <= 0 || render_to_data_factor > 2);
@@ -807,12 +810,17 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
 				if (modified_block_it != lod.modified_blocks.end()) {
-					save_block(data_grid_pos, lod_index);
+					SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr);
 					lod.modified_blocks.erase(modified_block_it);
+					if (task != nullptr) {
+						tasks.push_io_task(task);
+					}
 				}
 			}
 		}
 	}
+
+	tasks.flush();
 
 	// Remove render blocks
 	for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
@@ -827,11 +835,16 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 	}
 }
 
-void VoxelInstancer::save_all_modified_blocks() {
+void VoxelInstancer::save_all_modified_blocks(
+		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker) {
+	ZN_DSTACK();
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
-			save_block(*it, lod_index);
+			SaveBlockDataTask *task = save_block(*it, lod_index, tracker);
+			if (task != nullptr) {
+				tasks.push_io_task(task);
+			}
 		}
 		lod.modified_blocks.clear();
 	}
@@ -1166,10 +1179,11 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	}
 }
 
-void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
+SaveBlockDataTask *VoxelInstancer::save_block(
+		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND(_library.is_null());
-	ERR_FAIL_COND(_parent == nullptr);
+	ERR_FAIL_COND_V(_library.is_null(), nullptr);
+	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
 
 	ZN_PRINT_VERBOSE(format("Requesting save of instance block {} lod {}", data_grid_pos, lod_index));
 
@@ -1180,7 +1194,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	data->position_range = data_block_size;
 
 	const int render_to_data_factor = (1 << _parent_mesh_block_size_po2) / (1 << _parent_data_block_size_po2);
-	ERR_FAIL_COND_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, "Unsupported block size");
+	ERR_FAIL_COND_V_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, nullptr, "Unsupported block size");
 
 	const int render_block_size_base = (1 << _parent_mesh_block_size_po2);
 	const int render_block_size = render_block_size_base << lod_index;
@@ -1201,7 +1215,7 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 
 		const Layer &layer = get_layer_const(layer_id);
 
-		ERR_FAIL_COND(layer_id < 0);
+		ERR_FAIL_COND_V(layer_id < 0, nullptr);
 
 		const auto render_block_it = layer.blocks.find(render_block_pos);
 		if (render_block_it == layer.blocks.end()) {
@@ -1316,10 +1330,9 @@ void VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index) const {
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-			volume_id, data_grid_pos, lod_index, data_block_size, std::move(data), stream_dependency));
+			volume_id, data_grid_pos, lod_index, data_block_size, std::move(data), stream_dependency, tracker));
 
-	// No priority data, saving doesnt need sorting
-	VoxelEngine::get_singleton().push_async_io_task(task);
+	return task;
 }
 
 void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Transform3D &parent_transform,

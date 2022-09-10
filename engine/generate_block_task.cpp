@@ -5,6 +5,7 @@
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
+#include "../util/tasks/async_dependency_tracker.h"
 #include "save_block_data_task.h"
 #include "voxel_engine.h"
 
@@ -64,8 +65,8 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesnt need sorting
 
-			SaveBlockDataTask *save_task =
-					memnew(SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency));
+			SaveBlockDataTask *save_task = memnew(
+					SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency, nullptr));
 
 			VoxelEngine::get_singleton().push_async_task(save_task);
 		}

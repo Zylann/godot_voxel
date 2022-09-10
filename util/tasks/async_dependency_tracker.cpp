@@ -4,11 +4,19 @@
 
 namespace zylann {
 
-AsyncDependencyTracker::AsyncDependencyTracker(int initial_count) : _count(initial_count), _aborted(false) {}
+AsyncDependencyTracker::AsyncDependencyTracker() :
+		_count(0), _aborted(false), _tasks_have_started(false), _count_was_set(false) {}
+
+AsyncDependencyTracker::AsyncDependencyTracker(int initial_count) :
+		_count(initial_count), _aborted(false), _tasks_have_started(false), _count_was_set(true) {}
 
 AsyncDependencyTracker::AsyncDependencyTracker(
 		int initial_count, Span<IThreadedTask *> next_tasks, ScheduleNextTasksCallback scheduler_cb) :
-		_count(initial_count), _aborted(false), _next_tasks_schedule_callback(scheduler_cb) {
+		_count(initial_count),
+		_aborted(false),
+		_tasks_have_started(false),
+		_count_was_set(true),
+		_next_tasks_schedule_callback(scheduler_cb) {
 	//
 	ZN_ASSERT(scheduler_cb != nullptr);
 
@@ -34,11 +42,19 @@ AsyncDependencyTracker::~AsyncDependencyTracker() {
 	}
 }
 
+void AsyncDependencyTracker::set_count(int count) {
+	ZN_ASSERT_MSG(_count_was_set == false, "Count must not be set twice");
+	ZN_ASSERT_MSG(_tasks_have_started == false, "Count must not be set after scheduling tasks");
+	_count = count;
+	_count_was_set = true;
+}
+
 void AsyncDependencyTracker::post_complete() {
+	_tasks_have_started = true;
 	ZN_ASSERT_RETURN_MSG(_count > 0, "post_complete() called more times than expected");
 	ZN_ASSERT_RETURN_MSG(_aborted == false, "post_complete() called after abortion");
 	--_count;
-	// Note, this class only allows decrementing this counter up to zero
+	// Note, this class only allows decrementing this counter down to zero
 	if (_count == 0) {
 		_next_tasks_schedule_callback(to_span(_next_tasks));
 		_next_tasks.clear();
