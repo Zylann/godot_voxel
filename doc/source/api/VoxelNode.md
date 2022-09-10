@@ -16,6 +16,15 @@ Type              | Name                       | Default
 `VoxelStream`     | [stream](#i_stream)        |         
 <p></p>
 
+## Enumerations: 
+
+enum **GIMode**: 
+
+- **GI_MODE_DISABLED** = **0**
+- **GI_MODE_BAKED** = **1**
+- **GI_MODE_DYNAMIC** = **2**
+
+
 ## Property Descriptions
 
 - [VoxelGenerator](VoxelGenerator.md)<span id="i_generator"></span> **generator**
@@ -33,4 +42,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

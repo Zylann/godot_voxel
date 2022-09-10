@@ -29,6 +29,8 @@ Return                                                                    | Sign
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [debug_check_sdf](#i_debug_check_sdf) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh )        
 [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)    | [get_aabb](#i_get_aabb) ( ) const                                                                                            
 [VoxelBuffer](VoxelBuffer.md)                                             | [get_voxel_buffer](#i_get_voxel_buffer) ( ) const                                                                            
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [is_baked](#i_is_baked) ( ) const                                                                                            
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [is_baking](#i_is_baking) ( ) const                                                                                          
 <p></p>
 
 ## Signals: 
@@ -86,4 +88,10 @@ enum **BakeMode**:
 - [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
 
 
-_Generated on Aug 25, 2022_
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baked"></span> **is_baked**( ) 
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
+
+
+_Generated on Sep 10, 2022_

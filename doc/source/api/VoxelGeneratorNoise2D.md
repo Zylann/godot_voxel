@@ -3,7 +3,7 @@
 Inherits: [VoxelGeneratorHeightmap](VoxelGeneratorHeightmap.md)
 
 
-
+Voxel generator producing noise-based heightmap terrain.
 
 ## Properties: 
 
@@ -19,11 +19,16 @@ Type     | Name                             | Default
 
 - [Curve](https://docs.godotengine.org/en/stable/classes/class_curve.html)<span id="i_curve"></span> **curve**
 
+When assigned, this curve will alter the distribution of height variations, allowing to give some kind of "profile" to the generated shapes.
+
+By default, a linear curve from 0 to 1 is used.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_height_range"></span> **height_range** = 200.0
 
+Range of altitudes where ground height variations will be generated.
 
 - [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)<span id="i_noise"></span> **noise**
 
+Noise used to produce the heightmap. It is required for the generator to work.
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

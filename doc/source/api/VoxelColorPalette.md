@@ -23,10 +23,10 @@ Type                | Name                 | Default
 ## Methods: 
 
 
-Return                                                                    | Signature                                                                                                                                                                                
-------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)  | [get_color](#i_get_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg0 ) const                                                                            
-[void](#)                                                                 | [set_color](#i_set_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) arg1 )  
+Return                                                                    | Signature                                                                                                                                                                                         
+------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)  | [get_color](#i_get_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) const                                                                            
+[void](#)                                                                 | [set_color](#i_set_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg1 )  
 <p></p>
 
 ## Constants: 
@@ -43,10 +43,10 @@ Return                                                                    | Sign
 
 ## Method Descriptions
 
-- [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_get_color"></span> **get_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) arg0 ) 
+- [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_get_color"></span> **get_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
 
 
-- [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) arg1 ) 
+- [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) color, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg1 ) 
 
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

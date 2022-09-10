@@ -22,4 +22,4 @@ Type     | Name                         | Default
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_smoothness"></span> **smoothness** = 0.0
 
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

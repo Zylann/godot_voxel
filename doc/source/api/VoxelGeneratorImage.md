@@ -3,7 +3,7 @@
 Inherits: [VoxelGeneratorHeightmap](VoxelGeneratorHeightmap.md)
 
 
-
+Voxel generator producing a heightmap-based shape using an image.
 
 ## Properties: 
 
@@ -26,4 +26,4 @@ Type     | Name                             | Default
 - [Image](https://docs.godotengine.org/en/stable/classes/class_image.html)<span id="i_image"></span> **image**
 
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_
