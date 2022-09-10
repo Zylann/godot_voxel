@@ -17,8 +17,10 @@
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
+#include "../../util/tasks/async_dependency_tracker.h"
 #include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
+#include "../voxel_save_completion_tracker.h"
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
@@ -480,20 +482,23 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	}
 }
 
-void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
+void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 	Ref<VoxelStream> stream = get_stream();
 	ERR_FAIL_COND_MSG(stream.is_null(), "Attempting to save modified blocks, but there is no stream to save them to.");
+
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	// That may cause a stutter, so should be used when the player won't notice
 	_data->consume_all_modifications(_blocks_to_save, with_copy);
 
 	if (stream.is_valid() && _instancer != nullptr && stream->supports_instance_blocks()) {
-		_instancer->save_all_modified_blocks();
+		_instancer->save_all_modified_blocks(task_scheduler, tracker);
 	}
 
 	// And flush immediately
-	send_block_data_requests();
+	consume_block_data_save_requests(task_scheduler, tracker);
+	task_scheduler.flush();
 }
 
 const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
@@ -822,43 +827,41 @@ static void request_block_load(uint32_t volume_id, std::shared_ptr<StreamingDepe
 	}
 }
 
-static void request_voxel_block_save(uint32_t volume_id, const std::shared_ptr<VoxelBufferInternal> &voxels,
-		Vector3i block_pos, std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size) {
-	//
-	ZN_ASSERT(stream_dependency != nullptr);
-	ZN_ASSERT_RETURN(stream_dependency->stream.is_valid());
-
-	SaveBlockDataTask *task =
-			ZN_NEW(SaveBlockDataTask(volume_id, block_pos, 0, data_block_size, voxels, stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	VoxelEngine::get_singleton().push_async_io_task(task);
-}
-
-void VoxelTerrain::send_block_data_requests() {
+void VoxelTerrain::send_data_load_requests() {
 	ZN_PROFILE_SCOPE();
 
-	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
-			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
+	if (_blocks_pending_load.size() > 0) {
+		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
+				VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
-	const Transform3D volume_transform = get_global_transform();
+		const Transform3D volume_transform = get_global_transform();
 
-	// Blocks to load
-	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-		const Vector3i block_pos = _blocks_pending_load[i];
-		// TODO Optimization: Batch request
-		request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
-				volume_transform, _instancer != nullptr);
+		// Blocks to load
+		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+			const Vector3i block_pos = _blocks_pending_load[i];
+			// TODO Optimization: Batch request
+			request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
+					volume_transform, _instancer != nullptr);
+		}
+		_blocks_pending_load.clear();
 	}
+}
+
+void VoxelTerrain::consume_block_data_save_requests(
+		BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> saving_tracker) {
+	ZN_PROFILE_SCOPE();
 
 	// Blocks to save
 	if (get_stream().is_valid()) {
-		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-			ZN_PRINT_VERBOSE(format("Requesting save of block {}", _blocks_to_save[i].position));
-			const VoxelData::BlockToSave b = _blocks_to_save[i];
-			// TODO Optimization: Batch request
-			request_voxel_block_save(_volume_id, b.voxels, b.position, _streaming_dependency, get_data_block_size());
+		const uint8_t data_block_size = get_data_block_size();
+		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
+			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
+
+			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+					_volume_id, b.position, 0, data_block_size, b.voxels, _streaming_dependency, saving_tracker));
+
+			// No priority data, saving doesnt need sorting
+			task_scheduler.push_io_task(task);
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {
@@ -866,8 +869,12 @@ void VoxelTerrain::send_block_data_requests() {
 		}
 	}
 
+	if (saving_tracker != nullptr) {
+		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
+		saving_tracker->set_count(task_scheduler.get_io_count());
+	}
+
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
-	_blocks_pending_load.clear();
 	_blocks_to_save.clear();
 }
 
@@ -1122,7 +1129,10 @@ void VoxelTerrain::process_viewers() {
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (can_load_blocks) {
-		send_block_data_requests();
+		send_data_load_requests();
+		BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+		consume_block_data_save_requests(task_scheduler, nullptr);
+		task_scheduler.flush();
 	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
@@ -1623,8 +1633,11 @@ Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
 	return _data->block_to_voxel(pos);
 }
 
-void VoxelTerrain::_b_save_modified_blocks() {
-	save_all_modified_blocks(true);
+Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
+	save_all_modified_blocks(true, tracker);
+	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 // Explicitely ask to save a block if it was modified

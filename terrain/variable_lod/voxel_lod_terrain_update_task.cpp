@@ -11,6 +11,7 @@
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
+#include "../../util/tasks/async_dependency_tracker.h"
 
 namespace zylann::voxel {
 
@@ -948,7 +949,7 @@ static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBu
 	ERR_FAIL_COND(stream_dependency->stream.is_null());
 
 	SaveBlockDataTask *task =
-			memnew(SaveBlockDataTask(volume_id, block_pos, lod, data_block_size, voxels, stream_dependency));
+			memnew(SaveBlockDataTask(volume_id, block_pos, lod, data_block_size, voxels, stream_dependency, nullptr));
 
 	// No priority data, saving doesnt need sorting
 

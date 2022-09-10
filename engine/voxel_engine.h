@@ -279,18 +279,28 @@ public:
 		_io_tasks.push_back(task);
 	}
 
-	inline void flush() {
-		VoxelEngine::get_singleton().push_async_tasks(to_span(_main_tasks));
-		VoxelEngine::get_singleton().push_async_io_tasks(to_span(_io_tasks));
-		_main_tasks.clear();
-		_io_tasks.clear();
+	inline size_t get_main_count() const {
+		return _main_tasks.size();
 	}
+
+	inline size_t get_io_count() const {
+		return _io_tasks.size();
+	}
+
+	void flush();
 
 	// No destructor! This does not take ownership, it is only a helper. Flush should be called after each use.
 
 private:
+	BufferedTaskScheduler();
+
+	bool has_tasks() const {
+		return _main_tasks.size() > 0 || _io_tasks.size() > 0;
+	}
+
 	std::vector<IThreadedTask *> _main_tasks;
 	std::vector<IThreadedTask *> _io_tasks;
+	Thread::ID _thread_id;
 };
 
 } // namespace zylann::voxel

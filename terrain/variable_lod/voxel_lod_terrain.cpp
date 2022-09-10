@@ -1829,6 +1829,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	VoxelLodTerrainUpdateTask::flush_pending_lod_edits(_update_data->state, *_data, get_mesh_block_size());
 
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 	std::vector<VoxelData::BlockToSave> blocks_to_save;
 
 	Ref<VoxelStream> stream = get_stream();
@@ -1837,12 +1838,11 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		_data->consume_all_modifications(blocks_to_save, with_copy);
 
 		if (_instancer != nullptr && stream->supports_instance_blocks()) {
-			_instancer->save_all_modified_blocks();
+			_instancer->save_all_modified_blocks(task_scheduler, nullptr);
 		}
 	}
 
 	// And flush immediately
-	BufferedTaskScheduler task_scheduler;
 	VoxelLodTerrainUpdateTask::send_block_save_requests(
 			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size(), task_scheduler);
 	task_scheduler.flush();
