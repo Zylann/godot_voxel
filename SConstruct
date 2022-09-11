@@ -64,6 +64,7 @@ sources = [
 
     "generators/voxel_generator.cpp",
     "generators/voxel_generator_script.cpp",
+    "generators/simple/voxel_generator_flat.cpp",
 
     "util/dstack.cpp",
     "util/expression_parser.cpp",
