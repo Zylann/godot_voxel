@@ -2,8 +2,10 @@
 #define VOXEL_GENERATOR_SCRIPT_H
 
 #include "voxel_generator.h"
+#if defined(ZN_GODOT)
 #include <core/object/script_language.h> // needed for GDVIRTUAL macro
 #include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
+#endif
 
 namespace zylann::voxel {
 
@@ -18,8 +20,11 @@ public:
 	int get_used_channels_mask() const override;
 
 protected:
+// TODO GDX: Need information on how to bind virtual functions, can't bind them at the moment
+#if defined(ZN_GODOT)
 	GDVIRTUAL3(_generate_block, Ref<gd::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
+#endif
 
 private:
 	static void _bind_methods();
