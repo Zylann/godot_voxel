@@ -8,15 +8,15 @@ import sys
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "bin"
 
-# TODO Share common stuff with `SCsub`
+# TODO GDX: Share common stuff with `SCsub`
 
 # Dependency on GodotCpp.
 # Use the same cross-platform configurations.
-# TODO Make sure this isn't doing too much?
-# TODO Have GodotCpp in thirdparty/ or allow to specify a custom location
+# TODO GDX: Make sure this isn't doing too much?
+# TODO GDX: Have GodotCpp in thirdparty/ or allow to specify a custom location
 env = SConscript("D:/PROJETS/INFO/GODOT/Engine/godot_cpp_fork/SConstruct")
 
-# TODO Adding our variables produces a warning when provided.
+# TODO GDX: Adding our variables produces a warning when provided.
 # "WARNING: Unknown SCons variables were passed and will be ignored"
 # This is printed by GodotCpp's SConstruct file, which doesn't recognizes them.
 # However they seem to be taken into account in our `SConstruct` file though.
