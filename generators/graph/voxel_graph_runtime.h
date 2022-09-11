@@ -1,13 +1,12 @@
 #ifndef VOXEL_GRAPH_RUNTIME_H
 #define VOXEL_GRAPH_RUNTIME_H
 
+#include "../../util/godot/ref_counted.h"
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/span.h"
 #include "program_graph.h"
-
-#include <core/object/ref_counted.h>
 
 namespace zylann::voxel {
 

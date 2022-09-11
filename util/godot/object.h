@@ -8,6 +8,8 @@
 using namespace godot;
 #endif
 
+#include <vector>
+
 namespace zylann {
 
 // Turns out these functions are only used in editor for now.
@@ -19,6 +21,14 @@ namespace zylann {
 // meshes.
 uint64_t get_deep_hash(
 		const Object &obj, uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0);
+
+// Getting property info in Godot modules and GDExtension has a different API, with the same information.
+struct GodotPropertyInfo {
+	Variant::Type type;
+	String name;
+	uint32_t usage;
+};
+void get_property_list(const Object &obj, std::vector<GodotPropertyInfo> &out_properties);
 
 #endif
 

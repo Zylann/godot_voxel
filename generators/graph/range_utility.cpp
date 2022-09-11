@@ -1,7 +1,7 @@
 #include "range_utility.h"
-
-#include <core/io/image.h>
-#include <scene/resources/curve.h>
+#include "../../util/godot/curve.h"
+#include "../../util/godot/image.h"
+#include "../../util/string_funcs.h"
 
 namespace zylann {
 
@@ -126,8 +126,7 @@ Interval get_heightmap_range(const Image &im) {
 }
 
 Interval get_heightmap_range(const Image &im, Rect2i rect) {
-	ERR_FAIL_COND_V_MSG(
-			im.is_compressed(), Interval(), String("Image format not supported: {0}").format(varray(im.get_format())));
+	ZN_ASSERT_RETURN_V_MSG(!im.is_compressed(), Interval(), format("Image format not supported: {}", im.get_format()));
 
 	Interval r;
 

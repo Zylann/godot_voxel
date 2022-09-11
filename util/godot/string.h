@@ -1,12 +1,18 @@
 #ifndef ZN_GODOT_STRING_H
 #define ZN_GODOT_STRING_H
 
+#if defined(ZN_GODOT)
 #include <core/string/ustring.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/variant/string.hpp>
+using namespace godot;
+#endif
+
 #include <iosfwd>
 #include <string_view>
 
 #ifdef TOOLS_ENABLED
-#include <core/variant/variant.h>
+#include "variant.h"
 #include <vector>
 #endif
 
@@ -24,6 +30,12 @@ PackedStringArray to_godot(const std::vector<std::string_view> &svv);
 PackedStringArray to_godot(const std::vector<std::string> &sv);
 
 #endif
+
+inline std::string to_std_string(const String &godot_string) {
+	const CharString cs = godot_string.utf8();
+	std::string s = cs.get_data();
+	return s;
+}
 
 } // namespace zylann
 

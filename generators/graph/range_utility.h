@@ -1,12 +1,13 @@
 #ifndef RANGE_UTILITY_H
 #define RANGE_UTILITY_H
 
+#include "../../util/macros.h"
 #include "../../util/math/interval.h"
-#include <core/math/rect2.h>
+#include "../../util/math/rect2i.h"
 #include <vector>
 
-class Curve;
-class Image;
+ZN_GODOT_FORWARD_DECLARE(class Curve)
+ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann {
 

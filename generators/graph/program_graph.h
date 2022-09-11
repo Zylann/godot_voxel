@@ -1,10 +1,10 @@
 #ifndef ZN_PROGRAM_GRAPH_H
 #define ZN_PROGRAM_GRAPH_H
 
+#include "../../util/godot/variant.h"
+#include "../../util/hash_funcs.h"
+#include "../../util/math/vector2.h"
 #include "../../util/non_copyable.h"
-
-#include <core/math/vector2.h>
-#include <core/templates/hashfuncs.h>
 
 #include <string>
 #include <string_view>
@@ -130,7 +130,7 @@ public:
 
 	unsigned int get_nodes_count() const;
 
-	void debug_print_dot_file(String file_path) const;
+	void debug_print_dot_file(String p_file_path) const;
 
 private:
 	std::unordered_map<uint32_t, Node *> _nodes;

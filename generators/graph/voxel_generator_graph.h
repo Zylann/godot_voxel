@@ -1,6 +1,8 @@
 #ifndef VOXEL_GENERATOR_GRAPH_H
 #define VOXEL_GENERATOR_GRAPH_H
 
+#include "../../util/godot/binder.h"
+#include "../../util/macros.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
@@ -8,7 +10,7 @@
 
 #include <memory>
 
-class Image;
+ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 
@@ -177,7 +179,12 @@ public:
 	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
 			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
 
+#if defined(ZN_GODOT)
 	Ref<Resource> duplicate(bool p_subresources) const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: Resource::duplicate() cannot be overriden! This might lead to unexpected behavior!
+	Ref<Resource> duplicate(bool p_subresources) const;
+#endif
 
 	// Utility
 
@@ -218,7 +225,7 @@ public:
 	// Editor
 
 #ifdef TOOLS_ENABLED
-	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
 
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
@@ -322,6 +329,6 @@ ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGrap
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph::NodeTypeID)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph, NodeTypeID)
 
 #endif // VOXEL_GENERATOR_GRAPH_H

@@ -71,12 +71,32 @@ sources = [
     "generators/simple/voxel_generator_noise_2d.cpp",
     "generators/simple/voxel_generator_noise.cpp",
 
+    "generators/graph/code_gen_helper.cpp",
+    "generators/graph/fast_noise_lite_gdshader.cpp",
+    "generators/graph/image_range_grid.cpp",
+    "generators/graph/program_graph.cpp",
+    "generators/graph/range_utility.cpp",
+    "generators/graph/voxel_generator_graph.cpp",
+    "generators/graph/voxel_graph_compiler.cpp",
+    "generators/graph/voxel_graph_node_db.cpp",
+    "generators/graph/voxel_graph_runtime.cpp",
+    "generators/graph/voxel_graph_shader_generator.cpp",
+
+    # Utilities
+
     "util/dstack.cpp",
     "util/expression_parser.cpp",
     "util/log.cpp",
 
     "util/godot/funcs.cpp",
     "util/godot/variant.cpp",
+    "util/godot/object.cpp",
+    "util/godot/string.cpp",
+
+    "util/noise/fast_noise_lite/fast_noise_lite_gradient.cpp",
+    "util/noise/fast_noise_lite/fast_noise_lite_range.cpp",
+    "util/noise/fast_noise_lite/fast_noise_lite.cpp",
+    "util/noise/gd_noise_range.cpp",
 
     "util/thread/thread.cpp",
     "util/thread/godot_thread_helper.cpp",
@@ -87,6 +107,8 @@ sources = [
     "util/math/vector3f.cpp",
     "util/math/vector3i.cpp",
 
+    # Entry point
+    
     "register_types_gdx.cpp"
 ]
 

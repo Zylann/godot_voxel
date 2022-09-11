@@ -3,6 +3,8 @@
 #include "constants/voxel_string_names.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
+#include "generators/graph/voxel_generator_graph.h"
+#include "generators/graph/voxel_graph_node_db.h"
 #include "generators/simple/voxel_generator_flat.h"
 #include "generators/simple/voxel_generator_heightmap.h"
 #include "generators/simple/voxel_generator_image.h"
@@ -14,6 +16,8 @@
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
+#include "util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 #include "util/thread/godot_thread_helper.h"
 
 using namespace godot;
@@ -26,6 +30,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		VoxelMemoryPool::create_singleton();
 		VoxelStringNames::create_singleton();
+		VoxelGraphNodeDB::create_singleton();
 
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
@@ -43,6 +48,10 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGeneratorImage>();
 		ClassDB::register_class<VoxelGeneratorNoise2D>();
 		ClassDB::register_class<VoxelGeneratorNoise>();
+		ClassDB::register_class<VoxelGeneratorGraph>();
+
+		ClassDB::register_class<ZN_FastNoiseLite>();
+		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
 
 		// TODO GDX: I don't want to expose this one but there is no way not to expose it
 		ClassDB::register_class<ZN_GodotThreadHelper>();
@@ -53,7 +62,7 @@ void uninitialize_extension_test_module(godot::ModuleInitializationLevel p_level
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		//VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
-		//VoxelGraphNodeDB::destroy_singleton();
+		VoxelGraphNodeDB::destroy_singleton();
 		//gd::VoxelEngine::destroy_singleton();
 		//VoxelEngine::destroy_singleton();
 

@@ -1,7 +1,7 @@
 #include "image_range_grid.h"
+#include "../../util/godot/image.h"
+#include "../../util/string_funcs.h"
 #include "range_utility.h"
-
-#include <core/io/image.h>
 
 namespace zylann {
 
@@ -26,7 +26,7 @@ void ImageRangeGrid::clear() {
 }
 
 void ImageRangeGrid::generate(const Image &im) {
-	ERR_FAIL_COND_MSG(im.is_compressed(), String("Image format not supported: {0}").format(varray(im.get_format())));
+	ZN_ASSERT_RETURN_MSG(!im.is_compressed(), format("Image format not supported: {}", im.get_format()));
 
 	clear();
 

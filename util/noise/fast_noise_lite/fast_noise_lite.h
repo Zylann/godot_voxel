@@ -1,8 +1,7 @@
 #ifndef ZYLANN_FAST_NOISE_LITE_H
 #define ZYLANN_FAST_NOISE_LITE_H
 
-#include <core/io/resource.h>
-
+#include "../../godot/binder.h"
 #include "fast_noise_lite_gradient.h"
 
 namespace zylann {
@@ -36,7 +35,7 @@ namespace zylann {
 class ZN_FastNoiseLite : public Resource {
 	GDCLASS(ZN_FastNoiseLite, Resource)
 
-	typedef fast_noise_lite::FastNoiseLite _FastNoise;
+	typedef ::fast_noise_lite::FastNoiseLite _FastNoise;
 
 public:
 	static const int MAX_OCTAVES = 32;
@@ -147,7 +146,7 @@ public:
 
 	// Internal
 
-	const fast_noise_lite::FastNoiseLite &get_noise_internal() const {
+	const ::fast_noise_lite::FastNoiseLite &get_noise_internal() const {
 		return _fn;
 	}
 
@@ -170,7 +169,7 @@ private:
 		return get_noise_3d(p.x, p.y, p.z);
 	}
 
-	fast_noise_lite::FastNoiseLite _fn;
+	::fast_noise_lite::FastNoiseLite _fn;
 
 	// TODO FastNoiseLite should rather have getters
 
@@ -196,10 +195,10 @@ private:
 
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::NoiseType);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::FractalType);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::RotationType3D);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularDistanceFunction);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularReturnType);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, NoiseType);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, FractalType);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, RotationType3D);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, CellularDistanceFunction);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, CellularReturnType);
 
 #endif // ZYLANN_FAST_NOISE_LITE_H

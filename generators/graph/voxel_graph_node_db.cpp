@@ -1,5 +1,9 @@
 #include "voxel_graph_node_db.h"
 #include "../../constants/voxel_constants.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/curve.h"
+#include "../../util/godot/fast_noise_lite.h"
+#include "../../util/godot/image.h"
 #include "../../util/macros.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -14,10 +18,6 @@
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "../../util/noise/fast_noise_2.h"
 #endif
-
-#include <modules/noise/fastnoise_lite.h>
-#include <modules/noise/noise.h>
-#include <scene/resources/curve.h>
 
 namespace zylann::voxel {
 
