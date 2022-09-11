@@ -67,6 +67,7 @@ sources = [
     "generators/simple/voxel_generator_flat.cpp",
     "generators/simple/voxel_generator_heightmap.cpp",
     "generators/simple/voxel_generator_waves.cpp",
+    "generators/simple/voxel_generator_image.cpp",
 
     "util/dstack.cpp",
     "util/expression_parser.cpp",

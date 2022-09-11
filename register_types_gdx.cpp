@@ -5,6 +5,7 @@
 #include "edition/voxel_tool_buffer.h"
 #include "generators/simple/voxel_generator_flat.h"
 #include "generators/simple/voxel_generator_heightmap.h"
+#include "generators/simple/voxel_generator_image.h"
 #include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator.h"
 #include "generators/voxel_generator_script.h"
@@ -37,6 +38,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGeneratorFlat>();
 		ClassDB::register_class<VoxelGeneratorHeightmap>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<VoxelGeneratorWaves>();
+		ClassDB::register_class<VoxelGeneratorImage>();
 
 		// TODO GDX: I don't want to expose this one but there is no way not to expose it
 		ClassDB::register_class<ZN_GodotThreadHelper>();
