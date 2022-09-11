@@ -1,9 +1,9 @@
-#ifndef VOXEL_MATH_SDF_H
-#define VOXEL_MATH_SDF_H
+#ifndef ZN_MATH_SDF_H
+#define ZN_MATH_SDF_H
 
 #include "interval.h"
+#include "vector2.h"
 #include "vector3.h"
-#include <core/math/vector2.h>
 
 namespace zylann::math {
 
@@ -100,4 +100,4 @@ SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, r
 
 } // namespace zylann::math
 
-#endif // VOXEL_MATH_SDF_H
+#endif // ZN_MATH_SDF_H

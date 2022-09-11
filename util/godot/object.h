@@ -1,7 +1,12 @@
 #ifndef ZN_GODOT_OBJECT_H
 #define ZN_GODOT_OBJECT_H
 
+#if defined(ZN_GODOT)
 #include <core/object/object.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/object.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 

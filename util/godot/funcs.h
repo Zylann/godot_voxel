@@ -4,15 +4,23 @@
 #include "../math/vector2f.h"
 #include "../math/vector3f.h"
 #include "../span.h"
+#include <vector>
 
+#if defined(ZN_GODOT)
 #include <core/variant/variant.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/variant/variant.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 
 // Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
-void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src);
-void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src);
+void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src);
+void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src);
 
+// TODO Can't have code using template Vector if we want to support compiling both as module and extension
+#ifdef ZN_GODOT
 template <typename T>
 void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 	to.resize(from.size());
@@ -20,6 +28,7 @@ void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));
 	memcpy(to.ptrw(), from.data(), from.size() * sizeof(T));
 }
+#endif
 
 inline Vector3 get_forward(const Transform3D &t) {
 	return -t.basis.get_column(Vector3::AXIS_Z);
@@ -52,11 +61,19 @@ inline String ptr2s(const void *p) {
 
 template <typename T>
 inline T try_get(const Dictionary &d, String key) {
+#if defined(ZN_GODOT)
 	const Variant *v = d.getptr(key);
 	if (v == nullptr) {
 		return T();
 	}
 	return *v;
+#elif defined(ZN_GODOT_EXTENSION)
+	Variant v = d.get(key, Variant());
+	if (v.get_type() == Variant::NIL) {
+		return T();
+	}
+	return v;
+#endif
 }
 
 } // namespace zylann

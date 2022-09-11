@@ -1,7 +1,7 @@
 #ifndef VOXEL_CONSTANTS_H
 #define VOXEL_CONSTANTS_H
 
-#include <core/math/math_defs.h>
+#include "../util/math/constants.h"
 #include <cstdint>
 
 namespace zylann::voxel::constants {
@@ -26,7 +26,7 @@ static const int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxel
 
 static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;
-static const float INV_TAU = 1.f / Math_TAU;
+static const float INV_TAU = 1.f / math::TAU_32;
 static const float SQRT3 = 1.73205080757;
 
 // Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.

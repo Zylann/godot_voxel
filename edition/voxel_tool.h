@@ -126,6 +126,6 @@ protected:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelTool::Mode)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelTool, Mode)
 
 #endif // VOXEL_TOOL_H

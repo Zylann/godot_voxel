@@ -12,15 +12,19 @@
 // Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor
 // code that can produce errors in this module, and we still want them to compile properly.
 #if defined(ZN_GODOT) && defined(TOOLS_ENABLED)
-
 #include <core/string/ustring.h>
-
 #define ZN_TTR(msg) TTR(msg)
-
 #else
-
 #define ZN_TTR(msg) msg
+#endif
 
+#if defined(ZN_GODOT)
+#define ZN_GODOT_FORWARD_DECLARE(m_class) m_class;
+#elif defined(ZN_GODOT_EXTENSION)
+#define ZN_GODOT_FORWARD_DECLARE(m_class)                                                                              \
+	namespace godot {                                                                                                  \
+	m_class;                                                                                                           \
+	}
 #endif
 
 #endif // ZYLANN_MACROS_H

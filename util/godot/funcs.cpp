@@ -2,13 +2,9 @@
 #include "../math/conv.h"
 #include "../profiling.h"
 
-#include <core/config/engine.h>
-#include <scene/main/node.h>
-#include <scene/resources/multimesh.h>
-
 namespace zylann {
 
-void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src) {
+void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src) {
 	dst.resize(src.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(dst.size() != static_cast<int>(src.size()));
@@ -27,7 +23,7 @@ void copy_to(Vector<Vector3> &dst, const std::vector<Vector3f> &src) {
 #endif
 }
 
-void copy_to(Vector<Vector2> &dst, const std::vector<Vector2f> &src) {
+void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src) {
 	dst.resize(src.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(dst.size() != static_cast<int>(src.size()));

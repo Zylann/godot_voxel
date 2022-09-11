@@ -1,28 +1,21 @@
 #include "voxel_metadata_variant.h"
-#include <core/io/marshalls.h>
+#include "../util/godot/variant.h"
 
 namespace zylann::voxel::gd {
 
 size_t VoxelMetadataVariant::get_serialized_size() const {
-	int len;
-	const Error err = encode_variant(data, nullptr, len, false);
-	ERR_FAIL_COND_V_MSG(err != OK, 0, "Error when trying to encode Variant metadata.");
-	return len;
+	return get_variant_encoded_size(data);
 }
 
 size_t VoxelMetadataVariant::serialize(Span<uint8_t> dst) const {
-	int written_length;
-	const Error err = encode_variant(data, dst.data(), written_length, false);
-	ERR_FAIL_COND_V(err != OK, 0);
-	return written_length;
+	return encode_variant(data, dst);
 }
 
 bool VoxelMetadataVariant::deserialize(Span<const uint8_t> src, uint64_t &out_read_size) {
-	int read_length;
-	const Error err = decode_variant(data, src.data(), src.size(), &read_length, false);
-	ERR_FAIL_COND_V_MSG(err != OK, false, "Failed to deserialize block metadata");
-	out_read_size = read_length;
-	return true;
+	size_t read_size = 0;
+	const bool success = decode_variant(src, data, read_size);
+	out_read_size = read_size;
+	return success;
 }
 
 ICustomVoxelMetadata *VoxelMetadataVariant::duplicate() {

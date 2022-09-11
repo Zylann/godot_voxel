@@ -11,7 +11,7 @@ RUN_TESTS = env["voxel_tests"]
 env_voxel = env_modules.Clone()
 
 voxel_files = [
-	"*.cpp",
+	"register_types.cpp",
 	
 	"constants/*.cpp",
 
@@ -41,7 +41,7 @@ voxel_files = [
 	"util/noise/fast_noise_lite/*.cpp",
 	"util/noise/gd_noise_range.cpp",
 
-	"util/thread/*.cpp",
+	"util/thread/thread.cpp",
 
 	"util/tasks/*.cpp",
 	"util/tasks/godot/*.cpp",

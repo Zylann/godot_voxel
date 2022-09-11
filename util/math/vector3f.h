@@ -28,7 +28,7 @@ inline Vector3f lerp(const Vector3f a, const Vector3f b, const float t) {
 }
 
 inline bool has_nan(const Vector3f &v) {
-	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
+	return is_nan(v.x) || is_nan(v.y) || is_nan(v.z);
 }
 
 inline Vector3f normalized(const Vector3f &v) {

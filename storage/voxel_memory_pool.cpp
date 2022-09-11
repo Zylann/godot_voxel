@@ -29,7 +29,7 @@ void VoxelMemoryPool::destroy_singleton() {
 	ZN_ASSERT(g_memory_pool != nullptr);
 	VoxelMemoryPool *pool = g_memory_pool;
 	g_memory_pool = nullptr;
-	memdelete(pool);
+	ZN_DELETE(pool);
 }
 
 #ifdef DEBUG_ENABLED

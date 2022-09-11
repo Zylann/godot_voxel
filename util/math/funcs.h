@@ -2,7 +2,15 @@
 #define VOXEL_MATH_FUNCS_H
 
 #include "../errors.h"
+
+#if defined(ZN_GODOT)
 #include <core/math/math_funcs.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/core/math.hpp>
+using namespace godot;
+#endif
+
+#include <float.h> // for `_isnan`
 
 namespace zylann::math {
 
@@ -284,6 +292,47 @@ inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T
 	const T v = v0 + p.z * (v1 - v0);
 
 	return v;
+}
+
+// Math::is_nan exists in Godot core, but not in GDExtension...
+inline bool is_nan(double p_val) {
+#ifdef _MSC_VER
+	return _isnan(p_val);
+#elif defined(__GNUC__) && __GNUC__ < 6
+	union {
+		uint64_t u;
+		double f;
+	} ieee754;
+	ieee754.f = p_val;
+	// (unsigned)(0x7ff0000000000001 >> 32) : 0x7ff00000
+	return ((((unsigned)(ieee754.u >> 32) & 0x7fffffff) + ((unsigned)ieee754.u != 0)) > 0x7ff00000);
+#else
+	return isnan(p_val);
+#endif
+}
+
+// Math::is_nan exists in Godot core, but not in GDExtension...
+inline bool is_nan(float p_val) {
+#ifdef _MSC_VER
+	return _isnan(p_val);
+#elif defined(__GNUC__) && __GNUC__ < 6
+	union {
+		uint32_t u;
+		float f;
+	} ieee754;
+	ieee754.f = p_val;
+	// -----------------------------------
+	// (single-precision floating-point)
+	// NaN : s111 1111 1xxx xxxx xxxx xxxx xxxx xxxx
+	//     : (> 0x7f800000)
+	// where,
+	//   s : sign
+	//   x : non-zero number
+	// -----------------------------------
+	return ((ieee754.u & 0x7fffffff) > 0x7f800000);
+#else
+	return isnan(p_val);
+#endif
 }
 
 } // namespace zylann::math

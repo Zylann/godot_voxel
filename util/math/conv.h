@@ -1,7 +1,9 @@
 #ifndef ZN_CONV_H
 #define ZN_CONV_H
 
+#include "vector2.h"
 #include "vector2f.h"
+#include "vector2i.h"
 #include "vector3.h"
 #include "vector3d.h"
 #include "vector3f.h"
