@@ -2,8 +2,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/curve.h"
-#include "../../util/godot/engine.h"
-#include "../../util/godot/fast_noise_lite.hpp"
+#include "../../util/godot/fast_noise_lite.h"
 
 namespace zylann::voxel {
 

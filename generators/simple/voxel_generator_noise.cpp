@@ -1,7 +1,8 @@
 #include "voxel_generator_noise.h"
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <modules/noise/fastnoise_lite.h>
+#include "../../constants/voxel_string_names.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/fast_noise_lite.h"
+#include "../../util/godot/noise.h"
 
 namespace zylann::voxel {
 
@@ -14,14 +15,14 @@ void VoxelGeneratorNoise::set_noise(Ref<Noise> noise) {
 		return;
 	}
 	if (_noise.is_valid()) {
-		_noise->disconnect(
-				CoreStringNames::get_singleton()->changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
+		_noise->disconnect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise, _on_noise_changed));
 	}
 	_noise = noise;
 	Ref<Noise> copy;
 	if (_noise.is_valid()) {
-		_noise->connect(
-				CoreStringNames::get_singleton()->changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
+		_noise->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise, _on_noise_changed));
 		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 		copy = _noise->duplicate();
 	}
@@ -252,10 +253,13 @@ void VoxelGeneratorNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
 
+#ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise::_on_noise_changed);
+#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
+	// TODO Accept `Noise` instead of `FastNoiseLite`?
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_noise", "get_noise");
