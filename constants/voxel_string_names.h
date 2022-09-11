@@ -46,6 +46,9 @@ public:
 #ifdef DEBUG_ENABLED
 	StringName _voxel_debug_vt_position;
 #endif
+
+	// These are usually in CoreStringNames, but when compiling as a GDExtension, we don't have access to them
+	StringName changed;
 };
 
 } // namespace zylann::voxel

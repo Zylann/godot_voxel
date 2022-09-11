@@ -53,6 +53,8 @@ VoxelStringNames::VoxelStringNames() {
 #ifdef DEBUG_ENABLED
 	_voxel_debug_vt_position = StringName("_voxel_debug_vt_position");
 #endif
+
+	changed = StringName("changed");
 }
 
 } // namespace zylann::voxel
