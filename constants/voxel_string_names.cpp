@@ -1,55 +1,57 @@
 #include "voxel_string_names.h"
+#include "../util/errors.h"
+#include "../util/memory.h"
 
 namespace zylann::voxel {
 
 VoxelStringNames *VoxelStringNames::g_singleton;
 
 void VoxelStringNames::create_singleton() {
-	CRASH_COND(g_singleton != nullptr);
-	g_singleton = memnew(VoxelStringNames);
+	ZN_ASSERT(g_singleton == nullptr);
+	g_singleton = ZN_NEW(VoxelStringNames);
 }
 
 void VoxelStringNames::destroy_singleton() {
-	CRASH_COND(g_singleton == nullptr);
-	memdelete(g_singleton);
+	ZN_ASSERT(g_singleton != nullptr);
+	ZN_DELETE(g_singleton);
 	g_singleton = nullptr;
 }
 
 const VoxelStringNames &VoxelStringNames::get_singleton() {
-	CRASH_COND(g_singleton == nullptr);
+	ZN_ASSERT(g_singleton != nullptr);
 	return *g_singleton;
 }
 
 VoxelStringNames::VoxelStringNames() {
-	_emerge_block = StaticCString::create("_emerge_block");
-	_immerge_block = StaticCString::create("_immerge_block");
-	_generate_block = StaticCString::create("_generate_block");
-	_get_used_channels_mask = StaticCString::create("_get_used_channels_mask");
+	_emerge_block = StringName("_emerge_block");
+	_immerge_block = StringName("_immerge_block");
+	_generate_block = StringName("_generate_block");
+	_get_used_channels_mask = StringName("_get_used_channels_mask");
 
-	block_loaded = StaticCString::create("block_loaded");
-	block_unloaded = StaticCString::create("block_unloaded");
+	block_loaded = StringName("block_loaded");
+	block_unloaded = StringName("block_unloaded");
 
-	store_colors_in_texture = StaticCString::create("store_colors_in_texture");
-	scale = StaticCString::create("scale");
-	enable_baked_lighting = StaticCString::create("enable_baked_lighting");
-	pivot_mode = StaticCString::create("pivot_mode");
+	store_colors_in_texture = StringName("store_colors_in_texture");
+	scale = StringName("scale");
+	enable_baked_lighting = StringName("enable_baked_lighting");
+	pivot_mode = StringName("pivot_mode");
 
-	u_transition_mask = StaticCString::create("u_transition_mask");
-	u_block_local_transform = StaticCString::create("u_block_local_transform");
-	u_lod_fade = StaticCString::create("u_lod_fade");
+	u_transition_mask = StringName("u_transition_mask");
+	u_block_local_transform = StringName("u_block_local_transform");
+	u_lod_fade = StringName("u_lod_fade");
 
-	voxel_normalmap_atlas = StaticCString::create("voxel_normalmap_atlas");
-	voxel_normalmap_lookup = StaticCString::create("voxel_normalmap_lookup");
+	voxel_normalmap_atlas = StringName("voxel_normalmap_atlas");
+	voxel_normalmap_lookup = StringName("voxel_normalmap_lookup");
 
-	u_voxel_normalmap_atlas = StaticCString::create("u_voxel_normalmap_atlas");
-	u_voxel_cell_lookup = StaticCString::create("u_voxel_cell_lookup");
-	u_voxel_cell_size = StaticCString::create("u_voxel_cell_size");
-	u_voxel_block_size = StaticCString::create("u_voxel_block_size");
-	u_voxel_virtual_texture_fade = StaticCString::create("u_voxel_virtual_texture_fade");
-	u_voxel_virtual_texture_tile_size = StaticCString::create("u_voxel_virtual_texture_tile_size");
+	u_voxel_normalmap_atlas = StringName("u_voxel_normalmap_atlas");
+	u_voxel_cell_lookup = StringName("u_voxel_cell_lookup");
+	u_voxel_cell_size = StringName("u_voxel_cell_size");
+	u_voxel_block_size = StringName("u_voxel_block_size");
+	u_voxel_virtual_texture_fade = StringName("u_voxel_virtual_texture_fade");
+	u_voxel_virtual_texture_tile_size = StringName("u_voxel_virtual_texture_tile_size");
 
 #ifdef DEBUG_ENABLED
-	_voxel_debug_vt_position = StaticCString::create("_voxel_debug_vt_position");
+	_voxel_debug_vt_position = StringName("_voxel_debug_vt_position");
 #endif
 }
 

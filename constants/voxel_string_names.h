@@ -1,7 +1,7 @@
 #ifndef VOXEL_STRING_NAMES_H
 #define VOXEL_STRING_NAMES_H
 
-#include <core/string/string_name.h>
+#include "../util/godot/string_name.h"
 
 namespace zylann::voxel {
 

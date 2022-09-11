@@ -1,11 +1,10 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
+#include "../util/godot/resource.h"
 #include "../util/math/vector3f.h"
+#include "../util/math/vector3i.h"
 #include "../util/span.h"
-#include <core/io/resource.h>
-#include <core/math/vector3i.h>
-#include <core/variant/typed_array.h>
 
 namespace zylann::voxel {
 
@@ -64,7 +63,7 @@ public:
 	virtual int get_used_channels_mask() const;
 
 #ifdef TOOLS_ENABLED
-	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const {}
 #endif
 
 protected:

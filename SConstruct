@@ -50,6 +50,8 @@ if env["tools"]:
     env.Append(CPPDEFINES=["TOOLS_ENABLED"])
 
 sources = [
+    "constants/voxel_string_names.cpp",
+
     "edition/voxel_tool.cpp",
     "edition/voxel_tool_buffer.cpp",
 
@@ -59,6 +61,8 @@ sources = [
     "storage/voxel_metadata_variant.cpp",
     "storage/voxel_memory_pool.cpp",
     "storage/funcs.cpp",
+
+    "generators/voxel_generator.cpp",
 
     "util/dstack.cpp",
     "util/expression_parser.cpp",
