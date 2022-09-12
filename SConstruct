@@ -117,7 +117,7 @@ sources = [
     "util/godot/object.cpp",
     "util/godot/string.cpp",
     "util/godot/mesh.cpp",
-    "util/godot/collision_shape_3d.cpp",
+    "util/godot/concave_polygon_shape_3d.cpp",
     "util/godot/direct_mesh_instance.cpp",
     "util/godot/direct_static_body.cpp",
     "util/godot/project_settings.cpp",
