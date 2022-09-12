@@ -72,52 +72,6 @@
 #include "tests/tests.h"
 #endif
 
-namespace zylann::voxel {
-
-static VoxelEngine::ThreadsConfig get_config_from_godot(unsigned int &out_main_thread_time_budget_usec) {
-	CRASH_COND(ProjectSettings::get_singleton() == nullptr);
-
-	VoxelEngine::ThreadsConfig config;
-
-	// Compute thread count for general pool.
-	// Note that the I/O thread counts as one used thread and will always be present.
-
-	// "RST" means changing the property requires an editor restart (or game restart)
-	GLOBAL_DEF_RST("voxel/threads/count/minimum", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/minimum",
-			PropertyInfo(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/margin_below_max", 1);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/margin_below_max",
-			PropertyInfo(Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64"));
-
-	GLOBAL_DEF_RST("voxel/threads/count/ratio_over_max", 0.5f);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/count/ratio_over_max",
-			PropertyInfo(Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1"));
-
-	GLOBAL_DEF_RST("voxel/threads/main/time_budget_ms", 8);
-	ProjectSettings::get_singleton()->set_custom_property_info("voxel/threads/main/time_budget_ms",
-			PropertyInfo(Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000"));
-
-	out_main_thread_time_budget_usec =
-			1000 * int(ProjectSettings::get_singleton()->get("voxel/threads/main/time_budget_ms"));
-
-	config.thread_count_minimum =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/minimum")));
-
-	// How many threads below available count on the CPU should we set as limit
-	config.thread_count_margin_below_max =
-			math::max(1, int(ProjectSettings::get_singleton()->get("voxel/threads/count/margin_below_max")));
-
-	// Portion of available CPU threads to attempt using
-	config.thread_count_ratio_over_max = zylann::math::clamp(
-			float(ProjectSettings::get_singleton()->get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
-
-	return config;
-}
-
-} // namespace zylann::voxel
-
 void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace zylann;
 	using namespace voxel;
@@ -128,7 +82,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelGraphNodeDB::create_singleton();
 
 		unsigned int main_thread_budget_usec;
-		const VoxelEngine::ThreadsConfig threads_config = get_config_from_godot(main_thread_budget_usec);
+		const VoxelEngine::ThreadsConfig threads_config =
+				gd::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
 		VoxelEngine::create_singleton(threads_config);
 		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 		// TODO Pick this from the current renderer + user option (at time of writing, Godot 4 has only one renderer and

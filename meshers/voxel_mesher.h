@@ -3,10 +3,14 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
+#include "../util/godot/mesh.h"
+#include "../util/godot/typed_array.h"
+#include "../util/macros.h"
 #include "../util/span.h"
-
-#include <scene/resources/mesh.h>
 #include <vector>
+
+ZN_GODOT_FORWARD_DECLARE(class Image)
+ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
 namespace zylann::voxel {
 
@@ -78,7 +82,7 @@ public:
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
+	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, GodotMaterialArray materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
@@ -106,7 +110,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 	// If the mesher has problems, messages may be returned by this method so they can be shown to the user.
-	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const {}
 #endif
 
 	// Returns `true` if the mesher generates specific data for mesh collisions, which will be found in
@@ -120,9 +124,7 @@ public:
 	// detail is used. If null, standard materials or default Godot shaders can be used. This is mostly to provide a
 	// default shader that looks ok. Users are still expected to tweak them if need be.
 	// Such material is not meant to be modified.
-	virtual Ref<ShaderMaterial> get_default_lod_material() const {
-		return Ref<ShaderMaterial>();
-	}
+	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
 protected:
 	static void _bind_methods();

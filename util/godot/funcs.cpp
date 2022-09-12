@@ -42,4 +42,23 @@ void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src) {
 #endif
 }
 
+template <typename PackedVector_T, typename T>
+inline void copy_to_template(PackedVector_T &dst, const std::vector<T> &src) {
+	dst.resize(src.size());
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(dst.size() == src.size());
+#endif
+	T *dst_data = dst.ptrw();
+	//static_assert(sizeof(dst_data) == sizeof(T));
+	memcpy(dst_data, src.data(), src.size() * sizeof(T));
+}
+
+void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src) {
+	copy_to_template(dst, src);
+}
+
+void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src) {
+	copy_to_template(dst, src);
+}
+
 } // namespace zylann

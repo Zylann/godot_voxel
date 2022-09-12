@@ -1,8 +1,7 @@
 #ifndef VOXEL_ENGINE_GD_H
 #define VOXEL_ENGINE_GD_H
 
-#include "core/object/class_db.h"
-#include <core/object/object.h>
+#include "voxel_engine.h"
 
 namespace zylann {
 class ZN_ThreadedTask;
@@ -18,6 +17,9 @@ public:
 	static VoxelEngine *get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
+
+	static zylann::voxel::VoxelEngine::ThreadsConfig get_config_from_godot(
+			unsigned int &out_main_thread_time_budget_usec);
 
 	VoxelEngine();
 

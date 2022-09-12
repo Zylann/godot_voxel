@@ -21,7 +21,7 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelGenerator::Voxe
 		WARN_PRINT_ONCE("VoxelGeneratorScript::_generate_block is unimplemented!");
 	}
 #else
-	WARN_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
+	ERR_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
 #endif
 
 	// The wrapper is discarded
@@ -43,7 +43,7 @@ int VoxelGeneratorScript::get_used_channels_mask() const {
 		WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is unimplemented!");
 	}
 #else
-	WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is not supported yet in GDExtension!");
+	ERR_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is not supported yet in GDExtension!");
 #endif
 	return mask;
 }

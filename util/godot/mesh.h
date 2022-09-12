@@ -2,9 +2,13 @@
 #define ZN_GODOT_MESH_H
 
 #include "../span.h"
-#include <core/variant/array.h>
 
-class Mesh;
+#if defined(ZN_GODOT)
+#include <scene/resources/mesh.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/mesh.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 

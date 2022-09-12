@@ -1,8 +1,7 @@
 #include "time_spread_task_runner.h"
+#include "../godot/time.h"
 #include "../memory.h"
 #include "../profiling.h"
-
-#include <core/os/time.h>
 
 namespace zylann {
 

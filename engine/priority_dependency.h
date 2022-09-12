@@ -1,8 +1,8 @@
 #ifndef PRIORITY_DEPENDENCY_H
 #define PRIORITY_DEPENDENCY_H
 
+#include "../util/math/vector3.h"
 #include "../util/tasks/task_priority.h"
-#include <core/math/vector3.h>
 #include <memory>
 #include <vector>
 

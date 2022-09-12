@@ -1,11 +1,18 @@
-#ifndef ZN_GODOT_COLLISION_SHAPE_H
-#define ZN_GODOT_COLLISION_SHAPE_H
+#ifndef ZN_GODOT_COLLISION_SHAPE_3D_H
+#define ZN_GODOT_COLLISION_SHAPE_3D_H
 
+#include "../macros.h"
 #include "../math/vector3f.h"
 #include "../span.h"
-#include <core/object/ref_counted.h>
 
-class ConcavePolygonShape3D;
+#if defined(ZN_GODOT)
+#include <scene/3d/collision_shape_3d.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/collision_shape3d.hpp>
+using namespace godot;
+#endif
+
+ZN_GODOT_FORWARD_DECLARE(class ConcavePolygonShape3D);
 
 namespace zylann {
 
@@ -17,4 +24,4 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arra
 
 } // namespace zylann
 
-#endif // ZN_GODOT_COLLISION_SHAPE_H
+#endif // ZN_GODOT_COLLISION_SHAPE_3D_H

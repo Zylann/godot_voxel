@@ -1,13 +1,12 @@
 #ifndef DIRECT_STATIC_BODY_H
 #define DIRECT_STATIC_BODY_H
 
+#include "../macros.h"
 #include "../non_copyable.h"
 #include "direct_mesh_instance.h"
+#include "shape_3d.h"
 
-#include <core/templates/rid.h>
-#include <scene/resources/shape_3d.h>
-
-class World3D;
+ZN_GODOT_FORWARD_DECLARE(class World3D);
 
 namespace zylann {
 

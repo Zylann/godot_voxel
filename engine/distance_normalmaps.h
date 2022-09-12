@@ -2,19 +2,21 @@
 #define VOXEL_DISTANCE_NORMALMAPS_H
 
 #include "../util/fixed_array.h"
+#include "../util/godot/ref_counted.h"
+#include "../util/macros.h"
 #include "../util/math/vector3f.h"
 #include "../util/span.h"
-
-#include <core/object/ref_counted.h>
-#include <vector>
 
 //#define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 // Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens
 // too frequently with block size 32. So instead we have to keep using 2D atlases with padding.
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
+#include "../util/godot/texture_array.h"
+#endif
+#include "../util/godot/image.h"
+#include "../util/godot/texture_2d.h"
 
-class Texture2DArray;
-class Texture2D;
-class Image;
+#include <vector>
 
 namespace zylann::voxel {
 

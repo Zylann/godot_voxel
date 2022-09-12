@@ -2197,7 +2197,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = _types[i];
 		_type_name_to_id.insert({ t.name, (VoxelGeneratorGraph::NodeTypeID)i });
 
-		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
+		for (uint32_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
 			t.param_name_to_index.insert({ p.name, param_index });
 			p.index = param_index;

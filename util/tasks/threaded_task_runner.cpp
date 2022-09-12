@@ -1,8 +1,7 @@
 #include "threaded_task_runner.h"
+#include "../godot/time.h"
 #include "../profiling.h"
 #include "../string_funcs.h"
-
-#include <core/os/time.h>
 
 namespace zylann {
 

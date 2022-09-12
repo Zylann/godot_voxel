@@ -49,6 +49,7 @@ public:
 
 	// These are usually in CoreStringNames, but when compiling as a GDExtension, we don't have access to them
 	StringName changed;
+	StringName frame_post_draw;
 };
 
 } // namespace zylann::voxel

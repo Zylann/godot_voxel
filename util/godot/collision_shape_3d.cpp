@@ -1,8 +1,8 @@
-#include "collision_shape.h"
+#include "collision_shape_3d.h"
 #include "../math/conv.h"
 #include "../profiling.h"
-#include <scene/resources/concave_polygon_shape_3d.h>
-#include <scene/resources/mesh.h>
+#include "concave_polygon_shape_3d.h"
+#include "mesh.h"
 
 namespace zylann {
 

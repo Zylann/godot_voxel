@@ -19,6 +19,11 @@ namespace zylann {
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src);
 void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src);
 
+// Can't have code using template Vector if we want to support compiling both as module and extension.
+// So the following are defined for every case instead of a template.
+void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src);
+void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src);
+
 // TODO Can't have code using template Vector if we want to support compiling both as module and extension
 #ifdef ZN_GODOT
 template <typename T>

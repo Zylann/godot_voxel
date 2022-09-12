@@ -3,6 +3,7 @@
 
 #include "../generators/voxel_generator.h"
 #include "../streams/voxel_stream.h"
+#include "../util/thread/mutex.h"
 #include "modifiers.h"
 #include "voxel_data_map.h"
 

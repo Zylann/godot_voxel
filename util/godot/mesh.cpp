@@ -1,11 +1,26 @@
-#include "mesh.h"
-#include <scene/resources/mesh.h>
 #include <map>
 #include <unordered_map>
 
 #include "funcs.h"
+#include "mesh.h"
 
 namespace zylann {
+
+inline int surface_get_array_len(const Mesh &mesh, int i) {
+#if defined(ZN_GODOT)
+	return mesh.surface_get_array_len(i);
+#elif defined(ZN_GODOT_EXTENSION)
+	return mesh._surface_get_array_len(i);
+#endif
+}
+
+inline Mesh::PrimitiveType surface_get_primitive_type(const Mesh &mesh, int i) {
+#if defined(ZN_GODOT)
+	return mesh.surface_get_primitive_type(i);
+#elif defined(ZN_GODOT_EXTENSION)
+	return Mesh::PrimitiveType(mesh._surface_get_primitive_type(i));
+#endif
+}
 
 bool is_surface_triangulated(const Array &surface) {
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
@@ -29,14 +44,14 @@ bool is_mesh_empty(const Mesh &mesh) {
 	if (mesh.get_surface_count() == 0) {
 		return true;
 	}
-	if (mesh.surface_get_array_len(0) == 0) {
+	if (surface_get_array_len(mesh, 0) == 0) {
 		return true;
 	}
 	return false;
 }
 
 Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_index) {
-	if (src_mesh.surface_get_primitive_type(surface_index) != Mesh::PRIMITIVE_TRIANGLES) {
+	if (surface_get_primitive_type(src_mesh, surface_index) != Mesh::PRIMITIVE_TRIANGLES) {
 		return Array();
 	}
 	Array src_surface = src_mesh.surface_get_arrays(surface_index);
@@ -78,7 +93,7 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 		}
 	}
 
-	std::vector<int> dst_indices;
+	std::vector<int32_t> dst_indices;
 	{
 		//PoolIntArray::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
@@ -114,8 +129,8 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 
 	PackedVector3Array dst_positions_pv;
 	PackedInt32Array dst_indices_pv;
-	raw_copy_to(dst_positions_pv, dst_positions);
-	raw_copy_to(dst_indices_pv, dst_indices);
+	copy_to(dst_positions_pv, dst_positions);
+	copy_to(dst_indices_pv, dst_indices);
 	Array dst_surface;
 	dst_surface.resize(Mesh::ARRAY_MAX);
 	dst_surface[Mesh::ARRAY_VERTEX] = dst_positions_pv;

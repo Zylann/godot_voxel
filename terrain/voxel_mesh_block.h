@@ -6,15 +6,14 @@
 #include "../util/fixed_array.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
+#include "../util/godot/world_3d.h"
 #include "../util/ref_count.h"
 #include "../util/span.h"
 
-#include <scene/resources/world_3d.h>
-
 #include <atomic>
 
-class Node3D;
-class ConcavePolygonShape3D;
+ZN_GODOT_FORWARD_DECLARE(class Node3D);
+ZN_GODOT_FORWARD_DECLARE(class ConcavePolygonShape3D);
 
 namespace zylann::voxel {
 

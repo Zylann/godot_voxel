@@ -1,11 +1,12 @@
 #ifndef DIRECT_MESH_INSTANCE_H
 #define DIRECT_MESH_INSTANCE_H
 
+#include "../macros.h"
 #include "../non_copyable.h"
-#include <core/templates/rid.h>
-#include <scene/resources/mesh.h>
+#include "mesh.h"
+#include "rendering_server.h"
 
-class World3D;
+ZN_GODOT_FORWARD_DECLARE(class World3D);
 
 namespace zylann {
 

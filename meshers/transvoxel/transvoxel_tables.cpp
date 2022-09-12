@@ -30,7 +30,7 @@
 //
 //================================================================================
 
-#include <core/error/error_macros.h>
+#include "../../util/errors.h"
 
 namespace zylann::voxel::transvoxel::tables {
 
@@ -44,7 +44,7 @@ struct RegularCellData {
 
 	inline unsigned char get_vertex_index(unsigned int i) const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= 15);
+		ZN_ASSERT(i < 15);
 #endif
 		return vertexIndex[i];
 	}
@@ -68,7 +68,7 @@ struct TransitionCellData {
 
 	inline unsigned char get_vertex_index(unsigned int i) const {
 #ifdef DEBUG_ENABLED
-		CRASH_COND(i >= 36);
+		ZN_ASSERT(i < 36);
 #endif
 		return vertexIndex[i];
 	}
@@ -109,7 +109,7 @@ const unsigned char regularCellClass[256] = {
 // clang-format on
 inline unsigned char get_regular_cell_class(unsigned int i) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 256);
+	ZN_ASSERT(i < 256);
 #endif
 	return regularCellClass[i];
 }
@@ -138,7 +138,7 @@ const RegularCellData regularCellData[16] = {
 // clang-format on
 inline const RegularCellData &get_regular_cell_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 16);
+	ZN_ASSERT(i < 16);
 #endif
 	return regularCellData[i];
 }
@@ -410,8 +410,8 @@ const unsigned short regularVertexData[256][12] = {
 // clang-format on
 inline unsigned short get_regular_vertex_data(unsigned int i, unsigned int j) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 256);
-	CRASH_COND(j >= 12);
+	ZN_ASSERT(i < 256);
+	ZN_ASSERT(j < 12);
 #endif
 	return regularVertexData[i][j];
 }
@@ -460,7 +460,7 @@ const unsigned char transitionCellClass[512] = {
 // clang-format on
 inline unsigned char get_transition_cell_class(unsigned int i) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 512);
+	ZN_ASSERT(i < 512);
 #endif
 	return transitionCellClass[i];
 }
@@ -530,7 +530,7 @@ const TransitionCellData transitionCellData[56] = {
 // clang-format on
 inline const TransitionCellData &get_transition_cell_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 56);
+	ZN_ASSERT(i < 56);
 #endif
 	return transitionCellData[i];
 }
@@ -544,7 +544,7 @@ const unsigned char transitionCornerData[13] = {
 // clang-format on
 inline unsigned char get_transition_corner_data(unsigned int i) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 13);
+	ZN_ASSERT(i < 13);
 #endif
 	return transitionCornerData[i];
 }
@@ -1072,8 +1072,8 @@ const unsigned short transitionVertexData[512][12] = {
 // clang-format on
 inline unsigned short get_transition_vertex_data(unsigned int i, unsigned int j) {
 #ifdef DEBUG_ENABLED
-	CRASH_COND(i >= 512);
-	CRASH_COND(j >= 12);
+	ZN_ASSERT(i < 512);
+	ZN_ASSERT(j < 12);
 #endif
 	return transitionVertexData[i][j];
 }

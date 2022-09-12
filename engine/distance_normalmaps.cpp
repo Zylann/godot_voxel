@@ -3,12 +3,11 @@
 #include "../generators/voxel_generator.h"
 #include "../storage/voxel_data.h"
 #include "../storage/voxel_data_grid.h"
+#include "../util/godot/image.h"
+#include "../util/godot/image_texture.h"
 #include "../util/math/conv.h"
 #include "../util/math/triangle.h"
 #include "../util/profiling.h"
-
-#include <core/io/image.h>
-#include <scene/resources/texture.h>
 
 namespace zylann::voxel {
 
@@ -318,7 +317,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Sp
 
 #if DEBUG_ENABLED
 	for (const float sd : query_sdf_buffer) {
-		ZN_ASSERT(!(Math::is_nan(sd) || Math::is_inf(sd)));
+		ZN_ASSERT(!(math::is_nan(sd) || math::is_inf(sd)));
 	}
 #endif
 }

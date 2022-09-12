@@ -1,10 +1,12 @@
 #ifndef ZN_THREADED_TASK_GD
 #define ZN_THREADED_TASK_GD
 
+#include "../../godot/ref_counted.h"
 #include "../threaded_task.h"
-#include <core/object/ref_counted.h>
+#ifdef ZN_GODOT
 #include <core/object/script_language.h> // needed for GDVIRTUAL macro
 #include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
+#endif
 
 namespace zylann {
 
@@ -23,9 +25,12 @@ public:
 	IThreadedTask *create_task();
 
 private:
+// TODO GDX: Need information on how to bind virtual functions, can't bind them at the moment
+#ifdef ZN_GODOT
 	GDVIRTUAL1(_run, int);
 	GDVIRTUAL0R(int, _get_priority);
 	GDVIRTUAL0R(bool, _is_cancelled);
+#endif
 
 	static void _bind_methods();
 

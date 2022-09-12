@@ -51,6 +51,7 @@ if env["tools"]:
 
 sources = [
     "constants/voxel_string_names.cpp",
+    "constants/cube_tables.cpp",
 
     "edition/voxel_tool.cpp",
     "edition/voxel_tool_buffer.cpp",
@@ -60,7 +61,11 @@ sources = [
     "storage/voxel_metadata.cpp",
     "storage/voxel_metadata_variant.cpp",
     "storage/voxel_memory_pool.cpp",
+    "storage/voxel_data.cpp",
+    "storage/voxel_data_map.cpp",
+    "storage/voxel_data_block.cpp",
     "storage/funcs.cpp",
+    "storage/modifiers.cpp",
 
     "generators/voxel_generator.cpp",
     "generators/voxel_generator_script.cpp",
@@ -82,6 +87,25 @@ sources = [
     "generators/graph/voxel_graph_runtime.cpp",
     "generators/graph/voxel_graph_shader_generator.cpp",
 
+    "streams/instance_data.cpp",
+    "streams/voxel_stream.cpp",
+
+    "meshers/voxel_mesher.cpp",
+    "meshers/transvoxel/voxel_mesher_transvoxel.cpp",
+    "meshers/transvoxel/transvoxel.cpp",
+    "meshers/transvoxel/transvoxel_tables.cpp",
+    "meshers/transvoxel/transvoxel_shader_minimal.cpp",
+
+    "engine/voxel_engine.cpp",
+    "engine/voxel_engine_gd.cpp",
+    "engine/distance_normalmaps.cpp",
+    "engine/generate_block_task.cpp",
+    "engine/load_block_data_task.cpp",
+    "engine/save_block_data_task.cpp",
+    "engine/priority_dependency.cpp",
+
+    "terrain/voxel_mesh_block.cpp",
+
     # Utilities
 
     "util/dstack.cpp",
@@ -92,6 +116,11 @@ sources = [
     "util/godot/variant.cpp",
     "util/godot/object.cpp",
     "util/godot/string.cpp",
+    "util/godot/mesh.cpp",
+    "util/godot/collision_shape_3d.cpp",
+    "util/godot/direct_mesh_instance.cpp",
+    "util/godot/direct_static_body.cpp",
+    "util/godot/project_settings.cpp",
 
     "util/noise/fast_noise_lite/fast_noise_lite_gradient.cpp",
     "util/noise/fast_noise_lite/fast_noise_lite_range.cpp",
@@ -101,6 +130,12 @@ sources = [
     "util/thread/thread.cpp",
     "util/thread/godot_thread_helper.cpp",
 
+    "util/tasks/godot/threaded_task_gd.cpp",
+    "util/tasks/async_dependency_tracker.cpp",
+    "util/tasks/progressive_task_runner.cpp",
+    "util/tasks/threaded_task_runner.cpp",
+    "util/tasks/time_spread_task_runner.cpp",
+
     "util/math/box3i.cpp",
     "util/math/sdf.cpp",
     "util/math/vector3.cpp",
@@ -109,8 +144,30 @@ sources = [
 
     # Entry point
     
-    "register_types_gdx.cpp"
+    "register_types_gdx.cpp",
+
+    # Thirdparty
+
+    "thirdparty/meshoptimizer/allocator.cpp",
+    "thirdparty/meshoptimizer/clusterizer.cpp",
+    "thirdparty/meshoptimizer/indexcodec.cpp",
+    "thirdparty/meshoptimizer/indexgenerator.cpp",
+    "thirdparty/meshoptimizer/overdrawanalyzer.cpp",
+    "thirdparty/meshoptimizer/overdrawoptimizer.cpp",
+    "thirdparty/meshoptimizer/simplifier.cpp",
+    "thirdparty/meshoptimizer/spatialorder.cpp",
+    "thirdparty/meshoptimizer/stripifier.cpp",
+    "thirdparty/meshoptimizer/vcacheanalyzer.cpp",
+    "thirdparty/meshoptimizer/vcacheoptimizer.cpp",
+    "thirdparty/meshoptimizer/vertexcodec.cpp",
+    "thirdparty/meshoptimizer/vertexfilter.cpp",
+    "thirdparty/meshoptimizer/vfetchanalyzer.cpp",
+    "thirdparty/meshoptimizer/vfetchoptimizer.cpp",
 ]
+
+# if env["tools"]:
+#     sources += [
+#     ]
 
 # WARNING
 # From a C++ developer point of view, the GodotCpp example and `.gdextension` files are confusing what the

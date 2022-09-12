@@ -1,8 +1,8 @@
 #ifndef VOXEL_INSTANCE_DATA_H
 #define VOXEL_INSTANCE_DATA_H
 
+#include "../util/math/transform_3d.h"
 #include "../util/span.h"
-#include <core/math/transform_3d.h>
 
 namespace zylann::voxel {
 

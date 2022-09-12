@@ -3,6 +3,8 @@
 #include "constants/voxel_string_names.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
+#include "engine/voxel_engine.h"
+#include "engine/voxel_engine_gd.h"
 #include "generators/graph/voxel_generator_graph.h"
 #include "generators/graph/voxel_graph_node_db.h"
 #include "generators/simple/voxel_generator_flat.h"
@@ -13,9 +15,12 @@
 #include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator.h"
 #include "generators/voxel_generator_script.h"
+#include "meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "meshers/voxel_mesher.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
+#include "util/godot/rendering_server.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 #include "util/thread/godot_thread_helper.h"
@@ -31,6 +36,21 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		VoxelMemoryPool::create_singleton();
 		VoxelStringNames::create_singleton();
 		VoxelGraphNodeDB::create_singleton();
+
+		unsigned int main_thread_budget_usec;
+		const VoxelEngine::ThreadsConfig threads_config =
+				gd::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
+		VoxelEngine::create_singleton(threads_config);
+		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
+		// TODO Pick this from the current renderer + user option (at time of writing, Godot 4 has only one renderer and
+		// has not figured out how such option would be exposed).
+		// Could use `can_create_resources_async` but this is internal.
+		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
+		// resource creation.
+		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
+		// different threads
+		// VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
+		// 		RenderingServer::get_singleton()->is_low_end() == false);
 
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
@@ -50,6 +70,9 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGeneratorNoise>();
 		ClassDB::register_class<VoxelGeneratorGraph>();
 
+		ClassDB::register_class<VoxelMesher>(); // TODO GDX: This class needs to be abstract
+		ClassDB::register_class<VoxelMesherTransvoxel>();
+
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
 
@@ -64,7 +87,7 @@ void uninitialize_extension_test_module(godot::ModuleInitializationLevel p_level
 		VoxelStringNames::destroy_singleton();
 		VoxelGraphNodeDB::destroy_singleton();
 		//gd::VoxelEngine::destroy_singleton();
-		//VoxelEngine::destroy_singleton();
+		VoxelEngine::destroy_singleton();
 
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();

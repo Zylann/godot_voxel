@@ -55,6 +55,7 @@ VoxelStringNames::VoxelStringNames() {
 #endif
 
 	changed = StringName("changed");
+	frame_post_draw = StringName("frame_post_draw");
 }
 
 } // namespace zylann::voxel

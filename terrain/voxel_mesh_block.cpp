@@ -1,12 +1,11 @@
 #include "voxel_mesh_block.h"
 #include "../constants/voxel_string_names.h"
-#include "../util/godot/collision_shape.h"
+#include "../util/godot/collision_shape_3d.h"
+#include "../util/godot/concave_polygon_shape_3d.h"
+#include "../util/godot/node_3d.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "free_mesh_task.h"
-
-#include <scene/3d/node_3d.h>
-#include <scene/resources/concave_polygon_shape_3d.h>
 
 namespace zylann::voxel {
 
