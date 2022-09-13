@@ -95,6 +95,9 @@ sources = [
     "meshers/transvoxel/transvoxel.cpp",
     "meshers/transvoxel/transvoxel_tables.cpp",
     "meshers/transvoxel/transvoxel_shader_minimal.cpp",
+    "meshers/blocky/voxel_mesher_blocky.cpp",
+    "meshers/blocky/voxel_blocky_library.cpp",
+    "meshers/blocky/voxel_blocky_model.cpp",
 
     "engine/voxel_engine.cpp",
     "engine/voxel_engine_gd.cpp",

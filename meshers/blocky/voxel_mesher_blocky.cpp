@@ -2,9 +2,9 @@
 #include "../../constants/cube_tables.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/span.h"
-#include <core/os/os.h>
 
 namespace zylann::voxel {
 
@@ -573,8 +573,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				copy_to(positions, arrays.positions);
 				copy_to(uvs, arrays.uvs);
 				copy_to(normals, arrays.normals);
-				raw_copy_to(colors, arrays.colors);
-				raw_copy_to(indices, arrays.indices);
+				copy_to(colors, arrays.colors);
+				copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
@@ -584,7 +584,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 				if (arrays.tangents.size() > 0) {
 					PackedFloat32Array tangents;
-					raw_copy_to(tangents, arrays.tangents);
+					copy_to(tangents, arrays.tangents);
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}
 			}
@@ -633,19 +633,21 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 
 #ifdef TOOLS_ENABLED
 
-void VoxelMesherBlocky::get_configuration_warnings(TypedArray<String> &out_warnings) const {
+void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	Ref<VoxelBlockyLibrary> library = get_library();
 
 	if (library.is_null()) {
-		out_warnings.append(TTR(VoxelMesherBlocky::get_class_static() + " has no " +
-				VoxelBlockyLibrary::get_class_static() + " assigned."));
+		out_warnings.append(ZN_TTR(String("{0} has no {1} assigned.")
+										   .format(varray(VoxelMesherBlocky::get_class_static(),
+												   VoxelBlockyLibrary::get_class_static()))));
 		return;
 	}
 
 	if (library->get_voxel_count() == 0) {
-		out_warnings.append(TTR("The " + VoxelBlockyLibrary::get_class_static() + " assigned to " +
-				VoxelMesherBlocky::get_class_static() + " has an empty list of " +
-				VoxelBlockyModel::get_class_static() + "s."));
+		out_warnings.append(
+				ZN_TTR(String("The {0} assigned to {1} has an empty list of {2}s.")
+								.format(varray(VoxelBlockyLibrary::get_class_static(),
+										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
 		return;
 	}
 
@@ -667,9 +669,10 @@ void VoxelMesherBlocky::get_configuration_warnings(TypedArray<String> &out_warni
 		}
 	}
 	if (!has_solid_model) {
-		out_warnings.append(TTR("The " + VoxelBlockyLibrary::get_class_static() + " assigned to " +
-				VoxelMesherBlocky::get_class_static() + " only has empty " + VoxelBlockyModel::get_class_static() +
-				"s."));
+		out_warnings.append(
+				ZN_TTR(String("The {0} assigned to {1} only has empty {2}s.")
+								.format(varray(VoxelBlockyLibrary::get_class_static(),
+										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
 	}
 }
 

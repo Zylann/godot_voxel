@@ -1,16 +1,25 @@
 #include "voxel_blocky_model.h"
+#include "../../util/godot/base_material_3d.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/shader_material.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"
 #include "voxel_blocky_library.h"
-#include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
+
+// TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
+#include "voxel_mesher_blocky.h"
 
 #include <unordered_map>
 
 namespace zylann::voxel {
 
-VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
+VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {
+#if defined(ZN_GODOT_EXTENSION)
+	_material_override_hint_string =
+			format("{},{}", BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static());
+#endif
+}
 
 static Cube::Side name_to_side(const String &s) {
 	if (s == "left") {
@@ -108,18 +117,45 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 		p_list->push_back(PropertyInfo(
 				Variant::NIL, "Material overrides", PROPERTY_HINT_NONE, "material_override_", PROPERTY_USAGE_GROUP));
 
+#ifdef ZN_GODOT_EXTENSION
+		{
+			MutexLock mlock(_property_names_mutex);
+			if (_material_override_property_names.size() != _surface_count) {
+				_material_override_property_names.resize(_surface_count, std::string());
+				_collision_enabled_property_names.resize(_surface_count, std::string());
+				for (unsigned int i = 0; i < _surface_count; ++i) {
+					_material_override_property_names[i] = format("material_override_/{}", i);
+					_collision_enabled_property_names[i] = format("collision_enabled_/{}", i);
+				}
+			}
+		}
+#endif
+
+#if defined(ZN_GODOT)
 		for (unsigned int i = 0; i < _surface_count; ++i) {
 			p_list->push_back(PropertyInfo(Variant::OBJECT, String("material_override_{0}").format(varray(i)),
 					PROPERTY_HINT_RESOURCE_TYPE,
 					BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()));
 		}
+#elif defined(ZN_GODOT_EXTENSION)
+		for (unsigned int i = 0; i < _surface_count; ++i) {
+			p_list->push_back(PropertyInfo(Variant::OBJECT, _material_override_property_names[i].c_str(),
+					PROPERTY_HINT_RESOURCE_TYPE, _material_override_hint_string.c_str()));
+		}
+#endif
 
 		p_list->push_back(PropertyInfo(
 				Variant::NIL, "Mesh collision", PROPERTY_HINT_NONE, "collision_enabled_", PROPERTY_USAGE_GROUP));
 
+#if defined(ZN_GODOT)
 		for (unsigned int i = 0; i < _surface_count; ++i) {
 			p_list->push_back(PropertyInfo(Variant::BOOL, String("collision_enabled_{0}").format(varray(i))));
 		}
+#elif defined(ZN_GODOT_EXTENSION)
+		for (unsigned int i = 0; i < _surface_count; ++i) {
+			p_list->push_back(PropertyInfo(Variant::BOOL, _collision_enabled_property_names[i].c_str()));
+		}
+#endif
 	}
 }
 
@@ -702,7 +738,11 @@ void VoxelBlockyModel::_bind_methods() {
 
 	ADD_GROUP("Box collision", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"),
+	// TODO What is the syntax `number:` in `hint_string` with `ARRAY`? It's old, hard to search usages in Godot's
+	// codebase, and I can't find it anywhere in the documentation
+	const std::string collision_aabbs_hint_string = format("{}:", Variant::AABB);
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING,
+						 collision_aabbs_hint_string.c_str()),
 			"set_collision_aabbs", "get_collision_aabbs");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
 			"get_collision_mask");

@@ -61,4 +61,12 @@ void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src) {
 	copy_to_template(dst, src);
 }
 
+void copy_to(PackedColorArray &dst, const std::vector<Color> &src) {
+	copy_to_template(dst, src);
+}
+
+void copy_to(PackedFloat32Array &dst, const std::vector<float> &src) {
+	copy_to_template(dst, src);
+}
+
 } // namespace zylann

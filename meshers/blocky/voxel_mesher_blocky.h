@@ -1,12 +1,11 @@
 #ifndef VOXEL_MESHER_BLOCKY_H
 #define VOXEL_MESHER_BLOCKY_H
 
+#include "../../util/godot/mesh.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "voxel_blocky_library.h"
 
-#include <core/object/ref_counted.h>
-#include <scene/resources/mesh.h>
 #include <vector>
 
 namespace zylann::voxel {
@@ -33,7 +32,13 @@ public:
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
+#if defined(ZN_GODOT)
 	Ref<Resource> duplicate(bool p_subresources = false) const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: Resource::duplicate() cannot be overriden! This might lead to unexpected behavior!
+	Ref<Resource> duplicate(bool p_subresources = false) const;
+#endif
+
 	int get_used_channels_mask() const override;
 
 	bool supports_lod() const override {
@@ -63,7 +68,7 @@ public:
 	};
 
 #ifdef TOOLS_ENABLED
-	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
 #endif
 
 	bool is_generating_collision_surface() const override {

@@ -2225,7 +2225,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			}
 		}
 
-		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
+		for (uint32_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
 			t.input_name_to_index.insert({ p.name, input_index });
 		}
