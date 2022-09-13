@@ -1,9 +1,14 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/godot/base_material_3d.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/geometry_2d.h"
+#include "../../util/godot/image.h"
+#include "../../util/godot/shader_material.h"
+#include "../../util/godot/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include <core/math/geometry_2d.h>
+#include "../../util/string_funcs.h"
 
 namespace zylann::voxel {
 
@@ -621,17 +626,17 @@ Ref<Image> make_greedy_atlas(
 	ZN_PROFILE_SCOPE();
 
 	// Pack rectangles
-	Vector<Vector2i> result_points;
+	std::vector<Vector2i> result_points;
 	Vector2i result_size;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Packing");
-		Vector<Vector2i> sizes;
+		std::vector<Vector2i> sizes;
 		sizes.resize(atlas_data.images.size());
 		for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
-			sizes.write[i] = Vector2i(im.size_x, im.size_y);
+			sizes[i] = Vector2i(im.size_x, im.size_y);
 		}
-		Geometry2D::make_atlas(sizes, result_points, result_size);
+		geometry_2d_make_atlas(to_span(sizes), result_points, result_size);
 	}
 
 	// DEBUG
@@ -693,7 +698,7 @@ Ref<Image> make_greedy_atlas(
 	}
 	Ref<Image> image;
 	image.instantiate();
-	image->create(result_size.x, result_size.y, false, Image::FORMAT_RGBA8, im_data);
+	create_image_from_data(**image, result_size, false, Image::FORMAT_RGBA8, im_data);
 
 	return image;
 }
@@ -910,7 +915,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				copy_to(positions, arrays.positions);
 				copy_to(normals, arrays.normals);
-				raw_copy_to(indices, arrays.indices);
+				copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
@@ -918,7 +923,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				if (arrays.colors.size() > 0) {
 					PackedColorArray colors;
-					raw_copy_to(colors, arrays.colors);
+					copy_to(colors, arrays.colors);
 					mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				}
 				if (arrays.uvs.size() > 0) {
@@ -1061,11 +1066,15 @@ void VoxelMesherCubes::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelColorPalette::get_class_static()),
 			"set_palette", "get_palette");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+
+	// Doing this for compatibility with GDExtension, which expects `const char*`...
+	const std::string material_hint = to_std_string(
+			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static()));
+
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
 			"_set_opaque_material", "_get_opaque_material");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
 			"_set_transparent_material", "_get_transparent_material");
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);

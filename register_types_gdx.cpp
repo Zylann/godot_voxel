@@ -18,6 +18,7 @@
 #include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_blocky_model.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
+#include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "meshers/voxel_mesher.h"
 #include "storage/voxel_buffer_gd.h"
@@ -75,10 +76,12 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_class<VoxelBlockyModel>();
+		ClassDB::register_class<VoxelColorPalette>();
 
 		ClassDB::register_class<VoxelMesher>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<VoxelMesherTransvoxel>();
 		ClassDB::register_class<VoxelMesherBlocky>();
+		ClassDB::register_class<VoxelMesherCubes>();
 
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();

@@ -225,6 +225,11 @@ Span<T> to_span(FixedArray<T, N> &a) {
 }
 
 template <typename T, unsigned int N>
+Span<const T> to_span(const FixedArray<T, N> &a) {
+	return Span<const T>(a.data(), a.size());
+}
+
+template <typename T, unsigned int N>
 Span<T> to_span(FixedArray<T, N> &a, unsigned int count) {
 	ZN_ASSERT(count <= a.size());
 	return Span<T>(a.data(), count);

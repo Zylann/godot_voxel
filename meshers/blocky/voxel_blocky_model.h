@@ -6,6 +6,7 @@
 #include "../../util/godot/binder.h"
 #include "../../util/godot/material.h"
 #include "../../util/godot/mesh.h"
+#include "../../util/macros.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 
@@ -184,12 +185,7 @@ public:
 		return _empty;
 	}
 
-#if defined(ZN_GODOT)
-	Ref<Resource> duplicate(bool p_subresources) const override;
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: Resource::duplicate() cannot be overriden! This might lead to unexpected behavior!
-	Ref<Resource> duplicate(bool p_subresources) const;
-#endif
+	Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	//------------------------------------------
 	// Properties for internal usage only

@@ -16,8 +16,12 @@ namespace zylann {
 // Explicit conversion methods. Not in respective files because it would cause circular dependencies.
 
 // Godot => Godot
+// Note, in Godot modules there are implicit conversions. But I dont like implicit.
 
-// Note, in Godot this is an implicit conversion. But I dont like implicit
+inline Vector2i to_vec2i(const Vector2 v) {
+	return Vector2i(v.x, v.y);
+}
+
 inline Vector3i to_vec3i(Vector3 v) {
 	return Vector3i(v.x, v.y, v.z);
 }

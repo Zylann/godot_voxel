@@ -1,4 +1,5 @@
 #include "voxel_color_palette.h"
+#include "../../util/span.h"
 
 namespace zylann::voxel {
 
@@ -22,12 +23,13 @@ Color VoxelColorPalette::get_color(int index) const {
 }
 
 PackedColorArray VoxelColorPalette::get_colors() const {
-	PackedColorArray colors;
-	colors.resize(_colors.size());
+	PackedColorArray dst;
+	// Not resizing up-front to make code portable, because in GDExtension writing to packed arrays has different
+	// syntax.
 	for (unsigned int i = 0; i < _colors.size(); ++i) {
-		colors.write[i] = _colors[i];
+		dst.push_back(_colors[i]);
 	}
-	return colors;
+	return dst;
 }
 
 void VoxelColorPalette::set_colors(PackedColorArray colors) {
@@ -46,9 +48,10 @@ void VoxelColorPalette::clear() {
 
 PackedInt32Array VoxelColorPalette::_b_get_data() const {
 	PackedInt32Array colors;
-	colors.resize(_colors.size());
+	// Not resizing up-front to make code portable, because in GDExtension writing to packed arrays has different
+	// syntax.
 	for (size_t i = 0; i < _colors.size(); ++i) {
-		colors.write[i] = _colors[i].to_u32();
+		colors.push_back(_colors[i].to_u32());
 	}
 	return colors;
 }

@@ -98,6 +98,8 @@ sources = [
     "meshers/blocky/voxel_mesher_blocky.cpp",
     "meshers/blocky/voxel_blocky_library.cpp",
     "meshers/blocky/voxel_blocky_model.cpp",
+    "meshers/cubes/voxel_mesher_cubes.cpp",
+    "meshers/cubes/voxel_color_palette.cpp",
 
     "engine/voxel_engine.cpp",
     "engine/voxel_engine_gd.cpp",
@@ -124,6 +126,7 @@ sources = [
     "util/godot/direct_mesh_instance.cpp",
     "util/godot/direct_static_body.cpp",
     "util/godot/project_settings.cpp",
+    "util/godot/geometry_2d.cpp",
 
     "util/noise/fast_noise_lite/fast_noise_lite_gradient.cpp",
     "util/noise/fast_noise_lite/fast_noise_lite_range.cpp",

@@ -9,6 +9,15 @@
 
 #define ZN_ARRAY_LENGTH(a) (sizeof(a) / sizeof(a[0]))
 
+#ifdef ZN_GODOT_EXTENSION
+// TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules). This will lead to performance
+// degradation and maybe unexpected behavior!
+#define ZN_OVERRIDE_UNLESS_GODOT_EXTENSION
+#else
+#define ZN_OVERRIDE_UNLESS_GODOT_EXTENSION override
+#endif
+
+// TODO Move this to `godot/string.h`?
 // `TTR` means "tools translate", which is for editor-only localized messages.
 // Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor
 // code that can produce errors in this module, and we still want them to compile properly.

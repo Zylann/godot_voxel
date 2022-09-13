@@ -32,12 +32,7 @@ public:
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
-#if defined(ZN_GODOT)
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: Resource::duplicate() cannot be overriden! This might lead to unexpected behavior!
-	Ref<Resource> duplicate(bool p_subresources = false) const;
-#endif
+	Ref<Resource> duplicate(bool p_subresources = false) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	int get_used_channels_mask() const override;
 

@@ -43,7 +43,7 @@ void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src) {
 }
 
 template <typename PackedVector_T, typename T>
-inline void copy_to_template(PackedVector_T &dst, const std::vector<T> &src) {
+inline void copy_to_template(PackedVector_T &dst, Span<const T> src) {
 	dst.resize(src.size());
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(dst.size() == src.size());
@@ -54,18 +54,22 @@ inline void copy_to_template(PackedVector_T &dst, const std::vector<T> &src) {
 }
 
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src) {
-	copy_to_template(dst, src);
+	copy_to_template(dst, to_span(src));
 }
 
 void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src) {
-	copy_to_template(dst, src);
+	copy_to_template(dst, to_span(src));
 }
 
 void copy_to(PackedColorArray &dst, const std::vector<Color> &src) {
-	copy_to_template(dst, src);
+	copy_to_template(dst, to_span(src));
 }
 
 void copy_to(PackedFloat32Array &dst, const std::vector<float> &src) {
+	copy_to_template(dst, to_span(src));
+}
+
+void copy_to(PackedColorArray &dst, Span<const Color> src) {
 	copy_to_template(dst, src);
 }
 

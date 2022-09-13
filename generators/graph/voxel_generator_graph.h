@@ -179,12 +179,7 @@ public:
 	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
 			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
 
-#if defined(ZN_GODOT)
-	Ref<Resource> duplicate(bool p_subresources) const override;
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: Resource::duplicate() cannot be overriden! This might lead to unexpected behavior!
-	Ref<Resource> duplicate(bool p_subresources) const;
-#endif
+	Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	// Utility
 
