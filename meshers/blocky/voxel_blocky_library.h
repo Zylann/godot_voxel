@@ -3,7 +3,7 @@
 
 #include "../../util/dynamic_bitset.h"
 #include "../../util/godot/ref_counted.h"
-#include "../../util/godot/typed_array.h"
+#include "../../util/godot/typed_material_array.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
 // TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic

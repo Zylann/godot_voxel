@@ -9,9 +9,23 @@ void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> 
 
 #if defined(ZN_GODOT)
 
-#error "TODO Implement portable `make_atlas` for Godot modules
+	Vector<Vector2i> sizes;
+	sizes.resize(p_sizes.size());
+	Vector2i *sizes_data = sizes.ptrw();
+	ZN_ASSERT_RETURN(sizes_data != nullptr);
+	memcpy(sizes_data, p_sizes.data(), p_sizes.size() * sizeof(Vector2i));
+
+	Vector<Vector2i> result;
+	Geometry2D::make_atlas(sizes, result, r_size);
+
+	r_result.resize(result.size());
+	memcpy(r_result.data(), result.ptr(), result.size() * sizeof(Vector2i));
 
 #elif defined(ZN_GODOT_EXTENSION)
+
+	// PackedVector2iArray doesn't exist, so have to convert to float. Internally Godot allocates another array and
+	// converts back to ints. Then allocates another float array and converts results to floats, returns it, and then
+	// we finally convert back to ints... so much for not having added `PackedVector2iArray`.
 
 	PackedVector2Array sizes;
 	sizes.resize(p_sizes.size());

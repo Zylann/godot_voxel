@@ -124,7 +124,11 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 	}
 
 	if (mesher.is_valid()) {
-		mesher->get_configuration_warnings(warnings);
+		PackedStringArray resource_warnings;
+		mesher->get_configuration_warnings(resource_warnings);
+		for (int i = 0; i < resource_warnings.size(); ++i) {
+			warnings.append(resource_warnings);
+		}
 	}
 
 	return warnings;
