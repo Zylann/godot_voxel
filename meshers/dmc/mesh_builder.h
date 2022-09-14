@@ -1,8 +1,8 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
+#include "../../util/godot/array.h"
 #include "../../util/math/vector3f.h"
-#include <core/variant/array.h>
 #include <map>
 #include <vector>
 

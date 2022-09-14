@@ -1,11 +1,12 @@
 #ifndef VOXEL_MESHER_DMC_H
 #define VOXEL_MESHER_DMC_H
 
+#include "../../util/godot/binder.h"
+#include "../../util/godot/mesh.h"
 #include "../../util/object_pool.h"
 #include "../voxel_mesher.h"
 #include "hermite_value.h"
 #include "mesh_builder.h"
-#include <scene/resources/mesh.h>
 
 namespace zylann::voxel::dmc {
 
@@ -107,7 +108,7 @@ public:
 
 	Dictionary get_statistics() const;
 
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	Ref<Resource> duplicate(bool p_subresources = false) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 	int get_used_channels_mask() const override;
 
 protected:
@@ -146,8 +147,8 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SimplifyMode)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::MeshMode)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SeamMode)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, SimplifyMode)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, MeshMode)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, SeamMode)
 
 #endif // VOXEL_MESHER_DMC_H

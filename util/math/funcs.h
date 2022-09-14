@@ -202,6 +202,16 @@ inline unsigned int get_next_power_of_two_32(unsigned int x) {
 	return ++x;
 }
 
+// Function to find the previous power of 2 to an integer.
+inline unsigned int get_previous_power_of_two_32(unsigned int x) {
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x - (x >> 1);
+}
+
 // Assuming `pot == (1 << i)`, returns `i`.
 inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 #ifdef DEBUG_ENABLED

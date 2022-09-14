@@ -100,6 +100,8 @@ sources = [
     "meshers/blocky/voxel_blocky_model.cpp",
     "meshers/cubes/voxel_mesher_cubes.cpp",
     "meshers/cubes/voxel_color_palette.cpp",
+    "meshers/dmc/voxel_mesher_dmc.cpp",
+    "meshers/dmc/mesh_builder.cpp",
 
     "engine/voxel_engine.cpp",
     "engine/voxel_engine_gd.cpp",
