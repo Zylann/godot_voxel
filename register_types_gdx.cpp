@@ -25,6 +25,7 @@
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
+#include "util/godot/engine.h"
 #include "util/godot/rendering_server.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
@@ -57,8 +58,12 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		// VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
 		// 		RenderingServer::get_singleton()->is_low_end() == false);
 
+		add_godot_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
+
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
+
+		VoxelMesherTransvoxel::load_static_resources();
 
 		ClassDB::register_class<VoxelTool>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<VoxelToolBuffer>(); // TODO GDX: This class needs to be non-instantiable by scripts
@@ -95,10 +100,12 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 void uninitialize_extension_test_module(godot::ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		//VoxelMesherTransvoxel::free_static_resources();
+		remove_godot_singleton("VoxelEngine");
+
+		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
 		VoxelGraphNodeDB::destroy_singleton();
-		//gd::VoxelEngine::destroy_singleton();
+		gd::VoxelEngine::destroy_singleton();
 		VoxelEngine::destroy_singleton();
 
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
