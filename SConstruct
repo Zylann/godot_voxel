@@ -99,8 +99,10 @@ sources = [
     "streams/voxel_block_serializer_gd.cpp",
     "streams/voxel_stream.cpp",
     "streams/voxel_stream_script.cpp",
+    "streams/voxel_stream_cache.cpp",
     "streams/region/voxel_stream_region_files.cpp",
     "streams/region/region_file.cpp",
+    "streams/sqlite/voxel_stream_sqlite.cpp",
     "streams/vox/vox_data.cpp",
     "streams/vox/vox_loader.cpp",
 
@@ -212,12 +214,21 @@ sources = [
     "thirdparty/meshoptimizer/vfetchanalyzer.cpp",
     "thirdparty/meshoptimizer/vfetchoptimizer.cpp",
 
-    "thirdparty/lz4/lz4.c"
+    "thirdparty/lz4/lz4.c",
+
+    "thirdparty/sqlite/sqlite3.c",
 ]
 
 # if env["tools"]:
 #     sources += [
 #     ]
+
+if env["platform"] == "windows":
+	# When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:
+	# `sqlite3.c(42754): warning C4996: 'GetVersionExA': was declared deprecated `
+	# To fix it, let's indicate to SQLite it should not use this function, even if it is available.
+	# https://stackoverflow.com/questions/20031597/error-c4996-received-when-compiling-sqlite-c-in-visual-studio-2013
+	env.Append(CPPDEFINES={"SQLITE_WIN32_GETVERSIONEX": 0})
 
 # WARNING
 # From a C++ developer point of view, the GodotCpp example and `.gdextension` files are confusing what the

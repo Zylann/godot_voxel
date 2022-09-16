@@ -27,6 +27,7 @@
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
+#include "streams/sqlite/voxel_stream_sqlite.h"
 #include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer.h"
 #include "streams/voxel_block_serializer_gd.h"
@@ -91,6 +92,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelStream>();
 		ClassDB::register_class<VoxelStreamScript>();
 		ClassDB::register_class<VoxelStreamRegionFiles>();
+		ClassDB::register_class<VoxelStreamSQLite>();
 
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_class<VoxelBlockyModel>();
