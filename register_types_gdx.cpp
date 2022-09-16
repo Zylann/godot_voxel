@@ -27,6 +27,8 @@
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
+#include "streams/voxel_block_serializer.h"
+#include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_script.h"
 #include "util/godot/engine.h"
 #include "util/godot/rendering_server.h"
@@ -72,6 +74,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelToolBuffer>(); // TODO GDX: This class needs to be non-instantiable by scripts
 
 		ClassDB::register_class<gd::VoxelBuffer>();
+		ClassDB::register_class<gd::VoxelBlockSerializer>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();

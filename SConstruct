@@ -96,6 +96,7 @@ sources = [
     "streams/file_utils.cpp",
     "streams/compressed_data.cpp",
     "streams/voxel_block_serializer.cpp",
+    "streams/voxel_block_serializer_gd.cpp",
     "streams/voxel_stream.cpp",
     "streams/voxel_stream_script.cpp",
     "streams/region/voxel_stream_region_files.cpp",
