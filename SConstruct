@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import glob
 
 # This is the entry point for SCons to build this engine as a GDExtension.
 # To build as a module, see `SCsub`.
@@ -50,182 +51,68 @@ if env["tools"]:
     env.Append(CPPDEFINES=["TOOLS_ENABLED"])
 
 sources = [
-    "constants/voxel_string_names.cpp",
-    "constants/cube_tables.cpp",
+    "constants/*.cpp",
 
-    "edition/voxel_tool.cpp",
-    "edition/voxel_tool_buffer.cpp",
-    "edition/voxel_tool_terrain.cpp",
-    "edition/voxel_tool_lod_terrain.cpp",
-    "edition/mesh_sdf.cpp",
-    "edition/voxel_mesh_sdf_gd.cpp",
-    "edition/voxel_raycast_result.cpp",
+	"meshers/blocky/*.cpp",
+	"meshers/transvoxel/*.cpp",
+	"meshers/dmc/*.cpp",
+	"meshers/cubes/*.cpp",
+	"meshers/*.cpp",
 
-    "storage/voxel_buffer_internal.cpp",
-    "storage/voxel_buffer_gd.cpp",
-    "storage/voxel_metadata.cpp",
-    "storage/voxel_metadata_variant.cpp",
-    "storage/voxel_memory_pool.cpp",
-    "storage/voxel_data.cpp",
-    "storage/voxel_data_map.cpp",
-    "storage/voxel_data_block.cpp",
-    "storage/funcs.cpp",
-    "storage/modifiers.cpp",
-    "storage/modifiers_gd.cpp",
+	"streams/*.cpp",
+	"streams/sqlite/*.cpp",
+	"streams/region/*.cpp",
+	"streams/vox/*.cpp",
 
-    "generators/voxel_generator.cpp",
-    "generators/voxel_generator_script.cpp",
-    "generators/simple/voxel_generator_flat.cpp",
-    "generators/simple/voxel_generator_heightmap.cpp",
-    "generators/simple/voxel_generator_waves.cpp",
-    "generators/simple/voxel_generator_image.cpp",
-    "generators/simple/voxel_generator_noise_2d.cpp",
-    "generators/simple/voxel_generator_noise.cpp",
+	"storage/*.cpp",
 
-    "generators/graph/code_gen_helper.cpp",
-    "generators/graph/fast_noise_lite_gdshader.cpp",
-    "generators/graph/image_range_grid.cpp",
-    "generators/graph/program_graph.cpp",
-    "generators/graph/range_utility.cpp",
-    "generators/graph/voxel_generator_graph.cpp",
-    "generators/graph/voxel_graph_compiler.cpp",
-    "generators/graph/voxel_graph_node_db.cpp",
-    "generators/graph/voxel_graph_runtime.cpp",
-    "generators/graph/voxel_graph_shader_generator.cpp",
+	"generators/*.cpp",
+	"generators/graph/*.cpp",
+	"generators/simple/*.cpp",
 
-    "streams/instance_data.cpp",
-    "streams/file_utils.cpp",
-    "streams/compressed_data.cpp",
-    "streams/voxel_block_serializer.cpp",
-    "streams/voxel_block_serializer_gd.cpp",
-    "streams/voxel_stream.cpp",
-    "streams/voxel_stream_script.cpp",
-    "streams/voxel_stream_cache.cpp",
-    "streams/region/voxel_stream_region_files.cpp",
-    "streams/region/region_file.cpp",
-    "streams/sqlite/voxel_stream_sqlite.cpp",
-    "streams/vox/vox_data.cpp",
-    "streams/vox/vox_loader.cpp",
+	"terrain/*.cpp",
+	"terrain/instancing/*.cpp",
+	"terrain/fixed_lod/*.cpp",
+	"terrain/variable_lod/*.cpp",
 
-    "meshers/voxel_mesher.cpp",
-    "meshers/transvoxel/voxel_mesher_transvoxel.cpp",
-    "meshers/transvoxel/transvoxel.cpp",
-    "meshers/transvoxel/transvoxel_tables.cpp",
-    "meshers/transvoxel/transvoxel_shader_minimal.cpp",
-    "meshers/blocky/voxel_mesher_blocky.cpp",
-    "meshers/blocky/voxel_blocky_library.cpp",
-    "meshers/blocky/voxel_blocky_model.cpp",
-    "meshers/cubes/voxel_mesher_cubes.cpp",
-    "meshers/cubes/voxel_color_palette.cpp",
-    "meshers/dmc/voxel_mesher_dmc.cpp",
-    "meshers/dmc/mesh_builder.cpp",
+	"engine/*.cpp",
+	"edition/*.cpp",
 
-    "engine/voxel_engine.cpp",
-    "engine/voxel_engine_gd.cpp",
-    "engine/voxel_engine_updater.cpp",
-    "engine/distance_normalmaps.cpp",
-    "engine/generate_block_task.cpp",
-    "engine/load_block_data_task.cpp",
-    "engine/load_all_blocks_data_task.cpp",
-    "engine/save_block_data_task.cpp",
-    "engine/mesh_block_task.cpp",
-    "engine/generate_distance_normalmap_task.cpp",
-    "engine/priority_dependency.cpp",
+    # Utility
 
-    "terrain/voxel_mesh_block.cpp",
-    "terrain/voxel_node.cpp",
-    "terrain/voxel_save_completion_tracker.cpp",
-    "terrain/voxel_data_block_enter_info.cpp",
-    "terrain/voxel_viewer.cpp",
-    "terrain/fixed_lod/voxel_terrain.cpp",
-    "terrain/fixed_lod/voxel_box_mover.cpp",
-    "terrain/variable_lod/voxel_lod_terrain.cpp",
-    "terrain/variable_lod/voxel_lod_terrain_update_task.cpp",
-    "terrain/variable_lod/voxel_mesh_block_vlt.cpp",
-    "terrain/instancing/voxel_instance_generator.cpp",
-    "terrain/instancing/voxel_instance_library_item.cpp",
-    "terrain/instancing/voxel_instance_library_multimesh_item.cpp",
-    "terrain/instancing/voxel_instance_library_scene_item.cpp",
-    "terrain/instancing/voxel_instance_library.cpp",
-    "terrain/instancing/voxel_instancer.cpp",
-
-    "editor/voxel_debug.cpp",
-
-    # Utilities
-
-    "util/dstack.cpp",
-    "util/expression_parser.cpp",
-    "util/log.cpp",
-
-    "util/godot/funcs.cpp",
-    "util/godot/variant.cpp",
-    "util/godot/object.cpp",
-    "util/godot/node.cpp",
-    "util/godot/string.cpp",
-    "util/godot/mesh.cpp",
-    "util/godot/shader.cpp",
-    "util/godot/pcg.cpp",
-    "util/godot/random_pcg.cpp",
-    "util/godot/multimesh.cpp",
-    "util/godot/concave_polygon_shape_3d.cpp",
-    "util/godot/direct_mesh_instance.cpp",
-    "util/godot/direct_multimesh_instance.cpp",
-    "util/godot/direct_static_body.cpp",
-    "util/godot/project_settings.cpp",
-    "util/godot/geometry_2d.cpp",
-    "util/godot/shader_material_pool.cpp",
-    "util/godot/rendering_server.cpp",
-
-    "util/noise/fast_noise_lite/fast_noise_lite_gradient.cpp",
-    "util/noise/fast_noise_lite/fast_noise_lite_range.cpp",
-    "util/noise/fast_noise_lite/fast_noise_lite.cpp",
-    "util/noise/gd_noise_range.cpp",
-
-    "util/thread/thread.cpp",
+	"util/*.cpp",
+	"util/math/*.cpp",
+	"util/godot/*.cpp",
+	"util/noise/fast_noise_lite/*.cpp",
+	"util/noise/gd_noise_range.cpp",
+	"util/thread/thread.cpp",
     "util/thread/godot_thread_helper.cpp",
-
-    "util/tasks/godot/threaded_task_gd.cpp",
-    "util/tasks/async_dependency_tracker.cpp",
-    "util/tasks/progressive_task_runner.cpp",
-    "util/tasks/threaded_task_runner.cpp",
-    "util/tasks/time_spread_task_runner.cpp",
-
-    "util/math/box3i.cpp",
-    "util/math/sdf.cpp",
-    "util/math/vector3.cpp",
-    "util/math/vector3f.cpp",
-    "util/math/vector3i.cpp",
-
-    # Entry point
-    
-    "register_types_gdx.cpp",
+	"util/tasks/*.cpp",
+	"util/tasks/godot/*.cpp",
 
     # Thirdparty
 
-    "thirdparty/meshoptimizer/allocator.cpp",
-    "thirdparty/meshoptimizer/clusterizer.cpp",
-    "thirdparty/meshoptimizer/indexcodec.cpp",
-    "thirdparty/meshoptimizer/indexgenerator.cpp",
-    "thirdparty/meshoptimizer/overdrawanalyzer.cpp",
-    "thirdparty/meshoptimizer/overdrawoptimizer.cpp",
-    "thirdparty/meshoptimizer/simplifier.cpp",
-    "thirdparty/meshoptimizer/spatialorder.cpp",
-    "thirdparty/meshoptimizer/stripifier.cpp",
-    "thirdparty/meshoptimizer/vcacheanalyzer.cpp",
-    "thirdparty/meshoptimizer/vcacheoptimizer.cpp",
-    "thirdparty/meshoptimizer/vertexcodec.cpp",
-    "thirdparty/meshoptimizer/vertexfilter.cpp",
-    "thirdparty/meshoptimizer/vfetchanalyzer.cpp",
-    "thirdparty/meshoptimizer/vfetchoptimizer.cpp",
-
-    "thirdparty/lz4/lz4.c",
-
-    "thirdparty/sqlite/sqlite3.c",
+	"thirdparty/lz4/*.c",
+	"thirdparty/sqlite/*.c",
+	"thirdparty/meshoptimizer/*.cpp"
 ]
 
-# if env["tools"]:
-#     sources += [
-#     ]
+if env["tools"]:
+    sources += [
+        "editor/voxel_debug.cpp"
+    ]
+
+def process_glob_paths(p_sources):
+    out = []
+    for path in p_sources:
+        if '*' in path:
+            paths = glob.glob(path)
+            out += paths
+        else:
+            out.append(path)
+    return out
+
+sources = process_glob_paths(sources)
 
 if env["platform"] == "windows":
 	# When compiling SQLite with Godot on Windows with MSVC, it produces the following warning:
