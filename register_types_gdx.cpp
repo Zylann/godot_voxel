@@ -27,6 +27,7 @@
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
 #include "streams/region/voxel_stream_region_files.h"
+#include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_script.h"
@@ -75,6 +76,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<gd::VoxelBuffer>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
+		ClassDB::register_class<VoxelVoxLoader>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();

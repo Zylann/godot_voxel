@@ -1,10 +1,10 @@
 #include "vox_data.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/file.h"
 #include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 
-#include <core/io/file_access.h>
-#include <core/variant/variant.h>
 #include <unordered_set>
 
 namespace zylann::voxel::magica {
@@ -48,7 +48,7 @@ uint32_t g_default_palette[PALETTE_SIZE] = {
 };
 // clang-format on
 
-static Error parse_string(FileAccess &f, String &s) {
+static Error parse_string(GodotFile &f, String &s) {
 	const int size = f.get_32();
 
 	// Sanity checks
@@ -57,15 +57,16 @@ static Error parse_string(FileAccess &f, String &s) {
 
 	static thread_local std::vector<char> bytes;
 	bytes.resize(size);
-	ERR_FAIL_COND_V(f.get_buffer((uint8_t *)bytes.data(), bytes.size()) != bytes.size(), ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(
+			get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(), ERR_PARSE_ERROR);
 
-	s.clear();
-	ERR_FAIL_COND_V(s.parse_utf8(bytes.data(), bytes.size()), ERR_PARSE_ERROR);
+	s = "";
+	ERR_FAIL_COND_V(parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
 
 	return OK;
 }
 
-static Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
+static Error parse_dictionary(GodotFile &f, std::unordered_map<String, String> &dict) {
 	const int item_count = f.get_32();
 
 	// Sanity checks
@@ -162,7 +163,7 @@ static Basis parse_basis(uint8_t data) {
 	return b;
 }
 
-Error parse_node_common_header(Node &node, FileAccess &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
+Error parse_node_common_header(Node &node, GodotFile &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -199,17 +200,17 @@ Error Data::_load_from_file(String fpath) {
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox.txt
 	// https://github.com/ephtracy/voxel-model/blob/master/MagicaVoxel-file-format-vox-extension.txt
 
-	ZN_PRINT_VERBOSE(format("Loading {}", fpath));
+	ZN_PRINT_VERBOSE(format("Loading {}", GodotStringWrapper(fpath)));
 
 	Error open_err;
-	Ref<FileAccess> f_ref = FileAccess::open(fpath, FileAccess::READ, &open_err);
+	Ref<GodotFile> f_ref = open_file(fpath, GodotFile::READ, open_err);
 	if (f_ref == nullptr) {
 		return open_err;
 	}
-	FileAccess &f = **f_ref;
+	GodotFile &f = **f_ref;
 
 	char magic[5] = { 0 };
-	ERR_FAIL_COND_V(f.get_buffer((uint8_t *)magic, 4) != 4, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);
 	ERR_FAIL_COND_V(strcmp(magic, "VOX ") != 0, ERR_PARSE_ERROR);
 
 	const uint32_t version = f.get_32();
@@ -223,7 +224,7 @@ Error Data::_load_from_file(String fpath) {
 
 	while (f.get_position() < file_length) {
 		char chunk_id[5] = { 0 };
-		ERR_FAIL_COND_V(f.get_buffer((uint8_t *)chunk_id, 4) != 4, ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)chunk_id, 4)) != 4, ERR_PARSE_ERROR);
 
 		const uint32_t chunk_size = f.get_32();
 		f.get_32(); // child_chunks_size
@@ -312,7 +313,7 @@ Error Data::_load_from_file(String fpath) {
 			auto t_it = frame.find("_t");
 			if (t_it != frame.end()) {
 				// It is 3 integers formatted as text
-				Vector<float> coords = t_it->second.split_floats(" ");
+				const PackedFloat32Array coords = t_it->second.split_floats(" ");
 				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
 				//ZN_PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
 				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
@@ -551,7 +552,7 @@ Error Data::_load_from_file(String fpath) {
 		ERR_FAIL_COND_V_MSG(_root_node_id == -1, ERR_INVALID_DATA, "Root node not found");
 	}
 
-	ZN_PRINT_VERBOSE(format("Done loading {}", fpath));
+	ZN_PRINT_VERBOSE(format("Done loading {}", GodotStringWrapper(fpath)));
 
 	return OK;
 }

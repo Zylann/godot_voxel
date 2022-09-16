@@ -3,12 +3,11 @@
 
 #include "../../util/fixed_array.h"
 #include "../../util/godot/string.h"
+#include "../../util/math/basis.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory.h"
 
-#include <core/math/basis.h>
-#include <core/string/ustring.h>
 #include <unordered_map>
 #include <vector>
 

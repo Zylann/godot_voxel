@@ -1,7 +1,7 @@
 #ifndef VOX_LOADER_H
 #define VOX_LOADER_H
 
-#include <core/object/ref_counted.h>
+#include "../../util/godot/ref_counted.h"
 
 namespace zylann::voxel {
 
@@ -16,7 +16,8 @@ class VoxelVoxLoader : public RefCounted {
 	GDCLASS(VoxelVoxLoader, RefCounted);
 
 public:
-	Error load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette);
+	// TODO GDX: Can't bind functions returning a `godot::Error` enum
+	int /*Error*/ load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette);
 	// TODO Have chunked loading for better memory usage
 	// TODO Saving
 

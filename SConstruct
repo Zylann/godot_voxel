@@ -101,6 +101,8 @@ sources = [
     "streams/voxel_stream_script.cpp",
     "streams/region/voxel_stream_region_files.cpp",
     "streams/region/region_file.cpp",
+    "streams/vox/vox_data.cpp",
+    "streams/vox/vox_loader.cpp",
 
     "meshers/voxel_mesher.cpp",
     "meshers/transvoxel/voxel_mesher_transvoxel.cpp",

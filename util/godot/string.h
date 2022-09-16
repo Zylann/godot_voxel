@@ -16,6 +16,8 @@ using namespace godot;
 #include <vector>
 #endif
 
+#include "../span.h"
+
 namespace zylann {
 
 inline String to_godot(const std::string_view sv) {
@@ -35,6 +37,16 @@ inline std::string to_std_string(const String &godot_string) {
 	const CharString cs = godot_string.utf8();
 	std::string s = cs.get_data();
 	return s;
+}
+
+inline Error parse_utf8(String &s, Span<const char> utf8) {
+#if defined(ZN_GODOT)
+	return s.parse_utf8(utf8.data(), utf8.size());
+#elif defined(ZN_GODOT_EXTENSION)
+	s.parse_utf8(utf8.data(), utf8.size());
+	// The Godot API doesn't return anything, impossible to tell if parsing succeeded.
+	return OK;
+#endif
 }
 
 } // namespace zylann
