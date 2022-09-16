@@ -5,6 +5,8 @@
 #include <core/object/object.h>
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/object.hpp>
+// The `GDCLASS` macro isn't compiling when inheriting `Object`, unless `class_db.hpp` is also included
+#include <godot_cpp/core/class_db.hpp>
 using namespace godot;
 #endif
 

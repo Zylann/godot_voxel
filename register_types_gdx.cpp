@@ -32,6 +32,9 @@
 #include "streams/voxel_block_serializer.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_script.h"
+#include "terrain/fixed_lod/voxel_terrain.h"
+#include "terrain/voxel_data_block_enter_info.h"
+#include "terrain/voxel_save_completion_tracker.h"
 #include "util/godot/engine.h"
 #include "util/godot/rendering_server.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -78,6 +81,8 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<gd::VoxelBuffer>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
 		ClassDB::register_class<VoxelVoxLoader>();
+		ClassDB::register_class<VoxelSaveCompletionTracker>();
+		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();
@@ -103,6 +108,9 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherCubes>();
 		ClassDB::register_class<VoxelMesherDMC>();
+
+		ClassDB::register_class<VoxelNode>(); // TODO GDX: This class needs to be abstract
+		ClassDB::register_class<VoxelTerrain>();
 
 		ClassDB::register_class<gd::VoxelModifier>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<gd::VoxelModifierSphere>();
