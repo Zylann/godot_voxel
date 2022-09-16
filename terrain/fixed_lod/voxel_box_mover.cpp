@@ -334,7 +334,12 @@ float VoxelBoxMover::get_max_step_height() const {
 	return _max_step_height;
 }
 
+#if defined(ZN_GODOT)
 Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Node *terrain_node) {
+#elif defined(ZN_GODOT_EXTENSION)
+Vector3 VoxelBoxMover::_b_get_motion(Vector3 pos, Vector3 motion, AABB aabb, Object *terrain_node_o) {
+	Node *terrain_node = Object::cast_to<Node>(terrain_node_o);
+#endif
 	ERR_FAIL_COND_V(terrain_node == nullptr, Vector3());
 	VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(terrain_node);
 	ERR_FAIL_COND_V(terrain == nullptr, Vector3());

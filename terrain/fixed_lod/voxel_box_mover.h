@@ -1,10 +1,10 @@
 #ifndef VOXEL_BOX_MOVER_H
 #define VOXEL_BOX_MOVER_H
 
-#include <core/math/aabb.h>
-#include <core/object/ref_counted.h>
+#include "../../util/godot/ref_counted.h"
+#include "../../util/macros.h"
 
-class Node;
+ZN_GODOT_FORWARD_DECLARE(class Node);
 
 namespace zylann::voxel {
 
@@ -30,7 +30,12 @@ public:
 	bool has_stepped_up() const;
 
 private:
+#if defined(ZN_GODOT)
 	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Node *p_terrain_node);
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
+	Vector3 _b_get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, Object *p_terrain_node_o);
+#endif
 
 	static void _bind_methods();
 

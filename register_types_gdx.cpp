@@ -32,6 +32,7 @@
 #include "streams/voxel_block_serializer.h"
 #include "streams/voxel_block_serializer_gd.h"
 #include "streams/voxel_stream_script.h"
+#include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
 #include "terrain/voxel_data_block_enter_info.h"
 #include "terrain/voxel_save_completion_tracker.h"
@@ -83,6 +84,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
+		ClassDB::register_class<VoxelBoxMover>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();

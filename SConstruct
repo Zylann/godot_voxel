@@ -136,6 +136,7 @@ sources = [
     "terrain/voxel_save_completion_tracker.cpp",
     "terrain/voxel_data_block_enter_info.cpp",
     "terrain/fixed_lod/voxel_terrain.cpp",
+    "terrain/fixed_lod/voxel_box_mover.cpp",
     "terrain/variable_lod/voxel_lod_terrain.cpp",
     "terrain/variable_lod/voxel_lod_terrain_update_task.cpp",
     "terrain/variable_lod/voxel_mesh_block_vlt.cpp",
