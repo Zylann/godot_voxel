@@ -34,6 +34,10 @@
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
+#include "terrain/instancing/voxel_instance_component.h"
+#include "terrain/instancing/voxel_instance_library_multimesh_item.h"
+#include "terrain/instancing/voxel_instance_library_scene_item.h"
+#include "terrain/instancing/voxel_instancer.h"
 #include "terrain/variable_lod/voxel_lod_terrain.h"
 #include "terrain/voxel_data_block_enter_info.h"
 #include "terrain/voxel_save_completion_tracker.h"
@@ -118,6 +122,14 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelTerrain>();
 		ClassDB::register_class<VoxelLodTerrain>();
 
+		ClassDB::register_class<VoxelInstanceLibrary>();
+		ClassDB::register_class<VoxelInstanceLibraryItem>(); // TODO GDX: This class needs to be abstract
+		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
+		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
+		ClassDB::register_class<VoxelInstanceGenerator>();
+		ClassDB::register_class<VoxelInstancer>();
+		ClassDB::register_class<VoxelInstanceComponent>();
+
 		ClassDB::register_class<gd::VoxelModifier>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<gd::VoxelModifierSphere>();
 		ClassDB::register_class<gd::VoxelModifierMesh>();
@@ -143,6 +155,12 @@ void uninitialize_extension_test_module(godot::ModuleInitializationLevel p_level
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();
 	}
+
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		zylann::free_debug_resources();
+	}
+#endif // TOOLS_ENABLED
 }
 
 extern "C" {
