@@ -37,6 +37,7 @@
 #include "terrain/variable_lod/voxel_lod_terrain.h"
 #include "terrain/voxel_data_block_enter_info.h"
 #include "terrain/voxel_save_completion_tracker.h"
+#include "terrain/voxel_viewer.h"
 #include "util/godot/engine.h"
 #include "util/godot/rendering_server.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -86,6 +87,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelBoxMover>();
+		ClassDB::register_class<VoxelViewer>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();

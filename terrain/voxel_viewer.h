@@ -1,7 +1,7 @@
 #ifndef VOXEL_VIEWER_H
 #define VOXEL_VIEWER_H
 
-#include <scene/3d/node_3d.h>
+#include "../util/godot/node_3d.h"
 
 namespace zylann::voxel {
 
@@ -35,7 +35,6 @@ protected:
 private:
 	static void _bind_methods();
 
-	void _process();
 	bool is_active() const;
 
 	uint32_t _viewer_id = 0;
