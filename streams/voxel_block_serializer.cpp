@@ -9,12 +9,10 @@
 #include "../util/string_funcs.h"
 #include "compressed_data.h"
 
-#ifdef ZN_GODOT
+#if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
 #include "../storage/voxel_metadata_variant.h"
-#include <core/io/marshalls.h> // For `encode_variant`
 #endif
 
-#include <core/io/file_access.h>
 #include <limits>
 
 namespace zylann::voxel {
@@ -681,7 +679,7 @@ bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal 
 	return deserialize(to_span_const(data), out_voxel_buffer);
 }
 
-bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(GodotFile &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)
@@ -693,7 +691,7 @@ bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelB
 	std::vector<uint8_t> &compressed_data = tls_compressed_data;
 
 	compressed_data.resize(size_to_read);
-	const unsigned int read_size = f.get_buffer(compressed_data.data(), size_to_read);
+	const unsigned int read_size = get_buffer(f, to_span(compressed_data));
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(to_span(compressed_data), out_voxel_buffer);

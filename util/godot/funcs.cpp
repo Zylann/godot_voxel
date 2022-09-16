@@ -81,4 +81,16 @@ void copy_to(PackedColorArray &dst, Span<const Color> src) {
 	copy_to_template(dst, src);
 }
 
+void copy_to(PackedByteArray &dst, Span<const uint8_t> src) {
+	copy_to_template(dst, src);
+}
+
+void copy_to(Span<uint8_t> dst, const PackedByteArray &src) {
+	const size_t src_size = src.size();
+	ZN_ASSERT(dst.size() == src_size);
+	const uint8_t *src_data = src.ptr();
+	ZN_ASSERT(src_data != nullptr);
+	memcpy(dst.data(), src_data, src_size);
+}
+
 } // namespace zylann

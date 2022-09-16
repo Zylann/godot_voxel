@@ -26,6 +26,7 @@
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
+#include "streams/region/voxel_stream_region_files.h"
 #include "streams/voxel_stream_script.h"
 #include "util/godot/engine.h"
 #include "util/godot/rendering_server.h"
@@ -84,6 +85,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelStream>();
 		ClassDB::register_class<VoxelStreamScript>();
+		ClassDB::register_class<VoxelStreamRegionFiles>();
 
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_class<VoxelBlockyModel>();

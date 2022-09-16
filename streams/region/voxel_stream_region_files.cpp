@@ -1,14 +1,14 @@
 #include "voxel_stream_region_files.h"
 #include "../../engine/voxel_engine.h"
+#include "../../util/godot/directory.h"
+#include "../../util/godot/json.h"
 #include "../../util/godot/string.h"
+#include "../../util/godot/time.h"
 #include "../../util/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 
-#include <core/io/dir_access.h>
-#include <core/io/json.h>
-#include <core/os/time.h>
 #include <algorithm>
 
 namespace zylann::voxel {
@@ -238,15 +238,16 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	}
 }
 
-static bool u8_from_json_variant(Variant v, uint8_t &i) {
+static bool u8_from_json_variant(const Variant &v, uint8_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	int n = v;
 	ERR_FAIL_COND_V(n < 0 || n > 255, false);
-	i = v;
+	// Constructing an `int` first because when compiling with GodotCpp, the conversion isn't working directly
+	i = int(v);
 	return true;
 }
 
-static bool u32_from_json_variant(Variant v, uint32_t &i) {
+static bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	ERR_FAIL_COND_V(v.operator int64_t() < 0, false);
 	i = v;
@@ -278,8 +279,7 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 	}
 	d["channel_depths"] = channel_depths;
 
-	JSON json;
-	const String json_string = json.stringify(d, "\t", true);
+	const String json_string = JSON::stringify(d, "\t", true);
 
 	// Make sure the directory exists
 	{
@@ -296,7 +296,7 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 
 	Error err;
 	VoxelFileLockerWrite file_wlock(meta_path_utf8.get_data());
-	Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::WRITE, &err);
+	Ref<GodotFile> f = open_file(meta_path, GodotFile::WRITE, err);
 	if (f.is_null()) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
 		return FILE_CANT_OPEN;
@@ -344,23 +344,25 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 		Error err;
 		const CharString meta_path_utf8 = meta_path.utf8();
 		VoxelFileLockerRead file_rlock(meta_path_utf8.get_data());
-		Ref<FileAccess> f = FileAccess::open(meta_path, FileAccess::READ, &err);
+		Ref<GodotFile> f = open_file(meta_path, GodotFile::READ, err);
 		if (f.is_null()) {
 			return FILE_CANT_OPEN;
 		}
-		json_string = f->get_as_utf8_string();
+		json_string = get_as_text(**f);
 	}
 
 	// Note: I chose JSON purely for debugging purposes. This file is not meant to be edited by hand.
 	// World configuration changes may need a full converter.
 
-	JSON json;
-	const Error json_err = json.parse(json_string);
-	Variant res = json.get_data();
-	const String json_err_msg = json.get_error_message();
-	const int json_err_line = json.get_error_line();
+	Ref<JSON> json;
+	json.instantiate();
+	const Error json_err = json->parse(json_string);
+	Variant res = json->get_data();
 	if (json_err != OK) {
-		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", meta_path, json_err_line, json_err_msg));
+		const String json_err_msg = json->get_error_message();
+		const int json_err_line = json->get_error_line();
+		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", GodotStringWrapper(meta_path), json_err_line,
+				GodotStringWrapper(json_err_msg)));
 		return FILE_INVALID_DATA;
 	}
 
@@ -575,7 +577,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Backup current folder by renaming it, leaving the current name vacant
 	{
-		Ref<DirAccess> da = DirAccess::create_for_path(_directory_path);
+		Ref<GodotDirectory> da = open_directory(_directory_path);
 		ERR_FAIL_COND(da.is_null());
 		int i = 0;
 		String old_dir;
@@ -585,7 +587,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			} else {
 				old_dir = _directory_path + "_old" + String::num_int64(i);
 			}
-			if (da->exists(old_dir)) {
+			if (directory_exists(**da, old_dir)) {
 				++i;
 			} else {
 				Error err = da->rename(_directory_path, old_dir);
@@ -597,7 +599,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		}
 
 		old_stream->set_directory(old_dir);
-		ZN_PRINT_VERBOSE(format("Data backed up as {}", old_dir));
+		ZN_PRINT_VERBOSE(format("Data backed up as {}", GodotStringWrapper(old_dir)));
 	}
 
 	struct PositionAndLod {
@@ -617,7 +619,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
-			Ref<DirAccess> da = DirAccess::open(lod_folder);
+			Ref<GodotDirectory> da = open_directory(lod_folder);
 			if (da.is_null()) {
 				continue;
 			}
@@ -633,7 +635,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					continue;
 				}
 				if (fname.ends_with(ext)) {
-					Vector<String> parts = fname.split(".");
+					PackedStringArray parts = fname.split(".");
 					// r.x.y.z.ext
 					ERR_FAIL_COND_MSG(
 							parts.size() < 4, String("Found invalid region file: '{0}'").format(varray(fname)));

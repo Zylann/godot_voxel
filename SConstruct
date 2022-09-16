@@ -93,8 +93,13 @@ sources = [
     "generators/graph/voxel_graph_shader_generator.cpp",
 
     "streams/instance_data.cpp",
+    "streams/file_utils.cpp",
+    "streams/compressed_data.cpp",
+    "streams/voxel_block_serializer.cpp",
     "streams/voxel_stream.cpp",
     "streams/voxel_stream_script.cpp",
+    "streams/region/voxel_stream_region_files.cpp",
+    "streams/region/region_file.cpp",
 
     "meshers/voxel_mesher.cpp",
     "meshers/transvoxel/voxel_mesher_transvoxel.cpp",
@@ -203,6 +208,8 @@ sources = [
     "thirdparty/meshoptimizer/vertexfilter.cpp",
     "thirdparty/meshoptimizer/vfetchanalyzer.cpp",
     "thirdparty/meshoptimizer/vfetchoptimizer.cpp",
+
+    "thirdparty/lz4/lz4.c"
 ]
 
 # if env["tools"]:

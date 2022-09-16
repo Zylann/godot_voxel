@@ -19,6 +19,7 @@ namespace zylann {
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src);
 void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src);
 
+// Copy functions for matching types.
 // Can't have code using template Vector if we want to support compiling both as module and extension.
 // So the following are defined for every case instead of a template.
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src);
@@ -28,6 +29,8 @@ void copy_to(PackedInt32Array &dst, Span<const int32_t> src);
 void copy_to(PackedColorArray &dst, const std::vector<Color> &src);
 void copy_to(PackedColorArray &dst, Span<const Color> src);
 void copy_to(PackedFloat32Array &dst, const std::vector<float> &src);
+void copy_to(PackedByteArray &dst, Span<const uint8_t> src);
+void copy_to(Span<uint8_t> dst, const PackedByteArray &src);
 
 // TODO Can't have code using template Vector if we want to support compiling both as module and extension
 #ifdef ZN_GODOT

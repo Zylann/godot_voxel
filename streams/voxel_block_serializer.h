@@ -1,13 +1,14 @@
 #ifndef VOXEL_BLOCK_SERIALIZER_H
 #define VOXEL_BLOCK_SERIALIZER_H
 
+#include "../util/godot/file.h"
+#include "../util/macros.h"
 #include "../util/span.h"
 
 #include <cstdint>
 #include <vector>
 
-class StreamPeer;
-class FileAccess;
+ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
 namespace zylann::voxel {
 
@@ -32,7 +33,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 
 SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
+bool decompress_and_deserialize(GodotFile &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
 // Temporary thread-local buffers for internal use
 std::vector<uint8_t> &get_tls_data();
