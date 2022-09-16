@@ -94,6 +94,7 @@ sources = [
 
     "streams/instance_data.cpp",
     "streams/voxel_stream.cpp",
+    "streams/voxel_stream_script.cpp",
 
     "meshers/voxel_mesher.cpp",
     "meshers/transvoxel/voxel_mesher_transvoxel.cpp",
