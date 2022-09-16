@@ -59,6 +59,7 @@ sources = [
     "edition/voxel_tool_lod_terrain.cpp",
     "edition/mesh_sdf.cpp",
     "edition/voxel_mesh_sdf_gd.cpp",
+    "edition/voxel_raycast_result.cpp",
 
     "storage/voxel_buffer_internal.cpp",
     "storage/voxel_buffer_gd.cpp",

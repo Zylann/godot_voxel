@@ -1,6 +1,7 @@
 #include <godot_cpp/core/class_db.hpp>
 
 #include "constants/voxel_string_names.h"
+#include "edition/voxel_raycast_result.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
 #include "edition/voxel_tool_lod_terrain.h"
@@ -94,6 +95,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
+		ClassDB::register_class<VoxelRaycastResult>();
 		ClassDB::register_class<VoxelBoxMover>();
 		ClassDB::register_class<VoxelViewer>();
 
