@@ -98,6 +98,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelRaycastResult>();
 		ClassDB::register_class<VoxelBoxMover>();
 		ClassDB::register_class<VoxelViewer>();
+		ClassDB::register_class<VoxelMeshSDF>();
 
 		ClassDB::register_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorScript>();
