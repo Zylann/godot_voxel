@@ -3,6 +3,8 @@
 #include "constants/voxel_string_names.h"
 #include "edition/voxel_tool.h"
 #include "edition/voxel_tool_buffer.h"
+#include "edition/voxel_tool_lod_terrain.h"
+#include "edition/voxel_tool_terrain.h"
 #include "engine/voxel_engine.h"
 #include "engine/voxel_engine_gd.h"
 #include "generators/graph/voxel_generator_graph.h"
@@ -84,6 +86,8 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelTool>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<VoxelToolBuffer>(); // TODO GDX: This class needs to be non-instantiable by scripts
+		ClassDB::register_class<VoxelToolTerrain>(); // TODO GDX: This class needs to be non-instantiable by scripts
+		ClassDB::register_class<VoxelToolLodTerrain>(); // TODO GDX: This class needs to be non-instantiable by scripts
 
 		ClassDB::register_class<gd::VoxelBuffer>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
