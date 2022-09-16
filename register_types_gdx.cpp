@@ -34,6 +34,7 @@
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
+#include "terrain/variable_lod/voxel_lod_terrain.h"
 #include "terrain/voxel_data_block_enter_info.h"
 #include "terrain/voxel_save_completion_tracker.h"
 #include "util/godot/engine.h"
@@ -113,6 +114,7 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelNode>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<VoxelTerrain>();
+		ClassDB::register_class<VoxelLodTerrain>();
 
 		ClassDB::register_class<gd::VoxelModifier>(); // TODO GDX: This class needs to be abstract
 		ClassDB::register_class<gd::VoxelModifierSphere>();
