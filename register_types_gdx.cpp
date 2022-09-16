@@ -22,6 +22,7 @@
 #include "meshers/dmc/voxel_mesher_dmc.h"
 #include "meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "meshers/voxel_mesher.h"
+#include "storage/modifiers_gd.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"
 #include "storage/voxel_metadata_variant.h"
@@ -89,6 +90,10 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherCubes>();
 		ClassDB::register_class<VoxelMesherDMC>();
+
+		ClassDB::register_class<gd::VoxelModifier>(); // TODO GDX: This class needs to be abstract
+		ClassDB::register_class<gd::VoxelModifierSphere>();
+		ClassDB::register_class<gd::VoxelModifierMesh>();
 
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();

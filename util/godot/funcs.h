@@ -22,7 +22,9 @@ void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src);
 // Can't have code using template Vector if we want to support compiling both as module and extension.
 // So the following are defined for every case instead of a template.
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src);
+void copy_to(PackedVector3Array &dst, Span<const Vector3> src);
 void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src);
+void copy_to(PackedInt32Array &dst, Span<const int32_t> src);
 void copy_to(PackedColorArray &dst, const std::vector<Color> &src);
 void copy_to(PackedColorArray &dst, Span<const Color> src);
 void copy_to(PackedFloat32Array &dst, const std::vector<float> &src);

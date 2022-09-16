@@ -1,17 +1,22 @@
 #ifndef ZN_GODOT_MEMORY_H
 #define ZN_GODOT_MEMORY_H
 
+#if defined(ZN_GODOT)
 #include <core/os/memory.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/core/memory.hpp>
+#endif
+
 #include <memory>
 
 namespace zylann {
 
-// Creates a shared_ptr which will always use Godot's allocation functions
+/*// Creates a shared_ptr which will always use Godot's allocation functions
 template <typename T>
 inline std::shared_ptr<T> gd_make_shared() {
 	// std::make_shared() apparently wont allow us to specify custom new and delete
 	return std::shared_ptr<T>(memnew(T), memdelete<T>);
-}
+}*/
 
 // For use with smart pointers such as std::unique_ptr
 template <typename T>

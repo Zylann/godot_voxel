@@ -2,7 +2,7 @@
 #define VOXEL_MODIFIERS_GD_H
 
 #include "../edition/voxel_mesh_sdf_gd.h"
-#include <scene/3d/node_3d.h>
+#include "../util/godot/node_3d.h"
 
 namespace zylann::voxel {
 
@@ -87,6 +87,6 @@ private:
 } // namespace gd
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier::Operation);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier, Operation);
 
 #endif // VOXEL_MODIFIERS_GD_H

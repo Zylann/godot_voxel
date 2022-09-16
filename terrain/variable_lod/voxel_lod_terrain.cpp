@@ -9,9 +9,17 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/camera_3d.h"
+#include "../../util/godot/concave_polygon_shape_3d.h"
+#include "../../util/godot/engine.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/mesh_instance_3d.h"
 #include "../../util/godot/node.h"
+#include "../../util/godot/resource_saver.h"
+#include "../../util/godot/scene_tree.h"
+#include "../../util/godot/script.h"
 #include "../../util/godot/shader.h"
+#include "../../util/godot/viewport.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
@@ -23,14 +31,6 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
-
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <scene/3d/camera_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/main/viewport.h>
-#include <scene/resources/concave_polygon_shape_3d.h>
-#include <scene/resources/packed_scene.h>
 
 namespace zylann::voxel {
 
@@ -61,7 +61,7 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	ZN_ASSERT_RETURN(material.is_valid());
 
 	// Reset textures to avoid hoarding them in the pool
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2D>());
 	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
@@ -868,7 +868,7 @@ void VoxelLodTerrain::set_process_callback(ProcessCallback mode) {
 void VoxelLodTerrain::_notification(int p_what) {
 	switch (p_what) {
 		// TODO Should use NOTIFICATION_INTERNAL_PROCESS instead?
-		case NOTIFICATION_PROCESS:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
 			if (_process_callback == PROCESS_CALLBACK_IDLE) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
@@ -879,7 +879,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		// TODO Should use NOTIFICATION_INTERNAL_PHYSICS_PROCESS instead?
-		case NOTIFICATION_PHYSICS_PROCESS:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PHYSICS_PROCESS):
 			if (_process_callback == PROCESS_CALLBACK_PHYSICS) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
@@ -890,7 +890,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 
 #ifdef TOOLS_ENABLED
-		case NOTIFICATION_ENTER_TREE:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
 			// In the editor, auto-configure a default mesher, for convenience.
 			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
 			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
@@ -903,10 +903,10 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 #endif
 
-		case NOTIFICATION_EXIT_TREE:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
 			break;
 
-		case NOTIFICATION_ENTER_WORLD: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD): {
 			World3D *world = *get_world_3d();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
@@ -924,7 +924,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			//set_show_gizmos(true);
 		} break;
 
-		case NOTIFICATION_EXIT_WORLD: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD): {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -937,7 +937,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 #endif
 		} break;
 
-		case NOTIFICATION_VISIBILITY_CHANGED: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED): {
 			const bool visible = is_visible();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
@@ -955,7 +955,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 #endif
 		} break;
 
-		case NOTIFICATION_TRANSFORM_CHANGED: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();
@@ -1006,7 +1006,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
-void VoxelLodTerrain::_process(float delta) {
+void VoxelLodTerrain::process(float delta) {
 	ZN_PROFILE_SCOPE();
 
 	_stats.dropped_block_loads = 0;
@@ -1487,8 +1487,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 			ZN_ASSERT(_mesher.is_valid());
 			Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-			block->set_collision_shape(
-					collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+			const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+			block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
@@ -1993,10 +1993,10 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 
 #ifdef TOOLS_ENABLED
 
-TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
-	TypedArray<String> warnings = VoxelNode::get_configuration_warnings();
+void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelNode::get_configuration_warnings(warnings);
 	if (!warnings.is_empty()) {
-		return warnings;
+		return;
 	}
 
 	Ref<VoxelMesher> mesher = get_mesher();
@@ -2004,30 +2004,30 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 	// Material
 	Ref<ShaderMaterial> shader_material = _material;
 	if (shader_material.is_valid() && shader_material->get_shader().is_null()) {
-		warnings.append(TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
+		warnings.append(ZN_TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
 	}
 
 	if (mesher.is_valid()) {
 		// LOD support in mesher
 		if (!mesher->supports_lod()) {
-			warnings.append(
-					TTR("The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
-							.format(varray(mesher->get_class())));
+			warnings.append(ZN_TTR(
+					"The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
+									.format(varray(mesher->get_class())));
 		}
 
 		// LOD support in shader
 		if (_material.is_valid() && mesher->get_default_lod_material().is_valid()) {
 			if (shader_material.is_null()) {
-				warnings.append(
-						TTR("The current mesher ({0}) requires custom shader code to render properly. The current "
-							"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
-							"default shader.")
-								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
+				warnings.append(ZN_TTR(
+						"The current mesher ({0}) requires custom shader code to render properly. The current "
+						"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
+						"default shader.")
+										.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
 			} else {
 				Ref<Shader> shader = shader_material->get_shader();
 				if (shader.is_valid()) {
 					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
-						warnings.append(TTR(
+						warnings.append(ZN_TTR(
 								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
 												.format(varray(mesher->get_class(),
 														VoxelStringNames::get_singleton().u_transition_mask)));
@@ -2048,7 +2048,7 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 											.format(varray(ShaderMaterial::get_class_static())));
 				} else {
 					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
-						warnings.append(TTR(
+						warnings.append(ZN_TTR(
 								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
 												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
 					}
@@ -2061,16 +2061,16 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 		if (generator.is_valid()) {
 			if (is_normalmap_enabled()) {
 				if (!generator->supports_series_generation()) {
-					warnings.append(TTR(
+					warnings.append(ZN_TTR(
 							"Normalmaps are enabled, but it requires the generator to be able to generate series of "
 							"positions with `generate_series`. The current generator ({0}) does not support it.")
 											.format(varray(generator->get_class())));
 				}
 
 				if ((generator->get_used_channels_mask() & (1 << VoxelBufferInternal::CHANNEL_SDF)) == 0) {
-					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
-										"channel. The current generator ({0}) does not support it, or is not "
-										"configured to do so.")
+					warnings.append(ZN_TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
+										   "channel. The current generator ({0}) does not support it, or is not "
+										   "configured to do so.")
 											.format(varray(generator->get_class())));
 				}
 
@@ -2085,10 +2085,10 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 
 						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
 
-						if (missing_uniforms.size() != 0) {
+						if (missing_uniforms.length() != 0) {
 							warnings.append(String(
-									TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
-										"specific uniforms. Missing ones: {1}"))
+									ZN_TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
+										   "specific uniforms. Missing ones: {1}"))
 													.format(varray(
 															ShaderMaterial::get_class_static(), missing_uniforms)));
 						}
@@ -2097,7 +2097,6 @@ TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
 			}
 		}
 	}
-	return warnings;
 }
 
 #endif // TOOLS_ENABLED
@@ -2531,7 +2530,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return _data->get_block_count();
 }
 
-Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
@@ -2574,7 +2573,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 		return pack_result;
 	}
 
-	const Error save_result = ResourceSaver::save(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	return save_result;
 }
 
@@ -2727,8 +2726,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+	const std::string material_hint =
+			format("{},{}", BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static());
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
 			"set_material", "get_material");
 
 	ADD_GROUP("Detail normalmaps", "normalmap_");

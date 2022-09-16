@@ -1,8 +1,8 @@
 #ifndef VOXEL_INSTANCE_COMPONENT_H
 #define VOXEL_INSTANCE_COMPONENT_H
 
+#include "../../util/godot/node.h"
 #include "voxel_instancer.h"
-#include <scene/main/node.h>
 
 namespace zylann::voxel {
 
@@ -90,7 +90,7 @@ protected:
 
 			// TODO Optimization: this is also called when we quit the game or destroy the world
 			// which can make things a bit slow, but I don't know if it can easily be avoided
-			case NOTIFICATION_UNPARENTED:
+			case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_UNPARENTED):
 				// The user could queue_free() that node or its parent in game for some reason,
 				// so we have to notify the instancer to remove the instance
 				if (_instancer != nullptr) {

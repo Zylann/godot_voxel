@@ -11,7 +11,9 @@
 
 namespace zylann::voxel {
 
-VoxelToolTerrain::VoxelToolTerrain() {}
+VoxelToolTerrain::VoxelToolTerrain() {
+	_random.randomize();
+}
 
 VoxelToolTerrain::VoxelToolTerrain(VoxelTerrain *terrain) {
 	ERR_FAIL_COND(terrain == nullptr);
@@ -265,7 +267,8 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 }
 
 void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxel_box, const VoxelBlockyLibrary &lib,
-		int voxel_count, int batch_count, void *callback_data, bool (*callback)(void *, Vector3i, int64_t)) {
+		RandomPCG &random, int voxel_count, int batch_count, void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)) {
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
 	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
@@ -289,20 +292,20 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 	CRASH_COND(block_volume < 0.1f);
 
 	struct L {
-		static inline int urand(uint32_t max_value) {
-			return Math::rand() % max_value;
+		static inline int urand(RandomPCG &random, uint32_t max_value) {
+			return random.rand() % max_value;
 		}
-		static inline Vector3i urand_vec3i(Vector3i s) {
+		static inline Vector3i urand_vec3i(RandomPCG &random, Vector3i s) {
 #ifdef DEBUG_ENABLED
 			CRASH_COND(s.x <= 0 || s.y <= 0 || s.z <= 0);
 #endif
-			return Vector3i(urand(s.x), urand(s.y), urand(s.z));
+			return Vector3i(urand(random, s.x), urand(random, s.y), urand(random, s.z));
 		}
 	};
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = block_box.pos + L::urand_vec3i(block_box.size);
+		const Vector3i block_pos = block_box.pos + L::urand_vec3i(random, block_box.size);
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
 
@@ -335,7 +338,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 				// Batching this way improves performance a little by reducing block lookups.
 				picks.clear();
 				for (int vi = 0; vi < local_batch_count; ++vi) {
-					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(local_voxel_box.size);
+					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(random, local_voxel_box.size);
 
 					const uint64_t v = voxels.get_voxel(rpos, channel);
 					picks.push_back(Pick{ v, rpos });
@@ -372,7 +375,7 @@ static Ref<VoxelBlockyLibrary> get_voxel_library(const VoxelTerrain &terrain) {
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
 // slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(
-		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) const {
+		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) {
 	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -396,8 +399,9 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	VoxelData &data = _terrain->get_storage();
 	const Box3i voxel_box(math::floor_to_int(voxel_area.position), math::floor_to_int(voxel_area.size));
 
-	run_blocky_random_tick_static(
-			data, voxel_box, lib, voxel_count, batch_count, &cb_self, [](void *self, Vector3i pos, int64_t val) {
+#if defined(ZN_GODOT)
+	run_blocky_random_tick_static(data, voxel_box, lib, _random, voxel_count, batch_count, &cb_self,
+			[](void *self, Vector3i pos, int64_t val) {
 				const Variant vpos = pos;
 				const Variant vv = val;
 				const Variant *args[2];
@@ -413,6 +417,10 @@ void VoxelToolTerrain::run_blocky_random_tick(
 				// Return if it fails, we don't want an error spam
 				return true;
 			});
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: Can't call Callables
+	ZN_PRINT_ERROR("VoxelToolTerrain::run_blocky_random_tick isn't supported in GDExtension, cannot call Callables");
+#endif
 }
 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
@@ -438,6 +446,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 
+#if defined(ZN_GODOT)
 		voxels_ptr->for_each_voxel_metadata_in_area(
 				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
 					Variant v = gd::get_as_variant(meta);
@@ -454,6 +463,11 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 					// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 				});
+#elif defined(ZN_GODOT_EXTENSION)
+		// TODO GDX: Can't call Callables
+		ZN_PRINT_ERROR("VoxelToolTerrain::for_each_voxel_metadata_in_area isn't supported in GDExtension, cannot call "
+					   "Callables");
+#endif
 	});
 }
 

@@ -18,6 +18,13 @@ inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 #endif
 }
 
+struct GodotShaderParameterInfo {
+	String name;
+	Variant::Type type;
+};
+
+void get_shader_parameter_list(const RID &shader_rid, std::vector<GodotShaderParameterInfo> &out_parameters);
+
 } // namespace zylann
 
 #endif // ZN_GODOT_RENDERING_SERVER_H

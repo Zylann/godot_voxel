@@ -26,7 +26,7 @@
 #include <core/string/ustring.h>
 #define ZN_TTR(msg) TTR(msg)
 #else
-#define ZN_TTR(msg) msg
+#define ZN_TTR(msg) String(msg)
 #endif
 
 #if defined(ZN_GODOT)
@@ -36,6 +36,16 @@
 	namespace godot {                                                                                                  \
 	m_class;                                                                                                           \
 	}
+#endif
+
+// Tell the compiler to favour a certain branch of a condition.
+// Until C++20 can be used with the [[likely]] and [[unlikely]] attributes.
+#if defined(__GNUC__)
+#define ZN_LIKELY(x) __builtin_expect(!!(x), 1)
+#define ZN_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define ZN_LIKELY(x) x
+#define ZN_UNLIKELY(x) x
 #endif
 
 #endif // ZYLANN_MACROS_H

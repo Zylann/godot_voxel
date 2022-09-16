@@ -1,8 +1,8 @@
 #ifndef ZN_SHADER_MATERIAL_POOL_H
 #define ZN_SHADER_MATERIAL_POOL_H
 
-#include "../../util/span.h"
-#include <scene/resources/material.h>
+#include "../span.h"
+#include "shader_material.h"
 #include <vector>
 
 namespace zylann {

@@ -11,8 +11,6 @@
 #include "../voxel_node.h"
 #include "voxel_mesh_block_vt.h"
 
-#include <scene/3d/node_3d.h>
-
 namespace zylann {
 
 class AsyncDependencyTracker;
@@ -136,6 +134,18 @@ public:
 	// 	Vector3i position;
 	// };
 
+#ifdef TOOLS_ENABLED
+#ifdef ZN_GODOT_EXTENSION
+	// TODO GDX: GodotCpp fails to compile a class if its base is a custom class overriding
+	// `_get_configuration_warnings`
+	PackedStringArray _get_configuration_warnings() const override {
+		PackedStringArray warnings;
+		get_configuration_warnings(warnings);
+		return warnings;
+	}
+#endif
+#endif
+
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
@@ -156,7 +166,7 @@ protected:
 	void _on_gi_mode_changed() override;
 
 private:
-	void _process();
+	void process();
 	void process_viewers();
 	void process_viewer_data_box_change(
 			uint32_t viewer_id, Box3i prev_data_box, Box3i new_data_box, bool can_load_blocks);
@@ -199,6 +209,7 @@ private:
 
 	void get_viewers_in_area(std::vector<int> &out_viewer_ids, Box3i voxel_box) const;
 
+#ifdef ZN_GODOT
 	// Called each time a data block enters a viewer's area.
 	// This can be either when the block exists and the viewer gets close enough, or when it gets loaded.
 	// This only happens if data block enter notifications are enabled.
@@ -206,6 +217,7 @@ private:
 
 	// Called each time voxels are edited within a region.
 	GDVIRTUAL2(_on_area_edited, Vector3i, Vector3i);
+#endif
 
 	static void _bind_methods();
 

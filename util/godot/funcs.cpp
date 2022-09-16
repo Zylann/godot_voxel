@@ -57,8 +57,16 @@ void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src) {
 	copy_to_template(dst, to_span(src));
 }
 
+void copy_to(PackedVector3Array &dst, Span<const Vector3> src) {
+	copy_to_template(dst, src);
+}
+
 void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src) {
 	copy_to_template(dst, to_span(src));
+}
+
+void copy_to(PackedInt32Array &dst, Span<const int32_t> src) {
+	copy_to_template(dst, src);
 }
 
 void copy_to(PackedColorArray &dst, const std::vector<Color> &src) {

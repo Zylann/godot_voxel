@@ -20,6 +20,7 @@
 
 #define ZN_NEW(t) new t
 #define ZN_DELETE(t) delete t
+// TODO In GodotCpp, memnew and memdelete can't be used with any class, but the alloc/free funcs should be generic
 #define ZN_ALLOC(size) malloc(size)
 #define ZN_REALLOC(p, size) realloc(p, size)
 #define ZN_FREE(p) free(p)

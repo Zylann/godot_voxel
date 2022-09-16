@@ -5,6 +5,7 @@
 #include "../../streams/instance_data.h"
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
+#include "../../util/godot/node_3d.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory.h"
 #include "voxel_instance_generator.h"
@@ -15,14 +16,13 @@
 #include "../../editor/voxel_debug.h"
 #endif
 
-#include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-class PhysicsBody3D;
+ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
 namespace zylann {
 
@@ -109,7 +109,12 @@ public:
 	// Editor
 
 #ifdef TOOLS_ENABLED
+#if defined(ZN_GODOT)
 	TypedArray<String> get_configuration_warnings() const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	PackedStringArray _get_configuration_warnings() const override;
+#endif
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
 protected:
@@ -253,7 +258,7 @@ private:
 } // namespace voxel
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, UpMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H

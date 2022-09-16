@@ -9,8 +9,9 @@
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "mesh_sdf.h"
-
-#include <scene/resources/mesh.h>
+// Necessary when compiling with GodotCpp because it is used in a registered method argument, and the type must be
+// defined
+#include "../util/godot/scene_tree.h"
 
 namespace zylann::voxel {
 
@@ -152,7 +153,12 @@ void VoxelMeshSDF::bake() {
 	_max_pos = box_max_pos;
 }
 
+#ifdef ZN_GODOT_EXTENSION
+void VoxelMeshSDF::bake_async(Object *scene_tree_o) {
+	SceneTree *scene_tree = Object::cast_to<SceneTree>(scene_tree_o);
+#else
 void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
+#endif
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
 	VoxelEngineUpdater::ensure_existence(scene_tree);
 
@@ -462,20 +468,20 @@ void VoxelMeshSDF::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
 			"set_mesh", "get_mesh");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_count", PROPERTY_HINT_RANGE,
-						 String("{0},{1},1").format(varray(MIN_CELL_COUNT, MAX_CELL_COUNT))),
+	std::string cell_count_hint = format("{},{},1", MIN_CELL_COUNT, MAX_CELL_COUNT);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_count", PROPERTY_HINT_RANGE, cell_count_hint.c_str()),
 			"set_cell_count", "get_cell_count");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "margin_ratio", PROPERTY_HINT_RANGE,
-						 String("{0},{1},0.01").format(varray(MIN_MARGIN_RATIO, MAX_MARGIN_RATIO))),
+	std::string margin_ratio_hint = format("{},{},0.01", MIN_MARGIN_RATIO, MAX_MARGIN_RATIO);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "margin_ratio", PROPERTY_HINT_RANGE, margin_ratio_hint.c_str()),
 			"set_margin_ratio", "get_margin_ratio");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "bake_mode", PROPERTY_HINT_ENUM,
 						 "AccurateNaive,AccuratePartitioned,ApproxInterp,FloodFill"),
 			"set_bake_mode", "get_bake_mode");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE,
-						 String("{0},{1},1").format(varray(MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV))),
+	std::string partition_subdiv_hint = format("{},{},1", MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE, partition_subdiv_hint.c_str()),
 			"set_partition_subdiv", "get_partition_subdiv");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "boundary_sign_fix_enabled"), "set_boundary_sign_fix_enabled",

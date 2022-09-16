@@ -2,9 +2,14 @@
 #include "../../engine/save_block_data_task.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/camera_3d.h"
+#include "../../util/godot/collision_shape_3d.h"
+#include "../../util/godot/mesh_instance_3d.h"
 #include "../../util/godot/multimesh.h"
 #include "../../util/godot/node.h"
 #include "../../util/godot/ref_counted.h"
+#include "../../util/godot/resource_saver.h"
+#include "../../util/godot/viewport.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -14,12 +19,8 @@
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_rigidbody.h"
 
-#include <scene/3d/camera_3d.h>
-#include <scene/3d/collision_shape_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/main/viewport.h>
-// Only needed for debug purposes, otherwise RenderingServer is used directly
-#include <scene/3d/multimesh_instance_3d.h>
+// Only needed or debug purposes, otherwise RenderingServer is used directly
+#include "../../util/godot/multimesh_instance_3d.h"
 
 #include <algorithm>
 
@@ -57,7 +58,7 @@ void VoxelInstancer::clear_blocks() {
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
 			ERR_CONTINUE(instance.root == nullptr);
-			instance.root->queue_delete();
+			queue_free_node(instance.root);
 		}
 	}
 	_blocks.clear();
@@ -95,7 +96,7 @@ void VoxelInstancer::clear_layers() {
 
 void VoxelInstancer::_notification(int p_what) {
 	switch (p_what) {
-		case NOTIFICATION_ENTER_WORLD:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD):
 			set_world(*get_world_3d());
 			update_visibility();
 #ifdef TOOLS_ENABLED
@@ -103,14 +104,14 @@ void VoxelInstancer::_notification(int p_what) {
 #endif
 			break;
 
-		case NOTIFICATION_EXIT_WORLD:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD):
 			set_world(nullptr);
 #ifdef TOOLS_ENABLED
 			_debug_renderer.set_world(nullptr);
 #endif
 			break;
 
-		case NOTIFICATION_PARENTED: {
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PARENTED): {
 			VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(get_parent());
 			if (vlt != nullptr) {
 				_parent = vlt;
@@ -131,7 +132,7 @@ void VoxelInstancer::_notification(int p_what) {
 			// TODO may want to reload all instances? Not sure if worth implementing that use case
 		} break;
 
-		case NOTIFICATION_UNPARENTED:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_UNPARENTED):
 			clear_blocks();
 			if (_parent != nullptr) {
 				VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_parent);
@@ -147,7 +148,7 @@ void VoxelInstancer::_notification(int p_what) {
 			}
 			break;
 
-		case NOTIFICATION_TRANSFORM_CHANGED: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
 			ZN_PROFILE_SCOPE_NAMED("VoxelInstancer::NOTIFICATION_TRANSFORM_CHANGED");
 
 			if (!is_inside_tree() || _parent == nullptr) {
@@ -174,7 +175,7 @@ void VoxelInstancer::_notification(int p_what) {
 			}
 		} break;
 
-		case NOTIFICATION_VISIBILITY_CHANGED:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED):
 			update_visibility();
 #ifdef TOOLS_ENABLED
 			if (_gizmos_enabled) {
@@ -183,7 +184,7 @@ void VoxelInstancer::_notification(int p_what) {
 #endif
 			break;
 
-		case NOTIFICATION_INTERNAL_PROCESS:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_INTERNAL_PROCESS):
 			if (_parent != nullptr && _library.is_valid() && _mesh_lod_distance > 0.f) {
 				process_mesh_lods();
 			}
@@ -323,7 +324,8 @@ void VoxelInstancer::process_mesh_lods() {
 		const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
 		ERR_CONTINUE(item_base == nullptr);
 		// TODO Optimization: would be nice to not need this cast by iterating only the same item types
-		const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+		const VoxelInstanceLibraryMultiMeshItem *item =
+				cast_const_object_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
 		if (item == nullptr) {
 			// Not a multimesh item
 			continue;
@@ -628,7 +630,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 			block.scene_instances[instance_index] = instance;
 			// We just drop the instance without saving, because this function is supposed to occur only in editor,
 			// or in the very rare cases where library is modified in game (which would invalidate saves anyways).
-			prev_instance.root->queue_delete();
+			queue_free_node(prev_instance.root);
 		}
 	}
 }
@@ -757,7 +759,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		ERR_CONTINUE(instance.component == nullptr);
 		instance.component->detach();
 		ERR_CONTINUE(instance.root == nullptr);
-		instance.root->queue_delete();
+		queue_free_node(instance.root);
 	}
 
 	// If the block we removed was also the last one, we don't enter here
@@ -913,7 +915,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	Block &block = *_blocks[block_index];
 
 	// Update multimesh
-	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
+	const VoxelInstanceLibraryMultiMeshItem *item = cast_const_object_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
 		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
 
@@ -1007,7 +1009,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	}
 
 	// Update scene instances
-	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
+	const VoxelInstanceLibrarySceneItem *scene_item = cast_const_object_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
 		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
 		ERR_FAIL_COND_MSG(scene_item->get_scene().is_null(),
@@ -1046,7 +1048,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
 			ERR_CONTINUE(instance.root == nullptr);
-			instance.root->queue_delete();
+			queue_free_node(instance.root);
 		}
 
 		block.scene_instances.resize(transforms.size());
@@ -1461,7 +1463,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		// Not using detach_as_removed(),
 		// this function is not marking the block as modified. It may be done by the caller.
 		instance.component->detach();
-		instance.root->queue_delete();
+		queue_free_node(instance.root);
 
 		SceneInstance moved_instance = block.scene_instances[last_instance_index];
 		if (moved_instance.root != instance.root) {
@@ -1667,7 +1669,7 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 	memdelete(root);
 	ERR_FAIL_COND(pack_result != OK);
 
-	const Error save_result = ResourceSaver::save(packed_scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = save_resource(packed_scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	ERR_FAIL_COND(save_result != OK);
 }
 
@@ -1774,18 +1776,29 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 
 #ifdef TOOLS_ENABLED
 
+#if defined(ZN_GODOT)
 TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
-	TypedArray<String> warnings;
+#error "Implement get_configuration_warnings for modules"
+}
+#elif defined(ZN_GODOT_EXTENSION)
+PackedStringArray VoxelInstancer::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return warnings;
+}
+#endif
+
+void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_parent == nullptr) {
-		warnings.append(TTR("This node must be child of a " + VoxelLodTerrain::get_class_static() + "."));
+		warnings.append(
+				ZN_TTR("This node must be child of a {0}.").format(varray(VoxelLodTerrain::get_class_static())));
 	}
 	if (_library.is_null()) {
-		warnings.append(TTR("No library is assigned. A " + VoxelInstanceLibrary::get_class_static() +
-				" is needed to spawn items."));
+		warnings.append(ZN_TTR("No library is assigned. A {0} is needed to spawn items.")
+								.format(varray(VoxelInstanceLibrary::get_class_static())));
 	} else if (_library->get_item_count() == 0) {
-		warnings.append(TTR("The assigned library is empty. Add items to it so they can be spawned."));
+		warnings.append(ZN_TTR("The assigned library is empty. Add items to it so they can be spawned."));
 	}
-	return warnings;
 }
 
 #endif

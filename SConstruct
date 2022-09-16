@@ -55,6 +55,10 @@ sources = [
 
     "edition/voxel_tool.cpp",
     "edition/voxel_tool_buffer.cpp",
+    "edition/voxel_tool_terrain.cpp",
+    "edition/voxel_tool_lod_terrain.cpp",
+    "edition/mesh_sdf.cpp",
+    "edition/voxel_mesh_sdf_gd.cpp",
 
     "storage/voxel_buffer_internal.cpp",
     "storage/voxel_buffer_gd.cpp",
@@ -66,6 +70,7 @@ sources = [
     "storage/voxel_data_block.cpp",
     "storage/funcs.cpp",
     "storage/modifiers.cpp",
+    "storage/modifiers_gd.cpp",
 
     "generators/voxel_generator.cpp",
     "generators/voxel_generator_script.cpp",
@@ -105,13 +110,31 @@ sources = [
 
     "engine/voxel_engine.cpp",
     "engine/voxel_engine_gd.cpp",
+    "engine/voxel_engine_updater.cpp",
     "engine/distance_normalmaps.cpp",
     "engine/generate_block_task.cpp",
     "engine/load_block_data_task.cpp",
+    "engine/load_all_blocks_data_task.cpp",
     "engine/save_block_data_task.cpp",
+    "engine/mesh_block_task.cpp",
+    "engine/generate_distance_normalmap_task.cpp",
     "engine/priority_dependency.cpp",
 
     "terrain/voxel_mesh_block.cpp",
+    "terrain/voxel_node.cpp",
+    "terrain/voxel_save_completion_tracker.cpp",
+    "terrain/fixed_lod/voxel_terrain.cpp",
+    "terrain/variable_lod/voxel_lod_terrain.cpp",
+    "terrain/variable_lod/voxel_lod_terrain_update_task.cpp",
+    "terrain/variable_lod/voxel_mesh_block_vlt.cpp",
+    "terrain/instancing/voxel_instance_generator.cpp",
+    "terrain/instancing/voxel_instance_library_item.cpp",
+    "terrain/instancing/voxel_instance_library_multimesh_item.cpp",
+    "terrain/instancing/voxel_instance_library_scene_item.cpp",
+    "terrain/instancing/voxel_instance_library.cpp",
+    "terrain/instancing/voxel_instancer.cpp",
+
+    "editor/voxel_debug.cpp",
 
     # Utilities
 
@@ -122,13 +145,21 @@ sources = [
     "util/godot/funcs.cpp",
     "util/godot/variant.cpp",
     "util/godot/object.cpp",
+    "util/godot/node.cpp",
     "util/godot/string.cpp",
     "util/godot/mesh.cpp",
+    "util/godot/shader.cpp",
+    "util/godot/pcg.cpp",
+    "util/godot/random_pcg.cpp",
+    "util/godot/multimesh.cpp",
     "util/godot/concave_polygon_shape_3d.cpp",
     "util/godot/direct_mesh_instance.cpp",
+    "util/godot/direct_multimesh_instance.cpp",
     "util/godot/direct_static_body.cpp",
     "util/godot/project_settings.cpp",
     "util/godot/geometry_2d.cpp",
+    "util/godot/shader_material_pool.cpp",
+    "util/godot/rendering_server.cpp",
 
     "util/noise/fast_noise_lite/fast_noise_lite_gradient.cpp",
     "util/noise/fast_noise_lite/fast_noise_lite_range.cpp",

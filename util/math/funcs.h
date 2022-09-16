@@ -10,6 +10,7 @@
 using namespace godot;
 #endif
 
+#include "constants.h"
 #include <float.h> // for `_isnan`
 
 namespace zylann::math {
@@ -377,6 +378,14 @@ inline bool is_inf(float p_val) {
 #else
 	return isinf(p_val);
 #endif
+}
+
+inline double deg_to_rad(double p_y) {
+	return p_y * PI_64 / 180.0;
+}
+
+inline float deg_to_rad(float p_y) {
+	return p_y * PI_32 / 180.f;
 }
 
 } // namespace zylann::math

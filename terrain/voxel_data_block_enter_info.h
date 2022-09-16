@@ -2,7 +2,7 @@
 #define VOXEL_DATA_BLOCK_ENTER_INFO_H
 
 #include "../storage/voxel_data_block.h"
-#include <core/object/ref_counted.h>
+#include "../util/godot/object.h"
 
 namespace zylann::voxel {
 

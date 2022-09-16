@@ -20,7 +20,7 @@ void get_property_list(const Object &obj, std::vector<GodotPropertyInfo> &out_pr
 		out_properties.push_back(pi);
 	}
 #elif defined(ZN_GODOT_EXTENSION)
-	Array properties = obj.get_property_list();
+	const Array properties = obj.get_property_list();
 	const String type_key = "type";
 	const String name_key = "name";
 	const String usage_key = "usage";

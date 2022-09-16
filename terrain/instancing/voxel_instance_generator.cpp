@@ -1,9 +1,10 @@
 #include "voxel_instance_generator.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/array_mesh.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/random_pcg.h"
 #include "../../util/profiling.h"
-
-#include <core/core_string_names.h>
-#include <scene/resources/mesh.h>
 
 namespace zylann::voxel {
 
@@ -536,7 +537,7 @@ float VoxelInstanceGenerator::get_offset_along_normal() const {
 
 void VoxelInstanceGenerator::set_min_slope_degrees(float degrees) {
 	_min_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float max_surface_normal_y = math::min(1.f, Math::cos(Math::deg_to_rad(_min_slope_degrees)));
+	const float max_surface_normal_y = math::min(1.f, Math::cos(math::deg_to_rad(_min_slope_degrees)));
 	if (max_surface_normal_y == _max_surface_normal_y) {
 		return;
 	}
@@ -550,7 +551,7 @@ float VoxelInstanceGenerator::get_min_slope_degrees() const {
 
 void VoxelInstanceGenerator::set_max_slope_degrees(float degrees) {
 	_max_slope_degrees = math::clamp(degrees, 0.f, 180.f);
-	const float min_surface_normal_y = math::max(-1.f, Math::cos(Math::deg_to_rad(_max_slope_degrees)));
+	const float min_surface_normal_y = math::max(-1.f, Math::cos(math::deg_to_rad(_max_slope_degrees)));
 	if (min_surface_normal_y == _min_surface_normal_y) {
 		return;
 	}
@@ -614,13 +615,13 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 		return;
 	}
 	if (_noise.is_valid()) {
-		_noise->disconnect(CoreStringNames::get_singleton()->changed,
-				callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed));
+		_noise->disconnect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
 	}
 	_noise = noise;
 	if (_noise.is_valid()) {
-		_noise->connect(CoreStringNames::get_singleton()->changed,
-				callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed));
+		_noise->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
 	}
 	emit_changed();
 }
@@ -711,7 +712,9 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &VoxelInstanceGenerator::set_noise_on_scale);
 	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &VoxelInstanceGenerator::get_noise_on_scale);
 
-	// ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
+#endif
 
 	ADD_GROUP("Emission", "");
 

@@ -3,6 +3,7 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
+#include "../util/godot/script.h"
 
 namespace zylann::voxel {
 
@@ -58,16 +59,26 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 
 #ifdef TOOLS_ENABLED
 
+#if defined(ZN_GODOT)
 TypedArray<String> VoxelNode::get_configuration_warnings() const {
+#error "Implement get_configuration_warnings for modules"
+}
+#elif defined(ZN_GODOT_EXTENSION)
+PackedStringArray VoxelNode::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return warnings;
+}
+#endif
+
+void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelMesher> mesher = get_mesher();
 	Ref<VoxelStream> stream = get_stream();
 	Ref<VoxelGenerator> generator = get_generator();
 
-	TypedArray<String> warnings = Node3D::get_configuration_warnings();
-
 	if (mesher.is_null()) {
-		warnings.append(TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
-							"You can assign one on the `mesher` property."));
+		warnings.append(ZN_TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
+							   "You can assign one on the `mesher` property."));
 	}
 
 	if (stream.is_valid()) {
@@ -77,10 +88,10 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 			if (script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(TTR("Careful, don't edit your custom stream while it's running, "
-									"it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(ZN_TTR("Careful, don't edit your custom stream while it's running, "
+									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
 			} else {
-				warnings.append(TTR("The custom stream is not tool, the editor won't be able to use it."));
+				warnings.append(ZN_TTR("The custom stream is not tool, the editor won't be able to use it."));
 			}
 		}
 
@@ -89,8 +100,9 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 			const int mesher_channels = mesher->get_used_channels_mask();
 
 			if ((stream_channels & mesher_channels) == 0) {
-				warnings.append(TTR("The current stream is providing voxel data only on channels that are not used by "
-									"the current mesher. This will result in nothing being visible."));
+				warnings.append(
+						ZN_TTR("The current stream is providing voxel data only on channels that are not used by "
+							   "the current mesher. This will result in nothing being visible."));
 			}
 		}
 	}
@@ -103,11 +115,11 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 			if (script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
-				warnings.append(TTR("Careful, don't edit your custom generator while it's running, "
-									"it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
+				warnings.append(ZN_TTR("Careful, don't edit your custom generator while it's running, "
+									   "it can cause crashes. Turn off `run_stream_in_editor` before doing so."));
 			} else {
 				can_check_generator_channels = false;
-				// return TTR("The custom generator is not tool, the editor won't be able to use it.");
+				// return ZN_TTR("The custom generator is not tool, the editor won't be able to use it.");
 			}
 		}
 
@@ -117,21 +129,15 @@ TypedArray<String> VoxelNode::get_configuration_warnings() const {
 
 			if ((generator_channels & mesher_channels) == 0) {
 				warnings.append(
-						TTR("The current generator is providing voxel data only on channels that are not used by "
-							"the current mesher. This will result in nothing being visible."));
+						ZN_TTR("The current generator is providing voxel data only on channels that are not used by "
+							   "the current mesher. This will result in nothing being visible."));
 			}
 		}
 	}
 
 	if (mesher.is_valid()) {
-		PackedStringArray resource_warnings;
-		mesher->get_configuration_warnings(resource_warnings);
-		for (int i = 0; i < resource_warnings.size(); ++i) {
-			warnings.append(resource_warnings);
-		}
+		mesher->get_configuration_warnings(warnings);
 	}
-
-	return warnings;
 }
 
 #endif

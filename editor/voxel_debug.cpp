@@ -1,20 +1,15 @@
 #include "voxel_debug.h"
 #include "../util/fixed_array.h"
+#include "../util/godot/array_mesh.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_multimesh_instance.h"
-
-#include <scene/resources/mesh.h>
+#include "../util/godot/funcs.h"
+#include "../util/memory.h"
 
 namespace zylann {
 
 FixedArray<Ref<Mesh>, DebugColors::ID_COUNT> g_wirecubes;
 bool g_finalized = false;
-
-template <typename T>
-void raw_copy_to(Vector<T> &dst, const T *src, unsigned int count) {
-	dst.resize(count);
-	memcpy(dst.ptrw(), src, count * sizeof(T));
-}
 
 static Color get_color(DebugColors::ColorID id) {
 	switch (id) {
@@ -49,16 +44,16 @@ Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id) {
 			Vector3(0, 1, 1) //
 		};
 		PackedVector3Array positions;
-		raw_copy_to(positions, positions_raw, 8);
+		copy_to(positions, Span<const Vector3>(positions_raw, 8));
 
 		Color white(1.0, 1.0, 1.0);
 		PackedColorArray colors;
-		colors.resize(positions.size());
-		for (int i = 0; i < colors.size(); ++i) {
-			colors.write[i] = white;
+		// Not pre-resizing because writing to arrays have different syntax between Godot modules and GodotCpp.
+		for (int i = 0; i < positions.size(); ++i) {
+			colors.push_back(white);
 		}
 
-		const int indices_raw[] = {
+		const int32_t indices_raw[] = {
 			0, 1, //
 			1, 2, //
 			2, 3, //
@@ -75,7 +70,7 @@ Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id) {
 			3, 7 //
 		};
 		PackedInt32Array indices;
-		raw_copy_to(indices, indices_raw, 24);
+		copy_to(indices, Span<const int32_t>(indices_raw, 24));
 
 		Array arrays;
 		arrays.resize(Mesh::ARRAY_MAX);
@@ -182,7 +177,7 @@ void DebugRenderer::draw_box(const Transform3D &t, DebugColors::ColorID color) {
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
-		item = memnew(DebugRendererItem);
+		item = ZN_NEW(DebugRendererItem);
 		item->set_world(_world);
 		_items.push_back(item);
 	} else {

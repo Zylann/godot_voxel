@@ -3,12 +3,19 @@
 
 #include "voxel_instance_library_item.h"
 #include <map>
+// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
+// properties. See https://github.com/godotengine/godot-cpp/pull/826
+#ifdef ZN_GODOT_EXTENSION
+#include "../../util/thread/mutex.h"
+#include <string>
+#endif
 
 namespace zylann::voxel {
 
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
 class VoxelInstanceLibrary : public Resource, public VoxelInstanceLibraryItem::IListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
+
 public:
 	static const int MAX_ID = 0xffff;
 
@@ -61,6 +68,14 @@ private:
 	std::map<int, Ref<VoxelInstanceLibraryItem>> _items;
 
 	std::vector<IListener *> _listeners;
+
+// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
+// properties.
+// See https://github.com/godotengine/godot-cpp/pull/826
+#ifdef ZN_GODOT_EXTENSION
+	Mutex _item_property_names_mutex;
+	mutable std::vector<std::string> _item_property_names;
+#endif
 };
 
 } // namespace zylann::voxel

@@ -12,6 +12,11 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/concave_polygon_shape_3d.h"
+#include "../../util/godot/engine.h"
+#include "../../util/godot/scene_tree.h"
+#include "../../util/godot/script.h"
+#include "../../util/godot/shader_material.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
@@ -24,11 +29,6 @@
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
-
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/resources/concave_polygon_shape_3d.h>
 
 namespace zylann::voxel {
 
@@ -685,7 +685,11 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 	box_in_voxels.clip(_data->get_bounds());
 
 	if (_area_edit_notification_enabled) {
+#if defined(ZN_GODOT)
 		GDVIRTUAL_CALL(_on_area_edited, box_in_voxels.pos, box_in_voxels.size);
+#else
+		ERR_PRINT_ONCE("VoxelTerrain::_on_area_edited is not supported yet in GDExtension!");
+#endif
 	}
 
 	try_schedule_mesh_update_from_data(box_in_voxels);
@@ -713,7 +717,7 @@ void VoxelTerrain::_notification(int p_what) {
 	};
 
 	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
 			set_process(true);
 #ifdef TOOLS_ENABLED
 			// In the editor, auto-configure a default mesher, for convenience.
@@ -728,31 +732,31 @@ void VoxelTerrain::_notification(int p_what) {
 #endif
 			break;
 
-		case NOTIFICATION_PROCESS:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
 			// Can't do that in enter tree because Godot is "still setting up children".
 			// Can't do that in ready either because Godot says node state is locked.
 			// This hack is quite miserable.
 			VoxelEngineUpdater::ensure_existence(get_tree());
 
-			_process();
+			process();
 			break;
 
-		case NOTIFICATION_EXIT_TREE:
+		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
 			break;
 
-		case NOTIFICATION_ENTER_WORLD:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD):
 			_mesh_map.for_each_block(SetWorldAction(*get_world_3d()));
 			break;
 
-		case NOTIFICATION_EXIT_WORLD:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD):
 			_mesh_map.for_each_block(SetWorldAction(nullptr));
 			break;
 
-		case NOTIFICATION_VISIBILITY_CHANGED:
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED):
 			_mesh_map.for_each_block(SetParentVisibilityAction(is_visible()));
 			break;
 
-		case NOTIFICATION_TRANSFORM_CHANGED: {
+		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
 			const Transform3D transform = get_global_transform();
 			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 
@@ -920,12 +924,16 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 	_data_block_enter_info_obj->voxel_block = block;
 	_data_block_enter_info_obj->block_position = bpos;
 
+#if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get())) {
 		WARN_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is unimplemented!");
 	}
+#else
+	ERR_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is not supported yet in GDExtension!");
+#endif
 }
 
-void VoxelTerrain::_process() {
+void VoxelTerrain::process() {
 	ZN_PROFILE_SCOPE();
 	process_viewers();
 	//process_received_data_blocks();
@@ -1552,8 +1560,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 	if (gen_collisions) {
 		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-		block->set_collision_shape(
-				collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+		const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+		block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
@@ -1685,9 +1693,13 @@ PackedInt32Array VoxelTerrain::_b_get_viewer_network_peer_ids_in_area(Vector3i a
 
 	PackedInt32Array peer_ids;
 	peer_ids.resize(viewer_ids.size());
+	// Using direct access because when compiling with GodotCpp the array access syntax is different, also it is a bit
+	// faster
+	int32_t *peer_ids_data = peer_ids.ptrw();
+	ZN_ASSERT_RETURN_V(peer_ids_data != nullptr, peer_ids);
 	for (size_t i = 0; i < viewer_ids.size(); ++i) {
 		const int peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_ids[i]);
-		peer_ids.write[i] = peer_id;
+		peer_ids_data[i] = peer_id;
 	}
 
 	return peer_ids;
@@ -1754,8 +1766,10 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
 
+#ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
+#endif
 
 	ADD_GROUP("Bounds", "");
 
@@ -1774,8 +1788,9 @@ void VoxelTerrain::_bind_methods() {
 
 	ADD_GROUP("Materials", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+	const std::string material_hint =
+			format("{},{}", BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static());
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
 			"set_material_override", "get_material_override");
 
 	ADD_GROUP("Networking", "");
@@ -1798,9 +1813,8 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
-	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton().block_loaded, PropertyInfo(Variant::VECTOR3, "position")));
-	ADD_SIGNAL(
-			MethodInfo(VoxelStringNames::get_singleton().block_unloaded, PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3, "position")));
 }
 
 } // namespace zylann::voxel

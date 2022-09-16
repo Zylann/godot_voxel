@@ -1,9 +1,10 @@
 #ifndef VOXEL_TOOL_LOD_TERRAIN_H
 #define VOXEL_TOOL_LOD_TERRAIN_H
 
+#include "../util/macros.h"
 #include "voxel_tool.h"
 
-class Node;
+ZN_GODOT_FORWARD_DECLARE(class Node);
 
 namespace zylann::voxel {
 
@@ -30,7 +31,14 @@ public:
 	void do_sphere_async(Vector3 center, float radius);
 	void do_hemisphere(Vector3 center, float radius, Vector3 flat_direction, float smoothness);
 	float get_voxel_f_interpolated(Vector3 position) const;
+
+	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
+#if defined(ZN_GODOT)
 	Array separate_floating_chunks(AABB world_box, Node *parent_node);
+#elif defined(ZN_GODOT_EXTENSION)
+	Array separate_floating_chunks(AABB world_box, Object *parent_node_o);
+#endif
+
 	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);
 	void do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D transform, Vector3 area_size);
 

@@ -5,18 +5,18 @@
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../util/dstack.h"
+#include "../util/godot/callable.h"
+#include "../util/godot/collision_shape_3d.h"
 #include "../util/godot/mesh.h"
+#include "../util/godot/mesh_instance_3d.h"
+#include "../util/godot/rigid_body_3d.h"
+#include "../util/godot/timer.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
 #include "voxel_mesh_sdf_gd.h"
-
-#include <scene/3d/collision_shape_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/3d/physics_body_3d.h>
-#include <scene/main/timer.h>
 
 namespace zylann::voxel {
 
@@ -639,7 +639,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			collision_shape->set_position(offset);
 
 			RigidBody3D *rigid_body = memnew(RigidBody3D);
-			rigid_body->set_transform(transform * local_transform.translated_local(-offset));
+			rigid_body->set_transform(transform * transform3d_translated_local(local_transform, -offset));
 			rigid_body->add_child(collision_shape);
 			rigid_body->set_freeze_mode(RigidBody3D::FREEZE_MODE_KINEMATIC);
 			rigid_body->set_freeze_enabled(true);
@@ -649,7 +649,12 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", callable_mp(rigid_body, &RigidBody3D::set_freeze_enabled).bind(false));
+#if defined(ZN_GODOT)
+			timer->connect("timeout", ZN_GODOT_CALLABLE_MP(rigid_body, RigidBody3D, set_freeze_enabled).bind(false));
+#elif defined(ZN_GODOT_EXTENSION)
+			// TODO GDX: Callable::bind() cannot be used
+			ZN_PRINT_ERROR("Callable::bind() cannot be used in GDExtension, can't apply clipping fix to RigidBody3D");
+#endif
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);
@@ -669,7 +674,12 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	return nodes;
 }
 
+#if defined(ZN_GODOT)
 Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Node *parent_node) {
+#elif defined(ZN_GODOT_EXTENSION)
+Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *parent_node_o) {
+	Node *parent_node = Object::cast_to<Node>(parent_node_o);
+#endif
 	ERR_FAIL_COND_V(_terrain == nullptr, Array());
 	ERR_FAIL_COND_V(!math::is_valid_size(world_box.size), Array());
 	Ref<VoxelMesher> mesher = _terrain->get_mesher();
