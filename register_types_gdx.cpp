@@ -57,6 +57,10 @@
 #include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
+#include "editor/instance_library/voxel_instance_library_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_inspector_plugin.h"
+#include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
+#include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
@@ -182,6 +186,11 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelInstancerEditorPlugin>();
 		ClassDB::register_class<VoxelInstancerStatView>();
+
+		ClassDB::register_class<VoxelInstanceLibraryEditorPlugin>();
+		ClassDB::register_class<VoxelInstanceLibraryInspectorPlugin>();
+		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
 #endif
 	}
 }

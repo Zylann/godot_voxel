@@ -50,6 +50,12 @@ public:
 	// These are usually in CoreStringNames, but when compiling as a GDExtension, we don't have access to them
 	StringName changed;
 	StringName frame_post_draw;
+
+#ifdef TOOLS_ENABLED
+	StringName Add;
+	StringName Remove;
+	StringName EditorIcons;
+#endif
 };
 
 } // namespace zylann::voxel

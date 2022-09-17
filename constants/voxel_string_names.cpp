@@ -56,6 +56,12 @@ VoxelStringNames::VoxelStringNames() {
 
 	changed = StringName("changed");
 	frame_post_draw = StringName("frame_post_draw");
+
+#ifdef TOOLS_ENABLED
+	Add = StringName("Add");
+	Remove = StringName("Remove");
+	EditorIcons = StringName("EditorIcons");
+#endif
 }
 
 } // namespace zylann::voxel
