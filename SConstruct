@@ -78,6 +78,8 @@ sources = [
 	"engine/*.cpp",
 	"edition/*.cpp",
 
+	"register_types_gdx.cpp",
+
     # Utility
 
 	"util/*.cpp",
@@ -99,7 +101,8 @@ sources = [
 
 if env["tools"]:
     sources += [
-        "editor/voxel_debug.cpp"
+        "editor/*.cpp",
+		"editor/terrain/*.cpp"
     ]
 
 def process_glob_paths(p_sources):

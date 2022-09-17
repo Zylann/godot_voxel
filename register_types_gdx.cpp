@@ -51,6 +51,14 @@
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 #include "util/thread/godot_thread_helper.h"
 
+#if defined(TOOLS_ENABLED)
+
+#include "editor/about_window.h"
+#include "editor/terrain/voxel_terrain_editor_plugin.h"
+#include "editor/terrain/voxel_terrain_editor_task_indicator.h"
+
+#endif
+
 using namespace godot;
 using namespace zylann;
 using namespace zylann::voxel;
@@ -146,6 +154,16 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 
 		// TODO GDX: I don't want to expose this one but there is no way not to expose it
 		ClassDB::register_class<ZN_GodotThreadHelper>();
+
+#if defined(TOOLS_ENABLED)
+		// TODO GDX: I don't want to expose any of these classes, but it looks like there is no way to register them
+		// BUT not expose them
+
+		ClassDB::register_class<VoxelAboutWindow>();
+		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelTerrainEditorPlugin>();
+		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+#endif
 	}
 }
 

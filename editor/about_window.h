@@ -1,10 +1,11 @@
 #ifndef VOXEL_ABOUT_WINDOW_H
 #define VOXEL_ABOUT_WINDOW_H
 
-#include <scene/gui/dialogs.h>
+#include "../util/godot/accept_dialog.h"
+#include "../util/macros.h"
 
-class TextureRect;
-class RichTextLabel;
+ZN_GODOT_FORWARD_DECLARE(class TextureRect);
+ZN_GODOT_FORWARD_DECLARE(class RichTextLabel);
 
 namespace zylann::voxel {
 

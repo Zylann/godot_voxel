@@ -27,7 +27,7 @@ static const int NOTIFICATION_ENTER_WORLD = 41;
 static const int NOTIFICATION_EXIT_WORLD = 42;
 static const int NOTIFICATION_VISIBILITY_CHANGED = 43;
 #else
-#define ZN_GODOT_NODE_CONSTANT(m_name) m_name
+#define ZN_GODOT_NODE_3D_CONSTANT(m_name) m_name
 #endif // ZN_GODOT_EXTENSION
 } // namespace godot_cpp_fix
 
