@@ -102,7 +102,8 @@ sources = [
 if env["tools"]:
     sources += [
         "editor/*.cpp",
-		"editor/terrain/*.cpp"
+		"editor/terrain/*.cpp",
+		"editor/fast_noise_lite/*.cpp"
     ]
 
 def process_glob_paths(p_sources):

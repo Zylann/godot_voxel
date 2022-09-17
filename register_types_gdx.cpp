@@ -54,6 +54,9 @@
 #if defined(TOOLS_ENABLED)
 
 #include "editor/about_window.h"
+#include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
+#include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
+#include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 
@@ -163,6 +166,10 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
 		ClassDB::register_class<VoxelTerrainEditorPlugin>();
 		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+
+		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
+		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
+		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
 #endif
 	}
 }
