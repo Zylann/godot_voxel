@@ -3,13 +3,13 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
+#include "../util/godot/image.h"
 #include "../util/godot/mesh.h"
 #include "../util/godot/typed_material_array.h"
 #include "../util/macros.h"
 #include "../util/span.h"
 #include <vector>
 
-ZN_GODOT_FORWARD_DECLARE(class Image)
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
 namespace zylann::voxel {

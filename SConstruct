@@ -84,7 +84,7 @@ sources = [
 
 	"util/*.cpp",
 	"util/math/*.cpp",
-	"util/godot/*.cpp",
+	"util/godot/*.cpp", # TODO Maybe we don't want to compile also editor-only classes
 	"util/noise/fast_noise_lite/*.cpp",
 	"util/noise/gd_noise_range.cpp",
 	"util/thread/thread.cpp",
@@ -103,7 +103,8 @@ if env["tools"]:
     sources += [
         "editor/*.cpp",
 		"editor/terrain/*.cpp",
-		"editor/fast_noise_lite/*.cpp"
+		"editor/fast_noise_lite/*.cpp",
+		"editor/vox/*.cpp"
     ]
 
 def process_glob_paths(p_sources):

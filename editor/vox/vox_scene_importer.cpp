@@ -4,64 +4,64 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/image_texture.h"
+#include "../../util/godot/mesh_instance_3d.h"
+#include "../../util/godot/packed_scene.h"
+#include "../../util/godot/resource_saver.h"
+#include "../../util/godot/standard_material_3d.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 
-#include <core/io/file_access.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/3d/node_3d.h>
-#include <scene/resources/mesh.h>
-#include <scene/resources/packed_scene.h>
-
 namespace zylann::voxel::magica {
 
-String VoxelVoxSceneImporter::get_importer_name() const {
+String VoxelVoxSceneImporter::_zn_get_importer_name() const {
 	return "VoxelVoxSceneImporter";
 }
 
-String VoxelVoxSceneImporter::get_visible_name() const {
+String VoxelVoxSceneImporter::_zn_get_visible_name() const {
 	return "VoxelVoxSceneImporter";
 }
 
-void VoxelVoxSceneImporter::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_back("vox");
+PackedStringArray VoxelVoxSceneImporter::_zn_get_recognized_extensions() const {
+	PackedStringArray extensions;
+	extensions.append("vox");
+	return extensions;
 }
 
-String VoxelVoxSceneImporter::get_preset_name(int p_idx) const {
+String VoxelVoxSceneImporter::_zn_get_preset_name(int p_idx) const {
 	return "Default";
 }
 
-int VoxelVoxSceneImporter::get_preset_count() const {
+int VoxelVoxSceneImporter::_zn_get_preset_count() const {
 	return 1;
 }
 
-String VoxelVoxSceneImporter::get_save_extension() const {
+String VoxelVoxSceneImporter::_zn_get_save_extension() const {
 	return "tscn";
 }
 
-String VoxelVoxSceneImporter::get_resource_type() const {
+String VoxelVoxSceneImporter::_zn_get_resource_type() const {
 	return "PackedScene";
 }
 
-float VoxelVoxSceneImporter::get_priority() const {
+double VoxelVoxSceneImporter::_zn_get_priority() const {
 	// Higher import priority means the importer is preferred over another.
-	// By default, use this importer.
+	// By default, use this importer (the other Vox importer has lower priority).
 	return 1.0;
 }
 
 // int VoxelVoxImporter::get_import_order() const {
 // }
 
-void VoxelVoxSceneImporter::get_import_options(
-		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn.scale), 1.f));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.enable_baked_lighting), true));
+void VoxelVoxSceneImporter::_zn_get_import_options(
+		std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const {
+	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
 }
 
-bool VoxelVoxSceneImporter::get_option_visibility(
-		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
+bool VoxelVoxSceneImporter::_zn_get_option_visibility(
+		const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const {
 	return true;
 }
 
@@ -236,14 +236,14 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 // 	return defval;
 // }
 
-Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p_save_path,
-		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
-		Variant *r_metadata) {
+Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const String &p_save_path,
+		const GodotKeyValueWrapper p_options, GodotStringListWrapper p_out_platform_variants,
+		GodotStringListWrapper p_out_gen_files) const {
 	ZN_PROFILE_SCOPE();
 
-	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];
-	const float p_scale = p_options[VoxelStringNames::get_singleton().scale];
-	const bool p_enable_baked_lighting = p_options[VoxelStringNames::get_singleton().enable_baked_lighting];
+	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
+	const float p_scale = p_options.get("scale");
+	const bool p_enable_baked_lighting = p_options.get("enable_baked_lighting");
 
 	magica::Data data;
 	const Error load_err = data.load_from_file(p_source_file);
@@ -373,7 +373,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));
 		// `FLAG_CHANGE_PATH` did not do what I thought it did.
 		mesh->set_path(res_save_path);
-		const Error mesh_save_err = ResourceSaver::save(mesh, res_save_path);
+		const Error mesh_save_err = save_resource(mesh, res_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(res_save_path)));
 	}
@@ -387,7 +387,7 @@ Error VoxelVoxSceneImporter::import(const String &p_source_file, const String &p
 		scene.instantiate();
 		scene->pack(root_node);
 		String scene_save_path = p_save_path + ".tscn";
-		const Error save_err = ResourceSaver::save(scene, scene_save_path);
+		const Error save_err = save_resource(scene, scene_save_path, ResourceSaver::FLAG_NONE);
 		memdelete(root_node);
 		ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
 	}
