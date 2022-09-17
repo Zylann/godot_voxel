@@ -104,7 +104,8 @@ if env["tools"]:
         "editor/*.cpp",
 		"editor/terrain/*.cpp",
 		"editor/fast_noise_lite/*.cpp",
-		"editor/vox/*.cpp"
+		"editor/vox/*.cpp",
+		"editor/instancer/*.cpp"
     ]
 
 def process_glob_paths(p_sources):

@@ -57,6 +57,8 @@
 #include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
+#include "editor/instancer/voxel_instancer_editor_plugin.h"
+#include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 #include "editor/vox/vox_editor_plugin.h"
@@ -177,6 +179,9 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<magica::VoxelVoxEditorPlugin>();
 		ClassDB::register_class<magica::VoxelVoxMeshImporter>();
 		ClassDB::register_class<magica::VoxelVoxSceneImporter>();
+
+		ClassDB::register_class<VoxelInstancerEditorPlugin>();
+		ClassDB::register_class<VoxelInstancerStatView>();
 #endif
 	}
 }
