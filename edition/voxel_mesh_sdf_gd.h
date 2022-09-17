@@ -2,10 +2,10 @@
 #define VOXEL_MESH_SDF_GD_H
 
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/mesh.h"
 #include "../util/godot/resource.h"
 #include "../util/math/vector3f.h"
 
-ZN_GODOT_FORWARD_DECLARE(class Mesh);
 ZN_GODOT_FORWARD_DECLARE(class SceneTree);
 
 namespace zylann::voxel {

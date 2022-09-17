@@ -63,6 +63,8 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_stat_view.h"
+#include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
+#include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 #include "editor/vox/vox_editor_plugin.h"
@@ -191,6 +193,10 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstanceLibraryInspectorPlugin>();
 		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+
+		ClassDB::register_class<VoxelMeshSDFViewer>();
+		ClassDB::register_class<VoxelMeshSDFEditorPlugin>();
+		ClassDB::register_class<VoxelMeshSDFInspectorPlugin>();
 #endif
 	}
 }
