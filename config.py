@@ -1,4 +1,6 @@
 
+# This file is for compiling as a module. It may not be used when compiling as an extension.
+
 def can_build(env, platform):
     return True
 
