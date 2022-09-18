@@ -78,7 +78,7 @@ sources = [
 	"engine/*.cpp",
 	"edition/*.cpp",
 
-	"register_types_gdx.cpp",
+	"register_types.cpp",
 
     # Utility
 
