@@ -29,8 +29,15 @@
 /*************************************************************************/
 // Zylann: added the `godot` namespace, adapted so it can compile with GodotCpp
 
-#ifndef RANDOM_PCG_H
-#define RANDOM_PCG_H
+#ifndef ZN_RANDOM_PCG_H
+#define ZN_RANDOM_PCG_H
+
+#ifdef ZN_GODOT
+
+// Use built-in version
+#include <core/math/random_pcg.h>
+
+#else
 
 #include "../macros.h"
 #include "../math/constants.h"
@@ -149,4 +156,5 @@ public:
 
 } // namespace godot
 
+#endif // ZN_GODOT
 #endif // RANDOM_PCG_H

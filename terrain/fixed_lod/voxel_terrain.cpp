@@ -17,6 +17,7 @@
 #include "../../util/godot/scene_tree.h"
 #include "../../util/godot/script.h"
 #include "../../util/godot/shader_material.h"
+#include "../../util/godot/string.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"

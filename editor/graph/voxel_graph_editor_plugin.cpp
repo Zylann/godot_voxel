@@ -134,7 +134,11 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 	}
 	// The point is when the plugin's UI closed (for real, not closed and re-opened simultaneously!),
 	// it should cleanup its UI to not waste RAM (as it references stuff).
+#if defined(ZN_GODOT)
+	edit(nullptr);
+#elif defined(ZN_GODOT_EXTENSION)
 	_edit(nullptr);
+#endif
 	if (_graph_editor->is_visible_in_tree()) {
 		hide_bottom_panel();
 	}

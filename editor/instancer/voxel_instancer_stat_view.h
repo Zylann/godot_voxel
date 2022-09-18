@@ -3,6 +3,7 @@
 
 #include "../../util/godot/v_box_container.h"
 #include "../../util/macros.h"
+#include <unordered_map>
 
 ZN_GODOT_FORWARD_DECLARE(class Tree)
 

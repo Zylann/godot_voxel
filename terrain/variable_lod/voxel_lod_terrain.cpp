@@ -19,6 +19,7 @@
 #include "../../util/godot/scene_tree.h"
 #include "../../util/godot/script.h"
 #include "../../util/godot/shader.h"
+#include "../../util/godot/string.h"
 #include "../../util/godot/viewport.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"
@@ -874,7 +875,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelEngineUpdater::ensure_existence(get_tree());
-				_process(get_process_delta_time());
+				process(get_process_delta_time());
 			}
 			break;
 
@@ -885,7 +886,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelEngineUpdater::ensure_existence(get_tree());
-				_process(get_physics_process_delta_time());
+				process(get_physics_process_delta_time());
 				break;
 			}
 

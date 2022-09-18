@@ -24,7 +24,24 @@ struct GodotImportOption {
 struct GodotKeyValueWrapper {
 #if defined(ZN_GODOT)
 
-#error "Implement GodotKeyValueWrapper for modules"
+	const HashMap<StringName, Variant> &_map;
+
+	inline bool try_get(const String key, Variant &out_value) const {
+		const Variant *vp = _map.getptr(key);
+		if (vp != nullptr) {
+			out_value = *vp;
+			return true;
+		}
+		return false;
+	}
+
+	inline Variant get(const String key) const {
+		const Variant *vp = _map.getptr(key);
+		if (vp != nullptr) {
+			return *vp;
+		}
+		return Variant();
+	}
 
 #elif defined(ZN_GODOT_EXTENSION)
 
@@ -48,9 +65,10 @@ struct GodotKeyValueWrapper {
 // Exposes the same interface for different equivalent lists of strings, depending on the compiling target.
 struct GodotStringListWrapper {
 #if defined(ZN_GODOT)
-
-#error "Implement GodotStringListWrapper for modules"
-
+	List<String> &_list;
+	inline void append(const String s) {
+		_list.push_back(s);
+	}
 #elif defined(ZN_GODOT_EXTENSION)
 	Array &_array;
 	inline void append(const String s) {

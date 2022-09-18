@@ -25,7 +25,7 @@ public:
 	// This looks like a regression from Godot 3. They still take `Object` internally, there is no reason to use
 	// `Variant`.
 #if defined(ZN_GODOT)
-	bool handles(Object *p_object) override;
+	bool handles(Object *p_object) const override;
 	void edit(Object *p_object) override;
 #elif defined(ZN_GODOT_EXTENSION)
 	bool _handles(const Variant &p_object_v) const override;

@@ -30,7 +30,7 @@ VoxelMeshSDFViewer::VoxelMeshSDFViewer() {
 	update_info_label();
 
 	Button *bake_button = memnew(Button);
-	bake_button->connect("pressed", ZN_GODOT_CALLABLE_MP(this, &VoxelMeshSDFViewer, _on_bake_button_pressed));
+	bake_button->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelMeshSDFViewer, _on_bake_button_pressed));
 	add_child(bake_button);
 	_bake_button = bake_button;
 	update_bake_button();

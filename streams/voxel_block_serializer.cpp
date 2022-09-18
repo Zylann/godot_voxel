@@ -360,10 +360,7 @@ namespace legacy {
 bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	// In v3, metadata was always a Godot Variant. In v4, metadata uses an independent format.
 
-#ifndef ZN_GODOT
-	ZN_PRINT_ERROR("Cannot migrate block from v3 to v4, Godot Engine is required");
-	return false;
-#else
+#if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
 
 	// Constants used at the time of this version
 	const unsigned int channel_count = 8;
@@ -416,10 +413,10 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 			static bool convert_metadata_item(MemoryReader &mr, MemoryWriter &mw) {
 				// Read Variant
 				Variant src_meta;
-				int read_length;
-				const Error err =
-						decode_variant(src_meta, &mr.data[mr.pos], mr.data.size() - mr.pos, &read_length, false);
-				ZN_ASSERT_RETURN_V_MSG(err == OK, false, "Failed to deserialize v3 Variant metadata");
+				size_t read_length;
+				const bool decode_success = decode_variant(
+						Span<const uint8_t>(&mr.data[mr.pos], mr.data.size() - mr.pos), src_meta, read_length);
+				ZN_ASSERT_RETURN_V_MSG(decode_success, false, "Failed to deserialize v3 Variant metadata");
 				mr.pos += read_length;
 				ZN_ASSERT(mr.pos <= mr.data.size());
 
@@ -453,6 +450,11 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 			ZN_ASSERT_RETURN_V(L::convert_metadata_item(mr, mw), false);
 		}
 	}
+
+#else
+	ZN_PRINT_ERROR("Cannot migrate block from v3 to v4, Godot Engine is required");
+	return false;
+
 #endif
 	return true;
 }

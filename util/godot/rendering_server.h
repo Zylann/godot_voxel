@@ -8,6 +8,8 @@
 using namespace godot;
 #endif
 
+#include <vector>
+
 namespace zylann {
 
 inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {

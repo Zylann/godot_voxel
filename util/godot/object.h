@@ -3,6 +3,8 @@
 
 #if defined(ZN_GODOT)
 #include <core/object/object.h>
+// The `GDCLASS` macro isn't compiling when inheriting `Object`, unless `class_db.h` is also included
+#include <core/object/class_db.h>
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/object.hpp>
 // The `GDCLASS` macro isn't compiling when inheriting `Object`, unless `class_db.hpp` is also included

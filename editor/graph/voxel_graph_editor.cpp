@@ -438,7 +438,7 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 
 	if (mb.is_valid()) {
 		if (mb->is_pressed()) {
-			if (mb->get_button_index() == MOUSE_BUTTON_RIGHT) {
+			if (mb->get_button_index() == godot::MOUSE_BUTTON_RIGHT) {
 				_click_position = mb->get_position();
 				_context_menu->set_position(get_global_mouse_position());
 				_context_menu->popup();

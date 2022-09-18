@@ -4,53 +4,66 @@
 namespace zylann {
 
 #if defined(ZN_GODOT)
-#error "Implement ZN_EditorImportPlugin for modules"
 
 String ZN_EditorImportPlugin::get_importer_name() const {
-	// TODO
+	return _zn_get_importer_name();
 }
 
 String ZN_EditorImportPlugin::get_visible_name() const {
-	// TODO
+	return _zn_get_visible_name();
 }
 
 void ZN_EditorImportPlugin::get_recognized_extensions(List<String> *p_extensions) const {
-	// TODO
+	ZN_ASSERT(p_extensions != nullptr);
+	const PackedStringArray extensions = _zn_get_recognized_extensions();
+	for (const String &extension : extensions) {
+		p_extensions->push_back(extension);
+	}
 }
 
 String ZN_EditorImportPlugin::get_preset_name(int p_idx) const {
-	// TODO
+	return _zn_get_preset_name(p_idx);
 }
 
 int ZN_EditorImportPlugin::get_preset_count() const {
-	// TODO
+	return _zn_get_preset_count();
 }
 
 String ZN_EditorImportPlugin::get_save_extension() const {
-	// TODO
+	return _zn_get_save_extension();
 }
 
 String ZN_EditorImportPlugin::get_resource_type() const {
-	// TODO
+	return _zn_get_resource_type();
 }
 
 float ZN_EditorImportPlugin::get_priority() const {
-	// TODO
+	return _zn_get_priority();
 }
 
 void ZN_EditorImportPlugin::get_import_options(
-		const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const {
-	// TODO
+		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
+	ZN_ASSERT(r_options != nullptr);
+	std::vector<GodotImportOption> options;
+	_zn_get_import_options(options, p_path, p_preset);
+	for (const GodotImportOption &option : options) {
+		ImportOption opt(option.option, option.default_value);
+		r_options->push_back(opt);
+	}
 }
 
 bool ZN_EditorImportPlugin::get_option_visibility(
 		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
-	// TODO
+	return _zn_get_option_visibility(p_path, p_option, GodotKeyValueWrapper{ p_options });
 }
 
-Error import(const String &p_source_file, const String &p_save_path, const HashMap<StringName, Variant> &p_options,
-		List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) {
-	// TODO
+Error ZN_EditorImportPlugin::import(const String &p_source_file, const String &p_save_path,
+		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
+		Variant *r_metadata) {
+	ZN_ASSERT(r_platform_variants != nullptr);
+	ZN_ASSERT(r_gen_files != nullptr);
+	return _zn_import(p_source_file, p_save_path, GodotKeyValueWrapper{ p_options },
+			GodotStringListWrapper{ *r_platform_variants }, GodotStringListWrapper{ *r_gen_files });
 }
 
 #elif defined(ZN_GODOT_EXTENSION)

@@ -44,15 +44,13 @@ inline uint64_t get_buffer(GodotFile &f, Span<uint8_t> dst) {
 #endif
 }
 
-inline uint64_t store_buffer(GodotFile &f, Span<const uint8_t> src) {
+inline void store_buffer(GodotFile &f, Span<const uint8_t> src) {
 #if defined(ZN_GODOT)
-	return f.store_buffer(src.data(), src.size());
+	f.store_buffer(src.data(), src.size());
 #elif defined(ZN_GODOT_EXTENSION)
 	PackedByteArray bytes;
 	copy_to(bytes, src);
 	f.store_buffer(bytes);
-	// Impossible to tell how many bytes were actually written, the Godot API doesn't return anything...
-	return src.size();
 #endif
 }
 

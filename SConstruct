@@ -46,7 +46,11 @@ if env["tools"]:
 sources = common.get_sources(env)
 
 sources += [
-	"util/thread/godot_thread_helper.cpp"
+	"util/thread/godot_thread_helper.cpp",
+
+	# GodotCpp doesn't come with RandomPCG
+	"util/godot/pcg.cpp",
+	"util/godot/random_pcg.cpp"
 ]
 
 # WARNING
