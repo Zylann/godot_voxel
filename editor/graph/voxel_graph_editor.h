@@ -1,19 +1,20 @@
 #ifndef VOXEL_GRAPH_EDITOR_H
 #define VOXEL_GRAPH_EDITOR_H
 
+#include "../../generators/graph/voxel_generator_graph.h"
+#include "../../util/godot/control.h"
+#include "../../util/godot/editor_undo_redo_manager.h"
 #include "../voxel_debug.h"
-#include <editor/editor_undo_redo_manager.h>
-#include <scene/gui/control.h>
 
-class GraphEdit;
-class PopupMenu;
-class AcceptDialog;
-class UndoRedo;
-class Button;
+ZN_GODOT_FORWARD_DECLARE(class GraphEdit)
+ZN_GODOT_FORWARD_DECLARE(class PopupMenu)
+ZN_GODOT_FORWARD_DECLARE(class AcceptDialog)
+ZN_GODOT_FORWARD_DECLARE(class UndoRedo)
+ZN_GODOT_FORWARD_DECLARE(class Button)
+ZN_GODOT_FORWARD_DECLARE(class Label)
 
 namespace zylann::voxel {
 
-class VoxelGeneratorGraph;
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
 class VoxelGraphEditorShaderDialog;
@@ -45,9 +46,13 @@ public:
 	bool is_pinned_hint() const;
 	void set_popout_button_enabled(bool enable);
 
+#ifdef ZN_GODOT_EXTENSION
+	void _process(double delta) override;
+#endif
+
 private:
 	void _notification(int p_what);
-	void _process(float delta);
+	void process(float delta);
 
 	void clear();
 	void build_gui_from_graph();
@@ -66,9 +71,19 @@ private:
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
+
+#if defined(ZN_GODOT)
 	void _on_graph_edit_delete_nodes_request(TypedArray<StringName> node_names);
 	void _on_graph_edit_node_selected(Node *p_node);
 	void _on_graph_edit_node_deselected(Node *p_node);
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: TypedArray isn't available.
+	void _on_graph_edit_delete_nodes_request(Array node_names);
+	// TODO GDX: Can't bind methods taking a child class of `Object*`
+	void _on_graph_edit_node_selected(Object *p_node_o);
+	void _on_graph_edit_node_deselected(Object *p_node_o);
+#endif
+
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_id_pressed(int id);
 	void _on_update_previews_button_pressed();

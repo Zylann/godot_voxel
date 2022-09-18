@@ -2223,12 +2223,29 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					CRASH_NOW();
 					break;
 			}
+
+#ifdef ZN_GODOT_EXTENSION
+			p.name_std = to_std_string(p.name);
+			p.class_name_std = to_std_string(p.class_name);
+			if (p.has_range) {
+				// This was the code used in `VoxelGraphNodeInspectorWrapper`
+				//p.hint_string_std = to_std_string(String("{0},{1}").format(varray(p.min_value, p.max_value)));
+				p.hint_string_std = format("{},{}", p.min_value, p.max_value);
+			}
+#endif
 		}
 
 		for (uint32_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
 			t.input_name_to_index.insert({ p.name, input_index });
 		}
+
+#ifdef ZN_GODOT_EXTENSION
+		for (uint32_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
+			Port &p = t.inputs[input_index];
+			p.name_std = to_std_string(p.name);
+		}
+#endif
 
 		if (t.expression_func != nullptr) {
 			CRASH_COND(t.expression_func_name == nullptr);

@@ -1,10 +1,11 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/constants.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "voxel_graph_editor.h"
 
-#include <core/object/undo_redo.h>
 #include <algorithm>
 
 namespace zylann::voxel {
@@ -33,18 +34,19 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		return;
 	}
 
-	p_list->push_back(PropertyInfo(Variant::STRING_NAME, "name", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_EDITOR));
+	p_list->push_back(PropertyInfo(Variant::STRING_NAME, "name", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR));
 
 	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 
 	// Params
 
-	p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_CATEGORY));
+	p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
 	for (size_t i = 0; i < node_type.params.size(); ++i) {
 		const VoxelGraphNodeDB::Param &param = node_type.params[i];
 		PropertyInfo pi;
+#if defined(ZN_GODOT)
 		pi.name = param.name;
 		pi.type = param.type;
 		pi.class_name = param.class_name;
@@ -55,21 +57,36 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 			pi.hint = PROPERTY_HINT_RANGE;
 			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
 		}
+#elif defined(ZN_GODOT_EXTENSION)
+		pi.name = param.name_std.c_str();
+		pi.type = param.type;
+		pi.class_name = param.class_name_std.c_str();
+		if (!param.class_name.is_empty()) {
+			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
+			pi.hint_string = pi.class_name;
+		} else if (param.has_range) {
+			pi.hint = PROPERTY_HINT_RANGE;
+			pi.hint_string = param.hint_string_std.c_str();
+		}
+#endif
 		pi.usage = PROPERTY_USAGE_EDITOR;
 		p_list->push_back(pi);
 	}
 
 	// Inputs
 
-	p_list->push_back(
-			PropertyInfo(Variant::NIL, "Input Defaults", PROPERTY_HINT_NONE, String(), PROPERTY_USAGE_CATEGORY));
+	p_list->push_back(PropertyInfo(Variant::NIL, "Input Defaults", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
 	const bool autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
 
 	for (size_t i = 0; i < node_type.inputs.size(); ++i) {
 		const VoxelGraphNodeDB::Port &port = node_type.inputs[i];
 		PropertyInfo pi;
+#if defined(ZN_GODOT)
 		pi.name = port.name;
+#elif defined(ZN_GODOT_EXTENSION)
+		pi.name = port.name_std.c_str();
+#endif
 		pi.type = port.default_value.get_type();
 		if (autoconnect && port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
 			// This default value won't be used because the port will automatically connect when compiled
@@ -170,7 +187,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	ERR_FAIL_COND_V(_undo_redo == nullptr, false);
 	EditorUndoRedoManager &ur = **_undo_redo;
 
-	if (p_name == "name") {
+	const String name = p_name;
+
+	if (name == "name") {
 		String previous_name = graph->get_node_name(_node_id);
 		ur.create_action("Set VoxelGeneratorGraph node name");
 		ur.add_do_method(graph.ptr(), "set_node_name", _node_id, p_value);
@@ -181,7 +200,7 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		return true;
 	}
 
-	if (p_name == AUTOCONNECT_PROPERY_NAME) {
+	if (name == AUTOCONNECT_PROPERY_NAME) {
 		ur.create_action(String("Set ") + AUTOCONNECT_PROPERY_NAME);
 		const bool prev_autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
 		ur.add_do_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, p_value);
@@ -236,12 +255,14 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 	Ref<VoxelGeneratorGraph> graph = get_graph();
 	ERR_FAIL_COND_V(graph.is_null(), false);
 
-	if (p_name == "name") {
+	const String name = p_name;
+
+	if (name == "name") {
 		r_ret = graph->get_node_name(_node_id);
 		return true;
 	}
 
-	if (p_name == AUTOCONNECT_PROPERY_NAME) {
+	if (name == AUTOCONNECT_PROPERY_NAME) {
 		r_ret = graph->get_node_default_inputs_autoconnect(_node_id);
 		return true;
 	}

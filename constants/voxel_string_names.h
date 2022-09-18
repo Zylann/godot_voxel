@@ -55,6 +55,8 @@ public:
 	StringName Add;
 	StringName Remove;
 	StringName EditorIcons;
+	StringName Pin;
+	StringName ExternalLink;
 #endif
 };
 

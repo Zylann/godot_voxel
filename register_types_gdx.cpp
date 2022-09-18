@@ -57,6 +57,16 @@
 #include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
+#include "editor/graph/editor_property_text_change_on_submit.h"
+#include "editor/graph/voxel_graph_editor.h"
+#include "editor/graph/voxel_graph_editor_inspector_plugin.h"
+#include "editor/graph/voxel_graph_editor_node.h"
+#include "editor/graph/voxel_graph_editor_node_preview.h"
+#include "editor/graph/voxel_graph_editor_plugin.h"
+#include "editor/graph/voxel_graph_editor_shader_dialog.h"
+#include "editor/graph/voxel_graph_editor_window.h"
+#include "editor/graph/voxel_graph_node_inspector_wrapper.h"
+#include "editor/graph/voxel_range_analysis_dialog.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_inspector_plugin.h"
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
@@ -197,6 +207,20 @@ void initialize_extension_test_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelMeshSDFViewer>();
 		ClassDB::register_class<VoxelMeshSDFEditorPlugin>();
 		ClassDB::register_class<VoxelMeshSDFInspectorPlugin>();
+
+		ClassDB::register_class<ZN_EditorPropertyTextChangeOnSubmit>();
+		ClassDB::register_class<VoxelGraphEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelGraphEditorNodePreview>();
+		ClassDB::register_class<VoxelGraphEditorNode>();
+		ClassDB::register_class<VoxelGraphEditor>();
+		ClassDB::register_class<VoxelGraphEditorPlugin>();
+		ClassDB::register_class<VoxelGraphEditorShaderDialog>();
+		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
+		ClassDB::register_class<VoxelRangeAnalysisDialog>();
+
+		// TODO GDX: Can't add plugins.
+		// See https://github.com/godotengine/godot-cpp/issues/640
+		// and https://github.com/godotengine/godot/pull/65592
 #endif
 	}
 }
@@ -217,6 +241,8 @@ void uninitialize_extension_test_module(godot::ModuleInitializationLevel p_level
 
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		// TODO GDX: Can't remove plugins.
+
 		zylann::free_debug_resources();
 	}
 #endif // TOOLS_ENABLED

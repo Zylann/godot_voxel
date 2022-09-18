@@ -15,6 +15,15 @@ namespace zylann {
 void set_nodes_owner(Node *root, Node *owner);
 void set_nodes_owner_except_root(Node *root, Node *owner);
 
+template <typename T>
+inline T *get_node_typed(const Node &self, const NodePath &path) {
+#if defined(ZN_GODOT)
+	return Object::cast_to<T>(self.get_node(path));
+#elif defined(ZN_GODOT_EXTENSION)
+	return self.get_node<T>(path);
+#endif
+}
+
 // TODO GDX: `NOTIFICATION_*` (and maybe other constants) are not static, they are supposed to be! Can't be use them in
 // `switch`, and they take space in every class instance.
 namespace godot_cpp_fix {

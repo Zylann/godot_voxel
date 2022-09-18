@@ -1,0 +1,11 @@
+#ifndef ZN_GODOT_CODE_EDIT_H
+#define ZN_GODOT_CODE_EDIT_H
+
+#if defined(ZN_GODOT)
+#include <scene/gui/code_edit.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/code_edit.hpp>
+using namespace godot;
+#endif
+
+#endif // ZN_GODOT_CODE_EDIT_H

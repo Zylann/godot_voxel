@@ -61,6 +61,8 @@ VoxelStringNames::VoxelStringNames() {
 	Add = StringName("Add");
 	Remove = StringName("Remove");
 	EditorIcons = StringName("EditorIcons");
+	Pin = StringName("Pin");
+	ExternalLink = StringName("ExternalLink");
 #endif
 }
 
