@@ -26,11 +26,6 @@ public:
 		// explicitely specified. Only relevant for inputs.
 		AutoConnect auto_connect = AUTO_CONNECT_NONE;
 		//PortType port_type;
-#ifdef ZN_GODOT_EXTENSION
-		// TODO GDX: This is only to help working around the fact GodotCpp exposes `_get_property_list` with `const
-		// char*` for property names and other things...
-		std::string name_std;
-#endif
 
 		Port(String p_name, AutoConnect ac = AUTO_CONNECT_NONE) : name(p_name), default_value(0.f), auto_connect(ac) {}
 
@@ -50,13 +45,6 @@ public:
 		bool has_range = false;
 		int min_value;
 		int max_value;
-#ifdef ZN_GODOT_EXTENSION
-		// TODO GDX: This is only to help working around the fact GodotCpp exposes `_get_property_list` with `const
-		// char*` for property names and other things...
-		std::string name_std;
-		std::string class_name_std;
-		std::string hint_string_std;
-#endif
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}

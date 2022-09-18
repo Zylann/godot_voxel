@@ -468,20 +468,20 @@ void VoxelMeshSDF::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
 			"set_mesh", "get_mesh");
 
-	std::string cell_count_hint = format("{},{},1", MIN_CELL_COUNT, MAX_CELL_COUNT);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_count", PROPERTY_HINT_RANGE, cell_count_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_count", PROPERTY_HINT_RANGE,
+						 String("{0},{1},1").format(varray(MIN_CELL_COUNT, MAX_CELL_COUNT))),
 			"set_cell_count", "get_cell_count");
 
-	std::string margin_ratio_hint = format("{},{},0.01", MIN_MARGIN_RATIO, MAX_MARGIN_RATIO);
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "margin_ratio", PROPERTY_HINT_RANGE, margin_ratio_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "margin_ratio", PROPERTY_HINT_RANGE,
+						 String("{0},{1},0.01").format(varray(MIN_MARGIN_RATIO, MAX_MARGIN_RATIO))),
 			"set_margin_ratio", "get_margin_ratio");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "bake_mode", PROPERTY_HINT_ENUM,
 						 "AccurateNaive,AccuratePartitioned,ApproxInterp,FloodFill"),
 			"set_bake_mode", "get_bake_mode");
 
-	std::string partition_subdiv_hint = format("{},{},1", MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV);
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE, partition_subdiv_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE,
+						 String("{0},{1},1").format(varray(MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV))),
 			"set_partition_subdiv", "get_partition_subdiv");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "boundary_sign_fix_enabled"), "set_boundary_sign_fix_enabled",

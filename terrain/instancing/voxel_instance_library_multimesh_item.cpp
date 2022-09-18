@@ -420,6 +420,7 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			"_set_mesh_lod3", "_get_mesh_lod3");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
+						 // TODO Disallow CanvasItemMaterial?
 						 Material::get_class_static()),
 			"set_material_override", "get_material_override");
 

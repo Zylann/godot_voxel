@@ -165,23 +165,11 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 }
 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
-#if defined(ZN_GODOT)
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		const String name = "item_" + itos(it->first);
 		p_list->push_back(PropertyInfo(
 				Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibraryItem::get_class_static()));
 	}
-#elif defined(ZN_GODOT_EXTENSION)
-	MutexLock mlock(_item_property_names_mutex);
-	_item_property_names.clear();
-	for (auto it = _items.begin(); it != _items.end(); ++it) {
-		_item_property_names.push_back(format("item_{}", it->first));
-	}
-	for (const std::string &name : _item_property_names) {
-		p_list->push_back(PropertyInfo(Variant::OBJECT, name.c_str(), PROPERTY_HINT_RESOURCE_TYPE,
-				VoxelInstanceLibraryItem::get_class_static()));
-	}
-#endif
 }
 
 void VoxelInstanceLibrary::_bind_methods() {

@@ -94,26 +94,10 @@ bool VoxelBlockyLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 }
 
 void VoxelBlockyLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
-#if defined(ZN_GODOT)
 	for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
 		p_list->push_back(PropertyInfo(Variant::OBJECT, String("voxels/") + itos(i), PROPERTY_HINT_RESOURCE_TYPE,
 				VoxelBlockyModel::get_class_static()));
 	}
-#elif defined(ZN_GODOT_EXTENSION)
-	{
-		MutexLock mlock(_voxel_property_names_mutex);
-		if (_voxel_types.size() != _voxel_property_names.size()) {
-			_voxel_property_names.resize(_voxel_types.size(), std::string());
-			for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
-				_voxel_property_names[i] = format("voxels/{}", i);
-			}
-		}
-	}
-	for (unsigned int i = 0; i < _voxel_types.size(); ++i) {
-		p_list->push_back(PropertyInfo(Variant::OBJECT, _voxel_property_names[i].c_str(), PROPERTY_HINT_RESOURCE_TYPE,
-				VoxelBlockyModel::get_class_static()));
-	}
-#endif
 }
 
 void VoxelBlockyLibrary::set_atlas_size(int s) {

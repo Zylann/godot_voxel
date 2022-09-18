@@ -46,7 +46,6 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	for (size_t i = 0; i < node_type.params.size(); ++i) {
 		const VoxelGraphNodeDB::Param &param = node_type.params[i];
 		PropertyInfo pi;
-#if defined(ZN_GODOT)
 		pi.name = param.name;
 		pi.type = param.type;
 		pi.class_name = param.class_name;
@@ -57,18 +56,6 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 			pi.hint = PROPERTY_HINT_RANGE;
 			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
 		}
-#elif defined(ZN_GODOT_EXTENSION)
-		pi.name = param.name_std.c_str();
-		pi.type = param.type;
-		pi.class_name = param.class_name_std.c_str();
-		if (!param.class_name.is_empty()) {
-			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
-			pi.hint_string = pi.class_name;
-		} else if (param.has_range) {
-			pi.hint = PROPERTY_HINT_RANGE;
-			pi.hint_string = param.hint_string_std.c_str();
-		}
-#endif
 		pi.usage = PROPERTY_USAGE_EDITOR;
 		p_list->push_back(pi);
 	}
@@ -82,11 +69,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	for (size_t i = 0; i < node_type.inputs.size(); ++i) {
 		const VoxelGraphNodeDB::Port &port = node_type.inputs[i];
 		PropertyInfo pi;
-#if defined(ZN_GODOT)
 		pi.name = port.name;
-#elif defined(ZN_GODOT_EXTENSION)
-		pi.name = port.name_std.c_str();
-#endif
 		pi.type = port.default_value.get_type();
 		if (autoconnect && port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
 			// This default value won't be used because the port will automatically connect when compiled

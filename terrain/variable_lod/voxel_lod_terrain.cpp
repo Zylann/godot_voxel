@@ -2727,9 +2727,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
-	const std::string material_hint =
-			format("{},{}", BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static());
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
+						 String("{0},{1}").format(
+								 varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))),
 			"set_material", "get_material");
 
 	ADD_GROUP("Detail normalmaps", "normalmap_");

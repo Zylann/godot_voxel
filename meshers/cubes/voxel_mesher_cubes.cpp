@@ -1067,14 +1067,12 @@ void VoxelMesherCubes::_bind_methods() {
 						 VoxelColorPalette::get_class_static()),
 			"set_palette", "get_palette");
 
-	// Doing this for compatibility with GDExtension, which expects `const char*`...
-	const std::string material_hint = to_std_string(
-			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static()));
+	const String material_hint =
+			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static());
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
 			"_set_opaque_material", "_get_opaque_material");
-	ADD_PROPERTY(
-			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
 			"_set_transparent_material", "_get_transparent_material");
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);

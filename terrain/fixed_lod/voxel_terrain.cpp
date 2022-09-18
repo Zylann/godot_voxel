@@ -1789,9 +1789,9 @@ void VoxelTerrain::_bind_methods() {
 
 	ADD_GROUP("Materials", "");
 
-	const std::string material_hint =
-			format("{},{}", BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static());
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE, material_hint.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
+						 String("{0},{1}").format(
+								 varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))),
 			"set_material_override", "get_material_override");
 
 	ADD_GROUP("Networking", "");

@@ -6,12 +6,6 @@
 #include "../../util/godot/typed_material_array.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
-// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
-// properties. See https://github.com/godotengine/godot-cpp/pull/826
-#ifdef ZN_GODOT_EXTENSION
-#include "../../util/thread/mutex.h"
-#include <string>
-#endif
 
 namespace zylann::voxel {
 
@@ -123,14 +117,6 @@ private:
 	// One of the entries can be null to represent "The default material". If all non-empty models have materials, there
 	// won't be a null entry.
 	std::vector<Ref<Material>> _indexed_materials;
-
-// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
-// properties.
-// See https://github.com/godotengine/godot-cpp/pull/826
-#ifdef ZN_GODOT_EXTENSION
-	Mutex _voxel_property_names_mutex;
-	mutable std::vector<std::string> _voxel_property_names;
-#endif
 };
 
 } // namespace zylann::voxel

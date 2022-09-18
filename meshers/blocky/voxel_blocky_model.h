@@ -10,13 +10,6 @@
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 
-// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
-// properties.
-// See https://github.com/godotengine/godot-cpp/pull/826
-#ifdef ZN_GODOT_EXTENSION
-#include "../../util/thread/mutex.h"
-#endif
-
 #include <vector>
 
 namespace zylann::voxel {
@@ -257,16 +250,6 @@ private:
 	// Used for AABB physics only, not classic physics
 	std::vector<AABB> _collision_aabbs;
 	uint32_t _collision_mask = 1;
-
-// TODO GDX: `_get_property_list` requires `const char*` for property names, makes it difficult to bind dynamic
-// properties.
-// See https://github.com/godotengine/godot-cpp/pull/826
-#ifdef ZN_GODOT_EXTENSION
-	Mutex _property_names_mutex;
-	std::string _material_override_hint_string;
-	mutable std::vector<std::string> _material_override_property_names;
-	mutable std::vector<std::string> _collision_enabled_property_names;
-#endif
 };
 
 } // namespace zylann::voxel
