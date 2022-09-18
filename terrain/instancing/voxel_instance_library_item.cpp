@@ -98,7 +98,9 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItem::set_persistent);
 	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItem::is_persistent);
 
-	//ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItem::_on_generator_changed);
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItem::_on_generator_changed);
+#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
 	ADD_PROPERTY(
