@@ -366,7 +366,10 @@ GDExtension
 
 This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine. TODO: Godot's documentation doesn't seem to contain information about GDExtension yet. For now, you can check [this old news](https://godotengine.org/article/introducing-gd-extensions) and the [GodotCpp repository](https://github.com/godotengine/godot-cpp).
 
-To compile the library, open the same kind of console you would use to compile Godot, change directory to the voxel module's root folder, and run SCons there. It will use the `SConstruct` file instead of `SCsub`.
+To compile the library:
+- Download a copy of [GodotCpp](https://github.com/godotengine/godot-cpp)
+- In the voxel module's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script.
+- Open the same kind of console you would use to compile Godot, change directory to the voxel module's root folder, and run SCons there. It will use the `SConstruct` file instead of `SCsub`. The library will be saved under a `bin/` folder.
 
 Example of build command on Windows (unoptimized debug build for use in editor):
 ```
