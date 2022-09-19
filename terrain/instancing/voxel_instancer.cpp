@@ -96,7 +96,7 @@ void VoxelInstancer::clear_layers() {
 
 void VoxelInstancer::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD):
+		case NOTIFICATION_ENTER_WORLD:
 			set_world(*get_world_3d());
 			update_visibility();
 #ifdef TOOLS_ENABLED
@@ -104,14 +104,14 @@ void VoxelInstancer::_notification(int p_what) {
 #endif
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD):
+		case NOTIFICATION_EXIT_WORLD:
 			set_world(nullptr);
 #ifdef TOOLS_ENABLED
 			_debug_renderer.set_world(nullptr);
 #endif
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PARENTED): {
+		case NOTIFICATION_PARENTED: {
 			VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(get_parent());
 			if (vlt != nullptr) {
 				_parent = vlt;
@@ -132,7 +132,7 @@ void VoxelInstancer::_notification(int p_what) {
 			// TODO may want to reload all instances? Not sure if worth implementing that use case
 		} break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_UNPARENTED):
+		case NOTIFICATION_UNPARENTED:
 			clear_blocks();
 			if (_parent != nullptr) {
 				VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_parent);
@@ -148,7 +148,7 @@ void VoxelInstancer::_notification(int p_what) {
 			}
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
+		case NOTIFICATION_TRANSFORM_CHANGED: {
 			ZN_PROFILE_SCOPE_NAMED("VoxelInstancer::NOTIFICATION_TRANSFORM_CHANGED");
 
 			if (!is_inside_tree() || _parent == nullptr) {
@@ -175,7 +175,7 @@ void VoxelInstancer::_notification(int p_what) {
 			}
 		} break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED):
+		case NOTIFICATION_VISIBILITY_CHANGED:
 			update_visibility();
 #ifdef TOOLS_ENABLED
 			if (_gizmos_enabled) {
@@ -184,7 +184,7 @@ void VoxelInstancer::_notification(int p_what) {
 #endif
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_INTERNAL_PROCESS):
+		case NOTIFICATION_INTERNAL_PROCESS:
 			if (_parent != nullptr && _library.is_valid() && _mesh_lod_distance > 0.f) {
 				process_mesh_lods();
 			}

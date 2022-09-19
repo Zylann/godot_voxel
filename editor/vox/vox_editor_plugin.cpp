@@ -7,7 +7,7 @@ VoxelVoxEditorPlugin::VoxelVoxEditorPlugin() {}
 
 void VoxelVoxEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE): {
+		case NOTIFICATION_ENTER_TREE: {
 			_vox_scene_importer.instantiate();
 			add_import_plugin(_vox_scene_importer);
 			//ResourceFormatImporter::get_singleton()->add_importer(vox_scene_importer);
@@ -17,7 +17,7 @@ void VoxelVoxEditorPlugin::_notification(int p_what) {
 			//ResourceFormatImporter::get_singleton()->add_importer(vox_mesh_importer);
 		} break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE): {
+		case NOTIFICATION_EXIT_TREE: {
 			remove_import_plugin(_vox_scene_importer);
 			remove_import_plugin(_vox_mesh_importer);
 		} break;

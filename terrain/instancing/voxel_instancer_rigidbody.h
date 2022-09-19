@@ -50,7 +50,7 @@ protected:
 		switch (p_what) {
 			// TODO Optimization: this is also called when we quit the game or destroy the world
 			// which can make things a bit slow, but I don't know if it can easily be avoided
-			case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_UNPARENTED):
+			case NOTIFICATION_UNPARENTED:
 				// The user could queue_free() that node in game,
 				// so we have to notify the instancer to remove the multimesh instance and pointer
 				if (_parent != nullptr) {

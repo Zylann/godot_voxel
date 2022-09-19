@@ -224,16 +224,16 @@ void VoxelGraphEditor::_notification(int p_what) {
 	switch (p_what) {
 		// TODO GDX: SceneTree::get_process_time() is not exposed
 #ifdef ZN_GODOT
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_INTERNAL_PROCESS):
+		case NOTIFICATION_INTERNAL_PROCESS:
 			process(get_tree()->get_process_time());
 			break;
 #endif
 
-		case ZN_GODOT_CANVAS_ITEM_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED):
+		case NOTIFICATION_VISIBILITY_CHANGED:
 			set_process_internal(is_visible());
 			break;
 
-		case ZN_GODOT_CONTROL_CONSTANT(NOTIFICATION_THEME_CHANGED): {
+		case NOTIFICATION_THEME_CHANGED: {
 			const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 			set_button_icon(*_pin_button, get_theme_icon(sn.Pin, sn.EditorIcons));
 			set_button_icon(*_popout_button, get_theme_icon(sn.ExternalLink, sn.EditorIcons));

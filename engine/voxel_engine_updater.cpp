@@ -43,12 +43,12 @@ void VoxelEngineUpdater::ensure_existence(SceneTree *st) {
 
 void VoxelEngineUpdater::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
+		case NOTIFICATION_PROCESS:
 			// To workaround the absence of API to have a custom server processing in the main loop
 			zylann::voxel::VoxelEngine::get_singleton().process();
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PREDELETE):
+		case NOTIFICATION_PREDELETE:
 			ZN_PRINT_VERBOSE("Deleting VoxelEngineUpdater");
 			break;
 

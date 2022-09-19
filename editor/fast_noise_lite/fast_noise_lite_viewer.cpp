@@ -69,7 +69,7 @@ void ZN_FastNoiseLiteViewer::_on_noise_changed() {
 
 void ZN_FastNoiseLiteViewer::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS): {
+		case NOTIFICATION_PROCESS: {
 			if (_time_before_update > 0.f) {
 				_time_before_update -= get_process_delta_time();
 				if (_time_before_update <= 0.f) {

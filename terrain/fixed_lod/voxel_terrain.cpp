@@ -718,7 +718,7 @@ void VoxelTerrain::_notification(int p_what) {
 	};
 
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
+		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
 #ifdef TOOLS_ENABLED
 			// In the editor, auto-configure a default mesher, for convenience.
@@ -733,7 +733,7 @@ void VoxelTerrain::_notification(int p_what) {
 #endif
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
+		case NOTIFICATION_PROCESS:
 			// Can't do that in enter tree because Godot is "still setting up children".
 			// Can't do that in ready either because Godot says node state is locked.
 			// This hack is quite miserable.
@@ -742,22 +742,22 @@ void VoxelTerrain::_notification(int p_what) {
 			process();
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
+		case NOTIFICATION_EXIT_TREE:
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD):
+		case NOTIFICATION_ENTER_WORLD:
 			_mesh_map.for_each_block(SetWorldAction(*get_world_3d()));
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD):
+		case NOTIFICATION_EXIT_WORLD:
 			_mesh_map.for_each_block(SetWorldAction(nullptr));
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED):
+		case NOTIFICATION_VISIBILITY_CHANGED:
 			_mesh_map.for_each_block(SetParentVisibilityAction(is_visible()));
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
+		case NOTIFICATION_TRANSFORM_CHANGED: {
 			const Transform3D transform = get_global_transform();
 			// VoxelEngine::get_singleton().set_volume_transform(_volume_id, transform);
 

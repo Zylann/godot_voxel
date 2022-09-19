@@ -869,7 +869,7 @@ void VoxelLodTerrain::set_process_callback(ProcessCallback mode) {
 void VoxelLodTerrain::_notification(int p_what) {
 	switch (p_what) {
 		// TODO Should use NOTIFICATION_INTERNAL_PROCESS instead?
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
+		case NOTIFICATION_PROCESS:
 			if (_process_callback == PROCESS_CALLBACK_IDLE) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
@@ -880,7 +880,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 
 		// TODO Should use NOTIFICATION_INTERNAL_PHYSICS_PROCESS instead?
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PHYSICS_PROCESS):
+		case NOTIFICATION_PHYSICS_PROCESS:
 			if (_process_callback == PROCESS_CALLBACK_PHYSICS) {
 				// Can't do that in enter tree because Godot is "still setting up children".
 				// Can't do that in ready either because Godot says node state is locked.
@@ -891,7 +891,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 
 #ifdef TOOLS_ENABLED
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
+		case NOTIFICATION_ENTER_TREE:
 			// In the editor, auto-configure a default mesher, for convenience.
 			// Because Godot has a property hint to automatically instantiate a resource, but if that resource is
 			// abstract, it doesn't work... and it cannot be a default value because such practice was deprecated with a
@@ -904,10 +904,10 @@ void VoxelLodTerrain::_notification(int p_what) {
 			break;
 #endif
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
+		case NOTIFICATION_EXIT_TREE:
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_ENTER_WORLD): {
+		case NOTIFICATION_ENTER_WORLD: {
 			World3D *world = *get_world_3d();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
@@ -925,7 +925,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			//set_show_gizmos(true);
 		} break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_EXIT_WORLD): {
+		case NOTIFICATION_EXIT_WORLD: {
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 			for (unsigned int lod_index = 0; lod_index < state.lods.size(); ++lod_index) {
 				VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -938,7 +938,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 #endif
 		} break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_VISIBILITY_CHANGED): {
+		case NOTIFICATION_VISIBILITY_CHANGED: {
 			const bool visible = is_visible();
 			VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
@@ -956,7 +956,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 #endif
 		} break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED): {
+		case NOTIFICATION_TRANSFORM_CHANGED: {
 			ZN_PROFILE_SCOPE_NAMED("VoxelLodTerrain::NOTIFICATION_TRANSFORM_CHANGED");
 
 			const Transform3D transform = get_global_transform();

@@ -22,7 +22,7 @@ void VoxelInstancerStatView::set_instancer(const VoxelInstancer *instancer) {
 
 void VoxelInstancerStatView::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
+		case NOTIFICATION_PROCESS:
 			process();
 			break;
 	}

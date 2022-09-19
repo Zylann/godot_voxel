@@ -86,8 +86,8 @@ void EditorPropertyAABBMinMax::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_pr
 
 void EditorPropertyAABBMinMax::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
-		case ZN_GODOT_CONTROL_CONSTANT(NOTIFICATION_THEME_CHANGED): {
+		case NOTIFICATION_ENTER_TREE:
+		case NOTIFICATION_THEME_CHANGED: {
 			Span<const Color> colors = editor_property_get_colors(*this);
 			for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 				_spinboxes[i]->add_theme_color_override("label_color", colors[i % 3]);

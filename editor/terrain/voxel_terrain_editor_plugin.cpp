@@ -76,7 +76,7 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE):
+		case NOTIFICATION_ENTER_TREE:
 			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
 			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
 			// No collision needed in editor, also it updates faster without
@@ -86,12 +86,12 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 			add_inspector_plugin(_inspector_plugin);
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
+		case NOTIFICATION_EXIT_TREE:
 			VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
 			remove_inspector_plugin(_inspector_plugin);
 			break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PROCESS):
+		case NOTIFICATION_PROCESS:
 			_task_indicator->update_stats();
 			break;
 	}

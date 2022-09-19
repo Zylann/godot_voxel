@@ -66,7 +66,7 @@ int VoxelViewer::get_network_peer_id() const {
 
 void VoxelViewer::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_ENTER_TREE): {
+		case NOTIFICATION_ENTER_TREE: {
 			if (!Engine::get_singleton()->is_editor_hint()) {
 				_viewer_id = VoxelEngine::get_singleton().add_viewer();
 				VoxelEngine::get_singleton().set_viewer_distance(_viewer_id, _view_distance);
@@ -80,13 +80,13 @@ void VoxelViewer::_notification(int p_what) {
 			}
 		} break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_EXIT_TREE):
+		case NOTIFICATION_EXIT_TREE:
 			if (!Engine::get_singleton()->is_editor_hint()) {
 				VoxelEngine::get_singleton().remove_viewer(_viewer_id);
 			}
 			break;
 
-		case ZN_GODOT_NODE_3D_CONSTANT(NOTIFICATION_TRANSFORM_CHANGED):
+		case NOTIFICATION_TRANSFORM_CHANGED:
 			if (is_active()) {
 				const Vector3 pos = get_global_transform().origin;
 				VoxelEngine::get_singleton().set_viewer_position(_viewer_id, pos);

@@ -85,7 +85,7 @@ float VoxelModifier::get_smoothness() const {
 
 void VoxelModifier::_notification(int p_what) {
 	switch (p_what) {
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_PARENTED): {
+		case NOTIFICATION_PARENTED: {
 			Node *parent = get_parent();
 			ZN_ASSERT_RETURN(parent != nullptr);
 			ZN_ASSERT_RETURN(_volume == nullptr);
@@ -113,7 +113,7 @@ void VoxelModifier::_notification(int p_what) {
 			}
 		} break;
 
-		case ZN_GODOT_NODE_CONSTANT(NOTIFICATION_UNPARENTED): {
+		case NOTIFICATION_UNPARENTED: {
 			if (_volume != nullptr) {
 				VoxelData &data = _volume->get_storage();
 				VoxelModifierStack &modifiers = data.get_modifiers();
