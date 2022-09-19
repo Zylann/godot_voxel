@@ -4,8 +4,10 @@
 #if defined(ZN_GODOT)
 #include <editor/editor_scale.h>
 #elif defined(ZN_GODOT_EXTENSION)
-// TODO GDX: No `EDSCALE` equivalent for porting editor tools, DPI-awareness will not work
-#define EDSCALE 1
+#define EDSCALE zylann::get_editor_scale()
+namespace zylann {
+float get_editor_scale();
+}
 #endif
 
 #endif // ZN_GODOT_EDITOR_SCALE_H

@@ -53,6 +53,11 @@ sources += [
 	"util/godot/random_pcg.cpp"
 ]
 
+if env["tools"]:
+    sources += [
+        "util/godot/editor_scale.cpp"
+    ]
+
 # WARNING
 # From a C++ developer point of view, the GodotCpp example and `.gdextension` files are confusing what the
 # `debug` and `release` targets usually mean with "editor" and "exported projects".
