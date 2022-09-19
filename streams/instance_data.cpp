@@ -104,7 +104,7 @@ bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uin
 			const float scale = instance.transform.get_basis().get_scale().y;
 			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - scale_min) * 0xff));
 
-			const Quaternion q = get_rotation_quaternion(instance.transform.get_basis());
+			const Quaternion q = instance.transform.get_basis().get_rotation_quaternion();
 			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quaternion(q);
 			w.store_8(cq.x);
 			w.store_8(cq.y);
