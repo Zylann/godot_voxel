@@ -12,11 +12,11 @@ bool VoxelTerrainEditorInspectorPlugin::can_handle(Object *p_object) {
 bool VoxelTerrainEditorInspectorPlugin::_can_handle(const Variant &p_object_v) const {
 	const Object *p_object = p_object_v;
 #endif
-	const VoxelTerrain *vt = cast_const_object_to<VoxelTerrain>(p_object);
+	const VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(p_object);
 	if (vt != nullptr) {
 		return true;
 	}
-	const VoxelLodTerrain *vlt = cast_const_object_to<VoxelLodTerrain>(p_object);
+	const VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(p_object);
 	if (vlt != nullptr) {
 		return true;
 	}

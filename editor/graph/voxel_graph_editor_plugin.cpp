@@ -49,11 +49,11 @@ bool VoxelGraphEditorPlugin::_handles(const Variant &p_object_v) const {
 	if (p_object == nullptr) {
 		return false;
 	}
-	const VoxelGeneratorGraph *graph_ptr = cast_const_object_to<VoxelGeneratorGraph>(p_object);
+	const VoxelGeneratorGraph *graph_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
 	if (graph_ptr != nullptr) {
 		return true;
 	}
-	const VoxelGraphNodeInspectorWrapper *wrapper = cast_const_object_to<VoxelGraphNodeInspectorWrapper>(p_object);
+	const VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
 	if (wrapper != nullptr) {
 		return true;
 	}

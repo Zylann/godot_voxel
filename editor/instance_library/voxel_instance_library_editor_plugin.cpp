@@ -43,7 +43,7 @@ bool VoxelInstanceLibraryEditorPlugin::handles(Object *p_object) const {
 bool VoxelInstanceLibraryEditorPlugin::_handles(const Variant &p_object_v) const {
 	const Object *p_object = p_object_v;
 #endif
-	const VoxelInstanceLibrary *lib = cast_const_object_to<VoxelInstanceLibrary>(p_object);
+	const VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
 	return lib != nullptr;
 }
 

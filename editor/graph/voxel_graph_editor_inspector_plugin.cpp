@@ -8,7 +8,7 @@ namespace zylann::voxel {
 bool VoxelGraphEditorInspectorPlugin::can_handle(Object *obj) {
 #elif defined(ZN_GODOT_EXTENSION)
 bool VoxelGraphEditorInspectorPlugin::_can_handle(const Variant &obj_v) const {
-	Object *obj = obj_v;
+	const Object *obj = obj_v;
 #endif
 	return obj != nullptr && Object::cast_to<VoxelGraphNodeInspectorWrapper>(obj) != nullptr;
 }

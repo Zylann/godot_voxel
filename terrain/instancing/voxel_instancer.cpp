@@ -324,8 +324,7 @@ void VoxelInstancer::process_mesh_lods() {
 		const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
 		ERR_CONTINUE(item_base == nullptr);
 		// TODO Optimization: would be nice to not need this cast by iterating only the same item types
-		const VoxelInstanceLibraryMultiMeshItem *item =
-				cast_const_object_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+		const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
 		if (item == nullptr) {
 			// Not a multimesh item
 			continue;
@@ -915,7 +914,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	Block &block = *_blocks[block_index];
 
 	// Update multimesh
-	const VoxelInstanceLibraryMultiMeshItem *item = cast_const_object_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
+	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
 	if (item != nullptr) {
 		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
 
@@ -1009,7 +1008,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 	}
 
 	// Update scene instances
-	const VoxelInstanceLibrarySceneItem *scene_item = cast_const_object_to<VoxelInstanceLibrarySceneItem>(&item_base);
+	const VoxelInstanceLibrarySceneItem *scene_item = Object::cast_to<VoxelInstanceLibrarySceneItem>(&item_base);
 	if (scene_item != nullptr) {
 		ZN_PROFILE_SCOPE_NAMED("Update scene instances");
 		ERR_FAIL_COND_MSG(scene_item->get_scene().is_null(),

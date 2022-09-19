@@ -8,7 +8,7 @@ namespace zylann::voxel {
 bool VoxelMeshSDFInspectorPlugin::can_handle(Object *p_object) {
 #elif defined(ZN_GODOT_EXTENSION)
 bool VoxelMeshSDFInspectorPlugin::_can_handle(const Variant &p_object_v) const {
-	Object *p_object = p_object_v;
+	const Object *p_object = p_object_v;
 #endif
 	return Object::cast_to<VoxelMeshSDF>(p_object) != nullptr;
 }

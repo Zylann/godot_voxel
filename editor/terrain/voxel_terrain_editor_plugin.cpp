@@ -102,16 +102,16 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 // The use case being, as long as we edit an object NESTED within a voxel terrain, we should keep things visible.
 static bool is_side_handled(const Object *p_object) {
 	// Handle stream too so we can leave some controls visible while we edit a stream or generator
-	const VoxelGenerator *generator = cast_const_object_to<VoxelGenerator>(p_object);
+	const VoxelGenerator *generator = Object::cast_to<VoxelGenerator>(p_object);
 	if (generator != nullptr) {
 		return true;
 	}
 	// And have to account for this hack as well
-	const VoxelGraphNodeInspectorWrapper *wrapper = cast_const_object_to<VoxelGraphNodeInspectorWrapper>(p_object);
+	const VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
 	if (wrapper != nullptr) {
 		return true;
 	}
-	const gd::VoxelModifier *modifier = cast_const_object_to<gd::VoxelModifier>(p_object);
+	const gd::VoxelModifier *modifier = Object::cast_to<gd::VoxelModifier>(p_object);
 	if (modifier != nullptr) {
 		return true;
 	}
@@ -124,7 +124,7 @@ bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
 bool VoxelTerrainEditorPlugin::_handles(const Variant &p_object_v) const {
 	const Object *p_object = p_object_v;
 #endif
-	if (cast_const_object_to<VoxelNode>(p_object) != nullptr) {
+	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
 		return true;
 	}
 	if (_node != nullptr) {

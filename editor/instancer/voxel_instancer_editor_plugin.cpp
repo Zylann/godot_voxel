@@ -39,7 +39,7 @@ bool VoxelInstancerEditorPlugin::_handles(const Variant &p_object_v) const {
 	const Object *p_object = p_object_v;
 #endif
 	ERR_FAIL_COND_V(p_object == nullptr, false);
-	return cast_const_object_to<VoxelInstancer>(p_object) != nullptr;
+	return Object::cast_to<VoxelInstancer>(p_object) != nullptr;
 }
 
 #if defined(ZN_GODOT)

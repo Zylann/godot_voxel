@@ -36,16 +36,6 @@ void get_property_list(const Object &obj, std::vector<GodotPropertyInfo> &out_pr
 
 #endif
 
-template <typename T>
-inline const T *cast_const_object_to(const Object *o) {
-#if defined(ZN_GODOT)
-	return Object::cast_to<T>(o);
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: missing `Object::cast_to` for constant pointers!
-	return Object::cast_to<T>(const_cast<Object *>(o));
-#endif
-}
-
 } // namespace zylann
 
 #endif // ZN_GODOT_OBJECT_H

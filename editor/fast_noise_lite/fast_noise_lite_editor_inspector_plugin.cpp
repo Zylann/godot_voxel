@@ -8,7 +8,7 @@ namespace zylann {
 bool ZN_FastNoiseLiteEditorInspectorPlugin::can_handle(Object *p_object) {
 #elif defined(ZN_GODOT_EXTENSION)
 bool ZN_FastNoiseLiteEditorInspectorPlugin::_can_handle(const Variant &p_object_v) const {
-	Object *p_object = p_object_v;
+	const Object *p_object = p_object_v;
 #endif
 	return Object::cast_to<ZN_FastNoiseLite>(p_object) != nullptr ||
 			Object::cast_to<ZN_FastNoiseLiteGradient>(p_object);
