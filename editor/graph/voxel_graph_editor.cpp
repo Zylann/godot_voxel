@@ -222,12 +222,9 @@ void VoxelGraphEditor::_process(double delta) {
 
 void VoxelGraphEditor::_notification(int p_what) {
 	switch (p_what) {
-		// TODO GDX: SceneTree::get_process_time() is not exposed
-#ifdef ZN_GODOT
 		case NOTIFICATION_INTERNAL_PROCESS:
-			process(get_tree()->get_process_time());
+			process(get_process_delta_time());
 			break;
-#endif
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			set_process_internal(is_visible());
