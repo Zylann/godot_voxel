@@ -130,7 +130,6 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 
 // TODO This function does not modify anything, but cannot be `const` because get_editor_interface() is not...
 int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
-#if defined(ZN_GODOT)
 	String path = get_editor_interface()->get_inspector()->get_selected_path();
 	String prefix = "item_";
 
@@ -150,16 +149,6 @@ int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
 		_info_dialog->popup_centered();
 		return -1;
 	}
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: EditorInspector.get_selected_path() is not exposed
-	ZN_PRINT_ERROR("Unable to get selected inspector property, the Godot API doesn't expose "
-				   "EditorInspector.get_selected_path().");
-	// There is a signal but hell, why does it have to be any different... it's just a pain in the ass.
-	// If devs decide to keep not exposing it, will have to change using a signal just to cache the path, but it won't
-	// cover all cases like having no path selected (how would you tell that with a signal? You can only remember what
-	// was selected last, could be a different object...).
-	return -1;
-#endif
 }
 
 void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
