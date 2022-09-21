@@ -21,8 +21,7 @@ void add_custom_godot_project_setting(Variant::Type type, const char *name, Prop
 	d["hint_string"] = String(hint_string);
 	ps.add_property_info(d);
 	ps.set_initial_value(name, default_value);
-	// TODO GDX: there is no way to specify that a ProjectSetting requires an editor restart
-
+	ps.set_restart_if_changed(name, requires_restart);
 #endif
 }
 
