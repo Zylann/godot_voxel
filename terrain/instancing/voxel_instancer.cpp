@@ -1776,14 +1776,10 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
-TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
+PackedStringArray VoxelInstancer::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
-	TypedArray<String> warnings_ta;
-	for (const String &w : warnings) {
-		warnings_ta.append(w);
-	}
-	return warnings_ta;
+	return warnings;
 }
 #elif defined(ZN_GODOT_EXTENSION)
 PackedStringArray VoxelInstancer::_get_configuration_warnings() const {

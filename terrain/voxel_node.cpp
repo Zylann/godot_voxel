@@ -60,14 +60,10 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
-TypedArray<String> VoxelNode::get_configuration_warnings() const {
+PackedStringArray VoxelNode::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
-	TypedArray<String> warnings_ta;
-	for (const String &w : warnings) {
-		warnings_ta.append(w);
-	}
-	return warnings_ta;
+	return warnings;
 }
 #elif defined(ZN_GODOT_EXTENSION)
 PackedStringArray VoxelNode::_get_configuration_warnings() const {

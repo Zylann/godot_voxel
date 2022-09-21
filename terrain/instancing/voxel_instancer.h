@@ -110,7 +110,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 #elif defined(ZN_GODOT_EXTENSION)
 	PackedStringArray _get_configuration_warnings() const override;
 #endif
