@@ -45,13 +45,11 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 	set_bottom_editor(grid);
 }
 
-#ifdef ZN_GODOT
 void EditorPropertyAABBMinMax::_set_read_only(bool p_read_only) {
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		_spinboxes[i]->set_read_only(p_read_only);
 	}
 };
-#endif
 
 void EditorPropertyAABBMinMax::_on_value_changed(double val) {
 	if (_ignore_value_change) {

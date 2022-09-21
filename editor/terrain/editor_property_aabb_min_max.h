@@ -20,10 +20,7 @@ public:
 	virtual void ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_property)() override;
 
 protected:
-// TODO GDX: `EditorProperty::_set_read_only` is not exposed!
-#ifdef ZN_GODOT
 	virtual void _set_read_only(bool p_read_only) override;
-#endif
 
 private:
 	void _on_value_changed(double p_val);
