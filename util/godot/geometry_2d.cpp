@@ -37,7 +37,7 @@ void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> 
 
 	Dictionary result = Geometry2D::get_singleton()->make_atlas(sizes);
 	PackedVector2Array positions = result["points"];
-	Vector2 size = result["size"];
+	r_size = result["size"];
 
 	r_result.resize(positions.size());
 	const Vector2 *positions_data = positions.ptr();
@@ -45,8 +45,6 @@ void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> 
 	for (unsigned int i = 0; i < r_result.size(); ++i) {
 		r_result[i] = to_vec2i(positions_data[i]);
 	}
-
-	r_size = to_vec2i(size);
 
 #endif
 }
