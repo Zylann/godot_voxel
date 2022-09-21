@@ -126,8 +126,7 @@ void VoxelModifier::_notification(int p_what) {
 			}
 		} break;
 
-		//case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
-		case zylann::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
+		case Node3D::NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
 			if (_volume != nullptr && is_inside_tree()) {
 				VoxelData &data = _volume->get_storage();
 				VoxelModifierStack &modifiers = data.get_modifiers();
