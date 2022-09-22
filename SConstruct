@@ -11,11 +11,15 @@ import common
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "bin"
 
+# TODO Not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
+#env_vars.Add(PathVariable("godot_cpp_path", "Path to the GodotCpp library source code", None, PathVariable.PathIsDir))
+# TODO GDX: Have GodotCpp in thirdparty/ eventually
+godot_cpp_path = os.environ.get("GODOT_CPP_PATH", "D:/PROJETS/INFO/GODOT/Engine/godot_cpp_fork")
+
 # Dependency on GodotCpp.
 # Use the same cross-platform configurations.
 # TODO GDX: Make sure this isn't doing too much?
-# TODO GDX: Have GodotCpp in thirdparty/ or allow to specify a custom location
-env = SConscript("D:/PROJETS/INFO/GODOT/Engine/godot_cpp_fork/SConstruct")
+env = SConscript(godot_cpp_path + "/SConstruct")
 
 # TODO GDX: Adding our variables produces a warning when provided.
 # "WARNING: Unknown SCons variables were passed and will be ignored"
