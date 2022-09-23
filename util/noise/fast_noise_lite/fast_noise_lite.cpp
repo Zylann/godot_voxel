@@ -302,10 +302,8 @@ void ZN_FastNoiseLite::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,FBm,Ridged,PingPong"),
 			"set_fractal_type", "get_fractal_type");
 
-	// In GDExtension, PropertyInfo expects a `const char*` for `hint_string`, unlike Godot modules.
-	const std::string fractal_octaves_hint_string = format("1,{},1", MAX_OCTAVES);
-	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, fractal_octaves_hint_string.c_str()),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE,
+						 String("1,{0},1").format(varray(MAX_OCTAVES))),
 			"set_fractal_octaves", "get_fractal_octaves");
 
 	ADD_PROPERTY(
