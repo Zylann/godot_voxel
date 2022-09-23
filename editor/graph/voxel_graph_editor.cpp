@@ -3,6 +3,7 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../terrain/voxel_node.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/button.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/canvas_item.h"

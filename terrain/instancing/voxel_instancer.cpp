@@ -2,6 +2,7 @@
 #include "../../engine/save_block_data_task.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/camera_3d.h"
 #include "../../util/godot/collision_shape_3d.h"
 #include "../../util/godot/mesh_instance_3d.h"

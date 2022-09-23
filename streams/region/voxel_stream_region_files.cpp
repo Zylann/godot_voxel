@@ -1,5 +1,6 @@
 #include "voxel_stream_region_files.h"
 #include "../../engine/voxel_engine.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/directory.h"
 #include "../../util/godot/json.h"
 #include "../../util/godot/string.h"

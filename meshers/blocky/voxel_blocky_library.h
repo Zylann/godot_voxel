@@ -3,7 +3,6 @@
 
 #include "../../util/dynamic_bitset.h"
 #include "../../util/godot/ref_counted.h"
-#include "../../util/godot/typed_material_array.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
 
@@ -99,7 +98,7 @@ private:
 	Ref<VoxelBlockyModel> _b_get_voxel_by_name(StringName name);
 	// Convenience method to get all indexed materials after baking,
 	// which can be passed to VoxelMesher::build for testing
-	GodotMaterialArray _b_get_materials() const;
+	TypedArray<Material> _b_get_materials() const;
 
 	static void _bind_methods();
 

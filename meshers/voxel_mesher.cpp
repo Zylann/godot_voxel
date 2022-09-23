@@ -13,7 +13,7 @@
 namespace zylann::voxel {
 
 Ref<Mesh> VoxelMesher::build_mesh(
-		Ref<gd::VoxelBuffer> voxels, GodotMaterialArray materials, Dictionary additional_data) {
+		Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;

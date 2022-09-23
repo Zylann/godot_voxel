@@ -3,6 +3,7 @@
 #include "../engine/voxel_engine_updater.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/dstack.h"
+#include "../util/godot/array.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/color.h"
 #include "../util/math/conv.h"

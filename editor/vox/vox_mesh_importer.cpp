@@ -5,6 +5,7 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/image_texture.h"
 #include "../../util/godot/resource_saver.h"
 #include "../../util/godot/standard_material_3d.h"

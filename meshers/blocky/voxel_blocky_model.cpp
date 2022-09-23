@@ -1,4 +1,5 @@
 #include "voxel_blocky_model.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/base_material_3d.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/godot/shader_material.h"

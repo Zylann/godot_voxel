@@ -9,6 +9,7 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/camera_3d.h"
 #include "../../util/godot/concave_polygon_shape_3d.h"
 #include "../../util/godot/engine.h"

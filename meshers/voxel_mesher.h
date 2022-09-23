@@ -5,7 +5,6 @@
 #include "../util/fixed_array.h"
 #include "../util/godot/image.h"
 #include "../util/godot/mesh.h"
-#include "../util/godot/typed_material_array.h"
 #include "../util/macros.h"
 #include "../util/span.h"
 #include <vector>
@@ -82,7 +81,7 @@ public:
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, GodotMaterialArray materials, Dictionary additional_data);
+	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error

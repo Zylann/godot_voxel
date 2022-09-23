@@ -70,7 +70,7 @@ struct GodotStringListWrapper {
 		_list.push_back(s);
 	}
 #elif defined(ZN_GODOT_EXTENSION)
-	Array &_array;
+	TypedArray<String> &_array;
 	inline void append(const String s) {
 		_array.append(s);
 	}
@@ -110,12 +110,12 @@ public:
 	virtual String _get_save_extension() const override;
 	virtual String _get_resource_type() const override;
 	virtual double _get_priority() const override;
-	virtual Array _get_import_options(const String &path, int64_t preset_index) const override;
+	virtual TypedArray<Dictionary> _get_import_options(const String &path, int64_t preset_index) const override;
 	virtual bool _get_option_visibility(
 			const String &path, const StringName &option_name, const Dictionary &options) const override;
 
 	virtual int64_t _import(const String &source_file, const String &save_path, const Dictionary &options,
-			const Array &platform_variants, const Array &gen_files) const override;
+			const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const override;
 
 #endif
 

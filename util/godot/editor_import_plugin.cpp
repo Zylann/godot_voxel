@@ -100,11 +100,11 @@ double ZN_EditorImportPlugin::_get_priority() const {
 	return _zn_get_priority();
 }
 
-Array ZN_EditorImportPlugin::_get_import_options(const String &path, int64_t preset_index) const {
+TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int64_t preset_index) const {
 	std::vector<GodotImportOption> options;
 	_zn_get_import_options(options, path, preset_index);
 
-	Array output;
+	TypedArray<Dictionary> output;
 
 	const String name_key = "name";
 	const String property_hint_key = "property_hint";
@@ -130,10 +130,10 @@ bool ZN_EditorImportPlugin::_get_option_visibility(
 }
 
 int64_t ZN_EditorImportPlugin::_import(const String &source_file, const String &save_path, const Dictionary &options,
-		const Array &platform_variants, const Array &gen_files) const {
+		const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const {
 	// TODO GDX: `EditorImportPlugin::_import` is passing constant arrays for parameters that should be writable
-	Array &platform_variants_writable = const_cast<Array &>(platform_variants);
-	Array &gen_files_writable = const_cast<Array &>(gen_files);
+	TypedArray<String> &platform_variants_writable = const_cast<TypedArray<String> &>(platform_variants);
+	TypedArray<String> &gen_files_writable = const_cast<TypedArray<String> &>(gen_files);
 	return _zn_import(source_file, save_path, GodotKeyValueWrapper{ options },
 			GodotStringListWrapper{ platform_variants_writable }, GodotStringListWrapper{ gen_files_writable });
 }

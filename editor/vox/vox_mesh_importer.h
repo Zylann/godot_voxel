@@ -64,7 +64,7 @@ public:
 	double _get_priority() const override {
 		return ZN_EditorImportPlugin::_get_priority();
 	}
-	Array _get_import_options(const String &path, int64_t preset_index) const override {
+	TypedArray<Dictionary> _get_import_options(const String &path, int64_t preset_index) const override {
 		return ZN_EditorImportPlugin::_get_import_options(path, preset_index);
 	}
 	bool _get_option_visibility(
@@ -72,7 +72,7 @@ public:
 		return ZN_EditorImportPlugin::_get_option_visibility(path, option_name, options);
 	}
 	int64_t _import(const String &source_file, const String &save_path, const Dictionary &options,
-			const Array &platform_variants, const Array &gen_files) const override {
+			const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const override {
 		return ZN_EditorImportPlugin::_import(source_file, save_path, options, platform_variants, gen_files);
 	}
 #endif

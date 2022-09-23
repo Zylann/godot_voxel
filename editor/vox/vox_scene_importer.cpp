@@ -3,6 +3,7 @@
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/vox/vox_data.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/godot/image_texture.h"
 #include "../../util/godot/mesh_instance_3d.h"

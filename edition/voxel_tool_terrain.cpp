@@ -5,6 +5,7 @@
 #include "../storage/voxel_data.h"
 #include "../storage/voxel_metadata_variant.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
+#include "../util/godot/array.h"
 #include "../util/godot/ref_counted.h"
 #include "../util/math/conv.h"
 #include "../util/voxel_raycast.h"
