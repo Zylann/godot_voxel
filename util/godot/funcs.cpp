@@ -46,7 +46,7 @@ template <typename PackedVector_T, typename T>
 inline void copy_to_template(PackedVector_T &dst, Span<const T> src) {
 	dst.resize(src.size());
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT(dst.size() == src.size());
+	ZN_ASSERT(size_t(dst.size()) == src.size());
 #endif
 	T *dst_data = dst.ptrw();
 	//static_assert(sizeof(dst_data) == sizeof(T));
