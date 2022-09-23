@@ -1,7 +1,10 @@
 #ifndef ZN_GODOT_ARRAY_H
 #define ZN_GODOT_ARRAY_H
 
-#if defined(ZN_GODOT_EXTENSION)
+#if defined(ZN_GODOT)
+#include <core/variant/array.h>
+
+#elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/variant/array.hpp>
 using namespace godot;
 
