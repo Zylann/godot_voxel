@@ -1993,8 +1993,8 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 
 #ifdef TOOLS_ENABLED
 
-TypedArray<String> VoxelLodTerrain::get_configuration_warnings() const {
-	TypedArray<String> warnings = VoxelNode::get_configuration_warnings();
+PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
+	PackedStringArray warnings = VoxelNode::get_configuration_warnings();
 	if (!warnings.is_empty()) {
 		return warnings;
 	}

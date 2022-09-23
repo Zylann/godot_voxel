@@ -58,12 +58,12 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 
 #ifdef TOOLS_ENABLED
 
-TypedArray<String> VoxelNode::get_configuration_warnings() const {
+PackedStringArray VoxelNode::get_configuration_warnings() const {
 	Ref<VoxelMesher> mesher = get_mesher();
 	Ref<VoxelStream> stream = get_stream();
 	Ref<VoxelGenerator> generator = get_generator();
 
-	TypedArray<String> warnings = Node3D::get_configuration_warnings();
+	PackedStringArray warnings = Node3D::get_configuration_warnings();
 
 	if (mesher.is_null()) {
 		warnings.append(TTR("This node has no mesher assigned, it wont produce any mesh visuals. "

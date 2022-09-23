@@ -1761,8 +1761,8 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 
 #ifdef TOOLS_ENABLED
 
-TypedArray<String> VoxelInstancer::get_configuration_warnings() const {
-	TypedArray<String> warnings;
+PackedStringArray VoxelInstancer::get_configuration_warnings() const {
+	PackedStringArray warnings;
 	if (_parent == nullptr) {
 		warnings.append(TTR("This node must be child of a " + VoxelLodTerrain::get_class_static() + "."));
 	}

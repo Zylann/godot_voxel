@@ -44,7 +44,7 @@ public:
 	virtual Ref<VoxelTool> get_voxel_tool();
 
 #ifdef TOOLS_ENABLED
-	virtual TypedArray<String> get_configuration_warnings() const override;
+	virtual PackedStringArray get_configuration_warnings() const override;
 #endif
 
 protected:
