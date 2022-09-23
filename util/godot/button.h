@@ -10,7 +10,7 @@ using namespace godot;
 
 namespace zylann {
 
-inline void set_button_icon(Button &button, Ref<Texture2D> &icon) {
+inline void set_button_icon(Button &button, Ref<Texture2D> icon) {
 #if defined(ZN_GODOT)
 	button.set_icon(icon);
 #elif defined(ZN_GODOT_EXTENSION)
