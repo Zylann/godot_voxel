@@ -14,6 +14,7 @@ It's not a class to instantiate alone, you may get it from [VoxelLodTerrain](Vox
 
 Return                                                                    | Signature                                                                                                                                                                                                                                                                                                                                                                                         
 ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                                                                 | [do_graph](#i_do_graph) ( [VoxelGeneratorGraph](VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size )                                                                                                                           
 [void](#)                                                                 | [do_hemisphere](#i_do_hemisphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 )  
 [void](#)                                                                 | [do_sphere_async](#i_do_sphere_async) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                    
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [get_raycast_binary_search_iterations](#i_get_raycast_binary_search_iterations) ( ) const                                                                                                                                                                                                                                                                                                         
@@ -24,6 +25,9 @@ Return                                                                    | Sign
 <p></p>
 
 ## Method Descriptions
+
+- [void](#)<span id="i_do_graph"></span> **do_graph**( [VoxelGeneratorGraph](VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size ) 
+
 
 - [void](#)<span id="i_do_hemisphere"></span> **do_hemisphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 ) 
 
@@ -51,4 +55,4 @@ This algorithm can become expensive quickly, so the box should not be too big. A
 - [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
 
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

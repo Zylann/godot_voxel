@@ -66,6 +66,10 @@ Bakes the library. The data of models is optimized in order to combine them more
 
 Creates a new model attached to this library.
 
+`id`: ID of the model. It must be comprised between 0 and member voxel_count excluded. This ID will be used in voxel data.
+
+`name`: Name of the model. It is convenient to give one for better organization.
+
 - [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html)<span id="i_get_materials"></span> **get_materials**( ) 
 
 Gets a list of all distinct materials found in all models of the library.
@@ -84,4 +88,4 @@ Finds the first model having the specified name. If not found, returns `null`.
 
 Finds the ID of the first model having the specified name. If not found, returns `null`.
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

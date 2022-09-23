@@ -205,7 +205,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 
-	TypedArray<String> get_configuration_warnings() const override;
+	PackedStringArray get_configuration_warnings() const override;
 
 #endif // TOOLS_ENABLED
 

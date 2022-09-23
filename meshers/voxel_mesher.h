@@ -106,7 +106,7 @@ public:
 
 #ifdef TOOLS_ENABLED
 	// If the mesher has problems, messages may be returned by this method so they can be shown to the user.
-	virtual void get_configuration_warnings(TypedArray<String> &out_warnings) const {}
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const {}
 #endif
 
 	// Returns `true` if the mesher generates specific data for mesh collisions, which will be found in

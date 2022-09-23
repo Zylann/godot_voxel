@@ -35,9 +35,6 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_channel_compression](#i_get_channel_compression) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_channel_depth](#i_get_channel_depth) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                                   
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)  | [get_size](#i_get_size) ( ) const                                                                                                                                                                                                                                                                                                                                                                                                                  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_size_x](#i_get_size_x) ( ) const                                                                                                                                                                                                                                                                                                                                                                                                              
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_size_y](#i_get_size_y) ( ) const                                                                                                                                                                                                                                                                                                                                                                                                              
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_size_z](#i_get_size_z) ( ) const                                                                                                                                                                                                                                                                                                                                                                                                              
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_voxel](#i_get_voxel) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) const                                                                                                         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [get_voxel_f](#i_get_voxel_f) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) const                                                                                                     
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)    | [get_voxel_metadata](#i_get_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) const                                                                                                                                                                                                                                                                                                           
@@ -179,18 +176,6 @@ Gets which bit depth the specified channel has.
 
 Gets the 3D size of the buffer in voxels.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_size_x"></span> **get_size_x**( ) 
-
-Gets how many voxels the buffer contains across the X axis.
-
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_size_y"></span> **get_size_y**( ) 
-
-Gets how many voxels the buffer contains across the Y axis.
-
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_size_z"></span> **get_size_z**( ) 
-
-Gets how many voxels the buffer contains across the Z axis.
-
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel"></span> **get_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 Gets the raw value of a voxel within this buffer.
@@ -241,4 +226,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

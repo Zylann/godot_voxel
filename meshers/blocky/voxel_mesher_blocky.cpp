@@ -633,7 +633,7 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 
 #ifdef TOOLS_ENABLED
 
-void VoxelMesherBlocky::get_configuration_warnings(TypedArray<String> &out_warnings) const {
+void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	Ref<VoxelBlockyLibrary> library = get_library();
 
 	if (library.is_null()) {

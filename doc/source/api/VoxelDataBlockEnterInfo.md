@@ -7,7 +7,9 @@ Information sent by a terrain when one of its data blocks enters the area of a [
 
 ## Description: 
 
-See method VoxelTerrain._on_data_block_entered
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md). See method VoxelTerrain._on_data_block_entered.
+
+Instances of this class must not be stored, as they will become invalid after the call they come from.
 
 ## Methods: 
 
@@ -43,4 +45,4 @@ Gets the position of the data block, in data block coordinates (voxel coordinate
 
 Gets access to the voxels in the block.
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

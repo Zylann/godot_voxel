@@ -934,7 +934,7 @@ static void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateD
 			lod.loading_blocks.erase(loc.position);
 		}
 		{
-			VoxelDataBlock empty_block(0);
+			VoxelDataBlock empty_block(loc.lod);
 			data.try_set_block(loc.position, empty_block);
 		}
 	}

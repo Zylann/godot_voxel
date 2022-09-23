@@ -13,7 +13,7 @@ Type     | Name                             | Default
 `int`    | [channel](#i_channel)            | 1       
 `float`  | [height_range](#i_height_range)  | 30.0    
 `float`  | [height_start](#i_height_start)  | -50.0   
-`float`  | [iso_scale](#i_iso_scale)        | 0.1     
+`float`  | [iso_scale](#i_iso_scale)        | 0.002   
 <p></p>
 
 ## Property Descriptions
@@ -31,8 +31,8 @@ NOTE: due to a bug in Godot's documentation tool, the default value shown here i
 
 Minimum height where the surface will generate.
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_iso_scale"></span> **iso_scale** = 0.1
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_iso_scale"></span> **iso_scale** = 0.002
 
 Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 
-_Generated on Aug 25, 2022_
+_Generated on Sep 10, 2022_

@@ -63,7 +63,7 @@ public:
 	};
 
 #ifdef TOOLS_ENABLED
-	void get_configuration_warnings(TypedArray<String> &out_warnings) const override;
+	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
 #endif
 
 	bool is_generating_collision_surface() const override {
