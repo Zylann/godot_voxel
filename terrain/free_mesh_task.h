@@ -29,13 +29,10 @@ public:
 
 	void run() override {
 		ZN_PROFILE_SCOPE();
-		// TODO GDX: RefCounted does not expose `reference_get_count`, we can't do this debug check!
-#if defined(DEBUG_ENABLED) && defined(ZN_GODOT)
-		if (mesh->reference_get_count() > 1) {
+		if (mesh->get_reference_count() > 1) {
 			WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "
 					   "destruction cost");
 		}
-#endif
 		mesh.unref();
 	}
 
