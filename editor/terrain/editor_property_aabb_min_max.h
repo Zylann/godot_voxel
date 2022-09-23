@@ -19,7 +19,9 @@ public:
 
 	virtual void ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_property)() override;
 
+#ifdef ZN_GODOT
 protected:
+#endif
 	virtual void _set_read_only(bool p_read_only) override;
 
 private:
