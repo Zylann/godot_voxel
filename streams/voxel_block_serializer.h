@@ -33,7 +33,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 
 SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-bool decompress_and_deserialize(GodotFile &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
+bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
 
 // Temporary thread-local buffers for internal use
 std::vector<uint8_t> &get_tls_data();

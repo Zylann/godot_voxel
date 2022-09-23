@@ -681,7 +681,7 @@ bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal 
 	return deserialize(to_span_const(data), out_voxel_buffer);
 }
 
-bool decompress_and_deserialize(GodotFile &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
+bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
 #if defined(TOOLS_ENABLED) || defined(DEBUG_ENABLED)

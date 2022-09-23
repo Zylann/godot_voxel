@@ -4,7 +4,7 @@
 #if defined(ZN_GODOT)
 #include <core/io/file_access.h>
 #elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/file.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 using namespace godot;
 #endif
 
@@ -13,28 +13,21 @@ using namespace godot;
 
 namespace zylann {
 
-#if defined(ZN_GODOT)
-typedef FileAccess GodotFile;
-#elif defined(ZN_GODOT_EXTENSION)
-typedef File GodotFile;
-#endif
-
-inline Ref<GodotFile> open_file(const String path, GodotFile::ModeFlags mode_flags, Error &out_error) {
+inline Ref<FileAccess> open_file(const String path, FileAccess::ModeFlags mode_flags, Error &out_error) {
 #if defined(ZN_GODOT)
 	return FileAccess::open(path, mode_flags, &out_error);
 #elif defined(ZN_GODOT_EXTENSION)
-	Ref<File> file;
-	file.instantiate();
-	out_error = file->open(path, mode_flags);
+	Ref<FileAccess> file = FileAccess::open(path, mode_flags);
+	out_error = FileAccess::get_open_error();
 	if (out_error != godot::OK) {
-		return Ref<File>();
+		return Ref<FileAccess>();
 	} else {
 		return file;
 	}
 #endif
 }
 
-inline uint64_t get_buffer(GodotFile &f, Span<uint8_t> dst) {
+inline uint64_t get_buffer(FileAccess &f, Span<uint8_t> dst) {
 #if defined(ZN_GODOT)
 	return f.get_buffer(dst.data(), dst.size());
 #elif defined(ZN_GODOT_EXTENSION)
@@ -44,7 +37,7 @@ inline uint64_t get_buffer(GodotFile &f, Span<uint8_t> dst) {
 #endif
 }
 
-inline void store_buffer(GodotFile &f, Span<const uint8_t> src) {
+inline void store_buffer(FileAccess &f, Span<const uint8_t> src) {
 #if defined(ZN_GODOT)
 	f.store_buffer(src.data(), src.size());
 #elif defined(ZN_GODOT_EXTENSION)
@@ -54,7 +47,7 @@ inline void store_buffer(GodotFile &f, Span<const uint8_t> src) {
 #endif
 }
 
-inline String get_as_text(GodotFile &f) {
+inline String get_as_text(FileAccess &f) {
 #if defined(ZN_GODOT)
 	return f.get_as_utf8_string();
 #elif defined(ZN_GODOT_EXTENSION)

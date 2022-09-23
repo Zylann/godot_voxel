@@ -27,7 +27,7 @@ const char *to_string(FileResult res) {
 }
 
 FileResult check_magic_and_version(
-		GodotFile &f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
+		FileAccess &f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
 	uint8_t magic[5] = { '\0' };
 	const size_t count = get_buffer(f, Span<uint8_t>(magic, 4));
 	if (count != 4) {
@@ -50,7 +50,7 @@ FileResult check_magic_and_version(
 Error check_directory_created(const std::string &p_directory_path) {
 	const String directory_path(p_directory_path.c_str());
 
-	Ref<GodotDirectory> d = open_directory(directory_path);
+	Ref<DirAccess> d = open_directory(directory_path);
 
 	if (d.is_null()) {
 		ERR_PRINT("Could not access to filesystem");
@@ -81,7 +81,7 @@ Error check_directory_created_using_file_locker(const std::string &directory_pat
 // Makes the file bigger to move the half from the current position further,
 // so that it makes room for the specified amount of bytes.
 // The new allocated "free" bytes have undefined values, which may be later overwritten by the caller anyways.
-void insert_bytes(GodotFile &f, size_t count, size_t temp_chunk_size) {
+void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size) {
 	CRASH_COND(temp_chunk_size == 0);
 
 	const size_t prev_file_len = f.get_length();

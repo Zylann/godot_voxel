@@ -48,7 +48,7 @@ uint32_t g_default_palette[PALETTE_SIZE] = {
 };
 // clang-format on
 
-static Error parse_string(GodotFile &f, String &s) {
+static Error parse_string(FileAccess &f, String &s) {
 	const int size = f.get_32();
 
 	// Sanity checks
@@ -66,7 +66,7 @@ static Error parse_string(GodotFile &f, String &s) {
 	return OK;
 }
 
-static Error parse_dictionary(GodotFile &f, std::unordered_map<String, String> &dict) {
+static Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
 	const int item_count = f.get_32();
 
 	// Sanity checks
@@ -163,7 +163,7 @@ static Basis parse_basis(uint8_t data) {
 	return b;
 }
 
-Error parse_node_common_header(Node &node, GodotFile &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
+Error parse_node_common_header(Node &node, FileAccess &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -203,11 +203,11 @@ Error Data::_load_from_file(String fpath) {
 	ZN_PRINT_VERBOSE(format("Loading {}", GodotStringWrapper(fpath)));
 
 	Error open_err;
-	Ref<GodotFile> f_ref = open_file(fpath, GodotFile::READ, open_err);
+	Ref<FileAccess> f_ref = open_file(fpath, FileAccess::READ, open_err);
 	if (f_ref == nullptr) {
 		return open_err;
 	}
-	GodotFile &f = **f_ref;
+	FileAccess &f = **f_ref;
 
 	char magic[5] = { 0 };
 	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);

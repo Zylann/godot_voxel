@@ -296,7 +296,7 @@ FileResult VoxelStreamRegionFiles::save_meta() {
 
 	Error err;
 	VoxelFileLockerWrite file_wlock(meta_path_utf8.get_data());
-	Ref<GodotFile> f = open_file(meta_path, GodotFile::WRITE, err);
+	Ref<FileAccess> f = open_file(meta_path, FileAccess::WRITE, err);
 	if (f.is_null()) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
 		return FILE_CANT_OPEN;
@@ -344,7 +344,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 		Error err;
 		const CharString meta_path_utf8 = meta_path.utf8();
 		VoxelFileLockerRead file_rlock(meta_path_utf8.get_data());
-		Ref<GodotFile> f = open_file(meta_path, GodotFile::READ, err);
+		Ref<FileAccess> f = open_file(meta_path, FileAccess::READ, err);
 		if (f.is_null()) {
 			return FILE_CANT_OPEN;
 		}
@@ -577,7 +577,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Backup current folder by renaming it, leaving the current name vacant
 	{
-		Ref<GodotDirectory> da = open_directory(_directory_path);
+		Ref<DirAccess> da = open_directory(_directory_path);
 		ERR_FAIL_COND(da.is_null());
 		int i = 0;
 		String old_dir;
@@ -619,7 +619,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
-			Ref<GodotDirectory> da = open_directory(lod_folder);
+			Ref<DirAccess> da = open_directory(lod_folder);
 			if (da.is_null()) {
 				continue;
 			}
