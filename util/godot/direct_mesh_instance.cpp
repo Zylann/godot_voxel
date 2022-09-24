@@ -1,6 +1,7 @@
 #include "direct_mesh_instance.h"
 #include "../profiling.h"
-#include <scene/resources/world_3d.h>
+#include "material.h"
+#include "world_3d.h"
 
 namespace zylann {
 
@@ -36,7 +37,7 @@ void DirectMeshInstance::destroy() {
 	if (_mesh_instance.is_valid()) {
 		ZN_PROFILE_SCOPE();
 		RenderingServer &vs = *RenderingServer::get_singleton();
-		vs.free(_mesh_instance);
+		free_rendering_server_rid(vs, _mesh_instance);
 		_mesh_instance = RID();
 	}
 	_mesh.unref();

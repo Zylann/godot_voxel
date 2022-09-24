@@ -1,11 +1,10 @@
 #include "voxel_mesher_dmc.h"
 #include "../../constants/cube_tables.h"
+#include "../../util/godot/time.h"
 #include "../../util/math/conv.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
 #include "octree_tables.h"
-
-#include <core/os/time.h>
 
 // Dual marching cubes
 // Algorithm taken from https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/
@@ -274,8 +273,10 @@ void foreach_node(OctreeNode *root, Action_T &a, int depth = 0) {
 
 inline void scale_positions(PackedVector3Array &positions, float scale) {
 	const uint32_t size = positions.size();
+	// Using direct access because in GDExtension accessing with `[]` has different syntax than modules
+	Vector3 *positions_data = positions.ptrw();
 	for (unsigned int i = 0; i < size; ++i) {
-		positions.write[i] *= scale;
+		positions_data[i] *= scale;
 	}
 }
 
@@ -1406,7 +1407,8 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 
 	const Vector3i buffer_size = voxels.get_size();
 	// Taking previous power of two because the algorithm uses an integer cubic octree, and data should be padded
-	const int chunk_size = previous_power_of_2(MIN(MIN(buffer_size.x, buffer_size.y), buffer_size.z));
+	const int chunk_size =
+			math::get_previous_power_of_two_32(math::min(math::min(buffer_size.x, buffer_size.y), buffer_size.z));
 
 	ERR_FAIL_COND(voxels.get_size().x < chunk_size + PADDING * 2);
 	ERR_FAIL_COND(voxels.get_size().y < chunk_size + PADDING * 2);

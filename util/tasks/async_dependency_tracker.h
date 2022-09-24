@@ -10,10 +10,13 @@ namespace zylann {
 class IThreadedTask;
 
 // Tracks the status of one or more tasks.
+// This should be referenced by tasks using a shared pointer.
 class AsyncDependencyTracker {
 public:
+	// Creates a tracker with no known tasks to track yet. You must use `set_count` before scheduling tasks.
+	AsyncDependencyTracker();
+
 	// Creates a tracker which will track `initial_count` tasks.
-	// The tracker may be passed by shared pointer to each of these tasks so they can notify completion.
 	AsyncDependencyTracker(int initial_count);
 
 	typedef void (*ScheduleNextTasksCallback)(Span<IThreadedTask *> tasks);
@@ -25,12 +28,17 @@ public:
 
 	~AsyncDependencyTracker();
 
+	// Sets dependency count. This may only be used if you don't know easily the amount of tasks to create up-front, but
+	// has to be called BEFORE those tasks are scheduled.
+	void set_count(int count);
+
 	// Call this when one of the tracked dependencies is complete
 	void post_complete();
 
 	// Call this when one of the tracked dependencies is aborted
 	void abort() {
 		_aborted = true;
+		_tasks_have_started = true;
 	}
 
 	// Returns `true` if any of the tracked tasks was aborted.
@@ -55,6 +63,8 @@ public:
 private:
 	std::atomic_int _count;
 	std::atomic_bool _aborted;
+	std::atomic_bool _tasks_have_started;
+	bool _count_was_set = false;
 	std::vector<IThreadedTask *> _next_tasks;
 	ScheduleNextTasksCallback _next_tasks_schedule_callback = nullptr;
 };

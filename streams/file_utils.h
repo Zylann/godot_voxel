@@ -1,8 +1,8 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 
+#include "../util/godot/file.h"
 #include "../util/math/vector3i.h"
-#include <core/io/file_access.h>
 
 namespace zylann {
 

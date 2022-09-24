@@ -1,6 +1,6 @@
 #include "voxel_block_serializer_gd.h"
+#include "../util/godot/stream_peer.h"
 #include "voxel_block_serializer.h"
-#include <core/io/stream_peer.h>
 
 namespace zylann::voxel::gd {
 
@@ -8,13 +8,13 @@ int VoxelBlockSerializer::serialize(StreamPeer &peer, VoxelBufferInternal &voxel
 	if (compress) {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
-		peer.put_data(res.data.data(), res.data.size());
+		stream_peer_put_data(peer, to_span(res.data));
 		return res.data.size();
 
 	} else {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize(voxel_buffer);
 		ERR_FAIL_COND_V(!res.success, -1);
-		peer.put_data(res.data.data(), res.data.size());
+		stream_peer_put_data(peer, to_span(res.data));
 		return res.data.size();
 	}
 }
@@ -23,7 +23,7 @@ void VoxelBlockSerializer::deserialize(StreamPeer &peer, VoxelBufferInternal &vo
 	if (decompress) {
 		std::vector<uint8_t> &compressed_data = BlockSerializer::get_tls_compressed_data();
 		compressed_data.resize(size);
-		const Error err = peer.get_data(compressed_data.data(), compressed_data.size());
+		const Error err = stream_peer_get_data(peer, to_span(compressed_data));
 		ERR_FAIL_COND(err != OK);
 		bool success = BlockSerializer::decompress_and_deserialize(to_span(compressed_data), voxel_buffer);
 		ERR_FAIL_COND(!success);
@@ -31,7 +31,7 @@ void VoxelBlockSerializer::deserialize(StreamPeer &peer, VoxelBufferInternal &vo
 	} else {
 		std::vector<uint8_t> &data = BlockSerializer::get_tls_data();
 		data.resize(size);
-		const Error err = peer.get_data(data.data(), data.size());
+		const Error err = stream_peer_get_data(peer, to_span(data));
 		ERR_FAIL_COND(err != OK);
 		BlockSerializer::deserialize(to_span(data), voxel_buffer);
 	}

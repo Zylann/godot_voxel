@@ -10,9 +10,6 @@
 #include "../util/string_funcs.h"
 #include "voxel_buffer_internal.h"
 
-#include <core/io/marshalls.h>
-#include <core/math/math_funcs.h>
-
 namespace zylann::voxel {
 
 inline uint8_t *allocate_channel_data(size_t size) {
@@ -54,6 +51,16 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 
 static_assert(sizeof(uint32_t) == sizeof(float), "uint32_t and float cannot be marshalled back and forth");
 static_assert(sizeof(uint64_t) == sizeof(double), "uint64_t and double cannot be marshalled back and forth");
+
+union MarshallFloat {
+	float f;
+	uint32_t i;
+};
+
+union MarshallDouble {
+	double d;
+	uint64_t l;
+};
 
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBufferInternal::Depth depth) {
 	switch (depth) {

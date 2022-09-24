@@ -1,13 +1,15 @@
 #ifndef VOXEL_GRAPH_EDITOR_SHADER_DIALOG_H
 #define VOXEL_GRAPH_EDITOR_SHADER_DIALOG_H
 
-#include <scene/gui/dialogs.h>
+#include "../../util/godot/accept_dialog.h"
+#include "../../util/macros.h"
 
-class CodeEdit;
+ZN_GODOT_FORWARD_DECLARE(class CodeEdit)
 
 namespace zylann::voxel {
 
 class VoxelGraphEditorShaderDialog : public AcceptDialog {
+	GDCLASS(VoxelGraphEditorShaderDialog, AcceptDialog)
 public:
 	VoxelGraphEditorShaderDialog();
 
@@ -15,6 +17,8 @@ public:
 
 private:
 	void _on_copy_to_clipboard_button_pressed();
+
+	static void _bind_methods();
 
 	CodeEdit *_text_edit = nullptr;
 };

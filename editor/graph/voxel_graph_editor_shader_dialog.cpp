@@ -1,12 +1,16 @@
 #include "voxel_graph_editor_shader_dialog.h"
-
-#include <editor/editor_scale.h>
-#include <scene/gui/code_edit.h>
+#include "../../util/godot/button.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/code_edit.h"
+#include "../../util/godot/display_server.h"
+#include "../../util/godot/editor_scale.h"
+#include "../../util/godot/h_box_container.h"
+#include "../../util/godot/v_box_container.h"
 
 namespace zylann::voxel {
 
 VoxelGraphEditorShaderDialog::VoxelGraphEditorShaderDialog() {
-	set_title(TTR("Generated shader"));
+	set_title(ZN_TTR("Generated shader"));
 	//set_resizable(true); // TODO How to set if a Window is resizable or not?
 	set_min_size(Vector2(600, 300) * EDSCALE);
 
@@ -21,9 +25,9 @@ VoxelGraphEditorShaderDialog::VoxelGraphEditorShaderDialog() {
 	HBoxContainer *buttons_container = memnew(HBoxContainer);
 
 	Button *copy_to_clipboard_button = memnew(Button);
-	copy_to_clipboard_button->set_text(TTR("Copy to clipboard"));
+	copy_to_clipboard_button->set_text(ZN_TTR("Copy to clipboard"));
 	copy_to_clipboard_button->connect(
-			"pressed", callable_mp(this, &VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed));
+			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorShaderDialog, _on_copy_to_clipboard_button_pressed));
 	buttons_container->add_child(copy_to_clipboard_button);
 
 	v_box_container->add_child(buttons_container);
@@ -46,6 +50,13 @@ void VoxelGraphEditorShaderDialog::set_shader_code(const String &code) {
 
 void VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed() {
 	DisplayServer::get_singleton()->clipboard_set(_text_edit->get_text());
+}
+
+void VoxelGraphEditorShaderDialog::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_copy_to_clipboard_button_pressed"),
+			&VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed);
+#endif
 }
 
 } // namespace zylann::voxel

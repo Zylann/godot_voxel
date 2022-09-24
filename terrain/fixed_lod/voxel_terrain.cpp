@@ -12,21 +12,25 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/concave_polygon_shape_3d.h"
+#include "../../util/godot/engine.h"
+#include "../../util/godot/scene_tree.h"
+#include "../../util/godot/script.h"
+#include "../../util/godot/shader_material.h"
+#include "../../util/godot/string.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
+#include "../../util/tasks/async_dependency_tracker.h"
 #include "../instancing/voxel_instancer.h"
 #include "../voxel_data_block_enter_info.h"
+#include "../voxel_save_completion_tracker.h"
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
-
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/resources/concave_polygon_shape_3d.h>
 
 namespace zylann::voxel {
 
@@ -480,20 +484,23 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	}
 }
 
-void VoxelTerrain::save_all_modified_blocks(bool with_copy) {
+void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 	Ref<VoxelStream> stream = get_stream();
 	ERR_FAIL_COND_MSG(stream.is_null(), "Attempting to save modified blocks, but there is no stream to save them to.");
+
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	// That may cause a stutter, so should be used when the player won't notice
 	_data->consume_all_modifications(_blocks_to_save, with_copy);
 
 	if (stream.is_valid() && _instancer != nullptr && stream->supports_instance_blocks()) {
-		_instancer->save_all_modified_blocks();
+		_instancer->save_all_modified_blocks(task_scheduler, tracker);
 	}
 
 	// And flush immediately
-	send_block_data_requests();
+	consume_block_data_save_requests(task_scheduler, tracker);
+	task_scheduler.flush();
 }
 
 const VoxelTerrain::Stats &VoxelTerrain::get_stats() const {
@@ -680,7 +687,11 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 	box_in_voxels.clip(_data->get_bounds());
 
 	if (_area_edit_notification_enabled) {
+#if defined(ZN_GODOT)
 		GDVIRTUAL_CALL(_on_area_edited, box_in_voxels.pos, box_in_voxels.size);
+#else
+		ERR_PRINT_ONCE("VoxelTerrain::_on_area_edited is not supported yet in GDExtension!");
+#endif
 	}
 
 	try_schedule_mesh_update_from_data(box_in_voxels);
@@ -729,7 +740,7 @@ void VoxelTerrain::_notification(int p_what) {
 			// This hack is quite miserable.
 			VoxelEngineUpdater::ensure_existence(get_tree());
 
-			_process();
+			process();
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
@@ -822,43 +833,41 @@ static void request_block_load(uint32_t volume_id, std::shared_ptr<StreamingDepe
 	}
 }
 
-static void request_voxel_block_save(uint32_t volume_id, const std::shared_ptr<VoxelBufferInternal> &voxels,
-		Vector3i block_pos, std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size) {
-	//
-	ZN_ASSERT(stream_dependency != nullptr);
-	ZN_ASSERT_RETURN(stream_dependency->stream.is_valid());
-
-	SaveBlockDataTask *task =
-			ZN_NEW(SaveBlockDataTask(volume_id, block_pos, 0, data_block_size, voxels, stream_dependency));
-
-	// No priority data, saving doesnt need sorting
-
-	VoxelEngine::get_singleton().push_async_io_task(task);
-}
-
-void VoxelTerrain::send_block_data_requests() {
+void VoxelTerrain::send_data_load_requests() {
 	ZN_PROFILE_SCOPE();
 
-	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
-			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
+	if (_blocks_pending_load.size() > 0) {
+		std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
+				VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
-	const Transform3D volume_transform = get_global_transform();
+		const Transform3D volume_transform = get_global_transform();
 
-	// Blocks to load
-	for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
-		const Vector3i block_pos = _blocks_pending_load[i];
-		// TODO Optimization: Batch request
-		request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
-				volume_transform, _instancer != nullptr);
+		// Blocks to load
+		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
+			const Vector3i block_pos = _blocks_pending_load[i];
+			// TODO Optimization: Batch request
+			request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
+					volume_transform, _instancer != nullptr);
+		}
+		_blocks_pending_load.clear();
 	}
+}
+
+void VoxelTerrain::consume_block_data_save_requests(
+		BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> saving_tracker) {
+	ZN_PROFILE_SCOPE();
 
 	// Blocks to save
 	if (get_stream().is_valid()) {
-		for (unsigned int i = 0; i < _blocks_to_save.size(); ++i) {
-			ZN_PRINT_VERBOSE(format("Requesting save of block {}", _blocks_to_save[i].position));
-			const VoxelData::BlockToSave b = _blocks_to_save[i];
-			// TODO Optimization: Batch request
-			request_voxel_block_save(_volume_id, b.voxels, b.position, _streaming_dependency, get_data_block_size());
+		const uint8_t data_block_size = get_data_block_size();
+		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
+			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
+
+			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+					_volume_id, b.position, 0, data_block_size, b.voxels, _streaming_dependency, saving_tracker));
+
+			// No priority data, saving doesnt need sorting
+			task_scheduler.push_io_task(task);
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {
@@ -866,8 +875,12 @@ void VoxelTerrain::send_block_data_requests() {
 		}
 	}
 
+	if (saving_tracker != nullptr) {
+		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
+		saving_tracker->set_count(task_scheduler.get_io_count());
+	}
+
 	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
-	_blocks_pending_load.clear();
 	_blocks_to_save.clear();
 }
 
@@ -913,12 +926,16 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 	_data_block_enter_info_obj->voxel_block = block;
 	_data_block_enter_info_obj->block_position = bpos;
 
+#if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get())) {
 		WARN_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is unimplemented!");
 	}
+#else
+	ERR_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is not supported yet in GDExtension!");
+#endif
 }
 
-void VoxelTerrain::_process() {
+void VoxelTerrain::process() {
 	ZN_PROFILE_SCOPE();
 	process_viewers();
 	//process_received_data_blocks();
@@ -1122,7 +1139,10 @@ void VoxelTerrain::process_viewers() {
 
 	// It's possible the user didn't set a stream yet, or it is turned off
 	if (can_load_blocks) {
-		send_block_data_requests();
+		send_data_load_requests();
+		BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+		consume_block_data_save_requests(task_scheduler, nullptr);
+		task_scheduler.flush();
 	}
 
 	_stats.time_request_blocks_to_load = profiling_clock.restart();
@@ -1542,8 +1562,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	const bool gen_collisions = _generate_collisions && block->collision_viewers.get() > 0;
 	if (gen_collisions) {
 		Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-		block->set_collision_shape(
-				collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+		const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+		block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 		block->set_collision_layer(_collision_layer);
 		block->set_collision_mask(_collision_mask);
@@ -1623,8 +1643,11 @@ Vector3i VoxelTerrain::_b_data_block_to_voxel(Vector3i pos) const {
 	return _data->block_to_voxel(pos);
 }
 
-void VoxelTerrain::_b_save_modified_blocks() {
-	save_all_modified_blocks(true);
+Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
+	save_all_modified_blocks(true, tracker);
+	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 // Explicitely ask to save a block if it was modified
@@ -1672,9 +1695,13 @@ PackedInt32Array VoxelTerrain::_b_get_viewer_network_peer_ids_in_area(Vector3i a
 
 	PackedInt32Array peer_ids;
 	peer_ids.resize(viewer_ids.size());
+	// Using direct access because when compiling with GodotCpp the array access syntax is different, also it is a bit
+	// faster
+	int32_t *peer_ids_data = peer_ids.ptrw();
+	ZN_ASSERT_RETURN_V(peer_ids_data != nullptr, peer_ids);
 	for (size_t i = 0; i < viewer_ids.size(); ++i) {
 		const int peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_ids[i]);
-		peer_ids.write[i] = peer_id;
+		peer_ids_data[i] = peer_id;
 	}
 
 	return peer_ids;
@@ -1741,8 +1768,10 @@ void VoxelTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
 
+#ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
+#endif
 
 	ADD_GROUP("Bounds", "");
 
@@ -1762,7 +1791,8 @@ void VoxelTerrain::_bind_methods() {
 	ADD_GROUP("Materials", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+						 String("{0},{1}").format(
+								 varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))),
 			"set_material_override", "get_material_override");
 
 	ADD_GROUP("Networking", "");
@@ -1785,9 +1815,8 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
-	ADD_SIGNAL(MethodInfo(VoxelStringNames::get_singleton().block_loaded, PropertyInfo(Variant::VECTOR3, "position")));
-	ADD_SIGNAL(
-			MethodInfo(VoxelStringNames::get_singleton().block_unloaded, PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3, "position")));
 }
 
 } // namespace zylann::voxel

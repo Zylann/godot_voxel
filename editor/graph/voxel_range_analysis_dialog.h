@@ -1,11 +1,12 @@
 #ifndef VOXEL_RANGE_ANALYSIS_DIALOG_H
 #define VOXEL_RANGE_ANALYSIS_DIALOG_H
 
-#include <scene/gui/dialogs.h>
+#include "../../util/godot/accept_dialog.h"
+#include "../../util/macros.h"
 
-class CheckBox;
-class SpinBox;
-class GridContainer;
+ZN_GODOT_FORWARD_DECLARE(class CheckBox)
+ZN_GODOT_FORWARD_DECLARE(class SpinBox)
+ZN_GODOT_FORWARD_DECLARE(class GridContainer)
 
 namespace zylann::voxel {
 

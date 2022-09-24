@@ -9,6 +9,7 @@ namespace zylann::voxel {
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
 class VoxelInstanceLibrary : public Resource, public VoxelInstanceLibraryItem::IListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
+
 public:
 	static const int MAX_ID = 0xffff;
 

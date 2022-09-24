@@ -1,12 +1,15 @@
 #ifndef GENERATE_BLOCK_TASK_H
 #define GENERATE_BLOCK_TASK_H
 
-#include "../util/tasks/async_dependency_tracker.h"
 #include "../util/tasks/threaded_task.h"
 #include "priority_dependency.h"
 #include "streaming_dependency.h"
 
-namespace zylann::voxel {
+namespace zylann {
+
+class AsyncDependencyTracker;
+
+namespace voxel {
 
 class VoxelData;
 
@@ -37,6 +40,7 @@ public:
 	std::shared_ptr<AsyncDependencyTracker> tracker;
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
 #endif // GENERATE_BLOCK_TASK_H

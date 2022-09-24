@@ -1,12 +1,11 @@
 #ifndef VOXEL_MESHER_BLOCKY_H
 #define VOXEL_MESHER_BLOCKY_H
 
+#include "../../util/godot/mesh.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "voxel_blocky_library.h"
 
-#include <core/object/ref_counted.h>
-#include <scene/resources/mesh.h>
 #include <vector>
 
 namespace zylann::voxel {
@@ -33,7 +32,8 @@ public:
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	Ref<Resource> duplicate(bool p_subresources = false) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
+
 	int get_used_channels_mask() const override;
 
 	bool supports_lod() const override {

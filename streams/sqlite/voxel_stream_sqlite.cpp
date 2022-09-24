@@ -1,6 +1,7 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/errors.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/math/conv.h"
@@ -657,11 +658,11 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks.
 		VoxelStreamSQLiteInternal con;
-		CharString cpath = path.utf8();
+		const CharString cpath = path.utf8();
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
-		if (con.open(cpath)) {
+		if (con.open(cpath.get_data())) {
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -1015,8 +1016,8 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
-	CharString fpath_utf8 = fpath.utf8();
-	if (!con->open(fpath_utf8)) {
+	const CharString fpath_utf8 = fpath.utf8();
+	if (!con->open(fpath_utf8.get_data())) {
 		delete con;
 		con = nullptr;
 	}

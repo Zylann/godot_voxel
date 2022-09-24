@@ -2,7 +2,14 @@
 #define ZN_VECTOR3_H
 
 #include "funcs.h"
+
+#if defined(ZN_GODOT)
 #include <core/math/vector3.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/variant/vector3.hpp>
+using namespace godot;
+#endif
+
 #include <iosfwd>
 
 // 3-dimensional vector which components are either 32-bit float or 64-bit float depending on how Godot was compiled.
@@ -23,7 +30,7 @@ inline bool is_valid_size(const Vector3 &s) {
 }
 
 inline bool has_nan(const Vector3 &v) {
-	return Math::is_nan(v.x) || Math::is_nan(v.y) || Math::is_nan(v.z);
+	return is_nan(v.x) || is_nan(v.y) || is_nan(v.z);
 }
 
 inline bool is_normalized(const Vector3 &v) {

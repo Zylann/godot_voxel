@@ -1,8 +1,8 @@
 #ifndef VOXEL_RAYCAST_RESULT_H
 #define VOXEL_RAYCAST_RESULT_H
 
+#include "../util/godot/ref_counted.h"
 #include "../util/math/vector3i.h"
-#include <core/object/ref_counted.h>
 
 namespace zylann::voxel {
 

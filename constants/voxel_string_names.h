@@ -1,7 +1,7 @@
 #ifndef VOXEL_STRING_NAMES_H
 #define VOXEL_STRING_NAMES_H
 
-#include <core/string/string_name.h>
+#include "../util/godot/string_name.h"
 
 namespace zylann::voxel {
 
@@ -45,6 +45,18 @@ public:
 
 #ifdef DEBUG_ENABLED
 	StringName _voxel_debug_vt_position;
+#endif
+
+	// These are usually in CoreStringNames, but when compiling as a GDExtension, we don't have access to them
+	StringName changed;
+	StringName frame_post_draw;
+
+#ifdef TOOLS_ENABLED
+	StringName Add;
+	StringName Remove;
+	StringName EditorIcons;
+	StringName Pin;
+	StringName ExternalLink;
 #endif
 };
 

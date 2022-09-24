@@ -354,3 +354,38 @@ Some can be specified through SCons command line parameters.
 - `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
 - `VOXEL_ENABLE_FAST_NOISE_2`: if defined, the module will compile with integrated support for SIMD noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. SCons parameter: `voxel_fast_noise_2=yes`
 - `VOXEL_RUN_TESTS`: If `True`, tests will be compiled and run on startup to verify if some features of the engine still work correctly. It is off by default in production builds. This is mostly for debug builds when doing C++ development on the module. SCons parameter: `voxel_tests=yes`
+- `ZN_GODOT`: must be defined when compiling this project as a module.
+- `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
+
+
+GDExtension
+-------------
+
+!!! warn
+    This feature is under development and is not ready for production. It has bugs and can crash the engine. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
+
+This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine. TODO: Godot's documentation doesn't seem to contain information about GDExtension yet. For now, you can check [this old news](https://godotengine.org/article/introducing-gd-extensions) and the [GodotCpp repository](https://github.com/godotengine/godot-cpp).
+
+To compile the library:
+- Download a copy of [GodotCpp](https://github.com/godotengine/godot-cpp)
+- In the voxel module's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script.
+- Open the same kind of console you would use to compile Godot, change directory to the voxel module's root folder, and run SCons there. It will use the `SConstruct` file instead of `SCsub`. The library will be saved under a `bin/` folder.
+
+Example of build command on Windows (unoptimized debug build for use in editor):
+```
+scons platform=windows target=debug -j4
+```
+
+Example of `voxel.gdextension` file for Godot to detect the library (Windows 64-bits only):
+```
+[configuration]
+
+entry_symbol = "voxel_library_init"
+
+[libraries]
+
+windows.debug.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.windows.tools.debug.x86_64.dll"
+```
+
+There are a number of issues to address before this target can be usable. The module wasn't tested at all at the moment. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
+

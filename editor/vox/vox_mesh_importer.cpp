@@ -5,6 +5,10 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/image_texture.h"
+#include "../../util/godot/resource_saver.h"
+#include "../../util/godot/standard_material_3d.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory.h"
@@ -13,52 +17,52 @@
 
 namespace zylann::voxel::magica {
 
-String VoxelVoxMeshImporter::get_importer_name() const {
+String VoxelVoxMeshImporter::_zn_get_importer_name() const {
 	return "VoxelVoxMeshImporter";
 }
 
-String VoxelVoxMeshImporter::get_visible_name() const {
+String VoxelVoxMeshImporter::_zn_get_visible_name() const {
 	return "VoxelVoxMeshImporter";
 }
 
-void VoxelVoxMeshImporter::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_back("vox");
+PackedStringArray VoxelVoxMeshImporter::_zn_get_recognized_extensions() const {
+	PackedStringArray extensions;
+	extensions.append("vox");
+	return extensions;
 }
 
-String VoxelVoxMeshImporter::get_preset_name(int p_idx) const {
+String VoxelVoxMeshImporter::_zn_get_preset_name(int p_idx) const {
 	return "Default";
 }
 
-int VoxelVoxMeshImporter::get_preset_count() const {
+int VoxelVoxMeshImporter::_zn_get_preset_count() const {
 	return 1;
 }
 
-String VoxelVoxMeshImporter::get_save_extension() const {
+String VoxelVoxMeshImporter::_zn_get_save_extension() const {
 	return "mesh";
 }
 
-String VoxelVoxMeshImporter::get_resource_type() const {
+String VoxelVoxMeshImporter::_zn_get_resource_type() const {
 	return "ArrayMesh";
 }
 
-float VoxelVoxMeshImporter::get_priority() const {
+double VoxelVoxMeshImporter::_zn_get_priority() const {
 	// Higher import priority means the importer is preferred over another.
 	return 0.0;
 }
 
-// int VoxelVoxMeshImporter::get_import_order() const {
-// }
-
-void VoxelVoxMeshImporter::get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset) const {
-	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, sn.store_colors_in_texture), false));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, sn.scale), 1.f));
-	r_options->push_back(ImportOption(
-			PropertyInfo(Variant::INT, sn.pivot_mode, PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
+void VoxelVoxMeshImporter::_zn_get_import_options(
+		std::vector<GodotImportOption> &out_options, const String &path, int preset_index) const {
+	//const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	out_options.push_back(GodotImportOption(
+			PropertyInfo(Variant::INT, "pivot_mode", PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
 
-bool VoxelVoxMeshImporter::get_option_visibility(
-		const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const {
+bool VoxelVoxMeshImporter::_zn_get_option_visibility(
+		const String &path, const StringName &option_name, const GodotKeyValueWrapper options) const {
 	return true;
 }
 
@@ -217,13 +221,13 @@ bool make_single_voxel_grid(
 	return true;
 }
 
-Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_save_path,
-		const HashMap<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files,
-		Variant *r_metadata) {
+Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String &p_save_path,
+		const GodotKeyValueWrapper p_options, GodotStringListWrapper out_platform_variants,
+		GodotStringListWrapper out_gen_files) const {
 	//
-	const bool p_store_colors_in_textures = p_options[VoxelStringNames::get_singleton().store_colors_in_texture];
-	const float p_scale = p_options[VoxelStringNames::get_singleton().scale];
-	const int p_pivot_mode = p_options[VoxelStringNames::get_singleton().pivot_mode];
+	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
+	const float p_scale = p_options.get("scale");
+	const int p_pivot_mode = p_options.get("pivot_mode");
 
 	ERR_FAIL_INDEX_V(p_pivot_mode, PIVOT_MODES_COUNT, ERR_INVALID_PARAMETER);
 
@@ -357,7 +361,7 @@ Error VoxelVoxMeshImporter::import(const String &p_source_file, const String &p_
 	{
 		ZN_PROFILE_SCOPE();
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
-		const Error mesh_save_err = ResourceSaver::save(mesh, mesh_save_path);
+		const Error mesh_save_err = save_resource(mesh, mesh_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path)));
 	}

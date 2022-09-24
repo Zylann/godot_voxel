@@ -7,18 +7,18 @@ namespace zylann {
 
 PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
 	PackedStringArray psa;
-	psa.resize(svv.size());
+	// Not resizing up-front, because in Godot core writing elements uses different code than GDExtension.
 	for (unsigned int i = 0; i < svv.size(); ++i) {
-		psa.write[i] = to_godot(svv[i]);
+		psa.append(to_godot(svv[i]));
 	}
 	return psa;
 }
 
 PackedStringArray to_godot(const std::vector<std::string> &sv) {
 	PackedStringArray psa;
-	psa.resize(sv.size());
+	// Not resizing up-front, because in Godot core writing elements uses different code than GDExtension.
 	for (unsigned int i = 0; i < sv.size(); ++i) {
-		psa.write[i] = to_godot(sv[i]);
+		psa.append(to_godot(sv[i]));
 	}
 	return psa;
 }

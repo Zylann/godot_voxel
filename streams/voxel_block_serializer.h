@@ -1,13 +1,14 @@
 #ifndef VOXEL_BLOCK_SERIALIZER_H
 #define VOXEL_BLOCK_SERIALIZER_H
 
+#include "../util/godot/file.h"
+#include "../util/macros.h"
 #include "../util/span.h"
 
 #include <cstdint>
 #include <vector>
 
-class StreamPeer;
-class FileAccess;
+ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
 namespace zylann::voxel {
 

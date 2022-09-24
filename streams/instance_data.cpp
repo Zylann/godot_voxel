@@ -1,5 +1,6 @@
 #include "instance_data.h"
 #include "../constants/voxel_constants.h"
+#include "../util/math/basis.h"
 #include "../util/math/funcs.h"
 #include "../util/serialization.h"
 #include "../util/string_funcs.h"

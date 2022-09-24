@@ -6,4 +6,10 @@
 *.obj
 *.pyc
 *.tmp
+*.dblite
 .DS_Store
+*.lib
+*.exp
+*.pdb
+*.dll
+*.ilk

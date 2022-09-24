@@ -1,6 +1,7 @@
 #ifndef VOXEL_MESHER_CUBES_H
 #define VOXEL_MESHER_CUBES_H
 
+#include "../../util/godot/binder.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/thread/rw_lock.h"
@@ -51,7 +52,7 @@ public:
 	void set_palette(Ref<VoxelColorPalette> palette);
 	Ref<VoxelColorPalette> get_palette() const;
 
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
+	Ref<Resource> duplicate(bool p_subresources = false) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 	int get_used_channels_mask() const override;
 
 	void set_store_colors_in_texture(bool enable);
@@ -135,7 +136,7 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::ColorMode);
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::Materials);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes, ColorMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes, Materials);
 
 #endif // VOXEL_MESHER_CUBES_H

@@ -1,10 +1,10 @@
 #ifndef ZYLANN_EDITOR_PROPERTY_AABB_H
 #define ZYLANN_EDITOR_PROPERTY_AABB_H
 
-#include <editor/editor_inspector.h>
-#include <editor/editor_spin_slider.h>
-
 #include "../../util/fixed_array.h"
+#include "../../util/godot/editor_property.h"
+#include "../../util/godot/editor_spin_slider.h"
+#include "../../util/macros.h"
 
 namespace zylann {
 
@@ -17,13 +17,15 @@ public:
 
 	void setup(double p_min, double p_max, double p_step, bool p_no_slider, const String &p_suffix = String());
 
-	virtual void update_property() override;
+	virtual void ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_property)() override;
 
+#ifdef ZN_GODOT
 protected:
+#endif
 	virtual void _set_read_only(bool p_read_only) override;
 
 private:
-	void _value_changed(double p_val, int spinbox_index);
+	void _on_value_changed(double p_val);
 	void _notification(int p_what);
 
 	static void _bind_methods();

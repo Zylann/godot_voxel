@@ -3,10 +3,10 @@
 
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/fixed_array.h"
+#include "../../util/godot/file.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
 
-#include <core/io/file_access.h>
 #include <vector>
 
 namespace zylann::voxel {

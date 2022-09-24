@@ -1,5 +1,4 @@
 #include "node.h"
-#include <scene/main/node.h>
 
 namespace zylann {
 

@@ -2,11 +2,14 @@
 #define VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 
 #include "../../engine/voxel_engine.h"
-
-#include <editor/editor_scale.h>
-#include <scene/gui/box_container.h>
-#include <scene/gui/label.h>
-#include <scene/gui/separator.h>
+#include "../../util/godot/control.h"
+#include "../../util/godot/editor_scale.h"
+#include "../../util/godot/font.h"
+#include "../../util/godot/h_box_container.h"
+#include "../../util/godot/label.h"
+#include "../../util/godot/os.h"
+#include "../../util/godot/string.h"
+#include "../../util/godot/v_separator.h"
 
 namespace zylann::voxel {
 
@@ -24,16 +27,16 @@ private:
 
 public:
 	VoxelTerrainEditorTaskIndicator() {
-		create_stat(STAT_STREAM_TASKS, TTR("Streaming"), TTR("Streaming tasks"));
-		create_stat(STAT_GENERATE_TASKS, TTR("Generation"), TTR("Generation tasks"));
-		create_stat(STAT_MESH_TASKS, TTR("Meshing"), TTR("Meshing tasks"));
-		create_stat(STAT_MAIN_THREAD_TASKS, TTR("Main"), TTR("Main thread tasks"));
-		create_stat(STAT_MEMORY, TTR("Memory"), TTR("Memory usage (whole editor, not just voxel)"));
+		create_stat(STAT_STREAM_TASKS, ZN_TTR("Streaming"), ZN_TTR("Streaming tasks"));
+		create_stat(STAT_GENERATE_TASKS, ZN_TTR("Generation"), ZN_TTR("Generation tasks"));
+		create_stat(STAT_MESH_TASKS, ZN_TTR("Meshing"), ZN_TTR("Meshing tasks"));
+		create_stat(STAT_MAIN_THREAD_TASKS, ZN_TTR("Main"), ZN_TTR("Main thread tasks"));
+		create_stat(STAT_MEMORY, ZN_TTR("Memory"), ZN_TTR("Memory usage (whole editor, not just voxel)"));
 	}
 
 	void _notification(int p_what) {
 		switch (p_what) {
-			case NOTIFICATION_THEME_CHANGED:
+			case ZN_GODOT_CONTROL_CONSTANT(NOTIFICATION_THEME_CHANGED):
 				// Set a monospace font.
 				// Can't do this in constructor, fonts are not available then. Also the theme can change.
 				for (unsigned int i = 0; i < _stats.size(); ++i) {
@@ -53,6 +56,9 @@ public:
 	}
 
 private:
+	// When compiling with GodotCpp, `_bind_methods` is not optional.
+	static void _bind_methods() {}
+
 	void create_stat(StatID id, String short_name, String long_name) {
 		add_child(memnew(VSeparator));
 		Stat &stat = _stats[id];
@@ -67,6 +73,10 @@ private:
 		stat.label->set_text("---");
 		add_child(stat.label);
 	}
+
+	// TODO Optimize: these String formatting functions are extremely slow in GDExtension, due to indirection costs,
+	// extra calls and unnecessary allocations caused by workarounds for missing APIs. It would just be more portable to
+	// format a local `std::string` and convert to `String` at the end.
 
 	static String with_commas(int64_t n) {
 		String res = "";
@@ -86,7 +96,7 @@ private:
 	}
 
 	// There is `String::humanize_size` but:
-	//1) it is specifically for bytes, 2) it works on a 1024 base
+	// 1) it is specifically for bytes, 2) it works on a 1024 base
 	// This function allows any unit, and works on a base of 1000
 	static String with_unit(int64_t n, const char *unit) {
 		String s = "";

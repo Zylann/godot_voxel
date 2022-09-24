@@ -3,14 +3,16 @@
 #include "../engine/voxel_engine_updater.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/dstack.h"
+#include "../util/godot/array.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/color.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "mesh_sdf.h"
-
-#include <scene/resources/mesh.h>
+// Necessary when compiling with GodotCpp because it is used in a registered method argument, and the type must be
+// defined
+#include "../util/godot/scene_tree.h"
 
 namespace zylann::voxel {
 
@@ -152,7 +154,12 @@ void VoxelMeshSDF::bake() {
 	_max_pos = box_max_pos;
 }
 
+#ifdef ZN_GODOT_EXTENSION
+void VoxelMeshSDF::bake_async(Object *scene_tree_o) {
+	SceneTree *scene_tree = Object::cast_to<SceneTree>(scene_tree_o);
+#else
 void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
+#endif
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
 	VoxelEngineUpdater::ensure_existence(scene_tree);
 

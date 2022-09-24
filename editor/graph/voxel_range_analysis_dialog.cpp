@@ -1,30 +1,33 @@
 #include "voxel_range_analysis_dialog.h"
-
-#include <editor/editor_scale.h>
-#include <scene/gui/check_box.h>
-#include <scene/gui/grid_container.h>
-#include <scene/gui/spin_box.h>
+#include "../../util/godot/callable.h"
+#include "../../util/godot/check_box.h"
+#include "../../util/godot/editor_scale.h"
+#include "../../util/godot/grid_container.h"
+#include "../../util/godot/label.h"
+#include "../../util/godot/spin_box.h"
+#include "../../util/godot/v_box_container.h"
 
 namespace zylann::voxel {
 
 VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
-	set_title(TTR("Debug Range Analysis"));
+	set_title(ZN_TTR("Debug Range Analysis"));
 	set_min_size(EDSCALE * Vector2(300, 280));
 
 	VBoxContainer *vb = memnew(VBoxContainer);
 	//vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
 
 	_enabled_checkbox = memnew(CheckBox);
-	_enabled_checkbox->set_text(TTR("Enabled"));
-	_enabled_checkbox->connect("toggled", callable_mp(this, &VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled));
+	_enabled_checkbox->set_text(ZN_TTR("Enabled"));
+	_enabled_checkbox->connect(
+			"toggled", ZN_GODOT_CALLABLE_MP(this, VoxelRangeAnalysisDialog, _on_enabled_checkbox_toggled));
 	vb->add_child(_enabled_checkbox);
 
 	Label *tip = memnew(Label);
 	// TODO Had to use `\n` and disable autowrap, otherwise the popup height becomes crazy high
 	// See https://github.com/godotengine/godot/issues/47005
-	tip->set_text(TTR("When enabled, hover node output labels to\ninspect their "
-					  "estimated range within the\nconfigured area.\n"
-					  "Nodes that may be optimized out locally will be greyed out."));
+	tip->set_text(ZN_TTR("When enabled, hover node output labels to\ninspect their "
+						 "estimated range within the\nconfigured area.\n"
+						 "Nodes that may be optimized out locally will be greyed out."));
 	//tip->set_autowrap(true);
 	tip->set_modulate(Color(1.f, 1.f, 1.f, 0.8f));
 	vb->add_child(tip);
@@ -33,12 +36,12 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	gc->set_anchors_preset(Control::PRESET_TOP_WIDE);
 	gc->set_columns(2);
 
-	add_row(TTR("Position X"), _pos_x_spinbox, gc, 0);
-	add_row(TTR("Position Y"), _pos_y_spinbox, gc, 0);
-	add_row(TTR("Position Z"), _pos_z_spinbox, gc, 0);
-	add_row(TTR("Size X"), _size_x_spinbox, gc, 100);
-	add_row(TTR("Size Y"), _size_y_spinbox, gc, 100);
-	add_row(TTR("Size Z"), _size_z_spinbox, gc, 100);
+	add_row(ZN_TTR("Position X"), _pos_x_spinbox, gc, 0);
+	add_row(ZN_TTR("Position Y"), _pos_y_spinbox, gc, 0);
+	add_row(ZN_TTR("Position Z"), _pos_z_spinbox, gc, 0);
+	add_row(ZN_TTR("Size X"), _size_x_spinbox, gc, 100);
+	add_row(ZN_TTR("Size Y"), _size_y_spinbox, gc, 100);
+	add_row(ZN_TTR("Size Z"), _size_z_spinbox, gc, 100);
 
 	vb->add_child(gc);
 
@@ -73,10 +76,16 @@ void VoxelRangeAnalysisDialog::add_row(String text, SpinBox *&sb, GridContainer 
 	label->set_text(text);
 	parent->add_child(label);
 	parent->add_child(sb);
-	sb->connect("value_changed", callable_mp(this, &VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed));
+	sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, VoxelRangeAnalysisDialog, _on_area_spinbox_value_changed));
 }
 
 void VoxelRangeAnalysisDialog::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_enabled_checkbox_toggled", "enabled"),
+			&VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled);
+	ClassDB::bind_method(D_METHOD("_on_area_spinbox_value_changed", "value"),
+			&VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed);
+#endif
 	ADD_SIGNAL(MethodInfo("analysis_toggled", PropertyInfo(Variant::BOOL, "enabled")));
 	ADD_SIGNAL(MethodInfo("area_changed"));
 }

@@ -1,11 +1,11 @@
 #include "region_file.h"
 #include "../../streams/voxel_block_serializer.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/string.h"
 #include "../../util/log.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "../file_utils.h"
-#include <core/io/file_access.h>
 #include <algorithm>
 
 namespace zylann::voxel {
@@ -66,7 +66,7 @@ static bool save_header(
 		FileAccess &f, uint8_t version, const RegionFormat &format, const std::vector<RegionBlockInfo> &block_infos) {
 	f.seek(0);
 
-	f.store_buffer(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4);
+	store_buffer(f, Span<const uint8_t>(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4));
 	f.store_8(version);
 
 	f.store_8(format.block_size_po2);
@@ -95,7 +95,9 @@ static bool save_header(
 	}
 
 	// TODO Deal with endianess, this should be little-endian
-	f.store_buffer(reinterpret_cast<const uint8_t *>(block_infos.data()), block_infos.size() * sizeof(RegionBlockInfo));
+	store_buffer(f,
+			Span<const uint8_t>(reinterpret_cast<const uint8_t *>(block_infos.data()),
+					block_infos.size() * sizeof(RegionBlockInfo)));
 
 #ifdef DEBUG_ENABLED
 	const size_t blocks_begin_offset = f.get_position();
@@ -112,7 +114,7 @@ static bool load_header(
 
 	FixedArray<char, 5> magic;
 	fill(magic, '\0');
-	ERR_FAIL_COND_V(f.get_buffer(reinterpret_cast<uint8_t *>(magic.data()), 4) != 4, false);
+	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
 	const uint8_t version = f.get_8();
@@ -148,7 +150,7 @@ static bool load_header(
 			out_format.has_palette = false;
 
 		} else {
-			ERR_PRINT(String("Unexpected palette value: {0}").format(varray(palette_size)));
+			ZN_PRINT_ERROR(format("Unexpected palette value: {}", int(palette_size)));
 			return false;
 		}
 	}
@@ -158,7 +160,7 @@ static bool load_header(
 
 	// TODO Deal with endianess
 	const size_t blocks_len = out_block_infos.size() * sizeof(RegionBlockInfo);
-	const size_t read_size = f.get_buffer((uint8_t *)out_block_infos.data(), blocks_len);
+	const size_t read_size = get_buffer(f, Span<uint8_t>((uint8_t *)out_block_infos.data(), blocks_len));
 	ERR_FAIL_COND_V(read_size != blocks_len, false);
 
 	return true;
@@ -186,7 +188,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 	Error file_error;
 	// Open existing file for read and write permissions. This should not create the file if it doesn't exist.
 	// Note, there is no read-only mode supported, because there was no need for it yet.
-	Ref<FileAccess> f = FileAccess::open(fpath, FileAccess::READ_WRITE, &file_error);
+	Ref<FileAccess> f = open_file(fpath, FileAccess::READ_WRITE, file_error);
 	if (file_error != OK) {
 		if (create_if_not_found) {
 			CRASH_COND(f != nullptr);
@@ -199,7 +201,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 			}
 
 			// This time, we attempt to create the file
-			f = FileAccess::open(fpath, FileAccess::WRITE_READ, &file_error);
+			f = open_file(fpath, FileAccess::WRITE_READ, file_error);
 			if (file_error != OK) {
 				ERR_PRINT(String("Failed to create file {0}").format(varray(fpath)));
 				return file_error;
@@ -309,7 +311,7 @@ bool RegionFile::is_valid_block_position(const Vector3 position) const {
 }
 
 Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) {
-	ERR_FAIL_COND_V(_file_access == nullptr, ERR_FILE_CANT_READ);
+	ERR_FAIL_COND_V(_file_access.is_null(), ERR_FILE_CANT_READ);
 	FileAccess &f = **_file_access;
 
 	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
@@ -370,7 +372,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f.store_32(res.data.size());
 		const unsigned int written_size = sizeof(uint32_t) + res.data.size();
-		f.store_buffer(res.data.data(), res.data.size());
+		store_buffer(f, to_span(res.data));
 
 		const unsigned int end_pos = f.get_position();
 		CRASH_COND_MSG(written_size != (end_pos - block_offset),
@@ -417,7 +419,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 			f.seek(block_offset);
 
 			f.store_32(data.size());
-			f.store_buffer(data.data(), data.size());
+			store_buffer(f, to_span(data));
 
 			const size_t end_pos = f.get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));
@@ -435,7 +437,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 			f.seek(block_offset);
 
 			f.store_32(data.size());
-			f.store_buffer(data.data(), data.size());
+			store_buffer(f, to_span(data));
 
 			const size_t end_pos = f.get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));
@@ -506,11 +508,11 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	// Erase sectors from file
 	while (src_offset < old_end_offset) {
 		f.seek(src_offset);
-		const size_t read_bytes = f.get_buffer(temp.data(), sector_size);
+		const size_t read_bytes = get_buffer(f, to_span(temp));
 		CRASH_COND(read_bytes != sector_size); // Corrupted file
 
 		f.seek(dst_offset);
-		f.store_buffer(temp.data(), sector_size);
+		store_buffer(f, to_span(temp));
 
 		src_offset += sector_size;
 		dst_offset += sector_size;
@@ -556,7 +558,7 @@ bool RegionFile::save_header(FileAccess &f) {
 }
 
 bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
-	ZN_PRINT_VERBOSE(zylann::format("Migrating region file {} from v2 to v3", _file_path));
+	ZN_PRINT_VERBOSE(zylann::format("Migrating region file {} from v2 to v3", GodotStringWrapper(_file_path)));
 
 	// We can migrate if we know in advance what format the file should contain.
 	ERR_FAIL_COND_V_MSG(format.block_size_po2 == 0, false, "Cannot migrate without knowing the correct format");

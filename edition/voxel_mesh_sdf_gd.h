@@ -2,12 +2,11 @@
 #define VOXEL_MESH_SDF_GD_H
 
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/mesh.h"
+#include "../util/godot/resource.h"
 #include "../util/math/vector3f.h"
 
-#include <core/io/resource.h>
-
-class Mesh;
-class SceneTree;
+ZN_GODOT_FORWARD_DECLARE(class SceneTree);
 
 namespace zylann::voxel {
 
@@ -56,10 +55,15 @@ public:
 
 	void bake();
 
-	// Bakes the SDF asynchronously using threads of the job system.
-	// TODO A reference to the SceneTree should not be necessary!
-	// It is currently needed to ensure `VoxelServerUpdater` gets created so it can tick the task system...
+// Bakes the SDF asynchronously using threads of the job system.
+// TODO A reference to the SceneTree should not be necessary!
+// It is currently needed to ensure `VoxelServerUpdater` gets created so it can tick the task system...
+// TODO GDX: it seems binding a method taking a `SceneTree*` fails to compile. It is supposed to be working.
+#ifdef ZN_GODOT_EXTENSION
+	void bake_async(Object *scene_tree_o);
+#else
 	void bake_async(SceneTree *scene_tree);
+#endif
 
 	// Accesses baked SDF data.
 	// WARNING: don't modify this buffer. Only read from it.
@@ -103,6 +107,6 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMeshSDF::BakeMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMeshSDF, BakeMode);
 
 #endif // VOXEL_MESH_SDF_GD_H

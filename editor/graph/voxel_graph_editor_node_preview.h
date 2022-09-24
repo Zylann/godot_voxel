@@ -1,9 +1,12 @@
 #ifndef VOXEL_GRAPH_EDITOR_NODE_PREVIEW_H
 #define VOXEL_GRAPH_EDITOR_NODE_PREVIEW_H
 
-#include <scene/gui/box_container.h>
+#include "../../util/godot/image.h"
+#include "../../util/godot/image_texture.h"
+#include "../../util/godot/v_box_container.h"
+#include "../../util/macros.h"
 
-class TextureRect;
+ZN_GODOT_FORWARD_DECLARE(class TextureRect)
 
 namespace zylann::voxel {
 
@@ -19,6 +22,9 @@ public:
 	void update_texture();
 
 private:
+	// When compiling with GodotCpp, `_bind_methods` is not optional
+	static void _bind_methods() {}
+
 	TextureRect *_texture_rect = nullptr;
 	Ref<ImageTexture> _texture;
 	Ref<Image> _image;

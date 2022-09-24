@@ -4,7 +4,11 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
+#include "../../util/godot/array_mesh.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/rendering_server.h"
+#include "../../util/godot/shader.h"
+#include "../../util/godot/shader_material.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_shader_minimal.h"
@@ -47,10 +51,6 @@ VoxelMesherTransvoxel::VoxelMesherTransvoxel() {
 
 VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {}
 
-Ref<Resource> VoxelMesherTransvoxel::duplicate(bool p_subresources) const {
-	return memnew(VoxelMesherTransvoxel);
-}
-
 int VoxelMesherTransvoxel::get_used_channels_mask() const {
 	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
 		return (1 << VoxelBufferInternal::CHANNEL_SDF) | (1 << VoxelBufferInternal::CHANNEL_INDICES) |
@@ -79,7 +79,7 @@ static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src
 	static_assert(sizeof(transvoxel::LodAttrib) == 16);
 	memcpy(lod_data.ptrw(), src.lod_data.data(), lod_data.size() * sizeof(float));
 
-	raw_copy_to(indices, src.indices);
+	copy_to(indices, src.indices);
 
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;

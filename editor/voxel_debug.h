@@ -2,11 +2,10 @@
 #define VOXEL_DEBUG_H
 
 #include "../util/godot/direct_multimesh_instance.h"
-#include <core/object/ref_counted.h>
+#include "../util/godot/standard_material_3d.h"
 #include <vector>
 
-class Mesh;
-class World3D;
+ZN_GODOT_FORWARD_DECLARE(class Mesh);
 
 namespace zylann {
 namespace DebugColors {

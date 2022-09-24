@@ -1,12 +1,13 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 
+#include "../../util/godot/material.h"
+#include "../../util/godot/mesh.h"
+#include "../../util/godot/packed_scene.h"
+#include "../../util/godot/rendering_server.h"
+#include "../../util/godot/shape_3d.h"
 #include "../../util/span.h"
 #include "voxel_instance_library_item.h"
-
-#include <scene/resources/mesh.h>
-#include <scene/resources/packed_scene.h>
-#include <scene/resources/shape_3d.h>
 
 namespace zylann::voxel {
 
@@ -39,7 +40,12 @@ public:
 	void set_collision_mask(int collision_mask);
 	int get_collision_mask() const;
 
+	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
+#if defined(ZN_GODOT)
 	void setup_from_template(Node *root);
+#elif defined(ZN_GODOT_EXTENSION)
+	void setup_from_template(Object *root_o);
+#endif
 
 	void set_scene(Ref<PackedScene> scene);
 	Ref<PackedScene> get_scene() const;

@@ -2,11 +2,12 @@
 #define VOXEL_MESH_SDF_VIEWER_H
 
 #include "../../edition/voxel_mesh_sdf_gd.h"
-#include <scene/gui/box_container.h>
+#include "../../util/godot/v_box_container.h"
 
-class TextureRect;
-class Button;
-class SpinBox;
+ZN_GODOT_FORWARD_DECLARE(class TextureRect)
+ZN_GODOT_FORWARD_DECLARE(class Button)
+ZN_GODOT_FORWARD_DECLARE(class SpinBox)
+ZN_GODOT_FORWARD_DECLARE(class Label)
 
 namespace zylann::voxel {
 
@@ -29,6 +30,8 @@ private:
 	void center_slice_y();
 	// void clamp_slice_y();
 	void update_slice_spinbox();
+
+	static void _bind_methods();
 
 	TextureRect *_texture_rect = nullptr;
 	Label *_info_label = nullptr;

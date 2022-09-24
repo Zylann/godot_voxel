@@ -1,5 +1,9 @@
 #include "editor_property_aabb_min_max.h"
-#include <scene/gui/grid_container.h>
+#include "../../util/godot/callable.h"
+#include "../../util/godot/control.h"
+#include "../../util/godot/grid_container.h"
+#include "../../util/godot/label.h"
+#include "../../util/godot/node.h"
 
 namespace zylann {
 
@@ -23,7 +27,7 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 		EditorSpinSlider *sb = memnew(EditorSpinSlider);
 		sb->set_flat(true);
 		sb->set_h_size_flags(SIZE_EXPAND_FILL);
-		sb->connect("value_changed", callable_mp(this, &EditorPropertyAABBMinMax::_value_changed).bind(i));
+		sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, EditorPropertyAABBMinMax, _on_value_changed));
 		_spinboxes[i] = sb;
 
 		add_focusable(sb);
@@ -47,7 +51,7 @@ void EditorPropertyAABBMinMax::_set_read_only(bool p_read_only) {
 	}
 };
 
-void EditorPropertyAABBMinMax::_value_changed(double val, int spinbox_index) {
+void EditorPropertyAABBMinMax::_on_value_changed(double val) {
 	if (_ignore_value_change) {
 		return;
 	}
@@ -63,7 +67,7 @@ void EditorPropertyAABBMinMax::_value_changed(double val, int spinbox_index) {
 	emit_changed(get_edited_property(), p, "");
 }
 
-void EditorPropertyAABBMinMax::update_property() {
+void EditorPropertyAABBMinMax::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_property)() {
 	const AABB val = get_edited_object()->get(get_edited_property());
 
 	_ignore_value_change = true;
@@ -82,7 +86,7 @@ void EditorPropertyAABBMinMax::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 		case NOTIFICATION_THEME_CHANGED: {
-			const Color *colors = _get_property_colors();
+			Span<const Color> colors = editor_property_get_colors(*this);
 			for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 				_spinboxes[i]->add_theme_color_override("label_color", colors[i % 3]);
 			}
@@ -103,6 +107,10 @@ void EditorPropertyAABBMinMax::setup(
 	}
 }
 
-void EditorPropertyAABBMinMax::_bind_methods() {}
+void EditorPropertyAABBMinMax::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_value_changed"), &EditorPropertyAABBMinMax::_on_value_changed);
+#endif
+}
 
 } // namespace zylann

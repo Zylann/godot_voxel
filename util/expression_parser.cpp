@@ -617,7 +617,7 @@ bool precompute_constants(UniquePtr<Node> &node, float &out_number, Span<const F
 							out_number = powf(n0, n1);
 							break;
 						default:
-							CRASH_NOW();
+							ZN_CRASH();
 					}
 
 					node = make_unique_instance<NumberNode>(out_number);

@@ -1,6 +1,7 @@
 #include "shader_material_pool.h"
-#include "../../util/errors.h"
-#include "../../util/profiling.h"
+#include "../errors.h"
+#include "../profiling.h"
+#include "rendering_server.h"
 
 namespace zylann {
 
@@ -13,10 +14,10 @@ void ShaderMaterialPool::set_template(Ref<ShaderMaterial> tpl) {
 		Ref<Shader> shader = _template_material->get_shader();
 
 		if (shader.is_valid()) {
-			List<PropertyInfo> params;
-			RenderingServer::get_singleton()->get_shader_parameter_list(shader->get_rid(), &params);
+			std::vector<GodotShaderParameterInfo> params;
+			get_shader_parameter_list(shader->get_rid(), params);
 
-			for (const PropertyInfo &pi : params) {
+			for (const GodotShaderParameterInfo &pi : params) {
 				_shader_params_cache.push_back(pi.name);
 			}
 		}
@@ -41,7 +42,8 @@ Ref<ShaderMaterial> ShaderMaterialPool::allocate() {
 	material.instantiate();
 	material->set_shader(_template_material->get_shader());
 	for (const StringName &name : _shader_params_cache) {
-		// Note, I don't need to make copies of textures. They are shared.
+		// Note, I don't need to make copies of textures. They are shared (at least those coming from the template
+		// material).
 		material->set_shader_parameter(name, _template_material->get_shader_parameter(name));
 	}
 	return material;

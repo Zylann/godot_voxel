@@ -1,6 +1,8 @@
 #include "voxel_data.h"
 #include "../util/dstack.h"
 #include "../util/math/conv.h"
+#include "../util/string_funcs.h"
+#include "../util/thread/mutex.h"
 #include "voxel_data_grid.h"
 #include "voxel_metadata_variant.h"
 
@@ -583,8 +585,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);
 
 				} else {
-					ERR_PRINT(String("Destination block {0} not found when cascading edits on LOD {1}")
-									  .format(varray(dst_bpos, dst_lod_index)));
+					ZN_PRINT_ERROR(format(
+							"Destination block {} not found when cascading edits on LOD {}", dst_bpos, dst_lod_index));
 					continue;
 				}
 			}

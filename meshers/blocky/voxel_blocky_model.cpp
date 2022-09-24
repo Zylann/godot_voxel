@@ -1,10 +1,15 @@
 #include "voxel_blocky_model.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/base_material_3d.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/shader_material.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"
 #include "voxel_blocky_library.h"
-#include "voxel_mesher_blocky.h" // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
+
+// TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
+#include "voxel_mesher_blocky.h"
 
 #include <unordered_map>
 
@@ -111,7 +116,8 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 		for (unsigned int i = 0; i < _surface_count; ++i) {
 			p_list->push_back(PropertyInfo(Variant::OBJECT, String("material_override_{0}").format(varray(i)),
 					PROPERTY_HINT_RESOURCE_TYPE,
-					BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()));
+					String("{0},{1}").format(
+							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))));
 		}
 
 		p_list->push_back(PropertyInfo(
@@ -702,7 +708,10 @@ void VoxelBlockyModel::_bind_methods() {
 
 	ADD_GROUP("Box collision", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, itos(Variant::AABB) + ":"),
+	// TODO What is the syntax `number:` in `hint_string` with `ARRAY`? It's old, hard to search usages in Godot's
+	// codebase, and I can't find it anywhere in the documentation
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING,
+						 String::num_int64(Variant::AABB) + ":"),
 			"set_collision_aabbs", "get_collision_aabbs");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
 			"get_collision_mask");

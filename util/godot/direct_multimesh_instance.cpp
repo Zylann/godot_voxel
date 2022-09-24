@@ -1,7 +1,7 @@
 #include "direct_multimesh_instance.h"
 #include "../profiling.h"
-
-#include <scene/resources/world_3d.h>
+#include "material.h"
+#include "world_3d.h"
 
 namespace zylann {
 
@@ -25,7 +25,7 @@ void DirectMultiMeshInstance::create() {
 void DirectMultiMeshInstance::destroy() {
 	if (_multimesh_instance.is_valid()) {
 		RenderingServer &vs = *RenderingServer::get_singleton();
-		vs.free(_multimesh_instance);
+		free_rendering_server_rid(vs, _multimesh_instance);
 		_multimesh_instance = RID();
 		_multimesh.unref();
 	}

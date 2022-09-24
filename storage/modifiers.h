@@ -2,12 +2,12 @@
 #define VOXEL_MODIFIERS_H
 
 #include "../util/math/sdf.h"
+#include "../util/math/transform_3d.h"
 #include "../util/math/vector3.h"
 #include "../util/math/vector3f.h"
 #include "../util/thread/rw_lock.h"
 #include "voxel_buffer_internal.h"
 
-#include <core/math/transform_3d.h>
 #include <unordered_map>
 
 namespace zylann::voxel {

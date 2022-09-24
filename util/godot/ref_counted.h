@@ -1,7 +1,12 @@
 #ifndef ZN_GODOT_REF_COUNTED_H
 #define ZN_GODOT_REF_COUNTED_H
 
+#if defined(ZN_GODOT)
 #include <core/object/ref_counted.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/ref_counted.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 

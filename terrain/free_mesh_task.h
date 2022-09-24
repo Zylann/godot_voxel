@@ -29,12 +29,10 @@ public:
 
 	void run() override {
 		ZN_PROFILE_SCOPE();
-#ifdef DEBUG_ENABLED
 		if (mesh->get_reference_count() > 1) {
 			WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "
 					   "destruction cost");
 		}
-#endif
 		mesh.unref();
 	}
 

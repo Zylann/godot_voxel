@@ -1,10 +1,17 @@
 #include "voxel_instance_library_editor_plugin.h"
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "../../terrain/instancing/voxel_instance_library_scene_item.h"
-
-#include <editor/editor_file_dialog.h>
-#include <scene/gui/dialogs.h>
-#include <scene/resources/primitive_meshes.h>
+#include "../../util/godot/array.h"
+#include "../../util/godot/box_mesh.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/confirmation_dialog.h"
+#include "../../util/godot/control.h"
+#include "../../util/godot/editor_file_dialog.h"
+#include "../../util/godot/editor_inspector.h"
+#include "../../util/godot/editor_interface.h"
+#include "../../util/godot/editor_undo_redo_manager.h"
+#include "../../util/godot/object.h"
+#include "../../util/godot/resource_loader.h"
 
 namespace zylann::voxel {
 
@@ -13,30 +20,39 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin() {
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
 	_confirmation_dialog->connect(
-			"confirmed", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed));
+			"confirmed", ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryEditorPlugin, _on_remove_item_confirmed));
 	base_control->add_child(_confirmation_dialog);
 
 	_info_dialog = memnew(AcceptDialog);
 	base_control->add_child(_info_dialog);
 
 	_open_scene_dialog = memnew(EditorFileDialog);
-	List<String> extensions;
-	ResourceLoader::get_recognized_extensions_for_type(PackedScene::get_class_static(), &extensions);
-	for (List<String>::Element *E = extensions.front(); E; E = E->next()) {
-		_open_scene_dialog->add_filter("*." + E->get());
+	PackedStringArray extensions = get_recognized_extensions_for_type(PackedScene::get_class_static());
+	for (int i = 0; i < extensions.size(); ++i) {
+		_open_scene_dialog->add_filter("*." + extensions[i]);
 	}
 	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
-	_open_scene_dialog->connect(
-			"file_selected", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected));
+	_open_scene_dialog->connect("file_selected",
+			ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryEditorPlugin, _on_open_scene_dialog_file_selected));
 }
 
+#if defined(ZN_GODOT)
 bool VoxelInstanceLibraryEditorPlugin::handles(Object *p_object) const {
-	VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
+#elif defined(ZN_GODOT_EXTENSION)
+bool VoxelInstanceLibraryEditorPlugin::_handles(const Variant &p_object_v) const {
+	const Object *p_object = p_object_v;
+#endif
+	const VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
 	return lib != nullptr;
 }
 
+#if defined(ZN_GODOT)
 void VoxelInstanceLibraryEditorPlugin::edit(Object *p_object) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelInstanceLibraryEditorPlugin::_edit(const Variant &p_object_v) {
+	Object *p_object = p_object_v;
+#endif
 	VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
 	_library.reference_ptr(lib);
 }
@@ -55,6 +71,14 @@ void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
 	} else if (p_what == NOTIFICATION_EXIT_TREE) {
 		remove_inspector_plugin(_inspector_plugin);
 	}
+}
+
+void VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed(int id) {
+	_on_button_pressed(id);
+}
+
+void VoxelInstanceLibraryEditorPlugin::_on_remove_item_button_pressed() {
+	_on_button_pressed(VoxelInstanceLibraryInspectorPlugin::BUTTON_REMOVE_ITEM);
 }
 
 void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
@@ -93,7 +117,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 			const int item_id = try_get_selected_item_id();
 			if (item_id != -1) {
 				_item_id_to_remove = item_id;
-				_confirmation_dialog->set_text(vformat(TTR("Remove item %d?"), _item_id_to_remove));
+				_confirmation_dialog->set_text(ZN_TTR("Remove item {0}?").format(varray(_item_id_to_remove)));
 				_confirmation_dialog->popup_centered();
 			}
 		} break;
@@ -119,8 +143,8 @@ int VoxelInstanceLibraryEditorPlugin::try_get_selected_item_id() {
 		// but our current resource does not do that,
 		// and I don't want to modify the API just because the built-in inspector is bad.
 		_info_dialog->set_text(
-				TTR(String("Could not determine selected item from property path: `{0}`.\n"
-						   "You must select the `item_X` property label of the item you want to remove."))
+				ZN_TTR(String("Could not determine selected item from property path: `{0}`.\n"
+							  "You must select the `item_X` property label of the item you want to remove."))
 						.format(varray(path)));
 		_info_dialog->popup_centered();
 		return -1;
@@ -157,7 +181,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(Strin
 void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ERR_FAIL_COND(_library.is_null());
 
-	Ref<PackedScene> scene = ResourceLoader::load(fpath);
+	Ref<PackedScene> scene = load_resource(fpath);
 	ERR_FAIL_COND(scene.is_null());
 
 	Ref<VoxelInstanceLibrarySceneItem> item;
@@ -180,11 +204,18 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 }
 
 void VoxelInstanceLibraryEditorPlugin::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_add_multimesh_item_button_pressed"),
+			&VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_remove_item_button_pressed"),
+			&VoxelInstanceLibraryEditorPlugin::_on_remove_item_button_pressed);
 	// ClassDB::bind_method(D_METHOD("_on_button_pressed", "id"),
-	// &VoxelInstanceLibraryEditorPlugin::_on_button_pressed); ClassDB::bind_method(
-	// 		D_METHOD("_on_remove_item_confirmed"), &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
-	// ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
-	// 		&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
+	// &VoxelInstanceLibraryEditorPlugin::_on_button_pressed);
+	ClassDB::bind_method(
+			D_METHOD("_on_remove_item_confirmed"), &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
+	ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
+			&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
+#endif
 }
 
 } // namespace zylann::voxel

@@ -3,7 +3,7 @@
 
 #include "../storage/voxel_buffer_gd.h"
 
-class StreamPeer;
+ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
 namespace zylann::voxel::gd {
 

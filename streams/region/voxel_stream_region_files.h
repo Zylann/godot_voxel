@@ -7,8 +7,6 @@
 #include "../voxel_stream.h"
 #include "region_file.h"
 
-class FileAccess;
-
 namespace zylann::voxel {
 
 // TODO Rename VoxelStreamRegionForest

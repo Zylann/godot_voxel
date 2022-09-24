@@ -1,6 +1,7 @@
 #include "voxel_stream.h"
 #include "../storage/voxel_buffer_gd.h"
-#include <core/object/script_language.h>
+#include "../util/godot/string.h"
+#include "../util/string_funcs.h"
 
 using namespace zylann::voxel;
 
@@ -47,7 +48,7 @@ void VoxelStream::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
 }
 
 void VoxelStream::load_all_blocks(FullLoadingResult &result) {
-	ERR_PRINT(String("{0} does not support `load_all_blocks`").format(varray(get_class_name())));
+	ZN_PRINT_ERROR(format("{} does not support `load_all_blocks`", GodotStringWrapper(get_class())));
 }
 
 int VoxelStream::get_used_channels_mask() const {

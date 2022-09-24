@@ -2,9 +2,13 @@
 #define ZN_GODOT_SHADER_H
 
 #include "../span.h"
-#include <core/string/string_name.h>
 
-class Shader;
+#if defined(ZN_GODOT)
+#include <scene/resources/shader.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/shader.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 

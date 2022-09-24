@@ -1,5 +1,9 @@
 #include "voxel_graph_node_db.h"
 #include "../../constants/voxel_constants.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/curve.h"
+#include "../../util/godot/fast_noise_lite.h"
+#include "../../util/godot/image.h"
 #include "../../util/macros.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -14,10 +18,6 @@
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "../../util/noise/fast_noise_2.h"
 #endif
-
-#include <modules/noise/fastnoise_lite.h>
-#include <modules/noise/noise.h>
-#include <scene/resources/curve.h>
 
 namespace zylann::voxel {
 
@@ -2197,7 +2197,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = _types[i];
 		_type_name_to_id.insert({ t.name, (VoxelGeneratorGraph::NodeTypeID)i });
 
-		for (size_t param_index = 0; param_index < t.params.size(); ++param_index) {
+		for (uint32_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
 			t.param_name_to_index.insert({ p.name, param_index });
 			p.index = param_index;
@@ -2225,7 +2225,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			}
 		}
 
-		for (size_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
+		for (uint32_t input_index = 0; input_index < t.inputs.size(); ++input_index) {
 			const Port &p = t.inputs[input_index];
 			t.input_name_to_index.insert({ p.name, input_index });
 		}

@@ -1,10 +1,9 @@
 #include "voxel_instance_library.h"
 #include "voxel_instancer.h"
-
-#include <scene/3d/collision_shape_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/3d/physics_body_3d.h>
 #include <algorithm>
+#ifdef ZN_GODOT_EXTENSION
+#include "../../util/string_funcs.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -168,7 +167,8 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		const String name = "item_" + itos(it->first);
-		p_list->push_back(PropertyInfo(Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceLibraryItem"));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibraryItem::get_class_static()));
 	}
 }
 

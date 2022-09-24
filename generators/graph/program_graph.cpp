@@ -1,10 +1,13 @@
 #include "program_graph.h"
 #include "../../util/container_funcs.h"
 #include "../../util/errors.h"
+#include "../../util/godot/funcs.h"
+#include "../../util/godot/resource.h"
+#include "../../util/godot/string.h"
+#include "../../util/memory.h"
+#include "../../util/string_funcs.h"
 
-#include <core/io/file_access.h>
-#include <core/io/resource.h>
-#include <core/variant/variant.h>
+#include <fstream>
 #include <unordered_set>
 
 namespace zylann {
@@ -67,7 +70,7 @@ ProgramGraph::Node *ProgramGraph::create_node(uint32_t type_id, uint32_t id) {
 			_next_node_id = id + 1;
 		}
 	}
-	Node *node = memnew(Node);
+	Node *node = ZN_NEW(Node);
 	node->id = id;
 	node->type_id = type_id;
 	_nodes[node->id] = node;
@@ -104,14 +107,14 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 	}
 
 	_nodes.erase(node_id);
-	memdelete(&node);
+	ZN_DELETE(&node);
 }
 
 void ProgramGraph::clear() {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		Node *node = it->second;
 		ZN_ASSERT(node != nullptr);
-		memdelete(node);
+		ZN_DELETE(node);
 	}
 	_nodes.clear();
 }
@@ -322,17 +325,18 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uin
 	}
 }
 
-void ProgramGraph::debug_print_dot_file(String file_path) const {
+void ProgramGraph::debug_print_dot_file(String p_file_path) const {
 	// https://www.graphviz.org/pdf/dotguide.pdf
 
-	Error err;
-	Ref<FileAccess> f = FileAccess::open(file_path, FileAccess::WRITE, &err);
-	if (f == nullptr) {
-		ERR_PRINT(String("Could not write ProgramGraph debug file as {0}: error {1}").format(varray(file_path, err)));
+	const std::string file_path = to_std_string(p_file_path);
+	std::ofstream ofs(file_path, std::ios::binary | std::ios::trunc | std::ios::out);
+
+	if (!ofs.good()) {
+		ZN_PRINT_VERBOSE(format("Could not write ProgramGraph debug file as {}", file_path));
 		return;
 	}
 
-	f->store_line("digraph G {");
+	ofs << "digraph G {\n";
 
 	for (auto nit = _nodes.begin(); nit != _nodes.end(); ++nit) {
 		const Node *node = nit->second;
@@ -343,12 +347,13 @@ void ProgramGraph::debug_print_dot_file(String file_path) const {
 
 			for (auto cit = port.connections.begin(); cit != port.connections.end(); ++cit) {
 				PortLocation dst = *cit;
-				f->store_line(String("\tn{0} -> n{1};").format(varray(node_id, dst.node_id)));
+				ofs << format("\tn{} -> n{};\n", node_id, dst.node_id);
 			}
 		}
 	}
 
-	f->store_line("}");
+	ofs << "}\n";
+	ofs.close();
 }
 
 void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) {
@@ -360,7 +365,7 @@ void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) 
 	for (auto it = other._nodes.begin(); it != other._nodes.end(); ++it) {
 		const Node *other_node = it->second;
 
-		Node *node = memnew(Node);
+		Node *node = ZN_NEW(Node);
 		*node = *other_node;
 
 		if (copy_subresources) {

@@ -1,7 +1,7 @@
 #include "../util/math/vector3i.h"
 //#include "../util/profiling.h"
 #include "errors.h"
-#include <core/math/vector3.h>
+#include "math/vector3.h"
 
 namespace zylann {
 
@@ -36,7 +36,7 @@ bool voxel_raycast(Vec3f_T ray_origin, Vec3f_T ray_direction, Predicate_F predic
 
 	ZN_ASSERT_RETURN_V(!math::has_nan(ray_origin), false);
 	ZN_ASSERT_RETURN_V(!math::has_nan(ray_direction), false);
-	ZN_ASSERT_RETURN_V(!Math::is_nan(max_distance), false);
+	ZN_ASSERT_RETURN_V(!math::is_nan(max_distance), false);
 
 	const float g_infinite = 9999999;
 

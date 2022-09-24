@@ -1,10 +1,11 @@
 #ifndef VOXEL_GENERATOR_NOISE_2D_H
 #define VOXEL_GENERATOR_NOISE_2D_H
 
+#include "../../util/macros.h"
 #include "voxel_generator_heightmap.h"
 
-class Curve;
-class Noise;
+ZN_GODOT_FORWARD_DECLARE(class Curve)
+ZN_GODOT_FORWARD_DECLARE(class Noise)
 
 namespace zylann::voxel {
 

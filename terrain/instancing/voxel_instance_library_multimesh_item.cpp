@@ -1,10 +1,10 @@
 #include "voxel_instance_library_multimesh_item.h"
+#include "../../constants/voxel_string_names.h"
+#include "../../util/godot/collision_shape_3d.h"
+#include "../../util/godot/constants.h"
+#include "../../util/godot/mesh_instance_3d.h"
+#include "../../util/godot/physics_body_3d.h"
 #include "voxel_instancer.h"
-
-#include <core/core_string_names.h>
-#include <scene/3d/collision_shape_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/3d/physics_body_3d.h>
 
 namespace zylann::voxel {
 
@@ -156,39 +156,42 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 
 bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &r_ret) const {
 	if (_scene.is_valid()) {
-		if (p_name == "scene_mesh") {
+		// TODO GDX: GDExtension does not have `StringName::operator==(const char*)`
+		const String name = p_name;
+
+		if (name == "scene_mesh") {
 			r_ret = _scene_settings.mesh_lods[0];
 			return true;
 		}
-		if (p_name == "scene_mesh_lod1") {
+		if (name == "scene_mesh_lod1") {
 			r_ret = _scene_settings.mesh_lods[1];
 			return true;
 		}
-		if (p_name == "scene_mesh_lod2") {
+		if (name == "scene_mesh_lod2") {
 			r_ret = _scene_settings.mesh_lods[2];
 			return true;
 		}
-		if (p_name == "scene_mesh_lod3") {
+		if (name == "scene_mesh_lod3") {
 			r_ret = _scene_settings.mesh_lods[3];
 			return true;
 		}
-		if (p_name == "scene_material_override") {
+		if (name == "scene_material_override") {
 			r_ret = _scene_settings.material_override;
 			return true;
 		}
-		if (p_name == "scene_cast_shadow") {
+		if (name == "scene_cast_shadow") {
 			r_ret = _scene_settings.shadow_casting_setting;
 			return true;
 		}
-		if (p_name == "scene_collision_layer") {
+		if (name == "scene_collision_layer") {
 			r_ret = _scene_settings.collision_layer;
 			return true;
 		}
-		if (p_name == "scene_collision_mask") {
+		if (name == "scene_collision_mask") {
 			r_ret = _scene_settings.collision_mask;
 			return true;
 		}
-		if (p_name == "scene_collision_shapes") {
+		if (name == "scene_collision_shapes") {
 			r_ret = serialize_collision_shape_infos(_scene_settings.collision_shapes);
 			return true;
 		}
@@ -275,7 +278,12 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 	return true;
 }
 
+#if defined(ZN_GODOT)
 void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Object *root_o) {
+	Node *root = Object::cast_to<Node>(root_o);
+#endif
 	ERR_FAIL_COND(!zylann::voxel::setup_from_template(root, _manual_settings));
 	notify_listeners(CHANGE_VISUAL);
 }
@@ -412,6 +420,7 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			"_set_mesh_lod3", "_get_mesh_lod3");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
+						 // TODO Disallow CanvasItemMaterial?
 						 Material::get_class_static()),
 			"set_material_override", "get_material_override");
 

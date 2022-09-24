@@ -2,16 +2,7 @@
 #define ZN_ERRORS_H
 
 #include "log.h"
-
-// Tell the compiler to favour a certain branch of a condition.
-// Until C++20 can be used with the [[likely]] and [[unlikely]] attributes.
-#if defined(__GNUC__)
-#define ZN_LIKELY(x) __builtin_expect(!!(x), 1)
-#define ZN_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-#define ZN_LIKELY(x) x
-#define ZN_UNLIKELY(x) x
-#endif
+#include "macros.h"
 
 // Abnormally terminate the program
 #ifdef _MSC_VER

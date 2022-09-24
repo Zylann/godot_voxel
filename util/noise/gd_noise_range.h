@@ -1,9 +1,10 @@
 #ifndef VOXEL_GD_NOISE_RANGE_H
 #define VOXEL_GD_NOISE_RANGE_H
 
+#include "../macros.h"
 #include "../math/interval.h"
 
-class Noise;
+ZN_GODOT_FORWARD_DECLARE(class Noise)
 
 namespace zylann {
 

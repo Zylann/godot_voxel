@@ -1,7 +1,7 @@
 #ifndef VOXEL_SERVER_UPDATER_H
 #define VOXEL_SERVER_UPDATER_H
 
-#include <scene/main/node.h>
+#include "../util/godot/node.h"
 
 namespace zylann::voxel {
 
@@ -17,6 +17,9 @@ protected:
 
 private:
 	VoxelEngineUpdater();
+
+	// When compiling with GodotCpp, `_bind_methods` is not optional.
+	static void _bind_methods() {}
 };
 
 } // namespace zylann::voxel

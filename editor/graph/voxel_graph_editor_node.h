@@ -1,12 +1,13 @@
 #ifndef VOXEL_GRAPH_EDITOR_NODE_H
 #define VOXEL_GRAPH_EDITOR_NODE_H
 
-#include <scene/gui/graph_node.h>
 #include <vector>
 
 #include "../../generators/graph/voxel_graph_runtime.h"
+#include "../../util/godot/graph_node.h"
 
-class ColorRect;
+ZN_GODOT_FORWARD_DECLARE(class ColorRect)
+ZN_GODOT_FORWARD_DECLARE(class Label)
 
 namespace zylann::voxel {
 
@@ -48,6 +49,8 @@ private:
 	void _on_resize_request(Vector2 new_size);
 
 	void _notification(int p_what);
+
+	static void _bind_methods();
 
 	uint32_t _node_id = 0;
 	VoxelGraphEditorNodePreview *_preview = nullptr;

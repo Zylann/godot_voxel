@@ -1,11 +1,13 @@
 #ifndef VOXEL_BUFFER_GD_H
 #define VOXEL_BUFFER_GD_H
 
+#include "../util/godot/binder.h"
+#include "../util/godot/ref_counted.h"
+#include "../util/macros.h"
 #include "voxel_buffer_internal.h"
-#include <core/object/ref_counted.h>
 #include <memory>
 
-class Image;
+ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 
@@ -163,6 +165,11 @@ public:
 private:
 	void _b_deprecated_optimize();
 
+	// In GDExtension, `create` is defined by `GDCLASS`, preventing anyone from binding a `create` function directly
+	void _b_create(int x, int y, int z) {
+		create(x, y, z);
+	}
+
 	static void _bind_methods();
 
 	std::shared_ptr<VoxelBufferInternal> _buffer;
@@ -171,8 +178,8 @@ private:
 } // namespace gd
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::ChannelId)
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Depth)
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Compression)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, ChannelId)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, Depth)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, Compression)
 
 #endif // VOXEL_BUFFER_GD_H

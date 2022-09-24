@@ -3,10 +3,13 @@
 
 #include "../../constants/cube_tables.h"
 #include "../../util/fixed_array.h"
+#include "../../util/godot/binder.h"
+#include "../../util/godot/material.h"
+#include "../../util/godot/mesh.h"
+#include "../../util/macros.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 
-#include <scene/resources/mesh.h>
 #include <vector>
 
 namespace zylann::voxel {
@@ -175,7 +178,7 @@ public:
 		return _empty;
 	}
 
-	Ref<Resource> duplicate(bool p_subresources) const override;
+	Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	//------------------------------------------
 	// Properties for internal usage only
@@ -251,7 +254,7 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::GeometryType)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::Side)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel, GeometryType)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel, Side)
 
 #endif // VOXEL_BLOCKY_MODEL_H

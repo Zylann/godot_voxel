@@ -1,5 +1,4 @@
 #include "multimesh.h"
-#include <scene/resources/multimesh.h>
 
 namespace zylann {
 

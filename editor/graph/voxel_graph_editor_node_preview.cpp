@@ -1,6 +1,5 @@
 #include "voxel_graph_editor_node_preview.h"
-
-#include <scene/gui/texture_rect.h>
+#include "../../util/godot/texture_rect.h"
 
 namespace zylann::voxel {
 

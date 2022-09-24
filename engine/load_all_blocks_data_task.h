@@ -4,7 +4,6 @@
 #include "../streams/voxel_stream.h"
 #include "../util/tasks/threaded_task.h"
 #include "streaming_dependency.h"
-//#include <memory>
 
 namespace zylann::voxel {
 

@@ -3,7 +3,8 @@
 #include "voxel_engine.h"
 
 // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared
-#include <scene/main/window.h>
+#include "../util/godot/scene_tree.h"
+#include "../util/godot/window.h"
 
 namespace zylann::voxel {
 

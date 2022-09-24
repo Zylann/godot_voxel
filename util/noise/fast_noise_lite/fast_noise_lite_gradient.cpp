@@ -1,4 +1,6 @@
 #include "fast_noise_lite_gradient.h"
+#include "../../godot/array.h"
+#include "../../string_funcs.h"
 
 namespace zylann {
 
@@ -203,7 +205,8 @@ void ZN_FastNoiseLiteGradient::_bind_methods() {
 						 "None,DomainWarpProgressive,DomainWarpIndependent"),
 			"set_fractal_type", "get_fractal_type");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", _MAX_OCTAVES)),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE,
+						 String("1,{0},1").format(varray(_MAX_OCTAVES))),
 			"set_fractal_octaves", "get_fractal_octaves");
 
 	ADD_PROPERTY(

@@ -205,7 +205,17 @@ public:
 
 #ifdef TOOLS_ENABLED
 
-	PackedStringArray get_configuration_warnings() const override;
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
+
+#ifdef ZN_GODOT_EXTENSION
+	// TODO GDX: GodotCpp fails to compile a class if its base is a custom class overriding
+	// `_get_configuration_warnings`
+	PackedStringArray _get_configuration_warnings() const override {
+		PackedStringArray warnings;
+		get_configuration_warnings(warnings);
+		return warnings;
+	}
+#endif
 
 #endif // TOOLS_ENABLED
 
@@ -237,7 +247,7 @@ protected:
 	void _on_gi_mode_changed() override;
 
 private:
-	void _process(float delta);
+	void process(float delta);
 	void apply_main_thread_update_tasks();
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
@@ -280,7 +290,8 @@ private:
 	Array _b_debug_print_sdf_top_down(Vector3i center, Vector3i extents);
 	int _b_debug_get_mesh_block_count() const;
 	int _b_debug_get_data_block_count() const;
-	Error _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
+	// TODO GDX: Can't bind functions returning a `godot::Error` enum
+	int /*Error*/ _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
 
 	Dictionary _b_get_statistics() const;
 
@@ -398,7 +409,7 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
-VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::DebugDrawFlag)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain, ProcessCallback)
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain, DebugDrawFlag)
 
 #endif // VOXEL_LOD_TERRAIN_HPP

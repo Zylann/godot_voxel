@@ -2,8 +2,9 @@
 #define VOXEL_INSTANCE_GENERATOR_H
 
 //#include "../../storage/voxel_buffer.h"
+#include "../../util/godot/binder.h"
+#include "../../util/godot/noise.h"
 #include "../../util/math/vector3i.h"
-#include <modules/noise/noise.h>
 
 #include <limits>
 #include <vector>
@@ -148,8 +149,8 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::EmitMode);
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::Distribution);
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator::Dimension);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator, EmitMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator, Distribution);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstanceGenerator, Dimension);
 
 #endif // VOXEL_INSTANCE_GENERATOR_H

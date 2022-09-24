@@ -4,11 +4,11 @@
 #include "../math/color8.h"
 #include "../non_copyable.h"
 #include "../span.h"
+#include "multimesh.h"
+#include "rendering_server.h"
 
-#include <core/templates/rid.h>
-#include <scene/resources/multimesh.h>
-
-class World3D;
+ZN_GODOT_FORWARD_DECLARE(class World3D);
+ZN_GODOT_FORWARD_DECLARE(class Material);
 
 namespace zylann {
 

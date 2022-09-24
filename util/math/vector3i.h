@@ -1,11 +1,19 @@
 #ifndef ZYLANN_VECTOR3I_H
 #define ZYLANN_VECTOR3I_H
 
+#include "../hash_funcs.h"
 #include "funcs.h"
+#include <functional> // For std::hash
 
+#if defined(ZN_GODOT)
 #include <core/math/vector3.h>
 #include <core/math/vector3i.h>
-#include <core/templates/hashfuncs.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/variant/vector3.hpp>
+#include <godot_cpp/variant/vector3i.hpp>
+using namespace godot;
+#endif
+
 #include <iosfwd>
 
 namespace zylann {
@@ -90,7 +98,6 @@ inline Vector3i abs(const Vector3i v) {
 }
 
 } // namespace math
-} // namespace zylann
 
 inline Vector3i operator<<(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
@@ -112,12 +119,14 @@ inline Vector3i operator&(const Vector3i &a, uint32_t b) {
 
 std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
 
+} // namespace zylann
+
 // For Godot
 struct Vector3iHasher {
 	static inline uint32_t hash(const Vector3i &v) {
-		uint32_t hash = hash_djb2_one_32(v.x);
-		hash = hash_djb2_one_32(v.y, hash);
-		return hash_djb2_one_32(v.z, hash);
+		uint32_t hash = zylann::hash_djb2_one_32(v.x);
+		hash = zylann::hash_djb2_one_32(v.y, hash);
+		return zylann::hash_djb2_one_32(v.z, hash);
 	}
 };
 

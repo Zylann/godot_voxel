@@ -4,8 +4,10 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/array_mesh.h"
 #include "../util/godot/funcs.h"
 #include "../util/godot/mesh.h"
+#include "../util/godot/shader_material.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {
@@ -134,6 +136,10 @@ bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
 		}
 	}
 	return true;
+}
+
+Ref<ShaderMaterial> VoxelMesher::get_default_lod_material() const {
+	return Ref<ShaderMaterial>();
 }
 
 void VoxelMesher::_bind_methods() {

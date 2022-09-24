@@ -1,11 +1,13 @@
 #include "voxel_graph_editor_node.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/editor_scale.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/h_box_container.h"
+#include "../../util/godot/label.h"
+#include "../../util/godot/node.h"
 #include "voxel_graph_editor_node_preview.h"
-
-#include <editor/editor_scale.h>
-#include <scene/gui/box_container.h>
-#include <scene/gui/label.h>
 
 namespace zylann::voxel {
 
@@ -33,7 +35,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	}
 
 	if (node_view->is_resizable()) {
-		node_view->connect("resize_request", callable_mp(node_view, &VoxelGraphEditorNode::_on_resize_request));
+		node_view->connect("resize_request", ZN_GODOT_CALLABLE_MP(node_view, VoxelGraphEditorNode, _on_resize_request));
 	}
 
 	return node_view;
@@ -88,7 +90,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 	// Clear previous inputs and outputs
 	for (Node *row : _rows) {
 		remove_child(row);
-		row->queue_delete();
+		queue_free_node(row);
 	}
 	_rows.clear();
 
@@ -285,6 +287,12 @@ void VoxelGraphEditorNode::_notification(int p_what) {
 			draw_rect(Rect2(0, control_size.y - bgh, bgw * _profiling_ratio, bgh), fg_color);
 		}
 	}
+}
+
+void VoxelGraphEditorNode::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_resize_request", "new_size"), &VoxelGraphEditorNode::_on_resize_request);
+#endif
 }
 
 } // namespace zylann::voxel

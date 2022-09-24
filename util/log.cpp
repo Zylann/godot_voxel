@@ -1,6 +1,13 @@
 #include "godot/funcs.h"
 #include "string_funcs.h"
+
+#if defined(ZN_GODOT)
 #include <core/os/os.h>
+#elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+using namespace godot;
+#endif
 
 namespace zylann {
 
@@ -9,15 +16,23 @@ bool is_verbose_output_enabled() {
 }
 
 void println(const char *cstr) {
+#if defined(ZN_GODOT)
 	print_line(cstr);
+#elif defined(ZN_GODOT_EXTENSION)
+	godot::UtilityFunctions::print(cstr);
+#endif
 }
 
 void println(const FwdConstStdString &s) {
-	print_line(s.s.c_str());
+	println(s.s.c_str());
 }
 
 void print_warning(const char *warning, const char *func, const char *file, int line) {
+#if defined(ZN_GODOT)
 	_err_print_error(func, file, line, warning, false, ERR_HANDLER_WARNING);
+#elif defined(ZN_GODOT_EXTENSION)
+	_err_print_error(func, file, line, warning, true);
+#endif
 }
 
 void print_warning(const FwdConstStdString &warning, const char *func, const char *file, int line) {
@@ -41,7 +56,10 @@ void print_error(const char *error, const FwdConstStdString &msg, const char *fu
 }
 
 void flush_stdout() {
+#if defined(ZN_GODOT)
 	_err_flush_stdout();
+#endif
+	// TODO GodotCpp does not expose a way to flush logging output. Crashing errors might then miss log messages.
 }
 
 } // namespace zylann

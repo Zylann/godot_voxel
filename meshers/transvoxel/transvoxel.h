@@ -3,11 +3,11 @@
 
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/fixed_array.h"
+#include "../../util/math/color.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector3i.h"
 
-#include <core/math/color.h>
 #include <vector>
 
 namespace zylann::voxel::transvoxel {
@@ -66,7 +66,7 @@ struct MeshArrays {
 	std::vector<Vector3f> normals;
 	std::vector<LodAttrib> lod_data;
 	std::vector<Vector2f> texturing_data; // TextureAttrib
-	std::vector<int> indices;
+	std::vector<int32_t> indices;
 
 	void clear() {
 		vertices.clear();

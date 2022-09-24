@@ -1,8 +1,15 @@
 #include "voxel_generator_graph.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/container_funcs.h"
 #include "../../util/expression_parser.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/engine.h"
+#include "../../util/godot/image.h"
 #include "../../util/godot/object.h"
+#include "../../util/godot/string.h"
+#include "../../util/hash_funcs.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
@@ -10,10 +17,6 @@
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_node_db.h"
-
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <core/io/image.h>
 
 namespace zylann::voxel {
 
@@ -74,7 +77,7 @@ uint32_t VoxelGeneratorGraph::create_node(NodeTypeID type_id, Vector2 position, 
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
 	// Register resources if any were created by default
 	for (const Variant &v : node->params) {
-		if (!v.is_null()) {
+		if (v.get_type() == Variant::OBJECT) {
 			Ref<Resource> res = v;
 			if (res.is_valid()) {
 				register_subresource(**res);
@@ -167,7 +170,7 @@ void VoxelGeneratorGraph::set_node_name(uint32_t node_id, StringName name) {
 	if (name != StringName()) {
 		const uint32_t existing_node_id = _graph.find_node_by_name(name);
 		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
-			ERR_PRINT(String("More than one graph node has the name \"{0}\"").format(varray(name)));
+			ZN_PRINT_ERROR(format("More than one graph node has the name \"{}\"", GodotStringWrapper(String(name))));
 		}
 	}
 	node->name = name;
@@ -326,12 +329,11 @@ VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t n
 
 PackedInt32Array VoxelGeneratorGraph::get_node_ids() const {
 	PackedInt32Array ids;
-	ids.resize(_graph.get_nodes_count());
 	{
-		int i = 0;
-		_graph.for_each_node_id([&ids, &i](int id) {
-			ids.write[i] = id;
-			++i;
+		_graph.for_each_node_id([&ids](int id) {
+			// Not resizing up-front, because the code to assign elements is different between Godot modules and
+			// GDExtension
+			ids.append(id);
 		});
 	}
 	return ids;
@@ -605,7 +607,7 @@ static void fill_zx_sdf_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, Voxel
 			break;
 
 		default:
-			ERR_PRINT(String("Unknown depth {0}").format(varray(channel_depth)));
+			ZN_PRINT_ERROR(format("Unknown depth {}", channel_depth));
 			break;
 	}
 }
@@ -658,7 +660,7 @@ static void fill_zx_integer_slice(const VoxelGraphRuntime::Buffer &src_buffer, V
 			break;
 
 		default:
-			ERR_PRINT(String("Unknown depth {0}").format(varray(channel_depth)));
+			ZN_PRINT_ERROR(format("Unknown depth {}", channel_depth));
 			break;
 	}
 }
@@ -1666,15 +1668,19 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 	Array connections_data = data["connections"];
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
-	const Variant *id_key = nullptr;
-	while ((id_key = nodes_data.next(id_key))) {
-		const String id_str = *id_key;
+	// Can't iterate using `next()`, because in GDExtension, there doesn't seem to be a way to do so.
+	const Array nodes_data_keys = nodes_data.keys();
+
+	for (int nodes_data_key_index = 0; nodes_data_key_index < nodes_data_keys.size(); ++nodes_data_key_index) {
+		const Variant id_key = nodes_data_keys[nodes_data_key_index];
+		const String id_str = id_key;
 		ERR_FAIL_COND_V(!id_str.is_valid_int(), false);
 		const int sid = id_str.to_int();
 		ERR_FAIL_COND_V(sid < static_cast<int>(ProgramGraph::NULL_ID), false);
 		const uint32_t id = sid;
 
-		Dictionary node_data = nodes_data[*id_key];
+		Dictionary node_data = nodes_data[id_key];
+		ERR_FAIL_COND_V(node_data.is_empty(), false);
 
 		const String type_name = node_data["type"];
 		const Vector2 gui_position = node_data["gui_position"];
@@ -1685,14 +1691,17 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		ERR_FAIL_COND_V(node == nullptr, false);
 		// TODO Graphs made in older versions must have autoconnect always off
 
-		Variant *auto_connect_v = node_data.getptr("auto_connect");
-		if (auto_connect_v != nullptr) {
-			node->autoconnect_default_inputs = *auto_connect_v;
+		Variant auto_connect_v = node_data.get("auto_connect", Variant());
+		if (auto_connect_v != Variant()) {
+			node->autoconnect_default_inputs = auto_connect_v;
 		}
 
-		const Variant *param_key = nullptr;
-		while ((param_key = node_data.next(param_key))) {
-			const String param_name = *param_key;
+		// Can't iterate using `next()`, because in GDExtension, there doesn't seem to be a way to do so.
+		const Array node_data_keys = node_data.keys();
+
+		for (int node_data_key_index = 0; node_data_key_index < node_data_keys.size(); ++node_data_key_index) {
+			const Variant param_key = node_data_keys[node_data_key_index];
+			const String param_name = param_key;
 			if (param_name == "type") {
 				continue;
 			}
@@ -1703,7 +1712,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 				continue;
 			}
 			if (param_name == "dynamic_inputs") {
-				const Array dynamic_inputs_data = node_data[*param_key];
+				const Array dynamic_inputs_data = node_data[param_key];
 
 				for (int dpi = 0; dpi < dynamic_inputs_data.size(); ++dpi) {
 					const Array d = dynamic_inputs_data[dpi];
@@ -1725,15 +1734,15 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 			uint32_t param_index;
 			if (type_db.try_get_param_index_from_name(type_id, param_name, param_index)) {
 				ERR_CONTINUE(param_index < 0 || param_index >= node->params.size());
-				node->params[param_index] = node_data[*param_key];
+				node->params[param_index] = node_data[param_key];
 			}
 			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
 				ERR_CONTINUE(param_index < 0 || param_index >= node->default_inputs.size());
-				node->default_inputs[param_index] = node_data[*param_key];
+				node->default_inputs[param_index] = node_data[param_key];
 			}
-			const Variant *vname = node_data.getptr("name");
-			if (vname != nullptr) {
-				node->name = *vname;
+			const Variant vname = node_data.get("name", Variant());
+			if (vname != Variant()) {
+				node->name = vname;
 			}
 		}
 	}
@@ -1769,14 +1778,14 @@ void VoxelGeneratorGraph::load_graph_from_variant_data(Dictionary data) {
 
 void VoxelGeneratorGraph::register_subresource(Resource &resource) {
 	//print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	resource.connect(CoreStringNames::get_singleton()->changed,
-			callable_mp(this, &VoxelGeneratorGraph::_on_subresource_changed));
+	resource.connect(VoxelStringNames::get_singleton().changed,
+			ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorGraph, _on_subresource_changed));
 }
 
 void VoxelGeneratorGraph::unregister_subresource(Resource &resource) {
 	//print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
-	resource.disconnect(CoreStringNames::get_singleton()->changed,
-			callable_mp(this, &VoxelGeneratorGraph::_on_subresource_changed));
+	resource.disconnect(VoxelStringNames::get_singleton().changed,
+			ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorGraph, _on_subresource_changed));
 }
 
 void VoxelGeneratorGraph::register_subresources() {
@@ -1955,14 +1964,16 @@ void VoxelGeneratorGraph::debug_load_waves_preset() {
 
 #ifdef TOOLS_ENABLED
 
-void VoxelGeneratorGraph::get_configuration_warnings(TypedArray<String> &out_warnings) const {
+void VoxelGeneratorGraph::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	if (get_nodes_count() == 0) {
-		out_warnings.append(VoxelGeneratorGraph::get_class_static() + " is empty.");
+		// Making a `String` explicitely because in GDExtension `get_class_static` is a `const char*`
+		out_warnings.append(String(VoxelGeneratorGraph::get_class_static()) + " is empty.");
 		return;
 	}
 
 	if (!is_good()) {
-		out_warnings.append(VoxelGeneratorGraph::get_class_static() + " contains errors.");
+		// Making a `String` explicitely because in GDExtension `get_class_static` is a `const char*`
+		out_warnings.append(String(VoxelGeneratorGraph::get_class_static()) + " contains errors.");
 		return;
 	}
 }
@@ -2006,7 +2017,7 @@ uint64_t VoxelGeneratorGraph::get_output_graph_hash() const {
 		}
 
 		for (const Variant &v : node.default_inputs) {
-			hash = hash_djb2_one_float_64(v.hash(), hash);
+			hash = hash_djb2_one_64(v.hash(), hash);
 		}
 
 		for (const ProgramGraph::Port &port : node.inputs) {
@@ -2171,7 +2182,9 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
 
+#ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
+#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "",
 						 PROPERTY_USAGE_NO_EDITOR | PROPERTY_USAGE_INTERNAL),

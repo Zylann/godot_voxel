@@ -4,22 +4,24 @@
 #include "../../storage/modifiers_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
+#include "../../util/godot/callable.h"
+#include "../../util/godot/camera_3d.h"
+#include "../../util/godot/editor_interface.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/menu_button.h"
+#include "../../util/godot/node.h"
+#include "../../util/godot/popup_menu.h"
 #include "../about_window.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 #include "voxel_terrain_editor_task_indicator.h"
-
-#include <editor/editor_scale.h>
-#include <scene/3d/camera_3d.h>
-#include <scene/gui/menu_button.h>
 
 namespace zylann::voxel {
 
 VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
 	MenuButton *menu_button = memnew(MenuButton);
-	menu_button->set_text(TTR("Terrain"));
+	menu_button->set_text(ZN_TTR("Terrain"));
 	menu_button->get_popup()->connect(
-			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected));
+			"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_menu_item_selected));
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
@@ -38,11 +40,11 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
 
-	popup->add_item(TTR("Re-generate"), MENU_RESTART_STREAM);
-	popup->add_item(TTR("Re-mesh"), MENU_REMESH);
+	popup->add_item(ZN_TTR("Re-generate"), MENU_RESTART_STREAM);
+	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
 	{
-		popup->add_item(TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
+		popup->add_item(ZN_TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
 		const int i = popup->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
 		popup->set_item_as_checkable(i, true);
 		popup->set_item_checked(i, _editor_viewer_follows_camera);
@@ -50,26 +52,26 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	if (is_lod_terrain) {
 		popup->add_separator();
 		{
-			popup->add_item(TTR("Show octree bounds"), MENU_SHOW_OCTREE_BOUNDS);
+			popup->add_item(ZN_TTR("Show octree bounds"), MENU_SHOW_OCTREE_BOUNDS);
 			const int i = popup->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
 			popup->set_item_as_checkable(i, true);
 			popup->set_item_checked(i, _show_octree_bounds);
 		}
 		{
-			popup->add_item(TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
+			popup->add_item(ZN_TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
 			const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
 			popup->set_item_as_checkable(i, true);
 			popup->set_item_checked(i, _show_octree_nodes);
 		}
 		{
-			popup->add_item(TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
+			popup->add_item(ZN_TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
 			const int i = popup->get_item_index(MENU_SHOW_MESH_UPDATES);
 			popup->set_item_as_checkable(i, true);
 			popup->set_item_checked(i, _show_mesh_updates);
 		}
 	}
 	popup->add_separator();
-	popup->add_item(TTR("About Voxel Tools..."), MENU_ABOUT);
+	popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
 }
 
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
@@ -98,25 +100,30 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 // Things the plugin doesn't directly work on, but still handles to keep things visible.
 // This is basically a hack because it's not easy to express that with EditorPlugin API.
 // The use case being, as long as we edit an object NESTED within a voxel terrain, we should keep things visible.
-static bool is_side_handled(Object *p_object) {
+static bool is_side_handled(const Object *p_object) {
 	// Handle stream too so we can leave some controls visible while we edit a stream or generator
-	VoxelGenerator *generator = Object::cast_to<VoxelGenerator>(p_object);
+	const VoxelGenerator *generator = Object::cast_to<VoxelGenerator>(p_object);
 	if (generator != nullptr) {
 		return true;
 	}
 	// And have to account for this hack as well
-	VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
+	const VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
 	if (wrapper != nullptr) {
 		return true;
 	}
-	gd::VoxelModifier *modifier = Object::cast_to<gd::VoxelModifier>(p_object);
+	const gd::VoxelModifier *modifier = Object::cast_to<gd::VoxelModifier>(p_object);
 	if (modifier != nullptr) {
 		return true;
 	}
 	return false;
 }
 
+#if defined(ZN_GODOT)
 bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
+#elif defined(ZN_GODOT_EXTENSION)
+bool VoxelTerrainEditorPlugin::_handles(const Variant &p_object_v) const {
+	const Object *p_object = p_object_v;
+#endif
 	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
 		return true;
 	}
@@ -126,7 +133,12 @@ bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
 	return false;
 }
 
+#if defined(ZN_GODOT)
 void VoxelTerrainEditorPlugin::edit(Object *p_object) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelTerrainEditorPlugin::_edit(const Variant &p_object_v) {
+	Object *p_object = p_object_v;
+#endif
 	VoxelNode *node = Object::cast_to<VoxelNode>(p_object);
 
 	if (node != nullptr) {
@@ -141,11 +153,16 @@ void VoxelTerrainEditorPlugin::edit(Object *p_object) {
 
 void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	if (_node != nullptr) {
+#ifdef ZN_GODOT
 		// Using this to know when the node becomes really invalid, because ObjectID is unreliable in Godot 3.x,
 		// and we may want to keep access to the node when we select some different kinds of objects.
 		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
-		_node->disconnect("tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered));
-		_node->disconnect("tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited));
+		_node->disconnect(
+				"tree_entered", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered));
+		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
+#else
+// TODO GDX: Callable::bind() isn't implemented, can't use this signal
+#endif
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
@@ -156,10 +173,14 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	_node = node;
 
 	if (_node != nullptr) {
-		_node->connect(
-				"tree_entered", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_entered).bind(_node));
-		_node->connect(
-				"tree_exited", callable_mp(this, &VoxelTerrainEditorPlugin::_on_terrain_tree_exited).bind(_node));
+#ifdef ZN_GODOT
+		_node->connect("tree_entered",
+				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered).bind(_node));
+		_node->connect("tree_exited",
+				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited).bind(_node));
+#else
+// TODO GDX: Callable::bind() isn't implemented, can't use this signal
+#endif
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 
@@ -175,7 +196,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	}
 }
 
-void VoxelTerrainEditorPlugin::make_visible(bool visible) {
+void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visible)(bool visible) {
 	_menu_button->set_visible(visible);
 	_task_indicator->set_visible(visible);
 	set_process(visible);
@@ -194,8 +215,12 @@ void VoxelTerrainEditorPlugin::make_visible(bool visible) {
 	// So we'll need to check if _node is null all over the place
 }
 
+#if defined(ZN_GODOT)
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+#elif defined(ZN_GODOT_EXTENSION)
+int64_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+#endif
 	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
@@ -205,7 +230,11 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
 				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
 
+#if defined(ZN_GODOT)
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;
+#elif defined(ZN_GODOT_EXTENSION)
+	return godot_cpp_fix::AFTER_GUI_INPUT_PASS;
+#endif
 }
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
@@ -267,16 +296,33 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	}
 }
 
+#if defined(ZN_GODOT)
 void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Node *node) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Object *node_o) {
+	Node *node = Object::cast_to<Node>(node_o);
+#endif
 	_node = Object::cast_to<VoxelNode>(node);
 	ERR_FAIL_COND(_node == nullptr);
 }
 
+#if defined(ZN_GODOT)
 void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Object *node_o) {
+#endif
 	// If the node exited the tree because it was deleted, signals we connected should automatically disconnect.
 	_node = nullptr;
 }
 
-void VoxelTerrainEditorPlugin::_bind_methods() {}
+void VoxelTerrainEditorPlugin::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
+	ClassDB::bind_method(
+			D_METHOD("_on_terrain_tree_entered", "node"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
+	ClassDB::bind_method(
+			D_METHOD("_on_terrain_tree_exited", "node"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
+#endif
+}
 
 } // namespace zylann::voxel

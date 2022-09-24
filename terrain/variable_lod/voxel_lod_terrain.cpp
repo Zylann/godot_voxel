@@ -9,9 +9,19 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
+#include "../../util/godot/array.h"
+#include "../../util/godot/camera_3d.h"
+#include "../../util/godot/concave_polygon_shape_3d.h"
+#include "../../util/godot/engine.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/godot/mesh_instance_3d.h"
 #include "../../util/godot/node.h"
+#include "../../util/godot/resource_saver.h"
+#include "../../util/godot/scene_tree.h"
+#include "../../util/godot/script.h"
 #include "../../util/godot/shader.h"
+#include "../../util/godot/string.h"
+#include "../../util/godot/viewport.h"
 #include "../../util/log.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
@@ -23,14 +33,6 @@
 #include "../../util/thread/rw_lock.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
-
-#include <core/config/engine.h>
-#include <core/core_string_names.h>
-#include <scene/3d/camera_3d.h>
-#include <scene/3d/mesh_instance_3d.h>
-#include <scene/main/viewport.h>
-#include <scene/resources/concave_polygon_shape_3d.h>
-#include <scene/resources/packed_scene.h>
 
 namespace zylann::voxel {
 
@@ -61,7 +63,7 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	ZN_ASSERT_RETURN(material.is_valid());
 
 	// Reset textures to avoid hoarding them in the pool
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2DArray>());
+	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2D>());
 	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
@@ -874,7 +876,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelEngineUpdater::ensure_existence(get_tree());
-				_process(get_process_delta_time());
+				process(get_process_delta_time());
 			}
 			break;
 
@@ -885,7 +887,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// Can't do that in ready either because Godot says node state is locked.
 				// This hack is quite miserable.
 				VoxelEngineUpdater::ensure_existence(get_tree());
-				_process(get_physics_process_delta_time());
+				process(get_physics_process_delta_time());
 				break;
 			}
 
@@ -1006,7 +1008,7 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
-void VoxelLodTerrain::_process(float delta) {
+void VoxelLodTerrain::process(float delta) {
 	ZN_PROFILE_SCOPE();
 
 	_stats.dropped_block_loads = 0;
@@ -1487,8 +1489,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				static_cast<int>(now - block->last_collider_update_time) > _collision_update_delay) {
 			ZN_ASSERT(_mesher.is_valid());
 			Ref<Shape3D> collision_shape = make_collision_shape_from_mesher_output(ob.surfaces, **_mesher);
-			block->set_collision_shape(
-					collision_shape, get_tree()->is_debugging_collisions_hint(), this, _collision_margin);
+			const bool debug_collisions = is_inside_tree() ? get_tree()->is_debugging_collisions_hint() : false;
+			block->set_collision_shape(collision_shape, debug_collisions, this, _collision_margin);
 
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
@@ -1829,6 +1831,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 
 	VoxelLodTerrainUpdateTask::flush_pending_lod_edits(_update_data->state, *_data, get_mesh_block_size());
 
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 	std::vector<VoxelData::BlockToSave> blocks_to_save;
 
 	Ref<VoxelStream> stream = get_stream();
@@ -1837,12 +1840,11 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		_data->consume_all_modifications(blocks_to_save, with_copy);
 
 		if (_instancer != nullptr && stream->supports_instance_blocks()) {
-			_instancer->save_all_modified_blocks();
+			_instancer->save_all_modified_blocks(task_scheduler, nullptr);
 		}
 	}
 
 	// And flush immediately
-	BufferedTaskScheduler task_scheduler;
 	VoxelLodTerrainUpdateTask::send_block_save_requests(
 			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size(), task_scheduler);
 	task_scheduler.flush();
@@ -1993,10 +1995,10 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 
 #ifdef TOOLS_ENABLED
 
-PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
-	PackedStringArray warnings = VoxelNode::get_configuration_warnings();
+void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelNode::get_configuration_warnings(warnings);
 	if (!warnings.is_empty()) {
-		return warnings;
+		return;
 	}
 
 	Ref<VoxelMesher> mesher = get_mesher();
@@ -2004,30 +2006,30 @@ PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
 	// Material
 	Ref<ShaderMaterial> shader_material = _material;
 	if (shader_material.is_valid() && shader_material->get_shader().is_null()) {
-		warnings.append(TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
+		warnings.append(ZN_TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
 	}
 
 	if (mesher.is_valid()) {
 		// LOD support in mesher
 		if (!mesher->supports_lod()) {
-			warnings.append(
-					TTR("The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
-							.format(varray(mesher->get_class())));
+			warnings.append(ZN_TTR(
+					"The assigned mesher ({0}) does not support level of detail (LOD), results may be unexpected.")
+									.format(varray(mesher->get_class())));
 		}
 
 		// LOD support in shader
 		if (_material.is_valid() && mesher->get_default_lod_material().is_valid()) {
 			if (shader_material.is_null()) {
-				warnings.append(
-						TTR("The current mesher ({0}) requires custom shader code to render properly. The current "
-							"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
-							"default shader.")
-								.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
+				warnings.append(ZN_TTR(
+						"The current mesher ({0}) requires custom shader code to render properly. The current "
+						"material might not be appropriate. Hint: you can assign a newly created {1} to fork the "
+						"default shader.")
+										.format(varray(mesher->get_class(), ShaderMaterial::get_class_static())));
 			} else {
 				Ref<Shader> shader = shader_material->get_shader();
 				if (shader.is_valid()) {
 					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
-						warnings.append(TTR(
+						warnings.append(ZN_TTR(
 								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
 												.format(varray(mesher->get_class(),
 														VoxelStringNames::get_singleton().u_transition_mask)));
@@ -2048,7 +2050,7 @@ PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
 											.format(varray(ShaderMaterial::get_class_static())));
 				} else {
 					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
-						warnings.append(TTR(
+						warnings.append(ZN_TTR(
 								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
 												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
 					}
@@ -2061,16 +2063,16 @@ PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
 		if (generator.is_valid()) {
 			if (is_normalmap_enabled()) {
 				if (!generator->supports_series_generation()) {
-					warnings.append(TTR(
+					warnings.append(ZN_TTR(
 							"Normalmaps are enabled, but it requires the generator to be able to generate series of "
 							"positions with `generate_series`. The current generator ({0}) does not support it.")
 											.format(varray(generator->get_class())));
 				}
 
 				if ((generator->get_used_channels_mask() & (1 << VoxelBufferInternal::CHANNEL_SDF)) == 0) {
-					warnings.append(TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
-										"channel. The current generator ({0}) does not support it, or is not "
-										"configured to do so.")
+					warnings.append(ZN_TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
+										   "channel. The current generator ({0}) does not support it, or is not "
+										   "configured to do so.")
 											.format(varray(generator->get_class())));
 				}
 
@@ -2085,10 +2087,10 @@ PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
 
 						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
 
-						if (missing_uniforms.size() != 0) {
+						if (missing_uniforms.length() != 0) {
 							warnings.append(String(
-									TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
-										"specific uniforms. Missing ones: {1}"))
+									ZN_TTR("Normalmaps are enabled, but it requires to use a {0} with a shader having "
+										   "specific uniforms. Missing ones: {1}"))
 													.format(varray(
 															ShaderMaterial::get_class_static(), missing_uniforms)));
 						}
@@ -2097,7 +2099,6 @@ PackedStringArray VoxelLodTerrain::get_configuration_warnings() const {
 			}
 		}
 	}
-	return warnings;
 }
 
 #endif // TOOLS_ENABLED
@@ -2531,7 +2532,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return _data->get_block_count();
 }
 
-Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
@@ -2574,7 +2575,7 @@ Error VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instanc
 		return pack_result;
 	}
 
-	const Error save_result = ResourceSaver::save(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	return save_result;
 }
 
@@ -2729,7 +2730,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_GROUP("Material", "");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE,
-						 BaseMaterial3D::get_class_static() + "," + ShaderMaterial::get_class_static()),
+						 String("{0},{1}").format(
+								 varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))),
 			"set_material", "get_material");
 
 	ADD_GROUP("Detail normalmaps", "normalmap_");

@@ -1,9 +1,9 @@
 #ifndef ZYLANN_FAST_NOISE_LITE_GRADIENT_H
 #define ZYLANN_FAST_NOISE_LITE_GRADIENT_H
 
-#include <core/io/resource.h>
-
 #include "../../../thirdparty/fast_noise/FastNoiseLite.h"
+#include "../../godot/binder.h"
+#include "../../godot/resource.h"
 
 namespace zylann {
 
@@ -18,7 +18,7 @@ namespace zylann {
 class ZN_FastNoiseLiteGradient : public Resource {
 	GDCLASS(ZN_FastNoiseLiteGradient, Resource)
 
-	typedef fast_noise_lite::FastNoiseLite _FastNoise;
+	typedef ::fast_noise_lite::FastNoiseLite _FastNoise;
 
 public:
 	// TODO Had to prefix it because of https://github.com/godotengine/godot/issues/44860
@@ -102,7 +102,7 @@ private:
 		return pos;
 	}
 
-	fast_noise_lite::FastNoiseLite _fn;
+	::fast_noise_lite::FastNoiseLite _fn;
 
 	// TODO FastNoiseLite should rather have getters
 
@@ -121,8 +121,8 @@ private:
 
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::NoiseType);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::FractalType);
-VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::RotationType3D);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, NoiseType);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, FractalType);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, RotationType3D);
 
 #endif // ZYLANN_FAST_NOISE_LITE_GRADIENT_H

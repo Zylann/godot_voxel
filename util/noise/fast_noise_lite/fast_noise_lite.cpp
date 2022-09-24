@@ -1,6 +1,8 @@
 #include "fast_noise_lite.h"
+#include "../../godot/array.h"
+#include "../../godot/callable.h"
 #include "../../math/funcs.h"
-#include <core/core_string_names.h>
+#include "../../string_funcs.h"
 
 namespace zylann {
 
@@ -71,15 +73,13 @@ void ZN_FastNoiseLite::set_warp_noise(Ref<ZN_FastNoiseLiteGradient> warp_noise) 
 	}
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->disconnect(CoreStringNames::get_singleton()->changed,
-				callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
+		_warp_noise->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
 	}
 
 	_warp_noise = warp_noise;
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->connect(CoreStringNames::get_singleton()->changed,
-				callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
+		_warp_noise->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
 	}
 
 	emit_changed();
@@ -281,7 +281,9 @@ void ZN_FastNoiseLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &ZN_FastNoiseLite::_b_get_noise_2dv);
 	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &ZN_FastNoiseLite::_b_get_noise_3dv);
 
-	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &ZN_FastNoiseLite::_on_warp_noise_changed);
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &ZN_FastNoiseLite::_on_warp_noise_changed);
+#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
 						 "OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"),
@@ -301,7 +303,8 @@ void ZN_FastNoiseLite::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,FBm,Ridged,PingPong"),
 			"set_fractal_type", "get_fractal_type");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", MAX_OCTAVES)),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE,
+						 String("1,{0},1").format(varray(MAX_OCTAVES))),
 			"set_fractal_octaves", "get_fractal_octaves");
 
 	ADD_PROPERTY(

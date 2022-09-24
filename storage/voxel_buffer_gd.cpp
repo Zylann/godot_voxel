@@ -1,11 +1,10 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/dstack.h"
+#include "../util/godot/image.h"
 #include "../util/math/color.h"
 #include "../util/memory.h"
 #include "voxel_metadata_variant.h"
-
-#include <core/io/image.h>
 
 namespace zylann::voxel::gd {
 
@@ -148,18 +147,23 @@ void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 
 	for (auto it = metadata.begin(); it != metadata.end(); ++it) {
 		Variant v = get_as_variant(it->value);
+
+#if defined(ZN_GODOT)
+		// TODO Use template version? Could get closer to GodotCpp
 		const Variant key = it->key;
 		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
 		callback.callp(args, 2, retval, err);
-
 		ERR_FAIL_COND_MSG(
 				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
 
-		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
-		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+#elif defined(ZN_GODOT_EXTENSION)
+		// TODO Error reporting? GodotCpp doesn't expose anything
+		//callback.call(it->key, v);
+		// TODO GodotCpp is missing the implementation of `Callable::call`.
+		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
+#endif
 	}
 }
 
@@ -170,18 +174,23 @@ void VoxelBuffer::for_each_voxel_metadata_in_area(const Callable &callback, Vect
 
 	_buffer->for_each_voxel_metadata_in_area(box, [&callback](Vector3i rel_pos, const VoxelMetadata &meta) {
 		Variant v = get_as_variant(meta);
+
+#if defined(ZN_GODOT)
+		// TODO Use template version? Could get closer to GodotCpp
 		const Variant key = rel_pos;
 		const Variant *args[2] = { &key, &v };
 		Callable::CallError err;
 		Variant retval; // We don't care about the return value, Callable API requires it
 		callback.callp(args, 2, retval, err);
-
 		ERR_FAIL_COND_MSG(
 				err.error != Callable::CallError::CALL_OK, String("Callable failed at {0}").format(varray(key)));
 
-		// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-		// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
-		// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+#elif defined(ZN_GODOT_EXTENSION)
+		// TODO Error reporting? GodotCpp doesn't expose anything
+		//callback.call(rel_pos, v);
+		// TODO GodotCpp is missing the implementation of `Callable::call`.
+		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
+#endif
 	});
 }
 
@@ -273,7 +282,7 @@ void VoxelBuffer::_b_deprecated_optimize() {
 }
 
 void VoxelBuffer::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::create);
+	ClassDB::bind_method(D_METHOD("create", "sx", "sy", "sz"), &VoxelBuffer::_b_create);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelBuffer::clear);
 
 	ClassDB::bind_method(D_METHOD("get_size"), &VoxelBuffer::get_size);

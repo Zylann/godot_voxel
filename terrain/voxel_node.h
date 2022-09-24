@@ -5,8 +5,8 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
-
-#include <scene/3d/node_3d.h>
+#include "../util/godot/binder.h"
+#include "../util/godot/node_3d.h"
 
 namespace zylann::voxel {
 
@@ -44,7 +44,12 @@ public:
 	virtual Ref<VoxelTool> get_voxel_tool();
 
 #ifdef TOOLS_ENABLED
-	virtual PackedStringArray get_configuration_warnings() const override;
+#if defined(ZN_GODOT)
+	PackedStringArray get_configuration_warnings() const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	virtual PackedStringArray _get_configuration_warnings() const override;
+#endif
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
 protected:
@@ -81,6 +86,6 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelNode::GIMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelNode, GIMode);
 
 #endif // VOXEL_NODE_H

@@ -1,7 +1,7 @@
 #ifndef ZYLANN_COLOR8_H
 #define ZYLANN_COLOR8_H
 
-#include <core/math/color.h>
+#include "color.h"
 
 namespace zylann {
 

@@ -1,8 +1,8 @@
 #include "direct_static_body.h"
 #include "../profiling.h"
-
-#include <scene/resources/world_3d.h>
-#include <servers/physics_server_3d.h>
+#include "array_mesh.h"
+#include "physics_server_3d.h"
+#include "world_3d.h"
 
 namespace zylann {
 
@@ -26,7 +26,7 @@ void DirectStaticBody::create() {
 void DirectStaticBody::destroy() {
 	if (_body.is_valid()) {
 		PhysicsServer3D &ps = *PhysicsServer3D::get_singleton();
-		ps.free(_body);
+		free_physics_server_rid(ps, _body);
 		_body = RID();
 		// The shape need to be destroyed after the body
 		_shape.unref();

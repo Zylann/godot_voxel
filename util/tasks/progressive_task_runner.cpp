@@ -2,7 +2,7 @@
 #include "../errors.h"
 #include "../math/funcs.h"
 
-#include <core/os/time.h>
+#include "../godot/time.h"
 
 namespace zylann {
 

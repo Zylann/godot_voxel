@@ -2,11 +2,10 @@
 #define VOXEL_GRAPH_SHADER_GENERATOR_H
 
 #include "../../util/errors.h"
+#include "../../util/godot/variant.h"
 #include "../../util/span.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_runtime.h"
-
-#include <core/variant/variant.h>
 
 namespace zylann::voxel {
 

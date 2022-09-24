@@ -3,10 +3,13 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
+#include "../util/godot/image.h"
+#include "../util/godot/mesh.h"
+#include "../util/macros.h"
 #include "../util/span.h"
-
-#include <scene/resources/mesh.h>
 #include <vector>
+
+ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
 namespace zylann::voxel {
 
@@ -120,9 +123,7 @@ public:
 	// detail is used. If null, standard materials or default Godot shaders can be used. This is mostly to provide a
 	// default shader that looks ok. Users are still expected to tweak them if need be.
 	// Such material is not meant to be modified.
-	virtual Ref<ShaderMaterial> get_default_lod_material() const {
-		return Ref<ShaderMaterial>();
-	}
+	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
 protected:
 	static void _bind_methods();

@@ -1,6 +1,7 @@
 #include "voxel_viewer.h"
 #include "../engine/voxel_engine.h"
-#include <core/config/engine.h>
+#include "../util/godot/engine.h"
+#include "../util/godot/node.h"
 
 namespace zylann::voxel {
 

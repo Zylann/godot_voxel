@@ -2,8 +2,8 @@
 #define VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 
 #include "../../generators/graph/voxel_generator_graph.h"
-#include <core/object/ref_counted.h>
-#include <editor/editor_undo_redo_manager.h>
+#include "../../util/godot/editor_undo_redo_manager.h"
+#include "../../util/godot/ref_counted.h"
 
 namespace zylann::voxel {
 

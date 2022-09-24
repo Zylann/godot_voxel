@@ -6,9 +6,8 @@
 #include "../util/fixed_array.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
+#include "../util/math/transform_3d.h"
 #include "../util/profiling.h"
-
-#include <core/math/transform_3d.h>
 
 namespace zylann::voxel {
 

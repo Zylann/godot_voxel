@@ -1,10 +1,13 @@
 #ifndef VOXEL_MESHER_TRANSVOXEL_H
 #define VOXEL_MESHER_TRANSVOXEL_H
 
+#include "../../util/godot/binder.h"
+#include "../../util/macros.h"
 #include "../voxel_mesher.h"
 #include "transvoxel.h"
 
-class ArrayMesh;
+ZN_GODOT_FORWARD_DECLARE(class ArrayMesh);
+ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial);
 
 namespace zylann::voxel {
 
@@ -27,7 +30,6 @@ public:
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 	Ref<ArrayMesh> build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction);
 
-	Ref<Resource> duplicate(bool p_subresources = false) const override;
 	int get_used_channels_mask() const override;
 
 	bool is_generating_collision_surface() const override;
@@ -97,6 +99,6 @@ private:
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherTransvoxel::TexturingMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherTransvoxel, TexturingMode);
 
 #endif // VOXEL_MESHER_TRANSVOXEL_H

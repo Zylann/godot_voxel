@@ -3,7 +3,6 @@
 
 #include "../../storage/voxel_buffer_gd.h"
 #include "../voxel_generator.h"
-#include <core/io/image.h>
 
 namespace zylann::voxel {
 

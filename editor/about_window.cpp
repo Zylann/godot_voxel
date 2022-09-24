@@ -1,13 +1,17 @@
 #include "about_window.h"
+#include "../util/godot/array.h"
+#include "../util/godot/button.h"
+#include "../util/godot/callable.h"
+#include "../util/godot/editor_scale.h"
+#include "../util/godot/h_box_container.h"
+#include "../util/godot/h_split_container.h"
+#include "../util/godot/item_list.h"
+#include "../util/godot/os.h"
+#include "../util/godot/rich_text_label.h"
+#include "../util/godot/tab_container.h"
+#include "../util/godot/texture_rect.h"
+#include "../util/godot/v_box_container.h"
 #include "../util/macros.h"
-
-#include <core/os/os.h>
-#include <editor/editor_scale.h>
-#include <scene/gui/item_list.h>
-#include <scene/gui/rich_text_label.h>
-#include <scene/gui/split_container.h>
-#include <scene/gui/tab_container.h>
-#include <scene/gui/texture_rect.h>
 
 namespace zylann::voxel {
 
@@ -149,7 +153,7 @@ const unsigned int VOXEL_THIRD_PARTY_COUNT = ZN_ARRAY_LENGTH(g_third_parties);
 VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter
 
-	set_title(TTR("About Voxel Tools"));
+	set_title(ZN_TTR("About Voxel Tools"));
 	//set_resizable(true); // TODO How to set if a Window is resizable or not?
 	set_min_size(Vector2(600, 300) * EDSCALE);
 
@@ -212,7 +216,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	rich_text_label->set_use_bbcode(true);
 	rich_text_label->set_text(about_text);
 	rich_text_label->connect(
-			"meta_clicked", callable_mp(this, &VoxelAboutWindow::_on_about_rich_text_label_meta_clicked));
+			"meta_clicked", ZN_GODOT_CALLABLE_MP(this, VoxelAboutWindow, _on_about_rich_text_label_meta_clicked));
 
 	tab_container->add_child(rich_text_label);
 
@@ -240,8 +244,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	rich_text_label2->set_selection_enabled(true);
 
 	tab_container->add_child(rich_text_label2);
-	tab_container->set_tab_title(0, TTR("About"));
-	tab_container->set_tab_title(1, TTR("License"));
+	tab_container->set_tab_title(0, ZN_TTR("About"));
+	tab_container->set_tab_title(1, ZN_TTR("License"));
 
 	// Third-party licenses
 	if (VOXEL_THIRD_PARTY_COUNT > 0) {
@@ -255,7 +259,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 		}
 
 		third_party_list->connect(
-				"item_selected", callable_mp(this, &VoxelAboutWindow::_on_third_party_list_item_selected));
+				"item_selected", ZN_GODOT_CALLABLE_MP(this, VoxelAboutWindow, _on_third_party_list_item_selected));
 
 		_third_party_rich_text_label = memnew(RichTextLabel);
 		_third_party_rich_text_label->set_selection_enabled(true);
@@ -264,7 +268,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 		third_party_container->add_child(_third_party_rich_text_label);
 
 		tab_container->add_child(third_party_container);
-		tab_container->set_tab_title(2, TTR("Third party licenses"));
+		tab_container->set_tab_title(2, ZN_TTR("Third party licenses"));
 
 		third_party_list->select(0);
 		_on_third_party_list_item_selected(0);
@@ -298,6 +302,13 @@ void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
 }
 
-void VoxelAboutWindow::_bind_methods() {}
+void VoxelAboutWindow::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_about_rich_text_label_meta_clicked", "meta"),
+			&VoxelAboutWindow::_on_about_rich_text_label_meta_clicked);
+	ClassDB::bind_method(D_METHOD("_on_third_party_list_item_selected", "meta"),
+			&VoxelAboutWindow::_on_third_party_list_item_selected);
+#endif
+}
 
 } // namespace zylann::voxel

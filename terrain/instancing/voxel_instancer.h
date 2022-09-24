@@ -5,6 +5,7 @@
 #include "../../streams/instance_data.h"
 #include "../../util/fixed_array.h"
 #include "../../util/godot/direct_multimesh_instance.h"
+#include "../../util/godot/node_3d.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory.h"
 #include "voxel_instance_generator.h"
@@ -15,22 +16,27 @@
 #include "../../editor/voxel_debug.h"
 #endif
 
-#include <scene/3d/node_3d.h>
 //#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-class PhysicsBody3D;
+ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
-namespace zylann::voxel {
+namespace zylann {
+
+class AsyncDependencyTracker;
+
+namespace voxel {
 
 class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
+class SaveBlockDataTask;
+class BufferedTaskScheduler;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -62,7 +68,7 @@ public:
 
 	// Actions
 
-	void save_all_modified_blocks();
+	void save_all_modified_blocks(BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker);
 
 	// Event handlers
 
@@ -103,7 +109,12 @@ public:
 	// Editor
 
 #ifdef TOOLS_ENABLED
+#if defined(ZN_GODOT)
 	PackedStringArray get_configuration_warnings() const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	PackedStringArray _get_configuration_warnings() const override;
+#endif
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
 protected:
@@ -123,7 +134,8 @@ private:
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
-	void save_block(Vector3i data_grid_pos, int lod_index) const;
+	SaveBlockDataTask *save_block(
+			Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const;
 
 	// Get a layer assuming it exists
 	Layer &get_layer(int id);
@@ -243,9 +255,10 @@ private:
 #endif
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, UpMode);
+ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H

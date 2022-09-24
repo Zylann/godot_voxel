@@ -1,8 +1,8 @@
 #ifndef VOXEL_INSTANCER_RIGIDBODY_H
 #define VOXEL_INSTANCER_RIGIDBODY_H
 
+#include "../../util/godot/rigid_body_3d.h"
 #include "voxel_instancer.h"
-#include <scene/3d/physics_body_3d.h>
 
 namespace zylann::voxel {
 
@@ -34,7 +34,7 @@ public:
 
 	void detach_and_destroy() {
 		_parent = nullptr;
-		queue_delete();
+		queue_free_node(this);
 	}
 
 	// Note, for this the body must switch to convex shapes
@@ -43,6 +43,9 @@ public:
 	// }
 
 protected:
+	// When compiling with GodotCpp, `_bind_methods` is not optional
+	static void _bind_methods() {}
+
 	void _notification(int p_what) {
 		switch (p_what) {
 			// TODO Optimization: this is also called when we quit the game or destroy the world
