@@ -37,17 +37,6 @@ jobs:
             executable_name: godot.linuxbsd.double.opt.tools.x86_64
 
     steps:
-      # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
-      # This allows to make production builds that are compatible with older Linux distros.
-      # TODO Cache it so future runs can use it?
-      - name: Setup buildroot
-        run: |
-          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
-          tar -xvjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
-          cd x86_64-godot-linux-gnu_sdk-buildroot
-          ./relocate-sdk.sh
-          cd ..
-
       # Clone Godot
       - uses: actions/checkout@v2
         with:
@@ -58,6 +47,17 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: modules/voxel
+
+      # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
+      # This allows to make production builds that are compatible with older Linux distros.
+      # TODO Cache it so future runs can use it?
+      - name: Setup buildroot
+        run: |
+          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          cd x86_64-godot-linux-gnu_sdk-buildroot
+          ./relocate-sdk.sh
+          cd ..
 
       # [Already provided by the custom buildroot]
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
