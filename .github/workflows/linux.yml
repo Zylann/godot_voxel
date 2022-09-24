@@ -42,6 +42,7 @@ jobs:
       # TODO Cache it so future runs can use it?
       - name: Setup buildroot
         run: |
+          python --version
           wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           tar -xvjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
           cd x86_64-godot-linux-gnu_sdk-buildroot
