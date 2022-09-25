@@ -72,6 +72,7 @@ segfault-god (jp.owo.Manda)
 RonanZe
 Phyronnaz
 NoFr1ends (Lynx)
+Kluskey (Jared McCluskey)
 ```
 
 ### Supporters
