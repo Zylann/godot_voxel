@@ -79,7 +79,7 @@ jobs:
 
       - name: Generate Mono Glue
         run: |
-          xvfb-run ./bin/godot.x11.opt.tools.64.mono --generate-mono-glue modules/mono/glue || true
+          xvfb-run ./bin/godot.linuxbsd.opt.tools.x86_64.mono --generate-mono-glue modules/mono/glue || true
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -167,12 +167,12 @@ jobs:
       # Execute unit tests for the editor
       #- name: Unit Tests
       #  run: |
-      #    ./bin/godot.linuxbsd.opt.tools.64.mono --test
+      #    ./bin/godot.linuxbsd.opt.tools.x86_64.mono --test
 
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: godot.x11.opt.tools.64.mono
+          name: godot.linuxbsd.opt.tools.x86_64.mono
           path: bin/*
 
   windows-editor-mono:
@@ -251,10 +251,10 @@ jobs:
       # Execute unit tests for the editor
       #- name: Unit Tests
       #  run: |
-      #    ./bin/godot.windows.opt.tools.64.mono.exe --test
+      #    ./bin/godot.windows.opt.tools.x86_64.mono.exe --test
 
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: godot.windows.opt.tools.64.mono
+          name: godot.windows.opt.tools.x86_64.mono
           path: bin/*
