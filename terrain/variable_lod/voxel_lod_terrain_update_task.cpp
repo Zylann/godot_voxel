@@ -328,29 +328,6 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 	state.last_octree_region_box = new_box;
 }
 
-static void add_transition_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
-		std::vector<Vector3i> &blocks_pending_transition_update) {
-	if (!block.pending_transition_update) {
-		blocks_pending_transition_update.push_back(bpos);
-		block.pending_transition_update = true;
-	}
-}
-
-static void add_transition_updates_around(VoxelLodTerrainUpdateData::Lod &lod, Vector3i block_pos,
-		std::vector<Vector3i> &blocks_pending_transition_update) {
-	//
-	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		const Vector3i npos = block_pos + Cube::g_side_normals[dir];
-		auto nblock_it = lod.mesh_map_state.map.find(npos);
-
-		if (nblock_it != lod.mesh_map_state.map.end()) {
-			add_transition_update(nblock_it->second, npos, blocks_pending_transition_update);
-		}
-	}
-	// TODO If a block appears at lod, neighbor blocks at lod-1 need to be updated.
-	// or maybe get_transition_mask needs a different approach that also looks at higher lods?
-}
-
 inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 	return (data_block_size == 16 || data_block_size == 32) && (mesh_block_size == 16 || mesh_block_size == 32) &&
 			mesh_block_size >= data_block_size;
@@ -510,19 +487,17 @@ static bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &stat
 	return check_block_mesh_updated(state, data, *mesh_block, p_mesh_block_pos, lod_index, blocks_to_load, settings);
 }
 
-uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
-		const VoxelLodTerrainUpdateData::State &state, Vector3i block_pos, int lod_index, unsigned int lod_count) {
+uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(const VoxelLodTerrainUpdateData::State &state,
+		Vector3i block_pos, unsigned int lod_index, unsigned int lod_count) {
 	uint8_t transition_mask = 0;
 
-	if (lod_index + 1 >= static_cast<int>(lod_count)) {
+	if (lod_index + 1 >= lod_count) {
+		// We do transitions on higher-resolution blocks.
+		// Therefore, lowest-resolution blocks never have transitions.
 		return transition_mask;
 	}
 
-	const VoxelLodTerrainUpdateData::Lod &lower_lod = state.lods[lod_index + 1];
 	const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-
-	const Vector3i lower_pos = block_pos >> 1;
-	const Vector3i upper_pos = block_pos << 1;
 
 	// Based on octree rules, and the fact it must have run before, check neighbor blocks of same LOD:
 	// If one is missing or not visible, it means either of the following:
@@ -530,8 +505,8 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 	// - The neighbor at lod-1 is visible (no transition)
 
 	uint8_t visible_neighbors_of_same_lod = 0;
-	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		Vector3i npos = block_pos + Cube::g_side_normals[dir];
+	for (unsigned int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+		const Vector3i npos = block_pos + Cube::g_side_normals[dir];
 
 		auto nblock_it = lod.mesh_map_state.map.find(npos);
 
@@ -540,13 +515,23 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(
 		}
 	}
 
-	if (visible_neighbors_of_same_lod != 0b111111) {
+	if (visible_neighbors_of_same_lod == 0b111111) {
+		// No transitions needed
+		return transition_mask;
+	}
+
+	{
+		const Vector3i lower_pos = block_pos >> 1;
+		const Vector3i upper_pos = block_pos << 1;
+
+		const VoxelLodTerrainUpdateData::Lod &lower_lod = state.lods[lod_index + 1];
+
 		// At least one neighbor isn't visible.
 		// Check for neighbors at different LOD (there can be only one kind on a given side)
-		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-			int dir_mask = (1 << dir);
+		for (unsigned int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			const unsigned int dir_mask = (1 << dir);
 
-			if (visible_neighbors_of_same_lod & dir_mask) {
+			if ((visible_neighbors_of_same_lod & dir_mask) != 0) {
 				continue;
 			}
 
@@ -614,18 +599,12 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 	state.local_viewer_pos_previous_octree_update = p_viewer_pos;
 
-	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD>
-			tls_blocks_pending_transition_update_per_lod;
-	//static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD> tls_mesh_blocks_to_add_per_lod;
-
-	for (unsigned int i = 0; i < tls_blocks_pending_transition_update_per_lod.size(); ++i) {
-		CRASH_COND(!tls_blocks_pending_transition_update_per_lod[i].empty());
-		//CRASH_COND(!tls_mesh_blocks_to_add_per_lod[i].empty());
-	}
-
 	const float lod_distance_octree_space = settings.lod_distance / octree_leaf_node_size;
 
 	unsigned int blocked_octree_nodes = 0;
+
+	// Off by one bit: second bit is LOD0, first bit is unused
+	uint32_t lods_to_update_transitions = 0;
 
 	// TODO Optimization: Maintain a vector to make iteration faster?
 	for (auto octree_it = state.lod_octrees.begin(); octree_it != state.lod_octrees.end(); ++octree_it) {
@@ -640,6 +619,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			unsigned int blocked_count = 0;
 			float lod_distance_octree_space;
 			Vector3 viewer_pos_octree_space;
+			uint32_t &lods_to_update_transitions;
 
 			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
@@ -653,9 +633,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				//self->set_mesh_block_active(*block, true);
 				lod.mesh_blocks_to_activate.push_back(bpos);
 				mesh_block_it->second.active = true;
-				add_transition_update(
-						mesh_block_it->second, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
-				add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
+				lods_to_update_transitions |= (0b111 << lod_index);
 			}
 
 			void destroy_child(Vector3i node_pos, int lod_index) {
@@ -667,7 +645,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 					//self->set_mesh_block_active(*block, false);
 					mesh_block_it->second.active = false;
 					lod.mesh_blocks_to_deactivate.push_back(bpos);
-					add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
+					lods_to_update_transitions |= (0b111 << lod_index);
 				}
 			}
 
@@ -685,9 +663,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 					//self->set_mesh_block_active(*block, true);
 					mesh_block_it->second.active = true;
 					lod.mesh_blocks_to_activate.push_back(bpos);
-					add_transition_update(
-							mesh_block_it->second, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
-					add_transition_updates_around(lod, bpos, tls_blocks_pending_transition_update_per_lod[lod_index]);
+					lods_to_update_transitions |= (0b111 << lod_index);
 				}
 			}
 
@@ -784,7 +760,8 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			block_offset_lod0, //
 			0, //
 			lod_distance_octree_space, //
-			relative_viewer_pos / octree_leaf_node_size
+			relative_viewer_pos / octree_leaf_node_size, //
+			lods_to_update_transitions
 		};
 		VoxelLodTerrainUpdateData::OctreeItem &item = octree_it->second;
 		item.octree.update(octree_actions);
@@ -797,38 +774,52 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	state.stats.blocked_lods = blocked_octree_nodes;
 	state.had_blocked_octree_nodes_previous_update = blocked_octree_nodes > 0;
 
-	{
-		// In theory, blocks containing no surface have no reason to need a transition mask,
-		// but when we get a new mesh update into a block that previously had no surface, we still need it.
-
+	// TODO Optimize: this works but it's not smart.
+	// It doesn't take too long (100 microseconds when octrees update with lod distance 60).
+	// We used to only update positions based on which blocks were added/removed in the octree update,
+	// which was faster than this. However it missed some spots, which caused annoying cracks to show up.
+	// So instead, when any block changes state in LOD N, we update all transitions in LODs N-1, N, and N+1.
+	// It is unclear yet why the old approach didnt work, maybe because it didn't properly made N-1 and N+1 update.
+	// If you find a better approach, it has to comply with the validation check below.
+	if (lods_to_update_transitions != 0) {
 		ZN_PROFILE_SCOPE_NAMED("Transition masks");
-		for (unsigned int lod_index = 0; lod_index < tls_blocks_pending_transition_update_per_lod.size(); ++lod_index) {
-			std::vector<Vector3i> &blocks_pending_transition_update =
-					tls_blocks_pending_transition_update_per_lod[lod_index];
-
-			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-
-			for (unsigned int i = 0; i < blocks_pending_transition_update.size(); ++i) {
-				const Vector3i bpos = blocks_pending_transition_update[i];
-
-				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-				CRASH_COND(mesh_block_it == lod.mesh_map_state.map.end());
-				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
-
-				if (mesh_block.active) {
-					const uint8_t mask =
-							VoxelLodTerrainUpdateTask::get_transition_mask(state, bpos, lod_index, lod_count);
-					mesh_block.transition_mask = mask;
-					lod.mesh_blocks_to_update_transitions.push_back(
-							VoxelLodTerrainUpdateData::TransitionUpdate{ bpos, mask });
-				}
-
-				mesh_block.pending_transition_update = false;
+		lods_to_update_transitions >>= 1;
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			if ((lods_to_update_transitions & (1 << lod_index)) == 0) {
+				continue;
 			}
-
-			blocks_pending_transition_update.clear();
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+			RWLockRead rlock(lod.mesh_map_state.map_lock);
+			for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
+				if (it->second.active) {
+					const uint8_t recomputed_mask =
+							VoxelLodTerrainUpdateTask::get_transition_mask(state, it->first, lod_index, lod_count);
+					if (recomputed_mask != it->second.transition_mask) {
+						it->second.transition_mask = recomputed_mask;
+						lod.mesh_blocks_to_update_transitions.push_back(
+								VoxelLodTerrainUpdateData::TransitionUpdate{ it->first, recomputed_mask });
+					}
+				}
+			}
 		}
 	}
+#if 0
+	// DEBUG: Validation check for transition mask updates.
+	{
+		ZN_PROFILE_SCOPE_NAMED("Transition checks");
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+			RWLockRead rlock(lod.mesh_map_state.map_lock);
+			for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
+				if (it->second.active) {
+					const uint8_t recomputed_mask =
+							VoxelLodTerrainUpdateTask::get_transition_mask(state, it->first, lod_index, lod_count);
+					CRASH_COND(recomputed_mask != it->second.transition_mask);
+				}
+			}
+		}
+	}
+#endif
 }
 
 inline Vector3i get_block_center(Vector3i pos, int bs, int lod) {
