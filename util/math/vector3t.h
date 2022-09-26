@@ -156,6 +156,11 @@ inline Vector3T<T> max(const Vector3T<T> a, const Vector3T<T> b) {
 }
 
 template <typename T>
+inline Vector3T<T> clamp(const Vector3T<T> v, const Vector3T<T> minv, const Vector3T<T> maxv) {
+	return Vector3T<T>(clamp(v.x, minv.x, maxv.x), clamp(v.y, minv.y, maxv.y), clamp(v.z, minv.z, maxv.z));
+}
+
+template <typename T>
 inline T length_squared(const Vector3T<T> v) {
 	return v.x * v.x + v.y * v.y + v.z * v.z;
 }

@@ -67,6 +67,12 @@ inline Vector3f get_secondary_position(
 		const Vector3f primary, const Vector3f normal, const int lod_index, const Vector3i block_size_non_scaled) {
 	Vector3f delta = get_border_offset(primary, lod_index, block_size_non_scaled);
 	delta = project_border_offset(delta, normal);
+
+	// At very low LOD levels, error can be high and make secondary positions shoot very far.
+	// Saw this happen around LOD 8. This doesn't get rid of them, but should make it not noticeable.
+	const float p2k = 1 << lod_index;
+	delta = math::clamp(delta, Vector3f(-p2k), Vector3f(p2k));
+
 	return primary + delta;
 }
 
