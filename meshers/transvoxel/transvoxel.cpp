@@ -878,18 +878,18 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			const int data_index = Vector3iUtil::get_zxy_index(cell_positions[0], block_size_with_padding);
 
 			{
-				const bool s = sdf_data[data_index] < isolevel;
+				const bool s = sdf_data[data_index] > isolevel;
 
 				// `//` prevents clang-format from messing up
 				if ( //
-						(sdf_data[data_index + fn10] < isolevel) == s && //
-						(sdf_data[data_index + fn20] < isolevel) == s && //
-						(sdf_data[data_index + fn01] < isolevel) == s && //
-						(sdf_data[data_index + fn11] < isolevel) == s && //
-						(sdf_data[data_index + fn21] < isolevel) == s && //
-						(sdf_data[data_index + fn02] < isolevel) == s && //
-						(sdf_data[data_index + fn12] < isolevel) == s && //
-						(sdf_data[data_index + fn22] < isolevel) == s) {
+						(sdf_data[data_index + fn10] > isolevel) == s && //
+						(sdf_data[data_index + fn20] > isolevel) == s && //
+						(sdf_data[data_index + fn01] > isolevel) == s && //
+						(sdf_data[data_index + fn11] > isolevel) == s && //
+						(sdf_data[data_index + fn21] > isolevel) == s && //
+						(sdf_data[data_index + fn02] > isolevel) == s && //
+						(sdf_data[data_index + fn12] > isolevel) == s && //
+						(sdf_data[data_index + fn22] > isolevel) == s) {
 					// Not crossing the isolevel, this cell won't produce any geometry.
 					// We must figure this out as fast as possible, because it will happen a lot.
 					continue;
