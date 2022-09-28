@@ -24,10 +24,10 @@ SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b
 	//    a.min             a.max
 
 	if (b.min > -a.min + s) {
-		return SDF_ONLY_B;
+		return SDF_ONLY_A;
 	}
 	if (b.max < -a.max - s) {
-		return SDF_ONLY_A;
+		return SDF_ONLY_B;
 	}
 	return SDF_BOTH;
 }
