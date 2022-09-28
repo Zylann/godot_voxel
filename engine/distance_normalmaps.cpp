@@ -269,8 +269,10 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_
 		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
 		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
 		if (Vector3iUtil::get_volume(voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2) > math::cubed(8)) {
-			// Box too big for quick sparse readings, won't handle edits
-			ZN_PRINT_VERBOSE("Box too big to render virtual normalmaps");
+			// Box too big for quick sparse readings, won't handle edits. Fallback on generator.
+			// One way to speed this up would be to have an octree storing where edited data is.
+			// Or we would have to use the slowest query model, going through data structures for every voxel.
+			ZN_PRINT_VERBOSE("Box too big to render edited voxels with virtual normalmaps");
 			return false;
 		}
 
