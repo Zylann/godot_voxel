@@ -36,7 +36,7 @@ public:
 
 	void _notification(int p_what) {
 		switch (p_what) {
-			case ZN_GODOT_CONTROL_CONSTANT(NOTIFICATION_THEME_CHANGED):
+			case NOTIFICATION_THEME_CHANGED:
 				// Set a monospace font.
 				// Can't do this in constructor, fonts are not available then. Also the theme can change.
 				for (unsigned int i = 0; i < _stats.size(); ++i) {
