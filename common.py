@@ -3,7 +3,7 @@ import glob
 # Gets sources and configurations that are common to compiling as a module and an extension.
 # For module-specific configuration, see `SCsub`.
 # For extension-specific configuration, see `SConstruct`.
-def get_sources(env):
+def get_sources(env, is_editor_build):
     env.Append(CPPPATH=["."])
 
     env.Append(CPPDEFINES=[
@@ -87,7 +87,7 @@ def get_sources(env):
         "thirdparty/meshoptimizer/*.cpp"
     ]
 
-    if env["tools"]:
+    if is_editor_build:
         sources += [
             "editor/*.cpp",
             "editor/terrain/*.cpp",

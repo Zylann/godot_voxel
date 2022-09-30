@@ -47,7 +47,7 @@ if env["tools"]:
     # This is the same symbol used in Godot modules.
     env.Append(CPPDEFINES=["TOOLS_ENABLED"])
 
-sources = common.get_sources(env)
+sources = common.get_sources(env, env["tools"])
 
 sources += [
 	"util/thread/godot_thread_helper.cpp",
