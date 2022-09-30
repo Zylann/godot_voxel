@@ -1,7 +1,6 @@
 #include "voxel_instance_library_multimesh_item.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/collision_shape_3d.h"
-#include "../../util/godot/constants.h"
 #include "../../util/godot/mesh_instance_3d.h"
 #include "../../util/godot/physics_body_3d.h"
 #include "voxel_instancer.h"
