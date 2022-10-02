@@ -427,9 +427,8 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 					// Project to triangles
 					const Vector3f ray_origin_world = pos000 - direction * cell_size;
 					const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
-					const float NO_HIT = 999999.f;
-					float nearest_hit_distance = NO_HIT;
-					unsigned int hit_triangle_index;
+					float nearest_hit_distance = 999999.f;
+					unsigned int hit_triangle_index = triangle_count;
 					for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 						const math::TriangleIntersectionResult result =
 								baked_triangles[ti].intersect(ray_origin_mesh, direction);
@@ -440,7 +439,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 						}
 					}
 
-					if (nearest_hit_distance == NO_HIT) {
+					if (nearest_hit_distance == triangle_count) {
 						// Don't query if there is no triangle
 						continue;
 					}
