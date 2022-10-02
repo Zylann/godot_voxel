@@ -48,7 +48,8 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 
 	compute_normalmap(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
 			tls_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
-			virtual_texture_settings.octahedral_encoding_enabled);
+			virtual_texture_settings.octahedral_encoding_enabled,
+			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
 
 	NormalMapImages images = store_normalmap_data_to_images(
 			tls_normalmap_data, tile_resolution, mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);

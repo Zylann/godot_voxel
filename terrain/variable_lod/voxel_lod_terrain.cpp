@@ -1985,6 +1985,15 @@ int VoxelLodTerrain::get_normalmap_begin_lod_index() const {
 	return _update_data->settings.virtual_texture_settings.begin_lod_index;
 }
 
+void VoxelLodTerrain::set_normalmap_max_deviation_degrees(int angle) {
+	_update_data->settings.virtual_texture_settings.max_deviation_degrees = math::clamp(
+			angle, int(NormalMapSettings::MIN_DEVIATION_DEGREES), int(NormalMapSettings::MAX_DEVIATION_DEGREES));
+}
+
+int VoxelLodTerrain::get_normalmap_max_deviation_degrees() const {
+	return _update_data->settings.virtual_texture_settings.max_deviation_degrees;
+}
+
 void VoxelLodTerrain::set_octahedral_normal_encoding(bool enable) {
 	_update_data->settings.virtual_texture_settings.octahedral_encoding_enabled = enable;
 }
@@ -2657,6 +2666,11 @@ void VoxelLodTerrain::_bind_methods() {
 			D_METHOD("set_normalmap_begin_lod_index", "lod_index"), &VoxelLodTerrain::set_normalmap_begin_lod_index);
 	ClassDB::bind_method(D_METHOD("get_normalmap_begin_lod_index"), &VoxelLodTerrain::get_normalmap_begin_lod_index);
 
+	ClassDB::bind_method(D_METHOD("set_normalmap_max_deviation_degrees", "angle"),
+			&VoxelLodTerrain::set_normalmap_max_deviation_degrees);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_max_deviation_degrees"), &VoxelLodTerrain::get_normalmap_max_deviation_degrees);
+
 	ClassDB::bind_method(
 			D_METHOD("set_octahedral_normal_encoding", "enabled"), &VoxelLodTerrain::set_octahedral_normal_encoding);
 	ClassDB::bind_method(D_METHOD("get_octahedral_normal_encoding"), &VoxelLodTerrain::get_octahedral_normal_encoding);
@@ -2742,6 +2756,8 @@ void VoxelLodTerrain::_bind_methods() {
 			"get_normalmap_tile_resolution_max");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_begin_lod_index"), "set_normalmap_begin_lod_index",
 			"get_normalmap_begin_lod_index");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "normalmap_max_deviation_degrees"), "set_normalmap_max_deviation_degrees",
+			"get_normalmap_max_deviation_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
 			"get_octahedral_normal_encoding");
 

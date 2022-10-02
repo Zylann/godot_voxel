@@ -43,9 +43,14 @@ struct NormalMapSettings {
 	// LOD index.
 	uint8_t tile_resolution_min = 4;
 	uint8_t tile_resolution_max = 8;
+	// If the angle between geometry normals and computed normals exceeds this angle, their direction will be clamped.
+	uint8_t max_deviation_degrees = 60;
 	// If enabled, encodes normalmaps using octahedral compression, which trades a bit of quality for
 	// significantly reduced memory usage (using 2 bytes per pixel instead of 3).
 	bool octahedral_encoding_enabled = false;
+
+	static constexpr uint8_t MIN_DEVIATION_DEGREES = 1;
+	static constexpr uint8_t MAX_DEVIATION_DEGREES = 179;
 };
 
 unsigned int get_virtual_texture_tile_resolution_for_lod(const NormalMapSettings &settings, unsigned int lod_index);
@@ -85,10 +90,12 @@ public:
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
+// If the angle between the triangle and the computed normal is larger tham `max_deviation_radians`,
+// the normal's direction will be clamped.
 void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding);
+		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians);
 
 struct NormalMapImages {
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY

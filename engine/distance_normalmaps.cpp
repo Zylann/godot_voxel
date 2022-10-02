@@ -5,6 +5,7 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/godot/image.h"
 #include "../util/godot/image_texture.h"
+#include "../util/math/basis3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/triangle.h"
 #include "../util/profiling.h"
@@ -330,10 +331,14 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Sp
 void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding) {
+		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
+	ZN_ASSERT_RETURN_MSG(max_deviation_radians > 0.001f, "Max deviation angle is too small.");
+
+	const float max_deviation_cosine = Math::cos(max_deviation_radians);
+	const float max_deviation_sine = Math::cos(max_deviation_radians);
 
 	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
@@ -371,6 +376,10 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		tls_tile_sample_positions.clear();
 		tls_tile_sample_positions.reserve(math::squared(tile_resolution));
 
+		static thread_local std::vector<uint8_t> tls_tile_sample_triangle_index;
+		tls_tile_sample_triangle_index.clear();
+		tls_tile_sample_triangle_index.reserve(math::squared(tile_resolution));
+
 		// Each normal needs 4 samples:
 		// (x,   y,   z  )
 		// (x+s, y,   z  )
@@ -396,6 +405,14 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		unsigned int triangle_count =
 				prepare_triangles(first_index, cell_info, direction, baked_triangles, mesh_vertices, mesh_indices);
 
+		// Compute triangle normals
+		FixedArray<Vector3f, CurrentCellInfo::MAX_TRIANGLES> triangle_normals;
+		for (unsigned int i = 0; i < triangle_count; ++i) {
+			const math::BakedIntersectionTriangleForFixedDirection &tri = baked_triangles[i];
+			const Vector3f tri_normal = math::normalized(math::cross(tri.e2, tri.e1));
+			triangle_normals[i] = tri_normal;
+		}
+
 		// Fill query buffers
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compute positions");
@@ -412,12 +429,14 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 					const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
 					const float NO_HIT = 999999.f;
 					float nearest_hit_distance = NO_HIT;
+					unsigned int hit_triangle_index;
 					for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 						const math::TriangleIntersectionResult result =
 								baked_triangles[ti].intersect(ray_origin_mesh, direction);
 						if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
 								result.distance < nearest_hit_distance) {
 							nearest_hit_distance = result.distance;
+							hit_triangle_index = ti;
 						}
 					}
 
@@ -428,6 +447,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 
 					pos000 = ray_origin_world + direction * nearest_hit_distance;
 					tls_tile_sample_positions.push_back(Vector2i(xi, yi));
+					tls_tile_sample_triangle_index.push_back(hit_triangle_index);
 
 					tls_x_buffer.push_back(pos000.x);
 					tls_y_buffer.push_back(pos000.y);
@@ -468,8 +488,14 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		// Compute normals from SDF results
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compute normals");
+			ZN_ASSERT(tls_tile_sample_positions.size() == tls_tile_sample_triangle_index.size());
+
 			unsigned int bi = 0;
-			for (const Vector2i sample_position : tls_tile_sample_positions) {
+
+			for (unsigned int si = 0; si < tls_tile_sample_positions.size(); ++si) {
+				const Vector2i sample_position = tls_tile_sample_positions[si];
+				const uint8_t sample_tri_index = tls_tile_sample_triangle_index[si];
+
 				const unsigned int bi000 = bi;
 				const unsigned int bi100 = bi + 1;
 				const unsigned int bi010 = bi + 2;
@@ -486,10 +512,23 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 				const float sd100 = tls_sdf_buffer[bi100];
 				const float sd010 = tls_sdf_buffer[bi010];
 				const float sd001 = tls_sdf_buffer[bi001];
-				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
-				// TODO Clamp normals if their dot product with triangle normal is higher than a threshold.
-				// This would help avoiding flipped normals on very low LODs because bias is very high. In the
+
+				Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+
+				// Clamp normals if their dot product with triangle normal is higher than a threshold.
+				// This helps avoiding flipped normals on very low LODs because bias is very high. In the
 				// SolarSystem demo it can pick up caves from the surface which results in black spots.
+				const Vector3f &tri_normal = triangle_normals[sample_tri_index];
+				const float tdot = math::dot(normal, tri_normal);
+				if (tdot < max_deviation_cosine) {
+					if (tdot < -0.999) {
+						normal = tri_normal;
+					} else {
+						const Vector3f axis = math::normalized(math::cross(tri_normal, normal));
+						normal = math::rotated(tri_normal, axis, max_deviation_cosine, max_deviation_sine);
+					}
+				}
+
 				const unsigned int normal_index = sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
 				ZN_ASSERT(normal_index < normal_map_data.normals.size());

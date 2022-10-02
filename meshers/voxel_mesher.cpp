@@ -31,6 +31,9 @@ Ref<Mesh> VoxelMesher::build_mesh(
 				try_get<bool>(additional_data, "octahedral_normal_encoding_enabled");
 		virtual_texture_settings.tile_resolution_min = try_get<int>(additional_data, "normalmap_tile_resolution");
 		virtual_texture_settings.tile_resolution_max = virtual_texture_settings.tile_resolution_min;
+		virtual_texture_settings.max_deviation_degrees =
+				math::clamp(try_get<int>(additional_data, "normalmap_max_deviation_degrees"),
+						int(NormalMapSettings::MIN_DEVIATION_DEGREES), int(NormalMapSettings::MAX_DEVIATION_DEGREES));
 		input.virtual_texture_hint = virtual_texture_settings.enabled;
 	}
 
@@ -82,7 +85,8 @@ Ref<Mesh> VoxelMesher::build_mesh(
 			compute_normalmap(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
 					to_span(mesh_arrays.indices), nm_data, virtual_texture_settings.tile_resolution_min,
 					*input.generator, nullptr, input.origin_in_voxels, input.lod_index,
-					virtual_texture_settings.octahedral_encoding_enabled);
+					virtual_texture_settings.octahedral_encoding_enabled,
+					math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
 
 			const Vector3i block_size =
 					input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
