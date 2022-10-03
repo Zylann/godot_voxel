@@ -22,8 +22,10 @@ private:
 		STAT_STREAM_TASKS,
 		STAT_GENERATE_TASKS,
 		STAT_MESH_TASKS,
+		STAT_TOTAL_TASKS,
 		STAT_MAIN_THREAD_TASKS,
-		STAT_MEMORY,
+		STAT_TOTAL_MEMORY,
+		STAT_VOXEL_MEMORY,
 		STAT_COUNT
 	};
 
@@ -33,9 +35,11 @@ private:
 	void create_stat(StatID id, String short_name, String long_name);
 	void set_stat(StatID id, int64_t value);
 	void set_stat(StatID id, int64_t value, const char *unit);
+	void set_stat(StatID id, int64_t value, int64_t value2, const char *unit);
 
 	struct Stat {
 		int64_t value = 0;
+		int64_t value2 = 0;
 		Label *label = nullptr;
 	};
 

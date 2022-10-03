@@ -1,5 +1,6 @@
 #include "voxel_terrain_editor_task_indicator.h"
 #include "../../engine/voxel_engine.h"
+#include "../../storage/voxel_memory_pool.h"
 #include "../../util/godot/control.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/godot/font.h"
@@ -11,11 +12,13 @@
 namespace zylann::voxel {
 
 VoxelTerrainEditorTaskIndicator::VoxelTerrainEditorTaskIndicator() {
-	create_stat(STAT_STREAM_TASKS, ZN_TTR("Streaming"), ZN_TTR("Streaming tasks"));
-	create_stat(STAT_GENERATE_TASKS, ZN_TTR("Generation"), ZN_TTR("Generation tasks"));
-	create_stat(STAT_MESH_TASKS, ZN_TTR("Meshing"), ZN_TTR("Meshing tasks"));
+	create_stat(STAT_STREAM_TASKS, ZN_TTR("I/O"), ZN_TTR("I/O tasks"));
+	create_stat(STAT_GENERATE_TASKS, ZN_TTR("Gen"), ZN_TTR("Generation tasks"));
+	create_stat(STAT_MESH_TASKS, ZN_TTR("Mesh"), ZN_TTR("Meshing tasks"));
+	create_stat(STAT_TOTAL_TASKS, ZN_TTR("Total"), ZN_TTR("Total remaining threaded tasks"));
 	create_stat(STAT_MAIN_THREAD_TASKS, ZN_TTR("Main"), ZN_TTR("Main thread tasks"));
-	create_stat(STAT_MEMORY, ZN_TTR("Memory"), ZN_TTR("Memory usage (whole editor, not just voxel)"));
+	create_stat(STAT_VOXEL_MEMORY, ZN_TTR("Voxel memory"), ZN_TTR("Memory for voxels (in use / pooled)"));
+	create_stat(STAT_TOTAL_MEMORY, ZN_TTR("Total"), ZN_TTR("Memory usage (whole editor, not just voxel)"));
 }
 
 void VoxelTerrainEditorTaskIndicator::_notification(int p_what) {
@@ -35,8 +38,11 @@ void VoxelTerrainEditorTaskIndicator::update_stats() {
 	set_stat(STAT_STREAM_TASKS, stats.streaming_tasks);
 	set_stat(STAT_GENERATE_TASKS, stats.generation_tasks);
 	set_stat(STAT_MESH_TASKS, stats.meshing_tasks);
+	set_stat(STAT_TOTAL_TASKS, stats.general.tasks);
 	set_stat(STAT_MAIN_THREAD_TASKS, stats.main_thread_tasks);
-	set_stat(STAT_MEMORY, int64_t(OS::get_singleton()->get_static_memory_usage()), "b");
+	const VoxelMemoryPool &mp = VoxelMemoryPool::get_singleton();
+	set_stat(STAT_VOXEL_MEMORY, int64_t(mp.debug_get_used_memory()), int64_t(mp.debug_get_total_memory()), "b");
+	set_stat(STAT_TOTAL_MEMORY, int64_t(OS::get_singleton()->get_static_memory_usage()), "b");
 }
 
 void VoxelTerrainEditorTaskIndicator::create_stat(StatID id, String short_name, String long_name) {
@@ -49,7 +55,7 @@ void VoxelTerrainEditorTaskIndicator::create_stat(StatID id, String short_name, 
 	name_label->set_mouse_filter(Control::MOUSE_FILTER_PASS); // Necessary for tooltip to work
 	add_child(name_label);
 	stat.label = memnew(Label);
-	stat.label->set_custom_minimum_size(Vector2(60 * EDSCALE, 0));
+	stat.label->set_custom_minimum_size(Vector2(45 * EDSCALE, 0));
 	stat.label->set_text("---");
 	add_child(stat.label);
 }
@@ -136,6 +142,16 @@ void VoxelTerrainEditorTaskIndicator::set_stat(StatID id, int64_t value, const c
 	if (stat.value != value) {
 		stat.value = value;
 		stat.label->set_text(with_unit(stat.value, unit));
+	}
+}
+
+void VoxelTerrainEditorTaskIndicator::set_stat(StatID id, int64_t value, int64_t value2, const char *unit) {
+	Stat &stat = _stats[id];
+	if (stat.value != value || stat.value2 != value2) {
+		stat.value = value;
+		stat.value2 = value2;
+		stat.label->set_text(
+				String("{0} / {1}").format(varray(with_unit(stat.value, unit), with_unit(stat.value2, unit))));
 	}
 }
 
