@@ -439,7 +439,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 						}
 					}
 
-					if (nearest_hit_distance == triangle_count) {
+					if (hit_triangle_index == triangle_count) {
 						// Don't query if there is no triangle
 						continue;
 					}
