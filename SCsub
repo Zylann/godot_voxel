@@ -71,11 +71,6 @@ for f in voxel_files:
 
 # TODO Check webassembly builds (`env["platform"] == "javascript"`)
 
-# TODO Can this be removed now?
-# Ignored clang warnings because Godot's codebase is old and isn't using override yet
-if env["platform"] in ["osx", "android"]:
-	env_voxel.Append(CXXFLAGS=["-Wno-inconsistent-missing-override"])
-
 # Doesn't work, since the rest of Godot doesn't use this, linking fails.
 # No safe STL boundary checks for you.
 #if env["target"] == "debug":
