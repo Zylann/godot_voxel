@@ -1,6 +1,7 @@
 #include "voxel_terrain_editor_task_indicator.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_memory_pool.h"
+#include "../../util/godot/array.h"
 #include "../../util/godot/control.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/godot/font.h"
