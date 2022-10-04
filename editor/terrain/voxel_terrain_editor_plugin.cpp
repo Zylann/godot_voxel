@@ -216,7 +216,7 @@ void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visi
 }
 
 #if defined(ZN_GODOT)
-EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
+EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 #elif defined(ZN_GODOT_EXTENSION)
 int64_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {

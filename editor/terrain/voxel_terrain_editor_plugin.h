@@ -35,7 +35,7 @@ public:
 	void ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visible)(bool visible) override;
 
 #if defined(ZN_GODOT)
-	EditorPlugin::AfterGUIInput forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
+	EditorPlugin::AfterGUIInput forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 #elif defined(ZN_GODOT_EXTENSION)
 	int64_t _forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 #endif
