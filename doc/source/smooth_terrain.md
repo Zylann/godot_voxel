@@ -152,7 +152,7 @@ The method involves projecting the texture on to the part of object that directl
 
 Look at how the brick textures are blended together on the top right sphere.
 
-![Triplanar mapping image](https://docs.godotengine.org/en/3.1/_images/spatial_material25.webp)
+![Triplanar mapping image](images/triplanar_example.webp)
 
 Read about [triplanar mapping in Godot](https://docs.godotengine.org/en/latest/tutorials/3d/standard_material_3d.html#triplanar-mapping).
 
