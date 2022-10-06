@@ -22,9 +22,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Editor Debug build
-            target: debug
-            tools: yes
+          - name: Editor build
+            target: editor
+            dev_build: no
             #cache_action: actions/cache@v2
             executable_name: libvoxel.windows.tools.debug.x86_64.dll
 
@@ -77,7 +77,9 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 platform=windows target=${{matrix.target}} tools=${{matrix.tools}}
+          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
+          cd bin
+          ls -l
 
       # Make build available
       # - uses: actions/upload-artifact@v2
