@@ -79,7 +79,7 @@ jobs:
         run: |
           scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
           cd bin
-          ls -l
+          dir
 
       # Make build available
       # - uses: actions/upload-artifact@v2
