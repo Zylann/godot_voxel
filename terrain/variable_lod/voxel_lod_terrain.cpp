@@ -2624,7 +2624,7 @@ int VoxelLodTerrain::_b_debug_get_data_block_count() const {
 	return _data->get_block_count();
 }
 
-int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	Node3D *root = memnew(Node3D);
 	root->set_name(get_name());
 
@@ -2644,8 +2644,6 @@ int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include
 					// TODO Transition mesh visibility?
 					mi->set_visible(block.is_visible());
 					root->add_child(mi);
-					// The owner must be set after adding to parent
-					mi->set_owner(root);
 				}
 			});
 		});
@@ -2655,9 +2653,17 @@ int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include
 		Node *instances_root = _instancer->debug_dump_as_nodes();
 		if (instances_root != nullptr) {
 			root->add_child(instances_root);
-			set_nodes_owner(instances_root, root);
 		}
 	}
+
+	return root;
+}
+
+int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+	Node3D *root = debug_dump_as_nodes(include_instancer);
+	ZN_ASSERT_RETURN_V(root != nullptr, ERR_BUG);
+
+	set_nodes_owner_except_root(root, root);
 
 	Ref<PackedScene> scene;
 	scene.instantiate();

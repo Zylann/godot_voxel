@@ -201,6 +201,8 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	Node3D *debug_dump_as_nodes(bool include_instancer) const;
+
 	// Editor
 
 	void set_run_stream_in_editor(bool enable);
