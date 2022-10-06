@@ -49,6 +49,7 @@ VoxelStringNames::VoxelStringNames() {
 	u_voxel_block_size = StringName("u_voxel_block_size");
 	u_voxel_virtual_texture_fade = StringName("u_voxel_virtual_texture_fade");
 	u_voxel_virtual_texture_tile_size = StringName("u_voxel_virtual_texture_tile_size");
+	u_voxel_virtual_texture_offset_scale = StringName("u_voxel_virtual_texture_offset_scale");
 
 #ifdef DEBUG_ENABLED
 	_voxel_debug_vt_position = StringName("_voxel_debug_vt_position");

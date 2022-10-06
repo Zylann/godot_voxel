@@ -65,6 +65,8 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	// Reset textures to avoid hoarding them in the pool
 	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2D>());
 	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
+	material->set_shader_parameter(
+			VoxelStringNames::get_singleton().u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
 	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
@@ -1508,8 +1510,17 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	block->set_parent_transform(get_global_transform());
 
-	if (ob.virtual_textures != nullptr && ob.virtual_textures->valid) {
-		apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod);
+	if (ob.virtual_textures != nullptr) {
+		if (ob.virtual_textures->valid) {
+			apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod);
+		} else {
+			// Textures aren't ready.
+			// To avoid a jarring transitions from "sharp" to "blurry", keep using parent texture if available.
+			// We could do this on many other levels (like propagating to children when a normalmap is assigned),
+			// but if we have to, it means the calculation is too expensive anyways,
+			// so it's usually better to tune it in the first place.
+			try_apply_parent_virtual_texture_to_block(*block, ob.position);
+		}
 	}
 
 #ifdef TOOLS_ENABLED
@@ -1539,6 +1550,72 @@ void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualText
 	apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod_index);
 }
 
+static void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, ShaderMaterial &material,
+		unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block, Vector3i parent_bpos,
+		const NormalMapSettings &virtual_texture_settings) {
+	//
+	Ref<ShaderMaterial> parent_material = parent_block.get_shader_material();
+	ZN_ASSERT_RETURN(parent_material.is_valid());
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	Ref<Texture2D> cell_lookup_texture = parent_material->get_shader_parameter(sn.u_voxel_cell_lookup);
+	if (cell_lookup_texture.is_null()) {
+		return;
+	}
+	Ref<Texture2D> normalmap_atlas_texture = parent_material->get_shader_parameter(sn.u_voxel_normalmap_atlas);
+	ZN_ASSERT_RETURN(normalmap_atlas_texture.is_valid());
+
+	material.set_shader_parameter(sn.u_voxel_normalmap_atlas, normalmap_atlas_texture);
+	material.set_shader_parameter(sn.u_voxel_cell_lookup, cell_lookup_texture);
+
+	const int cell_size = 1 << block.lod_index;
+	material.set_shader_parameter(sn.u_voxel_cell_size, cell_size);
+
+	material.set_shader_parameter(sn.u_voxel_block_size, mesh_block_size);
+
+	const Vector4 parent_offset_and_scale =
+			parent_material->get_shader_parameter(sn.u_voxel_virtual_texture_offset_scale);
+	const Vector3i parent_offset(parent_offset_and_scale.x, parent_offset_and_scale.y, parent_offset_and_scale.z);
+	const int fallback_level = parent_block.virtual_texture_fallback_level + 1;
+
+	const Vector3i offset = parent_offset + (bpos - (parent_bpos * 2)) * (mesh_block_size >> fallback_level);
+	const float scale = 1.f / float(1 << fallback_level);
+	material.set_shader_parameter(
+			sn.u_voxel_virtual_texture_offset_scale, Vector4(offset.x, offset.y, offset.z, scale));
+
+	material.set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
+
+	const unsigned int parent_lod_index = block.lod_index + 1;
+	const unsigned int tile_size =
+			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, parent_lod_index);
+	material.set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
+
+	block.virtual_texture_fallback_level = fallback_level;
+}
+
+void VoxelLodTerrain::try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
+	ZN_PROFILE_SCOPE();
+
+	Ref<ShaderMaterial> material = block.get_shader_material();
+	if (!material.is_valid()) {
+		return;
+	}
+	if (block.lod_index == get_lod_count()) {
+		return;
+	}
+
+	// Only looking up one level for now
+	const unsigned int parent_lod_index = block.lod_index + 1;
+	const VoxelMeshMap<VoxelMeshBlockVLT> &parent_map = _mesh_maps_per_lod[parent_lod_index];
+	const Vector3i parent_bpos = bpos >> 1;
+	const VoxelMeshBlockVLT *parent_block = parent_map.get_block(parent_bpos);
+	if (parent_block == nullptr) {
+		return;
+	}
+
+	zylann::voxel::try_apply_parent_virtual_texture_to_block(block, bpos, **material, get_mesh_block_size(),
+			*parent_block, parent_bpos, _update_data->settings.virtual_texture_settings);
+}
+
 void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 		VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
@@ -1547,6 +1624,7 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 	NormalMapTextures normalmap_textures = ob.normalmap_textures;
 
 	if (normalmap_textures.lookup.is_null()) {
+		// Textures couldn't be created in VRAM so far, do it now. (OpenGL/low-end?)
 		// TODO When this code path is required, use a time-spread task to reduce stalls
 		NormalMapImages normalmap_images = ob.normalmap_images;
 		normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
@@ -1562,6 +1640,7 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 		const int cell_size = 1 << lod_index;
 		material->set_shader_parameter(sn.u_voxel_cell_size, cell_size);
 		material->set_shader_parameter(sn.u_voxel_block_size, get_mesh_block_size());
+		material->set_shader_parameter(sn.u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
 
 		if (!had_texture) {
 			if (_lod_fade_duration > 0.f) {
@@ -1571,10 +1650,12 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 			} else {
 				material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
 			}
-			const unsigned int tile_size = get_virtual_texture_tile_resolution_for_lod(
-					_update_data->settings.virtual_texture_settings, lod_index);
-			material->set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 		}
+
+		// We may set this again in case the material was using textures from the parent LOD as a temporary fallback
+		const unsigned int tile_size =
+				get_virtual_texture_tile_resolution_for_lod(_update_data->settings.virtual_texture_settings, lod_index);
+		material->set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 	}
 	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
 	// textures goes in the bin. That should be a warning in the editor.
@@ -1594,6 +1675,8 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 			// edit. Scheduling an update from here isn't mildly inconvenient due to threading.
 		}
 	}
+
+	block.virtual_texture_fallback_level = 0;
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
