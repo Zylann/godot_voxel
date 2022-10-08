@@ -209,8 +209,8 @@ Example of options setup in in VSCode `launch.json` on Windows:
             "type": "cppvsdbg", // For MSVC
             //"type": "cppdbg", // For GDB
             "request": "launch",
-            "program": "${workspaceFolder}/bin/godot.windows.tools.64.exe", // debug
-            //"program": "${workspaceFolder}/bin/godot.windows.opt.tools.64.exe", // release_debug
+            "program": "${workspaceFolder}/bin/godot.windows.editor.dev.x86_64.exe", // Dev build (old target=debug)
+            //"program": "${workspaceFolder}/bin/godot.windows.editor.x86_64.exe", // Non-dev build (old target=release_debug)
             "args": [
                 "-v", // Verbose output
                 

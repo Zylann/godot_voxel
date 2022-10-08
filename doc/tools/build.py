@@ -20,6 +20,7 @@ import subprocess
 import getopt
 import glob
 import os
+import platform
 from pathlib import Path
 
 SOURCES = "source"
@@ -50,24 +51,30 @@ def update_classes_xml(custom_godot_path, godot_repo_root, verbose=False):
 
 def find_godot(bindir):
     # Match a filename like these
-    # godot.windows.tools.64.exe
-    # godot.x11.tools.64
-    #regex = r"godot\.(windows|x11|osx)(\.opt)?(\.tools)?\.(32|64)(\.exe)?"
+    # godot.windows.editor.dev.x86_64.exe
+    # godot.linuxbsd.editor.dev.x86_64
+    #regex = r"godot\.(windows|macos|linuxbsd)\.editor(\.dev)?\.(x86_32|x86_64|arm64|rv64)(\.exe)?"
     prefix = "godot"
+    os = ""
     suffix = ""
     if sys.platform == "win32" or sys.platform == "cygwin":
-        prefix += ".windows"
+        os = ".windows"
         suffix = ".exe"
+    elif sys.platform == "darwin":
+        os = ".macos"
     else:
-        # TODO Mac OS?
-        prefix += ".x11"
+        os = ".linuxbsd"
 
-    bits = ".64"
+    arch = ".x86_64"
+    if platform.machine().lower() == "arm64":
+        arch = ".arm64"
+    if platform.machine().lower() == "riscv64":
+        arch = ".rv64"
 
     # Names to try by priority
     names = [
-        prefix + ".tools" + bits + suffix,
-        prefix + ".opt.tools" + bits + suffix
+        prefix + os + ".editor.dev" + arch + suffix,
+        prefix + os + ".editor" + arch + suffix,
     ]
 
     for name in names:
