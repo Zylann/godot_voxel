@@ -100,21 +100,19 @@ public:
 			List<String> *r_platform_variants, List<String> *r_gen_files, Variant *r_metadata = nullptr) override;
 
 #elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: These are also `virtual` to workaround the issue that deriving from a class implementing virtual
-	// methods fails to compile, unless the derived class also overrides those methods
-	virtual String _get_importer_name() const override;
-	virtual String _get_visible_name() const override;
-	virtual PackedStringArray _get_recognized_extensions() const override;
-	virtual String _get_preset_name(int64_t p_idx) const override;
-	virtual int64_t _get_preset_count() const override;
-	virtual String _get_save_extension() const override;
-	virtual String _get_resource_type() const override;
-	virtual double _get_priority() const override;
-	virtual TypedArray<Dictionary> _get_import_options(const String &path, int64_t preset_index) const override;
-	virtual bool _get_option_visibility(
+	String _get_importer_name() const override;
+	String _get_visible_name() const override;
+	PackedStringArray _get_recognized_extensions() const override;
+	String _get_preset_name(int64_t p_idx) const override;
+	int64_t _get_preset_count() const override;
+	String _get_save_extension() const override;
+	String _get_resource_type() const override;
+	double _get_priority() const override;
+	TypedArray<Dictionary> _get_import_options(const String &path, int64_t preset_index) const override;
+	bool _get_option_visibility(
 			const String &path, const StringName &option_name, const Dictionary &options) const override;
 
-	virtual int64_t _import(const String &source_file, const String &save_path, const Dictionary &options,
+	int64_t _import(const String &source_file, const String &save_path, const Dictionary &options,
 			const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const override;
 
 #endif

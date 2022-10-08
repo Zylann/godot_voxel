@@ -134,18 +134,6 @@ public:
 	// 	Vector3i position;
 	// };
 
-#ifdef TOOLS_ENABLED
-#ifdef ZN_GODOT_EXTENSION
-	// TODO GDX: GodotCpp fails to compile a class if its base is a custom class overriding
-	// `_get_configuration_warnings`
-	PackedStringArray _get_configuration_warnings() const override {
-		PackedStringArray warnings;
-		get_configuration_warnings(warnings);
-		return warnings;
-	}
-#endif
-#endif
-
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
