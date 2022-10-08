@@ -25,7 +25,7 @@ public:
 	IThreadedTask *create_task();
 
 private:
-// TODO GDX: Need information on how to bind virtual functions, can't bind them at the moment
+// TODO GDX: Defining custom virtual functions is not supported...
 #ifdef ZN_GODOT
 	GDVIRTUAL1(_run, int);
 	GDVIRTUAL0R(int, _get_priority);
