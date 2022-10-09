@@ -638,22 +638,28 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 	Ref<VoxelBlockyLibrary> library = get_library();
 
 	if (library.is_null()) {
-		out_warnings.append(ZN_TTR(String("{0} has no {1} assigned.")
-										   .format(varray(VoxelMesherBlocky::get_class_static(),
-												   VoxelBlockyLibrary::get_class_static()))));
+		out_warnings.append(
+				String(ZN_TTR("{0} has no {1} assigned."))
+						.format(varray(VoxelMesherBlocky::get_class_static(), VoxelBlockyLibrary::get_class_static())));
 		return;
 	}
 
 	if (library->get_voxel_count() == 0) {
 		out_warnings.append(
-				ZN_TTR(String("The {0} assigned to {1} has an empty list of {2}s.")
-								.format(varray(VoxelBlockyLibrary::get_class_static(),
-										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
+				String(ZN_TTR("The {0} assigned to {1} has an empty list of {2}s."))
+						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
+								VoxelBlockyModel::get_class_static())));
 		return;
 	}
 
+	std::vector<int> null_indices;
+
 	bool has_solid_model = false;
 	for (unsigned int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
+		if (!library->has_voxel(i)) {
+			null_indices.push_back(i);
+			continue;
+		}
 		const VoxelBlockyModel &model = library->get_voxel_const(i);
 		switch (model.get_geometry_type()) {
 			case VoxelBlockyModel::GEOMETRY_NONE:
@@ -671,9 +677,22 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 	}
 	if (!has_solid_model) {
 		out_warnings.append(
-				ZN_TTR(String("The {0} assigned to {1} only has empty {2}s.")
-								.format(varray(VoxelBlockyLibrary::get_class_static(),
-										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
+				String(ZN_TTR("The {0} assigned to {1} only has empty {2}s."))
+						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
+								VoxelBlockyModel::get_class_static())));
+	}
+
+	if (null_indices.size() > 0) {
+		String indices_str;
+		for (unsigned int i = 0; i < null_indices.size(); ++i) {
+			if (i > 0) {
+				indices_str += ", ";
+			}
+			indices_str += String::num_int64(null_indices[i]);
+		}
+		out_warnings.append(String(ZN_TTR("The {0} assigned to {1} has null model entries: {2}"))
+									.format(varray(VoxelBlockyLibrary::get_class_static(),
+											VoxelMesherBlocky::get_class_static(), indices_str)));
 	}
 }
 
