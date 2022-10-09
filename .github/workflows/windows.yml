@@ -22,19 +22,17 @@ jobs:
       matrix:
         include:
           - name: Editor build
-            target: release_debug
-            tools: yes
+            target: editor
             #cache_action: actions/cache@v2
-            executable_name: godot.windows.opt.tools.x86_64.exe
+            executable_name: godot.windows.editor.x86_64.exe
 
           - name: Release build
-            target: release
-            tools: no
+            target: template_release
             # TODO I don't remember why this one uses a different action?
             # Either way, Github Actions does not support matrix variables in `uses` yet.
             # See https://github.com/orgs/community/discussions/9049
             #cache_action: RevoluPowered/cache@v2.1
-            executable_name: godot.windows.opt.x86_64.exe
+            executable_name: godot.windows.template_release.x86_64.exe
 
     steps:
       # Clone Godot
@@ -84,13 +82,7 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tools=${{matrix.tools}} tests=no target=${{matrix.target}}
-
-      # TODO Such tests are able to run from Godot 4.0 only
-      # Execute unit tests for the editor
-      #- name: Unit Tests
-      #  run: |
-      #    ./bin/godot.windows.opt.tools.64.exe --test
+          scons -j2 verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no
 
       # Make build available
       - uses: actions/upload-artifact@v2

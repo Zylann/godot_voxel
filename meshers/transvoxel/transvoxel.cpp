@@ -67,6 +67,12 @@ inline Vector3f get_secondary_position(
 		const Vector3f primary, const Vector3f normal, const int lod_index, const Vector3i block_size_non_scaled) {
 	Vector3f delta = get_border_offset(primary, lod_index, block_size_non_scaled);
 	delta = project_border_offset(delta, normal);
+
+	// At very low LOD levels, error can be high and make secondary positions shoot very far.
+	// Saw this happen around LOD 8. This doesn't get rid of them, but should make it not noticeable.
+	const float p2k = 1 << lod_index;
+	delta = math::clamp(delta, Vector3f(-p2k), Vector3f(p2k));
+
 	return primary + delta;
 }
 
@@ -872,18 +878,18 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			const int data_index = Vector3iUtil::get_zxy_index(cell_positions[0], block_size_with_padding);
 
 			{
-				const bool s = sdf_data[data_index] < isolevel;
+				const bool s = sdf_data[data_index] > isolevel;
 
 				// `//` prevents clang-format from messing up
 				if ( //
-						(sdf_data[data_index + fn10] < isolevel) == s && //
-						(sdf_data[data_index + fn20] < isolevel) == s && //
-						(sdf_data[data_index + fn01] < isolevel) == s && //
-						(sdf_data[data_index + fn11] < isolevel) == s && //
-						(sdf_data[data_index + fn21] < isolevel) == s && //
-						(sdf_data[data_index + fn02] < isolevel) == s && //
-						(sdf_data[data_index + fn12] < isolevel) == s && //
-						(sdf_data[data_index + fn22] < isolevel) == s) {
+						(sdf_data[data_index + fn10] > isolevel) == s && //
+						(sdf_data[data_index + fn20] > isolevel) == s && //
+						(sdf_data[data_index + fn01] > isolevel) == s && //
+						(sdf_data[data_index + fn11] > isolevel) == s && //
+						(sdf_data[data_index + fn21] > isolevel) == s && //
+						(sdf_data[data_index + fn02] > isolevel) == s && //
+						(sdf_data[data_index + fn12] > isolevel) == s && //
+						(sdf_data[data_index + fn22] > isolevel) == s) {
 					// Not crossing the isolevel, this cell won't produce any geometry.
 					// We must figure this out as fast as possible, because it will happen a lot.
 					continue;

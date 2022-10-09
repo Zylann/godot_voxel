@@ -347,7 +347,7 @@ A more complex flattening brush, which both subtracts matter in a sphere and add
 
 ![Dual flattening brush](images/graph_flatten_brush.webp)
 
-One more detail to consider, is how big the original brush is. Usually voxel generators have no particular bounds, but it matters here because it will be used locally. For example if your make a spherical brush, you might use a `SdfSphere` node with radius `1`. Then, your original size will be `(2,2,2)`. You can then transform that brush (scale, rotate...) when using `do_sphere` at the desired position.
+One more detail to consider, is how big the original brush is. Usually voxel generators have no particular bounds, but it matters here because it will be used locally. For example if your make a spherical brush, you might use a `SdfSphere` node with radius `1`. Then, your original size will be `(2,2,2)`. You can then transform that brush (scale, rotate...) when using `do_graph` at the desired position.
 
 
 VoxelGeneratorGraph nodes

@@ -1448,7 +1448,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Params params = ctx.get_params<Params>();
 			if (a_ignored) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = b.data[i];
+					out.data[i] = -b.data[i];
 				}
 			} else if (b_ignored) {
 				for (uint32_t i = 0; i < out.size; ++i) {

@@ -99,6 +99,7 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	if (size > get_highest_supported_size()) {
 		// Sorry, memory is not pooled past this size
 		block = (uint8_t *)ZN_ALLOC(size * sizeof(uint8_t));
+		_total_memory += size;
 #ifdef DEBUG_ENABLED
 		if (block != nullptr) {
 			_debug_nonpooled_used_blocks.add(block);
@@ -122,6 +123,7 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 			ZN_ASSERT(capacity >= size);
 #endif
 			block = (uint8_t *)ZN_ALLOC(capacity * sizeof(uint8_t));
+			_total_memory += size;
 		}
 #ifdef DEBUG_ENABLED
 		if (block != nullptr) {
@@ -149,6 +151,7 @@ void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
 		_debug_nonpooled_used_blocks.remove(block);
 #endif
 		ZN_FREE(block);
+		_total_memory -= size;
 	} else {
 		const unsigned int pot = get_pool_index_from_size(size);
 		Pool &pool = _pot_pools[pot];

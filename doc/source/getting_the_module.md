@@ -19,7 +19,11 @@ The engine is massive and targets a lot of platforms, while our module is small 
 
 #### For Godot 4
 
-- Available on [Github Actions](https://github.com/Zylann/godot_voxel/actions)
+Available on Github Actions:
+
+- [Windows builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
+- [Linux builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
+- [Mono builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml) (likely not available, they broke in Godot 4, help is needed to fix them)
 
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.

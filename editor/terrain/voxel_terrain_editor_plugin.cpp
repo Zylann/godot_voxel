@@ -216,7 +216,7 @@ void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visi
 }
 
 #if defined(ZN_GODOT)
-EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_spatial_gui_input(
+EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 #elif defined(ZN_GODOT_EXTENSION)
 int64_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
@@ -230,11 +230,7 @@ int64_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, cons
 				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
 
-#if defined(ZN_GODOT)
 	return EditorPlugin::AFTER_GUI_INPUT_PASS;
-#elif defined(ZN_GODOT_EXTENSION)
-	return godot_cpp_fix::AFTER_GUI_INPUT_PASS;
-#endif
 }
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {

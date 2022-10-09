@@ -5,9 +5,11 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/godot/image.h"
 #include "../util/godot/image_texture.h"
+#include "../util/math/basis3f.h"
 #include "../util/math/conv.h"
 #include "../util/math/triangle.h"
 #include "../util/profiling.h"
+#include "../util/string_funcs.h"
 
 namespace zylann::voxel {
 
@@ -245,7 +247,7 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data
 
 bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data, Span<const float> query_x_buffer,
 		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
-		Vector3f query_min_pos, Vector3f query_max_pos) {
+		Vector3f query_min_pos, Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
 	ZN_PROFILE_SCOPE();
 
 	// Pad by 1 in case there are neighboring edited voxels. If not done, it creates a grid pattern following LOD0 block
@@ -269,8 +271,10 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_
 		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
 		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
 		if (Vector3iUtil::get_volume(voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2) > math::cubed(8)) {
-			// Box too big for quick sparse readings, won't handle edits
-			ZN_PRINT_VERBOSE("Box too big to render virtual normalmaps");
+			// Box too big for quick sparse readings, won't handle edits. Fallback on generator.
+			// One way to speed this up would be to have an octree storing where edited data is.
+			// Or we would have to use the slowest query model, going through data structures for every voxel.
+			++skipped_count_due_to_high_volume;
 			return false;
 		}
 
@@ -293,7 +297,7 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_
 
 inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Span<const float> query_x_buffer,
 		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
-		Vector3f query_min_pos, Vector3f query_max_pos) {
+		Vector3f query_min_pos, Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
 	ZN_PROFILE_SCOPE();
 	bool generator_only = true;
 
@@ -301,7 +305,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Sp
 		// TODO Optimize: if there are no edited voxels in the entire mesh, completely skip this function.
 		//                Doing this efficiently requires an acceleration structure to do fast "exists" queries.
 		generator_only = !try_query_sdf_with_edits(generator, *voxel_data, query_x_buffer, query_y_buffer,
-				query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
+				query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos, skipped_count_due_to_high_volume);
 	}
 
 	if (generator_only) {
@@ -327,10 +331,14 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Sp
 void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding) {
+		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
+	ZN_ASSERT_RETURN_MSG(max_deviation_radians > 0.001f, "Max deviation angle is too small.");
+
+	const float max_deviation_cosine = Math::cos(max_deviation_radians);
+	const float max_deviation_sine = Math::cos(max_deviation_radians);
 
 	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
@@ -344,6 +352,8 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 	unsigned int first_index = 0;
 	unsigned int cell_index = 0;
 	CurrentCellInfo cell_info;
+
+	uint32_t skipped_count_due_to_high_volume = 0;
 
 	while (cell_iterator.next(cell_info)) {
 		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices, first_index);
@@ -365,6 +375,10 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		static thread_local std::vector<Vector2i> tls_tile_sample_positions;
 		tls_tile_sample_positions.clear();
 		tls_tile_sample_positions.reserve(math::squared(tile_resolution));
+
+		static thread_local std::vector<uint8_t> tls_tile_sample_triangle_index;
+		tls_tile_sample_triangle_index.clear();
+		tls_tile_sample_triangle_index.reserve(math::squared(tile_resolution));
 
 		// Each normal needs 4 samples:
 		// (x,   y,   z  )
@@ -391,6 +405,14 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		unsigned int triangle_count =
 				prepare_triangles(first_index, cell_info, direction, baked_triangles, mesh_vertices, mesh_indices);
 
+		// Compute triangle normals
+		FixedArray<Vector3f, CurrentCellInfo::MAX_TRIANGLES> triangle_normals;
+		for (unsigned int i = 0; i < triangle_count; ++i) {
+			const math::BakedIntersectionTriangleForFixedDirection &tri = baked_triangles[i];
+			const Vector3f tri_normal = math::normalized(math::cross(tri.e2, tri.e1));
+			triangle_normals[i] = tri_normal;
+		}
+
 		// Fill query buffers
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compute positions");
@@ -405,24 +427,26 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 					// Project to triangles
 					const Vector3f ray_origin_world = pos000 - direction * cell_size;
 					const Vector3f ray_origin_mesh = ray_origin_world - to_vec3f(origin_in_voxels);
-					const float NO_HIT = 999999.f;
-					float nearest_hit_distance = NO_HIT;
+					float nearest_hit_distance = 999999.f;
+					unsigned int hit_triangle_index = triangle_count;
 					for (unsigned int ti = 0; ti < triangle_count; ++ti) {
 						const math::TriangleIntersectionResult result =
 								baked_triangles[ti].intersect(ray_origin_mesh, direction);
 						if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
 								result.distance < nearest_hit_distance) {
 							nearest_hit_distance = result.distance;
+							hit_triangle_index = ti;
 						}
 					}
 
-					if (nearest_hit_distance == NO_HIT) {
+					if (hit_triangle_index == triangle_count) {
 						// Don't query if there is no triangle
 						continue;
 					}
 
 					pos000 = ray_origin_world + direction * nearest_hit_distance;
 					tls_tile_sample_positions.push_back(Vector2i(xi, yi));
+					tls_tile_sample_triangle_index.push_back(hit_triangle_index);
 
 					tls_x_buffer.push_back(pos000.x);
 					tls_y_buffer.push_back(pos000.y);
@@ -453,7 +477,8 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 
 		// Query voxel data
 		query_sdf(generator, voxel_data, to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-				to_span(tls_sdf_buffer), cell_origin_world, cell_origin_world + Vector3f(cell_size));
+				to_span(tls_sdf_buffer), cell_origin_world, cell_origin_world + Vector3f(cell_size),
+				skipped_count_due_to_high_volume);
 
 		static thread_local std::vector<Vector3f> tls_tile_normals;
 		tls_tile_normals.clear();
@@ -462,8 +487,14 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		// Compute normals from SDF results
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compute normals");
+			ZN_ASSERT(tls_tile_sample_positions.size() == tls_tile_sample_triangle_index.size());
+
 			unsigned int bi = 0;
-			for (const Vector2i sample_position : tls_tile_sample_positions) {
+
+			for (unsigned int si = 0; si < tls_tile_sample_positions.size(); ++si) {
+				const Vector2i sample_position = tls_tile_sample_positions[si];
+				const uint8_t sample_tri_index = tls_tile_sample_triangle_index[si];
+
 				const unsigned int bi000 = bi;
 				const unsigned int bi100 = bi + 1;
 				const unsigned int bi010 = bi + 2;
@@ -480,7 +511,23 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 				const float sd100 = tls_sdf_buffer[bi100];
 				const float sd010 = tls_sdf_buffer[bi010];
 				const float sd001 = tls_sdf_buffer[bi001];
-				const Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+
+				Vector3f normal = math::normalized(Vector3f(sd100 - sd000, sd010 - sd000, sd001 - sd000));
+
+				// Clamp normals if their dot product with triangle normal is higher than a threshold.
+				// This helps avoiding flipped normals on very low LODs because bias is very high. In the
+				// SolarSystem demo it can pick up caves from the surface which results in black spots.
+				const Vector3f &tri_normal = triangle_normals[sample_tri_index];
+				const float tdot = math::dot(normal, tri_normal);
+				if (tdot < max_deviation_cosine) {
+					if (tdot < -0.999) {
+						normal = tri_normal;
+					} else {
+						const Vector3f axis = math::normalized(math::cross(tri_normal, normal));
+						normal = math::rotated(tri_normal, axis, max_deviation_cosine, max_deviation_sine);
+					}
+				}
+
 				const unsigned int normal_index = sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
 				ZN_ASSERT(normal_index < normal_map_data.normals.size());
@@ -517,6 +564,13 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 
 		first_index += 3 * cell_info.triangle_count;
 		++cell_index;
+	}
+
+	if (skipped_count_due_to_high_volume > 0) {
+		// Logging here to reduce spam
+		ZN_PRINT_VERBOSE(format(
+				"Virtual normalmaps: fell back on generator for {} tiles, box too big to render edited voxels (lod {})",
+				skipped_count_due_to_high_volume, lod_index));
 	}
 }
 

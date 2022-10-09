@@ -120,8 +120,8 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3d &p_from
 // If you need to do a lot of raycasts on a triangle using the same direction every time
 struct BakedIntersectionTriangleForFixedDirection {
 	Vector3f v0;
-	Vector3f e1;
-	Vector3f e2;
+	Vector3f e1; // v1 - v0
+	Vector3f e2; // v2 - v0
 	Vector3f h;
 	float f;
 

@@ -28,7 +28,6 @@ env = SConscript(godot_cpp_path + "/SConstruct")
 # If such a check should exist, it needs to be HERE, not in GodotCpp.
 
 env_vars = Variables()
-env_vars.Add(BoolVariable("tools", "Build library with editor tools", True))
 # TODO Share options between module and extension?
 env_vars.Add(BoolVariable("voxel_tests", 
     "Build with tests for the voxel module, which will run on startup of the engine", False))
@@ -42,12 +41,9 @@ env.Append(CPPDEFINES=[
 	"ZN_GODOT_EXTENSION"
 ])
 
-if env["tools"]:
-    # GodotCpp does not define anything regarding editor builds, so we have to define that ourselves.
-    # This is the same symbol used in Godot modules.
-    env.Append(CPPDEFINES=["TOOLS_ENABLED"])
+is_editor_build = (env["target"] == "editor")
 
-sources = common.get_sources(env)
+sources = common.get_sources(env, is_editor_build)
 
 sources += [
 	"util/thread/godot_thread_helper.cpp",
@@ -57,44 +53,33 @@ sources += [
 	"util/godot/random_pcg.cpp"
 ]
 
-if env["tools"]:
+if is_editor_build:
     sources += [
         "util/godot/editor_scale.cpp"
     ]
 
-# WARNING
-# From a C++ developer point of view, the GodotCpp example and `.gdextension` files are confusing what the
-# `debug` and `release` targets usually mean with "editor" and "exported projects".
-# In this project, we consider `debug` means "unoptimized + debug symbols, big binary",
-# while `release` means "optimized, no debug symbols, small binary".
-# "editor" and "exported" should be separate concepts, which we had to define ourselves as `tools`.
-# But in `.gdextension` files, `debug` actually means "editor", and `release` means "exported".
-
-bin_name = "{}.{}{}{}".format(
-    LIB_NAME,
-    env["platform"], 
-    ".tools." if env["tools"] else ".",
-    env["target"],
-)
-
 if env["platform"] == "macos":
     library = env.SharedLibrary(
-        "{}/{}.framework/{}".format(
+        "{}/{}.{}.{}.framework/{}.{}.{}".format(
             BIN_FOLDER,
-            bin_name,
-            bin_name
+            LIB_NAME,
+            env["platform"],
+            env["target"],
+            LIB_NAME,
+            env["platform"],
+            env["target"]
         ),
-        source = sources,
+        source = sources
     )
 else:
     library = env.SharedLibrary(
-        "{}/{}.{}{}".format(
+        "{}/{}{}{}".format(
             BIN_FOLDER,
-            bin_name,
-            env["arch_suffix"],
+            LIB_NAME,
+            env["suffix"],
             env["SHLIBSUFFIX"]
         ),
-        source = sources,
+        source = sources
     )
 
 Default(library)

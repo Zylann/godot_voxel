@@ -17,7 +17,7 @@ RUN_TESTS = env["voxel_tests"]
 
 env_voxel = env_modules.Clone()
 
-voxel_files = common.get_sources(env_voxel)
+voxel_files = common.get_sources(env_voxel, env.editor_build)
 
 env_voxel.Append(CPPDEFINES=[
 	# Tell engine-agnostic code we are using Godot Engine as a module
@@ -49,10 +49,20 @@ if FAST_NOISE_2_SRC:
 		"util/noise/fast_noise_2.cpp"
 	]
 
-	if env["tools"]:
+	if env.editor_build:
 		voxel_files += [
 			"editor/fast_noise_2/*.cpp"
 		]
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Tracy library
+# Expects Tracy to be inside the `thirdparty` folder of Godot (not this module)
+
+# env.Append(CPPDEFINES="TRACY_ENABLE")
+# env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
+# voxel_files += [
+# 	"#thirdparty/tracy/TracyClient.cpp"
+# ]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -60,11 +70,6 @@ for f in voxel_files:
 	env_voxel.add_source_files(env.modules_sources, f)
 
 # TODO Check webassembly builds (`env["platform"] == "javascript"`)
-
-# TODO Can this be removed now?
-# Ignored clang warnings because Godot's codebase is old and isn't using override yet
-if env["platform"] in ["osx", "android"]:
-	env_voxel.Append(CXXFLAGS=["-Wno-inconsistent-missing-override"])
 
 # Doesn't work, since the rest of Godot doesn't use this, linking fails.
 # No safe STL boundary checks for you.

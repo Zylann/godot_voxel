@@ -72,7 +72,7 @@ const channel : int = VoxelBuffer.CHANNEL_TYPE
 func _get_used_channels_mask() -> int:
     return 1 << channel
  
-func _generate_block(buffer : VoxelBuffer, origin : Vector3, lod : int) -> void:
+func _generate_block(buffer : VoxelBuffer, origin : Vector3i, lod : int) -> void:
 	if lod != 0:
         return
 	if origin.y < 0:
@@ -136,7 +136,7 @@ func _init():
     image.load("some_heightmap.png")
     image.lock()
 
-func generate_block(buffer : VoxelBuffer, origin : Vector3, lod : int) -> void:
+func generate_block(buffer : VoxelBuffer, origin : Vector3i, lod : int) -> void:
     # ... use image.get_pixel() freely ...
     # ... but DO NOT use image.set_pixel() ...
 

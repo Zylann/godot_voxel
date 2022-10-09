@@ -20,21 +20,27 @@ jobs:
         include:
           - name: Editor debug build
             float: 32
-            target: debug
+            target: editor
+            dev_build: yes
+            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
-            executable_name: godot.linuxbsd.tools.x86_64
+            executable_name: godot.linuxbsd.editor.dev.x86_64
 
           - name: Editor build
             float: 32
-            target: release_debug
+            target: editor
+            dev_build: no
+            #dev_mode: no
             production: yes
-            executable_name: godot.linuxbsd.opt.tools.x86_64
+            executable_name: godot.linuxbsd.editor.x86_64
 
           - name: Editor build with 64-bit floats
             float: 64
-            target: release_debug
+            target: editor
+            dev_build: no
+            #dev_mode: no
             production: yes
-            executable_name: godot.linuxbsd.double.opt.tools.x86_64
+            executable_name: godot.linuxbsd.editor.double.x86_64
 
     steps:
       # Clone Godot
@@ -48,18 +54,38 @@ jobs:
         with:
           path: modules/voxel
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
+      # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
+      # This allows to make production builds that are compatible with older Linux distros.
+      # TODO Cache it so future runs can use it?
+      # TODO Make this step self-contained? Currently I also setup `PATH` in the Compilation step because modifications
+      #      do not persist between steps (?). I also placed this step after checkout because the checkout step changes
+      #      the working directory for all following steps.
+      # TODO pkg-config wrongly points to lib instead of lib64 for arch-dependent header.
+      #      Using `sed` to patch it as a workaround.
+      #      See https://github.com/godotengine/buildroot/issues/6
+      - name: Setup buildroot
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
-          sudo apt-get update
+          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+          cd x86_64-godot-linux-gnu_sdk-buildroot
+          sed -i x86_64-godot-linux-gnu/sysroot/usr/lib/pkgconfig/dbus-1.pc -e "s@/lib@/lib64@g"
+          ./relocate-sdk.sh
+          cd ..
 
+      # [Already provided by the custom buildroot]
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      # - name: Make apt sources.list use the default Ubuntu repositories
+      #   run: |
+      #     sudo rm -f /etc/apt/sources.list.d/*
+      #     sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+      #     sudo apt-get update
+
+      # [Already provided by the custom buildroot]
       # Install all packages (except scons)
-      - name: Configure dependencies
-        run: |
-          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
-            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
+      # - name: Configure dependencies
+      #   run: |
+      #     sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+      #       libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -73,39 +99,36 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
+      # [Already provided by the custom buildroot]
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
+      # - name: Set up Python 3.x
+      #   uses: actions/setup-python@v2
+      #   with:
+      #     # Semantic version range syntax or exact version of a Python version
+      #     python-version: '3.x'
+      #     # Optional - x64 or x86 architecture, defaults to x64
+      #     architecture: 'x64'
 
+      # [Already provided by the custom buildroot]
       # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons
-          python --version
-          scons --version
+      # - name: Configuring Python packages
+      #   run: |
+      #     python -c "import sys; print(sys.version)"
+      #     python -m pip install scons
+      #     python --version
+      #     scons --version
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
-
-      # TODO Such tests are able to run from Godot 4.0 only
-      # Execute unit tests for the editor
-      #- name: Unit Tests
-      #  run: |
-      #    ./bin/godot.linuxbsd.opt.tools.64 --test
+          PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
+          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
 
       # Make build available
       - uses: actions/upload-artifact@v2
-        if: ${{ matrix.target != 'debug' }}
+        if: ${{ matrix.dev_build != 'yes' }}
         with:
           name: ${{matrix.executable_name}}
           path: bin/${{matrix.executable_name}}

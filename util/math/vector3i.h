@@ -97,6 +97,14 @@ inline Vector3i abs(const Vector3i v) {
 	return Vector3i(Math::abs(v.x), Math::abs(v.y), Math::abs(v.z));
 }
 
+inline Vector3i min(const Vector3i a, const Vector3i b) {
+	return Vector3i(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+}
+
+inline Vector3i max(const Vector3i a, const Vector3i b) {
+	return Vector3i(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+}
+
 } // namespace math
 
 inline Vector3i operator<<(const Vector3i &a, int b) {

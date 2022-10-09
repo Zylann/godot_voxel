@@ -111,6 +111,9 @@ public:
 	void set_normalmap_begin_lod_index(int lod_index);
 	int get_normalmap_begin_lod_index() const;
 
+	void set_normalmap_max_deviation_degrees(int angle);
+	int get_normalmap_max_deviation_degrees() const;
+
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 	void post_edit_modifiers(Box3i p_voxel_box);
@@ -198,25 +201,15 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+	Node3D *debug_dump_as_nodes(bool include_instancer) const;
+
 	// Editor
 
 	void set_run_stream_in_editor(bool enable);
 	bool is_stream_running_in_editor() const;
 
 #ifdef TOOLS_ENABLED
-
 	void get_configuration_warnings(PackedStringArray &warnings) const override;
-
-#ifdef ZN_GODOT_EXTENSION
-	// TODO GDX: GodotCpp fails to compile a class if its base is a custom class overriding
-	// `_get_configuration_warnings`
-	PackedStringArray _get_configuration_warnings() const override {
-		PackedStringArray warnings;
-		get_configuration_warnings(warnings);
-		return warnings;
-	}
-#endif
-
 #endif // TOOLS_ENABLED
 
 	// Internal
@@ -255,6 +248,7 @@ private:
 	void apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob);
 	void apply_virtual_texture_update_to_block(
 			VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index);
+	void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos);
 
 	void start_updater();
 	void stop_updater();

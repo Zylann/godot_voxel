@@ -84,14 +84,13 @@ struct VoxelLodTerrainUpdateData {
 		std::atomic<VirtualTextureState> virtual_texture_state;
 		uint8_t transition_mask;
 		bool active;
-		bool pending_transition_update;
+		//bool pending_transition_update;
 
 		MeshBlockState() :
 				state(MESH_NEVER_UPDATED),
 				virtual_texture_state(VIRTUAL_TEXTURE_IDLE),
 				transition_mask(0),
-				active(false),
-				pending_transition_update(false) {}
+				active(false) {}
 	};
 
 	// Version of the mesh map designed to be mainly used for the threaded update task.

@@ -9,6 +9,7 @@
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "voxel_buffer_internal.h"
+#include <cstring>
 
 namespace zylann::voxel {
 
