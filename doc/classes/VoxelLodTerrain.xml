@@ -127,6 +127,12 @@
 				Gets an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
 			</description>
 		</method>
+		<method name="restart_stream">
+			<return type="void" />
+			<description>
+				Restarts the stream. This performs the same operations as when stream parameters change, except this method does not change stream parameters.
+			</description>
+		</method>
 		<method name="save_modified_blocks">
 			<return type="void" />
 			<description>
