@@ -575,6 +575,68 @@ void load_graph_with_expression_and_noises(VoxelGeneratorGraph &g, Ref<ZN_FastNo
 	}
 }
 
+void load_graph_with_clamp(VoxelGeneratorGraph &g, float ramp_half_size) {
+	// Two planes of different height, with a 45-degrees ramp along the X axis between them.
+	// The plane is higher in negative X, and lower in positive X.
+	//
+	//   X --- Clamp --- + --- Out
+	//                  /
+	//                 Y
+
+	const uint32_t n_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+	const uint32_t n_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2());
+	// Not using CLAMP_C for testing simplification
+	const uint32_t n_clamp = g.create_node(VoxelGeneratorGraph::NODE_CLAMP, Vector2());
+	const uint32_t n_add = g.create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+	const uint32_t n_out = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+
+	g.set_node_default_input(n_clamp, 1, -ramp_half_size);
+	g.set_node_default_input(n_clamp, 2, ramp_half_size);
+
+	g.add_connection(n_x, 0, n_clamp, 0);
+	g.add_connection(n_clamp, 0, n_add, 0);
+	g.add_connection(n_y, 0, n_add, 1);
+	g.add_connection(n_add, 0, n_out, 0);
+}
+
+void test_voxel_graph_clamp_simplification() {
+	// The CLAMP node is replaced with a CLAMP_C node on compilation.
+	// This tests that the generator still behaves properly.
+	static const float RAMP_HALF_SIZE = 4.f;
+	struct L {
+		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			load_graph_with_clamp(**generator, RAMP_HALF_SIZE);
+			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
+			ZN_TEST_ASSERT_MSG(result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+			return generator;
+		}
+		static void test_locations(VoxelGeneratorGraph &g) {
+			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+			const float sd_on_higher_side_below_ground =
+					g.generate_single(Vector3i(-RAMP_HALF_SIZE - 10, 0, 0), channel).f;
+			const float sd_on_higher_side_above_ground =
+					g.generate_single(Vector3i(-RAMP_HALF_SIZE - 10, RAMP_HALF_SIZE + 2, 0), channel).f;
+			const float sd_on_lower_side_above_ground =
+					g.generate_single(Vector3i(RAMP_HALF_SIZE + 10, 0, 0), channel).f;
+			const float sd_on_lower_side_below_ground =
+					g.generate_single(Vector3i(RAMP_HALF_SIZE + 10, -RAMP_HALF_SIZE - 2, 0), channel).f;
+
+			ZN_TEST_ASSERT(sd_on_lower_side_above_ground > 0.f);
+			ZN_TEST_ASSERT(sd_on_lower_side_below_ground < 0.f);
+			ZN_TEST_ASSERT(sd_on_higher_side_above_ground > 0.f);
+			ZN_TEST_ASSERT(sd_on_higher_side_below_ground < 0.f);
+		}
+	};
+	Ref<VoxelGeneratorGraph> generator_debug = L::create_graph(true);
+	Ref<VoxelGeneratorGraph> generator = L::create_graph(false);
+	ZN_TEST_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
+	L::test_locations(**generator);
+	L::test_locations(**generator_debug);
+}
+
 void test_voxel_graph_generator_expressions() {
 	struct L {
 		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
@@ -2609,6 +2671,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_invalid_connection);
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
 	VOXEL_TEST(test_voxel_graph_sphere_on_plane);
+	VOXEL_TEST(test_voxel_graph_clamp_simplification);
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
 	VOXEL_TEST(test_voxel_graph_generator_expressions_2);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);

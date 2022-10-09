@@ -281,6 +281,8 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 			return result;
 		}
 		if (remap_info != nullptr) {
+			// It is assumed the expression node was user-created (and not the result of another expansion).
+			// So we don't check existing remaps.
 			remap_info->user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
 			for (const uint32_t expanded_node_id : expanded_node_ids) {
 				remap_info->expanded_to_user_node_ids.push_back({ expanded_node_id, node_id });
@@ -374,6 +376,35 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 	return true;
 }
 
+// Updates remaps for replacing one node with another, where old and new nodes have the same number of outputs.
+void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, uint32_t new_node_id, unsigned int output_count) {
+	bool existing_remap = false;
+	// Modify existing entries in case the old node was the result of a previous processing of the graph.
+	for (PortRemap &remap : remaps.user_to_expanded_ports) {
+		if (remap.expanded.node_id == old_node_id) {
+			remap.expanded.node_id = new_node_id;
+			existing_remap = true;
+		}
+	}
+	for (ExpandedNodeRemap &remap : remaps.expanded_to_user_node_ids) {
+		if (remap.expanded_node_id == old_node_id) {
+			remap.expanded_node_id = new_node_id;
+		}
+	}
+	if (!existing_remap) {
+		// The old node wasn't the result of a previous processing of the graph.
+		// So we may add new entries.
+		for (uint32_t output_index = 0; output_index < output_count; ++output_index) {
+			PortRemap port_remap;
+			port_remap.original = ProgramGraph::PortLocation{ old_node_id, output_index };
+			port_remap.expanded = ProgramGraph::PortLocation{ new_node_id, output_index };
+			remaps.user_to_expanded_ports.push_back(port_remap);
+
+			remaps.expanded_to_user_node_ids.push_back(ExpandedNodeRemap{ new_node_id, old_node_id });
+		}
+	}
+}
+
 static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
 	const ProgramGraph::Node &node1 = graph.get_node(node1_id);
 	const ProgramGraph::Node &node2 = graph.get_node(node2_id);
@@ -390,16 +421,7 @@ static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id
 		}
 	}
 	if (remap_info != nullptr) {
-		for (PortRemap &remap : remap_info->user_to_expanded_ports) {
-			if (remap.expanded.node_id == node2_id) {
-				remap.expanded.node_id = node1_id;
-			}
-		}
-		for (ExpandedNodeRemap &remap : remap_info->expanded_to_user_node_ids) {
-			if (remap.expanded_node_id == node2_id) {
-				remap.expanded_node_id = node1_id;
-			}
-		}
+		add_remap(*remap_info, node2_id, node1_id, node1.outputs.size());
 	}
 	graph.remove_node(node2_id);
 }
@@ -503,6 +525,78 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 	}
 }
 
+void try_simplify_clamp_node(ProgramGraph &graph, const ProgramGraph::Node &node, const VoxelGraphNodeDB &type_db,
+		GraphRemappingInfo *remap_info) {
+	ZN_ASSERT(node.inputs.size() == 3);
+
+	const uint32_t clamp_x_input_id = 0;
+	const uint32_t clamp_output_id = 0;
+	const uint32_t clamp_min_input_id = 1;
+	const uint32_t clamp_max_input_id = 2;
+
+	const uint32_t clampc_x_input_id = 0;
+	const uint32_t clampc_output_id = 0;
+	const uint32_t clampc_min_param_id = 0;
+	const uint32_t clampc_max_param_id = 1;
+
+	if (node.inputs[clamp_min_input_id].connections.size() == 0 &&
+			node.inputs[clamp_max_input_id].connections.size() == 0) {
+		// Can be replaced with a clamp version with constant bounds
+
+		ZN_ASSERT(node.default_inputs.size() == node.inputs.size());
+
+		const float minv = node.default_inputs[clamp_min_input_id];
+		const float maxv = node.default_inputs[clamp_max_input_id];
+
+		// Create new node
+		ProgramGraph::Node &clampc_node = create_node(graph, type_db, VoxelGeneratorGraph::NODE_CLAMP_C);
+
+		// Assign new node params
+		clampc_node.params[clampc_min_param_id] = minv;
+		clampc_node.params[clampc_max_param_id] = maxv;
+
+		// Connect inputs of new node
+		const ProgramGraph::Port &clamp_input = node.inputs[clamp_x_input_id];
+		for (const ProgramGraph::PortLocation &src : clamp_input.connections) {
+			graph.connect(src, ProgramGraph::PortLocation{ clampc_node.id, clampc_x_input_id });
+		}
+
+		// Making a copy because we first need to disconnect those connections
+		const std::vector<ProgramGraph::PortLocation> clamp_output_connections =
+				node.outputs[clamp_output_id].connections;
+		for (const ProgramGraph::PortLocation &dst : clamp_output_connections) {
+			graph.disconnect(ProgramGraph::PortLocation{ node.id, clamp_output_id }, dst);
+		}
+
+		// Connect outputs of new node
+		for (const ProgramGraph::PortLocation &dst : clamp_output_connections) {
+			graph.connect(ProgramGraph::PortLocation{ clampc_node.id, clampc_output_id }, dst);
+		}
+
+		// Update remaps for debug tracing
+		if (remap_info != nullptr) {
+			add_remap(*remap_info, node.id, clampc_node.id, node.outputs.size());
+		}
+
+		// Remove old node
+		graph.remove_node(node.id);
+		// From this point, `node` is invalid.
+	}
+}
+
+void replace_simplifiable_nodes(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+	std::vector<uint32_t> node_ids;
+	graph.get_node_ids(node_ids);
+
+	for (const uint32_t &node_id : node_ids) {
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+
+		if (node.type_id == VoxelGeneratorGraph::NODE_CLAMP) {
+			try_simplify_clamp_node(graph, node, type_db, remap_info);
+		}
+	}
+}
+
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	// First make a copy of the graph which we'll modify
@@ -517,6 +611,7 @@ VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, Pro
 	}
 
 	merge_equivalences(expanded_graph, remap_info);
+	replace_simplifiable_nodes(expanded_graph, type_db, remap_info);
 
 	return expand_result;
 }
