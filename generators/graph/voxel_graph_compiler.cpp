@@ -687,7 +687,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			return a;
 		}
 
-		uint16_t add_constant(float v) {
+		uint16_t add_constant(float v, bool buffer_required) {
 			const unsigned int a = next_address;
 			++next_address;
 			BufferSpec bs;
@@ -695,7 +695,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			bs.constant_value = v;
 			bs.is_binding = false;
 			bs.is_constant = true;
-			bs.is_pinned = true;
+			bs.is_pinned = buffer_required;
 			bs.users_count = 0;
 			buffer_specs.push_back(bs);
 			return a;
@@ -738,10 +738,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		// We still hardcode some of the nodes. Maybe we can abstract them too one day.
 		switch (node.type_id) {
+			// TODO Get rid of constant nodes, replace them with default inputs wherever they are used?
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
 				CRASH_COND(type.outputs.size() != 1);
 				CRASH_COND(type.params.size() != 1);
-				const uint16_t a = mem.add_constant(node.params[0].operator float());
+				const uint16_t a = mem.add_constant(node.params[0].operator float(), true);
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 				// Technically not an input or an output, but is a dependency regardless so treat it like an input
 				dg_node.is_input = true;
@@ -813,13 +814,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		// Add inputs
 		for (size_t j = 0; j < type.inputs.size(); ++j) {
+			const VoxelGraphNodeDB::Port &port = type.inputs[j];
 			uint16_t a;
 
 			if (node.inputs[j].connections.size() == 0) {
 				// No input, default it
 				CRASH_COND(j >= node.default_inputs.size());
 				float defval = node.default_inputs[j];
-				a = mem.add_constant(defval);
+				a = mem.add_constant(defval, port.require_input_buffer_when_constant);
 
 			} else {
 				ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
@@ -1034,16 +1036,18 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			for (BufferSpec &buffer_spec : _program.buffer_specs) {
 				if (!buffer_spec.is_binding) {
 					buffer_spec.data_index = data_helper.allocate(buffer_spec.users_count, true);
+					buffer_spec.has_data = true;
 				}
 			}
 
 		} else {
 			Span<BufferSpec> buffer_specs = to_span(_program.buffer_specs);
 
-			// Allocate unique buffers (this is used notably for compile-time constants)
+			// Allocate unique buffers (this is used notably for compile-time constants requiring a buffer)
 			for (BufferSpec &buffer_spec : _program.buffer_specs) {
 				if (!buffer_spec.is_binding && buffer_spec.is_pinned) {
 					buffer_spec.data_index = data_helper.allocate(1, true);
+					buffer_spec.has_data = true;
 				}
 			}
 
@@ -1056,7 +1060,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				const ProgramGraph::Node &node = graph.get_node(node_id);
 				const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
-				// Allocate data to store outputs
+				// Allocate data to store outputs.
+				// Note, we don't allocate for inputs. The only way to allocate them is to pin them.
 				for (unsigned int output_index = 0; output_index < type.outputs.size(); ++output_index) {
 					const VoxelGraphNodeDB::Port &output = type.outputs[output_index];
 					const ProgramGraph::PortLocation dst_port{ node_id, output_index };
@@ -1068,6 +1073,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 						continue;
 					}
 					buffer_spec.data_index = data_helper.allocate(buffer_spec.users_count, false);
+					buffer_spec.has_data = true;
 				}
 
 				// Release references on input datas, so they can be re-used by later operations

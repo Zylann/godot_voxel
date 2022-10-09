@@ -31,8 +31,16 @@ template <typename F>
 inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
-	for (uint32_t i = 0; i < a.size; ++i) {
-		out.data[i] = f(a.data[i]);
+	if (a.constant_value) {
+		// Normally this case should have been optimized out at compile-time
+		const float v = f(a.constant_value);
+		for (uint32_t i = 0; i < a.size; ++i) {
+			out.data[i] = v;
+		}
+	} else {
+		for (uint32_t i = 0; i < a.size; ++i) {
+			out.data[i] = f(a.data[i]);
+		}
 	}
 }
 
@@ -44,20 +52,25 @@ inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const uint32_t buffer_size = out.size;
 
 	if (a.is_constant || b.is_constant) {
-		float c;
-		const float *v;
-
-		if (a.is_constant) {
-			c = a.constant_value;
-			v = b.data;
+		if (!b.is_constant) {
+			const float c = a.constant_value;
+			const float *v = b.data;
 			for (uint32_t i = 0; i < buffer_size; ++i) {
 				out.data[i] = f(c, v[i]);
 			}
-		} else {
-			c = b.constant_value;
-			v = a.data;
+
+		} else if (!a.is_constant) {
+			const float c = b.constant_value;
+			const float *v = a.data;
 			for (uint32_t i = 0; i < buffer_size; ++i) {
 				out.data[i] = f(v[i], c);
+			}
+
+		} else {
+			// Normally this case should have been optimized out at compile-time
+			const float c = f(a.constant_value, b.constant_value);
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				out.data[i] = c;
 			}
 		}
 
@@ -68,6 +81,7 @@ inline void do_binop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	}
 }
 
+// Special case for division because we want to avoid NaNs caused by zeros
 void do_division(VoxelGraphRuntime::ProcessBufferContext &ctx) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	const VoxelGraphRuntime::Buffer &b = ctx.get_input(1);
@@ -75,32 +89,30 @@ void do_division(VoxelGraphRuntime::ProcessBufferContext &ctx) {
 	const uint32_t buffer_size = out.size;
 
 	if (a.is_constant || b.is_constant) {
-		float c;
-		const float *v;
-
-		if (a.is_constant) {
-			c = a.constant_value;
-			v = b.data;
+		if (!b.is_constant) {
+			const float c = a.constant_value;
+			const float *v = b.data;
 			for (uint32_t i = 0; i < buffer_size; ++i) {
-				if (b.data[i] == 0.f) {
-					out.data[i] = 0.f;
-				} else {
-					out.data[i] = c / v[i];
-				}
+				out.data[i] = v[i] == 0.f ? 0.f : c / v[i];
 			}
 
-		} else {
-			c = b.constant_value;
-			v = a.data;
-			if (c == 0.f) {
+		} else if (!a.is_constant) {
+			if (b.constant_value == 0.f) {
 				for (uint32_t i = 0; i < buffer_size; ++i) {
 					out.data[i] = 0.f;
 				}
 			} else {
-				c = 1.f / c;
+				const float c = 1.f / b.constant_value;
+				const float *v = a.data;
 				for (uint32_t i = 0; i < buffer_size; ++i) {
 					out.data[i] = v[i] * c;
 				}
+			}
+		} else {
+			// Normally this case should have been optimized out at compile-time
+			const float v = b.constant_value == 0.f ? 0.f : a.constant_value / b.constant_value;
+			for (uint32_t i = 0; i < buffer_size; ++i) {
+				out.data[i] = v;
 			}
 		}
 
@@ -382,8 +394,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
 		t.name = "Add";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.compile_func = nullptr;
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -402,8 +414,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SUBTRACT];
 		t.name = "Subtract";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return a - b; });
@@ -421,8 +433,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MULTIPLY];
 		t.name = "Multiply";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return a * b; });
@@ -445,8 +457,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_DIVIDE];
 		t.name = "Divide";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 1.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = do_division;
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -462,9 +474,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SIN];
 		t.name = "Sin";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::sin(a); }); };
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
+			do_monop(ctx, [](float a) { return Math::sin(a); });
+		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sin(a));
@@ -481,7 +495,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FLOOR];
 		t.name = "Floor";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_monop(ctx, [](float a) { return Math::floor(a); });
@@ -502,9 +516,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
 		t.name = "Abs";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::abs(a); }); };
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
+			do_monop(ctx, [](float a) { return Math::abs(a); });
+		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, abs(a));
@@ -521,26 +537,28 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
 		t.name = "Sqrt";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
-		t.process_buffer_func = [](ProcessBufferContext &ctx) { do_monop(ctx, [](float a) { return Math::sqrt(a); }); };
+		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
+			do_monop(ctx, [](float a) { return Math::sqrt(math::max(a, 0.f)); });
+		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval a = ctx.get_input(0);
 			ctx.set_output(0, sqrt(a));
 		};
 		t.expression_func_name = "sqrt";
 		t.expression_func = [](Span<const float> args) { //
-			return Math::sqrt(args[0]);
+			return Math::sqrt(math::max(args[0], 0.f));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
-			ctx.add_format("{} = sqrt({});\n", ctx.get_output_name(0), ctx.get_input_name(0));
+			ctx.add_format("{} = sqrt(max({}, 0.0));\n", ctx.get_output_name(0), ctx.get_input_name(0));
 		};
 	}
 	{
 		NodeType &t = types[VoxelGeneratorGraph::NODE_FRACT];
 		t.name = "Fract";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_monop(ctx, [](float a) { return a - Math::floor(a); });
@@ -561,8 +579,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_STEPIFY];
 		t.name = "Stepify";
 		t.category = CATEGORY_CONVERT;
-		t.inputs.push_back(Port("x"));
-		t.inputs.push_back(Port("step"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("step", 1.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return math::snappedf(a, b); });
@@ -589,8 +607,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_WRAP];
 		t.name = "Wrap";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x"));
-		t.inputs.push_back(Port("length"));
+		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("length", 1.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return wrapf(a, b); });
@@ -617,8 +635,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MIN];
 		t.name = "Min";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return min(a, b); });
@@ -640,8 +658,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_MAX];
 		t.name = "Max";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a"));
-		t.inputs.push_back(Port("b"));
+		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return max(a, b); });

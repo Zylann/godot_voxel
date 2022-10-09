@@ -345,6 +345,9 @@ private:
 		bool is_constant = false;
 		// Is the buffer a user input/output
 		bool is_binding = false;
+		// Will be `true` only if `data_index` actually refers to something.
+		// Buffers without data are bindings or constants not requiring buffers.
+		bool has_data = false;
 		// If true, the port will be assigned unique buffer data.
 		// If false, the port might share the same buffer data with other ports.
 		// TODO Rename `has_unique_data`?

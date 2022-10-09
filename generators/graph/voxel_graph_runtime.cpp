@@ -307,12 +307,14 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 	for (const BufferSpec &buffer_spec : _program.buffer_specs) {
 		Buffer &buffer = buffers[buffer_spec.address];
 
-		if (buffer_spec.is_binding) {
-			buffer.data = nullptr;
-		} else {
+		if (buffer_spec.has_data) {
+			ZN_ASSERT(!buffer_spec.is_binding);
 			BufferData &bd = buffer_datas[buffer_spec.data_index];
 			ZN_ASSERT(bd.capacity >= buffer_size);
 			buffer.data = bd.data;
+		} else {
+			ZN_ASSERT(buffer_spec.is_binding || buffer_spec.is_constant);
+			buffer.data = nullptr;
 		}
 
 		buffer.is_binding = buffer_spec.is_binding;
@@ -323,7 +325,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 		// Always reset constants because we don't know if we'll run the same program as before...
 		if (buffer_spec.is_constant) {
 			buffer.constant_value = buffer_spec.constant_value;
-			// At time of writing this data will never be null, but it is desired to avoid allocating it for constants
+			// Data can be null if it was determined that the nodes using this port don't require a buffer.
 			if (buffer.data != nullptr) {
 				for (unsigned int i = 0; i < buffer_size; ++i) {
 					buffer.data[i] = buffer_spec.constant_value;
@@ -436,9 +438,9 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		CRASH_COND(b.size < buffer_size);
 		CRASH_COND(b.size > state.buffer_capacity);
 		CRASH_COND(b.size != state.buffer_size);
-		ZN_ASSERT(b.buffer_data_index < state.buffer_datas.size());
-		const BufferData &bd = state.buffer_datas[b.buffer_data_index];
-		if (!b.is_binding) {
+		if (b.data != nullptr && !b.is_binding) {
+			ZN_ASSERT(b.buffer_data_index < state.buffer_datas.size());
+			const BufferData &bd = state.buffer_datas[b.buffer_data_index];
 			ZN_ASSERT(b.size <= bd.capacity);
 		}
 	}

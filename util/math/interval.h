@@ -191,6 +191,9 @@ inline Interval max_interval(const Interval &a, const real_t b) {
 }
 
 inline Interval sqrt(const Interval &i) {
+	// Avoiding negative numbers because they are undefined, also because VoxelGeneratorGraph defines its SQRT node this
+	// way.
+	// TODO Rename function `sqrt_or_zero` to be explicit about this?
 	return Interval{ Math::sqrt(maxf(0, i.min)), Math::sqrt(maxf(0, i.max)) };
 }
 

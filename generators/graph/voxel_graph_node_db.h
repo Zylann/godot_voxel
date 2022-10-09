@@ -18,6 +18,7 @@ public:
 		AUTO_CONNECT_Z
 	};
 
+	// TODO Separate Input and Output port types? Some member values don't make sense.
 	struct Port {
 		String name;
 		// Only relevant for inputs.
@@ -25,12 +26,19 @@ public:
 		// Which connection will be automatically made if the input port is not connected and no fixed value has been
 		// explicitely specified. Only relevant for inputs.
 		AutoConnect auto_connect = AUTO_CONNECT_NONE;
+		// If true, a buffer will be provided as input even if values were determined constant.
+		// If false, no buffer will provided, and instead the value will be available in Buffer::constant_value.
+		// This option exists to avoid having to implement all possible combinations of constant values vs variable
+		// values in input buffers.
+		bool require_input_buffer_when_constant = true;
 		//PortType port_type;
 
-		Port(String p_name, AutoConnect ac = AUTO_CONNECT_NONE) : name(p_name), default_value(0.f), auto_connect(ac) {}
-
-		Port(String p_name, float p_default_value, AutoConnect ac = AUTO_CONNECT_NONE) :
-				name(p_name), default_value(p_default_value), auto_connect(ac) {}
+		Port(String p_name, float p_default_value = 0.f, AutoConnect ac = AUTO_CONNECT_NONE,
+				bool p_require_input_buffer_when_constant = true) :
+				name(p_name),
+				default_value(p_default_value),
+				auto_connect(ac),
+				require_input_buffer_when_constant(p_require_input_buffer_when_constant) {}
 	};
 
 	typedef Variant (*DefaultValueFactory)();
