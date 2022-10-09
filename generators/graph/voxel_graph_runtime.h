@@ -34,16 +34,23 @@ public:
 		}
 	};
 
+	struct BufferData {
+		// Owns the data.
+		float *data = nullptr;
+		unsigned int capacity = 0;
+	};
+
 	// Contains values of a node output
 	struct Buffer {
-		// Values of the buffer. Must contain at least `size` values.
+		// Access to buffer data associated with this port. Must contain at least `size` values.
+		// This data is not owned by the port. Multiple ports can use the same buffer.
 		// TODO Consider wrapping this in debug mode. It is one of the rare cases I didnt do it.
 		// I spent an hour debugging memory corruption which originated from an overrun while accessing this data.
 		float *data = nullptr;
 		// This size is not the allocated count, it's an available count below capacity.
 		// All buffers have the same available count, size is here only for convenience.
 		unsigned int size;
-		unsigned int capacity;
+		//unsigned int capacity;
 		// Constant value of the buffer, if it is a compile-time constant
 		float constant_value;
 		// Is the buffer holding a compile-time constant
@@ -52,26 +59,48 @@ public:
 		bool is_binding = false;
 		// How many operations are using this buffer as input.
 		// This value is only relevant when using optimized execution mapping.
-		unsigned int local_users_count;
+		uint16_t local_users_count;
+		// Index of the data in the pool of BufferData. This is mainly used for debugging.
+		uint16_t buffer_data_index;
 	};
 
 	// Contains a list of adresses to the operations to execute for a given query.
 	// If no local optimization is done, this can remain the same for any position lists.
 	// If local optimization is used, it may be recomputed before each query.
 	struct ExecutionMap {
-		std::vector<uint16_t> operation_addresses;
+		struct OperationInfo {
+			uint16_t address = 0;
+			// How many constant fills to execute before this operation.
+			uint16_t constant_fill_count = 0;
+		};
+
+		std::vector<OperationInfo> operations;
+
 		// Stores node IDs referring to the user-facing graph.
 		// Each index corresponds to operation indices.
 		// The same node can appear twice, because sometimes a user-facing node compiles as multiple nodes.
 		// It can also include some nodes not explicitely present in the user graph (like auto-inputs).
 		std::vector<uint32_t> debug_nodes;
+
 		// From which index in the adress list operations will start depending on Y
 		unsigned int xzy_start_index = 0;
 
+		struct ConstantFill {
+			float *data = nullptr;
+			float value = 0;
+		};
+
+		// List of buffers to fill with constants when using local optimization.
+		// This list must be read using an advancing cursor, that moves up by the amount specified in `OperationInfo`.
+		// Note, it is preferable to use this for dynamic optimizations. Compile-time constants should use pinned
+		// buffers, or better, single values.
+		std::vector<ConstantFill> constant_fills;
+
 		void clear() {
-			operation_addresses.clear();
+			operations.clear();
 			debug_nodes.clear();
 			xzy_start_index = 0;
+			constant_fills.clear();
 		}
 	};
 
@@ -97,13 +126,12 @@ public:
 
 		void clear() {
 			buffer_size = 0;
-			buffer_capacity = 0;
-			for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-				Buffer &b = *it;
-				if (b.data != nullptr && !b.is_binding) {
-					memfree(b.data);
-				}
+			//buffer_capacity = 0;
+			for (BufferData &bd : buffer_datas) {
+				ZN_ASSERT(bd.data != nullptr);
+				memfree(bd.data);
 			}
+			buffer_datas.clear();
 			buffers.clear();
 			ranges.clear();
 			debug_profiler_times.clear();
@@ -128,6 +156,7 @@ public:
 
 		std::vector<math::Interval> ranges;
 		std::vector<Buffer> buffers;
+		std::vector<BufferData> buffer_datas;
 		// [execution_map_index] => microseconds
 		std::vector<uint32_t> debug_profiler_times;
 
@@ -158,7 +187,7 @@ public:
 	void generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const;
 
 	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf,
-			bool skip_xz, const ExecutionMap *execution_map) const;
+			bool skip_xz, const ExecutionMap *p_execution_map) const;
 
 	bool has_input(unsigned int node_type) const;
 
@@ -304,15 +333,22 @@ private:
 
 	struct BufferSpec {
 		// Index the buffer should be stored at
-		uint16_t address;
+		uint16_t address = 0;
+		// Index where the data of the buffer should be stored at.
+		// This can be the same for multiple buffer, unless pinned.
+		uint16_t data_index = 0;
 		// How many nodes use this buffer as input
-		uint16_t users_count;
+		uint16_t users_count = 0;
 		// Value of the compile-time constant, if any
-		float constant_value;
+		float constant_value = 0;
 		// Is the buffer constant at compile time
-		bool is_constant;
+		bool is_constant = false;
 		// Is the buffer a user input/output
-		bool is_binding;
+		bool is_binding = false;
+		// If true, the port will be assigned unique buffer data.
+		// If false, the port might share the same buffer data with other ports.
+		// TODO Rename `has_unique_data`?
+		bool is_pinned = false;
 	};
 
 	// Pre-processed, read-only graph used for runtime optimizations.
@@ -400,8 +436,10 @@ private:
 		// Maximum amount of buffers this program will need to do a full run.
 		// Buffers are needed to hold values of arguments and outputs for each operation.
 		unsigned int buffer_count = 0;
+		// Maximum amount of buffer datas this program will need to do a full run.
+		unsigned int buffer_data_count = 0;
 
-		// Associates a port from the input graph to its corresponding address within the compiled program.
+		// Associates a port from the expanded graph to its corresponding address within the compiled program.
 		// This is used for debugging intermediate values.
 		std::unordered_map<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
 
@@ -439,6 +477,7 @@ private:
 			heap_resources.clear();
 			ref_resources.clear();
 			buffer_count = 0;
+			buffer_data_count = 0;
 		}
 	};
 

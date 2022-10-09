@@ -2,9 +2,11 @@
 #define ZN_INTERVAL_H
 
 #include "funcs.h"
+#include <iosfwd>
 #include <limits>
 
-namespace zylann::math {
+namespace zylann {
+namespace math {
 
 // TODO Optimization: make template, I don't always need `real_t`, sometimes it uses doubles unnecessarily
 
@@ -478,6 +480,10 @@ inline Interval pow(Interval x, Interval p) {
 	}
 }
 
-} //namespace zylann::math
+} // namespace math
+
+std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v);
+
+} //namespace zylann
 
 #endif // ZN_INTERVAL_H
