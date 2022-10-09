@@ -69,6 +69,7 @@ Godot 4 is required from this version.
     - `VoxelBoxMover`: added basic support for stair climbing
 
 - Fixes
+    - `VoxelBlockyLibrary`: the editor no longer crashes some time after having null model entries.
     - `VoxelBlockyModel`: properties of the inspector were not refreshed when changing `geometry_type`
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
