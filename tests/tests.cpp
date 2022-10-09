@@ -470,7 +470,7 @@ void test_voxel_graph_generator_expressions() {
 		}
 	}
 	ZN_TEST_ASSERT(zfnl.is_valid());
-	ZN_TEST_ASSERT(zfnl->reference_get_count() == 1);
+	ZN_TEST_ASSERT(zfnl->get_reference_count() == 1);
 }
 
 void test_voxel_graph_generator_texturing() {
@@ -1628,10 +1628,10 @@ void test_run_blocky_random_tick() {
 
 	Callback cb(voxel_box);
 
-	Math::seed(131183);
-
+	RandomPCG random;
+	random.seed(131183);
 	VoxelToolTerrain::run_blocky_random_tick_static(
-			data, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, **library, random, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			});
