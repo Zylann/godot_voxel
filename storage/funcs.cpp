@@ -1,5 +1,6 @@
 #include "funcs.h"
 #include "../util/math/box3i.h"
+#include <cstring>
 
 namespace zylann::voxel {
 
