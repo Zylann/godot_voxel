@@ -10,7 +10,7 @@
 namespace zylann::voxel {
 
 namespace {
-const char *AUTOCONNECT_PROPERY_NAME = "autoconnect_default_inputs";
+const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
 }
 
 void VoxelGraphNodeInspectorWrapper::setup(
@@ -80,7 +80,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	// Autoconnect
 
 	if (node_type.has_autoconnect_inputs()) {
-		p_list->push_back(PropertyInfo(Variant::BOOL, AUTOCONNECT_PROPERY_NAME));
+		p_list->push_back(PropertyInfo(Variant::BOOL, AUTOCONNECT_PROPERTY_NAME));
 	}
 }
 
@@ -182,8 +182,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		return true;
 	}
 
-	if (name == AUTOCONNECT_PROPERY_NAME) {
-		ur.create_action(String("Set ") + AUTOCONNECT_PROPERY_NAME);
+	if (name == AUTOCONNECT_PROPERTY_NAME) {
+		ur.create_action(String("Set ") + AUTOCONNECT_PROPERTY_NAME);
 		const bool prev_autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
 		ur.add_do_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, p_value);
 		ur.add_undo_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, prev_autoconnect);
@@ -244,7 +244,7 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 		return true;
 	}
 
-	if (name == AUTOCONNECT_PROPERY_NAME) {
+	if (name == AUTOCONNECT_PROPERTY_NAME) {
 		r_ret = graph->get_node_default_inputs_autoconnect(_node_id);
 		return true;
 	}
