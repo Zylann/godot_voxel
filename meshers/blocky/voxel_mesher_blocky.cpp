@@ -6,6 +6,8 @@
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/span.h"
+// TODO GDX: String has no `operator+=`
+#include "../../util/godot/string.h"
 
 namespace zylann::voxel {
 
