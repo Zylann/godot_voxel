@@ -149,6 +149,7 @@ struct DefaultTextureIndicesData {
 
 class IDeepSDFSampler {
 public:
+	virtual ~IDeepSDFSampler() {}
 	virtual float get_single(const Vector3i position_in_voxels, uint32_t lod_index) const = 0;
 };
 
