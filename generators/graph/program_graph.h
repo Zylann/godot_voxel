@@ -49,6 +49,7 @@ public:
 		uint32_t type_id;
 		StringName name; // User-defined
 		Vector2 gui_position;
+		Vector2 gui_size; // Used on resizable nodes
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Variant> params;

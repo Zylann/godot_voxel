@@ -77,6 +77,7 @@ public:
 		NODE_POWI, // pow(x, constant positive integer)
 		NODE_POW, // pow(x, y)
 		NODE_INPUT_SDF,
+		NODE_COMMENT,
 
 		NODE_TYPE_COUNT
 	};
@@ -131,6 +132,9 @@ public:
 
 	Vector2 get_node_gui_position(uint32_t node_id) const;
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
+
+	Vector2 get_node_gui_size(uint32_t node_id) const;
+	void set_node_gui_size(uint32_t node_id, Vector2 size);
 
 	NodeTypeID get_node_type_id(uint32_t node_id) const;
 	PackedInt32Array get_node_ids() const;

@@ -320,6 +320,20 @@ void VoxelGeneratorGraph::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	}
 }
 
+Vector2 VoxelGeneratorGraph::get_node_gui_size(uint32_t node_id) const {
+	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND_V(node == nullptr, Vector2());
+	return node->gui_size;
+}
+
+void VoxelGeneratorGraph::set_node_gui_size(uint32_t node_id, Vector2 size) {
+	ProgramGraph::Node *node = _graph.try_get_node(node_id);
+	ERR_FAIL_COND(node == nullptr);
+	if (node->gui_size != size) {
+		node->gui_size = size;
+	}
+}
+
 VoxelGeneratorGraph::NodeTypeID VoxelGeneratorGraph::get_node_type_id(uint32_t node_id) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, NODE_TYPE_COUNT);
@@ -1586,6 +1600,9 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 		const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(node->type_id);
 		node_data["type"] = type.name;
 		node_data["gui_position"] = node->gui_position;
+		if (node->gui_size != Vector2()) {
+			node_data["gui_size"] = node->gui_size;
+		}
 
 		if (node->name != StringName()) {
 			node_data["name"] = node->name;
@@ -1691,6 +1708,8 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 		ERR_FAIL_COND_V(node == nullptr, false);
 		// TODO Graphs made in older versions must have autoconnect always off
 
+		node->gui_size = node_data.get("gui_size", Vector2());
+
 		Variant auto_connect_v = node_data.get("auto_connect", Variant());
 		if (auto_connect_v != Variant()) {
 			node->autoconnect_default_inputs = auto_connect_v;
@@ -1706,6 +1725,9 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 				continue;
 			}
 			if (param_name == "gui_position") {
+				continue;
+			}
+			if (param_name == "gui_size") {
 				continue;
 			}
 			if (param_name == "auto_connect") {
@@ -2134,6 +2156,8 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_node_gui_position", "node_id"), &VoxelGeneratorGraph::get_node_gui_position);
 	ClassDB::bind_method(
 			D_METHOD("set_node_gui_position", "node_id", "position"), &VoxelGeneratorGraph::set_node_gui_position);
+	ClassDB::bind_method(D_METHOD("get_node_gui_size", "node_id"), &VoxelGeneratorGraph::get_node_gui_size);
+	ClassDB::bind_method(D_METHOD("set_node_gui_size", "node_id", "size"), &VoxelGeneratorGraph::set_node_gui_size);
 	ClassDB::bind_method(D_METHOD("get_node_name", "node_id"), &VoxelGeneratorGraph::get_node_name);
 	ClassDB::bind_method(D_METHOD("set_node_name", "node_id", "name"), &VoxelGeneratorGraph::set_node_name);
 	ClassDB::bind_method(D_METHOD("set_expression_node_inputs", "node_id", "names"),
@@ -2256,6 +2280,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 	BIND_ENUM_CONSTANT(NODE_POWI);
 	BIND_ENUM_CONSTANT(NODE_POW);
 	BIND_ENUM_CONSTANT(NODE_INPUT_SDF);
+	BIND_ENUM_CONSTANT(NODE_COMMENT);
 	BIND_ENUM_CONSTANT(NODE_TYPE_COUNT);
 }
 

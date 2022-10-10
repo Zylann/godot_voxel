@@ -1527,6 +1527,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.is_pseudo_node = true;
 	}
 	{
+		NodeType &t = types[VoxelGeneratorGraph::NODE_COMMENT];
+		t.name = "Comment";
+		t.category = CATEGORY_DEBUG;
+		t.params.push_back(Param("text", Variant::STRING, Variant("")));
+		t.debug_only = true;
+		t.is_pseudo_node = true;
+	}
+	{
 		struct Params {
 			float threshold;
 		};

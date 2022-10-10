@@ -48,13 +48,20 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 		pi.name = param.name;
 		pi.type = param.type;
 		pi.class_name = param.class_name;
+
 		if (!param.class_name.is_empty()) {
 			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
 			pi.hint_string = pi.class_name;
+
 		} else if (param.has_range) {
 			pi.hint = PROPERTY_HINT_RANGE;
 			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
+
+		} else if (pi.type == Variant::STRING) {
+			// Used for comments
+			pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
 		}
+
 		pi.usage = PROPERTY_USAGE_EDITOR;
 		p_list->push_back(pi);
 	}
@@ -171,6 +178,7 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 
 	const String name = p_name;
 
+	// Special case because `name` is neither a parameter nor an output
 	if (name == "name") {
 		String previous_name = graph->get_node_name(_node_id);
 		ur.create_action("Set VoxelGeneratorGraph node name");
@@ -194,9 +202,8 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		return true;
 	}
 
-	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-
 	const VoxelGraphNodeDB &db = VoxelGraphNodeDB::get_singleton();
+	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
 
 	uint32_t index;
 	if (db.try_get_param_index_from_name(node_type_id, p_name, index)) {
@@ -210,6 +217,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 			// It requires calling `notify_property_list_changed`, however that makes the LineEdit in the inspector to
 			// reset its cursor position, making string parameter edition a nightmare. Only workaround is to deselect
 			// and re-select the node...
+		} else if (node_type_id == VoxelGeneratorGraph::NODE_COMMENT) {
+			ur.add_do_method(_graph_editor, "update_node_comment", _node_id);
+			ur.add_undo_method(_graph_editor, "update_node_comment", _node_id);
 		} else {
 			ur.add_do_method(this, "notify_property_list_changed");
 			ur.add_undo_method(this, "notify_property_list_changed");
