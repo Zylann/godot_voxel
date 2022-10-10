@@ -58,7 +58,10 @@ if not env.msvc:
     # This one might be legitimate in SmartNode.cpp but we assume the devs got the `memset` right
     env_fn2.Append(CXXFLAGS=["-Wno-class-memaccess"]) 
     # When we compile with `-Wextra`, FastNoise2 produces warnings. Silencing these...
-    env_fn2.Append(CXXFLAGS=["-Wno-enum-compare"])
+    # TODO Silencing `enum-compare` GCC warning doesn't work for some reason?
+    # So instead I modified `FastSIMD.h`.
+    # See also https://github.com/Auburn/FastNoise2/pull/103
+    #env_fn2.Append(CXXFLAGS=["-Wno-enum-compare"])
 
 env_fn2_scalar = env_fn2.Clone()
 env_fn2_sse2 = env_fn2.Clone()
