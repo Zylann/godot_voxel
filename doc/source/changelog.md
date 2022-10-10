@@ -74,6 +74,7 @@ Godot 4 is required from this version.
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
+    - `VoxelGeneratorGraph`: editor: fixed wrong position of context menu in some dual monitor configurations
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
     - `VoxelGeneratorGraph`: some specific node graphs were not ordered properly
