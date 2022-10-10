@@ -31,6 +31,19 @@ if RUN_TESTS:
 	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
 
 # ----------------------------------------------------------------------------------------------------------------------
+# SQLite
+env_sqlite = env_voxel.Clone()
+
+# Turn off some warnings produced when compiling with warnings=extra
+#env_sqlite.disable_warnings()
+if not env_sqlite.msvc:
+    env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
+
+# TODO The way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+# Had to do so, because this line below is specific to Godot's build system!
+env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
+
+# ----------------------------------------------------------------------------------------------------------------------
 # FastNoise 2
 
 if FAST_NOISE_2_SRC:
