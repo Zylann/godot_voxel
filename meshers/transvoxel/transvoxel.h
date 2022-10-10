@@ -81,7 +81,7 @@ struct MeshArrays {
 		int vi = vertices.size();
 		vertices.push_back(primary);
 		normals.push_back(normal);
-		lod_data.push_back({ secondary, cell_border_mask, vertex_border_mask, transition });
+		lod_data.push_back({ secondary, cell_border_mask, vertex_border_mask, transition, 0 });
 		return vi;
 	}
 };
