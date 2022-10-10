@@ -19,8 +19,6 @@ public:
 
 	Box3i(int ox, int oy, int oz, int sx, int sy, int sz) : pos(ox, oy, oz), size(sx, sy, sz) {}
 
-	Box3i(const Box3i &other) : pos(other.pos), size(other.size) {}
-
 	// Creates a box centered on a point, specifying half its size.
 	// Warning: if you consider the center being a 1x1x1 box which would be extended, instead of a mathematical point,
 	// you may want to add 1 to extents.
