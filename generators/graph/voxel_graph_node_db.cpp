@@ -1274,66 +1274,83 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
+		struct Params {
+			float radius;
+		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE];
 		t.name = "SdfSphere";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(Port("x", AUTO_CONNECT_X));
 		t.inputs.push_back(Port("y", AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("z", AUTO_CONNECT_Z));
-		// TODO Is it worth it making radius an input?
-		t.inputs.push_back(Port("radius", 1.f));
 		t.outputs.push_back(Port("sdf"));
+		t.params.push_back(Param("radius", Variant::FLOAT, 1.f));
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.radius = ctx.get_param(0);
+			ctx.set_params(p);
+		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
-			const VoxelGraphRuntime::Buffer &r = ctx.get_input(3);
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Params p = ctx.get_params<Params>();
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - r.data[i];
+				out.data[i] = Math::sqrt(squared(x.data[i]) + squared(y.data[i]) + squared(z.data[i])) - p.radius;
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
-			const Interval r = ctx.get_input(3);
+			const Params p = ctx.get_params<Params>();
+			const Interval r = Interval::from_single_value(p.radius);
 			ctx.set_output(0, get_length(x, y, z) - r);
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.add_format("{} = length(vec3({}, {}, {})) - {};\n", ctx.get_output_name(0), ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3));
+					ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)));
 		};
 	}
 	{
+		struct Params {
+			float r1;
+			float r2;
+		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_TORUS];
 		t.name = "SdfTorus";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(Port("x", AUTO_CONNECT_X));
 		t.inputs.push_back(Port("y", AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("z", AUTO_CONNECT_Z));
-		// TODO Is it worth it making radii an input?
-		t.inputs.push_back(Port("radius1", 16.f));
-		t.inputs.push_back(Port("radius2", 4.f));
 		t.outputs.push_back(Port("sdf"));
+		t.params.push_back(Param("radius1", Variant::FLOAT, 16.f));
+		t.params.push_back(Param("radius2", Variant::FLOAT, 4.f));
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.r1 = ctx.get_param(0);
+			p.r2 = ctx.get_param(1);
+			ctx.set_params(p);
+		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
-			const VoxelGraphRuntime::Buffer &r0 = ctx.get_input(3);
-			const VoxelGraphRuntime::Buffer &r1 = ctx.get_input(4);
+			const Params p = ctx.get_params<Params>();
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = math::sdf_torus(x.data[i], y.data[i], z.data[i], r0.data[i], r1.data[i]);
+				out.data[i] = math::sdf_torus(x.data[i], y.data[i], z.data[i], p.r1, p.r2);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
-			const Interval r0 = ctx.get_input(3);
-			const Interval r1 = ctx.get_input(4);
-			ctx.set_output(0, math::sdf_torus(x, y, z, r0, r1));
+			const Params p = ctx.get_params<Params>();
+			const Interval r1 = Interval::from_single_value(p.r1);
+			const Interval r2 = Interval::from_single_value(p.r2);
+			ctx.set_output(0, math::sdf_torus(x, y, z, r1, r2));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.require_lib_code("sdf_torus",
@@ -1342,8 +1359,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					"	return length(q) - t.y;\n"
 					"}\n");
 			ctx.add_format("{} = vg_sdf_torus(vec3({}, {}, {}), vec2({}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
-					ctx.get_input_name(4));
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
+					float(ctx.get_param(1)));
 		};
 	}
 	{
