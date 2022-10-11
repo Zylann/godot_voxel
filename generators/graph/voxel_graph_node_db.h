@@ -51,6 +51,7 @@ public:
 		String class_name;
 		uint32_t index = -1;
 		bool has_range = false;
+		bool multiline = false;
 		int min_value;
 		int max_value;
 

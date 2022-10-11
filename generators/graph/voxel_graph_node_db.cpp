@@ -1548,7 +1548,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_COMMENT];
 		t.name = "Comment";
 		t.category = CATEGORY_DEBUG;
-		t.params.push_back(Param("text", Variant::STRING, Variant("")));
+		Param text_param("text", Variant::STRING, Variant(""));
+		text_param.multiline = true;
+		t.params.push_back(text_param);
 		t.debug_only = true;
 		t.is_pseudo_node = true;
 	}
@@ -2115,7 +2117,9 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		NodeType &t = types[VoxelGeneratorGraph::NODE_EXPRESSION];
 		t.name = "Expression";
 		t.category = CATEGORY_MATH;
-		t.params.push_back(Param("expression", Variant::STRING, "0"));
+		Param expression_param("expression", Variant::STRING, "0");
+		expression_param.multiline = false;
+		t.params.push_back(expression_param);
 		t.outputs.push_back(Port("out"));
 		t.compile_func = [](CompileContext &ctx) {
 			ctx.make_error(ZN_TTR("Internal error, expression wasn't expanded"));

@@ -58,8 +58,9 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
 
 		} else if (pi.type == Variant::STRING) {
-			// Used for comments
-			pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
+			if (param.multiline) {
+				pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
+			}
 		}
 
 		pi.usage = PROPERTY_USAGE_EDITOR;
