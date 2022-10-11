@@ -17,7 +17,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
 	Output output;
-	Input input = { voxels->get_buffer() };
+	Input input = { voxels->get_buffer(), nullptr, nullptr, Vector3i(), 0, false, false, false };
 
 	NormalMapSettings virtual_texture_settings;
 	virtual_texture_settings.begin_lod_index = 0;

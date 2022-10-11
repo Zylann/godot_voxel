@@ -109,7 +109,7 @@ public:
 	unsigned int get_layer_count() const;
 	const Layer &get_layer_by_index(unsigned int index) const;
 
-	const int get_material_id_for_palette_index(unsigned int palette_index) const;
+	int get_material_id_for_palette_index(unsigned int palette_index) const;
 	const Material &get_material_by_id(int id) const;
 
 	inline const FixedArray<Color8, 256> &get_palette() const {

@@ -78,17 +78,13 @@ jobs:
           scons --version
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # TODO We'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
+      # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no
-
-      # TODO Such tests are able to run from Godot 4.0 only
-      # Execute unit tests for the editor
-      #- name: Unit Tests
-      #  run: |
-      #    ./bin/godot.windows.opt.tools.64.exe --test
 
       # Make build available
       - uses: actions/upload-artifact@v2

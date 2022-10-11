@@ -45,6 +45,16 @@ is_editor_build = (env["target"] == "editor")
 
 sources = common.get_sources(env, is_editor_build)
 
+# TODO The way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+# It cannot be in the common script...
+# Because when compiling with warnings=extra, SQLite produces warnings, so we have to turn them off only for SQLite.
+# But doing this requires specific code from Godot's build system, and no idea what code to use with GodotCpp...
+# Ideally I'd like to use the same code for both targets.
+# FastNoise2 has the same problem!
+sources += [
+    "thirdparty/sqlite/sqlite3.c"
+]
+
 sources += [
 	"util/thread/godot_thread_helper.cpp",
 

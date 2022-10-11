@@ -417,6 +417,17 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 	}
 }
 
+void VoxelGraphEditor::update_node_comment(uint32_t node_id) {
+	ERR_FAIL_COND(_graph.is_null());
+
+	GraphEdit &graph_edit = *_graph_edit;
+	const String view_name = node_to_gui_name(node_id);
+	VoxelGraphEditorNode *view = get_node_typed<VoxelGraphEditorNode>(graph_edit, view_name);
+	ERR_FAIL_COND(view == nullptr);
+
+	view->update_comment_text(**_graph);
+}
+
 bool VoxelGraphEditor::is_pinned_hint() const {
 	return _pin_button->is_pressed();
 }
@@ -438,7 +449,10 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 		if (mb->is_pressed()) {
 			if (mb->get_button_index() == godot::MOUSE_BUTTON_RIGHT) {
 				_click_position = mb->get_position();
-				_context_menu->set_position(get_global_mouse_position());
+				// Careful with how the position is computed, some users have multiple monitors but OSes handle it in
+				// different ways, either with two desktops or one expanded desktop. This affects mouse positions.
+				// I took example on context menus in `filesystem_dock.cpp`.
+				_context_menu->set_position(_graph_edit->get_screen_position() + mb->get_position());
 				_context_menu->popup();
 			}
 		}
@@ -1101,6 +1115,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
 	ClassDB::bind_method(D_METHOD("update_node_layout", "node_id"), &VoxelGraphEditor::update_node_layout);
+	ClassDB::bind_method(D_METHOD("update_node_comment", "node_id"), &VoxelGraphEditor::update_node_comment);
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_id")));
 	ADD_SIGNAL(MethodInfo(SIGNAL_NOTHING_SELECTED));

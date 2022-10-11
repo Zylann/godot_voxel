@@ -27,6 +27,7 @@ public:
 	void clear_range_analysis_tooltips();
 
 	void update_layout(const VoxelGeneratorGraph &graph);
+	void update_comment_text(const VoxelGeneratorGraph &graph);
 
 	bool has_outputs() const {
 		return _output_labels.size() > 0;
@@ -55,6 +56,7 @@ private:
 	uint32_t _node_id = 0;
 	VoxelGraphEditorNodePreview *_preview = nullptr;
 	std::vector<Control *> _output_labels;
+	Label *_comment_label = nullptr;
 
 	struct InputHint {
 		Label *label;

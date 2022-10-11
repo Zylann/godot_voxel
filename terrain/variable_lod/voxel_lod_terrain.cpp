@@ -890,8 +890,8 @@ void VoxelLodTerrain::_notification(int p_what) {
 				// This hack is quite miserable.
 				VoxelEngineUpdater::ensure_existence(get_tree());
 				process(get_physics_process_delta_time());
-				break;
 			}
+			break;
 
 #ifdef TOOLS_ENABLED
 		case NOTIFICATION_ENTER_TREE:

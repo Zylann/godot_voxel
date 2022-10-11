@@ -124,13 +124,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
-
-      # TODO Such tests are able to run from Godot 4.0 only
-      # Execute unit tests for the editor
-      #- name: Unit Tests
-      #  run: |
-      #    ./bin/godot.linuxbsd.opt.tools.64 --test
+          scons -j2 verbose=yes warnings=extra werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
 
       # Make build available
       - uses: actions/upload-artifact@v2

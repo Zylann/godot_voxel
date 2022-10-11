@@ -691,16 +691,18 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			VoxelStream::VoxelQueryData old_block_load_query{
 				old_block, //
 				block_pos * old_block_size << region_info.lod, //
-				region_info.lod //
+				region_info.lod, //
+				RESULT_ERROR //
 			};
 			old_stream->load_voxel_block(old_block_load_query);
 
 			// Save it in the new one
 			if (old_block_size == new_block_size) {
-				VoxelStream::VoxelQueryData old_block_save_query{ //
+				VoxelStream::VoxelQueryData old_block_save_query{
 					old_block, //
 					block_pos * new_block_size << region_info.lod, //
-					region_info.lod
+					region_info.lod,
+					RESULT_ERROR //
 				};
 				save_voxel_block(old_block_save_query);
 
@@ -716,7 +718,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					VoxelStream::VoxelQueryData new_block_load_query{ //
 						new_block, //
 						new_block_pos * new_block_size << region_info.lod, //
-						region_info.lod
+						region_info.lod, //
+						RESULT_ERROR
 					};
 					load_voxel_block(new_block_load_query);
 
@@ -731,7 +734,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					VoxelStream::VoxelQueryData new_block_save_query{ //
 						new_block, //
 						new_block_pos * new_block_size << region_info.lod, //
-						region_info.lod
+						region_info.lod, //
+						RESULT_ERROR
 					};
 					save_voxel_block(new_block_save_query);
 
@@ -754,7 +758,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 								VoxelStream::VoxelQueryData new_block_save_query{ //
 									new_block, //
 									(new_block_pos + rpos) * new_block_size << region_info.lod, //
-									region_info.lod
+									region_info.lod, //
+									RESULT_ERROR
 								};
 								save_voxel_block(new_block_save_query);
 							}

@@ -9,6 +9,7 @@ using namespace godot;
 #endif
 
 #include <iosfwd>
+#include <string>
 #include <string_view>
 
 #ifdef TOOLS_ENABLED

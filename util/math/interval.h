@@ -24,8 +24,6 @@ struct Interval {
 #endif
 	}
 
-	inline Interval(const Interval &other) : min(other.min), max(other.max) {}
-
 	inline static Interval from_single_value(real_t p_val) {
 		return Interval(p_val, p_val);
 	}

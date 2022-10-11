@@ -43,6 +43,8 @@ public:
 	// Rebuilds the node's internal controls, and updates GUI connections going to it from the graph.
 	void update_node_layout(uint32_t node_id);
 
+	void update_node_comment(uint32_t node_id);
+
 	bool is_pinned_hint() const;
 	void set_popout_button_enabled(bool enable);
 
