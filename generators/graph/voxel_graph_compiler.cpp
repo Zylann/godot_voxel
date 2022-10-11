@@ -5,6 +5,7 @@
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_node_db.h"
+#include <limits>
 #include <unordered_set>
 
 namespace zylann::voxel {
@@ -890,7 +891,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		// Add actual operation
 
-		CRASH_COND(node.type_id > 0xff);
+		ZN_ASSERT(node.type_id <= std::numeric_limits<uint16_t>::max());
 
 		if (order_index == xzy_start_index) {
 			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operations.size();
