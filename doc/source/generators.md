@@ -326,6 +326,12 @@ In Voxel Graphs, the same optimization occurs. When the list of operations is co
 This optimization only applies on both X and Z axes. It can be toggled in the inspector.
 
 
+#### Buffer reduction
+
+The graph attempts to use as few temporary buffers as possible. For example, if you have 10 nodes processing before the output, it won't necessarily allocate 10 unique buffers to store intermediary outputs. Instead, buffers will be re-used for multiple nodes, if that doesn't change the result. Buffers are assigned ahead-of-time, when the graph is compiled. It saves memory, and might improve performance because less data has to be loaded into CPU cache.
+This feature is disabled when the graph is compiled in debug mode, as it allows inspecting the state of each output.
+
+
 Custom generator
 -----------------
 
