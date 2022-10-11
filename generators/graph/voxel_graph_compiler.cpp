@@ -38,7 +38,7 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 		case ExpressionParser::Node::FUNCTION: {
 			const uint32_t dependency_pg_node_id =
 					expand_node(graph, arg, db, to_connect, expanded_node_ids, functions);
-			ERR_FAIL_COND_V(dependency_pg_node_id == ProgramGraph::NULL_ID, false);
+			ZN_ASSERT_RETURN_V(dependency_pg_node_id != ProgramGraph::NULL_ID, false);
 			graph.connect({ dependency_pg_node_id, 0 }, { pg_node.id, pg_node_input_index });
 		} break;
 
@@ -52,7 +52,7 @@ static ProgramGraph::Node &create_node(
 		ProgramGraph &graph, const VoxelGraphNodeDB &db, VoxelGeneratorGraph::NodeTypeID node_type_id) {
 	// Not creating default sub-resources here, there are no use cases where we use such nodes.
 	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID, false);
-	CRASH_COND(node == nullptr);
+	ZN_ASSERT(node != nullptr);
 	return *node;
 }
 
@@ -65,7 +65,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			// Constant node inputs don't create a constant node, they just set the default value of the input.
 			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_CONSTANT);
 			const ExpressionParser::NumberNode &nn = reinterpret_cast<const ExpressionParser::NumberNode &>(ep_node);
-			CRASH_COND(pg_node.params.size() != 1);
+			ZN_ASSERT(pg_node.params.size() == 1);
 			pg_node.params[0] = nn.value;
 			expanded_node_ids.push_back(pg_node.id);
 			return pg_node.id;
@@ -79,7 +79,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			const ExpressionParser::VariableNode &vn =
 					reinterpret_cast<const ExpressionParser::VariableNode &>(ep_node);
 			to_connect.push_back({ vn.name, { pg_node.id, 0 } });
-			CRASH_COND(pg_node.default_inputs.size() != 2);
+			ZN_ASSERT(pg_node.default_inputs.size() == 2);
 			pg_node.default_inputs[1] = 0;
 			expanded_node_ids.push_back(pg_node.id);
 			return pg_node.id;
@@ -89,8 +89,8 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			const ExpressionParser::OperatorNode &on =
 					reinterpret_cast<const ExpressionParser::OperatorNode &>(ep_node);
 
-			CRASH_COND(on.n0 == nullptr);
-			CRASH_COND(on.n1 == nullptr);
+			ZN_ASSERT(on.n0 != nullptr);
+			ZN_ASSERT(on.n1 != nullptr);
 
 			VoxelGeneratorGraph::NodeTypeID node_type_id;
 			switch (on.op) {
@@ -118,11 +118,11 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 							ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_POWI);
 							expanded_node_ids.push_back(pg_node.id);
 
-							CRASH_COND(pg_node.params.size() != 1);
+							ZN_ASSERT(pg_node.params.size() == 1);
 							pg_node.params[0] = pi;
 
-							ERR_FAIL_COND_V(!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids,
-													functions),
+							ZN_ASSERT_RETURN_V(expand_input(graph, *on.n0, pg_node, 0, db, to_connect,
+													   expanded_node_ids, functions),
 									ProgramGraph::NULL_ID);
 
 							return pg_node.id;
@@ -132,17 +132,17 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 					node_type_id = VoxelGeneratorGraph::NODE_POW;
 					break;
 				default:
-					CRASH_NOW();
+					ZN_CRASH();
 					break;
 			}
 
 			ProgramGraph::Node &pg_node = create_node(graph, db, node_type_id);
 			expanded_node_ids.push_back(pg_node.id);
 
-			ERR_FAIL_COND_V(!expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids, functions),
+			ZN_ASSERT_RETURN_V(expand_input(graph, *on.n0, pg_node, 0, db, to_connect, expanded_node_ids, functions),
 					ProgramGraph::NULL_ID);
 
-			ERR_FAIL_COND_V(!expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids, functions),
+			ZN_ASSERT_RETURN_V(expand_input(graph, *on.n1, pg_node, 1, db, to_connect, expanded_node_ids, functions),
 					ProgramGraph::NULL_ID);
 
 			return pg_node.id;
@@ -152,7 +152,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			const ExpressionParser::FunctionNode &fn =
 					reinterpret_cast<const ExpressionParser::FunctionNode &>(ep_node);
 			const ExpressionParser::Function *f = ExpressionParser::find_function_by_id(fn.function_id, functions);
-			CRASH_COND(f == nullptr);
+			ZN_ASSERT(f != nullptr);
 			const unsigned int arg_count = f->argument_count;
 
 			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NodeTypeID(fn.function_id));
@@ -160,9 +160,9 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 
 			for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
 				const ExpressionParser::Node *arg = fn.args[arg_index].get();
-				CRASH_COND(arg == nullptr);
-				ERR_FAIL_COND_V(
-						!expand_input(graph, *arg, pg_node, arg_index, db, to_connect, expanded_node_ids, functions),
+				ZN_ASSERT(arg != nullptr);
+				ZN_ASSERT_RETURN_V(
+						expand_input(graph, *arg, pg_node, arg_index, db, to_connect, expanded_node_ids, functions),
 						ProgramGraph::NULL_ID);
 			}
 
@@ -179,7 +179,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 		const VoxelGraphNodeDB &type_db) {
 	ZN_PROFILE_SCOPE();
 	const ProgramGraph::Node &original_node = graph.get_node(original_node_id);
-	CRASH_COND(original_node.params.size() == 0);
+	ZN_ASSERT(original_node.params.size() != 0);
 	const String code = original_node.params[0];
 	const CharString code_utf8 = code.utf8();
 
@@ -241,7 +241,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	}
 
 	// Copy first because we'll remove the original node
-	CRASH_COND(original_node.outputs.size() == 0);
+	ZN_ASSERT(original_node.outputs.size() != 0);
 	const ProgramGraph::Port original_output_port_copy = original_node.outputs[0];
 
 	// Remove the original expression node
@@ -815,8 +815,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 		const ProgramGraph::Node &node = graph.get_node(node_id);
 		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
-		CRASH_COND(node.inputs.size() != type.inputs.size());
-		CRASH_COND(node.outputs.size() != type.outputs.size());
+		ZN_ASSERT(node.inputs.size() == type.inputs.size());
+		ZN_ASSERT(node.outputs.size() == type.outputs.size());
 
 		if (order_index == xzy_start_index) {
 			_program.xzy_start_op_address = operations.size();
@@ -836,8 +836,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 		switch (node.type_id) {
 			// TODO Get rid of constant nodes, replace them with default inputs wherever they are used?
 			case VoxelGeneratorGraph::NODE_CONSTANT: {
-				CRASH_COND(type.outputs.size() != 1);
-				CRASH_COND(type.params.size() != 1);
+				ZN_ASSERT(type.outputs.size() == 1);
+				ZN_ASSERT(type.params.size() == 1);
 				const uint16_t a = mem.add_constant(node.params[0].operator float(), true);
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = a;
 				// Technically not an input or an output, but is a dependency regardless so treat it like an input
@@ -915,7 +915,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 			if (node.inputs[j].connections.size() == 0) {
 				// No input, default it
-				CRASH_COND(j >= node.default_inputs.size());
+				ZN_ASSERT(j < node.default_inputs.size());
 				float defval = node.default_inputs[j];
 				a = mem.add_constant(defval, port.require_input_buffer_when_constant);
 
@@ -923,13 +923,13 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
 				auto address_it = _program.output_port_addresses.find(src_port);
 				// Previous node ports must have been registered
-				CRASH_COND(address_it == _program.output_port_addresses.end());
+				ZN_ASSERT(address_it != _program.output_port_addresses.end());
 				a = address_it->second;
 
 				// Register dependency
 				auto it = node_id_to_dependency_graph.find(src_port.node_id);
-				CRASH_COND(it == node_id_to_dependency_graph.end());
-				CRASH_COND(it->second >= _program.dependency_graph.nodes.size());
+				ZN_ASSERT(it != node_id_to_dependency_graph.end());
+				ZN_ASSERT(it->second < _program.dependency_graph.nodes.size());
 				_program.dependency_graph.dependencies.push_back(it->second);
 				++dg_node.end_dependency;
 			}
@@ -1000,12 +1000,12 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				return result;
 			}
 			const size_t params_size = ctx.get_params_size_in_words();
-			CRASH_COND(params_size > std::numeric_limits<uint16_t>::max());
+			ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
 			operations[params_size_index] = params_size;
 		}
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
-			CRASH_COND(node.outputs.size() != 1);
+			ZN_ASSERT(node.outputs.size() == 1);
 
 			if (_program.outputs_count == _program.outputs.size()) {
 				CompilationResult result;
@@ -1018,7 +1018,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			{
 				auto address_it = _program.output_port_addresses.find(ProgramGraph::PortLocation{ node_id, 0 });
 				// Previous node ports must have been registered
-				CRASH_COND(address_it == _program.output_port_addresses.end());
+				ZN_ASSERT(address_it != _program.output_port_addresses.end());
 				OutputInfo &output_info = _program.outputs[_program.outputs_count];
 				output_info.buffer_address = address_it->second;
 				output_info.dependency_graph_node_index = dg_node_index;
@@ -1030,10 +1030,10 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			for (unsigned int j = 0; j < type.outputs.size(); ++j) {
 				const ProgramGraph::PortLocation loc{ node_id, j };
 				auto address_it = _program.output_port_addresses.find(loc);
-				CRASH_COND(address_it == _program.output_port_addresses.end());
+				ZN_ASSERT(address_it != _program.output_port_addresses.end());
 				BufferSpec &bs = _program.buffer_specs[address_it->second];
 				// Not expecting existing users on that port
-				ERR_FAIL_COND_V(bs.users_count != 0, CompilationResult());
+				ZN_ASSERT_RETURN_V(bs.users_count == 0, CompilationResult());
 				++bs.users_count;
 			}
 		}

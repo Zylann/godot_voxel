@@ -2075,7 +2075,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// const Interval x = ctx.get_input(0);
 			// const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ERR_FAIL_COND(p.noise == nullptr);
+			ZN_ASSERT_RETURN(p.noise != nullptr);
 			ctx.set_output(0, p.noise->get_estimated_output_range());
 		};
 	}
@@ -2125,7 +2125,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			// const Interval y = ctx.get_input(1);
 			// const Interval z = ctx.get_input(2);
 			const Params p = ctx.get_params<Params>();
-			ERR_FAIL_COND(p.noise == nullptr);
+			ZN_ASSERT_RETURN(p.noise != nullptr);
 			ctx.set_output(0, p.noise->get_estimated_output_range());
 		};
 	}

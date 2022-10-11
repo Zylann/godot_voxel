@@ -80,7 +80,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 	ZN_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
-	ERR_FAIL_COND(state.ranges.size() == 0);
+	ZN_ASSERT_RETURN(state.ranges.size() != 0);
 
 	const Program &program = _program;
 	const DependencyGraph &graph = program.dependency_graph;
@@ -114,7 +114,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 		// Check needed because Godot never compiles with `_DEBUG`...
 #ifdef DEBUG_ENABLED
-		CRASH_COND(node_index >= graph.nodes.size());
+		ZN_ASSERT(node_index < graph.nodes.size());
 #endif
 		const DependencyGraph::Node &node = graph.nodes[node_index];
 
@@ -144,7 +144,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 	if (debug) {
 		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
-		CRASH_COND(debug_nodes.size() > 0);
+		ZN_ASSERT(debug_nodes.size() == 0);
 
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
 			const ProcessResult res = results[node_index];
@@ -340,7 +340,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 	// 	for (unsigned int i = 0; i < state.buffers.size(); ++i) {
 	// 		Buffer &buffer = state.buffers[i];
 	// 		if (!buffer.is_constant && !buffer.is_binding) {
-	// 			CRASH_COND(buffer.data == nullptr);
+	// 			ZN_ASSERT(buffer.data != nullptr);
 	// 			for (unsigned int j = 0; j < buffer.size; ++j) {
 	// 				buffer.data[j] = -969696.f;
 	// 			}
@@ -404,14 +404,14 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	struct L {
 		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
 			Buffer &buffer = buffers[a];
-			CRASH_COND(!buffer.is_binding);
+			ZN_ASSERT(buffer.is_binding);
 			buffer.data = d.data();
 			buffer.size = d.size();
 		}
 
 		static inline void unbind_buffer(Span<Buffer> buffers, int a) {
 			Buffer &buffer = buffers[a];
-			CRASH_COND(!buffer.is_binding);
+			ZN_ASSERT(buffer.is_binding);
 			buffer.data = nullptr;
 		}
 	};
@@ -420,24 +420,24 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
-	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size()));
+	ZN_ASSERT(in_x.size() == in_y.size() && in_y.size() == in_z.size());
 	if (_program.sdf_input_address != -1) {
-		CRASH_COND(in_sdf.size() != in_x.size());
+		ZN_ASSERT(in_sdf.size() == in_x.size());
 	}
 #endif
 
 #ifdef TOOLS_ENABLED
 	const unsigned int buffer_size = in_x.size();
-	ERR_FAIL_COND(state.buffers.size() < _program.buffer_count);
-	ERR_FAIL_COND(state.buffers.size() == 0);
-	ERR_FAIL_COND(state.buffer_size < buffer_size);
-	ERR_FAIL_COND(state.buffers[0].size < buffer_size);
+	ZN_ASSERT_RETURN(state.buffers.size() >= _program.buffer_count);
+	ZN_ASSERT_RETURN(state.buffers.size() != 0);
+	ZN_ASSERT_RETURN(state.buffer_size >= buffer_size);
+	ZN_ASSERT_RETURN(state.buffers[0].size >= buffer_size);
 #ifdef DEBUG_ENABLED
 	for (size_t i = 0; i < state.buffers.size(); ++i) {
 		const Buffer &b = state.buffers[i];
-		CRASH_COND(b.size < buffer_size);
-		CRASH_COND(b.size > state.buffer_capacity);
-		CRASH_COND(b.size != state.buffer_size);
+		ZN_ASSERT(b.size >= buffer_size);
+		ZN_ASSERT(b.size <= state.buffer_capacity);
+		ZN_ASSERT(b.size == state.buffer_size);
 		if (b.data != nullptr && !b.is_binding) {
 			ZN_ASSERT(b.buffer_data_index < state.buffer_datas.size());
 			const BufferData &bd = state.buffer_datas[b.buffer_data_index];
@@ -509,7 +509,7 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		Span<const uint8_t> params = read_params(operations, pc);
 
 		// TODO Buffers will stay bound if this error occurs!
-		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
+		ZN_ASSERT_RETURN(node_type.process_buffer_func != nullptr);
 		ProcessBufferContext ctx(inputs, outputs, params, buffers, p_execution_map != nullptr);
 		node_type.process_buffer_func(ctx);
 
@@ -582,13 +582,13 @@ void VoxelGraphRuntime::analyze_range(
 
 		Span<const uint8_t> params = read_params(operations, pc);
 
-		ERR_FAIL_COND(node_type.range_analysis_func == nullptr);
+		ZN_ASSERT_RETURN(node_type.range_analysis_func != nullptr);
 		RangeAnalysisContext ctx(inputs, outputs, params, ranges, buffers);
 		node_type.range_analysis_func(ctx);
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
 		// If this fails, the program is ill-formed
-		CRASH_COND(read<uint16_t>(_program, pc) != VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+		ZN_ASSERT(read<uint16_t>(_program, pc) == VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
 #endif
 	}
 }
