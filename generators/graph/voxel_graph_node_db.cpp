@@ -1229,37 +1229,47 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
+		struct Params {
+			float size_x;
+			float size_y;
+			float size_z;
+		};
 		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_BOX];
 		t.name = "SdfBox";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
 		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
-		// TODO Is it worth it making size an input?
-		t.inputs.push_back(Port("size_x", 10.0));
-		t.inputs.push_back(Port("size_y", 10.0));
-		t.inputs.push_back(Port("size_z", 10.0));
+		t.params.push_back(Param("size_x", Variant::FLOAT, 10.0));
+		t.params.push_back(Param("size_y", Variant::FLOAT, 10.0));
+		t.params.push_back(Param("size_z", Variant::FLOAT, 10.0));
 		t.outputs.push_back(Port("sdf"));
+		t.compile_func = [](CompileContext &ctx) {
+			Params p;
+			p.size_x = ctx.get_param(0);
+			p.size_y = ctx.get_param(1);
+			p.size_z = ctx.get_param(2);
+			ctx.set_params(p);
+		};
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x = ctx.get_input(0);
 			const VoxelGraphRuntime::Buffer &y = ctx.get_input(1);
 			const VoxelGraphRuntime::Buffer &z = ctx.get_input(2);
-			const VoxelGraphRuntime::Buffer &sx = ctx.get_input(3);
-			const VoxelGraphRuntime::Buffer &sy = ctx.get_input(4);
-			const VoxelGraphRuntime::Buffer &sz = ctx.get_input(5);
+			const Params p = ctx.get_params<Params>();
 			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			const Vector3 size(p.size_x, p.size_y, p.size_z);
 			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = math::sdf_box(
-						Vector3(x.data[i], y.data[i], z.data[i]), Vector3(sx.data[i], sy.data[i], sz.data[i]));
+				out.data[i] = math::sdf_box(Vector3(x.data[i], y.data[i], z.data[i]), size);
 			}
 		};
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Interval z = ctx.get_input(2);
-			const Interval sx = ctx.get_input(3);
-			const Interval sy = ctx.get_input(4);
-			const Interval sz = ctx.get_input(5);
+			const Params p = ctx.get_params<Params>();
+			const Interval sx = Interval::from_single_value(p.size_x);
+			const Interval sy = Interval::from_single_value(p.size_y);
+			const Interval sz = Interval::from_single_value(p.size_z);
 			ctx.set_output(0, math::sdf_box(x, y, z, sx, sy, sz));
 		};
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
@@ -1269,8 +1279,8 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 					"	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);\n"
 					"}\n");
 			ctx.add_format("{} = vg_sdf_box(vec3({}, {}, {}), vec3({}, {}, {}));\n", ctx.get_output_name(0),
-					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_input_name(3),
-					ctx.get_input_name(4), ctx.get_input_name(5));
+					ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2), float(ctx.get_param(0)),
+					float(ctx.get_param(1)), float(ctx.get_param(2)));
 		};
 	}
 	{
