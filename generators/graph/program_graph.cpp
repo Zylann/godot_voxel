@@ -162,6 +162,8 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ZN_ASSERT_RETURN_MSG(!has_path(dst.node_id, src.node_id), "Cannot add connection that would create a cycle.");
 	Node &src_node = get_node(src.node_id);
 	Node &dst_node = get_node(dst.node_id);
+	ZN_ASSERT_RETURN_MSG(src.port_index < src_node.outputs.size(), "Source port doesn't exist");
+	ZN_ASSERT_RETURN_MSG(dst.port_index < dst_node.inputs.size(), "Destination port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(
 			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected");
 	src_node.outputs[src.port_index].connections.push_back(dst);

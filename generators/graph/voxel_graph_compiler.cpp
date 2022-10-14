@@ -25,6 +25,7 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 	switch (arg.type) {
 		case ExpressionParser::Node::NUMBER: {
 			const ExpressionParser::NumberNode &arg_nn = reinterpret_cast<const ExpressionParser::NumberNode &>(arg);
+			ZN_ASSERT(pg_node_input_index < pg_node.default_inputs.size());
 			pg_node.default_inputs[pg_node_input_index] = arg_nn.value;
 		} break;
 
@@ -233,6 +234,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 			result.message = "Could not resolve expression variable from input ports";
 			return result;
 		}
+		ZN_ASSERT(original_port_index < original_node.inputs.size());
 		const ProgramGraph::Port &original_port = original_node.inputs[original_port_index];
 		for (const ProgramGraph::PortLocation src : original_port.connections) {
 			graph.connect(src, tc.dst);
@@ -343,6 +345,10 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 				node1_input.connections.size() <= 1, false, "Multiple input connections isn't supported");
 		// TODO Some nodes like `*` and `+` have unordered inputs, we need to handle that
 		if (node1_input.connections.size() == 0) {
+			// Continuing the paranoia here, but that's because Godot doesn't define `_DEBUG` (and I can't define it in
+			// my module without failing to link), so standard library bound checks are in the toilet
+			ZN_ASSERT(node1.default_inputs.size() == node1.inputs.size());
+			ZN_ASSERT(node2.default_inputs.size() == node2.inputs.size());
 			// No ancestor, check default inputs (autoconnect is ignored, it must have been applied earlier)
 			const Variant v1 = node1.default_inputs[input_index];
 			const Variant v2 = node2.default_inputs[input_index];
@@ -493,6 +499,7 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 				continue;
 			}
 			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			ZN_ASSERT(node.inputs.size() == type.inputs.size());
 			const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
 			VoxelGeneratorGraph::NodeTypeID src_type;
 			switch (auto_connect) {
@@ -708,6 +715,7 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 	for (const uint32_t node_id : order_xzy) {
 		order[i++] = node_id;
 	}
+	ZN_ASSERT(i == order.size());
 
 	return xzy_start_index;
 }
@@ -933,6 +941,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 			operations.push_back(a);
 
+			ZN_ASSERT(a < _program.buffer_specs.size());
 			BufferSpec &bs = _program.buffer_specs[a];
 			++bs.users_count;
 
@@ -998,6 +1007,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 			}
 			const size_t params_size = ctx.get_params_size_in_words();
 			ZN_ASSERT(params_size <= std::numeric_limits<uint16_t>::max());
+			ZN_ASSERT(params_size_index < operations.size());
 			operations[params_size_index] = params_size;
 		}
 
@@ -1102,6 +1112,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				} else {
 					const uint16_t i = free_indices[free_indices.size() - 1];
 					free_indices.pop_back();
+					ZN_ASSERT(i < datas.size());
 					Data &d = datas[i];
 					// Must not re-use a pinned buffer
 					ZN_ASSERT(!d.pinned);
