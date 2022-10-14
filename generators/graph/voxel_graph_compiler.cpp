@@ -969,7 +969,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		// Get params, copy resources when used, and hold a reference to them
 		std::vector<Variant> params_copy;
-		params_copy.resize(node.params.size());
+		params_copy.reserve(node.params.size());
 		for (size_t i = 0; i < node.params.size(); ++i) {
 			Variant v = node.params[i];
 
@@ -992,7 +992,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				v = res;
 			}
 
-			params_copy[i] = v;
+			params_copy.push_back(v);
 		}
 
 		if (type.compile_func != nullptr) {
