@@ -758,18 +758,23 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	math::Interval sdf_input_range;
 	if (runtime.has_input(VoxelGeneratorGraph::NODE_INPUT_SDF)) {
 		ZN_PROFILE_SCOPE();
+		ZN_PRINT_ERROR("Running `VoxelGeneratorGraph::generate_block()` with an SDF input is currently unsupported.");
+		return result;
+		// TODO Implement support for calling `generate_block` with a graph having input SDF?
+		// Needs to get the unscaled SDF and copy it into slices
+		/*
 		// const Vector3i bs = out_buffer.get_size();
 		// const float midv = out_buffer.get_voxel_f(bs / 2, VoxelBufferInternal::CHANNEL_SDF) / sdf_scale;
 		// const float maxd = 0.501f * math::length(to_vec3f(bs << input.lod));
 		// sdf_input_range = math::Interval(midv - maxd, midv + maxd);
 
-		// TODO BUG: Cache size will be wrong when subdivision is enabled and can be used!
 		get_unscaled_sdf(out_buffer, input_sdf_cache);
 
 		sdf_input_range = math::Interval::from_single_value(input_sdf_cache[0]);
 		for (unsigned int i = 0; i < input_sdf_cache.size(); ++i) {
 			sdf_input_range.add_point(input_sdf_cache[i]);
 		}
+		*/
 	}
 
 	// For each subdivision of the block
