@@ -86,7 +86,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
 			const PortLocation src = *it;
 			Node &src_node = get_node(src.node_id);
-			uint32_t i = src_node.find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
+			const uint32_t i = src_node.find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
 			ZN_ASSERT(i != NULL_INDEX);
 			std::vector<PortLocation> &connections = src_node.outputs[src.port_index].connections;
 			connections.erase(connections.begin() + i);
@@ -99,7 +99,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
 			const PortLocation dst = *it;
 			Node &dst_node = get_node(dst.node_id);
-			uint32_t i = dst_node.find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
+			const uint32_t i = dst_node.find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
 			ZN_ASSERT(i != NULL_INDEX);
 			std::vector<PortLocation> &connections = dst_node.inputs[dst.port_index].connections;
 			connections.erase(connections.begin() + i);
@@ -171,11 +171,11 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 bool ProgramGraph::disconnect(PortLocation src, PortLocation dst) {
 	Node &src_node = get_node(src.node_id);
 	Node &dst_node = get_node(dst.node_id);
-	uint32_t src_i = src_node.find_output_connection(src.port_index, dst);
+	const uint32_t src_i = src_node.find_output_connection(src.port_index, dst);
 	if (src_i == NULL_INDEX) {
 		return false;
 	}
-	uint32_t dst_i = dst_node.find_input_connection(src, dst.port_index);
+	const uint32_t dst_i = dst_node.find_input_connection(src, dst.port_index);
 	ZN_ASSERT(dst_i != NULL_INDEX);
 	std::vector<PortLocation> &src_connections = src_node.outputs[src.port_index].connections;
 	std::vector<PortLocation> &dst_connections = dst_node.inputs[dst.port_index].connections;

@@ -695,7 +695,7 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 		}
 	}
 
-	uint32_t xzy_start_index = order_xz.size();
+	const uint32_t xzy_start_index = order_xz.size();
 
 	//#ifdef DEBUG_ENABLED
 	//		const uint32_t order_xz_raw_size = order_xz.size();
