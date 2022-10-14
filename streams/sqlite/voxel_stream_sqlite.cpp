@@ -629,8 +629,14 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-thread_local std::vector<uint8_t> tls_temp_block_data;
-thread_local std::vector<uint8_t> tls_temp_compressed_block_data;
+std::vector<uint8_t> &get_tls_temp_block_data() {
+	thread_local std::vector<uint8_t> tls_temp_block_data;
+	return tls_temp_block_data;
+}
+std::vector<uint8_t> &get_tls_temp_compressed_block_data() {
+	thread_local std::vector<uint8_t> tls_temp_compressed_block_data;
+	return tls_temp_compressed_block_data;
+}
 } // namespace
 
 VoxelStreamSQLite::VoxelStreamSQLite() {}
@@ -738,11 +744,13 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		loc.z = q.origin_in_voxels.z >> po2;
 		loc.lod = q.lod;
 
-		const ResultCode res = con->load_block(loc, tls_temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
+		std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
+
+		const ResultCode res = con->load_block(loc, temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
 
 		if (res == RESULT_BLOCK_FOUND) {
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
-			BlockSerializer::decompress_and_deserialize(to_span_const(tls_temp_block_data), q.voxel_buffer);
+			BlockSerializer::decompress_and_deserialize(to_span_const(temp_block_data), q.voxel_buffer);
 		}
 
 		q.result = res;
@@ -824,17 +832,20 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		loc.z = q.position.z;
 		loc.lod = q.lod;
 
-		const ResultCode res =
-				con->load_block(loc, tls_temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
+		std::vector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
+
+		const ResultCode res = con->load_block(loc, temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			if (!CompressedData::decompress(to_span_const(tls_temp_compressed_block_data), tls_temp_block_data)) {
+			std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
+
+			if (!CompressedData::decompress(to_span_const(temp_compressed_block_data), temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
 				q.result = RESULT_ERROR;
 				continue;
 			}
 			q.data = make_unique_instance<InstanceBlockData>();
-			if (!deserialize_instance_block_data(*q.data, to_span_const(tls_temp_block_data))) {
+			if (!deserialize_instance_block_data(*q.data, to_span_const(temp_block_data))) {
 				ERR_PRINT("Failed to deserialize instance block");
 				q.result = RESULT_ERROR;
 				continue;
@@ -909,7 +920,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			}
 
 			if (instances_data.size() > 0) {
-				std::vector<uint8_t> &temp_block_data = tls_temp_block_data;
+				std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 				if (!CompressedData::decompress(instances_data, temp_block_data)) {
 					ERR_PRINT("Failed to decompress instance block");
 					return;
@@ -952,8 +963,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 	ERR_FAIL_COND(p_connection == nullptr);
 	ERR_FAIL_COND(p_connection->begin_transaction() == false);
 
-	std::vector<uint8_t> &temp_data = tls_temp_block_data;
-	std::vector<uint8_t> &temp_compressed_data = tls_temp_compressed_block_data;
+	std::vector<uint8_t> &temp_data = get_tls_temp_block_data();
+	std::vector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
 
 	// TODO Needs better error rollback handling
 	_cache.flush([p_connection, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {

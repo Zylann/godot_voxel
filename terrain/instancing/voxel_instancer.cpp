@@ -28,8 +28,11 @@
 namespace zylann::voxel {
 
 namespace {
-static thread_local std::vector<Transform3D> tls_transform_cache;
+std::vector<Transform3D> &get_tls_transform_cache() {
+	static thread_local std::vector<Transform3D> tls_transform_cache;
+	return tls_transform_cache;
 }
+} //namespace
 
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
@@ -552,7 +555,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			}
 		}
 
-		std::vector<Transform3D> &transform_cache = tls_transform_cache;
+		std::vector<Transform3D> &transform_cache = get_tls_transform_cache();
 		transform_cache.clear();
 
 		Array surface_arrays;
@@ -1089,7 +1092,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	const Vector3i data_min_pos = render_grid_position * render_to_data_factor;
 	const Vector3i data_max_pos = data_min_pos + Vector3iUtil::create(render_to_data_factor);
 
-	std::vector<Transform3D> &transform_cache = tls_transform_cache;
+	std::vector<Transform3D> &transform_cache = get_tls_transform_cache();
 
 	for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
 		const int layer_id = *layer_it;

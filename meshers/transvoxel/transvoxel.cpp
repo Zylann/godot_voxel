@@ -1282,7 +1282,10 @@ struct WeightSamplerPackedU16 {
 	}
 };
 
-thread_local std::vector<uint16_t> s_weights_backing_buffer_u16;
+std::vector<uint16_t> &get_tls_weights_backing_buffer_u16() {
+	thread_local std::vector<uint16_t> tls_weights_backing_buffer_u16;
+	return tls_weights_backing_buffer_u16;
+}
 #endif
 
 // Presence of zeroes in samples occurs more often when precision is scarce
@@ -1357,8 +1360,8 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 		indices_data =
 				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
-		weights_data.u16_data =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
+		weights_data.u16_data = get_or_decompress_channel(
+				voxels, get_tls_weights_backing_buffer_u16(), VoxelBufferInternal::CHANNEL_WEIGHTS);
 		ZN_ASSERT_RETURN_V(weights_data.u16_data.size() == voxels_count, default_texture_indices_data);
 	}
 #endif
@@ -1449,8 +1452,8 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 			indices_data = get_texture_indices_data(
 					voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
 		}
-		weights_data.u16_data =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u16, VoxelBufferInternal::CHANNEL_WEIGHTS);
+		weights_data.u16_data = get_or_decompress_channel(
+				voxels, get_tls_weights_backing_buffer_u16(), VoxelBufferInternal::CHANNEL_WEIGHTS);
 		ZN_ASSERT_RETURN(weights_data.u16_data.size() == voxels_count);
 	}
 #endif

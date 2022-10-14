@@ -320,7 +320,7 @@ private:
 		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
 
-	static thread_local Cache _cache;
+	static Cache &get_tls_cache();
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position,

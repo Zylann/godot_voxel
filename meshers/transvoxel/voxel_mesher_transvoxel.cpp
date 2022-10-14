@@ -21,16 +21,27 @@ Ref<ShaderMaterial> g_minimal_shader_material;
 } //namespace
 
 namespace transvoxel {
-thread_local MeshArrays tls_mesh_arrays;
-thread_local std::vector<CellInfo> tls_cell_infos;
+// Wrapping thread-locals in functions so they initialize the first time they are needed, instead of when the
+// application starts. This works around a bug in the static debug MSVC runtime (/MTd). At time of writing, Godot is
+// using /MT even in debug builds, which prevents from getting safety checks from the standard library.
+// See https://github.com/baldurk/renderdoc/issues/1743
+// and https://developercommunity.visualstudio.com/t/race-condition-on-g-tss-mutex-with-static-crt/672664
+MeshArrays &get_tls_mesh_arrays() {
+	thread_local MeshArrays tls_mesh_arrays;
+	return tls_mesh_arrays;
+}
+std::vector<CellInfo> &get_tls_cell_infos() {
+	thread_local std::vector<CellInfo> tls_cell_infos;
+	return tls_cell_infos;
+}
 } //namespace transvoxel
 
 const transvoxel::MeshArrays &VoxelMesherTransvoxel::get_mesh_cache_from_current_thread() {
-	return transvoxel::tls_mesh_arrays;
+	return transvoxel::get_tls_mesh_arrays();
 }
 
 Span<const transvoxel::CellInfo> VoxelMesherTransvoxel::get_cell_info_from_current_thread() {
-	return to_span(transvoxel::tls_cell_infos);
+	return to_span(transvoxel::get_tls_cell_infos());
 }
 
 void VoxelMesherTransvoxel::load_static_resources() {
@@ -215,7 +226,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// These vectors are re-used.
 	// We don't know in advance how much geometry we are going to produce.
 	// Once capacity is big enough, no more memory should be allocated
-	transvoxel::MeshArrays &mesh_arrays = transvoxel::tls_mesh_arrays;
+	transvoxel::MeshArrays &mesh_arrays = transvoxel::get_tls_mesh_arrays();
 	mesh_arrays.clear();
 
 	const VoxelBufferInternal &voxels = input.voxels;
@@ -229,8 +240,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
 	if (input.virtual_texture_hint) {
-		transvoxel::tls_cell_infos.clear();
-		cell_infos = &transvoxel::tls_cell_infos;
+		transvoxel::get_tls_cell_infos().clear();
+		cell_infos = &transvoxel::get_tls_cell_infos();
 	}
 
 	if (_deep_sampling_enabled && input.generator != nullptr && input.data != nullptr && input.lod_index > 0) {
