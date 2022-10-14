@@ -1167,7 +1167,6 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				// Allocate data to store outputs.
 				// Note, we don't allocate for inputs. The only way to allocate them is to pin them.
 				for (unsigned int output_index = 0; output_index < type.outputs.size(); ++output_index) {
-					const VoxelGraphNodeDB::Port &output = type.outputs[output_index];
 					const ProgramGraph::PortLocation dst_port{ node_id, output_index };
 					auto address_it = _program.output_port_addresses.find(dst_port);
 					ZN_ASSERT(address_it != _program.output_port_addresses.end());
