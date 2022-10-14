@@ -111,6 +111,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 		queue_free_node(row);
 	}
 	_rows.clear();
+	_output_labels.clear();
 
 	clear_all_slots();
 
