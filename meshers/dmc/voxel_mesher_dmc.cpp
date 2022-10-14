@@ -1342,13 +1342,16 @@ namespace zylann::voxel {
 
 #define BUILD_OCTREE_BOTTOM_UP
 
-thread_local VoxelMesherDMC::Cache VoxelMesherDMC::_cache;
-
 VoxelMesherDMC::VoxelMesherDMC() {
 	set_padding(PADDING, PADDING);
 }
 
 VoxelMesherDMC::~VoxelMesherDMC() {}
+
+VoxelMesherDMC::Cache &VoxelMesherDMC::get_tls_cache() {
+	static thread_local Cache cache;
+	return cache;
+}
 
 void VoxelMesherDMC::set_mesh_mode(MeshMode mode) {
 	RWLockWrite wlock(_parameters_lock);
@@ -1438,7 +1441,7 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	Stats stats;
 	real_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	// In an ideal world, a tiny sphere placed in the middle of an empty SDF volume will
 	// cause corners data to change so that they indicate distance to it.

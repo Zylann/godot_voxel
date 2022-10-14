@@ -46,7 +46,10 @@ inline bool contributes_to_ao(const VoxelBlockyLibrary::BakedData &lib, uint32_t
 	return true;
 }
 
-static thread_local std::vector<int> tls_index_offsets;
+std::vector<int> &get_tls_index_offsets() {
+	static thread_local std::vector<int> tls_index_offsets;
+	return tls_index_offsets;
+}
 
 } // namespace
 
@@ -73,7 +76,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 
-	std::vector<int> &index_offsets = tls_index_offsets;
+	std::vector<int> &index_offsets = get_tls_index_offsets();
 	index_offsets.clear();
 	index_offsets.resize(out_arrays_per_material.size(), 0);
 
@@ -404,13 +407,16 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
-
 VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
 }
 
 VoxelMesherBlocky::~VoxelMesherBlocky() {}
+
+VoxelMesherBlocky::Cache &VoxelMesherBlocky::get_tls_cache() {
+	thread_local Cache cache;
+	return cache;
+}
 
 void VoxelMesherBlocky::set_library(Ref<VoxelBlockyLibrary> library) {
 	RWLockWrite wlock(_parameters_lock);
@@ -452,7 +458,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 	ERR_FAIL_COND(params.library.is_null());
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	std::vector<Arrays> &arrays_per_material = cache.arrays_per_material;
 	for (unsigned int i = 0; i < arrays_per_material.size(); ++i) {

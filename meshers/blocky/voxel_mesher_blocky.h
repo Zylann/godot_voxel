@@ -89,7 +89,7 @@ private:
 	RWLock _parameters_lock;
 
 	// Work cache
-	static thread_local Cache _cache;
+	static Cache &get_tls_cache();
 };
 
 } // namespace zylann::voxel

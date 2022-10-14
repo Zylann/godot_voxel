@@ -705,18 +705,21 @@ Ref<Image> make_greedy_atlas(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
-
 VoxelMesherCubes::VoxelMesherCubes() {
 	set_padding(PADDING, PADDING);
 }
 
 VoxelMesherCubes::~VoxelMesherCubes() {}
 
+VoxelMesherCubes::Cache &VoxelMesherCubes::get_tls_cache() {
+	static thread_local Cache cache;
+	return cache;
+}
+
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
 		Arrays &a = cache.arrays_per_material[i];

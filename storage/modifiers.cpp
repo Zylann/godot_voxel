@@ -7,12 +7,19 @@
 namespace zylann::voxel {
 
 namespace {
-thread_local std::vector<float> tls_sdf;
-thread_local std::vector<Vector3> tls_positions;
+std::vector<float> &get_tls_sdf() {
+	thread_local std::vector<float> tls_sdf;
+	return tls_sdf;
+}
+
+std::vector<Vector3> &get_tls_positions() {
+	thread_local std::vector<Vector3> tls_positions;
+	return tls_positions;
+}
 
 Span<const Vector3> get_positions_temporary(Vector3i buffer_size, Vector3 origin, Vector3 size) {
-	tls_positions.resize(Vector3iUtil::get_volume(buffer_size));
-	Span<Vector3> positions = to_span(tls_positions);
+	get_tls_positions().resize(Vector3iUtil::get_volume(buffer_size));
+	Span<Vector3> positions = to_span(get_tls_positions());
 
 	const Vector3 end = origin + size;
 	const Vector3 bsf = buffer_size;
@@ -35,8 +42,8 @@ Span<const Vector3> get_positions_temporary(
 		Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer) {
 	ZN_ASSERT(x_buffer.size() == z_buffer.size() && y_buffer.size() == z_buffer.size());
 
-	tls_positions.resize(x_buffer.size());
-	Span<Vector3> positions = to_span(tls_positions);
+	get_tls_positions().resize(x_buffer.size());
+	Span<Vector3> positions = to_span(get_tls_positions());
 
 	for (unsigned int i = 0; i < x_buffer.size(); ++i) {
 		positions[i] = Vector3(x_buffer[i], y_buffer[i], z_buffer[i]);
@@ -49,8 +56,8 @@ Span<const Vector3> get_positions_temporary(
 Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	ZN_DSTACK();
 	const Vector3i bs = voxels.get_size();
-	tls_sdf.resize(Vector3iUtil::get_volume(bs));
-	Span<float> sdf = to_span(tls_sdf);
+	get_tls_sdf().resize(Vector3iUtil::get_volume(bs));
+	Span<float> sdf = to_span(get_tls_sdf());
 
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	voxels.decompress_channel(channel);

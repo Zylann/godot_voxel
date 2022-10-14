@@ -22,12 +22,15 @@ namespace zylann::voxel {
 
 const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 
-thread_local VoxelGeneratorGraph::Cache VoxelGeneratorGraph::_cache;
-
 VoxelGeneratorGraph::VoxelGeneratorGraph() {}
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
 	clear();
+}
+
+VoxelGeneratorGraph::Cache &VoxelGeneratorGraph::get_tls_cache() {
+	thread_local Cache cache;
+	return cache;
 }
 
 void VoxelGeneratorGraph::clear() {
@@ -722,7 +725,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	// ERR_FAIL_COND_V(bs.y % section_size != 0, result);
 	// ERR_FAIL_COND_V(bs.z % section_size != 0, result);
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	// Slice is on the Y axis
 	const unsigned int slice_buffer_size = section_size.x * section_size.z;
@@ -760,6 +763,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 		// const float maxd = 0.501f * math::length(to_vec3f(bs << input.lod));
 		// sdf_input_range = math::Interval(midv - maxd, midv + maxd);
 
+		// TODO BUG: Cache size will be wrong when subdivision is enabled and can be used!
 		get_unscaled_sdf(out_buffer, input_sdf_cache);
 
 		sdf_input_range = math::Interval::from_single_value(input_sdf_cache[0]);
@@ -1112,7 +1116,7 @@ bool VoxelGeneratorGraph::is_good() const {
 void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z) {
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 
 	// Support graphs having an SDF input, give it default values
@@ -1132,7 +1136,7 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 void VoxelGeneratorGraph::generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf) {
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 
 	runtime.prepare_state(cache.state, in_x.size(), false);
@@ -1183,16 +1187,16 @@ void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<co
 				Span<float>(ptr_z, positions_z.size()));
 	}
 
-	const VoxelGraphRuntime::Buffer &buffer = _cache.state.get_buffer(buffer_index);
+	const VoxelGraphRuntime::Buffer &buffer = get_tls_cache().state.get_buffer(buffer_index);
 	memcpy(out_values.data(), buffer.data, sizeof(float) * out_values.size());
 }
 
 const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
-	return _cache.state;
+	return get_tls_cache().state;
 }
 
 Span<const uint32_t> VoxelGeneratorGraph::get_last_execution_map_debug_from_current_thread() {
-	return to_span_const(_cache.optimized_execution_map.debug_nodes);
+	return to_span_const(get_tls_cache().optimized_execution_map.debug_nodes);
 }
 
 bool VoxelGeneratorGraph::try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const {
@@ -1340,7 +1344,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		}
 	};
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	ProcessChunk pc(
 			cache.state, runtime_ptr->sdf_output_buffer_index, runtime_ptr->runtime, ref_radius, sdf_min, sdf_max);
@@ -1498,7 +1502,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		}
 	};
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	// The default for strength is 1.f
 	const float e = 0.001f;
@@ -1542,7 +1546,7 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	if (runtime_ptr->sdf_output_buffer_index == -1) {
 		return v;
 	}
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1, false);
 	runtime.generate_single(cache.state, to_vec3f(position), nullptr);
@@ -1563,7 +1567,7 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 		runtime_ptr = _runtime;
 	}
 	ERR_FAIL_COND_V(runtime_ptr == nullptr, math::Interval::from_single_value(0.f));
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
 	runtime.prepare_state(cache.state, 1, false);
@@ -1852,7 +1856,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 	ProfilingClock profiling_clock;
 	uint64_t total_elapsed_us = 0;
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	if (singular) {
 		runtime.prepare_state(cache.state, 1, false);
