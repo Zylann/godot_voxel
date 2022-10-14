@@ -159,7 +159,7 @@ void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	// The inspector is a glorious singleton, so when we select nodes to edit their properties, it prevents
 	// from accessing the graph resource itself, to save it for example.
-	// I'd like to embed properties inside the nodes themselves, but it's a bit more work,
+	// I'd like to embed properties inside the nodes themselves, but it's a bit more work (and a waste of space),
 	// so for now I make it so deselecting all nodes in the graph (like clicking in the background) selects the graph.
 	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
 	if (graph.is_valid()) {
