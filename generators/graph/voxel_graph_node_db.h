@@ -127,7 +127,7 @@ public:
 	bool try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const;
 
 	Span<const ExpressionParser::Function> get_expression_parser_functions() const {
-		return to_span_const(_expression_functions);
+		return to_span(_expression_functions);
 	}
 
 private:
