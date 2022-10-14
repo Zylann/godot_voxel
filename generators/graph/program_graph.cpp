@@ -309,12 +309,8 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uin
 	const Node &node = get_node(node_id);
 	const size_t begin = deps.size();
 
-	for (uint32_t ii = 0; ii < node.inputs.size(); ++ii) {
-		const Port &p = node.inputs[ii];
-
-		for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
-			const PortLocation src = *cit;
-
+	for (const Port &p : node.inputs) {
+		for (const PortLocation src : p.connections) {
 			// A node can have two connections to the same destination node
 			if (range_contains(deps, src.node_id, begin, deps.size())) {
 				continue;

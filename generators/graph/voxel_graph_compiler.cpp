@@ -234,8 +234,7 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 			return result;
 		}
 		const ProgramGraph::Port &original_port = original_node.inputs[original_port_index];
-		for (unsigned int j = 0; j < original_port.connections.size(); ++j) {
-			const ProgramGraph::PortLocation src = original_port.connections[j];
+		for (const ProgramGraph::PortLocation src : original_port.connections) {
 			graph.connect(src, tc.dst);
 		}
 	}
@@ -319,7 +318,7 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 		// Different type
 		return false;
 	}
-	// Note, some nodes can have dynamic inputs
+	// Note, some nodes can have dynamic inputs, so we don't check node type specs, we check the nodes
 	if (node1.inputs.size() != node2.inputs.size()) {
 		// Different input count
 		return false;
@@ -512,6 +511,7 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 					ZN_PRINT_ERROR("Unhandled autoconnect");
 					continue;
 			}
+			// Graph input node instances are all equivalent, so we can pick any
 			uint32_t src_node_id = graph.find_node_by_type(src_type);
 			if (src_node_id == ProgramGraph::NULL_ID) {
 				// Not found, create it then
@@ -662,8 +662,7 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 	std::vector<uint32_t> order_xz;
 	std::vector<uint32_t> order_xzy;
 
-	for (size_t i = 0; i < order.size(); ++i) {
-		const uint32_t node_id = order[i];
+	for (const uint32_t node_id : order) {
 		const ProgramGraph::Node &node = graph.get_node(node_id);
 
 		bool depends_on_y = false;
@@ -677,9 +676,7 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 			immediate_deps.clear();
 			graph.find_immediate_dependencies(node_id, immediate_deps);
 
-			for (size_t j = 0; j < immediate_deps.size(); ++j) {
-				const uint32_t dep_node_id = immediate_deps[j];
-
+			for (const uint32_t dep_node_id : immediate_deps) {
 				if (nodes_depending_on_y.find(dep_node_id) != nodes_depending_on_y.end()) {
 					depends_on_y = true;
 					nodes_depending_on_y.insert(node_id);
@@ -705,11 +702,11 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 	//#endif
 
 	size_t i = 0;
-	for (size_t j = 0; j < order_xz.size(); ++j) {
-		order[i++] = order_xz[j];
+	for (const uint32_t node_id : order_xz) {
+		order[i++] = node_id;
 	}
-	for (size_t j = 0; j < order_xzy.size(); ++j) {
-		order[i++] = order_xzy[j];
+	for (const uint32_t node_id : order_xzy) {
+		order[i++] = node_id;
 	}
 
 	return xzy_start_index;
