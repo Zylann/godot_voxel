@@ -315,7 +315,8 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
-		std::vector<float> input_sdf_cache;
+		std::vector<float> input_sdf_slice_cache;
+		std::vector<float> input_sdf_full_cache;
 		VoxelGraphRuntime::State state;
 		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};

@@ -735,12 +735,10 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	cache.x_cache.resize(slice_buffer_size);
 	cache.y_cache.resize(slice_buffer_size);
 	cache.z_cache.resize(slice_buffer_size);
-	cache.input_sdf_cache.resize(slice_buffer_size);
 
 	Span<float> x_cache = to_span(cache.x_cache);
 	Span<float> y_cache = to_span(cache.y_cache);
 	Span<float> z_cache = to_span(cache.z_cache);
-	Span<float> input_sdf_cache = to_span(cache.input_sdf_cache);
 
 	const float air_sdf = _debug_clipped_blocks ? -1.f : 1.f;
 	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
@@ -756,25 +754,24 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	bool all_sdf_is_matter = all_sdf_is_air;
 
 	math::Interval sdf_input_range;
+	Span<float> input_sdf_full_cache;
+	Span<float> input_sdf_slice_cache;
 	if (runtime.has_input(VoxelGeneratorGraph::NODE_INPUT_SDF)) {
 		ZN_PROFILE_SCOPE();
-		ZN_PRINT_ERROR("Running `VoxelGeneratorGraph::generate_block()` with an SDF input is currently unsupported.");
-		return result;
-		// TODO Implement support for calling `generate_block` with a graph having input SDF?
-		// Needs to get the unscaled SDF and copy it into slices
-		/*
-		// const Vector3i bs = out_buffer.get_size();
-		// const float midv = out_buffer.get_voxel_f(bs / 2, VoxelBufferInternal::CHANNEL_SDF) / sdf_scale;
-		// const float maxd = 0.501f * math::length(to_vec3f(bs << input.lod));
-		// sdf_input_range = math::Interval(midv - maxd, midv + maxd);
+		cache.input_sdf_slice_cache.resize(slice_buffer_size);
+		input_sdf_slice_cache = to_span(cache.input_sdf_slice_cache);
 
-		get_unscaled_sdf(out_buffer, input_sdf_cache);
+		const int64_t volume = Vector3iUtil::get_volume(bs);
+		cache.input_sdf_full_cache.resize(volume);
+		input_sdf_full_cache = to_span(cache.input_sdf_full_cache);
 
-		sdf_input_range = math::Interval::from_single_value(input_sdf_cache[0]);
-		for (unsigned int i = 0; i < input_sdf_cache.size(); ++i) {
-			sdf_input_range.add_point(input_sdf_cache[i]);
+		// Note, a copy of the data is notably needed because we are going to write into that same buffer.
+		get_unscaled_sdf(out_buffer, input_sdf_full_cache);
+
+		sdf_input_range = math::Interval::from_single_value(input_sdf_full_cache[0]);
+		for (const float sd : input_sdf_full_cache) {
+			sdf_input_range.add_point(sd);
 		}
-		*/
 	}
 
 	// For each subdivision of the block
@@ -879,8 +876,21 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 					y_cache.fill(gy);
 
+					if (input_sdf_full_cache.size() != 0) {
+						// Copy input SDF using expected coordinate convention.
+						// VoxelBuffer is ZXY, but the graph runs in YXZ.
+						unsigned int i = 0;
+						for (int rz = rmin.z; rz < rmax.z; ++rz) {
+							for (int rx = rmin.x; rx < rmax.x; ++rx) {
+								const unsigned int loc = Vector3iUtil::get_zxy_index(rx, ry, rz, bs.x, bs.y);
+								input_sdf_slice_cache[i] = input_sdf_full_cache[loc];
+								++i;
+							}
+						}
+					}
+
 					// Full query (unless using execution map)
-					runtime.generate_set(cache.state, x_cache, y_cache, z_cache, input_sdf_cache,
+					runtime.generate_set(cache.state, x_cache, y_cache, z_cache, input_sdf_slice_cache,
 							_use_xz_caching && ry != rmin.y,
 							_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 
@@ -1127,8 +1137,8 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	// Support graphs having an SDF input, give it default values
 	Span<float> in_sdf;
 	if (runtime.has_input(NODE_INPUT_SDF)) {
-		cache.input_sdf_cache.resize(in_x.size());
-		in_sdf = to_span(cache.input_sdf_cache);
+		cache.input_sdf_full_cache.resize(in_x.size());
+		in_sdf = to_span(cache.input_sdf_full_cache);
 		in_sdf.fill(0.f);
 	}
 

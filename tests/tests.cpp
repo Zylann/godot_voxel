@@ -485,7 +485,7 @@ void load_graph_with_sphere_on_plane(VoxelGeneratorGraph &g, float radius) {
 	g.add_connection(n_in_x, 0, n_sphere, 0);
 	g.add_connection(n_in_y, 0, n_sphere, 1);
 	g.add_connection(n_in_z, 0, n_sphere, 2);
-	g.set_node_default_input(n_sphere, 3, radius);
+	g.set_node_param(n_sphere, 0, radius);
 	g.add_connection(n_in_y, 0, n_plane, 0);
 	g.set_node_default_input(n_plane, 1, 0.f);
 	g.add_connection(n_sphere, 0, n_union, 0);
@@ -940,6 +940,179 @@ void test_voxel_graph_equivalence_merging() {
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
 		ZN_TEST_ASSERT(value.f == 22);
 	}
+}
+
+/*void print_sdf_as_ascii(const VoxelBufferInternal &vb) {
+	Vector3i pos;
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
+		println(format("Y = {}", pos.y));
+		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
+			std::string s;
+			std::string s2;
+			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
+				const float sd = vb.get_voxel_f(pos, channel);
+				char c;
+				if (sd < -0.9f) {
+					c = '=';
+				} else if (sd < 0.0f) {
+					c = '-';
+				} else if (sd == 0.f) {
+					c = ' ';
+				} else if (sd < 0.9f) {
+					c = '+';
+				} else {
+					c = '#';
+				}
+				s += c;
+				s += " ";
+				std::string n = std::to_string(math::clamp(int(sd * 1000.f), -999, 999));
+				while (n.size() < 4) {
+					n = " " + n;
+				}
+				s2 += n;
+				s2 += " ";
+			}
+			s += " | ";
+			s += s2;
+			println(s);
+		}
+	}
+}*/
+
+/*bool find_different_voxel(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2, Vector3i *out_pos,
+		unsigned int *out_channel_index) {
+	ZN_ASSERT(vb1.get_size() == vb2.get_size());
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb1.get_size().y; ++pos.y) {
+		for (pos.z = 0; pos.z < vb1.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb1.get_size().x; ++pos.x) {
+				for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
+						++channel_index) {
+					const uint64_t v1 = vb1.get_voxel(pos, channel_index);
+					const uint64_t v2 = vb2.get_voxel(pos, channel_index);
+					if (v1 != v2) {
+						if (out_pos != nullptr) {
+							*out_pos = pos;
+						}
+						if (out_channel_index != nullptr) {
+							*out_channel_index = channel_index;
+						}
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}*/
+
+bool sd_equals_approx(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2) {
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::Depth depth = vb1.get_channel_depth(channel);
+	//const float error_margin = 1.1f * VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	// There can be a small difference due to scaling operations, so instead of an exact equality, we check approximate
+	// equality.
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb1.get_size().y; ++pos.y) {
+		for (pos.z = 0; pos.z < vb1.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb1.get_size().x; ++pos.x) {
+				switch (depth) {
+					case VoxelBufferInternal::DEPTH_8_BIT: {
+						const int sd1 = int8_t(vb1.get_voxel(pos, channel));
+						const int sd2 = int8_t(vb2.get_voxel(pos, channel));
+						if (Math::abs(sd1 - sd2) > 1) {
+							return false;
+						}
+					} break;
+					case VoxelBufferInternal::DEPTH_16_BIT: {
+						const int sd1 = int16_t(vb1.get_voxel(pos, channel));
+						const int sd2 = int16_t(vb2.get_voxel(pos, channel));
+						if (Math::abs(sd1 - sd2) > 1) {
+							return false;
+						}
+					} break;
+					case VoxelBufferInternal::DEPTH_32_BIT:
+					case VoxelBufferInternal::DEPTH_64_BIT: {
+						const float sd1 = vb1.get_voxel_f(pos, channel);
+						const float sd2 = vb2.get_voxel_f(pos, channel);
+						if (!Math::is_equal_approx(sd1, sd2)) {
+							return false;
+						}
+					} break;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+void test_voxel_graph_generate_block_with_input_sdf() {
+	static const int BLOCK_SIZE = 16;
+	static const float SPHERE_RADIUS = 6;
+
+	struct L {
+		static void load_graph(VoxelGeneratorGraph &g) {
+			// Just outputting the input
+			const uint32_t n_in_sdf = g.create_node(VoxelGeneratorGraph::NODE_INPUT_SDF, Vector2());
+			const uint32_t n_out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+			g.add_connection(n_in_sdf, 0, n_out_sdf, 0);
+		}
+
+		static void test(bool subdivision_enabled, int subdivision_size) {
+			// Create generator
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			L::load_graph(**generator);
+			const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+			ZN_TEST_ASSERT_MSG(compilation_result.success,
+					String("Failed to compile graph: {0}: {1}")
+							.format(varray(compilation_result.node_id, compilation_result.message)));
+
+			// Create buffer containing part of a sphere
+			VoxelBufferInternal buffer;
+			buffer.create(Vector3i(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE));
+			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+			const VoxelBufferInternal::Depth depth = buffer.get_channel_depth(channel);
+			const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
+			for (int z = 0; z < buffer.get_size().z; ++z) {
+				for (int x = 0; x < buffer.get_size().x; ++x) {
+					for (int y = 0; y < buffer.get_size().y; ++y) {
+						// Sphere at origin
+						const float sd = math::sdf_sphere(Vector3(x, y, z), Vector3(), SPHERE_RADIUS);
+						buffer.set_voxel_f(sd * sd_scale, Vector3i(x, y, z), channel);
+					}
+				}
+			}
+
+			// Make a backup before running the generator
+			VoxelBufferInternal buffer_before;
+			buffer_before.create(buffer.get_size());
+			buffer_before.copy_from(buffer);
+
+			generator->set_use_subdivision(subdivision_enabled);
+			generator->set_subdivision_size(subdivision_size);
+			generator->generate_block(VoxelGenerator::VoxelQueryData{ buffer, Vector3i(), 0 });
+
+			/*if (!buffer.equals(buffer_before)) {
+				println("Buffer before:");
+				print_sdf_as_ascii(buffer_before);
+				println("Buffer after:");
+				print_sdf_as_ascii(buffer);
+				Vector3i different_pos;
+				unsigned int different_channel;
+				if (find_different_voxel(buffer_before, buffer, &different_pos, &different_channel)) {
+					const uint64_t v1 = buffer_before.get_voxel(different_pos, different_channel);
+					const uint64_t v2 = buffer.get_voxel(different_pos, different_channel);
+					println(format("Different position: {}, v1={}, v2={}", different_pos, v1, v2));
+				}
+			}*/
+			ZN_TEST_ASSERT(sd_equals_approx(buffer, buffer_before));
+		}
+	};
+
+	L::test(false, BLOCK_SIZE / 2);
+	L::test(true, BLOCK_SIZE / 2);
 }
 
 void test_voxel_graph_sphere_on_plane() {
@@ -2674,6 +2847,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_generator_expressions_2);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_voxel_graph_equivalence_merging);
+	VOXEL_TEST(test_voxel_graph_generate_block_with_input_sdf);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
 #ifdef TOOLS_ENABLED

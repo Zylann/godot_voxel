@@ -44,6 +44,10 @@ inline unsigned int get_zxy_index(const Vector3i &v, const Vector3i area_size) {
 	return v.y + area_size.y * (v.x + area_size.x * v.z); // ZXY
 }
 
+inline unsigned int get_zxy_index(int x, int y, int z, int sx, int sy) {
+	return y + sy * (x + sx * z); // ZXY
+}
+
 inline Vector3i from_zxy_index(unsigned int i, const Vector3i area_size) {
 	Vector3i pos;
 	pos.y = i % area_size.y;
