@@ -623,9 +623,7 @@ NormalMapImages store_normalmap_data_to_images(
 				memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
 			}
 
-			Ref<Image> image;
-			image.instantiate();
-			image->create_from_data(tile_resolution, tile_resolution, false, format, bytes);
+			Ref<Image> image = Image::create_from_data(tile_resolution, tile_resolution, false, format, bytes);
 
 			tile_images.write[tile_index] = image;
 			//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
@@ -650,9 +648,7 @@ NormalMapImages store_normalmap_data_to_images(
 					Vector2i(tile_resolution, tile_resolution), tile_pos_pixels, pixel_size);
 		}
 
-		Ref<Image> atlas;
-		atlas.instantiate();
-		atlas->create_from_data(pixels_across, pixels_across, false, format, bytes);
+		Ref<Image> atlas = Image::create_from_data(pixels_across, pixels_across, false, format, bytes);
 		images.atlas = atlas;
 
 #endif // VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
@@ -694,9 +690,7 @@ NormalMapImages store_normalmap_data_to_images(
 			}
 		}
 
-		Ref<Image> image;
-		image.instantiate();
-		image->create_from_data(sqri, sqri, false, Image::FORMAT_RG8, bytes);
+		Ref<Image> image = Image::create_from_data(sqri, sqri, false, Image::FORMAT_RG8, bytes);
 		images.lookup = image;
 	}
 

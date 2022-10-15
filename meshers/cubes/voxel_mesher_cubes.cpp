@@ -696,10 +696,8 @@ Ref<Image> make_greedy_atlas(
 			}
 		}
 	}
-	Ref<Image> image;
-	image.instantiate();
-	create_image_from_data(**image, result_size, false, Image::FORMAT_RGBA8, im_data);
 
+	Ref<Image> image = Image::create_from_data(result_size.x, result_size.y, false, Image::FORMAT_RGBA8, im_data);
 	return image;
 }
 
