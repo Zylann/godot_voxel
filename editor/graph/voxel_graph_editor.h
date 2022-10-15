@@ -31,9 +31,9 @@ public:
 
 	VoxelGraphEditor();
 
-	void set_graph(Ref<VoxelGeneratorGraph> graph);
-	inline Ref<VoxelGeneratorGraph> get_graph() const {
-		return _graph;
+	void set_generator(Ref<VoxelGeneratorGraph> generator);
+	inline Ref<VoxelGeneratorGraph> get_generator() const {
+		return _generator;
 	}
 
 	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
@@ -104,7 +104,8 @@ private:
 
 	static void _bind_methods();
 
-	Ref<VoxelGeneratorGraph> _graph;
+	Ref<VoxelGeneratorGraph> _generator;
+	Ref<VoxelGraphFunction> _graph;
 
 	GraphEdit *_graph_edit = nullptr;
 	PopupMenu *_context_menu = nullptr;

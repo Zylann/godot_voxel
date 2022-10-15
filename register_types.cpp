@@ -185,6 +185,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
+		ClassDB::register_class<VoxelGraphFunction>();
 
 		// Storage
 		ClassDB::register_class<gd::VoxelBuffer>();

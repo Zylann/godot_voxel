@@ -50,7 +50,7 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 }
 
 static ProgramGraph::Node &create_node(
-		ProgramGraph &graph, const VoxelGraphNodeDB &db, VoxelGeneratorGraph::NodeTypeID node_type_id) {
+		ProgramGraph &graph, const VoxelGraphNodeDB &db, VoxelGraphFunction::NodeTypeID node_type_id) {
 	// Not creating default sub-resources here, there are no use cases where we use such nodes.
 	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID, false);
 	ZN_ASSERT(node != nullptr);
@@ -64,7 +64,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 		case ExpressionParser::Node::NUMBER: {
 			// Note, this code should only run if the whole expression is only a number.
 			// Constant node inputs don't create a constant node, they just set the default value of the input.
-			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_CONSTANT);
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGraphFunction::NODE_CONSTANT);
 			const ExpressionParser::NumberNode &nn = reinterpret_cast<const ExpressionParser::NumberNode &>(ep_node);
 			ZN_ASSERT(pg_node.params.size() == 1);
 			pg_node.params[0] = nn.value;
@@ -76,7 +76,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			// Note, this code should only run if the whole expression is only a variable.
 			// Variable node inputs don't create a node each time, they are turned into connections in a later pass.
 			// Here we need a pass-through node, so let's use `var + 0`. It's not a common case anyways.
-			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_ADD);
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGraphFunction::NODE_ADD);
 			const ExpressionParser::VariableNode &vn =
 					reinterpret_cast<const ExpressionParser::VariableNode &>(ep_node);
 			to_connect.push_back({ vn.name, { pg_node.id, 0 } });
@@ -93,19 +93,19 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			ZN_ASSERT(on.n0 != nullptr);
 			ZN_ASSERT(on.n1 != nullptr);
 
-			VoxelGeneratorGraph::NodeTypeID node_type_id;
+			VoxelGraphFunction::NodeTypeID node_type_id;
 			switch (on.op) {
 				case ExpressionParser::OperatorNode::ADD:
-					node_type_id = VoxelGeneratorGraph::NODE_ADD;
+					node_type_id = VoxelGraphFunction::NODE_ADD;
 					break;
 				case ExpressionParser::OperatorNode::SUBTRACT:
-					node_type_id = VoxelGeneratorGraph::NODE_SUBTRACT;
+					node_type_id = VoxelGraphFunction::NODE_SUBTRACT;
 					break;
 				case ExpressionParser::OperatorNode::MULTIPLY:
-					node_type_id = VoxelGeneratorGraph::NODE_MULTIPLY;
+					node_type_id = VoxelGraphFunction::NODE_MULTIPLY;
 					break;
 				case ExpressionParser::OperatorNode::DIVIDE:
-					node_type_id = VoxelGeneratorGraph::NODE_DIVIDE;
+					node_type_id = VoxelGraphFunction::NODE_DIVIDE;
 					break;
 				case ExpressionParser::OperatorNode::POWER:
 					if (on.n1->type == ExpressionParser::Node::NUMBER) {
@@ -116,7 +116,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 						const int pi = int(arg1.value);
 						if (Math::is_equal_approx(arg1.value, pi) && pi >= 0) {
 							// Constant positive integer
-							ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NODE_POWI);
+							ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGraphFunction::NODE_POWI);
 							expanded_node_ids.push_back(pg_node.id);
 
 							ZN_ASSERT(pg_node.params.size() == 1);
@@ -130,7 +130,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 						}
 					}
 					// Fallback on generic power function
-					node_type_id = VoxelGeneratorGraph::NODE_POW;
+					node_type_id = VoxelGraphFunction::NODE_POW;
 					break;
 				default:
 					ZN_CRASH();
@@ -156,7 +156,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 			ZN_ASSERT(f != nullptr);
 			const unsigned int arg_count = f->argument_count;
 
-			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGeneratorGraph::NodeTypeID(fn.function_id));
+			ProgramGraph::Node &pg_node = create_node(graph, db, VoxelGraphFunction::NodeTypeID(fn.function_id));
 			// TODO Optimization: per-function shortcuts
 
 			for (unsigned int arg_index = 0; arg_index < arg_count; ++arg_index) {
@@ -267,7 +267,7 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 	// Gather expression node IDs first, as expansion could invalidate the iterator
 	std::vector<uint32_t> expression_node_ids;
 	graph.for_each_node([&expression_node_ids](ProgramGraph::Node &node) {
-		if (node.type_id == VoxelGeneratorGraph::NODE_EXPRESSION) {
+		if (node.type_id == VoxelGraphFunction::NODE_EXPRESSION) {
 			expression_node_ids.push_back(node.id);
 		}
 	});
@@ -501,16 +501,16 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 			ZN_ASSERT(node.inputs.size() == type.inputs.size());
 			const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
-			VoxelGeneratorGraph::NodeTypeID src_type;
+			VoxelGraphFunction::NodeTypeID src_type;
 			switch (auto_connect) {
 				case VoxelGraphNodeDB::AUTO_CONNECT_X:
-					src_type = VoxelGeneratorGraph::NODE_INPUT_X;
+					src_type = VoxelGraphFunction::NODE_INPUT_X;
 					break;
 				case VoxelGraphNodeDB::AUTO_CONNECT_Y:
-					src_type = VoxelGeneratorGraph::NODE_INPUT_Y;
+					src_type = VoxelGraphFunction::NODE_INPUT_Y;
 					break;
 				case VoxelGraphNodeDB::AUTO_CONNECT_Z:
-					src_type = VoxelGeneratorGraph::NODE_INPUT_Z;
+					src_type = VoxelGraphFunction::NODE_INPUT_Z;
 					break;
 				case VoxelGraphNodeDB::AUTO_CONNECT_NONE:
 					continue;
@@ -557,7 +557,7 @@ void try_simplify_clamp_node(ProgramGraph &graph, const ProgramGraph::Node &node
 		const float maxv = node.default_inputs[clamp_max_input_id];
 
 		// Create new node
-		ProgramGraph::Node &clampc_node = create_node(graph, type_db, VoxelGeneratorGraph::NODE_CLAMP_C);
+		ProgramGraph::Node &clampc_node = create_node(graph, type_db, VoxelGraphFunction::NODE_CLAMP_C);
 
 		// Assign new node params
 		clampc_node.params[clampc_min_param_id] = minv;
@@ -599,7 +599,7 @@ void replace_simplifiable_nodes(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 	for (const uint32_t &node_id : node_ids) {
 		const ProgramGraph::Node &node = graph.get_node(node_id);
 
-		if (node.type_id == VoxelGeneratorGraph::NODE_CLAMP) {
+		if (node.type_id == VoxelGraphFunction::NODE_CLAMP) {
 			try_simplify_clamp_node(graph, node, type_db, remap_info);
 		}
 	}
@@ -674,7 +674,7 @@ static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const Progra
 
 		bool depends_on_y = false;
 
-		if (node.type_id == VoxelGeneratorGraph::NODE_INPUT_Y) {
+		if (node.type_id == VoxelGraphFunction::NODE_INPUT_Y) {
 			nodes_depending_on_y.insert(node_id);
 			depends_on_y = true;
 		}
@@ -840,7 +840,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 		// We still hardcode some of the nodes. Maybe we can abstract them too one day.
 		switch (node.type_id) {
 			// TODO Get rid of constant nodes, replace them with default inputs wherever they are used?
-			case VoxelGeneratorGraph::NODE_CONSTANT: {
+			case VoxelGraphFunction::NODE_CONSTANT: {
 				ZN_ASSERT(type.outputs.size() == 1);
 				ZN_ASSERT(type.params.size() == 1);
 				const uint16_t a = mem.add_constant(node.params[0].operator float(), true);
@@ -852,22 +852,22 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 			// Input nodes can appear multiple times in the graph, for convenience.
 			// Multiple instances of the same node will refer to the same data.
-			case VoxelGeneratorGraph::NODE_INPUT_X:
+			case VoxelGraphFunction::NODE_INPUT_X:
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.x_input_address;
 				dg_node.is_input = true;
 				continue;
 
-			case VoxelGeneratorGraph::NODE_INPUT_Y:
+			case VoxelGraphFunction::NODE_INPUT_Y:
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.y_input_address;
 				dg_node.is_input = true;
 				continue;
 
-			case VoxelGeneratorGraph::NODE_INPUT_Z:
+			case VoxelGraphFunction::NODE_INPUT_Z:
 				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.z_input_address;
 				dg_node.is_input = true;
 				continue;
 
-			case VoxelGeneratorGraph::NODE_INPUT_SDF:
+			case VoxelGraphFunction::NODE_INPUT_SDF:
 				if (_program.sdf_input_address == -1) {
 					_program.sdf_input_address = mem.add_binding();
 				}
@@ -875,7 +875,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				dg_node.is_input = true;
 				continue;
 
-			case VoxelGeneratorGraph::NODE_SDF_PREVIEW: {
+			case VoxelGraphFunction::NODE_SDF_PREVIEW: {
 				if (!debug) {
 					ZN_PRINT_WARNING("Found preview node when compiling graph in non-debug mode. That node should not "
 									 "have been present. Bug?");

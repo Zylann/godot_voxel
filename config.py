@@ -43,6 +43,7 @@ def get_doc_classes():
         "VoxelGeneratorNoise2D",
         "VoxelGeneratorScript",
         "VoxelGeneratorWaves",
+        "VoxelGraphFunction",
         "VoxelInstanceComponent",
         "VoxelInstanceGenerator",
         "VoxelInstanceLibrary",

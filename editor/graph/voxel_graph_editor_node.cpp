@@ -1,4 +1,5 @@
 #include "voxel_graph_editor_node.h"
+#include "../../generators/graph/voxel_generator_graph.h"
 #include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/callable.h"
@@ -11,7 +12,7 @@
 
 namespace zylann::voxel {
 
-VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &graph, uint32_t node_id) {
+VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &graph, uint32_t node_id) {
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
 	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
 
@@ -24,7 +25,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	node_view->_node_id = node_id;
 
 	const bool is_resizable =
-			node_type_id == VoxelGeneratorGraph::NODE_EXPRESSION || node_type_id == VoxelGeneratorGraph::NODE_COMMENT;
+			node_type_id == VoxelGraphFunction::NODE_EXPRESSION || node_type_id == VoxelGraphFunction::NODE_COMMENT;
 
 	// Some nodes can have variable size title and layout. The node can get larger automatically, but doesn't shrink.
 	// So for now we make them resizable so users can adjust them.
@@ -36,13 +37,13 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	}
 	//node_view.rect_size = Vector2(200, 100)
 
-	if (node_type_id == VoxelGeneratorGraph::NODE_COMMENT) {
+	if (node_type_id == VoxelGraphFunction::NODE_COMMENT) {
 		node_view->set_comment(true);
 	}
 
 	node_view->update_layout(graph);
 
-	if (node_type_id == VoxelGeneratorGraph::NODE_SDF_PREVIEW) {
+	if (node_type_id == VoxelGraphFunction::NODE_SDF_PREVIEW) {
 		node_view->_preview = memnew(VoxelGraphEditorNodePreview);
 		node_view->add_child(node_view->_preview);
 	}
@@ -58,7 +59,7 @@ void VoxelGraphEditorNode::_on_resize_request(Vector2 new_size) {
 	set_size(new_size);
 }
 
-void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
+void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 	const uint32_t node_type_id = graph.get_node_type_id(_node_id);
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 	// We artificially hide output ports if the node is an output.
@@ -80,7 +81,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 		for (const VoxelGraphNodeDB::Port &port : node_type.outputs) {
 			outputs.push_back({ port.name });
 		}
-		if (graph.get_node_type_id(_node_id) == VoxelGeneratorGraph::NODE_EXPRESSION) {
+		if (graph.get_node_type_id(_node_id) == VoxelGraphFunction::NODE_EXPRESSION) {
 			std::vector<std::string> names;
 			graph.get_expression_node_inputs(_node_id, names);
 			for (const std::string &s : names) {
@@ -177,7 +178,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 	}
 }
 
-void VoxelGraphEditorNode::update_comment_text(const VoxelGeneratorGraph &graph) {
+void VoxelGraphEditorNode::update_comment_text(const VoxelGraphFunction &graph) {
 	ERR_FAIL_COND(_comment_label == nullptr);
 	const String text = graph.get_node_param(_node_id, 0);
 	_comment_label->set_text(text);
@@ -193,14 +194,14 @@ void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_n
 	}
 }
 
-void VoxelGraphEditorNode::poll(const VoxelGeneratorGraph &graph) {
+void VoxelGraphEditorNode::poll(const VoxelGraphFunction &graph) {
 	poll_default_inputs(graph);
 	poll_params(graph);
 }
 
 // When an input is left unconnected, it picks a default value. Input hints show this value.
 // It is otherwise shown in the inspector when the node is selected, but seeing them at a glance helps.
-void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph) {
+void VoxelGraphEditorNode::poll_default_inputs(const VoxelGraphFunction &graph) {
 	ProgramGraph::PortLocation src_loc_unused;
 	const String prefix = ": ";
 
@@ -217,7 +218,7 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph)
 
 		} else {
 			if (graph.get_node_default_inputs_autoconnect(loc.node_id)) {
-				const VoxelGeneratorGraph::NodeTypeID node_type_id = graph.get_node_type_id(loc.node_id);
+				const VoxelGraphFunction::NodeTypeID node_type_id = graph.get_node_type_id(loc.node_id);
 				const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 				const VoxelGraphNodeDB::Port &input_port = node_type.inputs[input_index];
 				if (input_port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
@@ -255,21 +256,21 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGeneratorGraph &graph)
 	}
 }
 
-void VoxelGraphEditorNode::poll_params(const VoxelGeneratorGraph &graph) {
-	if (graph.get_node_type_id(_node_id) == VoxelGeneratorGraph::NODE_EXPRESSION) {
+void VoxelGraphEditorNode::poll_params(const VoxelGraphFunction &graph) {
+	if (graph.get_node_type_id(_node_id) == VoxelGraphFunction::NODE_EXPRESSION) {
 		const String code = graph.get_node_param(_node_id, 0);
 		set_title(code);
 	}
 }
 
 void VoxelGraphEditorNode::update_range_analysis_tooltips(
-		const VoxelGeneratorGraph &graph, const VoxelGraphRuntime::State &state) {
+		const VoxelGeneratorGraph &generator, const VoxelGraphRuntime::State &state) {
 	for (unsigned int port_index = 0; port_index < _output_labels.size(); ++port_index) {
 		ProgramGraph::PortLocation loc;
 		loc.node_id = get_generator_node_id();
 		loc.port_index = port_index;
 		uint32_t address;
-		if (!graph.try_get_output_port_address(loc, address)) {
+		if (!generator.try_get_output_port_address(loc, address)) {
 			continue;
 		}
 		const math::Interval range = state.get_range(address);

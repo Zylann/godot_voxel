@@ -29,7 +29,7 @@ inline void queue_free_node(Node *node) {
 	ZN_ASSERT_RETURN(node != nullptr);
 #endif
 #if defined(ZN_GODOT)
-	node->queue_delete();
+	node->queue_free();
 #elif defined(ZN_GODOT_EXTENSION)
 	node->queue_free();
 #endif

@@ -66,16 +66,16 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
 	Object *p_object = p_object_v;
 #endif
-	VoxelGeneratorGraph *graph_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
-	if (graph_ptr == nullptr) {
+	VoxelGeneratorGraph *generator_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
+	if (generator_ptr == nullptr) {
 		VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
 		if (wrapper != nullptr) {
-			graph_ptr = *wrapper->get_graph();
+			generator_ptr = *wrapper->get_generator();
 		}
 	}
-	Ref<VoxelGeneratorGraph> graph(graph_ptr);
+	Ref<VoxelGeneratorGraph> generator(generator_ptr);
 	_graph_editor->set_undo_redo(get_undo_redo()); // UndoRedo isn't available in constructor
-	_graph_editor->set_graph(graph);
+	_graph_editor->set_generator(generator);
 
 	VoxelNode *voxel_node = nullptr;
 	Array selected_nodes = get_editor_interface()->get_selection()->get_selected_nodes();
@@ -83,7 +83,7 @@ void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
 		Node *node = Object::cast_to<Node>(selected_nodes[i]);
 		ERR_FAIL_COND(node == nullptr);
 		VoxelNode *vn = Object::cast_to<VoxelNode>(node);
-		if (vn != nullptr && vn->get_generator() == graph_ptr) {
+		if (vn != nullptr && vn->get_generator() == generator) {
 			voxel_node = vn;
 			break;
 		}
@@ -147,7 +147,7 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
-	wrapper->setup(_graph_editor->get_graph(), node_id, get_undo_redo(), _graph_editor);
+	wrapper->setup(_graph_editor->get_generator(), node_id, get_undo_redo(), _graph_editor);
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...
@@ -161,18 +161,18 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	// from accessing the graph resource itself, to save it for example.
 	// I'd like to embed properties inside the nodes themselves, but it's a bit more work (and a waste of space),
 	// so for now I make it so deselecting all nodes in the graph (like clicking in the background) selects the graph.
-	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
-	if (graph.is_valid()) {
-		get_editor_interface()->inspect_object(*graph);
+	Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
+	if (generator.is_valid()) {
+		get_editor_interface()->inspect_object(*generator);
 	}
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
 	// When deleting nodes, the selected one can be in them, but the inspector wrapper will still point at it.
 	// Clean it up and inspect the graph itself.
-	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
-	ERR_FAIL_COND(graph.is_null());
-	get_editor_interface()->inspect_object(*graph);
+	Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
+	ERR_FAIL_COND(generator.is_null());
+	get_editor_interface()->inspect_object(*generator);
 }
 
 template <typename F>
@@ -194,7 +194,7 @@ void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 		Node *root = get_editor_interface()->get_edited_scene_root();
 
 		if (root != nullptr) {
-			Ref<VoxelGeneratorGraph> generator = _graph_editor->get_graph();
+			Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
 			ERR_FAIL_COND(generator.is_null());
 
 			for_each_node(root, [&generator](Node *node) {
@@ -258,8 +258,8 @@ void VoxelGraphEditorPlugin::dock_graph_editor() {
 void VoxelGraphEditorPlugin::update_graph_editor_window_title() {
 	ERR_FAIL_COND(_graph_editor_window == nullptr);
 	String title;
-	if (_graph_editor->get_graph().is_valid()) {
-		title = _graph_editor->get_graph()->get_path();
+	if (_graph_editor->get_generator().is_valid()) {
+		title = _graph_editor->get_generator()->get_path();
 		title += " - ";
 	}
 	title += VoxelGeneratorGraph::get_class_static();

@@ -6,6 +6,7 @@
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
 #include "program_graph.h"
+#include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 
 #include <memory>
@@ -14,137 +15,19 @@ ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 
+// Uses a VoxelGraphFunction to generate voxel data.
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
 
-	// Node indexes within the DB.
-	// Don't use these in saved data,
-	// they can change depending on which features the module is compiled with.
-	enum NodeTypeID {
-		NODE_CONSTANT,
-		NODE_INPUT_X,
-		NODE_INPUT_Y,
-		NODE_INPUT_Z,
-		NODE_OUTPUT_SDF,
-		NODE_ADD,
-		NODE_SUBTRACT,
-		NODE_MULTIPLY,
-		NODE_DIVIDE,
-		NODE_SIN,
-		NODE_FLOOR,
-		NODE_ABS,
-		NODE_SQRT,
-		NODE_FRACT,
-		NODE_STEPIFY,
-		NODE_WRAP,
-		NODE_MIN,
-		NODE_MAX,
-		NODE_DISTANCE_2D,
-		NODE_DISTANCE_3D,
-		NODE_CLAMP,
-		NODE_CLAMP_C,
-		NODE_MIX,
-		NODE_REMAP,
-		NODE_SMOOTHSTEP,
-		NODE_CURVE,
-		NODE_SELECT,
-		NODE_NOISE_2D,
-		NODE_NOISE_3D,
-		NODE_IMAGE_2D,
-		NODE_SDF_PLANE,
-		NODE_SDF_BOX,
-		NODE_SDF_SPHERE,
-		NODE_SDF_TORUS,
-		NODE_SDF_PREVIEW, // For debugging
-		NODE_SDF_SPHERE_HEIGHTMAP,
-		NODE_SDF_SMOOTH_UNION,
-		NODE_SDF_SMOOTH_SUBTRACT,
-		NODE_NORMALIZE_3D,
-		NODE_FAST_NOISE_2D,
-		NODE_FAST_NOISE_3D,
-		NODE_FAST_NOISE_GRADIENT_2D,
-		NODE_FAST_NOISE_GRADIENT_3D,
-		NODE_OUTPUT_WEIGHT,
-		NODE_OUTPUT_TYPE,
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_FAST_NOISE_2_2D,
-		NODE_FAST_NOISE_2_3D,
-#endif
-		NODE_OUTPUT_SINGLE_TEXTURE,
-		NODE_EXPRESSION,
-		NODE_POWI, // pow(x, constant positive integer)
-		NODE_POW, // pow(x, y)
-		NODE_INPUT_SDF,
-		NODE_COMMENT,
-
-		NODE_TYPE_COUNT
-	};
-
 	VoxelGeneratorGraph();
 	~VoxelGeneratorGraph();
 
 	void clear();
-
-	// Graph edition API
-	// Important: functions editing the graph are NOT thread-safe.
-	// They are expected to be used by the main thread (editor or game logic).
-
-	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
-	void remove_node(uint32_t node_id);
-
-	// Checks if the specified connection can be created
-	bool can_connect(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
-
-	// Checks if the specified connection is valid (without considering existing connections)
-	bool is_valid_connection(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index) const;
-
-	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void remove_connection(
-			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
-
-	// Finds which source port is connected to the given destination.
-	// Returns false if `dst` has no inbound connection.
-	bool try_get_connection_to(ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const;
-
-	bool has_node(uint32_t node_id) const;
-
-	void set_node_name(uint32_t node_id, StringName name);
-	StringName get_node_name(uint32_t node_id) const;
-	uint32_t find_node_by_name(StringName name) const;
-
-	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
-	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
-
-	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
-	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
-	void set_expression_node_inputs(uint32_t node_id, PackedStringArray names);
-
-	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
-	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
-
-	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
-	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
-
-	Vector2 get_node_gui_position(uint32_t node_id) const;
-	void set_node_gui_position(uint32_t node_id, Vector2 pos);
-
-	Vector2 get_node_gui_size(uint32_t node_id) const;
-	void set_node_gui_size(uint32_t node_id, Vector2 size);
-
-	NodeTypeID get_node_type_id(uint32_t node_id) const;
-	PackedInt32Array get_node_ids() const;
-	uint32_t generate_node_id() {
-		return _graph.generate_node_id();
-	}
-
-	unsigned int get_nodes_count() const;
-
 	void load_plane_preset();
+
+	Ref<VoxelGraphFunction> get_main_function() const;
 
 	// Performance tuning (advanced)
 
@@ -183,7 +66,7 @@ public:
 	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
 			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
 
-	Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
+	//Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	// Utility
 
@@ -206,8 +89,6 @@ public:
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
 
-	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
-
 	// Debug
 
 	math::Interval debug_analyze_range(Vector3i min_pos, Vector3i max_pos, bool optimize_execution_map) const;
@@ -225,32 +106,16 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
-
-	// Gets a hash that attempts to only change if the output of the graph is different.
-	// This is computed from the editable graph data, not the compiled result.
-	uint64_t get_output_graph_hash() const;
 #endif
 
 private:
-	Dictionary get_graph_as_variant_data() const;
-	void load_graph_from_variant_data(Dictionary data);
-	void register_subresource(Resource &resource);
-	void unregister_subresource(Resource &resource);
-	void register_subresources();
-	void unregister_subresources();
 	void _on_subresource_changed();
-
-	int _b_get_node_type_count() const;
-	Dictionary _b_get_node_type_info(int type_id) const;
-	Array _b_get_connections() const;
-	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
-	// See https://github.com/godotengine/godot/issues/36895
-	void _b_set_node_param_null(int node_id, int param_index);
-	void _b_set_node_name(int node_id, String name);
 	float _b_generate_single(Vector3 pos);
 	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
 	float _b_debug_measure_microseconds_per_voxel(bool singular);
+	Dictionary get_graph_as_variant_data() const;
+	void load_graph_from_variant_data(Dictionary data);
 
 	struct WeightOutput {
 		unsigned int layer_index;
@@ -263,7 +128,8 @@ private:
 
 	static void _bind_methods();
 
-	ProgramGraph _graph;
+	Ref<VoxelGraphFunction> _main_function;
+
 	// This generator performs range analysis using nodes of the graph. Terrain surface can only appear when SDF
 	// crosses zero within a block. For each generated block, an estimated range of the output is calculated.
 	// If that range is beyond this threshold (either negatively or positively), then blocks will be given a uniform
@@ -324,11 +190,6 @@ private:
 	static Cache &get_tls_cache();
 };
 
-ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position,
-		uint32_t id, bool create_default_instances);
-
 } // namespace zylann::voxel
-
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelGeneratorGraph, NodeTypeID)
 
 #endif // VOXEL_GENERATOR_GRAPH_H

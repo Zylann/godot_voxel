@@ -32,7 +32,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 
 	// Only getting SDF for now, as this is the first use case I want to test this feature with
 	expanded_graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
-		if (node.type_id == VoxelGeneratorGraph::NODE_OUTPUT_SDF) {
+		if (node.type_id == VoxelGraphFunction::NODE_OUTPUT_SDF) {
 			terminal_nodes.push_back(node.id);
 		}
 	});
@@ -66,25 +66,25 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 		const VoxelGraphNodeDB::NodeType node_type = type_db.get_type(node.type_id);
 
 		switch (node.type_id) {
-			case VoxelGeneratorGraph::NODE_INPUT_X: {
+			case VoxelGraphFunction::NODE_INPUT_X: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::PortLocation output_port{ node_id, 0 };
 				port_to_var.insert({ output_port, "pos.x" });
 				continue;
 			}
-			case VoxelGeneratorGraph::NODE_INPUT_Y: {
+			case VoxelGraphFunction::NODE_INPUT_Y: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::PortLocation output_port{ node_id, 0 };
 				port_to_var.insert({ output_port, "pos.y" });
 				continue;
 			}
-			case VoxelGeneratorGraph::NODE_INPUT_Z: {
+			case VoxelGraphFunction::NODE_INPUT_Z: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::PortLocation output_port{ node_id, 0 };
 				port_to_var.insert({ output_port, "pos.z" });
 				continue;
 			}
-			case VoxelGeneratorGraph::NODE_CONSTANT: {
+			case VoxelGraphFunction::NODE_CONSTANT: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::PortLocation output_port{ node_id, 0 };
 				std::string name;
@@ -94,7 +94,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph
 				codegen.add_format("float {} = {};\n", name, float(node.params[0]));
 				continue;
 			}
-			case VoxelGeneratorGraph::NODE_OUTPUT_SDF: {
+			case VoxelGraphFunction::NODE_OUTPUT_SDF: {
 				ZN_ASSERT(node.outputs.size() == 1);
 				const ProgramGraph::Port &input_port = node.inputs[0];
 				if (input_port.connections.size() > 0) {

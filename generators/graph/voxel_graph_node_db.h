@@ -3,8 +3,8 @@
 
 #include "../../util/expression_parser.h"
 #include "../../util/godot/string.h" // For String hash
-#include "voxel_generator_graph.h"
 #include "voxel_graph_compiler.h"
+#include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"
 
 namespace zylann::voxel {
@@ -122,7 +122,7 @@ public:
 		return _types[id];
 	}
 	Dictionary get_type_info_dict(uint32_t id) const;
-	bool try_get_type_id_from_name(const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const;
+	bool try_get_type_id_from_name(const String &name, VoxelGraphFunction::NodeTypeID &out_type_id) const;
 	bool try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const;
 	bool try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const;
 
@@ -131,8 +131,8 @@ public:
 	}
 
 private:
-	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> _types;
-	std::unordered_map<String, VoxelGeneratorGraph::NodeTypeID> _type_name_to_id;
+	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> _types;
+	std::unordered_map<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
 	std::vector<ExpressionParser::Function> _expression_functions;
 };
 

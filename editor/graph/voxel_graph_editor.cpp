@@ -165,31 +165,36 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(_shader_dialog);
 }
 
-void VoxelGraphEditor::set_graph(Ref<VoxelGeneratorGraph> graph) {
-	if (_graph == graph) {
+void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
+	if (_generator == generator) {
 		return;
 	}
 
-	if (_graph.is_valid()) {
-		_graph->disconnect(VoxelStringNames::get_singleton().changed,
+	if (_generator.is_valid()) {
+		_generator->disconnect(VoxelStringNames::get_singleton().changed,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_changed));
-		_graph->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
+		_generator->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_name_changed));
 	}
 
-	_graph = graph;
+	_generator = generator;
 
-	if (_graph.is_valid()) {
+	if (_generator.is_valid()) {
+		_graph = generator->get_main_function();
+
 		// Load a default preset when creating new graphs.
 		// TODO Downside is, an empty graph cannot be seen.
 		// But Godot doesnt let us know if the resource has been created from the inspector or not
 		if (_graph->get_nodes_count() == 0) {
-			_graph->load_plane_preset();
+			_generator->load_plane_preset();
 		}
-		_graph->connect(VoxelStringNames::get_singleton().changed,
+		_generator->connect(VoxelStringNames::get_singleton().changed,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_changed));
-		_graph->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
+		_generator->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_name_changed));
+
+	} else {
+		_graph = Ref<VoxelGraphFunction>();
 	}
 
 	_debug_renderer.clear();
@@ -285,7 +290,7 @@ void VoxelGraphEditor::build_gui_from_graph() {
 		return;
 	}
 
-	const VoxelGeneratorGraph &graph = **_graph;
+	const VoxelGraphFunction &graph = **_graph;
 
 	// Nodes
 
@@ -684,7 +689,7 @@ void reset_modulates(GraphEdit &graph_edit) {
 }
 
 void VoxelGraphEditor::update_previews(bool with_live_update) {
-	if (_graph.is_null()) {
+	if (_generator.is_null()) {
 		return;
 	}
 
@@ -694,7 +699,7 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const VoxelGraphRuntime::CompilationResult result = _graph->compile(true);
+	const VoxelGraphRuntime::CompilationResult result = _generator->compile(true);
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 
@@ -714,7 +719,7 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 		_compile_result_label->hide();
 	}
 
-	if (!_graph->is_good()) {
+	if (!_generator->is_good()) {
 		return;
 	}
 	// We assume no other thread will try to modify the graph and compile something not good
@@ -748,13 +753,14 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 void VoxelGraphEditor::update_range_analysis_previews() {
 	ZN_PRINT_VERBOSE("Updating range analysis previews");
-	ERR_FAIL_COND(_graph.is_null());
-	ERR_FAIL_COND(!_graph->is_good());
+	ERR_FAIL_COND(_generator.is_null());
+	ERR_FAIL_COND(!_generator->is_good());
 
 	const AABB aabb = _range_analysis_dialog->get_aabb();
-	_graph->debug_analyze_range(math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size), true);
+	_generator->debug_analyze_range(
+			math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size), true);
 
-	const VoxelGraphRuntime::State &state = _graph->get_last_state_from_current_thread();
+	const VoxelGraphRuntime::State &state = _generator->get_last_state_from_current_thread();
 
 	const Color greyed_out_color(1, 1, 1, 0.5);
 
@@ -772,7 +778,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 		// TODO Would be nice if GraphEdit's minimap would take such coloring into account...
 		node_view->set_modulate(greyed_out_color);
 
-		node_view->update_range_analysis_tooltips(**_graph, state);
+		node_view->update_range_analysis_tooltips(**_generator, state);
 	}
 
 	// Highlight only nodes that will actually run.
@@ -816,7 +822,7 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 void VoxelGraphEditor::update_slice_previews() {
 	// TODO Use a thread?
 	ZN_PRINT_VERBOSE("Updating slice previews");
-	ERR_FAIL_COND(!_graph->is_good());
+	ERR_FAIL_COND(!_generator->is_good());
 
 	struct PreviewInfo {
 		VoxelGraphEditorNodePreview *control;
@@ -843,7 +849,7 @@ void VoxelGraphEditor::update_slice_previews() {
 		}
 		PreviewInfo info;
 		info.control = node->get_preview();
-		if (!_graph->try_get_output_port_address(src, info.address)) {
+		if (!_generator->try_get_output_port_address(src, info.address)) {
 			// Not part of the compiled result
 			continue;
 		}
@@ -891,7 +897,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			z_coords = to_span(y_vec);
 		}
 
-		_graph->generate_set(x_coords, y_coords, z_coords);
+		_generator->generate_set(x_coords, y_coords, z_coords);
 	}
 
 	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
@@ -953,7 +959,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
 	ERR_FAIL_COND(node_view == nullptr);
 
-	if (node_type_id != VoxelGeneratorGraph::NODE_EXPRESSION) {
+	if (node_type_id != VoxelGraphFunction::NODE_EXPRESSION) {
 		node_view->update_title(node_name, node_type_name);
 	}
 }
@@ -963,12 +969,12 @@ void VoxelGraphEditor::_on_update_previews_button_pressed() {
 }
 
 void VoxelGraphEditor::_on_profile_button_pressed() {
-	if (_graph.is_null() || !_graph->is_good()) {
+	if (_generator.is_null() || !_generator->is_good()) {
 		return;
 	}
 
 	std::vector<VoxelGeneratorGraph::NodeProfilingInfo> nodes_profiling_info;
-	const float us = _graph->debug_measure_microseconds_per_voxel(false, &nodes_profiling_info);
+	const float us = _generator->debug_measure_microseconds_per_voxel(false, &nodes_profiling_info);
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
 
 	struct NodeRatio {
@@ -1050,8 +1056,8 @@ void VoxelGraphEditor::_on_preview_axes_menu_id_pressed(int id) {
 }
 
 void VoxelGraphEditor::_on_generate_shader_button_pressed() {
-	ERR_FAIL_COND(_graph.is_null());
-	const String code = _graph->generate_shader();
+	ERR_FAIL_COND(_generator.is_null());
+	const String code = _generator->generate_shader();
 	if (code == "") {
 		return;
 	}
