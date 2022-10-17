@@ -649,6 +649,8 @@ void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
 	if (node_view != nullptr) {
 		node_view->set_position_offset(offset);
 	}
+	// We store GUI node positions independently from editor scale, to make the graph display the same regardless of
+	// monitor DPI, so we have to unapply it
 	_graph->set_node_gui_position(id, offset / EDSCALE);
 }
 

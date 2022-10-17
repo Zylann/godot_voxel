@@ -32,7 +32,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 	if (is_resizable) {
 		node_view->set_resizable(is_resizable);
 
-		const Vector2 node_size = graph.get_node_gui_size(node_id);
+		const Vector2 node_size = graph.get_node_gui_size(node_id) * EDSCALE;
 		node_view->set_size(node_size);
 	}
 	//node_view.rect_size = Vector2(200, 100)
