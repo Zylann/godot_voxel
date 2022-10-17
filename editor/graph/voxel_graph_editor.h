@@ -12,6 +12,8 @@ ZN_GODOT_FORWARD_DECLARE(class AcceptDialog)
 ZN_GODOT_FORWARD_DECLARE(class UndoRedo)
 ZN_GODOT_FORWARD_DECLARE(class Button)
 ZN_GODOT_FORWARD_DECLARE(class Label)
+ZN_GODOT_FORWARD_DECLARE(class OptionButton)
+ZN_GODOT_FORWARD_DECLARE(class CheckBox)
 
 namespace zylann::voxel {
 
@@ -35,6 +37,9 @@ public:
 	inline Ref<VoxelGeneratorGraph> get_generator() const {
 		return _generator;
 	}
+
+	void set_graph(Ref<VoxelGraphFunction> graph);
+	Ref<VoxelGraphFunction> get_graph() const;
 
 	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
 	void set_voxel_node(VoxelNode *node);
@@ -69,6 +74,7 @@ private:
 	void update_range_analysis_gizmo();
 	void clear_range_analysis_tooltips();
 	void hide_profiling_ratios();
+	void update_buttons_availability();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -126,6 +132,12 @@ private:
 	uint64_t _last_output_graph_hash = 0;
 	Button *_pin_button = nullptr;
 	Button *_popout_button = nullptr;
+	Button *_update_previews_button = nullptr;
+	Button *_profile_button = nullptr;
+	Button *_range_analysis_button = nullptr;
+	OptionButton *_preview_axes_menu = nullptr;
+	Button *_generate_shader_button = nullptr;
+	CheckBox *_live_update_checkbox = nullptr;
 
 	enum PreviewAxes { //
 		PREVIEW_XY = 0,

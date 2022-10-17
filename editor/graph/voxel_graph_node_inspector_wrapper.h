@@ -15,8 +15,7 @@ class VoxelGraphEditor;
 class VoxelGraphNodeInspectorWrapper : public RefCounted {
 	GDCLASS(VoxelGraphNodeInspectorWrapper, RefCounted)
 public:
-	void setup(Ref<VoxelGeneratorGraph> p_generator, uint32_t p_node_id, Ref<EditorUndoRedoManager> ur,
-			VoxelGraphEditor *ed);
+	void setup(uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed);
 	inline Ref<VoxelGraphFunction> get_graph() const {
 		return _graph;
 	}

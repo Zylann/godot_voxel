@@ -56,11 +56,13 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		update_previews_button->connect(
 				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_update_previews_button_pressed));
 		toolbar->add_child(update_previews_button);
+		_update_previews_button = update_previews_button;
 
 		Button *profile_button = memnew(Button);
 		profile_button->set_text("Profile");
 		profile_button->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_profile_button_pressed));
 		toolbar->add_child(profile_button);
+		_profile_button = profile_button;
 
 		_profile_label = memnew(Label);
 		toolbar->add_child(_profile_label);
@@ -76,6 +78,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		range_analysis_button->connect(
 				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_analyze_range_button_pressed));
 		toolbar->add_child(range_analysis_button);
+		_range_analysis_button = range_analysis_button;
 
 		OptionButton *preview_axes_menu = memnew(OptionButton);
 		preview_axes_menu->add_item("Preview XY", PREVIEW_XY);
@@ -83,12 +86,14 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		preview_axes_menu->get_popup()->connect(
 				"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_preview_axes_menu_id_pressed));
 		toolbar->add_child(preview_axes_menu);
+		_preview_axes_menu = preview_axes_menu;
 
 		Button *generate_shader_button = memnew(Button);
 		generate_shader_button->set_text(ZN_TTR("Generate shader"));
 		generate_shader_button->connect(
 				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_generate_shader_button_pressed));
 		toolbar->add_child(generate_shader_button);
+		_generate_shader_button = generate_shader_button;
 
 		CheckBox *live_update_checkbox = memnew(CheckBox);
 		live_update_checkbox->set_text(ZN_TTR("Live Update"));
@@ -97,6 +102,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		live_update_checkbox->set_pressed(_live_update_enabled);
 		live_update_checkbox->connect("toggled", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_live_update_toggled));
 		toolbar->add_child(live_update_checkbox);
+		_live_update_checkbox = live_update_checkbox;
 
 		Control *spacer = memnew(Control);
 		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
@@ -163,6 +169,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 	_shader_dialog = memnew(VoxelGraphEditorShaderDialog);
 	add_child(_shader_dialog);
+
+	update_buttons_availability();
 }
 
 void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
@@ -170,17 +178,10 @@ void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
 		return;
 	}
 
-	if (_generator.is_valid()) {
-		_generator->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_changed));
-		_generator->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_name_changed));
-	}
-
 	_generator = generator;
 
 	if (_generator.is_valid()) {
-		_graph = generator->get_main_function();
+		Ref<VoxelGraphFunction> graph = generator->get_main_function();
 
 		// Load a default preset when creating new graphs.
 		// TODO Downside is, an empty graph cannot be seen.
@@ -188,9 +189,36 @@ void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
 		if (_graph->get_nodes_count() == 0) {
 			_generator->load_plane_preset();
 		}
-		_generator->connect(VoxelStringNames::get_singleton().changed,
+
+		set_graph(graph);
+
+	} else {
+		set_graph(Ref<VoxelGraphFunction>());
+	}
+
+	schedule_preview_update();
+
+	update_buttons_availability();
+}
+
+void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
+	if (_graph == graph) {
+		return;
+	}
+
+	if (_graph.is_valid()) {
+		_graph->disconnect(VoxelStringNames::get_singleton().changed,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_changed));
-		_generator->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
+		_graph->disconnect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
+				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_name_changed));
+	}
+
+	_graph = graph;
+
+	if (_graph.is_valid()) {
+		_graph->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_changed));
+		_graph->connect(VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED,
 				ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_name_changed));
 
 	} else {
@@ -201,7 +229,11 @@ void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
 
 	build_gui_from_graph();
 
-	schedule_preview_update();
+	//schedule_preview_update();
+}
+
+Ref<VoxelGraphFunction> VoxelGraphEditor::get_graph() const {
+	return _graph;
 }
 
 void VoxelGraphEditor::set_undo_redo(Ref<EditorUndoRedoManager> undo_redo) {
@@ -1033,6 +1065,16 @@ void VoxelGraphEditor::hide_profiling_ratios() {
 		}
 		node_view->set_profiling_ratio_visible(false);
 	}
+}
+
+void VoxelGraphEditor::update_buttons_availability() {
+	// Some features are only available with a generator (for now)
+	_update_previews_button->set_disabled(_generator.is_null());
+	_profile_button->set_disabled(_generator.is_null());
+	_range_analysis_button->set_disabled(_generator.is_null());
+	_preview_axes_menu->set_disabled(_generator.is_null());
+	_generate_shader_button->set_disabled(_generator.is_null());
+	_live_update_checkbox->set_disabled(_generator.is_null());
 }
 
 void VoxelGraphEditor::_on_analyze_range_button_pressed() {

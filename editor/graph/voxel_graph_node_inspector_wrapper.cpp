@@ -13,10 +13,10 @@ namespace {
 const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
 }
 
-void VoxelGraphNodeInspectorWrapper::setup(
-		Ref<VoxelGeneratorGraph> p_generator, uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed) {
-	_graph = p_generator.is_valid() ? p_generator->get_main_function() : Ref<VoxelGraphFunction>();
-	_generator = p_generator;
+void VoxelGraphNodeInspectorWrapper::setup(uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed) {
+	ZN_ASSERT(ed != nullptr);
+	_graph = ed->get_graph();
+	_generator = ed->get_generator();
 	_node_id = p_node_id;
 	_undo_redo = ur;
 	_graph_editor = ed;
