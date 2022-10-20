@@ -20,7 +20,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 
 	const StringName node_name = graph.get_node_name(node_id);
-	node_view->update_title(node_name, node_type.name);
+	node_view->update_title(node_name, node_type.name, node_type_id == VoxelGraphFunction::NODE_COMMENT);
 
 	node_view->_node_id = node_id;
 
@@ -185,9 +185,13 @@ void VoxelGraphEditorNode::update_comment_text(const VoxelGraphFunction &graph) 
 }
 
 void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_name) {
+	update_title(node_name, node_type_name, is_comment());
+}
+
+void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_name, bool p_is_comment) {
 	if (node_name == StringName()) {
 		set_title(node_type_name);
-	} else if (is_comment()) {
+	} else if (p_is_comment) {
 		set_title(String(node_name));
 	} else {
 		set_title(String("{0} ({1})").format(varray(node_name, node_type_name)));
