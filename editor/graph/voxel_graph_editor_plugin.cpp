@@ -12,7 +12,9 @@
 #include "editor_property_text_change_on_submit.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_editor_inspector_plugin.h"
+#include "voxel_graph_editor_io_dialog.h"
 #include "voxel_graph_editor_window.h"
+#include "voxel_graph_function_inspector_plugin.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
 namespace zylann::voxel {
@@ -35,9 +37,14 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	_bottom_panel_button->hide();
 
 	// TODO Move this to `_enter_tree` and remove it on `_exit_tree`?
-	Ref<VoxelGraphEditorInspectorPlugin> inspector_plugin;
-	inspector_plugin.instantiate();
-	add_inspector_plugin(inspector_plugin);
+	Ref<VoxelGraphEditorInspectorPlugin> vge_inspector_plugin;
+	vge_inspector_plugin.instantiate();
+	add_inspector_plugin(vge_inspector_plugin);
+
+	Ref<VoxelGraphFunctionInspectorPlugin> vgf_inspector_plugin;
+	vgf_inspector_plugin.instantiate();
+	vgf_inspector_plugin->set_listener(this);
+	add_inspector_plugin(vgf_inspector_plugin);
 }
 
 #if defined(ZN_GODOT)
@@ -315,6 +322,18 @@ void VoxelGraphEditorPlugin::update_graph_editor_window_title() {
 	}
 
 	_graph_editor_window->set_title(title);
+}
+
+void VoxelGraphEditorPlugin::edit_ios(Ref<VoxelGraphFunction> graph) {
+	if (_io_dialog == nullptr) {
+		_io_dialog = memnew(VoxelGraphEditorIODialog);
+		_io_dialog->set_undo_redo(get_undo_redo());
+		Control *base_control = get_editor_interface()->get_base_control();
+		base_control->add_child(_io_dialog);
+	}
+
+	_io_dialog->set_graph(graph);
+	_io_dialog->popup_centered();
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {

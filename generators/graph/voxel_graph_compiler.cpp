@@ -10,6 +10,80 @@
 
 namespace zylann::voxel {
 
+// Updates remaps for replacing one node with one other, where old and new nodes have the same number of outputs.
+void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, uint32_t new_node_id, unsigned int output_count) {
+	bool existing_remap = false;
+	// Modify existing entries in case the old node was the result of a previous processing of the graph.
+	for (PortRemap &remap : remaps.user_to_expanded_ports) {
+		if (remap.expanded.node_id == old_node_id) {
+			remap.expanded.node_id = new_node_id;
+			existing_remap = true;
+		}
+	}
+	for (ExpandedNodeRemap &remap : remaps.expanded_to_user_node_ids) {
+		if (remap.expanded_node_id == old_node_id) {
+			remap.expanded_node_id = new_node_id;
+		}
+	}
+	if (!existing_remap) {
+		// The old node wasn't the result of a previous processing of the graph.
+		// So we may add new entries.
+		for (uint32_t output_index = 0; output_index < output_count; ++output_index) {
+			PortRemap port_remap;
+			port_remap.original = ProgramGraph::PortLocation{ old_node_id, output_index };
+			port_remap.expanded = ProgramGraph::PortLocation{ new_node_id, output_index };
+			remaps.user_to_expanded_ports.push_back(port_remap);
+
+			remaps.expanded_to_user_node_ids.push_back(ExpandedNodeRemap{ new_node_id, old_node_id });
+		}
+	}
+}
+
+// Updates remaps for replacing one node with multiple nodes. Outputs of the original node can become outputs of
+// different expanded nodes.
+void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, Span<const uint32_t> new_node_ids,
+		Span<const ProgramGraph::PortLocation> output_locations) {
+	// Add remap for the output ports
+	{
+		bool found = false;
+		for (PortRemap &pr : remaps.user_to_expanded_ports) {
+			if (pr.expanded.node_id == old_node_id) {
+				// The old node is the result of a previous expansion
+				pr.expanded = output_locations[pr.expanded.port_index];
+				found = true;
+			}
+		}
+		if (!found) {
+			for (unsigned int output_index = 0; output_index < output_locations.size(); ++output_index) {
+				PortRemap pr;
+				pr.original.node_id = old_node_id;
+				pr.original.port_index = output_index;
+				pr.expanded = output_locations[output_index];
+				remaps.user_to_expanded_ports.push_back(pr);
+			}
+		}
+	}
+	// Add remap for the nodes
+	{
+		uint32_t original_node_id = old_node_id;
+		for (const ExpandedNodeRemap &nr : remaps.expanded_to_user_node_ids) {
+			if (nr.expanded_node_id == old_node_id) {
+				// The old node was itself an expanded node, trace it back to the original
+				original_node_id = nr.original_node_id;
+				break;
+			}
+		}
+		for (const uint32_t expanded_node_id : new_node_ids) {
+			remaps.expanded_to_user_node_ids.push_back({ expanded_node_id, original_node_id });
+		}
+	}
+}
+
+inline void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, Span<const uint32_t> new_node_ids,
+		const ProgramGraph::PortLocation output_location) {
+	add_remap(remaps, old_node_id, new_node_ids, Span<const ProgramGraph::PortLocation>(&output_location, 1));
+}
+
 struct ToConnect {
 	std::string_view var_name;
 	ProgramGraph::PortLocation dst;
@@ -212,8 +286,8 @@ static VoxelGraphRuntime::CompilationResult expand_expression_node(ProgramGraph 
 	std::vector<ToConnect> to_connect;
 
 	// Create nodes from the expression's AST and connect them together
-	const uint32_t expanded_root_node_id = expand_node(
-			graph, *parse_result.root, VoxelGraphNodeDB::get_singleton(), to_connect, expanded_nodes, functions);
+	const uint32_t expanded_root_node_id =
+			expand_node(graph, *parse_result.root, type_db, to_connect, expanded_nodes, functions);
 	if (expanded_root_node_id == ProgramGraph::NULL_ID) {
 		VoxelGraphRuntime::CompilationResult result;
 		result.success = false;
@@ -283,12 +357,7 @@ VoxelGraphRuntime::CompilationResult expand_expression_nodes(
 			return result;
 		}
 		if (remap_info != nullptr) {
-			// It is assumed the expression node was user-created (and not the result of another expansion).
-			// So we don't check existing remaps.
-			remap_info->user_to_expanded_ports.push_back({ { node_id, 0 }, expanded_output_port });
-			for (const uint32_t expanded_node_id : expanded_node_ids) {
-				remap_info->expanded_to_user_node_ids.push_back({ expanded_node_id, node_id });
-			}
+			add_remap(*remap_info, node_id, to_span(expanded_node_ids), expanded_output_port);
 		}
 	}
 
@@ -382,35 +451,6 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 	return true;
 }
 
-// Updates remaps for replacing one node with another, where old and new nodes have the same number of outputs.
-void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, uint32_t new_node_id, unsigned int output_count) {
-	bool existing_remap = false;
-	// Modify existing entries in case the old node was the result of a previous processing of the graph.
-	for (PortRemap &remap : remaps.user_to_expanded_ports) {
-		if (remap.expanded.node_id == old_node_id) {
-			remap.expanded.node_id = new_node_id;
-			existing_remap = true;
-		}
-	}
-	for (ExpandedNodeRemap &remap : remaps.expanded_to_user_node_ids) {
-		if (remap.expanded_node_id == old_node_id) {
-			remap.expanded_node_id = new_node_id;
-		}
-	}
-	if (!existing_remap) {
-		// The old node wasn't the result of a previous processing of the graph.
-		// So we may add new entries.
-		for (uint32_t output_index = 0; output_index < output_count; ++output_index) {
-			PortRemap port_remap;
-			port_remap.original = ProgramGraph::PortLocation{ old_node_id, output_index };
-			port_remap.expanded = ProgramGraph::PortLocation{ new_node_id, output_index };
-			remaps.user_to_expanded_ports.push_back(port_remap);
-
-			remaps.expanded_to_user_node_ids.push_back(ExpandedNodeRemap{ new_node_id, old_node_id });
-		}
-	}
-}
-
 static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
 	const ProgramGraph::Node &node1 = graph.get_node(node1_id);
 	const ProgramGraph::Node &node2 = graph.get_node(node2_id);
@@ -498,21 +538,23 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 				// Already connected
 				continue;
 			}
-			const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
-			ZN_ASSERT(node.inputs.size() == type.inputs.size());
-			const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
+			//const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			//ZN_ASSERT(node.inputs.size() == type.inputs.size());
+			//const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
+			const VoxelGraphFunction::AutoConnect auto_connect =
+					VoxelGraphFunction::AutoConnect(input_port.autoconnect_hint);
 			VoxelGraphFunction::NodeTypeID src_type;
 			switch (auto_connect) {
-				case VoxelGraphNodeDB::AUTO_CONNECT_X:
+				case VoxelGraphFunction::AUTO_CONNECT_X:
 					src_type = VoxelGraphFunction::NODE_INPUT_X;
 					break;
-				case VoxelGraphNodeDB::AUTO_CONNECT_Y:
+				case VoxelGraphFunction::AUTO_CONNECT_Y:
 					src_type = VoxelGraphFunction::NODE_INPUT_Y;
 					break;
-				case VoxelGraphNodeDB::AUTO_CONNECT_Z:
+				case VoxelGraphFunction::AUTO_CONNECT_Z:
 					src_type = VoxelGraphFunction::NODE_INPUT_Z;
 					break;
-				case VoxelGraphNodeDB::AUTO_CONNECT_NONE:
+				case VoxelGraphFunction::AUTO_CONNECT_NONE:
 					continue;
 				default:
 					ZN_PRINT_ERROR("Unhandled autoconnect");
@@ -594,6 +636,7 @@ void try_simplify_clamp_node(ProgramGraph &graph, const ProgramGraph::Node &node
 
 void replace_simplifiable_nodes(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	std::vector<uint32_t> node_ids;
+	// TODO Optimize: only gather node IDs we are interested in?
 	graph.get_node_ids(node_ids);
 
 	for (const uint32_t &node_id : node_ids) {
@@ -605,10 +648,196 @@ void replace_simplifiable_nodes(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 	}
 }
 
+ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node) {
+	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id);
+	ZN_ASSERT(dst_node != nullptr);
+	dst_node->name = src_node.name;
+	dst_node->inputs.resize(src_node.inputs.size());
+	dst_node->outputs.resize(src_node.outputs.size());
+	dst_node->default_inputs = src_node.default_inputs;
+	dst_node->params = src_node.params;
+	// dst_node->gui_position = src_node.gui_position;
+	// dst_node->gui_size = src_node.gui_size;
+	dst_node->autoconnect_default_inputs = src_node.autoconnect_default_inputs;
+	return dst_node;
+}
+
+// Replaces a function node with its contents in place, with equivalent connections to its surroundings.
+void expand_function(
+		ProgramGraph &graph, uint32_t node_id, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+	const ProgramGraph::Node &fnode = graph.get_node(node_id);
+	ZN_ASSERT(fnode.type_id == VoxelGraphFunction::NODE_FUNCTION);
+	ZN_ASSERT(fnode.params.size() >= 1);
+	Ref<VoxelGraphFunction> function = fnode.params[0];
+	ZN_ASSERT(function.is_valid());
+	const ProgramGraph &fgraph = function->get_graph();
+
+	std::unordered_map<uint32_t, uint32_t> fn_to_expanded_node_ids;
+	std::vector<uint32_t> nested_func_node_ids;
+
+	// Copy nodes into the graph
+	fgraph.for_each_node_const(
+			[&graph, &type_db, &fn_to_expanded_node_ids, &nested_func_node_ids](const ProgramGraph::Node &src_node) {
+				const VoxelGraphNodeDB::NodeType &node_type = type_db.get_type(src_node.type_id);
+				// Ignore input and output nodes, we only copy what's in between
+				if (node_type.category == VoxelGraphNodeDB::CATEGORY_INPUT) {
+					return;
+				}
+				if (node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+					return;
+				}
+				const ProgramGraph::Node *expanded_node = duplicate_node(graph, src_node);
+				fn_to_expanded_node_ids[src_node.id] = expanded_node->id;
+
+				if (expanded_node->type_id == VoxelGraphFunction::NODE_FUNCTION) {
+					nested_func_node_ids.push_back(expanded_node->id);
+				}
+			});
+
+	// Copy internal connections
+	for (auto it = fn_to_expanded_node_ids.begin(); it != fn_to_expanded_node_ids.end(); ++it) {
+		const uint32_t fn_node_id = it->first;
+		const uint32_t ex_node_id = it->second;
+
+		const ProgramGraph::Node &fn_node = fgraph.get_node(fn_node_id);
+
+		for (unsigned int i = 0; i < fn_node.outputs.size(); ++i) {
+			const ProgramGraph::Port &fn_port = fn_node.outputs[i];
+
+			for (const ProgramGraph::PortLocation fn_dst : fn_port.connections) {
+				auto it2 = fn_to_expanded_node_ids.find(fn_dst.node_id);
+				if (it2 == fn_to_expanded_node_ids.end()) {
+					continue;
+				}
+				graph.connect(ProgramGraph::PortLocation{ ex_node_id, i },
+						ProgramGraph::PortLocation{ it2->second, fn_dst.port_index });
+			}
+		}
+	}
+
+	Span<const VoxelGraphFunction::Port> func_inputs = function->get_input_definitions();
+	Span<const VoxelGraphFunction::Port> func_outputs = function->get_output_definitions();
+
+	std::vector<uint32_t> node_ids;
+
+	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
+	ZN_ASSERT(func_outputs.size() == fnode.outputs.size());
+
+	// TODO What about autoconnect? Currently functions must use explicit input XYZ nodes, otherwise it will connect
+	// these inputs to the global XYZ inputs (after everything is unpacked), not the inputs of the function
+
+	// Add connections coming to the function's unpacked nodes.
+	// For each input of the function
+	for (unsigned int input_index = 0; input_index < fnode.inputs.size(); ++input_index) {
+		const ProgramGraph::Port &port = fnode.inputs[input_index];
+		if (port.connections.size() == 0) {
+			continue;
+		}
+		ZN_ASSERT_MSG(port.connections.size() == 1, "Input nodes are expected to have only 1 input");
+		const ProgramGraph::PortLocation src = port.connections[0];
+		const VoxelGraphFunction::Port &fport = func_inputs[input_index];
+
+		// TODO Optimize: this will iterate every node of the graph several times, maybe we can do better without adding
+		// too much code?
+		node_ids.clear();
+		function->get_input_node_ids(node_ids, input_index);
+
+		// For each input nodes in the function representing this input
+		for (const uint32_t fid : node_ids) {
+			const ProgramGraph::Node &fnode = fgraph.get_node(fid);
+			ZN_ASSERT_MSG(fnode.outputs.size() == 1, "Input nodes are expected to have only 1 output");
+			const ProgramGraph::Port &fio = fnode.outputs[0];
+
+			// For each connection coming from that input node
+			for (const ProgramGraph::PortLocation fdst : fio.connections) {
+				auto it = fn_to_expanded_node_ids.find(fdst.node_id);
+				ZN_ASSERT_MSG(it != fn_to_expanded_node_ids.end(),
+						"Expected to find unpacked node which has a connection to an input of the function");
+
+				// Create equivalent connection to unpacked nodes
+				graph.connect(src, ProgramGraph::PortLocation{ it->second, fdst.port_index });
+			}
+		}
+	}
+
+	std::vector<ProgramGraph::PortLocation> output_locations;
+
+	// Add connections coming from the function's unpacked nodes.
+	for (unsigned int output_index = 0; output_index < fnode.outputs.size(); ++output_index) {
+		const ProgramGraph::Port &port = fnode.outputs[output_index];
+		if (port.connections.size() == 0) {
+			// That output isn't connected outside the function
+			continue;
+		}
+		//const VoxelGraphFunction::Port fport = func_outputs[output_index];
+		node_ids.clear();
+		function->get_output_node_ids(node_ids, output_index);
+		ZN_ASSERT(node_ids.size() == 1);
+		const ProgramGraph::Node &inner_fnode = fgraph.get_node(node_ids[0]);
+		ZN_ASSERT(inner_fnode.inputs.size() == 1);
+		const ProgramGraph::Port &foi = inner_fnode.inputs[0];
+		if (foi.connections.size() == 0) {
+			// That output isn't connected inside the function
+			continue;
+		}
+		ZN_ASSERT(foi.connections.size() == 1);
+		const ProgramGraph::PortLocation fsrc = foi.connections[0];
+		auto it = fn_to_expanded_node_ids.find(fsrc.node_id);
+		ZN_ASSERT(it != fn_to_expanded_node_ids.end());
+		for (const ProgramGraph::PortLocation dst : port.connections) {
+			graph.connect(ProgramGraph::PortLocation{ it->second, fsrc.port_index }, dst);
+		}
+
+		if (remap_info != nullptr) {
+			output_locations.push_back(ProgramGraph::PortLocation{ it->second, fsrc.port_index });
+		}
+	}
+
+	if (remap_info != nullptr) {
+		std::vector<uint32_t> expanded_node_ids;
+		for (auto it = fn_to_expanded_node_ids.begin(); it != fn_to_expanded_node_ids.end(); ++it) {
+			const uint32_t ex_node_id = it->second;
+			const ProgramGraph::Node &node = graph.get_node(ex_node_id);
+			// Don't add remaps to a function node, because they will be expanded anyways
+			if (node.type_id == VoxelGraphFunction::NODE_FUNCTION) {
+				continue;
+			}
+			expanded_node_ids.push_back(ex_node_id);
+		}
+
+		add_remap(*remap_info, node_id, to_span(expanded_node_ids), to_span(output_locations));
+	}
+
+	// Remove function node
+	graph.remove_node(fnode.id);
+	// From this point, `fnode` is invalid.
+
+	// Expand nested functions
+	for (const uint32_t nested_node_id : nested_func_node_ids) {
+		expand_function(graph, nested_node_id, type_db, remap_info);
+	}
+}
+
+void expand_functions(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+	std::vector<uint32_t> func_node_ids;
+
+	graph.for_each_node_const([&func_node_ids](const ProgramGraph::Node &node) {
+		if (node.type_id == VoxelGraphFunction::NODE_FUNCTION) {
+			func_node_ids.push_back(node.id);
+		}
+	});
+
+	for (const uint32_t node_id : func_node_ids) {
+		expand_function(graph, node_id, type_db, remap_info);
+	}
+}
+
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	// First make a copy of the graph which we'll modify
 	expanded_graph.copy_from(graph, false);
+
+	expand_functions(expanded_graph, type_db, remap_info);
 
 	apply_auto_connects(expanded_graph, type_db);
 

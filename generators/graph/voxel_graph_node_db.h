@@ -11,13 +11,6 @@ namespace zylann::voxel {
 
 class VoxelGraphNodeDB {
 public:
-	enum AutoConnect { //
-		AUTO_CONNECT_NONE,
-		AUTO_CONNECT_X,
-		AUTO_CONNECT_Y,
-		AUTO_CONNECT_Z
-	};
-
 	// TODO Separate Input and Output port types? Some member values don't make sense.
 	struct Port {
 		String name;
@@ -25,7 +18,7 @@ public:
 		Variant default_value;
 		// Which connection will be automatically made if the input port is not connected and no fixed value has been
 		// explicitely specified. Only relevant for inputs.
-		AutoConnect auto_connect = AUTO_CONNECT_NONE;
+		VoxelGraphFunction::AutoConnect auto_connect = VoxelGraphFunction::AUTO_CONNECT_NONE;
 		// If true, a buffer will be provided as input even if values were determined constant.
 		// If false, no buffer will provided, and instead the value will be available in Buffer::constant_value.
 		// This option exists to avoid having to implement all possible combinations of constant values vs variable
@@ -33,7 +26,8 @@ public:
 		bool require_input_buffer_when_constant = true;
 		//PortType port_type;
 
-		Port(String p_name, float p_default_value = 0.f, AutoConnect ac = AUTO_CONNECT_NONE,
+		Port(String p_name, float p_default_value = 0.f,
+				VoxelGraphFunction::AutoConnect ac = VoxelGraphFunction::AUTO_CONNECT_NONE,
 				bool p_require_input_buffer_when_constant = true) :
 				name(p_name),
 				default_value(p_default_value),
@@ -52,6 +46,7 @@ public:
 		uint32_t index = -1;
 		bool has_range = false;
 		bool multiline = false;
+		bool hidden = false;
 		int min_value;
 		int max_value;
 
@@ -70,6 +65,7 @@ public:
 		CATEGORY_GENERATE,
 		CATEGORY_SDF,
 		CATEGORY_DEBUG,
+		CATEGORY_FUNCTIONS,
 		CATEGORY_COUNT
 	};
 
@@ -96,7 +92,7 @@ public:
 
 		inline bool has_autoconnect_inputs() const {
 			for (const Port &port : inputs) {
-				if (port.auto_connect != AUTO_CONNECT_NONE) {
+				if (port.auto_connect != VoxelGraphFunction::AUTO_CONNECT_NONE) {
 					return true;
 				}
 			}

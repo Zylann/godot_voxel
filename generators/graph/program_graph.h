@@ -38,6 +38,7 @@ public:
 		// Because it can't be deduced from `type_id`, they must be given a name.
 		// Initially needed for expression nodes.
 		std::string dynamic_name;
+		uint32_t autoconnect_hint = 0;
 
 		inline bool is_dynamic() const {
 			return dynamic_name.size() > 0;

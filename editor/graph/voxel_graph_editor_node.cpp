@@ -75,19 +75,33 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 	std::vector<Input> inputs;
 	std::vector<Output> outputs;
 	{
-		for (const VoxelGraphNodeDB::Port &port : node_type.inputs) {
-			inputs.push_back({ port.name });
+		const unsigned int input_count = graph.get_node_input_count(_node_id);
+		const unsigned int output_count = graph.get_node_output_count(_node_id);
+
+		for (unsigned int i = 0; i < input_count; ++i) {
+			Input input;
+			graph.get_node_input_info(_node_id, i, &input.name, nullptr);
+			inputs.push_back(input);
 		}
-		for (const VoxelGraphNodeDB::Port &port : node_type.outputs) {
-			outputs.push_back({ port.name });
+		for (unsigned int i = 0; i < output_count; ++i) {
+			Output output;
+			output.name = graph.get_node_output_name(_node_id, i);
+			outputs.push_back(output);
 		}
-		if (graph.get_node_type_id(_node_id) == VoxelGraphFunction::NODE_EXPRESSION) {
-			std::vector<std::string> names;
-			graph.get_expression_node_inputs(_node_id, names);
-			for (const std::string &s : names) {
-				inputs.push_back({ to_godot(s) });
-			}
-		}
+
+		// for (const VoxelGraphNodeDB::Port &port : node_type.inputs) {
+		// 	inputs.push_back({ port.name });
+		// }
+		// for (const VoxelGraphNodeDB::Port &port : node_type.outputs) {
+		// 	outputs.push_back({ port.name });
+		// }
+		// if (graph.get_node_type_id(_node_id) == VoxelGraphFunction::NODE_EXPRESSION) {
+		// 	std::vector<std::string> names;
+		// 	graph.get_expression_node_inputs(_node_id, names);
+		// 	for (const std::string &s : names) {
+		// 		inputs.push_back({ to_godot(s) });
+		// 	}
+		// }
 	}
 
 	const unsigned int row_count = math::max(inputs.size(), hide_outputs ? 0 : outputs.size());
@@ -222,24 +236,28 @@ void VoxelGraphEditorNode::poll_default_inputs(const VoxelGraphFunction &graph) 
 
 		} else {
 			if (graph.get_node_default_inputs_autoconnect(loc.node_id)) {
-				const VoxelGraphFunction::NodeTypeID node_type_id = graph.get_node_type_id(loc.node_id);
-				const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
-				const VoxelGraphNodeDB::Port &input_port = node_type.inputs[input_index];
-				if (input_port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
+				// const VoxelGraphFunction::NodeTypeID node_type_id = graph.get_node_type_id(loc.node_id);
+				// const VoxelGraphNodeDB::NodeType &node_type =
+				// VoxelGraphNodeDB::get_singleton().get_type(node_type_id); const VoxelGraphNodeDB::Port &input_port =
+				// node_type.inputs[input_index]; const VoxelGraphNodeDB::AutoConnect auto_connect =
+				// input_port.auto_connect;
+				VoxelGraphFunction::AutoConnect auto_connect;
+				graph.get_node_input_info(loc.node_id, loc.port_index, nullptr, &auto_connect);
+				if (auto_connect != VoxelGraphFunction::AUTO_CONNECT_NONE) {
 					Variant value;
-					switch (input_port.auto_connect) {
-						case VoxelGraphNodeDB::AUTO_CONNECT_X:
+					switch (auto_connect) {
+						case VoxelGraphFunction::AUTO_CONNECT_X:
 							value = "Auto X";
 							break;
-						case VoxelGraphNodeDB::AUTO_CONNECT_Y:
+						case VoxelGraphFunction::AUTO_CONNECT_Y:
 							value = "Auto Y";
 							break;
-						case VoxelGraphNodeDB::AUTO_CONNECT_Z:
+						case VoxelGraphFunction::AUTO_CONNECT_Z:
 							value = "Auto Z";
 							break;
 						default:
 							ERR_PRINT("Unhandled autoconnect");
-							value = int(input_port.auto_connect);
+							value = int(auto_connect);
 							break;
 					}
 					if (input_hint.last_value != value) {

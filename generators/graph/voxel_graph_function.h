@@ -72,8 +72,20 @@ public:
 		NODE_POW, // pow(x, y)
 		NODE_INPUT_SDF,
 		NODE_COMMENT,
+		NODE_FUNCTION,
+		NODE_CUSTOM_INPUT,
+		NODE_CUSTOM_OUTPUT,
 
 		NODE_TYPE_COUNT
+	};
+
+	struct Port {
+		NodeTypeID type;
+		String name;
+
+		inline bool is_custom() const {
+			return type == NODE_CUSTOM_INPUT || type == NODE_CUSTOM_OUTPUT;
+		}
 	};
 
 	void clear();
@@ -84,6 +96,9 @@ public:
 
 	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
+
+	uint32_t create_function_node(
+			Ref<VoxelGraphFunction> func, Vector2 position, uint32_t p_id = ProgramGraph::NULL_ID);
 
 	// Checks if the specified connection can be created
 	bool can_connect(
@@ -152,6 +167,24 @@ public:
 	Dictionary get_graph_as_variant_data() const;
 	bool load_graph_from_variant_data(Dictionary data);
 
+	enum AutoConnect { //
+		AUTO_CONNECT_NONE,
+		AUTO_CONNECT_X,
+		AUTO_CONNECT_Y,
+		AUTO_CONNECT_Z
+	};
+
+	unsigned int get_node_input_count(uint32_t node_id) const;
+	unsigned int get_node_output_count(uint32_t node_id) const;
+
+	void get_node_input_info(
+			uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect) const;
+	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
+	Span<const VoxelGraphFunction::Port> get_input_definitions();
+	Span<const VoxelGraphFunction::Port> get_output_definitions();
+	void get_input_node_ids(std::vector<uint32_t> &node_ids, unsigned int input_index) const;
+	void get_output_node_ids(std::vector<uint32_t> &node_ids, unsigned int output_index) const;
+
 private:
 	void register_subresource(Resource &resource);
 	void unregister_subresource(Resource &resource);
@@ -167,13 +200,34 @@ private:
 	void _b_set_node_param_null(int node_id, int param_index);
 	void _b_set_node_name(int node_id, String name);
 
+	Array _b_get_input_definitions() const;
+	void _b_set_input_definitions(Array data);
+
+	Array _b_get_output_definitions() const;
+	void _b_set_output_definitions(Array data);
+
 	static void _bind_methods();
 
 	ProgramGraph _graph;
+	std::vector<VoxelGraphFunction::Port> _inputs;
+	std::vector<VoxelGraphFunction::Port> _outputs;
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
 		uint32_t id, bool create_default_instances);
+
+void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
+		std::vector<VoxelGraphFunction::Port> &outputs);
+
+Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
+
+#ifdef TOOLS_ENABLED
+
+inline String get_port_display_name(const VoxelGraphFunction::Port &port) {
+	return port.name.is_empty() ? String("<unnamed>") : port.name;
+}
+
+#endif
 
 } // namespace zylann::voxel
 

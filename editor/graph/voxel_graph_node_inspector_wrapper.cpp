@@ -45,6 +45,9 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 	for (size_t i = 0; i < node_type.params.size(); ++i) {
 		const VoxelGraphNodeDB::Param &param = node_type.params[i];
+		if (param.hidden) {
+			continue;
+		}
 		PropertyInfo pi;
 		pi.name = param.name;
 		pi.type = param.type;
@@ -72,14 +75,24 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 	p_list->push_back(PropertyInfo(Variant::NIL, "Input Defaults", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
-	const bool autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
+	const bool autoconnect_enabled = graph->get_node_default_inputs_autoconnect(_node_id);
+	const unsigned int input_count = graph->get_node_input_count(_node_id);
+	bool has_autoconnect_inputs = false;
 
-	for (size_t i = 0; i < node_type.inputs.size(); ++i) {
-		const VoxelGraphNodeDB::Port &port = node_type.inputs[i];
+	for (unsigned int i = 0; i < input_count; ++i) {
+		String port_name;
+		VoxelGraphFunction::AutoConnect autoconnect_hint;
+		graph->get_node_input_info(_node_id, i, &port_name, &autoconnect_hint);
+
+		if (autoconnect_hint != VoxelGraphFunction::AUTO_CONNECT_NONE) {
+			has_autoconnect_inputs = true;
+		}
+
 		PropertyInfo pi;
-		pi.name = port.name;
-		pi.type = port.default_value.get_type();
-		if (autoconnect && port.auto_connect != VoxelGraphNodeDB::AUTO_CONNECT_NONE) {
+		pi.name = port_name;
+		// All I/Os are floats at the moment.
+		pi.type = Variant::FLOAT;
+		if (autoconnect_enabled && autoconnect_hint != VoxelGraphFunction::AUTO_CONNECT_NONE) {
 			// This default value won't be used because the port will automatically connect when compiled
 			pi.usage |= PROPERTY_USAGE_READ_ONLY;
 		}
@@ -88,7 +101,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 	// Autoconnect
 
-	if (node_type.has_autoconnect_inputs()) {
+	if (has_autoconnect_inputs) {
 		p_list->push_back(PropertyInfo(Variant::BOOL, AUTOCONNECT_PROPERTY_NAME));
 	}
 }
