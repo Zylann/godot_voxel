@@ -784,6 +784,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 								  .format(varray(VoxelGraphFunction::get_class_static())));
 				continue;
 			}
+			setup_function(*node, function);
 			// TODO Create a placeholder node in case a function isn't found to avoid loss of data?
 			// For now it's probably ok as long as the user doesn't save over
 
