@@ -441,28 +441,28 @@ void test_voxel_graph_generator_default_graph_compilation() {
 }
 
 void test_voxel_graph_invalid_connection() {
-	Ref<VoxelGeneratorGraph> generator;
-	generator.instantiate();
+	Ref<VoxelGraphFunction> graph;
+	graph.instantiate();
 
-	const uint32_t n_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
-	const uint32_t n_add1 = generator->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-	const uint32_t n_add2 = generator->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-	const uint32_t n_out = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
-	generator->add_connection(n_x, 0, n_add1, 0);
-	generator->add_connection(n_add1, 0, n_add2, 0);
-	generator->add_connection(n_add2, 0, n_out, 0);
+	VoxelGraphFunction &g = **graph;
 
-	ZN_TEST_ASSERT(generator->can_connect(n_add1, 0, n_add2, 1) == true);
-	ZN_TEST_ASSERT_MSG(
-			generator->can_connect(n_add1, 0, n_add2, 0) == false, "Adding twice the same connection is not allowed");
-	ZN_TEST_ASSERT_MSG(generator->can_connect(n_x, 0, n_add2, 0) == false,
+	const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+	const uint32_t n_add1 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+	const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+	const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+	g.add_connection(n_x, 0, n_add1, 0);
+	g.add_connection(n_add1, 0, n_add2, 0);
+	g.add_connection(n_add2, 0, n_out, 0);
+
+	ZN_TEST_ASSERT(g.can_connect(n_add1, 0, n_add2, 1) == true);
+	ZN_TEST_ASSERT_MSG(g.can_connect(n_add1, 0, n_add2, 0) == false, "Adding twice the same connection is not allowed");
+	ZN_TEST_ASSERT_MSG(g.can_connect(n_x, 0, n_add2, 0) == false,
 			"Adding a connection to a port already connected is not allowed");
-	ZN_TEST_ASSERT_MSG(
-			generator->can_connect(n_add1, 0, n_add1, 1) == false, "Connecting a node to itself is not allowed");
-	ZN_TEST_ASSERT_MSG(generator->can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
+	ZN_TEST_ASSERT_MSG(g.can_connect(n_add1, 0, n_add1, 1) == false, "Connecting a node to itself is not allowed");
+	ZN_TEST_ASSERT_MSG(g.can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
 }
 
-void load_graph_with_sphere_on_plane(VoxelGeneratorGraph &g, float radius) {
+void load_graph_with_sphere_on_plane(VoxelGraphFunction &g, float radius) {
 	//      X
 	//       \
 	//  Z --- Sphere --- Union --- OutSDF
@@ -470,17 +470,17 @@ void load_graph_with_sphere_on_plane(VoxelGeneratorGraph &g, float radius) {
 	//      Y --- Plane
 	//
 
-	const uint32_t n_in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-	const uint32_t n_in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t n_in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-	const uint32_t n_out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-	const uint32_t n_plane = g.create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
-	const uint32_t n_sphere = g.create_node(VoxelGeneratorGraph::NODE_SDF_SPHERE, Vector2());
-	const uint32_t n_union = g.create_node(VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION, Vector2());
+	const uint32_t n_in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t n_in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t n_in_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_plane = g.create_node(VoxelGraphFunction::NODE_SDF_PLANE, Vector2());
+	const uint32_t n_sphere = g.create_node(VoxelGraphFunction::NODE_SDF_SPHERE, Vector2());
+	const uint32_t n_union = g.create_node(VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, Vector2());
 
 	uint32_t union_smoothness_id;
 	ZN_ASSERT(VoxelGraphNodeDB::get_singleton().try_get_param_index_from_name(
-			VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id));
+			VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id));
 
 	g.add_connection(n_in_x, 0, n_sphere, 0);
 	g.add_connection(n_in_y, 0, n_sphere, 1);
@@ -494,12 +494,12 @@ void load_graph_with_sphere_on_plane(VoxelGeneratorGraph &g, float radius) {
 	g.add_connection(n_union, 0, n_out_sdf, 0);
 }
 
-void load_graph_with_expression(VoxelGeneratorGraph &g) {
-	const uint32_t in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-	const uint32_t in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-	const uint32_t out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-	const uint32_t n_expression = g.create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+void load_graph_with_expression(VoxelGraphFunction &g) {
+	const uint32_t in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_expression = g.create_node(VoxelGraphFunction::NODE_EXPRESSION, Vector2());
 
 	//             0.5
 	//                \
@@ -524,7 +524,7 @@ void load_graph_with_expression(VoxelGeneratorGraph &g) {
 	g.add_connection(n_expression, 0, out_sdf, 0);
 }
 
-void load_graph_with_expression_and_noises(VoxelGeneratorGraph &g, Ref<ZN_FastNoiseLite> *out_zfnl) {
+void load_graph_with_expression_and_noises(VoxelGraphFunction &g, Ref<ZN_FastNoiseLite> *out_zfnl) {
 	//                       SdfPreview
 	//                      /
 	//     X --- FastNoise2D
@@ -534,15 +534,15 @@ void load_graph_with_expression_and_noises(VoxelGeneratorGraph &g, Ref<ZN_FastNo
 	//                        /
 	//     Y --- SdfPlane ----
 
-	const uint32_t in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-	const uint32_t in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-	const uint32_t out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-	const uint32_t n_fn2d = g.create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2D, Vector2());
-	const uint32_t n_n2d = g.create_node(VoxelGeneratorGraph::NODE_NOISE_2D, Vector2());
-	const uint32_t n_plane = g.create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
-	const uint32_t n_expr = g.create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
-	const uint32_t n_preview = g.create_node(VoxelGeneratorGraph::NODE_SDF_PREVIEW, Vector2());
+	const uint32_t in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_fn2d = g.create_node(VoxelGraphFunction::NODE_FAST_NOISE_2D, Vector2());
+	const uint32_t n_n2d = g.create_node(VoxelGraphFunction::NODE_NOISE_2D, Vector2());
+	const uint32_t n_plane = g.create_node(VoxelGraphFunction::NODE_SDF_PLANE, Vector2());
+	const uint32_t n_expr = g.create_node(VoxelGraphFunction::NODE_EXPRESSION, Vector2());
+	const uint32_t n_preview = g.create_node(VoxelGraphFunction::NODE_SDF_PREVIEW, Vector2());
 
 	g.set_node_param(n_expr, 0, "a+b+c");
 	PackedStringArray var_names;
@@ -575,7 +575,7 @@ void load_graph_with_expression_and_noises(VoxelGeneratorGraph &g, Ref<ZN_FastNo
 	}
 }
 
-void load_graph_with_clamp(VoxelGeneratorGraph &g, float ramp_half_size) {
+void load_graph_with_clamp(VoxelGraphFunction &g, float ramp_half_size) {
 	// Two planes of different height, with a 45-degrees ramp along the X axis between them.
 	// The plane is higher in negative X, and lower in positive X.
 	//
@@ -583,12 +583,12 @@ void load_graph_with_clamp(VoxelGeneratorGraph &g, float ramp_half_size) {
 	//                  /
 	//                 Y
 
-	const uint32_t n_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
-	const uint32_t n_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2());
+	const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+	const uint32_t n_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
 	// Not using CLAMP_C for testing simplification
-	const uint32_t n_clamp = g.create_node(VoxelGeneratorGraph::NODE_CLAMP, Vector2());
-	const uint32_t n_add = g.create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-	const uint32_t n_out = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+	const uint32_t n_clamp = g.create_node(VoxelGraphFunction::NODE_CLAMP, Vector2());
+	const uint32_t n_add = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+	const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
 
 	g.set_node_default_input(n_clamp, 1, -ramp_half_size);
 	g.set_node_default_input(n_clamp, 2, ramp_half_size);
@@ -607,7 +607,8 @@ void test_voxel_graph_clamp_simplification() {
 		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
-			load_graph_with_clamp(**generator, RAMP_HALF_SIZE);
+			ZN_ASSERT(generator->get_main_function().is_valid());
+			load_graph_with_clamp(**generator->get_main_function(), RAMP_HALF_SIZE);
 			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
@@ -642,7 +643,8 @@ void test_voxel_graph_generator_expressions() {
 		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
-			load_graph_with_expression(**generator);
+			ZN_ASSERT(generator->get_main_function().is_valid());
+			load_graph_with_expression(**generator->get_main_function());
 			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
@@ -660,7 +662,9 @@ void test_voxel_graph_generator_expressions_2() {
 		Ref<VoxelGeneratorGraph> generator_debug;
 		{
 			generator_debug.instantiate();
-			load_graph_with_expression_and_noises(**generator_debug, &zfnl);
+			Ref<VoxelGraphFunction> graph = generator_debug->get_main_function();
+			ZN_ASSERT(graph.is_valid());
+			load_graph_with_expression_and_noises(**graph, &zfnl);
 			VoxelGraphRuntime::CompilationResult result = generator_debug->compile(true);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
@@ -671,14 +675,15 @@ void test_voxel_graph_generator_expressions_2() {
 			generator_debug->debug_measure_microseconds_per_voxel(false, &profiling_info);
 			ZN_TEST_ASSERT(profiling_info.size() >= 4);
 			for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
-				ZN_TEST_ASSERT(generator_debug->has_node(info.node_id));
+				ZN_TEST_ASSERT(graph->has_node(info.node_id));
 			}
 		}
 
 		Ref<VoxelGeneratorGraph> generator;
 		{
 			generator.instantiate();
-			load_graph_with_expression_and_noises(**generator, nullptr);
+			ZN_ASSERT(generator->get_main_function().is_valid());
+			load_graph_with_expression_and_noises(**generator->get_main_function(), nullptr);
 			VoxelGraphRuntime::CompilationResult result = generator->compile(false);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
@@ -696,6 +701,8 @@ void test_voxel_graph_generator_texturing() {
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 
+	VoxelGraphFunction &g = **generator->get_main_function();
+
 	// Plane centered on Y=0, angled 45 degrees, going up towards +X
 	// When Y<0, weight0 must be 1 and weight1 must be 0.
 	// When Y>0, weight0 must be 0 and weight1 must be 1.
@@ -710,29 +717,29 @@ void test_voxel_graph_generator_texturing() {
 	 *
 	 */
 
-	const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-	const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-	const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-	const uint32_t n_clamp = generator->create_node(VoxelGeneratorGraph::NODE_CLAMP_C, Vector2(0, 0));
-	const uint32_t n_sub0 = generator->create_node(VoxelGeneratorGraph::NODE_SUBTRACT, Vector2(0, 0));
-	const uint32_t n_sub1 = generator->create_node(VoxelGeneratorGraph::NODE_SUBTRACT, Vector2(0, 0));
-	const uint32_t out_weight0 = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT, Vector2(0, 0));
-	const uint32_t out_weight1 = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT, Vector2(0, 0));
+	const uint32_t in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_clamp = g.create_node(VoxelGraphFunction::NODE_CLAMP_C, Vector2(0, 0));
+	const uint32_t n_sub0 = g.create_node(VoxelGraphFunction::NODE_SUBTRACT, Vector2(0, 0));
+	const uint32_t n_sub1 = g.create_node(VoxelGraphFunction::NODE_SUBTRACT, Vector2(0, 0));
+	const uint32_t out_weight0 = g.create_node(VoxelGraphFunction::NODE_OUTPUT_WEIGHT, Vector2(0, 0));
+	const uint32_t out_weight1 = g.create_node(VoxelGraphFunction::NODE_OUTPUT_WEIGHT, Vector2(0, 0));
 
-	generator->set_node_default_input(n_sub1, 0, 1.0);
-	generator->set_node_param(n_clamp, 0, 0.0);
-	generator->set_node_param(n_clamp, 1, 1.0);
-	generator->set_node_param(out_weight0, 0, 0);
-	generator->set_node_param(out_weight1, 0, 1);
+	g.set_node_default_input(n_sub1, 0, 1.0);
+	g.set_node_param(n_clamp, 0, 0.0);
+	g.set_node_param(n_clamp, 1, 1.0);
+	g.set_node_param(out_weight0, 0, 0);
+	g.set_node_param(out_weight1, 0, 1);
 
-	generator->add_connection(in_y, 0, n_sub0, 0);
-	generator->add_connection(in_x, 0, n_sub0, 1);
-	generator->add_connection(n_sub0, 0, out_sdf, 0);
-	generator->add_connection(in_y, 0, n_clamp, 0);
-	generator->add_connection(n_clamp, 0, n_sub1, 1);
-	generator->add_connection(n_sub1, 0, out_weight0, 0);
-	generator->add_connection(n_clamp, 0, out_weight1, 0);
+	g.add_connection(in_y, 0, n_sub0, 0);
+	g.add_connection(in_x, 0, n_sub0, 1);
+	g.add_connection(n_sub0, 0, out_sdf, 0);
+	g.add_connection(in_y, 0, n_clamp, 0);
+	g.add_connection(n_clamp, 0, n_sub1, 1);
+	g.add_connection(n_sub1, 0, out_weight0, 0);
+	g.add_connection(n_clamp, 0, out_weight1, 0);
 
 	VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
 	ZN_TEST_ASSERT_MSG(compilation_result.success,
@@ -890,19 +897,20 @@ void test_voxel_graph_equivalence_merging() {
 
 		Ref<VoxelGeneratorGraph> graph;
 		graph.instantiate();
-		const uint32_t n_x1 = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
-		const uint32_t n_add1 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_x2 = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
-		const uint32_t n_add2 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_add3 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_out = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
-		graph->set_node_default_input(n_add1, 0, 1.0);
-		graph->set_node_default_input(n_add2, 0, 1.0);
-		graph->add_connection(n_x1, 0, n_add1, 1);
-		graph->add_connection(n_add1, 0, n_add3, 0);
-		graph->add_connection(n_x2, 0, n_add2, 1);
-		graph->add_connection(n_add2, 0, n_add3, 1);
-		graph->add_connection(n_add3, 0, n_out, 0);
+		VoxelGraphFunction &g = **graph->get_main_function();
+		const uint32_t n_x1 = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_add1 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_x2 = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_add3 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.set_node_default_input(n_add1, 0, 1.0);
+		g.set_node_default_input(n_add2, 0, 1.0);
+		g.add_connection(n_x1, 0, n_add1, 1);
+		g.add_connection(n_add1, 0, n_add3, 0);
+		g.add_connection(n_x2, 0, n_add2, 1);
+		g.add_connection(n_add2, 0, n_add3, 1);
+		g.add_connection(n_add3, 0, n_out, 0);
 		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
 		ZN_TEST_ASSERT(result.success);
 		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
@@ -922,18 +930,19 @@ void test_voxel_graph_equivalence_merging() {
 
 		Ref<VoxelGeneratorGraph> graph;
 		graph.instantiate();
-		const uint32_t n_x = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
-		const uint32_t n_add1 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_add2 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_add3 = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
-		const uint32_t n_out = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
-		graph->set_node_default_input(n_add1, 0, 1.0);
-		graph->set_node_default_input(n_add2, 0, 1.0);
-		graph->add_connection(n_x, 0, n_add1, 1);
-		graph->add_connection(n_add1, 0, n_add3, 0);
-		graph->add_connection(n_x, 0, n_add2, 1);
-		graph->add_connection(n_add2, 0, n_add3, 1);
-		graph->add_connection(n_add3, 0, n_out, 0);
+		VoxelGraphFunction &g = **graph->get_main_function();
+		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_add1 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_add2 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_add3 = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.set_node_default_input(n_add1, 0, 1.0);
+		g.set_node_default_input(n_add2, 0, 1.0);
+		g.add_connection(n_x, 0, n_add1, 1);
+		g.add_connection(n_add1, 0, n_add3, 0);
+		g.add_connection(n_x, 0, n_add2, 1);
+		g.add_connection(n_add2, 0, n_add3, 1);
+		g.add_connection(n_add3, 0, n_out, 0);
 		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
 		ZN_TEST_ASSERT(result.success);
 		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
@@ -1052,10 +1061,10 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 	static const float SPHERE_RADIUS = 6;
 
 	struct L {
-		static void load_graph(VoxelGeneratorGraph &g) {
+		static void load_graph(VoxelGraphFunction &g) {
 			// Just outputting the input
-			const uint32_t n_in_sdf = g.create_node(VoxelGeneratorGraph::NODE_INPUT_SDF, Vector2());
-			const uint32_t n_out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+			const uint32_t n_in_sdf = g.create_node(VoxelGraphFunction::NODE_INPUT_SDF, Vector2());
+			const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
 			g.add_connection(n_in_sdf, 0, n_out_sdf, 0);
 		}
 
@@ -1063,7 +1072,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 			// Create generator
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
-			L::load_graph(**generator);
+			L::load_graph(**generator->get_main_function());
 			const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
 			ZN_TEST_ASSERT_MSG(compilation_result.success,
 					String("Failed to compile graph: {0}: {1}")
@@ -1121,7 +1130,7 @@ void test_voxel_graph_sphere_on_plane() {
 		static Ref<VoxelGeneratorGraph> create(bool debug) {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
-			load_graph_with_sphere_on_plane(**generator, RADIUS);
+			load_graph_with_sphere_on_plane(**generator->get_main_function(), RADIUS);
 			VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(compilation_result.success,
 					String("Failed to compile graph: {0}: {1}")
@@ -1161,20 +1170,21 @@ void test_voxel_graph_sphere_on_plane() {
 void test_voxel_graph_issue427() {
 	Ref<VoxelGeneratorGraph> graph;
 	graph.instantiate();
+	VoxelGraphFunction &g = **graph->get_main_function();
 
-	const uint32_t n_in_y = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2()); // 1
-	const uint32_t n_sub = graph->create_node(VoxelGeneratorGraph::NODE_SUBTRACT, Vector2()); // 2
-	const uint32_t n_out_sdf = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2()); // 3
-	const uint32_t n_mul = graph->create_node(VoxelGeneratorGraph::NODE_MULTIPLY, Vector2()); // 4
-	const uint32_t n_fn2_2d = graph->create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D, Vector2()); // 5
-	const uint32_t n_distance_3d = graph->create_node(VoxelGeneratorGraph::NODE_DISTANCE_3D, Vector2()); // 6
+	const uint32_t n_in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2()); // 1
+	const uint32_t n_sub = g.create_node(VoxelGraphFunction::NODE_SUBTRACT, Vector2()); // 2
+	const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2()); // 3
+	const uint32_t n_mul = g.create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2()); // 4
+	const uint32_t n_fn2_2d = g.create_node(VoxelGraphFunction::NODE_FAST_NOISE_2_2D, Vector2()); // 5
+	const uint32_t n_distance_3d = g.create_node(VoxelGraphFunction::NODE_DISTANCE_3D, Vector2()); // 6
 
-	graph->add_connection(n_in_y, 0, n_sub, 0);
-	graph->add_connection(n_sub, 0, n_out_sdf, 0);
-	graph->add_connection(n_fn2_2d, 0, n_mul, 0);
-	graph->add_connection(n_distance_3d, 0, n_mul, 1);
+	g.add_connection(n_in_y, 0, n_sub, 0);
+	g.add_connection(n_sub, 0, n_out_sdf, 0);
+	g.add_connection(n_fn2_2d, 0, n_mul, 0);
+	g.add_connection(n_distance_3d, 0, n_mul, 1);
 	// Was crashing after adding this connection
-	graph->add_connection(n_mul, 0, n_sub, 1);
+	g.add_connection(n_mul, 0, n_sub, 1);
 
 	VoxelGraphRuntime::CompilationResult result = graph->compile(true);
 	ZN_TEST_ASSERT(result.success);
@@ -1183,51 +1193,52 @@ void test_voxel_graph_issue427() {
 #ifdef TOOLS_ENABLED
 
 void test_voxel_graph_hash() {
-	Ref<VoxelGeneratorGraph> graph;
+	Ref<VoxelGraphFunction> graph;
 	graph.instantiate();
+	VoxelGraphFunction &g = **graph;
 
-	const uint32_t n_in_y = graph->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2()); // 1
-	const uint32_t n_add = graph->create_node(VoxelGeneratorGraph::NODE_ADD, Vector2()); // 2
-	const uint32_t n_mul = graph->create_node(VoxelGeneratorGraph::NODE_MULTIPLY, Vector2()); // 3
-	const uint32_t n_out_sdf = graph->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2()); // 4
-	const uint32_t n_fn2_2d = graph->create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D, Vector2()); // 5
+	const uint32_t n_in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2()); // 1
+	const uint32_t n_add = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2()); // 2
+	const uint32_t n_mul = g.create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2()); // 3
+	const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2()); // 4
+	const uint32_t n_fn2_2d = g.create_node(VoxelGraphFunction::NODE_FAST_NOISE_2_2D, Vector2()); // 5
 
 	// Initial hash
-	const uint64_t hash0 = graph->get_output_graph_hash();
+	const uint64_t hash0 = g.get_output_graph_hash();
 
 	// Setting a default input on a node that isn't connected yet to the output
-	graph->set_node_default_input(n_mul, 1, 2);
-	const uint64_t hash1 = graph->get_output_graph_hash();
+	g.set_node_default_input(n_mul, 1, 2);
+	const uint64_t hash1 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash1 == hash0);
 
 	// Adding connections up to the output
-	graph->add_connection(n_in_y, 0, n_add, 0);
-	graph->add_connection(n_fn2_2d, 0, n_add, 1);
-	graph->add_connection(n_add, 0, n_mul, 0);
-	graph->add_connection(n_mul, 0, n_out_sdf, 0);
-	const uint64_t hash2 = graph->get_output_graph_hash();
+	g.add_connection(n_in_y, 0, n_add, 0);
+	g.add_connection(n_fn2_2d, 0, n_add, 1);
+	g.add_connection(n_add, 0, n_mul, 0);
+	g.add_connection(n_mul, 0, n_out_sdf, 0);
+	const uint64_t hash2 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash2 != hash0);
 
 	// Adding only one connection, creating a diamond
-	graph->add_connection(n_fn2_2d, 0, n_mul, 1);
-	const uint64_t hash3 = graph->get_output_graph_hash();
+	g.add_connection(n_fn2_2d, 0, n_mul, 1);
+	const uint64_t hash3 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash3 != hash2);
 
 	// Setting a default input
-	graph->set_node_default_input(n_mul, 1, 4);
-	const uint64_t hash4 = graph->get_output_graph_hash();
+	g.set_node_default_input(n_mul, 1, 4);
+	const uint64_t hash4 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash4 != hash3);
 
 	// Setting a noise resource property
-	Ref<FastNoise2> noise = graph->get_node_param(n_fn2_2d, 0);
+	Ref<FastNoise2> noise = g.get_node_param(n_fn2_2d, 0);
 	noise->set_period(noise->get_period() + 10.f);
-	const uint64_t hash5 = graph->get_output_graph_hash();
+	const uint64_t hash5 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash5 != hash4);
 
 	// Setting a different noise instance with the same properties
 	Ref<FastNoise2> noise2 = noise->duplicate();
-	graph->set_node_param(n_fn2_2d, 0, noise2);
-	const uint64_t hash6 = graph->get_output_graph_hash();
+	g.set_node_param(n_fn2_2d, 0, noise2);
+	const uint64_t hash6 = g.get_output_graph_hash();
 	ZN_TEST_ASSERT(hash6 == hash5);
 }
 
@@ -1505,7 +1516,7 @@ void test_transform_3d_array_zxy() {
 		20, 21, 22, 23 //
 	};
 	const Vector3i src_size(3, 4, 2);
-	const int volume = Vector3iUtil::get_volume(src_size);
+	const unsigned int volume = Vector3iUtil::get_volume(src_size);
 
 	FixedArray<int, 24> dst_grid;
 	ZN_TEST_ASSERT(dst_grid.size() == volume);
@@ -2700,9 +2711,9 @@ void test_threaded_task_runner() {
 	static const uint32_t task_duration_usec = 100'000;
 
 	struct TaskCounter {
-		std::atomic_int max_count;
-		std::atomic_int current_count;
-		std::atomic_int completed_count;
+		std::atomic_uint32_t max_count;
+		std::atomic_uint32_t current_count;
+		std::atomic_uint32_t completed_count;
 
 		void reset() {
 			max_count = 0;
@@ -2726,8 +2737,8 @@ void test_threaded_task_runner() {
 
 			// Update maximum count
 			// https://stackoverflow.com/questions/16190078/how-to-atomically-update-a-maximum-value
-			int current_count = counter->current_count;
-			int prev_max = counter->max_count;
+			unsigned int current_count = counter->current_count;
+			unsigned int prev_max = counter->max_count;
 			while (prev_max < current_count && !counter->max_count.compare_exchange_weak(prev_max, current_count)) {
 				current_count = counter->current_count;
 			}
