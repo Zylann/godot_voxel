@@ -102,7 +102,7 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 				if (b.is_custom()) {
 					return a.name < b.name;
 				} else {
-					return true;
+					return false;
 				}
 			} else if (b.is_custom()) {
 				return true;
