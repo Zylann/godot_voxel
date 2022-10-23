@@ -117,6 +117,18 @@ public:
 		}
 	}
 
+	template <typename F>
+	inline uint32_t find_node(F f) const {
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			const Node *node = it->second;
+			ZN_ASSERT_CONTINUE(node != nullptr);
+			if (f(*node)) {
+				return it->first;
+			}
+		}
+		return ProgramGraph::NULL_ID;
+	}
+
 	void copy_from(const ProgramGraph &other, bool copy_subresources);
 
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;

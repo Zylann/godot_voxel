@@ -184,6 +184,10 @@ public:
 	Span<const VoxelGraphFunction::Port> get_output_definitions();
 	void get_input_node_ids(std::vector<uint32_t> &node_ids, unsigned int input_index) const;
 	void get_output_node_ids(std::vector<uint32_t> &node_ids, unsigned int output_index) const;
+	bool contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion = 16) const;
+
+	bool get_node_input_index_by_name(uint32_t node_id, String name, unsigned int &out_input_index) const;
+	bool get_node_param_index_by_name(uint32_t node_id, String name, unsigned int &out_param_index) const;
 
 private:
 	void register_subresource(Resource &resource);

@@ -16,14 +16,11 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
 	node_view->set_position_offset(graph.get_node_gui_position(node_id) * EDSCALE);
 
-	const uint32_t node_type_id = graph.get_node_type_id(node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
-
-	const StringName node_name = graph.get_node_name(node_id);
-	node_view->update_title(node_name, node_type.name, node_type_id == VoxelGraphFunction::NODE_COMMENT);
+	node_view->update_title(graph, node_id);
 
 	node_view->_node_id = node_id;
 
+	const uint32_t node_type_id = graph.get_node_type_id(node_id);
 	const bool is_resizable =
 			node_type_id == VoxelGraphFunction::NODE_EXPRESSION || node_type_id == VoxelGraphFunction::NODE_COMMENT;
 
@@ -198,17 +195,34 @@ void VoxelGraphEditorNode::update_comment_text(const VoxelGraphFunction &graph) 
 	_comment_label->set_text(text);
 }
 
-void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_name) {
-	update_title(node_name, node_type_name, is_comment());
+void VoxelGraphEditorNode::update_title(const VoxelGraphFunction &graph) {
+	update_title(graph, _node_id);
 }
 
-void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_name, bool p_is_comment) {
-	if (node_name == StringName()) {
-		set_title(node_type_name);
-	} else if (p_is_comment) {
+void VoxelGraphEditorNode::update_title(const VoxelGraphFunction &graph, uint32_t node_id) {
+	const VoxelGraphFunction::NodeTypeID type_id = graph.get_node_type_id(node_id);
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(type_id);
+	const String node_name = graph.get_node_name(node_id);
+
+	if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
+		Ref<VoxelGraphFunction> func = graph.get_node_param(node_id, 0);
+		ERR_FAIL_COND(func.is_null());
+		String fname = func->get_path();
+		fname = fname.get_file();
+		if (node_name == StringName()) {
+			set_title(fname);
+		} else {
+			set_title(String("{0} ({1})").format(varray(node_name, fname)));
+		}
+
+	} else if (node_name == StringName()) {
+		set_title(type.name);
+
+	} else if (type_id == VoxelGraphFunction::NODE_COMMENT) {
 		set_title(String(node_name));
+
 	} else {
-		set_title(String("{0} ({1})").format(varray(node_name, node_type_name)));
+		set_title(String("{0} ({1})").format(varray(node_name, type.name)));
 	}
 }
 

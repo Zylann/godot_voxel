@@ -21,7 +21,7 @@ class VoxelGraphEditorNode : public GraphNode {
 public:
 	static VoxelGraphEditorNode *create(const VoxelGraphFunction &graph, uint32_t node_id);
 
-	void update_title(StringName node_name, String node_type_name);
+	void update_title(const VoxelGraphFunction &graph);
 	void poll(const VoxelGraphFunction &graph);
 
 	void update_range_analysis_tooltips(const VoxelGeneratorGraph &generator, const VoxelGraphRuntime::State &state);
@@ -46,7 +46,7 @@ public:
 	void set_profiling_ratio(float ratio);
 
 private:
-	void update_title(StringName node_name, String node_type_name, bool p_is_comment);
+	void update_title(const VoxelGraphFunction &graph, uint32_t node_id);
 	void poll_default_inputs(const VoxelGraphFunction &graph);
 	void poll_params(const VoxelGraphFunction &graph);
 	void _on_resize_request(Vector2 new_size);

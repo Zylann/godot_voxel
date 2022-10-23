@@ -36,39 +36,40 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 	p_list->push_back(PropertyInfo(Variant::STRING_NAME, "name", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR));
 
-	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-	const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
-
 	// Params
+	{
+		const uint32_t node_type_id = graph->get_node_type_id(_node_id);
+		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
 
-	p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
+		p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
-	for (size_t i = 0; i < node_type.params.size(); ++i) {
-		const VoxelGraphNodeDB::Param &param = node_type.params[i];
-		if (param.hidden) {
-			continue;
-		}
-		PropertyInfo pi;
-		pi.name = param.name;
-		pi.type = param.type;
-		pi.class_name = param.class_name;
-
-		if (!param.class_name.is_empty()) {
-			pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
-			pi.hint_string = pi.class_name;
-
-		} else if (param.has_range) {
-			pi.hint = PROPERTY_HINT_RANGE;
-			pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
-
-		} else if (pi.type == Variant::STRING) {
-			if (param.multiline) {
-				pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
+		for (size_t i = 0; i < node_type.params.size(); ++i) {
+			const VoxelGraphNodeDB::Param &param = node_type.params[i];
+			if (param.hidden) {
+				continue;
 			}
-		}
+			PropertyInfo pi;
+			pi.name = param.name;
+			pi.type = param.type;
+			pi.class_name = param.class_name;
 
-		pi.usage = PROPERTY_USAGE_EDITOR;
-		p_list->push_back(pi);
+			if (!param.class_name.is_empty()) {
+				pi.hint = PROPERTY_HINT_RESOURCE_TYPE;
+				pi.hint_string = pi.class_name;
+
+			} else if (param.has_range) {
+				pi.hint = PROPERTY_HINT_RANGE;
+				pi.hint_string = String("{0},{1}").format(varray(param.min_value, param.max_value));
+
+			} else if (pi.type == Variant::STRING) {
+				if (param.multiline) {
+					pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
+				}
+			}
+
+			pi.usage = PROPERTY_USAGE_EDITOR;
+			p_list->push_back(pi);
+		}
 	}
 
 	// Inputs
@@ -214,15 +215,16 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 		return true;
 	}
 
-	const VoxelGraphNodeDB &db = VoxelGraphNodeDB::get_singleton();
-	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-
 	uint32_t index;
-	if (db.try_get_param_index_from_name(node_type_id, p_name, index)) {
+
+	if (graph->get_node_param_index_by_name(_node_id, p_name, index)) {
 		Variant previous_value = graph->get_node_param(_node_id, index);
 		ur.create_action("Set VoxelGeneratorGraph node parameter");
 		ur.add_do_method(graph.ptr(), "set_node_param", _node_id, index, p_value);
 		ur.add_undo_method(graph.ptr(), "set_node_param", _node_id, index, previous_value);
+
+		const VoxelGraphFunction::NodeTypeID node_type_id = _graph->get_node_type_id(_node_id);
+
 		if (node_type_id == VoxelGraphFunction::NODE_EXPRESSION) {
 			update_expression_inputs(**graph, _node_id, p_value, ur, *_graph_editor);
 			// TODO Default inputs cannot be set after adding variables!
@@ -236,9 +238,10 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 			ur.add_do_method(this, "notify_property_list_changed");
 			ur.add_undo_method(this, "notify_property_list_changed");
 		}
+
 		ur.commit_action();
 
-	} else if (db.try_get_input_index_from_name(node_type_id, p_name, index)) {
+	} else if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
 		Variant previous_value = graph->get_node_default_input(_node_id, index);
 		ur.create_action("Set VoxelGeneratorGraph node default input");
 		ur.add_do_method(graph.ptr(), "set_node_default_input", _node_id, index, p_value);
@@ -271,15 +274,11 @@ bool VoxelGraphNodeInspectorWrapper::_get(const StringName &p_name, Variant &r_r
 		return true;
 	}
 
-	const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-
-	const VoxelGraphNodeDB &db = VoxelGraphNodeDB::get_singleton();
-
-	uint32_t index;
-	if (db.try_get_param_index_from_name(node_type_id, p_name, index)) {
+	unsigned int index;
+	if (graph->get_node_param_index_by_name(_node_id, p_name, index)) {
 		r_ret = graph->get_node_param(_node_id, index);
 
-	} else if (db.try_get_input_index_from_name(node_type_id, p_name, index)) {
+	} else if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
 		r_ret = graph->get_node_default_input(_node_id, index);
 
 	} else {

@@ -9,6 +9,8 @@
 #include "../../util/godot/canvas_item.h"
 #include "../../util/godot/check_box.h"
 #include "../../util/godot/control.h"
+#include "../../util/godot/editor_file_dialog.h"
+#include "../../util/godot/editor_quick_open.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/godot/graph_edit.h"
@@ -19,6 +21,7 @@
 #include "../../util/godot/node.h"
 #include "../../util/godot/option_button.h"
 #include "../../util/godot/popup_menu.h"
+#include "../../util/godot/resource_loader.h"
 #include "../../util/godot/scene_tree.h"
 #include "../../util/godot/time.h"
 #include "../../util/godot/world_3d.h"
@@ -39,6 +42,13 @@ const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 const char *VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED = "regenerate_requested";
 const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
+
+enum ContextMenuSpecialIDs {
+	// Preceding IDs are node types
+	CONTEXT_MENU_FUNCTION_BROWSE = VoxelGraphFunction::NODE_MAX,
+	CONTEXT_MENU_FUNCTION_QUICK_OPEN,
+	CONTEXT_MENU_ID_MAX
+};
 
 static NodePath to_node_path(const StringName &sn) {
 	return NodePath(String(sn));
@@ -152,10 +162,19 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_context_menu->add_submenu_item(name, name, i);
 		category_menus[i] = menu;
 	}
+	// TODO Usability: have CustomInput and CustomOutput subcategories based on I/O definitions, + a "new" option for
+	// unbound
 	for (int i = 0; i < VoxelGraphNodeDB::get_singleton().get_type_count(); ++i) {
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
-		menu->add_item(node_type.name, i);
+		if (i == VoxelGraphFunction::NODE_FUNCTION) {
+			menu->add_item(TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
+#ifdef ZN_GODOT
+			menu->add_item(TTR("Quick Open..."), CONTEXT_MENU_FUNCTION_QUICK_OPEN);
+#endif
+		} else {
+			menu->add_item(node_type.name, i);
+		}
 	}
 	_context_menu->hide();
 	add_child(_context_menu);
@@ -169,6 +188,24 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 	_shader_dialog = memnew(VoxelGraphEditorShaderDialog);
 	add_child(_shader_dialog);
+
+	_function_file_dialog = memnew(EditorFileDialog);
+	_function_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
+	_function_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
+	// TODO Usability: there is no way to limit a file dialog to a specific TYPE of resource, only file extensions. So
+	// it's not useful because text resources are almost all using `.tres`...
+	_function_file_dialog->add_filter("*.tres", TTR("Text Resource"));
+	_function_file_dialog->add_filter("*.res", TTR("Binary Resource"));
+	_function_file_dialog->connect(
+			"file_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_file_dialog_file_selected));
+	add_child(_function_file_dialog);
+
+#ifdef ZN_GODOT
+	_function_quick_open_dialog = memnew(EditorQuickOpen);
+	_function_quick_open_dialog->connect(
+			"quick_open", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_quick_open_dialog_quick_open));
+	add_child(_function_quick_open_dialog);
+#endif
 
 	update_buttons_availability();
 }
@@ -354,6 +391,8 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	// Build one GUI node
 
 	CRASH_COND(_graph.is_null());
+	// Checking because when creating a new node, UndoRedo methods carry on even if one fails
+	ERR_FAIL_COND(_graph->has_node(node_id) == false);
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	ERR_FAIL_COND(_graph_edit->has_node(ui_node_name));
@@ -601,8 +640,14 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 		_undo_redo->add_do_method(*_graph, "remove_node", node_id);
 		_undo_redo->add_do_method(this, "remove_node_gui", node_view->get_name());
 
-		_undo_redo->add_undo_method(
-				*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
+		if (node_type_id == VoxelGraphFunction::NODE_FUNCTION) {
+			Ref<VoxelGraphFunction> func = _graph->get_node_param(node_id, 0);
+			_undo_redo->add_undo_method(
+					*_graph, "create_function_node", func, _graph->get_node_gui_position(node_id), node_id);
+		} else {
+			_undo_redo->add_undo_method(
+					*_graph, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
+		}
 
 		// Params undo
 		const size_t param_count = VoxelGraphNodeDB::get_singleton().get_type(node_type_id).params.size();
@@ -667,8 +712,22 @@ Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 l
 }
 
 void VoxelGraphEditor::_on_context_menu_id_pressed(int id) {
+	if (id == CONTEXT_MENU_FUNCTION_BROWSE) {
+		_function_file_dialog->popup();
+		return;
+	}
+#ifdef ZN_GODOT
+	if (id == CONTEXT_MENU_FUNCTION_QUICK_OPEN) {
+		_function_quick_open_dialog->popup_dialog(VoxelGraphFunction::get_class_static());
+		return;
+	}
+#endif
+
+	// Create a base node type
+
 	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
 	const uint32_t node_type_id = id;
+
 	const uint32_t node_id = _graph->generate_node_id();
 	const StringName node_name = node_to_gui_name(node_id);
 
@@ -984,17 +1043,15 @@ void VoxelGraphEditor::_on_graph_changed() {
 
 void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	ERR_FAIL_COND(_graph.is_null());
-	StringName node_name = _graph->get_node_name(node_id);
 
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
-	String node_type_name = VoxelGraphNodeDB::get_singleton().get_type(node_type_id).name;
 
 	const String ui_node_name = node_to_gui_name(node_id);
 	VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
 	ERR_FAIL_COND(node_view == nullptr);
 
 	if (node_type_id != VoxelGraphFunction::NODE_EXPRESSION) {
-		node_view->update_title(node_name, node_type_name);
+		node_view->update_title(**_graph);
 	}
 }
 
@@ -1121,6 +1178,59 @@ void VoxelGraphEditor::set_popout_button_enabled(bool enable) {
 	_popout_button->set_visible(enable);
 }
 
+void VoxelGraphEditor::_on_function_file_dialog_file_selected(String fpath) {
+	create_function_node(fpath);
+}
+
+#ifdef ZN_GODOT
+
+void VoxelGraphEditor::_on_function_quick_open_dialog_quick_open() {
+	String path = _function_quick_open_dialog->get_selected();
+	if (path == "") {
+		return;
+	}
+	create_function_node(path);
+}
+
+#endif
+
+void VoxelGraphEditor::create_function_node(String fpath) {
+	Ref<Resource> res = load_resource(fpath);
+	if (res.is_null()) {
+		ERR_PRINT("Could not instantiate function, resource could not be loaded.");
+		return;
+	}
+	Ref<VoxelGraphFunction> func = res;
+	if (func.is_null()) {
+		ERR_PRINT(String("Could not instantiate function, resource is not a {0}.")
+						  .format(varray(VoxelGraphFunction::get_class_static())));
+		return;
+	}
+
+	if (func == _graph) {
+		ERR_PRINT("Adding a function to itself is not allowed.");
+		return;
+	}
+
+	if (func->contains_reference_to_function(_graph)) {
+		ERR_PRINT("Adding a function to itself is not allowed, detected an indirect cycle.");
+		return;
+	}
+
+	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
+	const uint32_t node_type_id = VoxelGraphFunction::NODE_FUNCTION;
+
+	const uint32_t node_id = _graph->generate_node_id();
+	const StringName node_name = node_to_gui_name(node_id);
+
+	_undo_redo->create_action(ZN_TTR("Create Function Node"));
+	_undo_redo->add_do_method(*_graph, "create_function_node", func, pos, node_id);
+	_undo_redo->add_do_method(this, "create_node_gui", node_id);
+	_undo_redo->add_undo_method(*_graph, "remove_node", node_id);
+	_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
+	_undo_redo->commit_action();
+}
+
 void VoxelGraphEditor::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
@@ -1157,6 +1267,10 @@ void VoxelGraphEditor::_bind_methods() {
 			D_METHOD("_on_generate_shader_button_pressed"), &VoxelGraphEditor::_on_generate_shader_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_live_update_toggled", "enabled"), &VoxelGraphEditor::_on_live_update_toggled);
 	ClassDB::bind_method(D_METHOD("_on_popout_button_pressed"), &VoxelGraphEditor::_on_popout_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_function_file_dialog_file_selected", "fpath"),
+			&VoxelGraphEditor::_on_function_file_dialog_file_selected);
+	ClassDB::bind_method(D_METHOD("_on_function_quick_open_dialog_quick_open"),
+			&VoxelGraphEditor::_on_function_quick_open_dialog_quick_open);
 #endif
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);

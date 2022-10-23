@@ -14,6 +14,8 @@ ZN_GODOT_FORWARD_DECLARE(class Button)
 ZN_GODOT_FORWARD_DECLARE(class Label)
 ZN_GODOT_FORWARD_DECLARE(class OptionButton)
 ZN_GODOT_FORWARD_DECLARE(class CheckBox)
+ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
+ZN_GODOT_FORWARD_DECLARE(class EditorQuickOpen)
 
 namespace zylann::voxel {
 
@@ -75,6 +77,7 @@ private:
 	void clear_range_analysis_tooltips();
 	void hide_profiling_ratios();
 	void update_buttons_availability();
+	void create_function_node(String fpath);
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -105,6 +108,10 @@ private:
 	void _on_generate_shader_button_pressed();
 	void _on_live_update_toggled(bool enabled);
 	void _on_popout_button_pressed();
+	void _on_function_file_dialog_file_selected(String fpath);
+#ifdef ZN_GODOT
+	void _on_function_quick_open_dialog_quick_open();
+#endif
 
 	void _check_nothing_selected();
 
@@ -118,6 +125,11 @@ private:
 	Label *_profile_label = nullptr;
 	Label *_compile_result_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
+	EditorFileDialog *_function_file_dialog = nullptr;
+#ifdef ZN_GODOT
+	// TODO GDX: EditorQuickOpen is not exposed!
+	EditorQuickOpen *_function_quick_open_dialog = nullptr;
+#endif
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
 	// VisualShader did it that way when this manager got introduced in place of the old global UndoRedo...
 	// there doesn't seem to be any documentation yet for this class
