@@ -132,6 +132,7 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 	ZN_ASSERT(node.type_id == VoxelGraphFunction::NODE_FUNCTION);
 	ZN_ASSERT(func.is_valid());
 	ZN_ASSERT(node.params.size() >= 1);
+	node.params.resize(1);
 	node.params[0] = func;
 
 	Span<const VoxelGraphFunction::Port> input_definitions = func->get_input_definitions();
@@ -141,10 +142,10 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 	}
 
 	struct L {
-		static void add_ports(std::vector<ProgramGraph::Port> &ports, Span<const VoxelGraphFunction::Port> fports) {
+		static void set_ports(std::vector<ProgramGraph::Port> &ports, Span<const VoxelGraphFunction::Port> fports) {
+			ports.clear();
 			for (const VoxelGraphFunction::Port &fport : fports) {
 				ProgramGraph::Port port;
-				//port.dynamic_name = to_std_string(fport.name);
 				if (fport.is_custom()) {
 					port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_NONE;
 				} else {
@@ -167,14 +168,13 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 		}
 	};
 
-	L::add_ports(node.inputs, input_definitions);
-	L::add_ports(node.outputs, func->get_output_definitions());
+	L::set_ports(node.inputs, input_definitions);
+	L::set_ports(node.outputs, func->get_output_definitions());
 
 	// TODO Function parameters
 }
 
 uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
-	// TODO Disallow creating function nodes with this method? It's used internally though
 	ERR_FAIL_COND_V(!VoxelGraphNodeDB::get_singleton().is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id, true);
 	ERR_FAIL_COND_V(node == nullptr, ProgramGraph::NULL_ID);
@@ -327,16 +327,37 @@ void VoxelGraphFunction::set_node_param(uint32_t node_id, uint32_t param_index, 
 	ERR_FAIL_INDEX(param_index, node->params.size());
 
 	if (node->params[param_index] != value) {
-		Ref<Resource> prev_resource = node->params[param_index];
-		if (prev_resource.is_valid()) {
-			unregister_subresource(**prev_resource);
-		}
+		if (VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
+			// The function param is special, it conditions the presence of other parameters and node ports
 
-		node->params[param_index] = value;
+			Ref<VoxelGraphFunction> func = value;
+			ERR_FAIL_COND_MSG(func.is_null(),
+					String("A Function node with a null {0} reference is not allowed")
+							.format(varray(VoxelGraphFunction::get_class_static())));
 
-		Ref<Resource> resource = value;
-		if (resource.is_valid()) {
-			register_subresource(**resource);
+			// Unregister potential resource params, since the previous function could have had different ones
+			for (unsigned int i = 0; i < node->params.size(); ++i) {
+				Ref<Resource> res = node->params[i];
+				if (res.is_valid()) {
+					unregister_subresource(**res);
+				}
+			}
+
+			setup_function(*node, func);
+			register_subresource(**func);
+
+		} else {
+			Ref<Resource> prev_resource = node->params[param_index];
+			if (prev_resource.is_valid()) {
+				unregister_subresource(**prev_resource);
+			}
+
+			node->params[param_index] = value;
+
+			Ref<Resource> resource = value;
+			if (resource.is_valid()) {
+				register_subresource(**resource);
+			}
 		}
 
 		emit_changed();
