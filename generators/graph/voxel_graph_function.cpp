@@ -327,7 +327,7 @@ void VoxelGraphFunction::set_node_param(uint32_t node_id, uint32_t param_index, 
 	ERR_FAIL_INDEX(param_index, node->params.size());
 
 	if (node->params[param_index] != value) {
-		if (VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
+		if (node->type_id == VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
 			// The function param is special, it conditions the presence of other parameters and node ports
 
 			Ref<VoxelGraphFunction> func = value;
