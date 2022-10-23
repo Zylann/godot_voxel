@@ -490,7 +490,7 @@ Node name             | Description
 ----------------------|----------------------------------
 Curve                 | Returns the value of a custom `curve` at coordinate `x`, where `x` is in the range `[0..1]`. The `curve` is specified with a `Curve` resource.
 Image2D               | Returns the value of the red channel of an `image` at coordinates `(x, y)`, where `x` and `y` are in pixels and the return value is in the range `[0..1]` (or more if the image has an HDR format). If coordinates are outside the image, they will be wrapped around. No filtering is performed. The image must have an uncompressed format.
-Function              | Runs a custom function, like a re-usable sub-graph. See `VoxelGraphFunction`.
+Function              | Runs a custom function, like a re-usable sub-graph. The first parameter (parameter 0) of this node is a reference to a `VoxelGraphFunction`. Further parameters (starting from 1) are those exposed by the function.
 
 
 Modifiers
