@@ -216,9 +216,8 @@ uint32_t VoxelGraphFunction::create_function_node(Ref<VoxelGraphFunction> func, 
 	ERR_FAIL_COND_V(func.is_null(), ProgramGraph::NULL_ID);
 	const uint32_t id = create_node(VoxelGraphFunction::NODE_FUNCTION, position, p_id);
 	ERR_FAIL_COND_V(id == ProgramGraph::NULL_ID, ProgramGraph::NULL_ID);
-	ERR_FAIL_COND_V(id != p_id, ProgramGraph::NULL_ID);
 	ProgramGraph::Node &node = _graph.get_node(id);
-	setup_function(node, Ref<VoxelGraphFunction>(func));
+	setup_function(node, func);
 	register_subresource(**func);
 	return id;
 }
@@ -1034,6 +1033,10 @@ bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> 
 	});
 
 	return id != ProgramGraph::NULL_ID;
+}
+
+void VoxelGraphFunction::auto_pick_inputs_and_outputs() {
+	zylann::voxel::auto_pick_input_and_outputs(_graph, _inputs, _outputs);
 }
 
 bool find_port_by_name(Span<const VoxelGraphFunction::Port> ports, const String &name, unsigned int &out_index) {
