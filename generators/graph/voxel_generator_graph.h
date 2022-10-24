@@ -77,6 +77,7 @@ public:
 		NODE_POWI, // pow(x, constant positive integer)
 		NODE_POW, // pow(x, y)
 		NODE_INPUT_SDF,
+		NODE_COMMENT,
 
 		NODE_TYPE_COUNT
 	};
@@ -131,6 +132,9 @@ public:
 
 	Vector2 get_node_gui_position(uint32_t node_id) const;
 	void set_node_gui_position(uint32_t node_id, Vector2 pos);
+
+	Vector2 get_node_gui_size(uint32_t node_id) const;
+	void set_node_gui_size(uint32_t node_id, Vector2 size);
 
 	NodeTypeID get_node_type_id(uint32_t node_id) const;
 	PackedInt32Array get_node_ids() const;
@@ -311,12 +315,13 @@ private:
 		std::vector<float> x_cache;
 		std::vector<float> y_cache;
 		std::vector<float> z_cache;
-		std::vector<float> input_sdf_cache;
+		std::vector<float> input_sdf_slice_cache;
+		std::vector<float> input_sdf_full_cache;
 		VoxelGraphRuntime::State state;
 		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
 	};
 
-	static thread_local Cache _cache;
+	static Cache &get_tls_cache();
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGeneratorGraph::NodeTypeID type_id, Vector2 position,

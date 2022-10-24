@@ -591,7 +591,7 @@ const Layer &Data::get_layer_by_index(unsigned int index) const {
 	return *layer;
 }
 
-const int Data::get_material_id_for_palette_index(unsigned int palette_index) const {
+int Data::get_material_id_for_palette_index(unsigned int palette_index) const {
 	auto it = _materials.find(palette_index);
 	if (it == _materials.end()) {
 		return -1;

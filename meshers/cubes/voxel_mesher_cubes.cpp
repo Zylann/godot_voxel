@@ -696,16 +696,12 @@ Ref<Image> make_greedy_atlas(
 			}
 		}
 	}
-	Ref<Image> image;
-	image.instantiate();
-	create_image_from_data(**image, result_size, false, Image::FORMAT_RGBA8, im_data);
 
+	Ref<Image> image = Image::create_from_data(result_size.x, result_size.y, false, Image::FORMAT_RGBA8, im_data);
 	return image;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-thread_local VoxelMesherCubes::Cache VoxelMesherCubes::_cache;
 
 VoxelMesherCubes::VoxelMesherCubes() {
 	set_padding(PADDING, PADDING);
@@ -713,10 +709,15 @@ VoxelMesherCubes::VoxelMesherCubes() {
 
 VoxelMesherCubes::~VoxelMesherCubes() {}
 
+VoxelMesherCubes::Cache &VoxelMesherCubes::get_tls_cache() {
+	static thread_local Cache cache;
+	return cache;
+}
+
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
 	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
 		Arrays &a = cache.arrays_per_material[i];

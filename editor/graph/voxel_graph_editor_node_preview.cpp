@@ -4,8 +4,7 @@
 namespace zylann::voxel {
 
 VoxelGraphEditorNodePreview::VoxelGraphEditorNodePreview() {
-	_image.instantiate();
-	_image->create(RESOLUTION, RESOLUTION, false, Image::FORMAT_L8);
+	_image = Image::create_empty(RESOLUTION, RESOLUTION, false, Image::FORMAT_L8);
 	_image->fill(Color(0.5, 0.5, 0.5));
 	_texture = ImageTexture::create_from_image(_image);
 	update_texture();

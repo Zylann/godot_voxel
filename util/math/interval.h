@@ -2,9 +2,11 @@
 #define ZN_INTERVAL_H
 
 #include "funcs.h"
+#include <iosfwd>
 #include <limits>
 
-namespace zylann::math {
+namespace zylann {
+namespace math {
 
 // TODO Optimization: make template, I don't always need `real_t`, sometimes it uses doubles unnecessarily
 
@@ -21,8 +23,6 @@ struct Interval {
 		ZN_ASSERT(p_min <= p_max);
 #endif
 	}
-
-	inline Interval(const Interval &other) : min(other.min), max(other.max) {}
 
 	inline static Interval from_single_value(real_t p_val) {
 		return Interval(p_val, p_val);
@@ -189,6 +189,9 @@ inline Interval max_interval(const Interval &a, const real_t b) {
 }
 
 inline Interval sqrt(const Interval &i) {
+	// Avoiding negative numbers because they are undefined, also because VoxelGeneratorGraph defines its SQRT node this
+	// way.
+	// TODO Rename function `sqrt_or_zero` to be explicit about this?
 	return Interval{ Math::sqrt(maxf(0, i.min)), Math::sqrt(maxf(0, i.max)) };
 }
 
@@ -478,6 +481,10 @@ inline Interval pow(Interval x, Interval p) {
 	}
 }
 
-} //namespace zylann::math
+} // namespace math
+
+std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v);
+
+} //namespace zylann
 
 #endif // ZN_INTERVAL_H

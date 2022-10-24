@@ -49,6 +49,7 @@ public:
 		uint32_t type_id;
 		StringName name; // User-defined
 		Vector2 gui_position;
+		Vector2 gui_size; // Used on resizable nodes
 		std::vector<Port> inputs;
 		std::vector<Port> outputs;
 		std::vector<Variant> params;
@@ -101,7 +102,7 @@ public:
 	inline void for_each_node_const(F f) const {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			const Node *node = it->second;
-			ERR_CONTINUE(node == nullptr);
+			ZN_ASSERT_CONTINUE(node != nullptr);
 			f(*node);
 		}
 	}
@@ -110,7 +111,7 @@ public:
 	inline void for_each_node(F f) {
 		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 			Node *node = it->second;
-			ERR_CONTINUE(node == nullptr);
+			ZN_ASSERT_CONTINUE(node != nullptr);
 			f(*node);
 		}
 	}

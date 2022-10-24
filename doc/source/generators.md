@@ -321,9 +321,16 @@ for z in size_z:
 
 This way, the 2D noise is only computed once for each column of voxels along Y, which speeds up generation a lot.
 
-In Voxel Graphs, the same optimization occurs. When the list of operations is computed, all operations that only depend on X and Z are put first in the list. Then a specific index is remembered where the first operation dependent on Y can be found. When generating a block of voxels, the first XZ slice is computed by reading the list from its beginning. But every following slice, the list is read starting from that special index instead, skipping all the first nodes. The next nodes can still refer to the result of the nodes that depend on X and Z because their buffers are not reset between slices. In other words, results are cached.
+In Voxel Graphs, the same optimization occurs. When the list of operations is computed, they are put in two groups: `XZ` and `XZY`. All operations that only depend on X and Z are put into the `XZ` group, and others go into the `XZY` group.
+When generating a block of voxels, the `XZ` group is executed once for the first slice of voxels, and the `XZY` group is executed for every slice, re-using results from the `XZ` group.
 
 This optimization only applies on both X and Z axes. It can be toggled in the inspector.
+
+
+#### Buffer reduction
+
+The graph attempts to use as few temporary buffers as possible. For example, if you have 10 nodes processing before the output, it won't necessarily allocate 10 unique buffers to store intermediary outputs. Instead, buffers will be re-used for multiple nodes, if that doesn't change the result. Buffers are assigned ahead-of-time, when the graph is compiled. It saves memory, and might improve performance because less data has to be loaded into CPU cache.
+This feature is disabled when the graph is compiled in debug mode, as it allows inspecting the state of each output.
 
 
 Custom generator

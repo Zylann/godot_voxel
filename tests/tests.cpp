@@ -2,6 +2,7 @@
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../generators/graph/voxel_generator_graph.h"
+#include "../generators/graph/voxel_graph_node_db.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
@@ -348,13 +349,95 @@ void test_copy_3d_region_zxy() {
 	}
 }
 
+math::Interval get_sdf_range(const VoxelBufferInternal &block) {
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	math::Interval range = math::Interval::from_single_value(block.get_voxel_f(Vector3i(), channel));
+	Vector3i pos;
+	const Vector3i size = block.get_size();
+
+	for (pos.z = 0; pos.z < size.z; ++pos.z) {
+		for (pos.x = 0; pos.x < size.x; ++pos.x) {
+			for (pos.y = 0; pos.y < size.y; ++pos.y) {
+				range.add_point(block.get_voxel_f(pos, channel));
+			}
+		}
+	}
+
+	return range;
+}
+
+bool check_graph_results_are_equal(VoxelGeneratorGraph &generator1, VoxelGeneratorGraph &generator2, Vector3i origin) {
+	{
+		const float sd1 = generator1.generate_single(origin, VoxelBufferInternal::CHANNEL_SDF).f;
+		const float sd2 = generator2.generate_single(origin, VoxelBufferInternal::CHANNEL_SDF).f;
+
+		if (!Math::is_equal_approx(sd1, sd2)) {
+			ZN_PRINT_ERROR(format("sd1: ", sd1));
+			ZN_PRINT_ERROR(format("sd2: ", sd1));
+			return false;
+		}
+	}
+
+	const Vector3i block_size(16, 16, 16);
+
+	VoxelBufferInternal block1;
+	block1.create(block_size);
+
+	VoxelBufferInternal block2;
+	block2.create(block_size);
+
+	// Note, not every graph configuration can be considered invalid when inequal.
+	// SDF clipping does create differences that are supposed to be irrelevant for our use cases.
+	// So it is important that we test generators with the same SDF clipping options.
+	ZN_ASSERT(generator1.get_sdf_clip_threshold() == generator2.get_sdf_clip_threshold());
+
+	generator1.generate_block(VoxelGenerator::VoxelQueryData{ block1, origin, 0 });
+	generator2.generate_block(VoxelGenerator::VoxelQueryData{ block2, origin, 0 });
+
+	if (block1.equals(block2)) {
+		return true;
+	}
+
+	const math::Interval range1 = get_sdf_range(block1);
+	const math::Interval range2 = get_sdf_range(block2);
+	ZN_PRINT_ERROR(format("When testing box ", Box3i(origin, block_size)));
+	ZN_PRINT_ERROR(format("Block1 range: ", range1));
+	ZN_PRINT_ERROR(format("Block2 range: ", range2));
+	return false;
+}
+
+bool check_graph_results_are_equal(VoxelGeneratorGraph &generator1, VoxelGeneratorGraph &generator2) {
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i()));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(-8, -8, -8)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(0, 100, 0)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(0, -100, 0)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(100, 0, 0)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(-100, 0, 0)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(100, 100, 100)));
+	ZN_TEST_ASSERT(check_graph_results_are_equal(generator1, generator2, Vector3i(-100, -100, -100)));
+	return true;
+}
+
 void test_voxel_graph_generator_default_graph_compilation() {
+	Ref<VoxelGeneratorGraph> generator_debug;
 	Ref<VoxelGeneratorGraph> generator;
-	generator.instantiate();
-	generator->load_plane_preset();
-	VoxelGraphRuntime::CompilationResult result = generator->compile(false);
-	ZN_TEST_ASSERT_MSG(
-			result.success, String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+	{
+		generator_debug.instantiate();
+		generator_debug->load_plane_preset();
+		VoxelGraphRuntime::CompilationResult result = generator_debug->compile(true);
+		ZN_TEST_ASSERT_MSG(result.success,
+				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+	}
+	{
+		generator.instantiate();
+		generator->load_plane_preset();
+		VoxelGraphRuntime::CompilationResult result = generator->compile(false);
+		ZN_TEST_ASSERT_MSG(result.success,
+				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+	}
+	if (generator_debug.is_valid() && generator.is_valid()) {
+		ZN_TEST_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
+	}
 }
 
 void test_voxel_graph_invalid_connection() {
@@ -379,98 +462,234 @@ void test_voxel_graph_invalid_connection() {
 	ZN_TEST_ASSERT_MSG(generator->can_connect(n_add2, 0, n_add1, 1) == false, "Creating a cycle is not allowed");
 }
 
-void test_voxel_graph_generator_expressions() {
-	{
-		Ref<VoxelGeneratorGraph> generator;
-		generator.instantiate();
+void load_graph_with_sphere_on_plane(VoxelGeneratorGraph &g, float radius) {
+	//      X
+	//       \
+	//  Z --- Sphere --- Union --- OutSDF
+	//       /          /
+	//      Y --- Plane
+	//
 
-		const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-		const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-		const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-		const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-		const uint32_t n_expression = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+	const uint32_t n_in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t n_in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t n_in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t n_out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_plane = g.create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
+	const uint32_t n_sphere = g.create_node(VoxelGeneratorGraph::NODE_SDF_SPHERE, Vector2());
+	const uint32_t n_union = g.create_node(VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION, Vector2());
 
-		generator->set_node_param(n_expression, 0, "0.1 * x + 0.2 * z + min(y, 0.5)");
-		PackedStringArray var_names;
-		var_names.push_back("x");
-		var_names.push_back("y");
-		var_names.push_back("z");
-		generator->set_expression_node_inputs(n_expression, var_names);
+	uint32_t union_smoothness_id;
+	ZN_ASSERT(VoxelGraphNodeDB::get_singleton().try_get_param_index_from_name(
+			VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id));
 
-		generator->add_connection(in_x, 0, n_expression, 0);
-		generator->add_connection(in_y, 0, n_expression, 1);
-		generator->add_connection(in_z, 0, n_expression, 2);
-		generator->add_connection(n_expression, 0, out_sdf, 0);
+	g.add_connection(n_in_x, 0, n_sphere, 0);
+	g.add_connection(n_in_y, 0, n_sphere, 1);
+	g.add_connection(n_in_z, 0, n_sphere, 2);
+	g.set_node_param(n_sphere, 0, radius);
+	g.add_connection(n_in_y, 0, n_plane, 0);
+	g.set_node_default_input(n_plane, 1, 0.f);
+	g.add_connection(n_sphere, 0, n_union, 0);
+	g.add_connection(n_plane, 0, n_union, 1);
+	g.set_node_param(n_union, union_smoothness_id, 0.f);
+	g.add_connection(n_union, 0, n_out_sdf, 0);
+}
 
-		VoxelGraphRuntime::CompilationResult result = generator->compile(false);
-		ZN_TEST_ASSERT_MSG(result.success,
-				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+void load_graph_with_expression(VoxelGeneratorGraph &g) {
+	const uint32_t in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_expression = g.create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+
+	//             0.5
+	//                \
+	//     0.1   y --- min
+	//        \           \
+	//   x --- * --- + --- + --- sdf
+	//              /
+	//     0.2 --- *
+	//            /
+	//           z
+
+	g.set_node_param(n_expression, 0, "0.1 * x + 0.2 * z + min(y, 0.5)");
+	PackedStringArray var_names;
+	var_names.push_back("x");
+	var_names.push_back("y");
+	var_names.push_back("z");
+	g.set_expression_node_inputs(n_expression, var_names);
+
+	g.add_connection(in_x, 0, n_expression, 0);
+	g.add_connection(in_y, 0, n_expression, 1);
+	g.add_connection(in_z, 0, n_expression, 2);
+	g.add_connection(n_expression, 0, out_sdf, 0);
+}
+
+void load_graph_with_expression_and_noises(VoxelGeneratorGraph &g, Ref<ZN_FastNoiseLite> *out_zfnl) {
+	//                       SdfPreview
+	//                      /
+	//     X --- FastNoise2D
+	//      \/              \
+	//      /\               \
+	//     Z --- Noise2D ----- a+b+c --- OutputSDF
+	//                        /
+	//     Y --- SdfPlane ----
+
+	const uint32_t in_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
+	const uint32_t in_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
+	const uint32_t in_z = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
+	const uint32_t out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
+	const uint32_t n_fn2d = g.create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2D, Vector2());
+	const uint32_t n_n2d = g.create_node(VoxelGeneratorGraph::NODE_NOISE_2D, Vector2());
+	const uint32_t n_plane = g.create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
+	const uint32_t n_expr = g.create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
+	const uint32_t n_preview = g.create_node(VoxelGeneratorGraph::NODE_SDF_PREVIEW, Vector2());
+
+	g.set_node_param(n_expr, 0, "a+b+c");
+	PackedStringArray var_names;
+	var_names.push_back("a");
+	var_names.push_back("b");
+	var_names.push_back("c");
+	g.set_expression_node_inputs(n_expr, var_names);
+
+	Ref<ZN_FastNoiseLite> zfnl;
+	zfnl.instantiate();
+	g.set_node_param(n_fn2d, 0, zfnl);
+
+	Ref<FastNoiseLite> fnl;
+	fnl.instantiate();
+	g.set_node_param(n_n2d, 0, fnl);
+
+	g.add_connection(in_x, 0, n_fn2d, 0);
+	g.add_connection(in_x, 0, n_n2d, 0);
+	g.add_connection(in_z, 0, n_fn2d, 1);
+	g.add_connection(in_z, 0, n_n2d, 1);
+	g.add_connection(in_y, 0, n_plane, 0);
+	g.add_connection(n_fn2d, 0, n_expr, 0);
+	g.add_connection(n_fn2d, 0, n_preview, 0);
+	g.add_connection(n_n2d, 0, n_expr, 1);
+	g.add_connection(n_plane, 0, n_expr, 2);
+	g.add_connection(n_expr, 0, out_sdf, 0);
+
+	if (out_zfnl != nullptr) {
+		*out_zfnl = zfnl;
 	}
+}
+
+void load_graph_with_clamp(VoxelGeneratorGraph &g, float ramp_half_size) {
+	// Two planes of different height, with a 45-degrees ramp along the X axis between them.
+	// The plane is higher in negative X, and lower in positive X.
+	//
+	//   X --- Clamp --- + --- Out
+	//                  /
+	//                 Y
+
+	const uint32_t n_x = g.create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2());
+	const uint32_t n_y = g.create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2());
+	// Not using CLAMP_C for testing simplification
+	const uint32_t n_clamp = g.create_node(VoxelGeneratorGraph::NODE_CLAMP, Vector2());
+	const uint32_t n_add = g.create_node(VoxelGeneratorGraph::NODE_ADD, Vector2());
+	const uint32_t n_out = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+
+	g.set_node_default_input(n_clamp, 1, -ramp_half_size);
+	g.set_node_default_input(n_clamp, 2, ramp_half_size);
+
+	g.add_connection(n_x, 0, n_clamp, 0);
+	g.add_connection(n_clamp, 0, n_add, 0);
+	g.add_connection(n_y, 0, n_add, 1);
+	g.add_connection(n_add, 0, n_out, 0);
+}
+
+void test_voxel_graph_clamp_simplification() {
+	// The CLAMP node is replaced with a CLAMP_C node on compilation.
+	// This tests that the generator still behaves properly.
+	static const float RAMP_HALF_SIZE = 4.f;
+	struct L {
+		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			load_graph_with_clamp(**generator, RAMP_HALF_SIZE);
+			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
+			ZN_TEST_ASSERT_MSG(result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+			return generator;
+		}
+		static void test_locations(VoxelGeneratorGraph &g) {
+			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+			const float sd_on_higher_side_below_ground =
+					g.generate_single(Vector3i(-RAMP_HALF_SIZE - 10, 0, 0), channel).f;
+			const float sd_on_higher_side_above_ground =
+					g.generate_single(Vector3i(-RAMP_HALF_SIZE - 10, RAMP_HALF_SIZE + 2, 0), channel).f;
+			const float sd_on_lower_side_above_ground =
+					g.generate_single(Vector3i(RAMP_HALF_SIZE + 10, 0, 0), channel).f;
+			const float sd_on_lower_side_below_ground =
+					g.generate_single(Vector3i(RAMP_HALF_SIZE + 10, -RAMP_HALF_SIZE - 2, 0), channel).f;
+
+			ZN_TEST_ASSERT(sd_on_lower_side_above_ground > 0.f);
+			ZN_TEST_ASSERT(sd_on_lower_side_below_ground < 0.f);
+			ZN_TEST_ASSERT(sd_on_higher_side_above_ground > 0.f);
+			ZN_TEST_ASSERT(sd_on_higher_side_below_ground < 0.f);
+		}
+	};
+	Ref<VoxelGeneratorGraph> generator_debug = L::create_graph(true);
+	Ref<VoxelGeneratorGraph> generator = L::create_graph(false);
+	ZN_TEST_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
+	L::test_locations(**generator);
+	L::test_locations(**generator_debug);
+}
+
+void test_voxel_graph_generator_expressions() {
+	struct L {
+		static Ref<VoxelGeneratorGraph> create_graph(bool debug) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			load_graph_with_expression(**generator);
+			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
+			ZN_TEST_ASSERT_MSG(result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+			return generator;
+		}
+	};
+	Ref<VoxelGeneratorGraph> generator_debug = L::create_graph(true);
+	Ref<VoxelGeneratorGraph> generator = L::create_graph(false);
+	ZN_TEST_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
+}
+
+void test_voxel_graph_generator_expressions_2() {
 	Ref<ZN_FastNoiseLite> zfnl;
 	{
-		Ref<VoxelGeneratorGraph> generator;
-		generator.instantiate();
+		Ref<VoxelGeneratorGraph> generator_debug;
+		{
+			generator_debug.instantiate();
+			load_graph_with_expression_and_noises(**generator_debug, &zfnl);
+			VoxelGraphRuntime::CompilationResult result = generator_debug->compile(true);
+			ZN_TEST_ASSERT_MSG(result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 
-		/*                       SdfPreview
-								/
-			  X --- FastNoise2D
-				\/              \
-				/\               \
-			  Z --- Noise2D ----- a+b+c --- OutputSDF
-								 /
-			  Y --- SdfPlane ----
-		*/
+			generator_debug->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
 
-		const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
-		const uint32_t in_y = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Y, Vector2(0, 0));
-		const uint32_t in_z = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_Z, Vector2(0, 0));
-		const uint32_t out_sdf = generator->create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2(0, 0));
-		const uint32_t n_fn2d = generator->create_node(VoxelGeneratorGraph::NODE_FAST_NOISE_2D, Vector2());
-		const uint32_t n_n2d = generator->create_node(VoxelGeneratorGraph::NODE_NOISE_2D, Vector2());
-		const uint32_t n_plane = generator->create_node(VoxelGeneratorGraph::NODE_SDF_PLANE, Vector2());
-		const uint32_t n_expr = generator->create_node(VoxelGeneratorGraph::NODE_EXPRESSION, Vector2());
-		const uint32_t n_preview = generator->create_node(VoxelGeneratorGraph::NODE_SDF_PREVIEW, Vector2());
-
-		generator->set_node_param(n_expr, 0, "a+b+c");
-		PackedStringArray var_names;
-		var_names.push_back("a");
-		var_names.push_back("b");
-		var_names.push_back("c");
-		generator->set_expression_node_inputs(n_expr, var_names);
-
-		zfnl.instantiate();
-		generator->set_node_param(n_fn2d, 0, zfnl);
-
-		Ref<FastNoiseLite> fnl;
-		fnl.instantiate();
-		generator->set_node_param(n_n2d, 0, fnl);
-
-		generator->add_connection(in_x, 0, n_fn2d, 0);
-		generator->add_connection(in_x, 0, n_n2d, 0);
-		generator->add_connection(in_z, 0, n_fn2d, 1);
-		generator->add_connection(in_z, 0, n_n2d, 1);
-		generator->add_connection(in_y, 0, n_plane, 0);
-		generator->add_connection(n_fn2d, 0, n_expr, 0);
-		generator->add_connection(n_fn2d, 0, n_preview, 0);
-		generator->add_connection(n_n2d, 0, n_expr, 1);
-		generator->add_connection(n_plane, 0, n_expr, 2);
-		generator->add_connection(n_expr, 0, out_sdf, 0);
-
-		VoxelGraphRuntime::CompilationResult result = generator->compile(true);
-		ZN_TEST_ASSERT_MSG(result.success,
-				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
-
-		generator->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
-
-		std::vector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
-		generator->debug_measure_microseconds_per_voxel(false, &profiling_info);
-		ZN_TEST_ASSERT(profiling_info.size() >= 4);
-		for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
-			ZN_TEST_ASSERT(generator->has_node(info.node_id));
+			std::vector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
+			generator_debug->debug_measure_microseconds_per_voxel(false, &profiling_info);
+			ZN_TEST_ASSERT(profiling_info.size() >= 4);
+			for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
+				ZN_TEST_ASSERT(generator_debug->has_node(info.node_id));
+			}
 		}
+
+		Ref<VoxelGeneratorGraph> generator;
+		{
+			generator.instantiate();
+			load_graph_with_expression_and_noises(**generator, nullptr);
+			VoxelGraphRuntime::CompilationResult result = generator->compile(false);
+			ZN_TEST_ASSERT_MSG(result.success,
+					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
+		}
+
+		ZN_TEST_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
 	}
+
+	// Making sure it didn't leak
 	ZN_TEST_ASSERT(zfnl.is_valid());
-	ZN_TEST_ASSERT(zfnl->reference_get_count() == 1);
+	ZN_TEST_ASSERT(zfnl->get_reference_count() == 1);
 }
 
 void test_voxel_graph_generator_texturing() {
@@ -721,6 +940,219 @@ void test_voxel_graph_equivalence_merging() {
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
 		ZN_TEST_ASSERT(value.f == 22);
 	}
+}
+
+/*void print_sdf_as_ascii(const VoxelBufferInternal &vb) {
+	Vector3i pos;
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
+		println(format("Y = {}", pos.y));
+		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
+			std::string s;
+			std::string s2;
+			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
+				const float sd = vb.get_voxel_f(pos, channel);
+				char c;
+				if (sd < -0.9f) {
+					c = '=';
+				} else if (sd < 0.0f) {
+					c = '-';
+				} else if (sd == 0.f) {
+					c = ' ';
+				} else if (sd < 0.9f) {
+					c = '+';
+				} else {
+					c = '#';
+				}
+				s += c;
+				s += " ";
+				std::string n = std::to_string(math::clamp(int(sd * 1000.f), -999, 999));
+				while (n.size() < 4) {
+					n = " " + n;
+				}
+				s2 += n;
+				s2 += " ";
+			}
+			s += " | ";
+			s += s2;
+			println(s);
+		}
+	}
+}*/
+
+/*bool find_different_voxel(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2, Vector3i *out_pos,
+		unsigned int *out_channel_index) {
+	ZN_ASSERT(vb1.get_size() == vb2.get_size());
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb1.get_size().y; ++pos.y) {
+		for (pos.z = 0; pos.z < vb1.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb1.get_size().x; ++pos.x) {
+				for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
+						++channel_index) {
+					const uint64_t v1 = vb1.get_voxel(pos, channel_index);
+					const uint64_t v2 = vb2.get_voxel(pos, channel_index);
+					if (v1 != v2) {
+						if (out_pos != nullptr) {
+							*out_pos = pos;
+						}
+						if (out_channel_index != nullptr) {
+							*out_channel_index = channel_index;
+						}
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}*/
+
+bool sd_equals_approx(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2) {
+	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBufferInternal::Depth depth = vb1.get_channel_depth(channel);
+	//const float error_margin = 1.1f * VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	// There can be a small difference due to scaling operations, so instead of an exact equality, we check approximate
+	// equality.
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb1.get_size().y; ++pos.y) {
+		for (pos.z = 0; pos.z < vb1.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb1.get_size().x; ++pos.x) {
+				switch (depth) {
+					case VoxelBufferInternal::DEPTH_8_BIT: {
+						const int sd1 = int8_t(vb1.get_voxel(pos, channel));
+						const int sd2 = int8_t(vb2.get_voxel(pos, channel));
+						if (Math::abs(sd1 - sd2) > 1) {
+							return false;
+						}
+					} break;
+					case VoxelBufferInternal::DEPTH_16_BIT: {
+						const int sd1 = int16_t(vb1.get_voxel(pos, channel));
+						const int sd2 = int16_t(vb2.get_voxel(pos, channel));
+						if (Math::abs(sd1 - sd2) > 1) {
+							return false;
+						}
+					} break;
+					case VoxelBufferInternal::DEPTH_32_BIT:
+					case VoxelBufferInternal::DEPTH_64_BIT: {
+						const float sd1 = vb1.get_voxel_f(pos, channel);
+						const float sd2 = vb2.get_voxel_f(pos, channel);
+						if (!Math::is_equal_approx(sd1, sd2)) {
+							return false;
+						}
+					} break;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+void test_voxel_graph_generate_block_with_input_sdf() {
+	static const int BLOCK_SIZE = 16;
+	static const float SPHERE_RADIUS = 6;
+
+	struct L {
+		static void load_graph(VoxelGeneratorGraph &g) {
+			// Just outputting the input
+			const uint32_t n_in_sdf = g.create_node(VoxelGeneratorGraph::NODE_INPUT_SDF, Vector2());
+			const uint32_t n_out_sdf = g.create_node(VoxelGeneratorGraph::NODE_OUTPUT_SDF, Vector2());
+			g.add_connection(n_in_sdf, 0, n_out_sdf, 0);
+		}
+
+		static void test(bool subdivision_enabled, int subdivision_size) {
+			// Create generator
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			L::load_graph(**generator);
+			const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+			ZN_TEST_ASSERT_MSG(compilation_result.success,
+					String("Failed to compile graph: {0}: {1}")
+							.format(varray(compilation_result.node_id, compilation_result.message)));
+
+			// Create buffer containing part of a sphere
+			VoxelBufferInternal buffer;
+			buffer.create(Vector3i(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE));
+			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+			const VoxelBufferInternal::Depth depth = buffer.get_channel_depth(channel);
+			const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
+			for (int z = 0; z < buffer.get_size().z; ++z) {
+				for (int x = 0; x < buffer.get_size().x; ++x) {
+					for (int y = 0; y < buffer.get_size().y; ++y) {
+						// Sphere at origin
+						const float sd = math::sdf_sphere(Vector3(x, y, z), Vector3(), SPHERE_RADIUS);
+						buffer.set_voxel_f(sd * sd_scale, Vector3i(x, y, z), channel);
+					}
+				}
+			}
+
+			// Make a backup before running the generator
+			VoxelBufferInternal buffer_before;
+			buffer_before.create(buffer.get_size());
+			buffer_before.copy_from(buffer);
+
+			generator->set_use_subdivision(subdivision_enabled);
+			generator->set_subdivision_size(subdivision_size);
+			generator->generate_block(VoxelGenerator::VoxelQueryData{ buffer, Vector3i(), 0 });
+
+			/*if (!buffer.equals(buffer_before)) {
+				println("Buffer before:");
+				print_sdf_as_ascii(buffer_before);
+				println("Buffer after:");
+				print_sdf_as_ascii(buffer);
+				Vector3i different_pos;
+				unsigned int different_channel;
+				if (find_different_voxel(buffer_before, buffer, &different_pos, &different_channel)) {
+					const uint64_t v1 = buffer_before.get_voxel(different_pos, different_channel);
+					const uint64_t v2 = buffer.get_voxel(different_pos, different_channel);
+					println(format("Different position: {}, v1={}, v2={}", different_pos, v1, v2));
+				}
+			}*/
+			ZN_TEST_ASSERT(sd_equals_approx(buffer, buffer_before));
+		}
+	};
+
+	L::test(false, BLOCK_SIZE / 2);
+	L::test(true, BLOCK_SIZE / 2);
+}
+
+void test_voxel_graph_sphere_on_plane() {
+	static const float RADIUS = 6.f;
+	struct L {
+		static Ref<VoxelGeneratorGraph> create(bool debug) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			load_graph_with_sphere_on_plane(**generator, RADIUS);
+			VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(debug);
+			ZN_TEST_ASSERT_MSG(compilation_result.success,
+					String("Failed to compile graph: {0}: {1}")
+							.format(varray(compilation_result.node_id, compilation_result.message)));
+			return generator;
+		}
+
+		static void test_locations(VoxelGeneratorGraph &g) {
+			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+			const float sd_sky_above_sphere = g.generate_single(Vector3i(0, RADIUS + 5, 0), channel).f;
+			const float sd_sky_away_from_sphere = g.generate_single(Vector3i(100, RADIUS + 5, 0), channel).f;
+			const float sd_ground_below_sphere = g.generate_single(Vector3i(0, -RADIUS - 5, 0), channel).f;
+			const float sd_ground_away_from_sphere = g.generate_single(Vector3i(100, -RADIUS - 5, 0), channel).f;
+			const float sd_at_sphere_center = g.generate_single(Vector3i(0, 0, 0), channel).f;
+			const float sd_in_sphere_but_higher_than_center =
+					g.generate_single(Vector3i(RADIUS / 2, RADIUS / 2, RADIUS / 2), channel).f;
+
+			ZN_TEST_ASSERT(sd_sky_above_sphere > 0.f);
+			ZN_TEST_ASSERT(sd_sky_away_from_sphere > 0.f);
+			ZN_TEST_ASSERT(sd_ground_below_sphere < 0.f);
+			ZN_TEST_ASSERT(sd_ground_away_from_sphere < 0.f);
+			ZN_TEST_ASSERT(sd_at_sphere_center < 0.f);
+			ZN_TEST_ASSERT(sd_in_sphere_but_higher_than_center < 0.f);
+			ZN_TEST_ASSERT(sd_in_sphere_but_higher_than_center > sd_at_sphere_center);
+		}
+	};
+	Ref<VoxelGeneratorGraph> generator_debug = L::create(true);
+	Ref<VoxelGeneratorGraph> generator = L::create(false);
+	ZN_ASSERT(check_graph_results_are_equal(**generator_debug, **generator));
+	L::test_locations(**generator_debug);
+	L::test_locations(**generator);
 }
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
@@ -1549,9 +1981,7 @@ void test_fast_noise_2() {
 	float nv = noise->get_noise_2d_single(Vector2(42, 666));
 	print_line(String("SIMD level: {0}").format(varray(FastNoise2::get_simd_level_name(noise->get_simd_level()))));
 	print_line(String("Noise: {0}").format(varray(nv)));
-	Ref<Image> im;
-	im.instantiate();
-	im->create(256, 256, false, Image::FORMAT_RGB8);
+	Ref<Image> im = Image::create_empty(256, 256, false, Image::FORMAT_RGB8);
 	noise->generate_image(im, false);
 	//im->save_png("zylann_test_fastnoise2.png");
 }
@@ -1628,10 +2058,10 @@ void test_run_blocky_random_tick() {
 
 	Callback cb(voxel_box);
 
-	Math::seed(131183);
-
+	RandomPCG random;
+	random.seed(131183);
 	VoxelToolTerrain::run_blocky_random_tick_static(
-			data, voxel_box, **library, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data, voxel_box, **library, random, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
 			});
@@ -2411,9 +2841,13 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_copy_3d_region_zxy);
 	VOXEL_TEST(test_voxel_graph_invalid_connection);
 	VOXEL_TEST(test_voxel_graph_generator_default_graph_compilation);
+	VOXEL_TEST(test_voxel_graph_sphere_on_plane);
+	VOXEL_TEST(test_voxel_graph_clamp_simplification);
 	VOXEL_TEST(test_voxel_graph_generator_expressions);
+	VOXEL_TEST(test_voxel_graph_generator_expressions_2);
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_voxel_graph_equivalence_merging);
+	VOXEL_TEST(test_voxel_graph_generate_block_with_input_sdf);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
 #ifdef TOOLS_ENABLED

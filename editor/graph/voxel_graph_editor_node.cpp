@@ -22,10 +22,23 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGeneratorGraph &gr
 	node_view->update_title(node_name, node_type.name);
 
 	node_view->_node_id = node_id;
+
+	const bool is_resizable =
+			node_type_id == VoxelGeneratorGraph::NODE_EXPRESSION || node_type_id == VoxelGeneratorGraph::NODE_COMMENT;
+
 	// Some nodes can have variable size title and layout. The node can get larger automatically, but doesn't shrink.
 	// So for now we make them resizable so users can adjust them.
-	node_view->set_resizable(node_type_id == VoxelGeneratorGraph::NODE_EXPRESSION);
+	if (is_resizable) {
+		node_view->set_resizable(is_resizable);
+
+		const Vector2 node_size = graph.get_node_gui_size(node_id);
+		node_view->set_size(node_size);
+	}
 	//node_view.rect_size = Vector2(200, 100)
+
+	if (node_type_id == VoxelGeneratorGraph::NODE_COMMENT) {
+		node_view->set_comment(true);
+	}
 
 	node_view->update_layout(graph);
 
@@ -87,12 +100,18 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 		remove_child(_preview);
 	}
 
+	if (_comment_label != nullptr) {
+		queue_free_node(_comment_label);
+		_comment_label = nullptr;
+	}
+
 	// Clear previous inputs and outputs
 	for (Node *row : _rows) {
 		remove_child(row);
 		queue_free_node(row);
 	}
 	_rows.clear();
+	_output_labels.clear();
 
 	clear_all_slots();
 
@@ -148,11 +167,27 @@ void VoxelGraphEditorNode::update_layout(const VoxelGeneratorGraph &graph) {
 	if (_preview != nullptr) {
 		add_child(_preview);
 	}
+
+	if (is_comment()) {
+		_comment_label = memnew(Label);
+		add_child(_comment_label);
+		_comment_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		_comment_label->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+		update_comment_text(graph);
+	}
+}
+
+void VoxelGraphEditorNode::update_comment_text(const VoxelGeneratorGraph &graph) {
+	ERR_FAIL_COND(_comment_label == nullptr);
+	const String text = graph.get_node_param(_node_id, 0);
+	_comment_label->set_text(text);
 }
 
 void VoxelGraphEditorNode::update_title(StringName node_name, String node_type_name) {
 	if (node_name == StringName()) {
 		set_title(node_type_name);
+	} else if (is_comment()) {
+		set_title(String(node_name));
 	} else {
 		set_title(String("{0} ({1})").format(varray(node_name, node_type_name)));
 	}

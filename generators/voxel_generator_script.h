@@ -20,7 +20,7 @@ public:
 	int get_used_channels_mask() const override;
 
 protected:
-// TODO GDX: Need information on how to bind virtual functions, can't bind them at the moment
+// TODO GDX: Defining custom virtual functions is not supported...
 #if defined(ZN_GODOT)
 	GDVIRTUAL3(_generate_block, Ref<gd::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?

@@ -185,9 +185,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 	const double min_value = 0.0;
 	const double max_value = 10.0;
 
-	Ref<Image> im;
-	im.instantiate();
-	im->create(size_x, size_z, false, Image::FORMAT_RGB8);
+	Ref<Image> im = Image::create_empty(size_x, size_z, false, Image::FORMAT_RGB8);
 
 	for (int py = 0; py < size_z; ++py) {
 		for (int px = 0; px < size_x; ++px) {

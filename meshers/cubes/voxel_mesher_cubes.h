@@ -131,7 +131,7 @@ private:
 	FixedArray<Ref<Material>, MATERIAL_COUNT> _materials;
 
 	// Work cache
-	static thread_local Cache _cache;
+	static Cache &get_tls_cache();
 };
 
 } // namespace zylann::voxel

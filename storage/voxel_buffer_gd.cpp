@@ -214,10 +214,8 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 }
 
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb) {
-	Ref<Image> im;
-	im.instantiate();
 	const Vector3i size = vb.get_size();
-	im->create(size.x, size.z, false, Image::FORMAT_RGB8);
+	Ref<Image> im = Image::create_empty(size.x, size.z, false, Image::FORMAT_RGB8);
 	Vector3i pos;
 	for (pos.z = 0; pos.z < size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < size.x; ++pos.x) {
@@ -240,9 +238,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(float scale, int y) const {
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(y < 0 || y >= res.y, Ref<Image>());
 
-	Ref<Image> im;
-	im.instantiate();
-	im->create(res.x, res.z, false, Image::FORMAT_RGB8);
+	Ref<Image> im = Image::create_empty(res.x, res.z, false, Image::FORMAT_RGB8);
 
 	const Color nega_col(0.5f, 0.5f, 1.0f);
 	const Color posi_col(1.0f, 0.6f, 0.1f);

@@ -68,12 +68,14 @@ public:
 	//-------------------------
 	// Internal use
 
-	_FORCE_INLINE_ bool has_voxel(unsigned int id) const {
+	inline bool has_voxel(unsigned int id) const {
 		return id < _voxel_types.size() && _voxel_types[id].is_valid();
 	}
 
-	_FORCE_INLINE_ const VoxelBlockyModel &get_voxel_const(unsigned int id) const {
-		return **_voxel_types[id];
+	inline const VoxelBlockyModel &get_voxel_const(unsigned int id) const {
+		const Ref<VoxelBlockyModel> &model = _voxel_types[id];
+		ZN_ASSERT(model.is_valid());
+		return **model;
 	}
 
 	const BakedData &get_baked_data() const {

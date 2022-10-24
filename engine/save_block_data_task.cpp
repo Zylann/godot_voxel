@@ -75,7 +75,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		}
 		_voxels = nullptr;
 		const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
-		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod };
+		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);
 	}
 
@@ -87,7 +87,8 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 		ZN_PRINT_VERBOSE(format("Saving instance block {} lod {} with data {}", _position, _lod, _instances.get()));
 
-		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod };
+		VoxelStream::InstancesQueryData instances_query{ std::move(_instances), _position, _lod,
+			VoxelStream::RESULT_ERROR };
 		stream->save_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 	}
 

@@ -86,7 +86,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
 			const PortLocation src = *it;
 			Node &src_node = get_node(src.node_id);
-			uint32_t i = src_node.find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
+			const uint32_t i = src_node.find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
 			ZN_ASSERT(i != NULL_INDEX);
 			std::vector<PortLocation> &connections = src_node.outputs[src.port_index].connections;
 			connections.erase(connections.begin() + i);
@@ -99,7 +99,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 		for (auto it = p.connections.begin(); it != p.connections.end(); ++it) {
 			const PortLocation dst = *it;
 			Node &dst_node = get_node(dst.node_id);
-			uint32_t i = dst_node.find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
+			const uint32_t i = dst_node.find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
 			ZN_ASSERT(i != NULL_INDEX);
 			std::vector<PortLocation> &connections = dst_node.inputs[dst.port_index].connections;
 			connections.erase(connections.begin() + i);
@@ -162,6 +162,8 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 	ZN_ASSERT_RETURN_MSG(!has_path(dst.node_id, src.node_id), "Cannot add connection that would create a cycle.");
 	Node &src_node = get_node(src.node_id);
 	Node &dst_node = get_node(dst.node_id);
+	ZN_ASSERT_RETURN_MSG(src.port_index < src_node.outputs.size(), "Source port doesn't exist");
+	ZN_ASSERT_RETURN_MSG(dst.port_index < dst_node.inputs.size(), "Destination port doesn't exist");
 	ZN_ASSERT_RETURN_MSG(
 			dst_node.inputs[dst.port_index].connections.size() == 0, "Destination node's port is already connected");
 	src_node.outputs[src.port_index].connections.push_back(dst);
@@ -171,11 +173,11 @@ void ProgramGraph::connect(PortLocation src, PortLocation dst) {
 bool ProgramGraph::disconnect(PortLocation src, PortLocation dst) {
 	Node &src_node = get_node(src.node_id);
 	Node &dst_node = get_node(dst.node_id);
-	uint32_t src_i = src_node.find_output_connection(src.port_index, dst);
+	const uint32_t src_i = src_node.find_output_connection(src.port_index, dst);
 	if (src_i == NULL_INDEX) {
 		return false;
 	}
-	uint32_t dst_i = dst_node.find_input_connection(src, dst.port_index);
+	const uint32_t dst_i = dst_node.find_input_connection(src, dst.port_index);
 	ZN_ASSERT(dst_i != NULL_INDEX);
 	std::vector<PortLocation> &src_connections = src_node.outputs[src.port_index].connections;
 	std::vector<PortLocation> &dst_connections = dst_node.inputs[dst.port_index].connections;
@@ -309,12 +311,8 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uin
 	const Node &node = get_node(node_id);
 	const size_t begin = deps.size();
 
-	for (uint32_t ii = 0; ii < node.inputs.size(); ++ii) {
-		const Port &p = node.inputs[ii];
-
-		for (auto cit = p.connections.begin(); cit != p.connections.end(); ++cit) {
-			const PortLocation src = *cit;
-
+	for (const Port &p : node.inputs) {
+		for (const PortLocation src : p.connections) {
 			// A node can have two connections to the same destination node
 			if (range_contains(deps, src.node_id, begin, deps.size())) {
 				continue;

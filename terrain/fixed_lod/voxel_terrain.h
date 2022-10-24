@@ -205,6 +205,8 @@ private:
 
 	// Called each time voxels are edited within a region.
 	GDVIRTUAL2(_on_area_edited, Vector3i, Vector3i);
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: Defining custom virtual functions is not supported...
 #endif
 
 	static void _bind_methods();

@@ -83,7 +83,7 @@ def get_sources(env, is_editor_build):
         # Thirdparty
 
         "thirdparty/lz4/*.c",
-        "thirdparty/sqlite/*.c",
+        # "thirdparty/sqlite/*.c",
         "thirdparty/meshoptimizer/*.cpp"
     ]
 
@@ -116,3 +116,4 @@ def get_sources(env, is_editor_build):
     sources = process_glob_paths(sources)
 
     return sources
+

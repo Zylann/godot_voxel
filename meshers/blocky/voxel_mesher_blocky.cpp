@@ -6,6 +6,8 @@
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/span.h"
+// TODO GDX: String has no `operator+=`
+#include "../../util/godot/string.h"
 
 namespace zylann::voxel {
 
@@ -44,7 +46,10 @@ inline bool contributes_to_ao(const VoxelBlockyLibrary::BakedData &lib, uint32_t
 	return true;
 }
 
-static thread_local std::vector<int> tls_index_offsets;
+std::vector<int> &get_tls_index_offsets() {
+	static thread_local std::vector<int> tls_index_offsets;
+	return tls_index_offsets;
+}
 
 } // namespace
 
@@ -71,7 +76,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 
-	std::vector<int> &index_offsets = tls_index_offsets;
+	std::vector<int> &index_offsets = get_tls_index_offsets();
 	index_offsets.clear();
 	index_offsets.resize(out_arrays_per_material.size(), 0);
 
@@ -402,13 +407,16 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-thread_local VoxelMesherBlocky::Cache VoxelMesherBlocky::_cache;
-
 VoxelMesherBlocky::VoxelMesherBlocky() {
 	set_padding(PADDING, PADDING);
 }
 
 VoxelMesherBlocky::~VoxelMesherBlocky() {}
+
+VoxelMesherBlocky::Cache &VoxelMesherBlocky::get_tls_cache() {
+	thread_local Cache cache;
+	return cache;
+}
 
 void VoxelMesherBlocky::set_library(Ref<VoxelBlockyLibrary> library) {
 	RWLockWrite wlock(_parameters_lock);
@@ -450,7 +458,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 	ERR_FAIL_COND(params.library.is_null());
 
-	Cache &cache = _cache;
+	Cache &cache = get_tls_cache();
 
 	std::vector<Arrays> &arrays_per_material = cache.arrays_per_material;
 	for (unsigned int i = 0; i < arrays_per_material.size(); ++i) {
@@ -638,22 +646,28 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 	Ref<VoxelBlockyLibrary> library = get_library();
 
 	if (library.is_null()) {
-		out_warnings.append(ZN_TTR(String("{0} has no {1} assigned.")
-										   .format(varray(VoxelMesherBlocky::get_class_static(),
-												   VoxelBlockyLibrary::get_class_static()))));
+		out_warnings.append(
+				String(ZN_TTR("{0} has no {1} assigned."))
+						.format(varray(VoxelMesherBlocky::get_class_static(), VoxelBlockyLibrary::get_class_static())));
 		return;
 	}
 
 	if (library->get_voxel_count() == 0) {
 		out_warnings.append(
-				ZN_TTR(String("The {0} assigned to {1} has an empty list of {2}s.")
-								.format(varray(VoxelBlockyLibrary::get_class_static(),
-										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
+				String(ZN_TTR("The {0} assigned to {1} has an empty list of {2}s."))
+						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
+								VoxelBlockyModel::get_class_static())));
 		return;
 	}
 
+	std::vector<int> null_indices;
+
 	bool has_solid_model = false;
 	for (unsigned int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
+		if (!library->has_voxel(i)) {
+			null_indices.push_back(i);
+			continue;
+		}
 		const VoxelBlockyModel &model = library->get_voxel_const(i);
 		switch (model.get_geometry_type()) {
 			case VoxelBlockyModel::GEOMETRY_NONE:
@@ -671,9 +685,22 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 	}
 	if (!has_solid_model) {
 		out_warnings.append(
-				ZN_TTR(String("The {0} assigned to {1} only has empty {2}s.")
-								.format(varray(VoxelBlockyLibrary::get_class_static(),
-										VoxelMesherBlocky::get_class_static(), VoxelBlockyModel::get_class_static()))));
+				String(ZN_TTR("The {0} assigned to {1} only has empty {2}s."))
+						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
+								VoxelBlockyModel::get_class_static())));
+	}
+
+	if (null_indices.size() > 0) {
+		String indices_str;
+		for (unsigned int i = 0; i < null_indices.size(); ++i) {
+			if (i > 0) {
+				indices_str += ", ";
+			}
+			indices_str += String::num_int64(null_indices[i]);
+		}
+		out_warnings.append(String(ZN_TTR("The {0} assigned to {1} has null model entries: {2}"))
+									.format(varray(VoxelBlockyLibrary::get_class_static(),
+											VoxelMesherBlocky::get_class_static(), indices_str)));
 	}
 }
 

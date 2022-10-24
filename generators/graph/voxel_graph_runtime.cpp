@@ -80,7 +80,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 	ZN_PROFILE_SCOPE();
 
 	// Range analysis results must have been computed
-	ERR_FAIL_COND(state.ranges.size() == 0);
+	ZN_ASSERT_RETURN(state.ranges.size() != 0);
 
 	const Program &program = _program;
 	const DependencyGraph &graph = program.dependency_graph;
@@ -114,7 +114,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 		// Check needed because Godot never compiles with `_DEBUG`...
 #ifdef DEBUG_ENABLED
-		CRASH_COND(node_index >= graph.nodes.size());
+		ZN_ASSERT(node_index < graph.nodes.size());
 #endif
 		const DependencyGraph::Node &node = graph.nodes[node_index];
 
@@ -144,7 +144,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 	if (debug) {
 		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
-		CRASH_COND(debug_nodes.size() > 0);
+		ZN_ASSERT(debug_nodes.size() == 0);
 
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
 			const ProcessResult res = results[node_index];
@@ -169,6 +169,9 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 
 	Span<const uint16_t> operations(program.operations.data(), 0, program.operations.size());
 	bool xzy_start_not_assigned = true;
+
+	static thread_local std::vector<ExecutionMap::ConstantFill> tls_constant_fills;
+	tls_constant_fills.clear();
 
 	// Now we have to fill buffers with the local constants we may have found.
 	// We iterate nodes primarily because we have to preserve a certain order relative to outer loop optimization.
@@ -196,18 +199,24 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 						continue;
 					}
 
-					CRASH_COND(buffer.is_binding);
+					ZN_ASSERT(!buffer.is_binding);
 
 					// The node is considered skippable, which means its outputs are either locally constant or unused.
 					// Unused buffers can be left as-is, but local constants must be filled in.
 					if (buffer.local_users_count > 0) {
 						const math::Interval range = state.ranges[output_address];
 						// If this interval is not a single value then the node should not have been skippable
-						CRASH_COND(!range.is_single_value());
+						ZN_ASSERT(range.is_single_value());
 						const float v = range.min;
-						for (unsigned int j = 0; j < buffer.size; ++j) {
-							buffer.data[j] = v;
-						}
+						// When we re-use buffer data in multiple nodes, this optimization cannot work reliably
+						// if we were to fill constant data here. It is possible that the data pointer
+						// is written to by another operation that re-uses it prior to the skippable node.
+						// This will overwrite the values we were expecting.
+						// To avoid this problem defer the filling to run just before the first node reading the buffer.
+						// The reason we do it is to avoid having to rewrite operations for every
+						// combination of constant arguments vs buffers.
+						ZN_ASSERT(buffer.data != nullptr);
+						tls_constant_fills.push_back(ExecutionMap::ConstantFill{ buffer.data, v });
 					}
 				}
 			} break;
@@ -216,10 +225,17 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 				if (xzy_start_not_assigned && node.op_address >= program.xzy_start_op_address) {
 					// This should be correct as long as the list of nodes in the graph follows the same re-ordered
 					// optimization done in `compile()` such that all nodes not depending on Y come first
-					execution_map.xzy_start_index = execution_map.operation_addresses.size();
+					execution_map.xzy_start_index = execution_map.operations.size();
 					xzy_start_not_assigned = false;
 				}
-				execution_map.operation_addresses.push_back(node.op_address);
+
+				execution_map.operations.push_back(
+						ExecutionMap::OperationInfo{ node.op_address, uint16_t(tls_constant_fills.size()) });
+
+				for (const ExecutionMap::ConstantFill &cf : tls_constant_fills) {
+					execution_map.constant_fills.push_back(cf);
+				}
+
 				break;
 
 			default:
@@ -236,89 +252,86 @@ void VoxelGraphRuntime::generate_single(State &state, Vector3f position_f, const
 }
 
 void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const {
-	const unsigned int old_buffer_count = state.buffers.size();
-	if (_program.buffer_count > state.buffers.size()) {
-		state.buffers.resize(_program.buffer_count);
+	// Allocate memory
+
+	const unsigned int old_buffer_data_count = state.buffer_datas.size();
+	if (state.buffer_datas.size() < _program.buffer_data_count) {
+		// Create more buffer datas.
+		state.buffer_datas.resize(_program.buffer_data_count);
+		for (unsigned int i = old_buffer_data_count; i < state.buffer_datas.size(); ++i) {
+			BufferData &bd = state.buffer_datas[i];
+			ZN_ASSERT(bd.data == nullptr);
+			// These are new items, we always allocate.
+			bd.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
+			bd.capacity = buffer_size;
+		}
 	}
 
-	// Note: this must be after we resize the vector
+	if (state.buffer_size < buffer_size) {
+		// Make existing buffer datas larger.
+		for (unsigned int i = 0; i < old_buffer_data_count; ++i) {
+			BufferData &bd = state.buffer_datas[i];
+			ZN_ASSERT(bd.data != nullptr);
+			if (bd.capacity < buffer_size) {
+				// These are existing items, we always realloc.
+				bd.data = reinterpret_cast<float *>(memrealloc(bd.data, buffer_size * sizeof(float)));
+				bd.capacity = buffer_size;
+			}
+		}
+		// TODO Not sure if worth keeping capacity at state level. Buffer datas can have varying capacities depending on
+		// which multiple graphs were prepared before.
+		state.buffer_capacity = buffer_size;
+	}
+
+	// Initialize buffers
+
+#if DEBUG_ENABLED
+	for (const Buffer &buffer : state.buffers) {
+		if (buffer.is_binding) {
+			// Forgot to unbind?
+			ZN_ASSERT(buffer.data == nullptr);
+		}
+	}
+#endif
+
+	state.buffers.resize(_program.buffer_count);
+	state.ranges.resize(_program.buffer_count);
+	// Note: this must be after we resize the vector.
+	// Doing this mainly because Godot doesn't compile with standard library boundary checks...
 	Span<Buffer> buffers = to_span(state.buffers);
+	Span<BufferData> buffer_datas = to_span(state.buffer_datas);
+	Span<math::Interval> ranges = to_span(state.ranges);
+
 	state.buffer_size = buffer_size;
 
-	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
-		const BufferSpec &buffer_spec = *it;
+	for (const BufferSpec &buffer_spec : _program.buffer_specs) {
 		Buffer &buffer = buffers[buffer_spec.address];
 
-		if (buffer_spec.is_binding) {
-			if (buffer.is_binding) {
-				// Forgot to unbind?
-				ZN_ASSERT(buffer.data == nullptr);
-			} else if (buffer.data != nullptr) {
-				// Deallocate this buffer if it wasnt a binding and contained something
-				memfree(buffer.data);
-				buffer.data = nullptr;
-			}
+		if (buffer_spec.has_data) {
+			ZN_ASSERT(!buffer_spec.is_binding);
+			BufferData &bd = buffer_datas[buffer_spec.data_index];
+			ZN_ASSERT(bd.capacity >= buffer_size);
+			buffer.data = bd.data;
+		} else {
+			ZN_ASSERT(buffer_spec.is_binding || buffer_spec.is_constant);
+			buffer.data = nullptr;
 		}
 
 		buffer.is_binding = buffer_spec.is_binding;
-	}
-
-	// Allocate more buffers if needed
-	if (old_buffer_count < state.buffers.size()) {
-		for (size_t buffer_index = old_buffer_count; buffer_index < buffers.size(); ++buffer_index) {
-			Buffer &buffer = buffers[buffer_index];
-			// TODO Put all bindings at the beginning. This would avoid the branch.
-			if (buffer.is_binding) {
-				// These are supposed to be setup already
-				continue;
-			}
-			// We don't expect previous stuff in those buffers since we just created their slots
-			ZN_ASSERT(buffer.data == nullptr);
-			// TODO Use pool?
-			// New buffers get an up-to-date size, but must also comply with common capacity
-			const unsigned int bs = math::max(state.buffer_capacity, buffer_size);
-			buffer.data = reinterpret_cast<float *>(memalloc(bs * sizeof(float)));
-			buffer.capacity = bs;
-		}
-	}
-
-	// Make old buffers larger if needed
-	if (state.buffer_capacity < buffer_size) {
-		for (size_t buffer_index = 0; buffer_index < old_buffer_count; ++buffer_index) {
-			Buffer &buffer = buffers[buffer_index];
-			if (buffer.is_binding) {
-				continue;
-			}
-			if (buffer.data == nullptr) {
-				buffer.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
-			} else {
-				buffer.data = reinterpret_cast<float *>(memrealloc(buffer.data, buffer_size * sizeof(float)));
-			}
-			buffer.capacity = buffer_size;
-		}
-		state.buffer_capacity = buffer_size;
-	}
-	for (auto it = state.buffers.begin(); it != state.buffers.end(); ++it) {
-		Buffer &buffer = *it;
+		buffer.is_constant = buffer_spec.is_constant;
 		buffer.size = buffer_size;
-		buffer.is_constant = false;
-	}
+		buffer.buffer_data_index = buffer_spec.data_index;
 
-	state.ranges.resize(_program.buffer_count);
-
-	// Always reset constants because we don't know if we'll run the same program as before...
-	for (auto it = _program.buffer_specs.cbegin(); it != _program.buffer_specs.cend(); ++it) {
-		const BufferSpec &bs = *it;
-		Buffer &buffer = buffers[bs.address];
-		if (bs.is_constant) {
-			buffer.is_constant = true;
-			buffer.constant_value = bs.constant_value;
-			CRASH_COND(buffer.size > buffer.capacity);
-			for (unsigned int j = 0; j < buffer_size; ++j) {
-				buffer.data[j] = bs.constant_value;
+		// Always reset constants because we don't know if we'll run the same program as before...
+		if (buffer_spec.is_constant) {
+			buffer.constant_value = buffer_spec.constant_value;
+			// Data can be null if it was determined that the nodes using this port don't require a buffer.
+			if (buffer.data != nullptr) {
+				for (unsigned int i = 0; i < buffer_size; ++i) {
+					buffer.data[i] = buffer_spec.constant_value;
+				}
 			}
-			CRASH_COND(bs.address >= state.ranges.size());
-			state.ranges[bs.address] = math::Interval::from_single_value(bs.constant_value);
+			ranges[buffer_spec.address] = math::Interval::from_single_value(buffer_spec.constant_value);
 		}
 	}
 
@@ -327,7 +340,7 @@ void VoxelGraphRuntime::prepare_state(State &state, unsigned int buffer_size, bo
 	// 	for (unsigned int i = 0; i < state.buffers.size(); ++i) {
 	// 		Buffer &buffer = state.buffers[i];
 	// 		if (!buffer.is_constant && !buffer.is_binding) {
-	// 			CRASH_COND(buffer.data == nullptr);
+	// 			ZN_ASSERT(buffer.data != nullptr);
 	// 			for (unsigned int j = 0; j < buffer.size; ++j) {
 	// 				buffer.data[j] = -969696.f;
 	// 			}
@@ -386,19 +399,19 @@ bool VoxelGraphRuntime::has_input(unsigned int node_type) const {
 }
 
 void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z,
-		Span<float> in_sdf, bool skip_xz, const ExecutionMap *execution_map) const {
+		Span<float> in_sdf, bool skip_xz, const ExecutionMap *p_execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
 			Buffer &buffer = buffers[a];
-			CRASH_COND(!buffer.is_binding);
+			ZN_ASSERT(buffer.is_binding);
 			buffer.data = d.data();
 			buffer.size = d.size();
 		}
 
 		static inline void unbind_buffer(Span<Buffer> buffers, int a) {
 			Buffer &buffer = buffers[a];
-			CRASH_COND(!buffer.is_binding);
+			ZN_ASSERT(buffer.is_binding);
 			buffer.data = nullptr;
 		}
 	};
@@ -407,26 +420,28 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
-	CRASH_COND(!(in_x.size() == in_y.size() && in_y.size() == in_z.size()));
+	ZN_ASSERT(in_x.size() == in_y.size() && in_y.size() == in_z.size());
 	if (_program.sdf_input_address != -1) {
-		CRASH_COND(in_sdf.size() != in_x.size());
+		ZN_ASSERT(in_sdf.size() == in_x.size());
 	}
 #endif
 
 #ifdef TOOLS_ENABLED
 	const unsigned int buffer_size = in_x.size();
-	ERR_FAIL_COND(state.buffers.size() < _program.buffer_count);
-	ERR_FAIL_COND(state.buffers.size() == 0);
-	ERR_FAIL_COND(state.buffer_size < buffer_size);
-	ERR_FAIL_COND(state.buffers[0].size < buffer_size);
+	ZN_ASSERT_RETURN(state.buffers.size() >= _program.buffer_count);
+	ZN_ASSERT_RETURN(state.buffers.size() != 0);
+	ZN_ASSERT_RETURN(state.buffer_size >= buffer_size);
+	ZN_ASSERT_RETURN(state.buffers[0].size >= buffer_size);
 #ifdef DEBUG_ENABLED
 	for (size_t i = 0; i < state.buffers.size(); ++i) {
 		const Buffer &b = state.buffers[i];
-		CRASH_COND(b.size < buffer_size);
-		CRASH_COND(b.size > state.buffer_capacity);
-		CRASH_COND(b.size != state.buffer_size);
-		if (!b.is_binding) {
-			CRASH_COND(b.size > b.capacity);
+		ZN_ASSERT(b.size >= buffer_size);
+		ZN_ASSERT(b.size <= state.buffer_capacity);
+		ZN_ASSERT(b.size == state.buffer_size);
+		if (b.data != nullptr && !b.is_binding) {
+			ZN_ASSERT(b.buffer_data_index < state.buffer_datas.size());
+			const BufferData &bd = state.buffer_datas[b.buffer_data_index];
+			ZN_ASSERT(b.size <= bd.capacity);
 		}
 	}
 #endif
@@ -450,13 +465,13 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_addresses = execution_map != nullptr
-			? to_span_const(execution_map->operation_addresses)
-			: to_span_const(_program.default_execution_map.operation_addresses);
-	if (skip_xz && op_addresses.size() > 0) {
-		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index
-															 : _program.default_execution_map.xzy_start_index;
-		op_addresses = op_addresses.sub(offset);
+	const ExecutionMap &execution_map = p_execution_map != nullptr ? *p_execution_map : _program.default_execution_map;
+	Span<const ExecutionMap::OperationInfo> operation_infos = to_span(execution_map.operations);
+	const Span<const ExecutionMap::ConstantFill> constant_fills = to_span(execution_map.constant_fills);
+
+	if (skip_xz && operation_infos.size() > 0) {
+		const unsigned int offset = execution_map.xzy_start_index;
+		operation_infos = operation_infos.sub(offset);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -464,8 +479,21 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 	const bool profile = state.debug_profiler_times.size() > 0;
 #endif
 
-	for (unsigned int execution_map_index = 0; execution_map_index < op_addresses.size(); ++execution_map_index) {
-		unsigned int pc = op_addresses[execution_map_index];
+	unsigned int constant_fill_index = 0;
+
+	for (unsigned int execution_map_index = 0; execution_map_index < operation_infos.size(); ++execution_map_index) {
+		const ExecutionMap::OperationInfo op_info = operation_infos[execution_map_index];
+
+		for (unsigned int i = 0; i < op_info.constant_fill_count; ++i) {
+			const ExecutionMap::ConstantFill &cf = constant_fills[constant_fill_index];
+			ZN_ASSERT(cf.data != nullptr);
+			for (unsigned int j = 0; j < state.buffer_size; ++j) {
+				cf.data[j] = cf.value;
+			}
+			++constant_fill_index;
+		}
+
+		unsigned int pc = op_info.address;
 
 		const uint16_t opid = operations[pc++];
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(opid);
@@ -481,8 +509,8 @@ void VoxelGraphRuntime::generate_set(State &state, Span<float> in_x, Span<float>
 		Span<const uint8_t> params = read_params(operations, pc);
 
 		// TODO Buffers will stay bound if this error occurs!
-		ERR_FAIL_COND(node_type.process_buffer_func == nullptr);
-		ProcessBufferContext ctx(inputs, outputs, params, buffers, execution_map != nullptr);
+		ZN_ASSERT_RETURN(node_type.process_buffer_func != nullptr);
+		ProcessBufferContext ctx(inputs, outputs, params, buffers, p_execution_map != nullptr);
 		node_type.process_buffer_func(ctx);
 
 #ifdef TOOLS_ENABLED
@@ -554,13 +582,13 @@ void VoxelGraphRuntime::analyze_range(
 
 		Span<const uint8_t> params = read_params(operations, pc);
 
-		ERR_FAIL_COND(node_type.range_analysis_func == nullptr);
+		ZN_ASSERT_RETURN(node_type.range_analysis_func != nullptr);
 		RangeAnalysisContext ctx(inputs, outputs, params, ranges, buffers);
 		node_type.range_analysis_func(ctx);
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
 		// If this fails, the program is ill-formed
-		CRASH_COND(read<uint16_t>(_program, pc) != VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
+		ZN_ASSERT(read<uint16_t>(_program, pc) == VOXEL_DEBUG_GRAPH_PROG_SENTINEL);
 #endif
 	}
 }

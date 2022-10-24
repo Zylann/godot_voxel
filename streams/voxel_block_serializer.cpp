@@ -23,15 +23,19 @@ const unsigned int BLOCK_TRAILING_MAGIC_SIZE = 4;
 const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
 
 // Temporary data buffers, re-used to reduce allocations
-thread_local std::vector<uint8_t> tls_data;
-thread_local std::vector<uint8_t> tls_compressed_data;
-thread_local std::vector<uint8_t> tls_metadata_tmp;
+
+std::vector<uint8_t> &get_tls_metadata_tmp() {
+	thread_local std::vector<uint8_t> tls_metadata_tmp;
+	return tls_metadata_tmp;
+}
 
 std::vector<uint8_t> &get_tls_data() {
+	thread_local std::vector<uint8_t> tls_data;
 	return tls_data;
 }
 
 std::vector<uint8_t> &get_tls_compressed_data() {
+	thread_local std::vector<uint8_t> tls_compressed_data;
 	return tls_compressed_data;
 }
 
@@ -269,8 +273,8 @@ SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
 	//
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &dst_data = tls_data;
-	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
+	std::vector<uint8_t> &dst_data = get_tls_data();
+	std::vector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
 	dst_data.clear();
 	metadata_tmp.clear();
 
@@ -552,7 +556,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &metadata_tmp = tls_metadata_tmp;
+	std::vector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
 
 	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
@@ -657,7 +661,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &compressed_data = tls_compressed_data;
+	std::vector<uint8_t> &compressed_data = get_tls_compressed_data();
 
 	SerializeResult res = serialize(voxel_buffer);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
@@ -673,7 +677,7 @@ SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer) 
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &data = tls_data;
+	std::vector<uint8_t> &data = get_tls_data();
 
 	const bool res = CompressedData::decompress(p_data, data);
 	ERR_FAIL_COND_V(!res, false);
@@ -690,7 +694,7 @@ bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelB
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 
-	std::vector<uint8_t> &compressed_data = tls_compressed_data;
+	std::vector<uint8_t> &compressed_data = get_tls_compressed_data();
 
 	compressed_data.resize(size_to_read);
 	const unsigned int read_size = get_buffer(f, to_span(compressed_data));
