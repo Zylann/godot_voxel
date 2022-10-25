@@ -57,6 +57,20 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	struct L {
+		static void try_add_input(std::vector<VoxelGraphFunction::Port> &added_ports,
+				VoxelGraphFunction::NodeTypeID type_id, String name) {
+			for (VoxelGraphFunction::Port &p : added_ports) {
+				if (p.type == type_id) {
+					// Already added
+					return;
+				}
+			}
+			added_ports.push_back(VoxelGraphFunction::Port());
+			VoxelGraphFunction::Port &port = added_ports.back();
+			port.name = name;
+			port.type = type_id;
+		}
+
 		static void try_add_port(const ProgramGraph::Node &node, std::vector<VoxelGraphFunction::Port> &added_ports,
 				VoxelGraphFunction::NodeTypeID custom_type, const VoxelGraphNodeDB::NodeType &type) {
 			String name;
@@ -117,10 +131,26 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 
 	graph.for_each_node_const([&type_db, &inputs, &outputs](const ProgramGraph::Node &node) {
 		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+
 		if (type.category == VoxelGraphNodeDB::CATEGORY_INPUT) {
 			L::try_add_port(node, inputs, VoxelGraphFunction::NODE_CUSTOM_INPUT, type);
+
 		} else if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			L::try_add_port(node, outputs, VoxelGraphFunction::NODE_CUSTOM_OUTPUT, type);
+
+		} else if (node.autoconnect_default_inputs) {
+			// The input node is implicit
+			for (const ProgramGraph::Port &port : node.inputs) {
+				VoxelGraphFunction::NodeTypeID type_id;
+				// If the input isn't connected and has an autoconnect hint
+				if (port.connections.size() == 0 &&
+						VoxelGraphFunction::try_get_node_type_id_from_auto_connect(
+								VoxelGraphFunction::AutoConnect(port.autoconnect_hint), type_id)) {
+					const VoxelGraphNodeDB::NodeType &type = type_db.get_type(type_id);
+					ZN_ASSERT(type.outputs.size() == 1);
+					L::try_add_input(inputs, type_id, type.outputs[0].name);
+				}
+			}
 		}
 	});
 
@@ -149,18 +179,9 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 				if (fport.is_custom()) {
 					port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_NONE;
 				} else {
-					switch (fport.type) {
-						case VoxelGraphFunction::NODE_INPUT_X:
-							port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_X;
-							break;
-						case VoxelGraphFunction::NODE_INPUT_Y:
-							port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_Y;
-							break;
-						case VoxelGraphFunction::NODE_INPUT_Z:
-							port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_Z;
-							break;
-						default:
-							break;
+					VoxelGraphFunction::AutoConnect ac;
+					if (VoxelGraphFunction::try_get_auto_connect_from_node_type_id(fport.type, ac)) {
+						port.autoconnect_hint = ac;
 					}
 				}
 				ports.push_back(port);
@@ -170,6 +191,8 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 
 	L::set_ports(node.inputs, input_definitions);
 	L::set_ports(node.outputs, func->get_output_definitions());
+
+	node.autoconnect_default_inputs = true;
 
 	// TODO Function parameters
 }
@@ -213,7 +236,10 @@ uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, u
 }
 
 uint32_t VoxelGraphFunction::create_function_node(Ref<VoxelGraphFunction> func, Vector2 position, uint32_t p_id) {
-	ERR_FAIL_COND_V(func.is_null(), ProgramGraph::NULL_ID);
+	ERR_FAIL_COND_V_MSG(func.is_null(), ProgramGraph::NULL_ID, "Cannot add null function");
+	ERR_FAIL_COND_V_MSG(func.ptr() == this, ProgramGraph::NULL_ID, "Cannot add function to itself");
+	ERR_FAIL_COND_V_MSG(func->contains_reference_to_function(*this), ProgramGraph::NULL_ID,
+			"Cannot add function indirectly referencing itself");
 	const uint32_t id = create_node(VoxelGraphFunction::NODE_FUNCTION, position, p_id);
 	ERR_FAIL_COND_V(id == ProgramGraph::NULL_ID, ProgramGraph::NULL_ID);
 	ProgramGraph::Node &node = _graph.get_node(id);
@@ -788,11 +814,6 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 
 		node->gui_size = node_data.get("gui_size", Vector2());
 
-		Variant auto_connect_v = node_data.get("auto_connect", Variant());
-		if (auto_connect_v != Variant()) {
-			node->autoconnect_default_inputs = auto_connect_v;
-		}
-
 		if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
 			const VoxelGraphNodeDB::NodeType &ntype = type_db.get_type(type_id);
 			ZN_ASSERT(ntype.params.size() >= 1);
@@ -809,6 +830,11 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 			// For now it's probably ok as long as the user doesn't save over
 
 			// TODO Function inputs are user-named, but they could conflict with other keys in this save format
+		}
+
+		Variant auto_connect_v = node_data.get("auto_connect", Variant());
+		if (auto_connect_v != Variant()) {
+			node->autoconnect_default_inputs = auto_connect_v;
 		}
 
 		// Can't iterate using `next()`, because in GDExtension, there doesn't seem to be a way to do so.
@@ -978,6 +1004,43 @@ unsigned int VoxelGraphFunction::get_node_output_count(uint32_t node_id) const {
 	return node->outputs.size();
 }
 
+bool VoxelGraphFunction::try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type) {
+	switch (ac) {
+		case AUTO_CONNECT_X:
+			out_node_type = NODE_INPUT_X;
+			return true;
+		case AUTO_CONNECT_Y:
+			out_node_type = NODE_INPUT_Y;
+			return true;
+		case AUTO_CONNECT_Z:
+			out_node_type = NODE_INPUT_Z;
+			return true;
+		case AUTO_CONNECT_NONE:
+			return false;
+		default:
+			ZN_PRINT_ERROR(format("Unhandled auto-connect value: {0}", ac));
+			return false;
+			break;
+	}
+}
+
+bool VoxelGraphFunction::try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac) {
+	switch (node_type) {
+		case NODE_INPUT_X:
+			out_ac = AUTO_CONNECT_X;
+			return true;
+		case NODE_INPUT_Y:
+			out_ac = AUTO_CONNECT_Y;
+			return true;
+		case NODE_INPUT_Z:
+			out_ac = AUTO_CONNECT_Z;
+			return true;
+		default:
+			out_ac = AUTO_CONNECT_NONE;
+			return false;
+	}
+}
+
 Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_input_definitions() {
 	return to_span(_inputs);
 }
@@ -986,55 +1049,12 @@ Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions(
 	return to_span(_outputs);
 }
 
-void VoxelGraphFunction::get_input_and_output_node_ids(
-		std::vector<std::vector<uint32_t>> &input_node_ids, std::vector<std::vector<uint32_t>> &output_node_ids) {
-	struct L {
-		static bool try_add_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
-				std::vector<std::vector<uint32_t>> &node_ids) {
-			for (unsigned int i = 0; i < ports.size(); ++i) {
-				const VoxelGraphFunction::Port &port = ports[i];
-				if (node.type_id == port.type) {
-					if (port.is_custom()) {
-						if (port.name == node.name) {
-							ZN_ASSERT(i < node_ids.size());
-							node_ids[i].push_back(node.id);
-							return true;
-						}
-					} else {
-						ZN_ASSERT(i < node_ids.size());
-						node_ids[i].push_back(node.id);
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-	};
-
-	Span<const VoxelGraphFunction::Port> inputs = to_span(_inputs);
-	Span<const VoxelGraphFunction::Port> outputs = to_span(_outputs);
-
-	input_node_ids.resize(inputs.size());
-	for (std::vector<uint32_t> &node_ids : input_node_ids) {
-		node_ids.clear();
-	}
-
-	output_node_ids.resize(outputs.size());
-	for (std::vector<uint32_t> &node_ids : output_node_ids) {
-		node_ids.clear();
-	}
-
-	_graph.for_each_node_const([&input_node_ids, &output_node_ids, &inputs, &outputs](const ProgramGraph::Node &node) {
-		if (L::try_add_node(inputs, node, input_node_ids)) {
-			return;
-		}
-		if (L::try_add_node(outputs, node, output_node_ids)) {
-			return;
-		}
-	});
+bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion) const {
+	ERR_FAIL_COND_V(p_func.is_null(), false);
+	return contains_reference_to_function(**p_func, max_recursion);
 }
 
-bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion) const {
+bool VoxelGraphFunction::contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion) const {
 	ERR_FAIL_COND_V_MSG(max_recursion == -1, true,
 			String("A cycle exists in a {0}, or functions are too deeply nested.")
 					.format(varray(VoxelGraphFunction::get_class_static())));
@@ -1043,7 +1063,7 @@ bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> 
 		if (node.type_id == VoxelGraphFunction::NODE_FUNCTION) {
 			ZN_ASSERT(node.params.size() >= 1);
 			Ref<VoxelGraphFunction> func = node.params[0];
-			if (func == p_func) {
+			if (func.ptr() == &p_func) {
 				return true;
 			}
 			if (func.is_valid()) {

@@ -1124,7 +1124,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 	L::test(true, BLOCK_SIZE / 2);
 }
 
-void test_voxel_graph_functions() {
+Ref<VoxelGraphFunction> create_pass_through_function() {
 	Ref<VoxelGraphFunction> func;
 	func.instantiate();
 	{
@@ -1137,6 +1137,11 @@ void test_voxel_graph_functions() {
 
 		func->auto_pick_inputs_and_outputs();
 	}
+	return func;
+}
+
+void test_voxel_graph_functions_pass_through() {
+	Ref<VoxelGraphFunction> func = create_pass_through_function();
 	Ref<VoxelGeneratorGraph> generator;
 	generator.instantiate();
 	{
@@ -1154,6 +1159,94 @@ void test_voxel_graph_functions() {
 					.format(varray(compilation_result.node_id, compilation_result.message)));
 	const float f = generator->generate_single(Vector3i(42, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 	ZN_TEST_ASSERT(f == 42.f);
+}
+
+void test_voxel_graph_functions_nested_pass_through() {
+	Ref<VoxelGraphFunction> func1 = create_pass_through_function();
+
+	// Minimal function using another
+	Ref<VoxelGraphFunction> func2;
+	func2.instantiate();
+	{
+		VoxelGraphFunction &g = **func2;
+		// Nested pass through
+		// X --- Func1 --- OutSDF
+		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_f = g.create_function_node(func1, Vector2());
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.add_connection(n_x, 0, n_f, 0);
+		g.add_connection(n_f, 0, n_out_sdf, 0);
+
+		func2->auto_pick_inputs_and_outputs();
+	}
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	{
+		VoxelGraphFunction &g = **generator->get_main_function();
+		// X --- Func2 --- OutSDF
+		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_f = g.create_function_node(func2, Vector2());
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.add_connection(n_x, 0, n_f, 0);
+		g.add_connection(n_f, 0, n_out_sdf, 0);
+	}
+	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	ZN_TEST_ASSERT_MSG(compilation_result.success,
+			String("Failed to compile graph: {0}: {1}")
+					.format(varray(compilation_result.node_id, compilation_result.message)));
+	const float f = generator->generate_single(Vector3i(42, 0, 0), VoxelBufferInternal::CHANNEL_SDF).f;
+	ZN_TEST_ASSERT(f == 42.f);
+}
+
+void test_voxel_graph_functions_autoconnect() {
+	Ref<VoxelGraphFunction> func;
+	func.instantiate();
+	const float sphere_radius = 10.f;
+	{
+		VoxelGraphFunction &g = **func;
+		// Sphere --- OutSDF
+		const uint32_t n_sphere = g.create_node(VoxelGraphFunction::NODE_SDF_SPHERE, Vector2());
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.add_connection(n_sphere, 0, n_out_sdf, 0);
+		g.set_node_param(n_sphere, 0, sphere_radius);
+
+		g.auto_pick_inputs_and_outputs();
+	}
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	const float z_offset = 5.f;
+	{
+		VoxelGraphFunction &g = **generator->get_main_function();
+		//      X (auto)
+		//              \
+		//  Y (auto) --- Func --- OutSDF
+		//              /
+		//     Z --- Add+5
+		//
+		const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
+		const uint32_t n_add = g.create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_f = g.create_function_node(func, Vector2());
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.add_connection(n_z, 0, n_add, 0);
+		g.set_node_default_input(n_add, 1, z_offset);
+		g.add_connection(n_add, 0, n_f, 2);
+		g.add_connection(n_f, 0, n_out_sdf, 0);
+	}
+	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	ZN_TEST_ASSERT_MSG(compilation_result.success,
+			String("Failed to compile graph: {0}: {1}")
+					.format(varray(compilation_result.node_id, compilation_result.message)));
+	FixedArray<Vector3i, 3> positions;
+	positions[0] = Vector3i(1, 1, 1);
+	positions[1] = Vector3i(20, 7, -4);
+	positions[2] = Vector3i(-5, 0, 18);
+	for (const Vector3i &pos : positions) {
+		const float sd = generator->generate_single(pos, VoxelBufferInternal::CHANNEL_SDF).f;
+		const float expected = math::length(Vector3f(pos.x, pos.y, pos.z + z_offset)) - sphere_radius;
+		ZN_TEST_ASSERT(Math::is_equal_approx(sd, expected));
+	}
 }
 
 void test_voxel_graph_sphere_on_plane() {
@@ -2891,7 +2984,9 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_generator_texturing);
 	VOXEL_TEST(test_voxel_graph_equivalence_merging);
 	VOXEL_TEST(test_voxel_graph_generate_block_with_input_sdf);
-	VOXEL_TEST(test_voxel_graph_functions);
+	VOXEL_TEST(test_voxel_graph_functions_pass_through);
+	VOXEL_TEST(test_voxel_graph_functions_nested_pass_through);
+	VOXEL_TEST(test_voxel_graph_functions_autoconnect);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
 #ifdef TOOLS_ENABLED

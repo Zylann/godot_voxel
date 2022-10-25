@@ -7,6 +7,7 @@ namespace zylann::voxel {
 
 struct PortRemap {
 	ProgramGraph::PortLocation original;
+	// Can have null ID, means the port expanded into nothing.
 	ProgramGraph::PortLocation expanded;
 };
 

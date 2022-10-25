@@ -167,6 +167,7 @@ public:
 	Dictionary get_graph_as_variant_data() const;
 	bool load_graph_from_variant_data(Dictionary data);
 
+	// TODO Should this be directly a node type?
 	enum AutoConnect { //
 		AUTO_CONNECT_NONE,
 		AUTO_CONNECT_X,
@@ -177,14 +178,16 @@ public:
 	unsigned int get_node_input_count(uint32_t node_id) const;
 	unsigned int get_node_output_count(uint32_t node_id) const;
 
+	static bool try_get_node_type_id_from_auto_connect(AutoConnect ac, NodeTypeID &out_node_type);
+	static bool try_get_auto_connect_from_node_type_id(NodeTypeID node_type, AutoConnect &out_ac);
+
 	void get_node_input_info(
 			uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const VoxelGraphFunction::Port> get_input_definitions();
 	Span<const VoxelGraphFunction::Port> get_output_definitions();
-	void get_input_and_output_node_ids(
-			std::vector<std::vector<uint32_t>> &input_node_ids, std::vector<std::vector<uint32_t>> &output_node_ids);
 	bool contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion = 16) const;
+	bool contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
 
 	bool get_node_input_index_by_name(uint32_t node_id, String name, unsigned int &out_input_index) const;
