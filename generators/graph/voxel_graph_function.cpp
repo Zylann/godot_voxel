@@ -986,29 +986,52 @@ Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions(
 	return to_span(_outputs);
 }
 
-static void get_io_node_ids(
-		const ProgramGraph &graph, std::vector<uint32_t> &node_ids, const VoxelGraphFunction::Port &port) {
-	graph.for_each_node_const([&node_ids, &port](const ProgramGraph::Node &node) {
-		if (node.type_id == port.type) {
-			if (port.is_custom()) {
-				if (port.name == node.name) {
-					node_ids.push_back(node.id);
+void VoxelGraphFunction::get_input_and_output_node_ids(
+		std::vector<std::vector<uint32_t>> &input_node_ids, std::vector<std::vector<uint32_t>> &output_node_ids) {
+	struct L {
+		static bool try_add_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
+				std::vector<std::vector<uint32_t>> &node_ids) {
+			for (unsigned int i = 0; i < ports.size(); ++i) {
+				const VoxelGraphFunction::Port &port = ports[i];
+				if (node.type_id == port.type) {
+					if (port.is_custom()) {
+						if (port.name == node.name) {
+							ZN_ASSERT(i < node_ids.size());
+							node_ids[i].push_back(node.id);
+							return true;
+						}
+					} else {
+						ZN_ASSERT(i < node_ids.size());
+						node_ids[i].push_back(node.id);
+						return true;
+					}
 				}
-			} else {
-				node_ids.push_back(node.id);
 			}
+			return false;
+		}
+	};
+
+	Span<const VoxelGraphFunction::Port> inputs = to_span(_inputs);
+	Span<const VoxelGraphFunction::Port> outputs = to_span(_outputs);
+
+	input_node_ids.resize(inputs.size());
+	for (std::vector<uint32_t> &node_ids : input_node_ids) {
+		node_ids.clear();
+	}
+
+	output_node_ids.resize(outputs.size());
+	for (std::vector<uint32_t> &node_ids : output_node_ids) {
+		node_ids.clear();
+	}
+
+	_graph.for_each_node_const([&input_node_ids, &output_node_ids, &inputs, &outputs](const ProgramGraph::Node &node) {
+		if (L::try_add_node(inputs, node, input_node_ids)) {
+			return;
+		}
+		if (L::try_add_node(outputs, node, output_node_ids)) {
+			return;
 		}
 	});
-}
-
-void VoxelGraphFunction::get_input_node_ids(std::vector<uint32_t> &node_ids, unsigned int input_index) const {
-	ZN_ASSERT(input_index < _inputs.size());
-	get_io_node_ids(_graph, node_ids, _inputs[input_index]);
-}
-
-void VoxelGraphFunction::get_output_node_ids(std::vector<uint32_t> &node_ids, unsigned int output_index) const {
-	ZN_ASSERT(output_index < _outputs.size());
-	get_io_node_ids(_graph, node_ids, _outputs[output_index]);
 }
 
 bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion) const {

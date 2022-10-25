@@ -662,6 +662,20 @@ ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::
 	return dst_node;
 }
 
+bool find_port_index_from_node(
+		const std::vector<std::vector<uint32_t>> &ports_node_ids, uint32_t node_id, unsigned int &out_port_index) {
+	for (unsigned int port_index = 0; port_index < ports_node_ids.size(); ++port_index) {
+		const std::vector<uint32_t> &port_node_ids = ports_node_ids[port_index];
+		for (const uint32_t id : port_node_ids) {
+			if (id == node_id) {
+				out_port_index = port_index;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 // Replaces a function node with its contents in place, with equivalent connections to its surroundings.
 void expand_function(
 		ProgramGraph &graph, uint32_t node_id, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
@@ -716,14 +730,10 @@ void expand_function(
 		}
 	}
 
-	Span<const VoxelGraphFunction::Port> func_inputs = function->get_input_definitions();
-	Span<const VoxelGraphFunction::Port> func_outputs = function->get_output_definitions();
-
-	std::vector<uint32_t> input_node_ids;
-	std::vector<uint32_t> output_node_ids;
-
-	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
-	ZN_ASSERT(func_outputs.size() == fnode.outputs.size());
+	// Get nodes corresponding to each input and output
+	std::vector<std::vector<uint32_t>> inputs_node_ids;
+	std::vector<std::vector<uint32_t>> outputs_node_ids;
+	function->get_input_and_output_node_ids(inputs_node_ids, outputs_node_ids);
 
 	// Disconnect outputs of the function node, because we are going to replace them.
 	// (destination ports are not allowed to have two connections at a given time)
@@ -739,7 +749,11 @@ void expand_function(
 	// TODO What about autoconnect? Currently functions must use explicit input XYZ nodes, otherwise it will connect
 	// these inputs to the global XYZ inputs (after everything is unpacked), not the inputs of the function
 
-	// Add connections coming to the function's unpacked nodes.
+	Span<const VoxelGraphFunction::Port> func_inputs = function->get_input_definitions();
+	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
+
+	// Add connections coming to the function's unpacked nodes. Input nodes are not present anymore, so we connect to
+	// the nodes they were connected to internally.
 	// For each input of the function
 	for (unsigned int input_index = 0; input_index < fnode.inputs.size(); ++input_index) {
 		const ProgramGraph::Port &port = fnode.inputs[input_index];
@@ -750,10 +764,8 @@ void expand_function(
 		const ProgramGraph::PortLocation src = port.connections[0];
 		const VoxelGraphFunction::Port &fport = func_inputs[input_index];
 
-		// TODO Optimize: this will iterate every node of the graph several times, maybe we can do better without adding
-		// too much code?
-		input_node_ids.clear();
-		function->get_input_node_ids(input_node_ids, input_index);
+		ZN_ASSERT(input_index < inputs_node_ids.size());
+		const std::vector<uint32_t> &input_node_ids = inputs_node_ids[input_index];
 
 		// For each input nodes in the function representing this input
 		for (const uint32_t fid : input_node_ids) {
@@ -779,30 +791,8 @@ void expand_function(
 					ZN_ASSERT(func_internal_output_node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT);
 
 					// Find the output index corresponding to the output node
-					// TODO Optimize: perhaps we should gather all node IDs per port before I/O passes
-					struct L {
-						static bool find_output_index_from_node(unsigned int output_count,
-								std::vector<uint32_t> &output_node_ids, VoxelGraphFunction &func,
-								uint32_t output_node_id, unsigned int &out_output_index) {
-							unsigned int output_index = 0;
-							bool found = false;
-							for (; output_index < output_count && !found; ++output_index) {
-								output_node_ids.clear();
-								func.get_output_node_ids(output_node_ids, output_index);
-								for (const uint32_t id : output_node_ids) {
-									if (id == output_node_id) {
-										out_output_index = output_index;
-										return true;
-									}
-								}
-							}
-							return false;
-						}
-					};
-
 					unsigned int output_index;
-					const bool found = L::find_output_index_from_node(
-							fnode_outputs.size(), output_node_ids, **function, fdst.node_id, output_index);
+					const bool found = find_port_index_from_node(outputs_node_ids, fdst.node_id, output_index);
 					// We expect to find the output index. If we don't, that output node is invalid maybe, or outputs
 					// aren't correctly configured.
 					ZN_ASSERT(found);
@@ -836,9 +826,8 @@ void expand_function(
 			// That output isn't connected outside the function
 			continue;
 		}
-		//const VoxelGraphFunction::Port fport = func_outputs[output_index];
-		output_node_ids.clear();
-		function->get_output_node_ids(output_node_ids, output_index);
+		ZN_ASSERT(output_index < outputs_node_ids.size());
+		const std::vector<uint32_t> &output_node_ids = outputs_node_ids[output_index];
 		// An output node can only appear once
 		ZN_ASSERT(output_node_ids.size() == 1);
 		const ProgramGraph::Node &inner_fnode = fgraph.get_node(output_node_ids[0]);

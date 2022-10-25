@@ -182,8 +182,8 @@ public:
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
 	Span<const VoxelGraphFunction::Port> get_input_definitions();
 	Span<const VoxelGraphFunction::Port> get_output_definitions();
-	void get_input_node_ids(std::vector<uint32_t> &node_ids, unsigned int input_index) const;
-	void get_output_node_ids(std::vector<uint32_t> &node_ids, unsigned int output_index) const;
+	void get_input_and_output_node_ids(
+			std::vector<std::vector<uint32_t>> &input_node_ids, std::vector<std::vector<uint32_t>> &output_node_ids);
 	bool contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
 
