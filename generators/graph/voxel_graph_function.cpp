@@ -1049,6 +1049,41 @@ Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions(
 	return to_span(_outputs);
 }
 
+bool validate_io_definitions(Span<const VoxelGraphFunction::Port> ports, const VoxelGraphNodeDB::Category category) {
+	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+	for (unsigned int i = 0; i < ports.size(); ++i) {
+		const VoxelGraphFunction::Port &port = ports[i];
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(port.type);
+		if (type.category != category) {
+			return false;
+		}
+		for (unsigned int j = i + 1; j < ports.size(); ++j) {
+			const VoxelGraphFunction::Port &other_port = ports[j];
+			// There must not be two ports of the same category with equivalent matching
+			if (port.equals(other_port)) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+void VoxelGraphFunction::set_io_definitions(Span<const Port> inputs, Span<const Port> outputs) {
+	ERR_FAIL_COND(!validate_io_definitions(inputs, VoxelGraphNodeDB::CATEGORY_INPUT));
+	ERR_FAIL_COND(!validate_io_definitions(outputs, VoxelGraphNodeDB::CATEGORY_OUTPUT));
+	_inputs.clear();
+	for (const Port &input : inputs) {
+		_inputs.push_back(input);
+	}
+	_outputs.clear();
+	for (const Port &output : outputs) {
+		_outputs.push_back(output);
+	}
+#ifdef TOOLS_ENABLED
+	notify_property_list_changed();
+#endif
+}
+
 bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion) const {
 	ERR_FAIL_COND_V(p_func.is_null(), false);
 	return contains_reference_to_function(**p_func, max_recursion);

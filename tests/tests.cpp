@@ -1250,6 +1250,8 @@ void test_voxel_graph_functions_autoconnect() {
 }
 
 void test_voxel_graph_functions_misc() {
+	static const float func_custom_input_defval = 42.f;
+
 	struct L {
 		static Ref<VoxelGraphFunction> create_misc_function() {
 			Ref<VoxelGraphFunction> func;
@@ -1285,46 +1287,75 @@ void test_voxel_graph_functions_misc() {
 			}
 			return func;
 		}
+
+		static Ref<VoxelGeneratorGraph> create_generator(Ref<VoxelGraphFunction> func, int input_count) {
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			//      X
+			//       \ 
+			//  Z --- Func --- OutSDF
+			//
+			{
+				VoxelGraphFunction &g = **generator->get_main_function();
+
+				const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+				const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
+				const uint32_t n_f = g.create_function_node(func, Vector2());
+				const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+
+				if (input_count == 4) {
+					g.set_node_default_input(n_f, 3, func_custom_input_defval);
+					// This one shouldn't matter, it's unused, but defined still
+					g.set_node_default_input(n_f, 2, 12345);
+				}
+
+				g.add_connection(n_x, 0, n_f, 0);
+				g.add_connection(n_z, 0, n_f, 1);
+				g.add_connection(n_f, 0, n_out, 0);
+			}
+
+			return generator;
+		}
 	};
 
-	Ref<VoxelGraphFunction> func = L::create_misc_function();
-	func->auto_pick_inputs_and_outputs();
-	ZN_TEST_ASSERT(func->get_input_definitions().size() == 4);
-	ZN_TEST_ASSERT(func->get_output_definitions().size() == 2);
-
-	Ref<VoxelGeneratorGraph> generator;
-	generator.instantiate();
-	//      X
-	//       \ 
-	//  Z --- Func --- OutSDF
-	//
-	const float func_custom_input_defval = 42.f;
+	// Regular test
 	{
-		VoxelGraphFunction &g = **generator->get_main_function();
+		Ref<VoxelGraphFunction> func = L::create_misc_function();
+		func->auto_pick_inputs_and_outputs();
+		ZN_TEST_ASSERT(func->get_input_definitions().size() == 4);
+		ZN_TEST_ASSERT(func->get_output_definitions().size() == 2);
 
-		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
-		const uint32_t n_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
-		const uint32_t n_f = g.create_function_node(func, Vector2());
-		const uint32_t n_out = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 4);
 
-		g.set_node_default_input(n_f, 3, func_custom_input_defval);
-		// This one shouldn't matter, it's unused, but defined still
-		g.set_node_default_input(n_f, 2, 12345);
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		ZN_TEST_ASSERT_MSG(compilation_result.success,
+				String("Failed to compile graph: {0}: {1}")
+						.format(varray(compilation_result.node_id, compilation_result.message)));
 
-		g.add_connection(n_x, 0, n_f, 0);
-		g.add_connection(n_z, 0, n_f, 1);
-		g.add_connection(n_f, 0, n_out, 0);
+		const Vector3i pos(1, 2, 3);
+		const float sd = generator->generate_single(pos, VoxelBufferInternal::CHANNEL_SDF).f;
+		const float expected = float(pos.x) + float(pos.z) + func_custom_input_defval;
+		ZN_TEST_ASSERT(Math::is_equal_approx(sd, expected));
 	}
+	// Mismatched inputs, but should still compile
+	{
+		Ref<VoxelGraphFunction> func = L::create_misc_function();
+		FixedArray<VoxelGraphFunction::Port, 2> inputs;
+		inputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_INPUT_X, "x" };
+		inputs[1] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_INPUT, "custom_input" };
+		// 2 input nodes don't have corresponding inputs
+		FixedArray<VoxelGraphFunction::Port, 2> outputs;
+		outputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_OUTPUT_SDF, "sdf" };
+		outputs[1] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_OUTPUT, "custom_output" };
+		func->set_io_definitions(to_span(inputs), to_span(outputs));
 
-	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
-	ZN_TEST_ASSERT_MSG(compilation_result.success,
-			String("Failed to compile graph: {0}: {1}")
-					.format(varray(compilation_result.node_id, compilation_result.message)));
+		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 2);
 
-	const Vector3i pos(1, 2, 3);
-	const float sd = generator->generate_single(pos, VoxelBufferInternal::CHANNEL_SDF).f;
-	const float expected = float(pos.x) + float(pos.z) + func_custom_input_defval;
-	ZN_TEST_ASSERT(Math::is_equal_approx(sd, expected));
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		ZN_TEST_ASSERT_MSG(compilation_result.success,
+				String("Failed to compile graph: {0}: {1}")
+						.format(varray(compilation_result.node_id, compilation_result.message)));
+	}
 }
 
 void test_voxel_graph_sphere_on_plane() {

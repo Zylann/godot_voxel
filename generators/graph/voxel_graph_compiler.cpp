@@ -906,6 +906,11 @@ void expand_function(
 		}
 		ZN_ASSERT(output_index < outputs_node_ids.size());
 		const std::vector<uint32_t> &output_node_ids = outputs_node_ids[output_index];
+		if (output_node_ids.size() == 0) {
+			// This output isn't actually bound to any node.
+			ZN_PRINT_VERBOSE("Function output isn't bound to an output node");
+			continue;
+		}
 		// An output node can only appear once
 		ZN_ASSERT(output_node_ids.size() == 1);
 		const ProgramGraph::Node &inner_fnode = fgraph.get_node(output_node_ids[0]);

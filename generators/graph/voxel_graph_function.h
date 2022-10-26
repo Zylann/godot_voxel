@@ -86,6 +86,13 @@ public:
 		inline bool is_custom() const {
 			return type == NODE_CUSTOM_INPUT || type == NODE_CUSTOM_OUTPUT;
 		}
+
+		inline bool equals(const Port &other) const {
+			if (type == other.type) {
+				return true;
+			}
+			return name == other.name;
+		}
 	};
 
 	void clear();
@@ -184,8 +191,10 @@ public:
 	void get_node_input_info(
 			uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
-	Span<const VoxelGraphFunction::Port> get_input_definitions();
-	Span<const VoxelGraphFunction::Port> get_output_definitions();
+	Span<const Port> get_input_definitions();
+	Span<const Port> get_output_definitions();
+	// Currently used for testing
+	void set_io_definitions(Span<const Port> inputs, Span<const Port> outputs);
 	bool contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion = 16) const;
 	bool contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
