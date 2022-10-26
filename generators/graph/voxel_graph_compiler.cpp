@@ -791,84 +791,113 @@ void expand_function(
 		}
 	}
 
-	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
-
+	// Will tell which ports to lookup when inspecting outputs from the user-facing graph
 	std::vector<ProgramGraph::PortLocation> output_locations;
 	if (remap_info != nullptr) {
 		output_locations.resize(fnode_outputs.size(), ProgramGraph::PortLocation{ ProgramGraph::NULL_ID, 0 });
 	}
 
-	// Add connections coming to the function's unpacked nodes. Input nodes are not present anymore, so we connect to
-	// the nodes they were connected to internally.
-	// For each input of the function
+	// Find mappings between ports of the function to unpacked nodes and descendants
+	// InputPort => Destinations.
+	std::vector<std::vector<ProgramGraph::PortLocation>> inputs_to_destinations;
+	inputs_to_destinations.resize(func_inputs.size());
+	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
+	ZN_ASSERT(func_outputs.size() == fnode_outputs.size());
+
 	for (unsigned int input_index = 0; input_index < fnode.inputs.size(); ++input_index) {
-		const ProgramGraph::Port &port = fnode.inputs[input_index];
-		if (port.connections.size() == 0) {
-			continue;
-		}
-		ZN_ASSERT_MSG(port.connections.size() == 1, "Input nodes are expected to have only 1 input");
-		const ProgramGraph::PortLocation src = port.connections[0];
-		const VoxelGraphFunction::Port &fport = func_inputs[input_index];
+		std::vector<ProgramGraph::PortLocation> &in_destinations = inputs_to_destinations[input_index];
 
 		ZN_ASSERT(input_index < inputs_node_ids.size());
-		const std::vector<uint32_t> &input_node_ids = inputs_node_ids[input_index];
+		const std::vector<uint32_t> &inner_input_node_ids = inputs_node_ids[input_index];
 
-		// For each input nodes in the function representing this input
-		for (const uint32_t fid : input_node_ids) {
-			const ProgramGraph::Node &func_internal_input_node = fgraph.get_node(fid);
-			ZN_ASSERT_MSG(
-					func_internal_input_node.outputs.size() == 1, "Input nodes are expected to have only 1 output");
-			const ProgramGraph::Port &fio = func_internal_input_node.outputs[0];
+		// For each inner node corresponding to this input
+		for (const uint32_t inner_input_node_id : inner_input_node_ids) {
+			const ProgramGraph::Node &inner_input_node = fgraph.get_node(inner_input_node_id);
 
-			// For each connection coming from that input node
-			for (const ProgramGraph::PortLocation fdst : fio.connections) {
-				auto it = fn_to_expanded_node_ids.find(fdst.node_id);
+			ZN_ASSERT_MSG(inner_input_node.outputs.size() == 1, "Input nodes are expected to have only 1 output");
+			const ProgramGraph::Port &op = inner_input_node.outputs[0];
+
+			// For each destination this input node is going to
+			for (const ProgramGraph::PortLocation inner_dst : op.connections) {
+				auto it = fn_to_expanded_node_ids.find(inner_dst.node_id);
 
 				if (it != fn_to_expanded_node_ids.end()) {
-					// The input is connected to an internal node of the function.
-					// Create equivalent connection to unpacked nodes
-					graph.connect(src, ProgramGraph::PortLocation{ it->second, fdst.port_index });
+					// Goes to an inner node
+					in_destinations.push_back(ProgramGraph::PortLocation{ it->second, inner_dst.port_index });
 
 				} else {
-					// The input is connected directly to an output of the function?
-					const ProgramGraph::Node &func_internal_output_node = fgraph.get_node(fdst.node_id);
-					const VoxelGraphNodeDB::NodeType func_internal_output_node_type =
-							type_db.get_type(func_internal_output_node.type_id);
-					ZN_ASSERT(func_internal_output_node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT);
-
-					// Find the output index corresponding to the output node
-					unsigned int output_index;
-					const bool found = find_port_index_from_node(outputs_node_ids, fdst.node_id, output_index);
-					// We expect to find the output index. If we don't, that output node is invalid maybe, or outputs
-					// aren't correctly configured.
-					ZN_ASSERT(found);
-
-					// We expect the output index to correspond to the node's data. If not, maybe there was a desync or
-					// bug?
-					ZN_ASSERT(output_index < fnode_outputs.size());
+					// Goes directly to an output, we'll have to find nodes depending on the function.
 
 					//                   B                     B
 					//                  /                     /
 					//  A --- In --- Out --- C    Becomes:   A --- C
 					//            ^     \                     \ 
 					//                   D                     D
+					//
 
-					// Create connections
+					// Make sure it's an output
+					const ProgramGraph::Node &inner_output_node = fgraph.get_node(inner_dst.node_id);
+					const VoxelGraphNodeDB::NodeType inner_output_node_type =
+							type_db.get_type(inner_output_node.type_id);
+					ZN_ASSERT(inner_output_node_type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT);
+
+					// Find the output index corresponding to the output node
+					unsigned int output_index;
+					const bool found = find_port_index_from_node(outputs_node_ids, inner_dst.node_id, output_index);
+					// We expect to find the output index. If we don't, that output node is invalid maybe, or
+					// outputs aren't correctly configured.
+					ZN_ASSERT(found);
+
+					// We expect the output index to correspond to the node's data. If not, maybe there was a desync
+					// or bug?
+					ZN_ASSERT(output_index < fnode_outputs.size());
+
 					const ProgramGraph::Port &oport = fnode_outputs[output_index];
 					for (const ProgramGraph::PortLocation &dst : oport.connections) {
-						graph.connect(src, dst);
+						in_destinations.push_back(dst);
 					}
 
 					if (remap_info != nullptr) {
-						ZN_ASSERT(output_index < output_locations.size());
-						output_locations[output_index] = src;
+						const ProgramGraph::Port &port = fnode.inputs[input_index];
+						if (port.connections.size() != 0) {
+							// Since that outputs routes directly back to an input, the port to lookup when debugging
+							// should be an ancestor of the function
+							ZN_ASSERT(port.connections.size() == 1);
+							const ProgramGraph::PortLocation src = port.connections[0];
+							ZN_ASSERT(output_index < output_locations.size());
+							output_locations[output_index] = src;
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// Add connections coming from the function's unpacked nodes.
+	// Create connections coming from nodes connected to inputs of the function.
+	// Such connections can go to unpacked nodes, or directly to nodes that were depending on the function.
+	for (unsigned int input_index = 0; input_index < inputs_to_destinations.size(); ++input_index) {
+		const std::vector<ProgramGraph::PortLocation> &destinations = inputs_to_destinations[input_index];
+		const ProgramGraph::Port &port = fnode.inputs[input_index];
+		if (port.connections.size() == 0) {
+			// Assign default input values
+			if (port.autoconnect_hint == VoxelGraphFunction::AUTO_CONNECT_NONE || fnode.autoconnect_default_inputs) {
+				const float defval = fnode.default_inputs[input_index];
+				for (const ProgramGraph::PortLocation &dst : destinations) {
+					ProgramGraph::Node &dst_node = graph.get_node(dst.node_id);
+					dst_node.default_inputs[dst.port_index] = defval;
+				}
+			}
+		} else {
+			// Create connections
+			ZN_ASSERT_MSG(port.connections.size() == 1, "Input nodes are expected to have only 1 input");
+			const ProgramGraph::PortLocation src = port.connections[0];
+			for (const ProgramGraph::PortLocation &dst : destinations) {
+				graph.connect(src, dst);
+			}
+		}
+	}
+
+	// Create connections coming from outputs of the function
 	for (unsigned int output_index = 0; output_index < fnode_outputs.size(); ++output_index) {
 		const ProgramGraph::Port &port = fnode_outputs[output_index];
 		if (port.connections.size() == 0) {
@@ -882,28 +911,40 @@ void expand_function(
 		const ProgramGraph::Node &inner_fnode = fgraph.get_node(output_node_ids[0]);
 		ZN_ASSERT(inner_fnode.inputs.size() == 1);
 		const ProgramGraph::Port &foi = inner_fnode.inputs[0];
+
 		if (foi.connections.size() == 0) {
 			// That output isn't connected inside the function
-			continue;
-		}
-		ZN_ASSERT(foi.connections.size() == 1);
-		const ProgramGraph::PortLocation fsrc = foi.connections[0];
-		auto it = fn_to_expanded_node_ids.find(fsrc.node_id);
-		if (it == fn_to_expanded_node_ids.end()) {
-			// This output isn't connected to an internal node of the function. Maybe it's connected directly to an
-			// input? If so, we may skip it, because we handle this case in the inputs pass.
-			const ProgramGraph::Node &inode = fgraph.get_node(fsrc.node_id);
-			const VoxelGraphNodeDB::NodeType inode_type = type_db.get_type(inode.type_id);
-			ZN_ASSERT(inode_type.category == VoxelGraphNodeDB::CATEGORY_INPUT);
-			continue;
-		}
-		for (const ProgramGraph::PortLocation dst : port.connections) {
-			graph.connect(ProgramGraph::PortLocation{ it->second, fsrc.port_index }, dst);
-		}
+			if (foi.autoconnect_hint == VoxelGraphFunction::AUTO_CONNECT_NONE ||
+					!inner_fnode.autoconnect_default_inputs) {
+				// Assign default values
+				for (const ProgramGraph::PortLocation dst : port.connections) {
+					ProgramGraph::Node &dst_node = graph.get_node(dst.node_id);
+					// TODO Not sure about outputs that process their values!
+					dst_node.default_inputs[dst.port_index] = inner_fnode.default_inputs[0];
+				}
+			}
 
-		if (remap_info != nullptr) {
-			ZN_ASSERT(output_index < output_locations.size());
-			output_locations[output_index] = ProgramGraph::PortLocation{ it->second, fsrc.port_index };
+		} else {
+			// That output is connected inside the function
+			ZN_ASSERT(foi.connections.size() == 1);
+			const ProgramGraph::PortLocation fsrc = foi.connections[0];
+			auto it = fn_to_expanded_node_ids.find(fsrc.node_id);
+			if (it == fn_to_expanded_node_ids.end()) {
+				// The output may be internally connected to an input of the function.
+				// If so, we skip it, because we handle this case in the inputs pass.
+				const ProgramGraph::Node &inode = fgraph.get_node(fsrc.node_id);
+				const VoxelGraphNodeDB::NodeType inode_type = type_db.get_type(inode.type_id);
+				ZN_ASSERT(inode_type.category == VoxelGraphNodeDB::CATEGORY_INPUT);
+				continue;
+			}
+			for (const ProgramGraph::PortLocation dst : port.connections) {
+				graph.connect(ProgramGraph::PortLocation{ it->second, fsrc.port_index }, dst);
+			}
+
+			if (remap_info != nullptr) {
+				ZN_ASSERT(output_index < output_locations.size());
+				output_locations[output_index] = ProgramGraph::PortLocation{ it->second, fsrc.port_index };
+			}
 		}
 	}
 
