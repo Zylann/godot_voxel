@@ -1337,7 +1337,7 @@ void test_voxel_graph_functions_misc() {
 		const float expected = float(pos.x) + float(pos.z) + func_custom_input_defval;
 		ZN_TEST_ASSERT(Math::is_equal_approx(sd, expected));
 	}
-	// Mismatched inputs, but should still compile
+	// More input nodes than inputs, but should still compile
 	{
 		Ref<VoxelGraphFunction> func = L::create_misc_function();
 		FixedArray<VoxelGraphFunction::Port, 2> inputs;
@@ -1347,6 +1347,29 @@ void test_voxel_graph_functions_misc() {
 		FixedArray<VoxelGraphFunction::Port, 2> outputs;
 		outputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_OUTPUT_SDF, "sdf" };
 		outputs[1] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_OUTPUT, "custom_output" };
+		func->set_io_definitions(to_span(inputs), to_span(outputs));
+
+		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 2);
+
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		ZN_TEST_ASSERT_MSG(compilation_result.success,
+				String("Failed to compile graph: {0}: {1}")
+						.format(varray(compilation_result.node_id, compilation_result.message)));
+	}
+	// Less I/O nodes than I/Os, but should still compile
+	{
+		Ref<VoxelGraphFunction> func = L::create_misc_function();
+		FixedArray<VoxelGraphFunction::Port, 5> inputs;
+		inputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_INPUT_X, "x" };
+		inputs[1] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_INPUT, "custom_input" };
+		inputs[2] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_INPUT, "custom_input2" };
+		inputs[3] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_INPUT, "custom_input3" };
+		inputs[4] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_INPUT, "custom_input4" };
+		// 2 input nodes don't have corresponding inputs
+		FixedArray<VoxelGraphFunction::Port, 3> outputs;
+		outputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_OUTPUT_SDF, "sdf" };
+		outputs[1] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_OUTPUT, "custom_output" };
+		outputs[2] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_CUSTOM_OUTPUT, "custom_output2" };
 		func->set_io_definitions(to_span(inputs), to_span(outputs));
 
 		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 2);
