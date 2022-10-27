@@ -400,6 +400,15 @@ When an existing function changes (new/removed inputs/outputs for example), it i
 Currently, you are expected to fix these graphs, and save them. You can also change the offending function so that its inputs, outputs and parameters are what you expect. However if you save a broken graph, you might loose some connections or nodes.
 
 
+### Debugging
+
+Editor tools such as profiling, output previews or range analysis are currently unsupported inside a `VoxelGraphFunction`. It is also not possible to inspect internal nodes of a function when editing a `VoxelGeneratorGraph`.
+
+It is planned to have these tools available when editing a standalone `VoxelGraphFunction` in the future. This will be done by moving features out of `VoxelGeneratorGraph` so they become more generic.
+
+Inspecting a function "instance" (and sub-instances...) may be desirable, but it is tricky to implement. It could be done as an "Open Inside" feature, to inspect data within the context of the "containing graph". However because functions are fully unpacked and optimized out internally, the engine has to trace back the information to original nodes. Tracing is already present to some degree, but only maps the "top-level" graph to fully-expanded/optimized graph, with no in-between information. This might be worked on further in the future.
+
+
 VoxelGeneratorGraph nodes
 -----------------------------
 
