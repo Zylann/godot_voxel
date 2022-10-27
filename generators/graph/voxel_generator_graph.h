@@ -15,7 +15,7 @@ ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 
-// Uses a VoxelGraphFunction to generate voxel data.
+// Uses an internal VoxelGraphFunction to generate voxel data.
 class VoxelGeneratorGraph : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorGraph, VoxelGenerator)
 public:

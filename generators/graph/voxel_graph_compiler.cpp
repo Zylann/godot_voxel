@@ -966,6 +966,15 @@ void expand_function(
 		}
 
 		add_remap(*remap_info, node_id, to_span(expanded_node_ids), to_span(output_locations));
+		// TODO If a function is a pass-through, it won't appear in `ExecutionMap::debug_nodes`.
+		// In a graph like `A --- Func --- B`, Func will disappear to only leave `A --- B`. Therefore there is no node
+		// in the final graph corresponding to the function in the user-facing graph.
+		// Technically, we could consider A is an equivalent to Func, but A already appears in the debug execution
+		// map. We'd need to have A in the `debug_nodes` list, and also have a pair (A => Func) in
+		// `expanded_node_id_to_user_node_id`, but if A is in the user-facing graph already, keep it in the list instead
+		// of replacing it with the remap. However doing this means `debug_nodes` indices no longer match execution map
+		// indices, which is a bit problematic for profiling.
+		// I didn't fix this for now, it doesn't feel worth it, it's an edge case for a degenerate situation.
 	}
 
 	// Remove function node
