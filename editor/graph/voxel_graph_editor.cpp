@@ -45,7 +45,7 @@ const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
 
 enum ContextMenuSpecialIDs {
 	// Preceding IDs are node types
-	CONTEXT_MENU_FUNCTION_BROWSE = VoxelGraphFunction::NODE_MAX,
+	CONTEXT_MENU_FUNCTION_BROWSE = VoxelGraphFunction::NODE_TYPE_COUNT,
 	CONTEXT_MENU_FUNCTION_QUICK_OPEN,
 	CONTEXT_MENU_ID_MAX
 };
