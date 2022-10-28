@@ -58,7 +58,7 @@ private:
 	Span<const char *> _output_names;
 	CodeGenHelper &_code_gen;
 	String _error_message;
-	bool _has_error;
+	bool _has_error = false;
 };
 
 typedef void (*ShaderGenFunc)(ShaderGenContext &);
