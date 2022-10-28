@@ -18,6 +18,7 @@
 #include "../../util/godot/input_enums.h"
 #include "../../util/godot/input_event_mouse_button.h"
 #include "../../util/godot/label.h"
+#include "../../util/godot/menu_button.h"
 #include "../../util/godot/node.h"
 #include "../../util/godot/option_button.h"
 #include "../../util/godot/popup_menu.h"
@@ -43,6 +44,17 @@ const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
 const char *VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED = "regenerate_requested";
 const char *VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED = "popout_requested";
 
+enum ToolbarMenuIDs {
+	MENU_UPDATE_PREVIEWS = 0,
+	MENU_PROFILE,
+	MENU_ANALYZE_RANGE,
+	MENU_LIVE_UPDATE,
+	MENU_PREVIEW_AXES,
+	MENU_PREVIEW_AXES_XY,
+	MENU_PREVIEW_AXES_XZ,
+	MENU_GENERATE_SHADER
+};
+
 enum ContextMenuSpecialIDs {
 	// Preceding IDs are node types
 	CONTEXT_MENU_FUNCTION_BROWSE = VoxelGraphFunction::NODE_TYPE_COUNT,
@@ -61,18 +73,54 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	{
 		HBoxContainer *toolbar = memnew(HBoxContainer);
 
-		Button *update_previews_button = memnew(Button);
-		update_previews_button->set_text("Update Previews");
-		update_previews_button->connect(
-				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_update_previews_button_pressed));
-		toolbar->add_child(update_previews_button);
-		_update_previews_button = update_previews_button;
+		{
+			MenuButton *menu_button = memnew(MenuButton);
+			menu_button->set_text(ZN_TTR("Graph"));
+			menu_button->set_switch_on_hover(true);
 
-		Button *profile_button = memnew(Button);
-		profile_button->set_text("Profile");
-		profile_button->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_profile_button_pressed));
-		toolbar->add_child(profile_button);
-		_profile_button = profile_button;
+			PopupMenu *popup_menu = menu_button->get_popup();
+			popup_menu->add_item(ZN_TTR("Generate Shader"), MENU_GENERATE_SHADER);
+
+			popup_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_menu_id_pressed));
+
+			toolbar->add_child(menu_button);
+			_graph_menu_button = menu_button;
+		}
+		{
+			MenuButton *menu_button = memnew(MenuButton);
+			menu_button->set_text(ZN_TTR("Debug"));
+			menu_button->set_switch_on_hover(true);
+
+			PopupMenu *popup_menu = menu_button->get_popup();
+			popup_menu->add_item(ZN_TTR("Update Previews"), MENU_UPDATE_PREVIEWS);
+			popup_menu->add_item(ZN_TTR("Profile"), MENU_PROFILE);
+			popup_menu->add_item(ZN_TTR("Analyze Range..."), MENU_ANALYZE_RANGE);
+
+			{
+				const int idx = popup_menu->get_item_count();
+				popup_menu->add_check_item(ZN_TTR("Live Update"), MENU_LIVE_UPDATE);
+				popup_menu->set_item_tooltip(
+						idx, ZN_TTR("Automatically re-generate the terrain when the generator is modified"));
+				popup_menu->set_item_checked(idx, _live_update_enabled);
+			}
+
+			{
+				PopupMenu *sub_menu = memnew(PopupMenu);
+				sub_menu->set_name("PreviewAxisMenu");
+				sub_menu->add_radio_check_item("XY", MENU_PREVIEW_AXES_XY);
+				sub_menu->add_radio_check_item("XZ", MENU_PREVIEW_AXES_XZ);
+				sub_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_menu_id_pressed));
+				popup_menu->add_child(sub_menu);
+				popup_menu->add_submenu_item(TTR("Preview Axes"), sub_menu->get_name(), MENU_PREVIEW_AXES);
+				_preview_axes_menu = sub_menu;
+				update_preview_axes_menu();
+			}
+
+			popup_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_menu_id_pressed));
+
+			toolbar->add_child(menu_button);
+			_debug_menu_button = menu_button;
+		}
 
 		_profile_label = memnew(Label);
 		toolbar->add_child(_profile_label);
@@ -82,37 +130,6 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_compile_result_label->set_clip_text(true);
 		_compile_result_label->hide();
 		toolbar->add_child(_compile_result_label);
-
-		Button *range_analysis_button = memnew(Button);
-		range_analysis_button->set_text("Analyze Range...");
-		range_analysis_button->connect(
-				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_analyze_range_button_pressed));
-		toolbar->add_child(range_analysis_button);
-		_range_analysis_button = range_analysis_button;
-
-		OptionButton *preview_axes_menu = memnew(OptionButton);
-		preview_axes_menu->add_item("Preview XY", PREVIEW_XY);
-		preview_axes_menu->add_item("Preview XZ", PREVIEW_XZ);
-		preview_axes_menu->get_popup()->connect(
-				"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_preview_axes_menu_id_pressed));
-		toolbar->add_child(preview_axes_menu);
-		_preview_axes_menu = preview_axes_menu;
-
-		Button *generate_shader_button = memnew(Button);
-		generate_shader_button->set_text(ZN_TTR("Generate shader"));
-		generate_shader_button->connect(
-				"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_generate_shader_button_pressed));
-		toolbar->add_child(generate_shader_button);
-		_generate_shader_button = generate_shader_button;
-
-		CheckBox *live_update_checkbox = memnew(CheckBox);
-		live_update_checkbox->set_text(ZN_TTR("Live Update"));
-		live_update_checkbox->set_tooltip_text(
-				ZN_TTR("Automatically re-generate the terrain when the generator is modified"));
-		live_update_checkbox->set_pressed(_live_update_enabled);
-		live_update_checkbox->connect("toggled", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_live_update_toggled));
-		toolbar->add_child(live_update_checkbox);
-		_live_update_checkbox = live_update_checkbox;
 
 		Control *spacer = memnew(Control);
 		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
@@ -679,6 +696,55 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 	emit_signal(SIGNAL_NODES_DELETED);
 }
 
+void VoxelGraphEditor::_on_menu_id_pressed(int id) {
+	switch (id) {
+		case MENU_ANALYZE_RANGE:
+			_range_analysis_dialog->popup_centered();
+			break;
+
+		case MENU_PREVIEW_AXES_XY:
+			_preview_axes = PREVIEW_XY;
+			schedule_preview_update();
+			update_preview_axes_menu();
+			break;
+
+		case MENU_PREVIEW_AXES_XZ:
+			_preview_axes = PREVIEW_XZ;
+			schedule_preview_update();
+			update_preview_axes_menu();
+			break;
+
+		case MENU_PROFILE:
+			profile();
+			break;
+
+		case MENU_UPDATE_PREVIEWS:
+			update_previews(false);
+			break;
+
+		case MENU_LIVE_UPDATE: {
+			_live_update_enabled = !_live_update_enabled;
+			PopupMenu *menu = _debug_menu_button->get_popup();
+			const int idx = menu->get_item_index(id);
+			menu->set_item_checked(idx, _live_update_enabled);
+		} break;
+
+		case MENU_GENERATE_SHADER: {
+			ERR_FAIL_COND(_generator.is_null());
+			const String code = _generator->generate_shader();
+			if (code == "") {
+				return;
+			}
+			_shader_dialog->set_shader_code(code);
+			_shader_dialog->popup_centered();
+		} break;
+
+		default:
+			ERR_PRINT("Unknown menu item");
+			break;
+	}
+}
+
 void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) {
 	_undo_redo->create_action(ZN_TTR("Move nodes"));
 	_undo_redo->add_do_method(this, "set_node_position", id, to);
@@ -1055,11 +1121,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	}
 }
 
-void VoxelGraphEditor::_on_update_previews_button_pressed() {
-	update_previews(false);
-}
-
-void VoxelGraphEditor::_on_profile_button_pressed() {
+void VoxelGraphEditor::profile() {
 	if (_generator.is_null() || !_generator->is_good()) {
 		return;
 	}
@@ -1116,6 +1178,30 @@ void VoxelGraphEditor::_on_profile_button_pressed() {
 	}
 }
 
+void VoxelGraphEditor::update_preview_axes_menu() {
+	ERR_FAIL_COND(_preview_axes_menu == nullptr);
+	ToolbarMenuIDs id;
+	switch (_preview_axes) {
+		case PREVIEW_XY:
+			id = MENU_PREVIEW_AXES_XY;
+			break;
+		case PREVIEW_XZ:
+			id = MENU_PREVIEW_AXES_XZ;
+			break;
+		default:
+			ERR_PRINT("Unknown preview axes");
+			break;
+	}
+	struct L {
+		static void set_menu_item_checked(PopupMenu &menu, int id, bool checked) {
+			const int index = menu.get_item_index(id);
+			menu.set_item_checked(index, checked);
+		}
+	};
+	L::set_menu_item_checked(*_preview_axes_menu, MENU_PREVIEW_AXES_XZ, MENU_PREVIEW_AXES_XZ == id);
+	L::set_menu_item_checked(*_preview_axes_menu, MENU_PREVIEW_AXES_XY, MENU_PREVIEW_AXES_XY == id);
+}
+
 void VoxelGraphEditor::hide_profiling_ratios() {
 	for (int child_index = 0; child_index < _graph_edit->get_child_count(); ++child_index) {
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(child_index));
@@ -1128,16 +1214,8 @@ void VoxelGraphEditor::hide_profiling_ratios() {
 
 void VoxelGraphEditor::update_buttons_availability() {
 	// Some features are only available with a generator (for now)
-	_update_previews_button->set_disabled(_generator.is_null());
-	_profile_button->set_disabled(_generator.is_null());
-	_range_analysis_button->set_disabled(_generator.is_null());
-	_preview_axes_menu->set_disabled(_generator.is_null());
-	_generate_shader_button->set_disabled(_generator.is_null());
-	_live_update_checkbox->set_disabled(_generator.is_null());
-}
-
-void VoxelGraphEditor::_on_analyze_range_button_pressed() {
-	_range_analysis_dialog->popup_centered();
+	_debug_menu_button->set_disabled(_generator.is_null());
+	_graph_menu_button->set_disabled(_generator.is_null());
 }
 
 void VoxelGraphEditor::_on_range_analysis_toggled(bool enabled) {
@@ -1148,26 +1226,6 @@ void VoxelGraphEditor::_on_range_analysis_toggled(bool enabled) {
 void VoxelGraphEditor::_on_range_analysis_area_changed() {
 	schedule_preview_update();
 	update_range_analysis_gizmo();
-}
-
-void VoxelGraphEditor::_on_preview_axes_menu_id_pressed(int id) {
-	ERR_FAIL_COND(id < 0 || id >= PREVIEW_AXES_OPTIONS_COUNT);
-	_preview_axes = PreviewAxes(id);
-	schedule_preview_update();
-}
-
-void VoxelGraphEditor::_on_generate_shader_button_pressed() {
-	ERR_FAIL_COND(_generator.is_null());
-	const String code = _generator->generate_shader();
-	if (code == "") {
-		return;
-	}
-	_shader_dialog->set_shader_code(code);
-	_shader_dialog->popup_centered();
-}
-
-void VoxelGraphEditor::_on_live_update_toggled(bool enabled) {
-	_live_update_enabled = enabled;
 }
 
 void VoxelGraphEditor::_on_popout_button_pressed() {
@@ -1248,6 +1306,7 @@ void VoxelGraphEditor::_bind_methods() {
 			D_METHOD("_on_graph_edit_node_deselected", "node"), &VoxelGraphEditor::_on_graph_edit_node_deselected);
 	ClassDB::bind_method(
 			D_METHOD("_on_graph_node_dragged", "from", "to", "id"), &VoxelGraphEditor::_on_graph_node_dragged);
+	ClassDB::bind_method(D_METHOD("_on_menu_id_pressed", "id"), &VoxelGraphEditor::_on_menu_id_pressed);
 	ClassDB::bind_method(D_METHOD("_on_context_menu_id_pressed", "id"), &VoxelGraphEditor::_on_context_menu_id_pressed);
 	ClassDB::bind_method(
 			D_METHOD("_on_update_previews_button_pressed"), &VoxelGraphEditor::_on_update_previews_button_pressed);

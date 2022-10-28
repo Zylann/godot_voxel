@@ -15,7 +15,10 @@ ZN_GODOT_FORWARD_DECLARE(class Label)
 ZN_GODOT_FORWARD_DECLARE(class OptionButton)
 ZN_GODOT_FORWARD_DECLARE(class CheckBox)
 ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
+ZN_GODOT_FORWARD_DECLARE(class MenuButton)
+#ifdef ZN_GODOT
 ZN_GODOT_FORWARD_DECLARE(class EditorQuickOpen)
+#endif
 
 namespace zylann::voxel {
 
@@ -78,6 +81,8 @@ private:
 	void hide_profiling_ratios();
 	void update_buttons_availability();
 	void create_function_node(String fpath);
+	void profile();
+	void update_preview_axes_menu();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -95,18 +100,13 @@ private:
 	void _on_graph_edit_node_deselected(Object *p_node_o);
 #endif
 
+	void _on_menu_id_pressed(int id);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
 	void _on_context_menu_id_pressed(int id);
-	void _on_update_previews_button_pressed();
-	void _on_profile_button_pressed();
 	void _on_graph_changed();
 	void _on_graph_node_name_changed(int node_id);
-	void _on_analyze_range_button_pressed();
 	void _on_range_analysis_toggled(bool enabled);
 	void _on_range_analysis_area_changed();
-	void _on_preview_axes_menu_id_pressed(int id);
-	void _on_generate_shader_button_pressed();
-	void _on_live_update_toggled(bool enabled);
 	void _on_popout_button_pressed();
 	void _on_function_file_dialog_file_selected(String fpath);
 #ifdef ZN_GODOT
@@ -144,12 +144,9 @@ private:
 	uint64_t _last_output_graph_hash = 0;
 	Button *_pin_button = nullptr;
 	Button *_popout_button = nullptr;
-	Button *_update_previews_button = nullptr;
-	Button *_profile_button = nullptr;
-	Button *_range_analysis_button = nullptr;
-	OptionButton *_preview_axes_menu = nullptr;
-	Button *_generate_shader_button = nullptr;
-	CheckBox *_live_update_checkbox = nullptr;
+	MenuButton *_graph_menu_button = nullptr;
+	MenuButton *_debug_menu_button = nullptr;
+	PopupMenu *_preview_axes_menu = nullptr;
 
 	enum PreviewAxes { //
 		PREVIEW_XY = 0,
