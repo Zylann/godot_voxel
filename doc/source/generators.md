@@ -202,6 +202,13 @@ If more variety is needed, `Select` nodes can be chained to combine multiple lay
 Currently, graph generators only work per voxel. That makes them good to generate base ground and biomes, but it isn't practical to generate structures like trees or villages with it. This may be easier to accomplish using a second pass on the whole block instead, using a custom generator.
 
 
+### Relays
+
+A special `Relay` node exists to organize long connections between nodes. They do nothing on their own, they just redirect a connection. It also remains possible for a relay to have multiple destinations.
+
+![Screenshot of a relay node](images/relay_node.webp)
+
+
 ### Performance tuning
 
 This is a more technical section.

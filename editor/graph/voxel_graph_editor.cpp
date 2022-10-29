@@ -171,6 +171,11 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_context_menu = memnew(PopupMenu);
 	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
 	for (unsigned int i = 0; i < category_menus.size(); ++i) {
+		if (i == VoxelGraphNodeDB::CATEGORY_RELAY) {
+			category_menus[i] = nullptr;
+			_context_menu->add_item("Relay", VoxelGraphFunction::NODE_RELAY);
+			continue;
+		}
 		String name = VoxelGraphNodeDB::get_category_name(VoxelGraphNodeDB::Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
@@ -182,8 +187,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	// TODO Usability: have CustomInput and CustomOutput subcategories based on I/O definitions, + a "new" option for
 	// unbound
 	for (int i = 0; i < VoxelGraphNodeDB::get_singleton().get_type_count(); ++i) {
+		if (i == VoxelGraphFunction::NODE_RELAY) {
+			continue;
+		}
 		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
+		ZN_ASSERT(menu != nullptr);
 		if (i == VoxelGraphFunction::NODE_FUNCTION) {
 			menu->add_item(TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
 #ifdef ZN_GODOT
@@ -193,6 +202,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			menu->add_item(node_type.name, i);
 		}
 	}
+	_context_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_context_menu_id_pressed));
 	_context_menu->hide();
 	add_child(_context_menu);
 

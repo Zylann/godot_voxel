@@ -70,6 +70,7 @@ private:
 
 	float _profiling_ratio = 0.f;
 	bool _profiling_ratio_enabled = false;
+	bool _is_relay = false;
 };
 
 } // namespace zylann::voxel

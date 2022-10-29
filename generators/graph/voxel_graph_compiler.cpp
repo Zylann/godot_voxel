@@ -738,6 +738,7 @@ void expand_function(
 			[&graph, &type_db, &fn_to_expanded_node_ids, &nested_func_node_ids](const ProgramGraph::Node &src_node) {
 				const VoxelGraphNodeDB::NodeType &node_type = type_db.get_type(src_node.type_id);
 				// Ignore input and output nodes, we only copy what's in between
+				// TODO We could replace I/Os with Relay nodes to simplify the code?
 				if (node_type.category == VoxelGraphNodeDB::CATEGORY_INPUT) {
 					return;
 				}
@@ -1001,6 +1002,57 @@ void expand_functions(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, Grap
 	}
 }
 
+void remove_relays(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
+	std::vector<uint32_t> node_ids;
+	graph.for_each_node([&node_ids](const ProgramGraph::Node &node) {
+		if (node.type_id == VoxelGraphFunction::NODE_RELAY) {
+			node_ids.push_back(node.id);
+		}
+	});
+	for (const uint32_t node_id : node_ids) {
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+		ZN_ASSERT(node.inputs.size() == 1);
+		ZN_ASSERT(node.outputs.size() == 1);
+
+		const ProgramGraph::Port &node_input = node.inputs[0];
+		if (node_input.connections.size() == 0) {
+			// Just remove the node
+			graph.remove_node(node_id);
+			continue;
+		}
+		ZN_ASSERT(node_input.connections.size() == 1);
+		const ProgramGraph::PortLocation src = node_input.connections[0];
+
+		const std::vector<ProgramGraph::Port> node_outputs = node.outputs;
+
+		for (uint32_t output_index = 0; output_index < node_outputs.size(); ++output_index) {
+			const ProgramGraph::Port &port = node_outputs[output_index];
+			for (const ProgramGraph::PortLocation dst : port.connections) {
+				const ProgramGraph::PortLocation old_src{ node_id, output_index };
+				graph.disconnect(old_src, dst);
+				graph.connect(src, dst);
+			}
+		}
+
+		if (remap_info != nullptr) {
+			for (unsigned int i = 0; i < remap_info->expanded_to_user_node_ids.size(); ++i) {
+				const ExpandedNodeRemap &r = remap_info->expanded_to_user_node_ids[i];
+				if (r.expanded_node_id == node_id) {
+					remap_info->expanded_to_user_node_ids[i] = remap_info->expanded_to_user_node_ids.back();
+					remap_info->expanded_to_user_node_ids.pop_back();
+					break;
+				}
+			}
+			for (unsigned int i = 0; i < remap_info->user_to_expanded_ports.size(); ++i) {
+				PortRemap &pr = remap_info->user_to_expanded_ports[i];
+				if (pr.expanded.node_id == node_id) {
+					pr.expanded = src;
+				}
+			}
+		}
+	}
+}
+
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
@@ -1010,6 +1062,8 @@ VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, Pro
 	apply_auto_connects(expanded_graph, type_db);
 
 	expand_functions(expanded_graph, type_db, remap_info);
+
+	remove_relays(expanded_graph, remap_info);
 
 	const VoxelGraphRuntime::CompilationResult expand_result =
 			expand_expression_nodes(expanded_graph, type_db, remap_info);

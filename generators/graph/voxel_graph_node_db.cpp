@@ -417,6 +417,14 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
+		NodeType &t = types[VoxelGraphFunction::NODE_RELAY];
+		t.name = "Relay";
+		t.category = CATEGORY_RELAY;
+		t.inputs.push_back(Port("in"));
+		t.outputs.push_back(Port("out"));
+		t.is_pseudo_node = true;
+	}
+	{
 		NodeType &t = types[VoxelGraphFunction::NODE_ADD];
 		t.name = "Add";
 		t.category = CATEGORY_MATH;

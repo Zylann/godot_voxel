@@ -8,9 +8,12 @@
 #include "../../util/godot/h_box_container.h"
 #include "../../util/godot/label.h"
 #include "../../util/godot/node.h"
+#include "../../util/godot/style_box_empty.h"
 #include "voxel_graph_editor_node_preview.h"
 
 namespace zylann::voxel {
+
+static const Color PORT_COLOR(0.4, 0.4, 1.0);
 
 VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &graph, uint32_t node_id) {
 	VoxelGraphEditorNode *node_view = memnew(VoxelGraphEditorNode);
@@ -23,6 +26,8 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 	const uint32_t node_type_id = graph.get_node_type_id(node_id);
 	const bool is_resizable =
 			node_type_id == VoxelGraphFunction::NODE_EXPRESSION || node_type_id == VoxelGraphFunction::NODE_COMMENT;
+
+	node_view->_is_relay = node_type_id == VoxelGraphFunction::NODE_RELAY;
 
 	// Some nodes can have variable size title and layout. The node can get larger automatically, but doesn't shrink.
 	// So for now we make them resizable so users can adjust them.
@@ -85,24 +90,9 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 			output.name = graph.get_node_output_name(_node_id, i);
 			outputs.push_back(output);
 		}
-
-		// for (const VoxelGraphNodeDB::Port &port : node_type.inputs) {
-		// 	inputs.push_back({ port.name });
-		// }
-		// for (const VoxelGraphNodeDB::Port &port : node_type.outputs) {
-		// 	outputs.push_back({ port.name });
-		// }
-		// if (graph.get_node_type_id(_node_id) == VoxelGraphFunction::NODE_EXPRESSION) {
-		// 	std::vector<std::string> names;
-		// 	graph.get_expression_node_inputs(_node_id, names);
-		// 	for (const std::string &s : names) {
-		// 		inputs.push_back({ to_godot(s) });
-		// 	}
-		// }
 	}
 
 	const unsigned int row_count = math::max(inputs.size(), hide_outputs ? 0 : outputs.size());
-	const Color port_color(0.4, 0.4, 1.0);
 	const Color hint_label_modulate(0.6, 0.6, 0.6);
 
 	//const int middle_min_width = EDSCALE * 32.0;
@@ -129,6 +119,16 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 
 	_input_hints.clear();
 
+	const bool is_relay = (node_type_id == VoxelGraphFunction::NODE_RELAY);
+	// Can't remove the frame style, it breaks interaction with the node...
+	// if (is_relay) {
+	// 	Ref<StyleBoxEmpty> sb;
+	// 	sb.instantiate();
+	// 	add_theme_style_override("frame", sb);
+	// } else {
+	// 	remove_theme_style_override("frame");
+	// }
+
 	// Add inputs and outputs
 	for (unsigned int slot_index = 0; slot_index < row_count; ++slot_index) {
 		const bool has_left = slot_index < inputs.size();
@@ -136,8 +136,9 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 
 		HBoxContainer *property_control = memnew(HBoxContainer);
 		property_control->set_custom_minimum_size(Vector2(0, 24 * EDSCALE));
+		property_control->set_mouse_filter(Control::MOUSE_FILTER_PASS);
 
-		if (has_left) {
+		if (has_left && !is_relay) {
 			Label *label = memnew(Label);
 			label->set_text(inputs[slot_index].name);
 			property_control->add_child(label);
@@ -153,7 +154,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 			_input_hints.push_back(input_hint);
 		}
 
-		if (has_right) {
+		if (has_right && !is_relay) {
 			if (property_control->get_child_count() < 2) {
 				Control *spacer = memnew(Control);
 				spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
@@ -171,7 +172,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 		}
 
 		add_child(property_control);
-		set_slot(slot_index, has_left, Variant::FLOAT, port_color, has_right, Variant::FLOAT, port_color);
+		set_slot(slot_index, has_left, Variant::FLOAT, PORT_COLOR, has_right, Variant::FLOAT, PORT_COLOR);
 		_rows.push_back(property_control);
 	}
 
@@ -201,6 +202,10 @@ void VoxelGraphEditorNode::update_title(const VoxelGraphFunction &graph) {
 
 void VoxelGraphEditorNode::update_title(const VoxelGraphFunction &graph, uint32_t node_id) {
 	const VoxelGraphFunction::NodeTypeID type_id = graph.get_node_type_id(node_id);
+	if (type_id == VoxelGraphFunction::NODE_RELAY) {
+		// Relays don't have title bars
+		return;
+	}
 	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(type_id);
 	const String node_name = graph.get_node_name(node_id);
 
@@ -338,7 +343,6 @@ void VoxelGraphEditorNode::set_profiling_ratio(float ratio) {
 	queue_redraw();
 }
 
-// Color has no lerp??
 inline Color lerp(Color a, Color b, float t) {
 	return Color( //
 			Math::lerp(a.r, b.r, t), //
@@ -349,6 +353,17 @@ inline Color lerp(Color a, Color b, float t) {
 
 void VoxelGraphEditorNode::_notification(int p_what) {
 	if (p_what == NOTIFICATION_DRAW) {
+		if (_is_relay) {
+			// Draw line to show that the data is directly relayed
+			// TODO Thickness and antialiasing should come from GraphEdit
+			const float width = Math::floor(2.f * get_theme_default_base_scale());
+			// Can't directly use inputs and output positions... Godot pre-scales them, which makes them unusable
+			// for drawing because the node is already scaled
+			const Vector2 scale = get_global_transform().get_scale();
+			const Vector2 input_pos = get_connection_input_position(0) / scale;
+			const Vector2 output_pos = get_connection_output_position(0) / scale;
+			draw_line(input_pos, output_pos, get_connection_input_color(0), width, true);
+		}
 		if (_profiling_ratio_enabled) {
 			const float bgh = EDSCALE * 4.f;
 			const Vector2 control_size = get_size();
