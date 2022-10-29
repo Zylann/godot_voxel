@@ -47,7 +47,7 @@ private:
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
-	void _on_graph_edit_delete_nodes_request();
+	void _on_graph_edit_delete_nodes_request(Array nodes);
 	void _on_graph_edit_node_selected(Node *p_node);
 	void _on_graph_edit_node_unselected(Node *p_node);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);

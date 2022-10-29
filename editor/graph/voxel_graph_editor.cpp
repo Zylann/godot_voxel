@@ -555,7 +555,7 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	_undo_redo->commit_action();
 }
 
-void VoxelGraphEditor::_on_graph_edit_delete_nodes_request() {
+void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array nodes) {
 	std::vector<VoxelGraphEditorNode *> to_erase;
 
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -977,7 +977,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("_on_graph_edit_disconnection_request", "from_node_name", "from_slot", "to_node_name", "to_slot"),
 			&VoxelGraphEditor::_on_graph_edit_disconnection_request);
-	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request"),
+	ClassDB::bind_method(D_METHOD("_on_graph_edit_delete_nodes_request", "nodes"),
 			&VoxelGraphEditor::_on_graph_edit_delete_nodes_request);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_selected"), &VoxelGraphEditor::_on_graph_edit_node_selected);
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_node_unselected"), &VoxelGraphEditor::_on_graph_edit_node_unselected);
