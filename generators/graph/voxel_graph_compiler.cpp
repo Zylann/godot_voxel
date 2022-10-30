@@ -1305,6 +1305,11 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				dg_node.is_input = true;
 				continue;
 
+			case VoxelGraphFunction::NODE_CUSTOM_INPUT:
+				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = mem.add_binding();
+				dg_node.is_input = true;
+				continue;
+
 			case VoxelGraphFunction::NODE_SDF_PREVIEW: {
 				if (!debug) {
 					ZN_PRINT_WARNING("Found preview node when compiling graph in non-debug mode. That node should not "
