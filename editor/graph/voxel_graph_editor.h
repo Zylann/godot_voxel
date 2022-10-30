@@ -71,6 +71,7 @@ private:
 	void create_node_gui(uint32_t node_id);
 	void remove_node_gui(StringName gui_node_name);
 	void set_node_position(int id, Vector2 offset);
+	void set_node_size(int id, Vector2 size);
 
 	void schedule_preview_update();
 	void update_previews(bool with_live_update);
@@ -112,6 +113,7 @@ private:
 #ifdef ZN_GODOT
 	void _on_function_quick_open_dialog_quick_open();
 #endif
+	void _on_node_resize_request(Vector2 new_size, int node_id);
 
 	void _check_nothing_selected();
 

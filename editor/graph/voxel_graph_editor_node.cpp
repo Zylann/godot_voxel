@@ -50,15 +50,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 		node_view->add_child(node_view->_preview);
 	}
 
-	if (node_view->is_resizable()) {
-		node_view->connect("resize_request", ZN_GODOT_CALLABLE_MP(node_view, VoxelGraphEditorNode, _on_resize_request));
-	}
-
 	return node_view;
-}
-
-void VoxelGraphEditorNode::_on_resize_request(Vector2 new_size) {
-	set_size(new_size);
 }
 
 void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
@@ -376,10 +368,6 @@ void VoxelGraphEditorNode::_notification(int p_what) {
 	}
 }
 
-void VoxelGraphEditorNode::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_resize_request", "new_size"), &VoxelGraphEditorNode::_on_resize_request);
-#endif
-}
+void VoxelGraphEditorNode::_bind_methods() {}
 
 } // namespace zylann::voxel

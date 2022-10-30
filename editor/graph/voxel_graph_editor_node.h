@@ -49,7 +49,6 @@ private:
 	void update_title(const VoxelGraphFunction &graph, uint32_t node_id);
 	void poll_default_inputs(const VoxelGraphFunction &graph);
 	void poll_params(const VoxelGraphFunction &graph);
-	void _on_resize_request(Vector2 new_size);
 
 	void _notification(int p_what);
 

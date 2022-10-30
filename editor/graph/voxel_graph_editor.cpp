@@ -429,9 +429,12 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 #if defined(ZN_GODOT)
 	node_view->connect("dragged", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_dragged).bind(node_id));
+	node_view->connect(
+			"resize_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_node_resize_request).bind(node_id));
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
-	ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle dragging nodes action with UndoRedo.");
+	ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle dragging and resizing nodes action with "
+				   "UndoRedo.");
 #endif
 
 	_graph_edit->add_child(node_view);
@@ -773,6 +776,34 @@ void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
 	// We store GUI node positions independently from editor scale, to make the graph display the same regardless of
 	// monitor DPI, so we have to unapply it
 	_graph->set_node_gui_position(id, offset / EDSCALE);
+}
+
+void VoxelGraphEditor::_on_node_resize_request(Vector2 new_size, int node_id) {
+	const String node_view_path = node_to_gui_name(node_id);
+	Node *node = get_node_typed<Node>(*_graph_edit, node_view_path);
+	ZN_ASSERT_RETURN(node != nullptr);
+	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
+	ZN_ASSERT_RETURN(node_view != nullptr);
+	ZN_ASSERT_RETURN(_graph.is_valid());
+
+	// TODO Not sure if EDSCALE has to be unapplied in this case?
+	_undo_redo->create_action(TTR("Resize Node"), UndoRedo::MERGE_ENDS);
+	_undo_redo->add_do_method(this, "set_node_size", node_id, new_size);
+	_undo_redo->add_do_method(_graph.ptr(), "set_node_gui_size", node_id, new_size);
+	_undo_redo->add_undo_method(this, "set_node_size", node_id, node_view->get_size());
+	_undo_redo->add_undo_method(_graph.ptr(), "set_node_gui_size", node_id, node_view->get_size());
+	_undo_redo->commit_action();
+}
+
+void VoxelGraphEditor::set_node_size(int id, Vector2 size) {
+	String node_name = node_to_gui_name(id);
+	GraphNode *node_view = get_node_typed<GraphNode>(*_graph_edit, node_name);
+	if (node_view != nullptr) {
+		node_view->set_size(size);
+	}
+	// This function is used solely for the UI, since we should not pass node pointers directly to UndoRedo, they could
+	// have been deleted when the Undo action is called later
+	//_graph->set_node_gui_size(id, size / EDSCALE);
 }
 
 Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 local_mouse_pos) {
@@ -1340,6 +1371,8 @@ void VoxelGraphEditor::_bind_methods() {
 			&VoxelGraphEditor::_on_function_file_dialog_file_selected);
 	ClassDB::bind_method(D_METHOD("_on_function_quick_open_dialog_quick_open"),
 			&VoxelGraphEditor::_on_function_quick_open_dialog_quick_open);
+	ClassDB::bind_method(
+			D_METHOD("_on_node_resize_request", "new_size", "node_id"), &VoxelGraphEditor::_on_node_resize_request);
 #endif
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
@@ -1347,6 +1380,7 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
+	ClassDB::bind_method(D_METHOD("set_node_size", "node_id", "size"), &VoxelGraphEditor::set_node_size);
 	ClassDB::bind_method(D_METHOD("update_node_layout", "node_id"), &VoxelGraphEditor::update_node_layout);
 	ClassDB::bind_method(D_METHOD("update_node_comment", "node_id"), &VoxelGraphEditor::update_node_comment);
 
