@@ -267,6 +267,12 @@ bool VoxelGraphFunction::can_connect(
 	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND_V(!_graph.is_output_port_valid(src_port), false);
 	ERR_FAIL_COND_V(!_graph.is_input_port_valid(dst_port), false);
+	const ProgramGraph::Node &node = _graph.get_node(src_node_id);
+	// Output nodes have output ports, for internal reasons. They should not be connected.
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(node.type_id);
+	if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		return false;
+	}
 	return _graph.can_connect(src_port, dst_port);
 }
 
@@ -276,6 +282,11 @@ bool VoxelGraphFunction::is_valid_connection(
 	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND_V(!_graph.is_output_port_valid(src_port), false);
 	ERR_FAIL_COND_V(!_graph.is_input_port_valid(dst_port), false);
+	const ProgramGraph::Node &node = _graph.get_node(src_node_id);
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(node.type_id);
+	if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
+		return false;
+	}
 	return _graph.is_valid_connection(src_port, dst_port);
 }
 
@@ -285,6 +296,9 @@ void VoxelGraphFunction::add_connection(
 	const ProgramGraph::PortLocation dst_port{ dst_node_id, dst_port_index };
 	ERR_FAIL_COND(!_graph.is_output_port_valid(src_port));
 	ERR_FAIL_COND(!_graph.is_input_port_valid(dst_port));
+	const ProgramGraph::Node &node = _graph.get_node(src_node_id);
+	const VoxelGraphNodeDB::NodeType &type = VoxelGraphNodeDB::get_singleton().get_type(node.type_id);
+	ERR_FAIL_COND(type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT);
 	_graph.connect(src_port, dst_port);
 	emit_changed();
 }
