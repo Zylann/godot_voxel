@@ -1381,6 +1381,134 @@ void test_voxel_graph_functions_misc() {
 	}
 }
 
+template <typename T>
+void get_node_types(const VoxelGraphNodeDB &type_db, std::vector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
+	for (unsigned int i = 0; i < VoxelGraphFunction::NODE_TYPE_COUNT; ++i) {
+		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(i);
+		if (predicate(type)) {
+			types.push_back(VoxelGraphFunction::NodeTypeID(i));
+		}
+	}
+}
+
+// The goal of this test is to find crashes. It will probably cause errors, but should not crash.
+void test_voxel_graph_fuzzing() {
+	struct L {
+		static String make_random_name(RandomPCG &rng) {
+			String name;
+			const int len = rng.rand() % 8;
+			// Note, we let empty names happen.
+			for (int i = 0; i < len; ++i) {
+				const char c = 'a' + (rng.rand() % ('z' - 'a'));
+				name += c;
+			}
+			return name;
+		}
+
+		static void make_random_graph(VoxelGraphFunction &g, RandomPCG &rng, bool allow_custom_io) {
+			const int input_count = rng.rand() % 4;
+			const int output_count = rng.rand() % 4;
+			const int intermediary_node_count = rng.rand() % 8;
+
+			const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+
+			std::vector<VoxelGraphFunction::NodeTypeID> input_types;
+			get_node_types(type_db, input_types,
+					[](const VoxelGraphNodeDB::NodeType &t) { //
+						return t.category == VoxelGraphNodeDB::CATEGORY_INPUT;
+					});
+
+			std::vector<VoxelGraphFunction::NodeTypeID> output_types;
+			get_node_types(type_db, output_types,
+					[](const VoxelGraphNodeDB::NodeType &t) { //
+						return t.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
+					});
+
+			if (!allow_custom_io) {
+				unordered_remove_value(input_types, VoxelGraphFunction::NODE_CUSTOM_INPUT);
+				unordered_remove_value(output_types, VoxelGraphFunction::NODE_CUSTOM_OUTPUT);
+			}
+
+			for (int i = 0; i < input_count; ++i) {
+				const VoxelGraphFunction::NodeTypeID input_type = input_types[rng.rand() % input_types.size()];
+				const uint32_t n = g.create_node(input_type, Vector2());
+				g.set_node_name(n, make_random_name(rng));
+			}
+
+			for (int i = 0; i < output_count; ++i) {
+				const VoxelGraphFunction::NodeTypeID output_type = output_types[rng.rand() % output_types.size()];
+				const uint32_t n = g.create_node(output_type, Vector2());
+				g.set_node_name(n, make_random_name(rng));
+			}
+
+			std::vector<VoxelGraphFunction::NodeTypeID> node_types;
+			get_node_types(type_db, node_types,
+					[](const VoxelGraphNodeDB::NodeType &t) { //
+						return t.category != VoxelGraphNodeDB::CATEGORY_OUTPUT &&
+								t.category != VoxelGraphNodeDB::CATEGORY_INPUT;
+					});
+
+			for (int i = 0; i < intermediary_node_count; ++i) {
+				const VoxelGraphFunction::NodeTypeID type = node_types[rng.rand() % node_types.size()];
+				g.create_node(type, Vector2());
+			}
+
+			PackedInt32Array node_ids = g.get_node_ids();
+			if (node_ids.size() == 0) {
+				print_line("Empty graph");
+				return;
+			}
+			const int connection_attempts = rng.rand() % (node_ids.size() + 1);
+
+			for (int i = 0; i < connection_attempts; ++i) {
+				const int src_node_id = node_ids[rng.rand() % node_ids.size()];
+				const int dst_node_id = node_ids[rng.rand() % node_ids.size()];
+
+				const int src_output_count = g.get_node_output_count(src_node_id);
+				const int dst_input_count = g.get_node_input_count(dst_node_id);
+
+				if (src_output_count == 0 || dst_input_count == 0) {
+					continue;
+				}
+
+				const int src_output_index = rng.rand() % src_output_count;
+				const int dst_input_index = rng.rand() % dst_input_count;
+
+				if (g.can_connect(src_node_id, src_output_index, dst_node_id, dst_input_index)) {
+					g.add_connection(src_node_id, src_output_index, dst_node_id, dst_input_index);
+				}
+			}
+		}
+	};
+
+	const int attempts = 1000;
+
+	RandomPCG rng;
+	rng.seed(131183);
+
+	int successful_compiles_count = 0;
+
+	print_line("--- Begin of zone with possible errors ---");
+
+	for (int i = 0; i < attempts; ++i) {
+		print_line(String("Testing random graph #{0}").format(varray(i)));
+		Ref<VoxelGeneratorGraph> generator;
+		generator.instantiate();
+		L::make_random_graph(**generator->get_main_function(), rng,
+				// Disallowing custom I/Os because VoxelGeneratorGraph cannot handle them at the moment
+				false);
+		VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		if (compilation_result.success) {
+			generator->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
+		} else {
+			++successful_compiles_count;
+		}
+	}
+
+	print_line("--- End of zone with possible errors ---");
+	print_line(String("Successful compiles: {0}/{1}").format(varray(successful_compiles_count, attempts)));
+}
+
 void test_voxel_graph_sphere_on_plane() {
 	static const float RADIUS = 6.f;
 	struct L {
@@ -3120,6 +3248,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_functions_nested_pass_through);
 	VOXEL_TEST(test_voxel_graph_functions_autoconnect);
 	VOXEL_TEST(test_voxel_graph_functions_misc);
+	VOXEL_TEST(test_voxel_graph_fuzzing);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);
 #ifdef TOOLS_ENABLED
