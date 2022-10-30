@@ -31,7 +31,7 @@ template <typename F>
 inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
-	if (a.constant_value) {
+	if (a.is_constant) {
 		// Normally this case should have been optimized out at compile-time
 		const float v = f(a.constant_value);
 		for (uint32_t i = 0; i < a.size; ++i) {
