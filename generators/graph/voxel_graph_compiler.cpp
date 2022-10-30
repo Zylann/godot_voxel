@@ -713,14 +713,17 @@ bool find_port_index_from_node(
 }
 
 // Replaces a function node with its contents in place, with equivalent connections to its surroundings.
-void expand_function(
+VoxelGraphRuntime::CompilationResult expand_function(
 		ProgramGraph &graph, uint32_t node_id, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
 	const ProgramGraph::Node &fnode = graph.get_node(node_id);
 	ZN_ASSERT(fnode.type_id == VoxelGraphFunction::NODE_FUNCTION);
 	ZN_ASSERT(fnode.params.size() >= 1);
 	Ref<VoxelGraphFunction> function = fnode.params[0];
-	ZN_ASSERT(function.is_valid());
+
+	if (function.is_null()) {
+		return VoxelGraphRuntime::CompilationResult::make_error("Function resource is invalid.", node_id);
+	}
 
 	// Copy original graph so we can do some local pre-processing to the function
 	ProgramGraph fgraph;
@@ -928,9 +931,14 @@ void expand_function(
 	for (const uint32_t nested_node_id : nested_func_node_ids) {
 		expand_function(graph, nested_node_id, type_db, remap_info);
 	}
+
+	VoxelGraphRuntime::CompilationResult result;
+	result.success = true;
+	return result;
 }
 
-void expand_functions(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
+VoxelGraphRuntime::CompilationResult expand_functions(
+		ProgramGraph &graph, const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	std::vector<uint32_t> func_node_ids;
 
 	graph.for_each_node_const([&func_node_ids](const ProgramGraph::Node &node) {
@@ -940,8 +948,15 @@ void expand_functions(ProgramGraph &graph, const VoxelGraphNodeDB &type_db, Grap
 	});
 
 	for (const uint32_t node_id : func_node_ids) {
-		expand_function(graph, node_id, type_db, remap_info);
+		const VoxelGraphRuntime::CompilationResult result = expand_function(graph, node_id, type_db, remap_info);
+		if (!result.success) {
+			return result;
+		}
 	}
+
+	VoxelGraphRuntime::CompilationResult result;
+	result.success = true;
+	return result;
 }
 
 void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *remap_info) {
@@ -1018,20 +1033,23 @@ VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, Pro
 
 	apply_auto_connects(expanded_graph, type_db);
 
-	expand_functions(expanded_graph, type_db, remap_info);
+	VoxelGraphRuntime::CompilationResult func_expand_result = expand_functions(expanded_graph, type_db, remap_info);
+	if (!func_expand_result.success) {
+		return func_expand_result;
+	}
 
 	remove_relays(expanded_graph, remap_info);
 
-	const VoxelGraphRuntime::CompilationResult expand_result =
+	const VoxelGraphRuntime::CompilationResult expr_expand_result =
 			expand_expression_nodes(expanded_graph, type_db, remap_info);
-	if (!expand_result.success) {
-		return expand_result;
+	if (!expr_expand_result.success) {
+		return expr_expand_result;
 	}
 
 	merge_equivalences(expanded_graph, remap_info);
 	replace_simplifiable_nodes(expanded_graph, type_db, remap_info);
 
-	return expand_result;
+	return expr_expand_result;
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
