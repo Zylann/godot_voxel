@@ -158,6 +158,16 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 	std::sort(outputs.begin(), outputs.end(), Comparator());
 }
 
+VoxelGraphFunction::AutoConnect get_auto_connect_hint(const VoxelGraphFunction::Port &port) {
+	if (!port.is_custom()) {
+		VoxelGraphFunction::AutoConnect ac;
+		if (VoxelGraphFunction::try_get_auto_connect_from_node_type_id(port.type, ac)) {
+			return ac;
+		}
+	}
+	return VoxelGraphFunction::AUTO_CONNECT_NONE;
+}
+
 void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 	ZN_ASSERT(node.type_id == VoxelGraphFunction::NODE_FUNCTION);
 	ZN_ASSERT(func.is_valid());
@@ -176,14 +186,7 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 			ports.clear();
 			for (const VoxelGraphFunction::Port &fport : fports) {
 				ProgramGraph::Port port;
-				if (fport.is_custom()) {
-					port.autoconnect_hint = VoxelGraphFunction::AUTO_CONNECT_NONE;
-				} else {
-					VoxelGraphFunction::AutoConnect ac;
-					if (VoxelGraphFunction::try_get_auto_connect_from_node_type_id(fport.type, ac)) {
-						port.autoconnect_hint = ac;
-					}
-				}
+				port.autoconnect_hint = get_auto_connect_hint(fport);
 				ports.push_back(port);
 			}
 		}
@@ -195,6 +198,78 @@ void setup_function(ProgramGraph::Node &node, Ref<VoxelGraphFunction> func) {
 	node.autoconnect_default_inputs = true;
 
 	// TODO Function parameters
+}
+
+void update_function(
+		ProgramGraph &graph, uint32_t node_id, std::vector<ProgramGraph::Connection> *removed_connections) {
+	ProgramGraph::Node &node = graph.get_node(node_id);
+	ZN_ASSERT(node.type_id == VoxelGraphFunction::NODE_FUNCTION);
+	ZN_ASSERT_RETURN(node.params.size() >= 1);
+	Ref<VoxelGraphFunction> func = node.params[0];
+	ZN_ASSERT_RETURN(func.is_valid());
+
+	Span<const VoxelGraphFunction::Port> input_defs = func->get_input_definitions();
+	Span<const VoxelGraphFunction::Port> output_defs = func->get_output_definitions();
+
+	ZN_ASSERT(node.default_inputs.size() == node.inputs.size());
+
+	// Update inputs
+	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
+		const VoxelGraphFunction::Port &port_def = input_defs[input_index];
+
+		if (input_index < node.inputs.size()) {
+			ProgramGraph::Port &port = node.inputs[input_index];
+			port.autoconnect_hint = get_auto_connect_hint(port_def);
+
+		} else {
+			ProgramGraph::Port port;
+			port.autoconnect_hint = get_auto_connect_hint(port_def);
+			node.inputs.push_back(port);
+			node.default_inputs.push_back(0.f);
+		}
+	}
+	// Remove excess inputs
+	if (node.inputs.size() > input_defs.size()) {
+		for (unsigned int i = input_defs.size(); i < node.inputs.size(); ++i) {
+			const ProgramGraph::Port &port = node.inputs[i];
+
+			if (port.connections.size() > 0) {
+				ZN_ASSERT(port.connections.size() == 1);
+				const ProgramGraph::PortLocation src = port.connections[0];
+				const ProgramGraph::PortLocation dst{ node_id, i };
+				graph.disconnect(src, dst);
+
+				if (removed_connections != nullptr) {
+					removed_connections->push_back(ProgramGraph::Connection{ src, dst });
+				}
+			}
+		}
+		node.inputs.resize(input_defs.size());
+		node.default_inputs.resize(input_defs.size());
+	}
+
+	// Add new outputs
+	for (unsigned int output_index = node.outputs.size(); output_index < output_defs.size(); ++output_index) {
+		const VoxelGraphFunction::Port &port_def = output_defs[output_index];
+		ProgramGraph::Port port;
+		node.outputs.push_back(port);
+	}
+	// Remove excess outputs
+	if (node.outputs.size() > output_defs.size()) {
+		for (unsigned int i = output_defs.size(); i < node.outputs.size(); ++i) {
+			const ProgramGraph::Port &port = node.outputs[i];
+			const std::vector<ProgramGraph::PortLocation> destinations = port.connections;
+			const ProgramGraph::PortLocation src{ node_id, i };
+
+			for (const ProgramGraph::PortLocation dst : destinations) {
+				graph.disconnect(src, dst);
+				if (removed_connections != nullptr) {
+					removed_connections->push_back(ProgramGraph::Connection{ src, dst });
+				}
+			}
+		}
+		node.outputs.resize(output_defs.size());
+	}
 }
 
 uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
@@ -1174,6 +1249,15 @@ bool VoxelGraphFunction::get_node_param_index_by_name(
 	const ProgramGraph::Node &node = _graph.get_node(node_id);
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 	return type_db.try_get_param_index_from_name(node.type_id, name, out_param_index);
+}
+
+void VoxelGraphFunction::update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections) {
+	ProgramGraph &graph = _graph;
+	_graph.for_each_node([&graph, removed_connections](const ProgramGraph::Node &node) {
+		if (node.type_id == VoxelGraphFunction::NODE_FUNCTION) {
+			update_function(graph, node.id, removed_connections);
+		}
+	});
 }
 
 // Binding land

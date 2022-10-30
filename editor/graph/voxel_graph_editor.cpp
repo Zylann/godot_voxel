@@ -292,6 +292,7 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	_debug_renderer.clear();
 
 	build_gui_from_graph();
+	update_functions();
 
 	//schedule_preview_update();
 }
@@ -897,6 +898,8 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 	hide_profiling_ratios();
 	reset_modulates(*_graph_edit);
 
+	update_functions();
+
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	const VoxelGraphRuntime::CompilationResult result = _generator->compile(true);
@@ -1328,6 +1331,37 @@ void VoxelGraphEditor::create_function_node(String fpath) {
 	_undo_redo->add_undo_method(*_graph, "remove_node", node_id);
 	_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
 	_undo_redo->commit_action();
+}
+
+void VoxelGraphEditor::update_functions() {
+	struct L {
+		static void try_update_node_view(
+				VoxelGraphFunction &graph, GraphEdit &graph_edit, uint32_t node_id, const String &node_view_name) {
+			if (graph.get_node_type_id(node_id) == VoxelGraphFunction::NODE_FUNCTION) {
+				VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(graph_edit, node_view_name);
+				ERR_FAIL_COND(node_view == nullptr);
+				node_view->update_layout(graph);
+			}
+		}
+	};
+
+	ERR_FAIL_COND(_graph.is_null());
+
+	std::vector<ProgramGraph::Connection> removed_connections;
+	_graph->update_function_nodes(&removed_connections);
+	// TODO This can mess with undo/redo and remove connections, but I'm not sure if it's worth dealing with it.
+	// A way to workaround it is to introduce a concept of "invalid ports", where function nodes keep their old ports
+	// until they are explicitely removed by an action of the user (and then come back if undone).
+
+	for (const ProgramGraph::Connection &con : removed_connections) {
+		const String from_node_name = node_to_gui_name(con.src.node_id);
+		const String to_node_name = node_to_gui_name(con.dst.node_id);
+
+		_graph_edit->disconnect_node(from_node_name, con.src.port_index, to_node_name, con.dst.port_index);
+
+		L::try_update_node_view(**_graph, *_graph_edit, con.src.node_id, from_node_name);
+		L::try_update_node_view(**_graph, *_graph_edit, con.dst.node_id, to_node_name);
+	}
 }
 
 void VoxelGraphEditor::_bind_methods() {

@@ -1301,6 +1301,12 @@ void test_voxel_graph_functions_io_mismatch() {
 		ZN_TEST_ASSERT(compilation_result.success == false);
 		ZN_PRINT_VERBOSE(format("Compiling failed with message '{}'", compilation_result.message));
 	}
+	generator->get_main_function()->update_function_nodes(nullptr);
+	{
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		// Compiling should work now
+		ZN_TEST_ASSERT(compilation_result.success == true);
+	}
 }
 
 void test_voxel_graph_functions_misc() {

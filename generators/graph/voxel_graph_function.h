@@ -204,6 +204,8 @@ public:
 	bool get_node_input_index_by_name(uint32_t node_id, String name, unsigned int &out_input_index) const;
 	bool get_node_param_index_by_name(uint32_t node_id, String name, unsigned int &out_param_index) const;
 
+	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
+
 private:
 	void register_subresource(Resource &resource);
 	void unregister_subresource(Resource &resource);

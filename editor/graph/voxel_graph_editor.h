@@ -84,6 +84,7 @@ private:
 	void create_function_node(String fpath);
 	void profile();
 	void update_preview_axes_menu();
+	void update_functions();
 
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
