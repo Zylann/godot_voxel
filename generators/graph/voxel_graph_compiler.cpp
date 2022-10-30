@@ -1448,6 +1448,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
 			ZN_ASSERT(node.outputs.size() == 1);
+			ZN_ASSERT(node.outputs[0].connections.size() == 0);
 
 			if (_program.outputs_count == _program.outputs.size()) {
 				CompilationResult result;
@@ -1599,6 +1600,9 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				const ProgramGraph::Node &node = graph.get_node(node_id);
 				const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
+				uint16_t throwaway_data_index = 0;
+				bool has_throwaway_data = false;
+
 				// Allocate data to store outputs.
 				// Note, we don't allocate for inputs. The only way to allocate them is to pin them.
 				for (unsigned int output_index = 0; output_index < type.outputs.size(); ++output_index) {
@@ -1610,8 +1614,23 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 					if (buffer_spec.is_binding || buffer_spec.is_pinned) {
 						continue;
 					}
-					buffer_spec.data_index = data_helper.allocate(buffer_spec.users_count, false);
+					if (buffer_spec.users_count > 0) {
+						buffer_spec.data_index = data_helper.allocate(buffer_spec.users_count, false);
+					} else {
+						// The node will be run, but has an unused output. We'll have to allocate a throw-away buffer.
+						// We should be able to use the same buffer if more outputs are unused on the same node, but not
+						// the same as buffers that are used.
+						if (!has_throwaway_data) {
+							has_throwaway_data = true;
+							throwaway_data_index = data_helper.allocate(1, false);
+						}
+						buffer_spec.data_index = throwaway_data_index;
+					}
 					buffer_spec.has_data = true;
+				}
+
+				if (has_throwaway_data) {
+					data_helper.unref(throwaway_data_index);
 				}
 
 				// Release references on input datas, so they can be re-used by later operations
