@@ -1249,6 +1249,60 @@ void test_voxel_graph_functions_autoconnect() {
 	}
 }
 
+void test_voxel_graph_functions_io_mismatch() {
+	Ref<VoxelGraphFunction> func;
+	func.instantiate();
+
+	// X --- Add --- OutSDF
+	//      /
+	//     Y
+	const uint32_t fn_x = func->create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+	const uint32_t fn_y = func->create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
+	const uint32_t fn_add = func->create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+	const uint32_t fn_out_sdf = func->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+	func->add_connection(fn_x, 0, fn_add, 0);
+	func->add_connection(fn_y, 0, fn_add, 1);
+	func->add_connection(fn_add, 0, fn_out_sdf, 0);
+	func->auto_pick_inputs_and_outputs();
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	{
+		VoxelGraphFunction &g = **generator->get_main_function();
+		// X --- Func --- OutSDF
+		//      /
+		//     Y
+		const uint32_t n_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
+		const uint32_t n_f = g.create_function_node(func, Vector2());
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		g.add_connection(n_x, 0, n_f, 0);
+		g.add_connection(n_y, 0, n_f, 1);
+		g.add_connection(n_f, 0, n_out_sdf, 0);
+	}
+	{
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		ZN_TEST_ASSERT_MSG(compilation_result.success,
+				String("Failed to compile graph: {0}: {1}")
+						.format(varray(compilation_result.node_id, compilation_result.message)));
+	}
+
+	// Now remove an input from the function, and see how it goes
+	{
+		FixedArray<VoxelGraphFunction::Port, 1> inputs;
+		inputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_INPUT_X, "x" };
+		FixedArray<VoxelGraphFunction::Port, 1> outputs;
+		outputs[0] = VoxelGraphFunction::Port{ VoxelGraphFunction::NODE_OUTPUT_SDF, "sdf" };
+		func->set_io_definitions(to_span(inputs), to_span(outputs));
+	}
+	{
+		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		// Compiling should fail, but not crash
+		ZN_TEST_ASSERT(compilation_result.success == false);
+		ZN_PRINT_VERBOSE(format("Compiling failed with message '{}'", compilation_result.message));
+	}
+}
+
 void test_voxel_graph_functions_misc() {
 	static const float func_custom_input_defval = 42.f;
 
@@ -1455,7 +1509,7 @@ void test_voxel_graph_fuzzing() {
 
 			PackedInt32Array node_ids = g.get_node_ids();
 			if (node_ids.size() == 0) {
-				print_line("Empty graph");
+				ZN_PRINT_VERBOSE("Empty graph");
 				return;
 			}
 			const int connection_attempts = rng.rand() % (node_ids.size() + 1);
@@ -1488,10 +1542,10 @@ void test_voxel_graph_fuzzing() {
 
 	int successful_compiles_count = 0;
 
-	print_line("--- Begin of zone with possible errors ---");
+	//print_line("--- Begin of zone with possible errors ---");
 
 	for (int i = 0; i < attempts; ++i) {
-		print_line(String("Testing random graph #{0}").format(varray(i)));
+		ZN_PRINT_VERBOSE(format("Testing random graph #{}", i));
 		Ref<VoxelGeneratorGraph> generator;
 		generator.instantiate();
 		L::make_random_graph(**generator->get_main_function(), rng,
@@ -1505,8 +1559,8 @@ void test_voxel_graph_fuzzing() {
 		}
 	}
 
-	print_line("--- End of zone with possible errors ---");
-	print_line(String("Successful compiles: {0}/{1}").format(varray(successful_compiles_count, attempts)));
+	//print_line("--- End of zone with possible errors ---");
+	print_line(String("Successful random compiles: {0}/{1}").format(varray(successful_compiles_count, attempts)));
 }
 
 void test_voxel_graph_sphere_on_plane() {
@@ -3247,6 +3301,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_functions_pass_through);
 	VOXEL_TEST(test_voxel_graph_functions_nested_pass_through);
 	VOXEL_TEST(test_voxel_graph_functions_autoconnect);
+	VOXEL_TEST(test_voxel_graph_functions_io_mismatch);
 	VOXEL_TEST(test_voxel_graph_functions_misc);
 	VOXEL_TEST(test_voxel_graph_fuzzing);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2

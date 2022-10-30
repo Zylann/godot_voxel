@@ -725,6 +725,16 @@ VoxelGraphRuntime::CompilationResult expand_function(
 		return VoxelGraphRuntime::CompilationResult::make_error("Function resource is invalid.", node_id);
 	}
 
+	// Check I/Os are up to date
+	Span<const VoxelGraphFunction::Port> func_inputs = function->get_input_definitions();
+	Span<const VoxelGraphFunction::Port> func_outputs = function->get_output_definitions();
+	if (func_inputs.size() != fnode.inputs.size()) {
+		return VoxelGraphRuntime::CompilationResult::make_error("Function inputs are not up to date.", node_id);
+	}
+	if (func_outputs.size() != fnode.outputs.size()) {
+		return VoxelGraphRuntime::CompilationResult::make_error("Function outputs are not up to date.", node_id);
+	}
+
 	// Copy original graph so we can do some local pre-processing to the function
 	ProgramGraph fgraph;
 	{
@@ -780,8 +790,6 @@ VoxelGraphRuntime::CompilationResult expand_function(
 	}
 
 	// Get nodes corresponding to each input and output
-	Span<const VoxelGraphFunction::Port> func_inputs = function->get_input_definitions();
-	Span<const VoxelGraphFunction::Port> func_outputs = function->get_output_definitions();
 	std::vector<std::vector<uint32_t>> inputs_node_ids;
 	std::vector<std::vector<uint32_t>> outputs_node_ids;
 	get_input_and_output_node_ids(fgraph, func_inputs, func_outputs, inputs_node_ids, outputs_node_ids);
@@ -806,8 +814,6 @@ VoxelGraphRuntime::CompilationResult expand_function(
 	// Find mappings between inputs of the function to unpacked nodes
 	std::vector<std::vector<ProgramGraph::PortLocation>> inputs_to_destinations;
 	inputs_to_destinations.resize(func_inputs.size());
-	ZN_ASSERT(func_inputs.size() == fnode.inputs.size());
-	ZN_ASSERT(func_outputs.size() == fnode_outputs.size());
 
 	for (unsigned int input_index = 0; input_index < fnode.inputs.size(); ++input_index) {
 		std::vector<ProgramGraph::PortLocation> &in_destinations = inputs_to_destinations[input_index];
