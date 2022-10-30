@@ -89,10 +89,11 @@ public:
 		}
 
 		inline bool equals(const Port &other) const {
-			if (type == other.type) {
-				return true;
+			if (is_custom()) {
+				return name == other.name;
+			} else {
+				return type == other.type;
 			}
-			return name == other.name;
 		}
 	};
 
