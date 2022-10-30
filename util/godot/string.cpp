@@ -30,6 +30,7 @@ PackedStringArray to_godot(const std::vector<std::string> &sv) {
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s) {
 	const CharString cs = s.s.utf8();
 	// String has non-explicit constructors from various types making this ambiguous
-	ss.std::stringstream::operator<<(cs.get_data());
+	const char *ca = cs.get_data();
+	ss << ca;
 	return ss;
 }
