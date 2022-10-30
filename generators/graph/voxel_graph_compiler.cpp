@@ -1355,7 +1355,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				a = mem.add_constant(defval, port.require_input_buffer_when_constant);
 
 			} else {
-				ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
+				const ProgramGraph::PortLocation src_port = node.inputs[j].connections[0];
 				auto address_it = _program.output_port_addresses.find(src_port);
 				// Previous node ports must have been registered
 				ZN_ASSERT(address_it != _program.output_port_addresses.end());
