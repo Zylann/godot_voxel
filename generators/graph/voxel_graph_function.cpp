@@ -250,7 +250,6 @@ void update_function(
 
 	// Add new outputs
 	for (unsigned int output_index = node.outputs.size(); output_index < output_defs.size(); ++output_index) {
-		const VoxelGraphFunction::Port &port_def = output_defs[output_index];
 		ProgramGraph::Port port;
 		node.outputs.push_back(port);
 	}
