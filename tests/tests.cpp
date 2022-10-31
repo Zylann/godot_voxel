@@ -1698,6 +1698,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_functions_autoconnect);
 	VOXEL_TEST(test_voxel_graph_functions_io_mismatch);
 	VOXEL_TEST(test_voxel_graph_functions_misc);
+	VOXEL_TEST(test_voxel_graph_issue461);
 	VOXEL_TEST(test_voxel_graph_fuzzing);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 	VOXEL_TEST(test_voxel_graph_issue427);

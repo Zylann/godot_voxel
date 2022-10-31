@@ -1108,6 +1108,16 @@ void test_voxel_graph_functions_misc() {
 	}
 }
 
+void test_voxel_graph_issue461() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	generator->get_main_function()->create_node(VoxelGraphFunction::NODE_OUTPUT_TYPE, Vector2(), -69);
+	generator->debug_load_waves_preset();
+	generator->debug_load_waves_preset();
+	// This used to crash
+	generator->generate_shader();
+}
+
 template <typename T>
 void get_node_types(const VoxelGraphNodeDB &type_db, std::vector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
 	for (unsigned int i = 0; i < VoxelGraphFunction::NODE_TYPE_COUNT; ++i) {

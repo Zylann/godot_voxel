@@ -17,6 +17,7 @@ void test_voxel_graph_functions_nested_pass_through();
 void test_voxel_graph_functions_autoconnect();
 void test_voxel_graph_functions_io_mismatch();
 void test_voxel_graph_functions_misc();
+void test_voxel_graph_issue461();
 void test_voxel_graph_fuzzing();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 void test_voxel_graph_issue427();
