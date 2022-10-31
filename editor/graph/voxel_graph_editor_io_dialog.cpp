@@ -225,7 +225,7 @@ void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, std::vector<Vo
 }
 
 void VoxelGraphEditorIODialog::copy_data_to_ui(PortsUI &ui, const std::vector<VoxelGraphFunction::Port> &ports) {
-	if (ui.item_list->get_item_count() != ports.size()) {
+	if (ui.item_list->get_item_count() != int(ports.size())) {
 		PackedInt32Array selection = ui.item_list->get_selected_items();
 
 		ui.item_list->clear();
