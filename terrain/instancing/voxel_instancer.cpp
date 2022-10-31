@@ -1663,6 +1663,7 @@ Dictionary VoxelInstancer::_b_debug_get_instance_counts() const {
 
 void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 	Node *root = debug_dump_as_nodes();
+	ERR_FAIL_COND(root == nullptr);
 
 	set_nodes_owner_except_root(root, root);
 
@@ -1677,7 +1678,6 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 }
 
 Node *VoxelInstancer::debug_dump_as_nodes() const {
-	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
 	const unsigned int mesh_block_size = 1 << _parent_mesh_block_size_po2;
 
 	Node3D *root = memnew(Node3D);
