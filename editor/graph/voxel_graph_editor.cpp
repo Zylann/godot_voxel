@@ -1320,7 +1320,6 @@ void VoxelGraphEditor::create_function_node(String fpath) {
 	}
 
 	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
-	const uint32_t node_type_id = VoxelGraphFunction::NODE_FUNCTION;
 
 	const uint32_t node_id = _graph->generate_node_id();
 	const StringName node_name = node_to_gui_name(node_id);
