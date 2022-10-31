@@ -286,7 +286,7 @@ void VoxelGraphEditorPlugin::dock_graph_editor() {
 	ZN_PRINT_VERBOSE("Dock voxel graph editor");
 
 	_graph_editor->get_parent()->remove_child(_graph_editor);
-	queue_free_node(_graph_editor_window);
+	_graph_editor_window->queue_free();
 	_graph_editor_window = nullptr;
 
 	_graph_editor->set_popout_button_enabled(true);

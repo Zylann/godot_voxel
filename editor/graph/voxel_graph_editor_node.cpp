@@ -95,14 +95,14 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 	}
 
 	if (_comment_label != nullptr) {
-		queue_free_node(_comment_label);
+		_comment_label->queue_free();
 		_comment_label = nullptr;
 	}
 
 	// Clear previous inputs and outputs
 	for (Node *row : _rows) {
 		remove_child(row);
-		queue_free_node(row);
+		row->queue_free();
 	}
 	_rows.clear();
 	_output_labels.clear();

@@ -62,7 +62,7 @@ void VoxelInstancer::clear_blocks() {
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
 			ERR_CONTINUE(instance.root == nullptr);
-			queue_free_node(instance.root);
+			instance.root->queue_free();
 		}
 	}
 	_blocks.clear();
@@ -633,7 +633,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 			block.scene_instances[instance_index] = instance;
 			// We just drop the instance without saving, because this function is supposed to occur only in editor,
 			// or in the very rare cases where library is modified in game (which would invalidate saves anyways).
-			queue_free_node(prev_instance.root);
+			prev_instance.root->queue_free();
 		}
 	}
 }
@@ -762,7 +762,7 @@ void VoxelInstancer::remove_block(unsigned int block_index) {
 		ERR_CONTINUE(instance.component == nullptr);
 		instance.component->detach();
 		ERR_CONTINUE(instance.root == nullptr);
-		queue_free_node(instance.root);
+		instance.root->queue_free();
 	}
 
 	// If the block we removed was also the last one, we don't enter here
@@ -1051,7 +1051,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			ERR_CONTINUE(instance.component == nullptr);
 			instance.component->detach();
 			ERR_CONTINUE(instance.root == nullptr);
-			queue_free_node(instance.root);
+			instance.root->queue_free();
 		}
 
 		block.scene_instances.resize(transforms.size());
@@ -1466,7 +1466,7 @@ void VoxelInstancer::remove_floating_scene_instances(Block &block, const Transfo
 		// Not using detach_as_removed(),
 		// this function is not marking the block as modified. It may be done by the caller.
 		instance.component->detach();
-		queue_free_node(instance.root);
+		instance.root->queue_free();
 
 		SceneInstance moved_instance = block.scene_instances[last_instance_index];
 		if (moved_instance.root != instance.root) {

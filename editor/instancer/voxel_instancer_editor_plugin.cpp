@@ -106,7 +106,7 @@ bool VoxelInstancerEditorPlugin::toggle_stat_view() {
 	} else {
 		if (_stat_view != nullptr) {
 			remove_control_from_container(CONTAINER_SPATIAL_EDITOR_BOTTOM, _stat_view);
-			queue_free_node(_stat_view);
+			_stat_view->queue_free();
 			_stat_view = nullptr;
 		}
 	}
