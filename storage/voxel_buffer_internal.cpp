@@ -166,13 +166,17 @@ VoxelBufferInternal &VoxelBufferInternal::operator=(VoxelBufferInternal &&src) {
 void VoxelBufferInternal::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(sx <= MAX_SIZE && sy <= MAX_SIZE && sz <= MAX_SIZE);
-#ifdef TOOLS_ENABLED
-	if (sx == 0 || sy == 0 || sz == 0) {
-		ZN_PRINT_WARNING(format("VoxelBuffer::create called with empty size ({}, {}, {})", sx, sy, sz));
-	}
-#endif
 
 	clear_voxel_metadata();
+
+#ifdef TOOLS_ENABLED
+	if (sx == 0 || sy == 0 || sz == 0) {
+		ZN_PRINT_WARNING(format(
+				"VoxelBuffer::create called with empty size ({}, {}, {}). It will be cleared instead.", sx, sy, sz));
+		clear();
+		return;
+	}
+#endif
 
 	const Vector3i new_size(sx, sy, sz);
 	if (new_size != _size) {
