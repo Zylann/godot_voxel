@@ -141,14 +141,14 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 		} else if (node.autoconnect_default_inputs) {
 			// The input node is implicit
 			for (const ProgramGraph::Port &port : node.inputs) {
-				VoxelGraphFunction::NodeTypeID type_id;
+				VoxelGraphFunction::NodeTypeID input_type_id;
 				// If the input isn't connected and has an autoconnect hint
 				if (port.connections.size() == 0 &&
 						VoxelGraphFunction::try_get_node_type_id_from_auto_connect(
-								VoxelGraphFunction::AutoConnect(port.autoconnect_hint), type_id)) {
-					const VoxelGraphNodeDB::NodeType &type = type_db.get_type(type_id);
-					ZN_ASSERT(type.outputs.size() == 1);
-					L::try_add_input(inputs, type_id, type.outputs[0].name);
+								VoxelGraphFunction::AutoConnect(port.autoconnect_hint), input_type_id)) {
+					const VoxelGraphNodeDB::NodeType &input_type = type_db.get_type(input_type_id);
+					ZN_ASSERT(input_type.outputs.size() == 1);
+					L::try_add_input(inputs, input_type_id, input_type.outputs[0].name);
 				}
 			}
 		}
