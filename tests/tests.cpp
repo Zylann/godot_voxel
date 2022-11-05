@@ -1086,7 +1086,7 @@ void test_voxel_stream_region_files() {
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 
-void test_fast_noise_2() {
+void test_fast_noise_2_basic() {
 	// Very basic test. The point is to make sure it doesn't crash, so there is no special condition to check.
 	Ref<FastNoise2> noise;
 	noise.instantiate();
@@ -1096,6 +1096,14 @@ void test_fast_noise_2() {
 	Ref<Image> im = Image::create_empty(256, 256, false, Image::FORMAT_RGB8);
 	noise->generate_image(im, false);
 	//im->save_png("zylann_test_fastnoise2.png");
+}
+
+void test_fast_noise_2_empty_encoded_node_tree() {
+	Ref<FastNoise2> noise;
+	noise.instantiate();
+	noise->set_noise_type(FastNoise2::TYPE_ENCODED_NODE_TREE);
+	// This can print an error, but should not crash
+	noise->update_generator();
 }
 
 #endif
@@ -1719,7 +1727,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_region_file);
 	VOXEL_TEST(test_voxel_stream_region_files);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-	VOXEL_TEST(test_fast_noise_2);
+	VOXEL_TEST(test_fast_noise_2_basic);
+	VOXEL_TEST(test_fast_noise_2_empty_encoded_node_tree);
 #endif
 	VOXEL_TEST(test_run_blocky_random_tick);
 	VOXEL_TEST(test_flat_map);

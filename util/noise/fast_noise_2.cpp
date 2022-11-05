@@ -418,8 +418,10 @@ void FastNoise2::generate_image(Ref<Image> image, bool tileable) const {
 void FastNoise2::update_generator() {
 	if (_noise_type == TYPE_ENCODED_NODE_TREE) {
 		CharString cs = _last_set_encoded_node_tree.utf8();
+		// TODO FastNoise2 crashes if given an empty string.
+		ERR_FAIL_COND_MSG(cs.length() == 0, "Encoded node tree is empty.");
 		_generator = FastNoise::NewFromEncodedNodeTree(cs.get_data());
-		ERR_FAIL_COND(!is_valid());
+		ERR_FAIL_COND_MSG(!is_valid(), "Encoded node tree is invalid.");
 		// TODO Maybe apply period modifier here?
 		// NoiseTool assumes we scale input coordinates so typical noise made in there has period 1...
 		return;
