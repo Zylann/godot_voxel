@@ -342,7 +342,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	return get_sdf_interpolated([terrain, channel](Vector3i ipos) {
 		VoxelSingleValue defval;
 		defval.f = 1.f;
-		VoxelSingleValue value = terrain->get_voxel(ipos, VoxelBufferInternal::CHANNEL_SDF, defval);
+		VoxelSingleValue value = terrain->get_voxel(ipos, channel, defval);
 		return value.f;
 	},
 			position);
