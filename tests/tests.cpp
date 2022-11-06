@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "../edition/voxel_mesh_sdf_gd.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
@@ -14,6 +15,7 @@
 #include "../streams/voxel_block_serializer_gd.h"
 #include "../util/container_funcs.h"
 #include "../util/flat_map.h"
+#include "../util/godot/box_shape_3d.h"
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
@@ -1674,6 +1676,33 @@ void test_task_priority_values() {
 	ZN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
 }
 
+void test_issue463() {
+	Ref<VoxelMeshSDF> msdf;
+	msdf.instantiate();
+
+	Dictionary d;
+	d["roman"] = 22;
+	d[22] = 25;
+	// TODO The original report was creating a BoxShape3D, but for reasons beyond my understanding, Godot's
+	// PhysicsServer3D is still not created after `MODULE_INITIALIZATION_LEVEL_SERVERS`. And not even SCENE or EDITOR
+	// levels. It's impossible to use a level to do anything with physics.... Go figure.
+	//
+	// Ref<BoxShape3D> shape1;
+	// shape1.instantiate();
+	// Ref<BoxShape3D> shape2;
+	// shape2.instantiate();
+	// d[shape1] = shape2;
+	Ref<Resource> res1;
+	res1.instantiate();
+	Ref<Resource> res2;
+	res2.instantiate();
+	d[res1] = res2;
+
+	ZN_ASSERT(msdf->has_method("_set_data"));
+	// Setting invalid data should cause an error but not crash or leak
+	msdf->call("_set_data", d);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1738,6 +1767,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_mesher_cubes);
 	VOXEL_TEST(test_threaded_task_runner);
 	VOXEL_TEST(test_task_priority_values);
+	VOXEL_TEST(test_issue463);
 
 	print_line("------------ Voxel tests end -------------");
 }

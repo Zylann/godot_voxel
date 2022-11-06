@@ -23,16 +23,16 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	virtual_texture_settings.begin_lod_index = 0;
 
 	if (additional_data.size() > 0) {
-		Ref<VoxelGenerator> generator = try_get<Ref<VoxelGenerator>>(additional_data, "generator");
+		Ref<VoxelGenerator> generator = additional_data.get("generator", Variant());
 		input.generator = generator.ptr();
-		input.origin_in_voxels = try_get<Vector3i>(additional_data, "origin_in_voxels");
-		virtual_texture_settings.enabled = try_get<bool>(additional_data, "normalmap_enabled");
+		input.origin_in_voxels = additional_data.get("origin_in_voxels", Vector3i());
+		virtual_texture_settings.enabled = additional_data.get("normalmap_enabled", false);
 		virtual_texture_settings.octahedral_encoding_enabled =
-				try_get<bool>(additional_data, "octahedral_normal_encoding_enabled");
-		virtual_texture_settings.tile_resolution_min = try_get<int>(additional_data, "normalmap_tile_resolution");
+				additional_data.get("octahedral_normal_encoding_enabled", false);
+		virtual_texture_settings.tile_resolution_min = additional_data.get("normalmap_tile_resolution", 16);
 		virtual_texture_settings.tile_resolution_max = virtual_texture_settings.tile_resolution_min;
 		virtual_texture_settings.max_deviation_degrees =
-				math::clamp(try_get<int>(additional_data, "normalmap_max_deviation_degrees"),
+				math::clamp(int(additional_data.get("normalmap_max_deviation_degrees", 0)),
 						int(NormalMapSettings::MIN_DEVIATION_DEGREES), int(NormalMapSettings::MAX_DEVIATION_DEGREES));
 		input.virtual_texture_hint = virtual_texture_settings.enabled;
 	}
