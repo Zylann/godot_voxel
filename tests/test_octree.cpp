@@ -21,7 +21,7 @@ void test_octree_update() {
 	const Box3i viewer_box_voxels =
 			Box3i::from_center_extents(Vector3i::from_floored(viewer_pos), Vector3i(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
-	viewer_box_octrees.for_each_cell([&octrees, lod_distance, block_size, lod_count](Vector3i pos) {
+	viewer_box_octrees.for_each_cell([&octrees, lod_distance](Vector3i pos) {
 		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
 		LodOctree &octree = e->value();
 		LodOctree::NoDestroyAction nda;
@@ -194,8 +194,7 @@ void test_octree_find_in_box() {
 		ERR_FAIL_COND(it == expected_positions.end());
 		const std::unordered_set<Vector3i> &expected_area_positions = it->second;
 		std::unordered_set<Vector3i> found_positions;
-		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions, &checksum](
-												   Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
+		octree.for_leaves_in_box(area_box, [&found_positions, &expected_area_positions, &checksum](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 			auto insert_result = found_positions.insert(node_pos);
 			// Must be one of the expected positions
 			ERR_FAIL_COND(expected_area_positions.find(node_pos) == expected_area_positions.end());
@@ -209,10 +208,9 @@ void test_octree_find_in_box() {
 	{
 		ProfilingClock profiling_clock;
 		int checksum2 = 0;
-		full_box.for_each_cell([&octree, &expected_positions, &checksum2](Vector3i pos) {
+		full_box.for_each_cell([&octree, &checksum2](Vector3i pos) {
 			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
-			octree.for_leaves_in_box(area_box, [&checksum2](Vector3i node_pos, int lod,
-													   const LodOctree::NodeData &node_data) {
+			octree.for_leaves_in_box(area_box, [&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {
 				checksum2 += node_data.state;
 			});
 		});

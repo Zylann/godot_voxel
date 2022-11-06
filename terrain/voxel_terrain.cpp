@@ -947,15 +947,15 @@ void VoxelTerrain::process_viewers() {
 					VOXEL_PROFILE_SCOPE();
 
 					// Unview blocks that just fell out of range
-					prev_data_box.difference(new_data_box, [this, &viewer](Box3i out_of_range_box) {
-						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
+					prev_data_box.difference(new_data_box, [this](Box3i out_of_range_box) {
+						out_of_range_box.for_each_cell([this](Vector3i bpos) {
 							unview_data_block(bpos);
 						});
 					});
 
 					// View blocks that just entered the range
-					new_data_box.difference(prev_data_box, [this, &viewer](Box3i box_to_load) {
-						box_to_load.for_each_cell([this, &viewer](Vector3i bpos) {
+					new_data_box.difference(prev_data_box, [this](Box3i box_to_load) {
+						box_to_load.for_each_cell([this](Vector3i bpos) {
 							// Load or update block
 							view_data_block(bpos);
 						});

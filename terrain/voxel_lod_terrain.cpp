@@ -1522,7 +1522,7 @@ void VoxelLodTerrain::process_unload_mesh_blocks_sliding_box(Vector3 p_viewer_po
 		{
 			VOXEL_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.blocks_pending_update, [&lod, new_box](Vector3i bpos) {
+			unordered_remove_if(lod.blocks_pending_update, [new_box](Vector3i bpos) {
 				return !new_box.contains(bpos);
 			});
 		}
