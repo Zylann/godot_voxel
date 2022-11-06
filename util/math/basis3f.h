@@ -151,13 +151,13 @@ struct Basis3f {
 		return b;
 	}
 
-	inline float Basis3f::determinant() const {
+	inline float determinant() const {
 		return rows[0][0] * (rows[1][1] * rows[2][2] - rows[2][1] * rows[1][2]) -
 				rows[1][0] * (rows[0][1] * rows[2][2] - rows[2][1] * rows[0][2]) +
 				rows[2][0] * (rows[0][1] * rows[1][2] - rows[1][1] * rows[0][2]);
 	}
 
-	Quaternionf Basis3f::get_rotation_quaternion() const {
+	Quaternionf get_rotation_quaternion() const {
 		// Assumes that the matrix can be decomposed into a proper rotation and scaling matrix as M = R.S,
 		// and returns the Euler angles corresponding to the rotation part, complementing get_scale().
 		// See the comment in get_scale() for further information.
@@ -172,7 +172,7 @@ struct Basis3f {
 		return m.get_quaternion();
 	}
 
-	Quaternionf Basis3f::get_quaternion() const {
+	Quaternionf get_quaternion() const {
 		//#ifdef MATH_CHECKS
 		// 	ERR_FAIL_COND_V_MSG(!is_rotation(), Quaternion(), "Basis must be normalized in order to be casted to a
 		// Quaternion. Use get_rotation_quaternion() or call orthonormalized() if the Basis contains linearly
