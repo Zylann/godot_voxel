@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import sys
+from os.path import exists
 
 if len(sys.argv) < 2:
     print("ERROR: You must run program with file name as argument.")
@@ -20,17 +21,6 @@ if file_contents.find("ERROR: AddressSanitizer:") != -1:
     print("FATAL ERROR: An incorrectly used memory was found.")
     sys.exit(51)
 
-# In test project may be put several assert functions which will control if
-# project is executed with right parameters etc. which normally will not stop
-# execution of project
-# Example - https://github.com/godotengine/godot/issues/37980#issue-602414919
-
-if file_contents.find("Assertion failed") != -1:
-    print(
-        'ERROR: Assertion failed in project, check execution log for more info (search for "Assertion failed" in CI log)'
-    )
-    sys.exit(55)
-
 # There is also possible, that program crashed with or without backtrace.
 # Example - https://github.com/godotengine/godot/issues/51620#issue-970308653
 
@@ -41,7 +31,6 @@ if (
     or file_contents.find("Aborted (core dumped)") != -1
     or file_contents.find("(core dumped)") != -1
     or file_contents.find("Aborted") != -1
-    or file_contents.find("Assertion") != -1
 
 ):
     print("FATAL ERROR: Godot has been crashed.")
@@ -76,7 +65,7 @@ if file_contents.find("ObjectDB instances leaked at exit") != -1:
 
 if file_contents.find("vptr for") != -1:
     print('WARNING: Found pointer which not point at valid object (search for "vptr for" in CI log)')
-    sys.exit(56)
+    # sys.exit(56)
 
 # By default overflow or underflow of signed values are in C++ just
 # undefined behavior(most of the time value is wrapped)
@@ -103,7 +92,7 @@ if file_contents.find("null pointer passed as argument") != -1:
 
 if file_contents.find("misaligned address") != -1:
     print('ERROR: Found usage of misaligned pointer (search for "misaligned address" in CI log)')
-    sys.exit(59)
+    #sys.exit(59)
 
 # For now Godot leaks a lot of rendering stuff so for now we just show info
 # about it and this needs to be re-enabled after fixing this memory leaks.
@@ -113,7 +102,7 @@ if file_contents.find("misaligned address") != -1:
 
 if file_contents.find("were leaked") != -1 or file_contents.find("were never freed") != -1:
     print('WARNING: Memory leak was found (search for "were leaked" or "were never freed" in CI log)')
-    sys.exit(60)
+    #sys.exit(60)
 
 # Usually error about trying to free invalid ID is caused by removing wrong object
 # Example - https://github.com/godotengine/godot/issues/49623#issue-921610423
@@ -123,6 +112,18 @@ if file_contents.find("were leaked") != -1 or file_contents.find("were never fre
 if file_contents.find("Attempted to free invalid ID") != -1:
     print('WARNING: Trying to free invalid object (search for "Attempted to free invalid ID" in CI log)')
     #sys.exit(61)
+
+if file_contents.find("Killed") != -1:
+    print('ERROR: CI was killed due one of possible bugs')
+    sys.exit(62)
+
+if file_contents.find("timeout: sending signal") != -1:
+    print('ERROR: timeout of command')
+    sys.exit(63)
+
+if exists("CRASH_FOUND"):
+    print('ERROR: Reproducer found crash')
+    sys.exit(91)
 
 
 sys.exit(0)

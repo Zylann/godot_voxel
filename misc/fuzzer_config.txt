@@ -1,57 +1,63 @@
 use_parent_methods: true
 add_to_tree: true
-delay_removing_added_nodes_to_next_frame: true
-test_one_class_multiple_times: true
+#test_one_class_multiple_times: true
 
 custom_classes:
-VoxelEngine
-ZN_ThreadedTask
-VoxelLibrary
+FastNoise2
+VoxelBlockSerializer
+VoxelBlockyLibrary
+VoxelBlockyModel
+VoxelBoxMover
+VoxelBuffer
 VoxelColorPalette
+VoxelDataBlockEnterInfo
+VoxelEngine
+VoxelGenerator
+VoxelGeneratorFlat
+VoxelGeneratorGraph
+VoxelGeneratorHeightmap
+VoxelGeneratorImage
+VoxelGeneratorNoise
+VoxelGeneratorNoise2D
+VoxelGeneratorScript
+VoxelGeneratorWaves
+VoxelInstanceComponent
+VoxelInstanceGenerator
 VoxelInstanceLibrary
 VoxelInstanceLibraryItem
-VoxelInstanceLibraryItemBase
+VoxelInstanceLibraryMultiMeshItem
 VoxelInstanceLibrarySceneItem
-VoxelInstanceGenerator
-VoxelBuffer
-VoxelNode
-VoxelTerrain
-VoxelLodTerrain
-VoxelViewer # Cause freeze when using with VoxelTerrain, due iterating each cell
 VoxelInstancer
+VoxelLodTerrain
+VoxelMeshSDF
+VoxelMesher
+VoxelMesherBlocky
+VoxelMesherCubes
+VoxelMesherDMC
+VoxelMesherTransvoxel
+VoxelModifier
+VoxelModifierMesh
+VoxelModifierSphere
+VoxelNode
+VoxelRaycastResult
+VoxelSaveCompletionTracker
 VoxelStream
-VoxelStreamFile
 VoxelStreamRegionFiles
 VoxelStreamSQLite
 VoxelStreamScript
-VoxelGenerator
-VoxelGeneratorFlat
-VoxelGeneratorWaves
-VoxelGeneratorHeightmap
-VoxelGeneratorImage
-VoxelGeneratorNoise2D
-VoxelGeneratorNoise
-VoxelGeneratorGraph
-VoxelGeneratorScript
-VoxelBoxMover
-VoxelRaycastResult
+VoxelTerrain
 VoxelTool
-VoxelToolTerrain
-VoxelToolLodTerrain
 VoxelToolBuffer
-VoxelBlockSerializer
+VoxelToolLodTerrain
+VoxelToolTerrain
+VoxelViewer
 VoxelVoxLoader
-VoxelDataBlockEnterInfo
-VoxelMeshSDF
 ZN_FastNoiseLite
 ZN_FastNoiseLiteGradient
-FastNoise2
-VoxelMesher
-VoxelMesherBlocky
-VoxelMesherTransvoxel
-VoxelMesherDMC
-VoxelMesherCubes
+ZN_ThreadedTask
 
-#function_exceptions_append:
-#debug_print_sdf_top_down # Look at https://github.com/Zylann/godot_voxel/issues/330
-
+function_exceptions_append:
+update_generator # https://github.com/Zylann/godot_voxel/issues/466
+_set_data # https://github.com/Zylann/godot_voxel/issues/463
+debug_measure_microseconds_per_voxel # Slow function
+debug_print_sdf_top_down # Slow and spams hundreads of things
