@@ -768,7 +768,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	switch (params.color_mode) {
 		case COLOR_RAW:
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
@@ -785,7 +785,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
@@ -823,7 +823,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetColorFromPalette get_color_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						if (params.store_colors_in_texture) {
 							build_voxel_mesh_as_greedy_cubes_atlased(
@@ -852,7 +852,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
@@ -888,7 +888,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetIndexFromPalette get_index_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBuffer::DEPTH_8_BIT:
+				case VoxelBufferInternal::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
@@ -905,7 +905,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBuffer::DEPTH_16_BIT:
+				case VoxelBufferInternal::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
