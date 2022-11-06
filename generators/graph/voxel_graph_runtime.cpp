@@ -347,7 +347,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		}
 
 		if (type.compile_func != nullptr) {
-			CompileContext ctx(*node, operations, _program.heap_resources, params_copy);
+			CompileContext ctx(operations, _program.heap_resources, params_copy);
 			type.compile_func(ctx);
 			if (ctx.has_error()) {
 				CompilationResult result;
