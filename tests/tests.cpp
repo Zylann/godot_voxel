@@ -354,7 +354,7 @@ void test_voxel_graph_generator_texturing() {
 	 *  Z   Y        Weight1
 	 *       \
 	 *  X --- Sub0 --- Sdf
-	 * 
+	 *
 	 */
 
 	const uint32_t in_x = generator->create_node(VoxelGeneratorGraph::NODE_INPUT_X, Vector2(0, 0));
@@ -512,7 +512,7 @@ void test_voxel_graph_generator_texturing() {
 		};
 
 		// Putting state on the stack because the debugger doesnt let me access it
-		const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+		//const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 		// Try first without optimization
 		generator->set_use_optimized_execution_map(false);
@@ -757,7 +757,7 @@ void test_instance_data_serialization() {
 	ERR_FAIL_COND(dst_data.position_range != src_data.position_range);
 
 	const float distance_error = max(src_data.position_range, VoxelInstanceBlockData::POSITION_RANGE_MINIMUM) /
-								 float(VoxelInstanceBlockData::POSITION_RESOLUTION);
+			float(VoxelInstanceBlockData::POSITION_RESOLUTION);
 
 	// Compare layers
 	for (unsigned int layer_index = 0; layer_index < dst_data.layers.size(); ++layer_index) {
