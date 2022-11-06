@@ -8,6 +8,7 @@
 #include "../../util/godot/node_3d.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory.h"
+#include "generate_instances_block_task.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_multimesh_item.h"
@@ -123,11 +124,13 @@ protected:
 private:
 	struct Layer;
 
+	void process();
+	void process_generator_results();
 	void process_mesh_lods();
 
 	void add_layer(int layer_id, int lod_index);
 	void remove_layer(int layer_id);
-	unsigned int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position);
+	unsigned int create_block(Layer &layer, uint16_t layer_id, Vector3i grid_position, bool pending_instances);
 	void remove_block(unsigned int block_index);
 	void set_world(World3D *world);
 	void clear_blocks();
@@ -182,6 +185,9 @@ private:
 		uint16_t layer_id;
 		uint8_t current_mesh_lod = 0;
 		uint8_t lod_index;
+		// If true, the block is waiting to be populated asynchronously. We create blocks in this state so when async
+		// generation completes, we can check if the block is still present.
+		bool pending_instances = false;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
 		DirectMultiMeshInstance multimesh_instance;
@@ -215,6 +221,7 @@ private:
 	};
 
 	struct Lod : public NonCopyable {
+		// Unordered list of layer IDs using this LOD level.
 		std::vector<int> layers;
 
 		// Blocks that have have unsaved changes.
@@ -225,7 +232,7 @@ private:
 		// These instances are user-authored ones. If a block does not have an entry there,
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
-		// Can't use `HashMap` because it lacks move semantics.
+		// Can't use Godot's `HashMap` because it lacks move semantics.
 		std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
 
 		FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
@@ -247,6 +254,8 @@ private:
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	float _mesh_lod_distance = 0.f;
+
+	std::shared_ptr<VoxelInstancerGeneratorTaskOutputQueue> _generator_results;
 
 #ifdef TOOLS_ENABLED
 	DebugRenderer _debug_renderer;
