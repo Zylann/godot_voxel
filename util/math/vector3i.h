@@ -68,6 +68,10 @@ inline bool is_valid_size(const Vector3i &s) {
 	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
 
+inline bool is_empty_size(const Vector3i &s) {
+	return s.x == 0 || s.y == 0 || s.z == 0;
+}
+
 } // namespace Vector3iUtil
 
 namespace math {
