@@ -220,7 +220,7 @@ void test_octree_find_in_box() {
 	{
 		ProfilingClock profiling_clock;
 		int checksum2 = 0;
-		full_box.for_each_cell([&octree, &expected_positions, &checksum2](Vector3i pos) {
+		full_box.for_each_cell([&octree, &checksum2](Vector3i pos) {
 			const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 			octree.for_leaves_in_box(
 					area_box, [&checksum2](Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {

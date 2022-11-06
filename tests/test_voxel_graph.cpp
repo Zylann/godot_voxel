@@ -386,7 +386,7 @@ void test_voxel_graph_generator_texturing() {
 
 	const uint32_t in_x = g.create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2(0, 0));
 	const uint32_t in_y = g.create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2(0, 0));
-	const uint32_t in_z = g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
+	/*const uint32_t in_z =*/g.create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2(0, 0));
 	const uint32_t out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
 	const uint32_t n_clamp = g.create_node(VoxelGraphFunction::NODE_CLAMP_C, Vector2(0, 0));
 	const uint32_t n_sub0 = g.create_node(VoxelGraphFunction::NODE_SUBTRACT, Vector2(0, 0));
@@ -539,7 +539,7 @@ void test_voxel_graph_generator_texturing() {
 		};
 
 		// Putting state on the stack because the debugger doesnt let me access it
-		const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+		//const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 		// Try first without optimization
 		generator->set_use_optimized_execution_map(false);
