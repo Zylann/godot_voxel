@@ -15,13 +15,13 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext ctx) {
 	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ZN_ASSERT_RETURN(normals.size() > 0);
 
-	static thread_local std::vector<Transform3D> tls_generated_transforms;
+	static thread_local std::vector<Transform3f> tls_generated_transforms;
 	tls_generated_transforms.clear();
 
 	generator->generate_transforms(tls_generated_transforms, mesh_block_grid_position, lod_index, layer_id,
 			surface_arrays, static_cast<VoxelInstanceGenerator::UpMode>(up_mode), gen_octant_mask, mesh_block_size);
 
-	for (const Transform3D &t : tls_generated_transforms) {
+	for (const Transform3f &t : tls_generated_transforms) {
 		transforms.push_back(t);
 	}
 

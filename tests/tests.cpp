@@ -511,8 +511,8 @@ void test_instance_data_serialization() {
 		static InstanceBlockData::InstanceData create_instance(
 				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
 			InstanceBlockData::InstanceData d;
-			d.transform = Transform3D(
-					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z));
+			d.transform = to_transform3f(Transform3D(
+					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z)));
 			return d;
 		}
 	};
@@ -585,16 +585,20 @@ void test_instance_data_serialization() {
 			const InstanceBlockData::InstanceData &src_instance = src_layer.instances[instance_index];
 			const InstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
 
-			ZN_TEST_ASSERT(src_instance.transform.origin.distance_to(dst_instance.transform.origin) <= distance_error);
+			ZN_TEST_ASSERT(
+					math::distance(src_instance.transform.origin, dst_instance.transform.origin) <= distance_error);
 
-			const Vector3 src_scale = src_instance.transform.basis.get_scale();
-			const Vector3 dst_scale = dst_instance.transform.basis.get_scale();
+			const Basis src_basis = to_basis3(src_instance.transform.basis);
+			const Basis dst_basis = to_basis3(dst_instance.transform.basis);
+
+			const Vector3 src_scale = src_basis.get_scale();
+			const Vector3 dst_scale = src_basis.get_scale();
 			ZN_TEST_ASSERT(src_scale.distance_to(dst_scale) <= scale_error);
 
 			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even
 			// uniformly)
-			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quaternion();
-			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quaternion();
+			const Quaternion src_rot = src_basis.orthonormalized().get_quaternion();
+			const Quaternion dst_rot = dst_basis.orthonormalized().get_quaternion();
 			const float rot_dx = Math::abs(src_rot.x - dst_rot.x);
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);

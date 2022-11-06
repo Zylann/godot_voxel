@@ -4,6 +4,7 @@
 //#include "../../storage/voxel_buffer.h"
 #include "../../util/godot/binder.h"
 #include "../../util/godot/noise.h"
+#include "../../util/math/transform3f.h"
 #include "../../util/math/vector3i.h"
 
 #include <limits>
@@ -55,8 +56,10 @@ public:
 		DIMENSION_COUNT
 	};
 
-	// This API might change so for now it's not exposed to scripts
-	void generate_transforms(std::vector<Transform3D> &out_transforms, Vector3i grid_position, int lod_index,
+	// This API might change so for now it's not exposed to scripts.
+	// Using 32-bit float transforms because those transforms are chunked, so their origins never really need to hold
+	// large coordinates.
+	void generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position, int lod_index,
 			int layer_id, Array surface_arrays, UpMode up_mode,
 			// When generating a 2x2x2 data block area, bits in `octant_mask` tell which octant should be generated.
 			// Bits set to zero will cause all instances in the corresponding octant to not be generated.
@@ -112,7 +115,7 @@ public:
 	void set_noise_on_scale(float amount);
 	float get_noise_on_scale() const;
 
-	static inline int get_octant_index(const Vector3 pos, float half_block_size) {
+	static inline int get_octant_index(const Vector3f pos, float half_block_size) {
 		return get_octant_index(pos.x > half_block_size, pos.y > half_block_size, pos.z > half_block_size);
 	}
 

@@ -10,7 +10,7 @@ namespace zylann::voxel {
 struct VoxelInstanceGeneratorTaskOutput {
 	Vector3i render_block_position;
 	uint16_t layer_id;
-	std::vector<Transform3D> transforms;
+	std::vector<Transform3f> transforms;
 };
 
 struct VoxelInstancerGeneratorTaskOutputQueue {
@@ -30,7 +30,7 @@ public:
 	Array surface_arrays;
 	Ref<VoxelInstanceGenerator> generator;
 	// Can be pre-populated by edited transforms
-	std::vector<Transform3D> transforms;
+	std::vector<Transform3f> transforms;
 	std::shared_ptr<VoxelInstancerGeneratorTaskOutputQueue> output_queue;
 
 	void run(ThreadedTaskContext ctx) override;

@@ -36,7 +36,7 @@ struct CompressedQuaternion4b {
 	uint8_t z;
 	uint8_t w;
 
-	static CompressedQuaternion4b from_quaternion(Quaternion q) {
+	static CompressedQuaternion4b from_quaternion(Quaternionf q) {
 		CompressedQuaternion4b c;
 		c.x = norm_to_u8(q.x);
 		c.y = norm_to_u8(q.y);
@@ -45,13 +45,13 @@ struct CompressedQuaternion4b {
 		return c;
 	}
 
-	Quaternion to_quaternion() const {
-		Quaternion q;
+	Quaternionf to_quaternion() const {
+		Quaternionf q;
 		q.x = u8_to_norm(x);
 		q.y = u8_to_norm(y);
 		q.z = u8_to_norm(z);
 		q.w = u8_to_norm(w);
-		return q.normalized();
+		return math::normalized(q);
 	}
 };
 
@@ -101,10 +101,10 @@ bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uin
 			w.store_16(static_cast<uint16_t>(pos_norm_scale * instance.transform.origin.y * 0xffff));
 			w.store_16(static_cast<uint16_t>(pos_norm_scale * instance.transform.origin.z * 0xffff));
 
-			const float scale = instance.transform.get_basis().get_scale().y;
+			const float scale = instance.transform.basis.get_scale_abs().y;
 			w.store_8(static_cast<uint8_t>(scale_norm_scale * (scale - scale_min) * 0xff));
 
-			const Quaternion q = instance.transform.get_basis().get_rotation_quaternion();
+			const Quaternionf q = instance.transform.basis.get_rotation_quaternion();
 			const CompressedQuaternion4b cq = CompressedQuaternion4b::from_quaternion(q);
 			w.store_8(cq.x);
 			w.store_8(cq.y);
@@ -164,10 +164,10 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 			cq.y = r.get_8();
 			cq.z = r.get_8();
 			cq.w = r.get_8();
-			const Quaternion q = cq.to_quaternion();
+			const Quaternionf q = cq.to_quaternion();
 
 			InstanceBlockData::InstanceData &instance = layer.instances[j];
-			instance.transform = Transform3D(Basis(q).scaled(Vector3(s, s, s)), Vector3(x, y, z));
+			instance.transform = Transform3f(Basis3f(q).scaled(s), Vector3f(x, y, z));
 		}
 	}
 

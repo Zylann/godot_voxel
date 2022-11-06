@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_DATA_H
 #define VOXEL_INSTANCE_DATA_H
 
-#include "../util/math/transform_3d.h"
+#include "../util/math/transform3f.h"
 #include "../util/span.h"
 
 namespace zylann::voxel {
@@ -10,7 +10,7 @@ namespace zylann::voxel {
 struct InstanceBlockData {
 	struct InstanceData {
 		// Transform of the instance, relative to the origin of the data block.
-		Transform3D transform;
+		Transform3f transform;
 	};
 
 	enum VoxelInstanceFormat {

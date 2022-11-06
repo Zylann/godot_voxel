@@ -4,6 +4,7 @@
 #include "../../util/godot/array_mesh.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/random_pcg.h"
+#include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {
@@ -13,10 +14,10 @@ const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
 
-inline Vector3 normalized(Vector3 pos, float &length) {
-	length = pos.length();
+inline Vector3f normalized(Vector3f pos, float &length) {
+	length = math::length(pos);
 	if (length == 0) {
-		return Vector3();
+		return Vector3f();
 	}
 	pos.x /= length;
 	pos.y /= length;
@@ -34,7 +35,7 @@ inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
 	return 0.5f * c.length();
 }
 
-void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_transforms, Vector3i grid_position,
+void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position,
 		int lod_index, int layer_id, Array surface_arrays, UpMode up_mode, uint8_t octant_mask, float block_size) {
 	ZN_PROFILE_SCOPE();
 
@@ -61,7 +62,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 
 	const uint32_t block_pos_hash = Vector3iHasher::hash(grid_position);
 
-	Vector3 global_up(0.f, 1.f, 0.f);
+	Vector3f global_up(0.f, 1.f, 0.f);
 
 	// Using different number generators so changing parameters affecting one doesn't affect the other
 	const uint64_t seed = block_pos_hash + layer_id;
@@ -74,12 +75,12 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 
 	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
 
-	static thread_local std::vector<Vector3> g_vertex_cache;
-	static thread_local std::vector<Vector3> g_normal_cache;
+	static thread_local std::vector<Vector3f> g_vertex_cache;
+	static thread_local std::vector<Vector3f> g_normal_cache;
 	static thread_local std::vector<float> g_noise_cache;
 
-	std::vector<Vector3> &vertex_cache = g_vertex_cache;
-	std::vector<Vector3> &normal_cache = g_normal_cache;
+	std::vector<Vector3f> &vertex_cache = g_vertex_cache;
+	std::vector<Vector3f> &normal_cache = g_normal_cache;
 
 	vertex_cache.clear();
 	normal_cache.clear();
@@ -107,8 +108,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 					if (pcg0.rand() >= density_u32) {
 						continue;
 					}
-					vertex_cache.push_back(vertices[i]);
-					normal_cache.push_back(normals[i]);
+					vertex_cache.push_back(to_vec3f(vertices[i]));
+					normal_cache.push_back(to_vec3f(normals[i]));
 				}
 			} break;
 
@@ -150,8 +151,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 					const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
 					const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
 
-					vertex_cache[instance_index] = p;
-					normal_cache[instance_index] = n;
+					vertex_cache[instance_index] = to_vec3f(p);
+					normal_cache[instance_index] = to_vec3f(n);
 				}
 
 			} break;
@@ -204,8 +205,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 						const Vector3 p = pa.lerp(pb, t0).lerp(pc, t1);
 						const Vector3 n = na.lerp(nb, t0).lerp(nc, t1);
 
-						vertex_cache.push_back(p);
-						normal_cache.push_back(n);
+						vertex_cache.push_back(to_vec3f(p));
+						normal_cache.push_back(to_vec3f(n));
 					}
 
 					accumulator -= count_in_triangle * inv_density;
@@ -225,7 +226,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 		ZN_PROFILE_SCOPE_NAMED("octant filter");
 		const float h = block_size / 2.f;
 		for (unsigned int i = 0; i < vertex_cache.size(); ++i) {
-			const Vector3 &pos = vertex_cache[i];
+			const Vector3f &pos = vertex_cache[i];
 			const uint8_t octant_index = get_octant_index(pos, h);
 			if ((octant_mask & (1 << octant_index)) == 0) {
 				unordered_remove(vertex_cache, i);
@@ -236,11 +237,12 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 	}
 
 	std::vector<float> &noise_cache = g_noise_cache;
-	// Position of the block relative to the instancer node.
-	const Vector3 mesh_block_origin = grid_position * block_size;
 
 	// Filter out by noise
 	if (_noise.is_valid()) {
+		// Position of the block relative to the instancer node.
+		// Use full-precision here because we deal with potentially large coordinates
+		const Vector3 mesh_block_origin_d = grid_position * block_size;
 		ZN_PROFILE_SCOPE_NAMED("noise filter");
 
 		noise_cache.clear();
@@ -248,7 +250,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 		switch (_noise_dimension) {
 			case DIMENSION_2D: {
 				for (size_t i = 0; i < vertex_cache.size(); ++i) {
-					const Vector3 &pos = vertex_cache[i] + mesh_block_origin;
+					const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
 					const float n = _noise->get_noise_2d(pos.x, pos.z);
 					if (n < 0) {
 						unordered_remove(vertex_cache, i);
@@ -262,7 +264,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 
 			case DIMENSION_3D: {
 				for (size_t i = 0; i < vertex_cache.size(); ++i) {
-					const Vector3 &pos = vertex_cache[i] + mesh_block_origin;
+					const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
 					const float n = _noise->get_noise_3d(pos.x, pos.y, pos.z);
 					if (n < 0) {
 						unordered_remove(vertex_cache, i);
@@ -292,19 +294,20 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 	const float min_height = _min_height;
 	const float max_height = _max_height;
 
-	const Vector3 fixed_look_axis = up_mode == UP_MODE_POSITIVE_Y ? Vector3(1, 0, 0) : Vector3(0, 1, 0);
-	const Vector3 fixed_look_axis_alternative = up_mode == UP_MODE_POSITIVE_Y ? Vector3(0, 1, 0) : Vector3(1, 0, 0);
+	const Vector3f fixed_look_axis = up_mode == UP_MODE_POSITIVE_Y ? Vector3f(1, 0, 0) : Vector3f(0, 1, 0);
+	const Vector3f fixed_look_axis_alternative = up_mode == UP_MODE_POSITIVE_Y ? Vector3f(0, 1, 0) : Vector3f(1, 0, 0);
+	const Vector3f mesh_block_origin = to_vec3f(grid_position * block_size);
 
 	// Calculate orientations and scales
 	for (size_t vertex_index = 0; vertex_index < vertex_cache.size(); ++vertex_index) {
-		Transform3D t;
+		Transform3f t;
 		t.origin = vertex_cache[vertex_index];
 
 		// Warning: sometimes mesh normals are not perfectly normalized.
 		// The cause is for meshing speed on CPU. It's normalized on GPU anyways.
-		Vector3 surface_normal = normal_cache[vertex_index];
+		Vector3f surface_normal = normal_cache[vertex_index];
 
-		Vector3 axis_y;
+		Vector3f axis_y;
 
 		bool surface_normal_is_normalized = false;
 		bool sphere_up_is_computed = false;
@@ -312,7 +315,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 		float sphere_distance;
 
 		if (vertical_alignment == 0.f) {
-			surface_normal.normalize();
+			surface_normal = math::normalized(surface_normal);
 			surface_normal_is_normalized = true;
 			axis_y = surface_normal;
 
@@ -324,7 +327,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 			}
 
 			if (vertical_alignment < 1.f) {
-				axis_y = surface_normal.lerp(global_up, vertical_alignment).normalized();
+				axis_y = math::normalized(math::lerp(surface_normal, global_up, vertical_alignment));
 
 			} else {
 				axis_y = global_up;
@@ -333,7 +336,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 
 		if (slope_filter) {
 			if (!surface_normal_is_normalized) {
-				surface_normal.normalize();
+				surface_normal = math::normalized(surface_normal);
 			}
 
 			float ny = surface_normal.y;
@@ -343,7 +346,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 					sphere_up_is_computed = true;
 					sphere_distance_is_computed = true;
 				}
-				ny = surface_normal.dot(global_up);
+				ny = math::dot(surface_normal, global_up);
 			}
 
 			if (ny < normal_min_y || ny > normal_max_y) {
@@ -356,7 +359,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 			float y = mesh_block_origin.y + t.origin.y;
 			if (up_mode == UP_MODE_SPHERE) {
 				if (!sphere_distance_is_computed) {
-					sphere_distance = (mesh_block_origin + t.origin).length();
+					sphere_distance = math::length(mesh_block_origin + t.origin);
 					sphere_distance_is_computed = true;
 				}
 				y = sphere_distance;
@@ -378,28 +381,29 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 		// Pick a random rotation from the floor's normal.
 		// We may check for cases too close to Y to avoid broken basis due to float precision limits,
 		// even if that could differ from the expected result
-		Vector3 dir;
+		Vector3f dir;
 		if (_random_rotation) {
 			do {
-				// TODO A pool of precomputed random directions would do the job too?
-				dir = Vector3(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f).normalized();
+				// TODO Optimization: a pool of precomputed random directions would do the job too? Or would it waste
+				// the cache?
+				dir = math::normalized(Vector3f(pcg1.randf() - 0.5f, pcg1.randf() - 0.5f, pcg1.randf() - 0.5f));
 				// TODO Any way to check if the two vectors are close to aligned without normalizing `dir`?
-			} while (Math::abs(dir.dot(axis_y)) > 0.9999f);
+			} while (Math::abs(math::dot(dir, axis_y)) > 0.9999f);
 
 		} else {
 			// If the surface is aligned with this axis, it will create a "pole" where all instances are looking at.
 			// When getting too close to it, we may pick a different axis.
 			dir = fixed_look_axis;
-			if (Math::abs(dir.dot(axis_y)) > 0.9999f) {
+			if (Math::abs(math::dot(dir, axis_y)) > 0.9999f) {
 				dir = fixed_look_axis_alternative;
 			}
 		}
 
-		const Vector3 axis_x = axis_y.cross(dir).normalized();
-		const Vector3 axis_z = axis_x.cross(axis_y);
+		const Vector3f axis_x = math::normalized(math::cross(axis_y, dir));
+		const Vector3f axis_z = math::cross(axis_x, axis_y);
 
-		t.basis = Basis(Vector3(axis_x.x, axis_y.x, axis_z.x), Vector3(axis_x.y, axis_y.y, axis_z.y),
-				Vector3(axis_x.z, axis_y.z, axis_z.z));
+		t.basis = Basis3f(Vector3f(axis_x.x, axis_y.x, axis_z.x), Vector3f(axis_x.y, axis_y.y, axis_z.y),
+				Vector3f(axis_x.z, axis_y.z, axis_z.z));
 
 		if (scale_range > 0.f) {
 			float r = pcg1.randf();
@@ -427,12 +431,12 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3D> &out_t
 				r *= Math::lerp(1.f, n, _noise_on_scale);
 			}
 
-			float scale = scale_min + scale_range * r;
+			const float scale = scale_min + scale_range * r;
 
-			t.basis.scale(Vector3(scale, scale, scale));
+			t.basis.scale(scale);
 
 		} else if (scale_min != 1.f) {
-			t.basis.scale(Vector3(scale_min, scale_min, scale_min));
+			t.basis.scale(scale_min);
 		}
 
 		out_transforms.push_back(t);

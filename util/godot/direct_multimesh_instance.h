@@ -2,6 +2,7 @@
 #define DIRECT_MULTIMESH_INSTANCE_H
 
 #include "../math/color8.h"
+#include "../math/transform3f.h"
 #include "../non_copyable.h"
 #include "../span.h"
 #include "multimesh.h"
@@ -30,6 +31,7 @@ public:
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
 
 	static void make_transform_3d_bulk_array(Span<const Transform3D> transforms, PackedFloat32Array &bulk_array);
+	static void make_transform_3d_bulk_array(Span<const Transform3f> transforms, PackedFloat32Array &bulk_array);
 
 	struct TransformAndColor8 {
 		Transform3D transform;
