@@ -787,13 +787,9 @@ void VoxelGraphRuntime::generate_set(State &state,
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	Span<const uint16_t> op_adresses = execution_map != nullptr ?
-											   to_span_const(execution_map->operation_adresses) :
-											   to_span_const(_program.default_execution_map.operation_adresses);
+	Span<const uint16_t> op_adresses = execution_map != nullptr ? to_span_const(execution_map->operation_adresses) : to_span_const(_program.default_execution_map.operation_adresses);
 	if (skip_xz && op_adresses.size() > 0) {
-		const unsigned int offset = execution_map != nullptr ?
-											execution_map->xzy_start_index :
-											_program.default_execution_map.xzy_start_index;
+		const unsigned int offset = execution_map != nullptr ? execution_map->xzy_start_index : _program.default_execution_map.xzy_start_index;
 		op_adresses = op_adresses.sub(offset);
 	}
 

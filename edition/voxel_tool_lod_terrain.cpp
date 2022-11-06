@@ -149,10 +149,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 			};
 
 			VolumeSampler sampler{ _terrain };
-			d = hit_distance_prev + approximate_distance_to_isosurface_binary_search(sampler,
-											pos + dir * hit_distance_prev,
-											dir, hit_distance - hit_distance_prev,
-											_raycast_binary_search_iterations);
+			d = hit_distance_prev + approximate_distance_to_isosurface_binary_search(sampler, pos + dir * hit_distance_prev, dir, hit_distance - hit_distance_prev, _raycast_binary_search_iterations);
 		}
 
 		res.instance();
