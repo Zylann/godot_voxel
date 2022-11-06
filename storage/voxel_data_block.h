@@ -1,10 +1,10 @@
 #ifndef VOXEL_DATA_BLOCK_H
 #define VOXEL_DATA_BLOCK_H
 
-#include <memory>
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/macros.h"
 #include "voxel_ref_count.h"
+#include <memory>
 
 // Stores loaded voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 class VoxelDataBlock {
@@ -82,7 +82,7 @@ private:
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.
-	bool _max_lod_hint = false;
+	//bool _max_lod_hint = false;
 };
 
 #endif // VOXEL_DATA_BLOCK_H
