@@ -3,7 +3,7 @@
 
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_instance_generator.h"
-#include <memory.h>
+#include <memory>
 
 namespace zylann::voxel {
 
