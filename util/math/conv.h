@@ -1,6 +1,8 @@
 #ifndef ZN_CONV_H
 #define ZN_CONV_H
 
+#include "transform3f.h"
+#include "transform_3d.h"
 #include "vector2.h"
 #include "vector2f.h"
 #include "vector2i.h"
@@ -48,6 +50,18 @@ inline Vector3i16 to_vec3i16(const Vector3i v) {
 	return Vector3i16(v.x, v.y, v.z);
 }
 
+inline Basis3f to_basis3f(const Basis &src) {
+	Basis3f dst;
+	dst.rows[0] = to_vec3f(src.rows[0]);
+	dst.rows[1] = to_vec3f(src.rows[1]);
+	dst.rows[2] = to_vec3f(src.rows[2]);
+	return dst;
+}
+
+inline Transform3f to_transform3f(const Transform3D &t) {
+	return Transform3f(to_basis3f(t.basis), to_vec3f(t.origin));
+}
+
 // ZN => Godot
 
 inline Vector2f to_vec2f(Vector2i v) {
@@ -62,6 +76,18 @@ inline Vector3i to_vec3i(Vector3T<T> v) {
 template <typename T>
 inline Vector3 to_vec3(const Vector3T<T> v) {
 	return Vector3(v.x, v.y, v.z);
+}
+
+inline Basis to_basis3(const Basis3f &src) {
+	Basis dst;
+	dst.rows[0] = to_vec3(src.rows[0]);
+	dst.rows[1] = to_vec3(src.rows[1]);
+	dst.rows[2] = to_vec3(src.rows[2]);
+	return dst;
+}
+
+inline Transform3D to_transform3(const Transform3f &t) {
+	return Transform3D(to_basis3(t.basis), to_vec3(t.origin));
 }
 
 // ZN => ZN

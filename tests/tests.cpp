@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "../edition/voxel_mesh_sdf_gd.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
@@ -14,6 +15,7 @@
 #include "../streams/voxel_block_serializer_gd.h"
 #include "../util/container_funcs.h"
 #include "../util/flat_map.h"
+#include "../util/godot/box_shape_3d.h"
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
@@ -509,8 +511,8 @@ void test_instance_data_serialization() {
 		static InstanceBlockData::InstanceData create_instance(
 				float x, float y, float z, float rotx, float roty, float rotz, float scale) {
 			InstanceBlockData::InstanceData d;
-			d.transform = Transform3D(
-					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z));
+			d.transform = to_transform3f(Transform3D(
+					Basis().rotated(Vector3(rotx, roty, rotz)).scaled(Vector3(scale, scale, scale)), Vector3(x, y, z)));
 			return d;
 		}
 	};
@@ -583,16 +585,20 @@ void test_instance_data_serialization() {
 			const InstanceBlockData::InstanceData &src_instance = src_layer.instances[instance_index];
 			const InstanceBlockData::InstanceData &dst_instance = dst_layer.instances[instance_index];
 
-			ZN_TEST_ASSERT(src_instance.transform.origin.distance_to(dst_instance.transform.origin) <= distance_error);
+			ZN_TEST_ASSERT(
+					math::distance(src_instance.transform.origin, dst_instance.transform.origin) <= distance_error);
 
-			const Vector3 src_scale = src_instance.transform.basis.get_scale();
-			const Vector3 dst_scale = dst_instance.transform.basis.get_scale();
+			const Basis src_basis = to_basis3(src_instance.transform.basis);
+			const Basis dst_basis = to_basis3(dst_instance.transform.basis);
+
+			const Vector3 src_scale = src_basis.get_scale();
+			const Vector3 dst_scale = src_basis.get_scale();
 			ZN_TEST_ASSERT(src_scale.distance_to(dst_scale) <= scale_error);
 
 			// Had to normalize here because Godot doesn't want to give you a Quat if the basis is scaled (even
 			// uniformly)
-			const Quaternion src_rot = src_instance.transform.basis.orthonormalized().get_quaternion();
-			const Quaternion dst_rot = dst_instance.transform.basis.orthonormalized().get_quaternion();
+			const Quaternion src_rot = src_basis.orthonormalized().get_quaternion();
+			const Quaternion dst_rot = dst_basis.orthonormalized().get_quaternion();
 			const float rot_dx = Math::abs(src_rot.x - dst_rot.x);
 			const float rot_dy = Math::abs(src_rot.y - dst_rot.y);
 			const float rot_dz = Math::abs(src_rot.z - dst_rot.z);
@@ -1086,7 +1092,7 @@ void test_voxel_stream_region_files() {
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 
-void test_fast_noise_2() {
+void test_fast_noise_2_basic() {
 	// Very basic test. The point is to make sure it doesn't crash, so there is no special condition to check.
 	Ref<FastNoise2> noise;
 	noise.instantiate();
@@ -1096,6 +1102,14 @@ void test_fast_noise_2() {
 	Ref<Image> im = Image::create_empty(256, 256, false, Image::FORMAT_RGB8);
 	noise->generate_image(im, false);
 	//im->save_png("zylann_test_fastnoise2.png");
+}
+
+void test_fast_noise_2_empty_encoded_node_tree() {
+	Ref<FastNoise2> noise;
+	noise.instantiate();
+	noise->set_noise_type(FastNoise2::TYPE_ENCODED_NODE_TREE);
+	// This can print an error, but should not crash
+	noise->update_generator();
 }
 
 #endif
@@ -1666,6 +1680,33 @@ void test_task_priority_values() {
 	ZN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
 }
 
+void test_issue463() {
+	Ref<VoxelMeshSDF> msdf;
+	msdf.instantiate();
+
+	Dictionary d;
+	d["roman"] = 22;
+	d[22] = 25;
+	// TODO The original report was creating a BoxShape3D, but for reasons beyond my understanding, Godot's
+	// PhysicsServer3D is still not created after `MODULE_INITIALIZATION_LEVEL_SERVERS`. And not even SCENE or EDITOR
+	// levels. It's impossible to use a level to do anything with physics.... Go figure.
+	//
+	// Ref<BoxShape3D> shape1;
+	// shape1.instantiate();
+	// Ref<BoxShape3D> shape2;
+	// shape2.instantiate();
+	// d[shape1] = shape2;
+	Ref<Resource> res1;
+	res1.instantiate();
+	Ref<Resource> res2;
+	res2.instantiate();
+	d[res1] = res2;
+
+	ZN_ASSERT(msdf->has_method("_set_data"));
+	// Setting invalid data should cause an error but not crash or leak
+	msdf->call("_set_data", d);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1719,7 +1760,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_region_file);
 	VOXEL_TEST(test_voxel_stream_region_files);
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-	VOXEL_TEST(test_fast_noise_2);
+	VOXEL_TEST(test_fast_noise_2_basic);
+	VOXEL_TEST(test_fast_noise_2_empty_encoded_node_tree);
 #endif
 	VOXEL_TEST(test_run_blocky_random_tick);
 	VOXEL_TEST(test_flat_map);
@@ -1729,6 +1771,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_mesher_cubes);
 	VOXEL_TEST(test_threaded_task_runner);
 	VOXEL_TEST(test_task_priority_values);
+	VOXEL_TEST(test_issue463);
 
 	print_line("------------ Voxel tests end -------------");
 }

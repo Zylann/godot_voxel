@@ -55,12 +55,13 @@ inline Vector3f project_border_offset(Vector3f delta, Vector3f normal) {
 	// | y | + | -nx * ny  ,  1 - ny²   ,  -ny * nz | * | Δy |
 	// | z |   | -nx * nz  ,  -ny * nz  ,  1 - nz²  |   | Δz |
 	//
-	return Vector3f((1 - normal.x * normal.x) * delta.x /**/ - normal.y * normal.x * delta.y /*     */ -
-					normal.z * normal.x * delta.z,
-			/**/ -normal.x * normal.y * delta.x + (1 - normal.y * normal.y) * delta.y /*    */ -
-					normal.z * normal.y * delta.z,
-			/**/ -normal.x * normal.z * delta.x /**/ - normal.y * normal.z * delta.y /**/ +
-					(1 - normal.z * normal.z) * delta.z);
+	// clang-format off
+	return Vector3f(
+		(1 - normal.x * normal.x) * delta.x -      normal.y * normal.x  * delta.y -      normal.z * normal.x  * delta.z,
+		    -normal.x * normal.y  * delta.x + (1 - normal.y * normal.y) * delta.y -      normal.z * normal.y  * delta.z,
+		    -normal.x * normal.z  * delta.x -      normal.y * normal.z  * delta.y + (1 - normal.z * normal.z) * delta.z
+	);
+	// clang-format on
 }
 
 inline Vector3f get_secondary_position(

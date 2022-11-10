@@ -521,6 +521,7 @@ void VoxelBufferInternal::compress_if_uniform(Channel &channel) {
 void VoxelBufferInternal::decompress_channel(unsigned int channel_index) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
+	ZN_ASSERT_RETURN(!Vector3iUtil::is_empty_size(get_size()));
 	Channel &channel = _channels[channel_index];
 	if (channel.data == nullptr) {
 		ZN_ASSERT_RETURN(create_channel(channel_index, channel.defval));

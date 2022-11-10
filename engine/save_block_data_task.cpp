@@ -61,10 +61,13 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 	CRASH_COND(stream.is_null());
 
 	if (_save_voxels) {
-		if (_voxels == nullptr && _tracker != nullptr) {
-			_tracker->abort();
+		if (_voxels == nullptr) {
+			if (_tracker != nullptr) {
+				_tracker->abort();
+			}
+			ZN_PRINT_ERROR("Voxels to save shouldn't be null");
+			return;
 		}
-		ZN_ASSERT_RETURN(_voxels == nullptr);
 
 		VoxelBufferInternal voxels_copy;
 		{

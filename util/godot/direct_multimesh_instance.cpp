@@ -87,7 +87,8 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCa
 	vs.instance_geometry_set_cast_shadows_setting(_multimesh_instance, mode);
 }
 
-inline void write_bulk_array_transform(float *dst, const Transform3D &t) {
+template <typename TTransform3>
+inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
 	dst[0] = t.basis.rows[0].x;
 	dst[1] = t.basis.rows[1].x;
 	dst[2] = t.basis.rows[2].x;
@@ -124,6 +125,26 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	for (size_t i = 0; i < transforms.size(); ++i) {
 		float *ptr = w + item_size * i;
 		const Transform3D &t = transforms[i];
+		write_bulk_array_transform(ptr, t);
+	}
+}
+
+void DirectMultiMeshInstance::make_transform_3d_bulk_array(
+		Span<const Transform3f> transforms, PackedFloat32Array &bulk_array) {
+	ZN_PROFILE_SCOPE();
+
+	const int item_size = 12; // In number of floats
+
+	const unsigned int bulk_array_size = transforms.size() * item_size;
+	if (static_cast<unsigned int>(bulk_array.size()) != bulk_array_size) {
+		bulk_array.resize(bulk_array_size);
+	}
+	CRASH_COND(transforms.size() * sizeof(Transform3f) / sizeof(float) != static_cast<size_t>(bulk_array.size()));
+
+	float *w = bulk_array.ptrw();
+	for (size_t i = 0; i < transforms.size(); ++i) {
+		float *ptr = w + item_size * i;
+		const Transform3f &t = transforms[i];
 		write_bulk_array_transform(ptr, t);
 	}
 }
