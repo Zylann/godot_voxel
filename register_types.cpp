@@ -185,6 +185,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
+		ClassDB::register_class<VoxelGraphFunction>();
 
 		// Storage
 		ClassDB::register_class<gd::VoxelBuffer>();
@@ -309,6 +310,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
 
 		ClassDB::register_class<ZN_EditorImportPlugin>();
+		ClassDB::register_class<ZN_EditorInspectorPlugin>();
 
 		ClassDB::register_class<magica::VoxelVoxEditorPlugin>();
 		ClassDB::register_class<magica::VoxelVoxMeshImporter>();
@@ -328,11 +330,13 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<ZN_EditorPropertyTextChangeOnSubmit>();
 		ClassDB::register_class<VoxelGraphEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelGraphFunctionInspectorPlugin>();
 		ClassDB::register_class<VoxelGraphEditorNodePreview>();
 		ClassDB::register_class<VoxelGraphEditorNode>();
 		ClassDB::register_class<VoxelGraphEditor>();
 		ClassDB::register_class<VoxelGraphEditorPlugin>();
 		ClassDB::register_class<VoxelGraphEditorShaderDialog>();
+		ClassDB::register_class<VoxelGraphEditorIODialog>();
 		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
 		ClassDB::register_class<VoxelRangeAnalysisDialog>();
 #endif

@@ -61,7 +61,7 @@ inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
 /*
 // Removes all items satisfying the given predicate.
 // This can reduce the size of the container. Items are moved to preserve order.
-// More direct option than `vec.erase(std::remove_if(vec.begin(), vec.end(), predicate))`.
+// More direct option than `vec.erase(std::remove_if(vec.begin(), vec.end(), predicate), vec.end())`.
 template <typename T, typename F>
 inline void remove_if(std::vector<T> &vec, F predicate) {
 	unsigned int i = 0;

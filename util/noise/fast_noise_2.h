@@ -15,6 +15,8 @@ class FastNoise2 : public Resource {
 	GDCLASS(FastNoise2, Resource)
 public:
 	static const int MAX_OCTAVES = 32;
+	// This minimum size exists to fix an issue with SIMD operations, which need to use more than one element.
+	static const unsigned int MIN_BUFFER_SIZE = 16;
 
 	enum SIMDLevel {
 		SIMD_NULL = FastSIMD::Level_Null, // Uninitilised

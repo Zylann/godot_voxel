@@ -15,10 +15,12 @@ class VoxelGraphEditor;
 class VoxelGraphNodeInspectorWrapper : public RefCounted {
 	GDCLASS(VoxelGraphNodeInspectorWrapper, RefCounted)
 public:
-	void setup(
-			Ref<VoxelGeneratorGraph> p_graph, uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed);
-	inline Ref<VoxelGeneratorGraph> get_graph() const {
+	void setup(uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed);
+	inline Ref<VoxelGraphFunction> get_graph() const {
 		return _graph;
+	}
+	inline Ref<VoxelGeneratorGraph> get_generator() const {
+		return _generator;
 	}
 
 protected:
@@ -30,7 +32,8 @@ protected:
 private:
 	static void _bind_methods();
 
-	Ref<VoxelGeneratorGraph> _graph;
+	Ref<VoxelGraphFunction> _graph;
+	Ref<VoxelGeneratorGraph> _generator;
 	uint32_t _node_id = ProgramGraph::NULL_ID;
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
 	// DictionaryPropertyEdit kept using this manager when it got introduced in place of the old global UndoRedo...

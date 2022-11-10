@@ -378,6 +378,7 @@ void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) 
 			}
 		}
 
+		// IDs should be the same
 		_nodes.insert(std::make_pair(node->id, node));
 	}
 }

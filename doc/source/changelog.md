@@ -31,6 +31,8 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: added pin button to keep the graph editor shown even after deselecting the terrain.
     - `VoxelGeneratorGraph`: editor: added popout button to open the graph editor in a separate window
     - `VoxelGeneratorGraph`: added comment nodes
+    - `VoxelGeneratorGraph`: added relay nodes
+    - `VoxelGeneratorGraph`: added custom functions with the new `VoxelGraphFunction` resource (initial implementation, has limitations)
     - `VoxelGeneratorGraph`: added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
     - `VoxelGeneratorGraph`: added math expression node
     - `VoxelGeneratorGraph`: added Pow and Powi nodes
@@ -76,6 +78,7 @@ Godot 4 is required from this version.
     - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
     - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
     - `VoxelGeneratorGraph`: editor: fixed wrong position of context menu in some dual monitor configurations
+    - `VoxelGeneratorGraph`: editor: fixed an occasional random crash happening when nodes UI layouts are updated
     - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
     - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
     - `VoxelGeneratorGraph`: some specific node graphs were not ordered properly

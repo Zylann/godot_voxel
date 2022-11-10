@@ -140,7 +140,7 @@ public:
 	// `bool predicate(FlatMap<K, T>::Pair)`
 	template <typename F>
 	inline void remove_if(F predicate) {
-		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate));
+		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate), _items.end());
 	}
 
 	void operator=(const FlatMap<K, T> &other) {
@@ -332,7 +332,7 @@ public:
 	// `bool predicate(FlatMap<K, T>::Pair)`
 	template <typename F>
 	inline void remove_if(F predicate) {
-		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate));
+		_items.erase(std::remove_if(_items.begin(), _items.end(), predicate), _items.end());
 	}
 
 	void operator=(const FlatMap<K, T> &other) {

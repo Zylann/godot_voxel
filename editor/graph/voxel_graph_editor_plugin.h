@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_EDITOR_PLUGIN_H
 #define VOXEL_GRAPH_EDITOR_PLUGIN_H
 
+#include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/editor_plugin.h"
 #include "../../util/macros.h"
 
@@ -11,6 +12,7 @@ namespace zylann::voxel {
 class VoxelGraphEditor;
 class VoxelNode;
 class VoxelGraphEditorWindow;
+class VoxelGraphEditorIODialog;
 
 class VoxelGraphEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelGraphEditorPlugin, EditorPlugin)
@@ -26,6 +28,8 @@ public:
 	void _edit(const Variant &p_object_v) override;
 	void _make_visible(bool visible) override;
 #endif
+
+	void edit_ios(Ref<VoxelGraphFunction> graph);
 
 private:
 	void undock_graph_editor();
@@ -44,6 +48,7 @@ private:
 
 	VoxelGraphEditor *_graph_editor = nullptr;
 	VoxelGraphEditorWindow *_graph_editor_window = nullptr;
+	VoxelGraphEditorIODialog *_io_dialog = nullptr;
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
 	VoxelNode *_voxel_node = nullptr;

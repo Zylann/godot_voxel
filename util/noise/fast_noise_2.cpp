@@ -307,14 +307,64 @@ float FastNoise2::get_noise_3d_single(Vector3 pos) const {
 void FastNoise2::get_noise_2d_series(Span<const float> src_x, Span<const float> src_y, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(src_x.size() != src_y.size() || src_x.size() != dst.size());
-	_generator->GenPositionArray2D(dst.data(), dst.size(), src_x.data(), src_y.data(), 0, 0, _seed);
+	if (src_x.size() < MIN_BUFFER_SIZE) {
+		// Using backing arrays for input buffers, because SIMD needs to read multiple values. This might make
+		// single-reads a bit slower, but in that case performance likely doesn't matter anyways
+		FixedArray<float, MIN_BUFFER_SIZE> x;
+		FixedArray<float, MIN_BUFFER_SIZE> y;
+		FixedArray<float, MIN_BUFFER_SIZE> n;
+		for (unsigned int i = 0; i < src_x.size(); ++i) {
+			x[i] = src_x[i];
+		}
+		for (unsigned int i = 0; i < src_y.size(); ++i) {
+			y[i] = src_y[i];
+		}
+		src_x = to_span(x);
+		src_y = to_span(y);
+		// TODO Need to update FastNoise2.
+		// Using a destination buffer smaller than SIMD level is not supposed to break, but it crashes. Using a backing
+		// array too as workaround.
+		_generator->GenPositionArray2D(n.data(), n.size(), src_x.data(), src_y.data(), 0, 0, _seed);
+		for (unsigned int i = 0; i < dst.size(); ++i) {
+			dst[i] = n[i];
+		}
+	} else {
+		_generator->GenPositionArray2D(dst.data(), dst.size(), src_x.data(), src_y.data(), 0, 0, _seed);
+	}
 }
 
 void FastNoise2::get_noise_3d_series(
 		Span<const float> src_x, Span<const float> src_y, Span<const float> src_z, Span<float> dst) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(src_x.size() != src_y.size() || src_x.size() != src_z.size() || src_x.size() != dst.size());
-	_generator->GenPositionArray3D(dst.data(), dst.size(), src_x.data(), src_y.data(), src_z.data(), 0, 0, 0, _seed);
+	if (src_x.size() < MIN_BUFFER_SIZE) {
+		FixedArray<float, MIN_BUFFER_SIZE> x;
+		FixedArray<float, MIN_BUFFER_SIZE> y;
+		FixedArray<float, MIN_BUFFER_SIZE> z;
+		FixedArray<float, MIN_BUFFER_SIZE> n;
+		for (unsigned int i = 0; i < src_x.size(); ++i) {
+			x[i] = src_x[i];
+		}
+		for (unsigned int i = 0; i < src_y.size(); ++i) {
+			y[i] = src_y[i];
+		}
+		for (unsigned int i = 0; i < src_z.size(); ++i) {
+			z[i] = src_z[i];
+		}
+		src_x = to_span(x);
+		src_y = to_span(y);
+		src_z = to_span(z);
+		// TODO Need to update FastNoise2.
+		// Using a destination buffer smaller than SIMD level is not supposed to break, but it crashes. Using a backing
+		// array too as workaround.
+		_generator->GenPositionArray3D(n.data(), n.size(), src_x.data(), src_y.data(), src_z.data(), 0, 0, 0, _seed);
+		for (unsigned int i = 0; i < dst.size(); ++i) {
+			dst[i] = n[i];
+		}
+	} else {
+		_generator->GenPositionArray3D(
+				dst.data(), dst.size(), src_x.data(), src_y.data(), src_z.data(), 0, 0, 0, _seed);
+	}
 }
 
 void FastNoise2::get_noise_2d_grid(Vector2 origin, Vector2i size, Span<float> dst) const {

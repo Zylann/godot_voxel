@@ -99,6 +99,7 @@ def get_sources(env, is_editor_build):
             "editor/graph/*.cpp",
 
             "util/godot/editor_import_plugin.cpp",
+            "util/godot/editor_inspector_plugin.cpp",
             "util/godot/editor_property.cpp",
             "util/godot/graph_edit.cpp", # Not editor-only, but only used in editor for now
         ]

@@ -384,13 +384,13 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 
 bool VoxelGraphRuntime::has_input(unsigned int node_type) const {
 	switch (node_type) {
-		case VoxelGeneratorGraph::NODE_INPUT_X:
+		case VoxelGraphFunction::NODE_INPUT_X:
 			return _program.x_input_address != -1;
-		case VoxelGeneratorGraph::NODE_INPUT_Y:
+		case VoxelGraphFunction::NODE_INPUT_Y:
 			return _program.y_input_address != -1;
-		case VoxelGeneratorGraph::NODE_INPUT_Z:
+		case VoxelGraphFunction::NODE_INPUT_Z:
 			return _program.z_input_address != -1;
-		case VoxelGeneratorGraph::NODE_INPUT_SDF:
+		case VoxelGraphFunction::NODE_INPUT_SDF:
 			return _program.sdf_input_address != -1;
 		default:
 			ZN_PRINT_ERROR(format("Unknown input node type {}", node_type));

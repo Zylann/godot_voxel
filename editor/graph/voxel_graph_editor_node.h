@@ -13,21 +13,22 @@ namespace zylann::voxel {
 
 class VoxelGraphEditorNodePreview;
 class VoxelGeneratorGraph;
+class VoxelGraphFunction;
 
 // GUI graph node with a few custom data attached.
 class VoxelGraphEditorNode : public GraphNode {
 	GDCLASS(VoxelGraphEditorNode, GraphNode)
 public:
-	static VoxelGraphEditorNode *create(const VoxelGeneratorGraph &graph, uint32_t node_id);
+	static VoxelGraphEditorNode *create(const VoxelGraphFunction &graph, uint32_t node_id);
 
-	void update_title(StringName node_name, String node_type_name);
-	void poll(const VoxelGeneratorGraph &graph);
+	void update_title(const VoxelGraphFunction &graph);
+	void poll(const VoxelGraphFunction &graph);
 
-	void update_range_analysis_tooltips(const VoxelGeneratorGraph &graph, const VoxelGraphRuntime::State &state);
+	void update_range_analysis_tooltips(const VoxelGeneratorGraph &generator, const VoxelGraphRuntime::State &state);
 	void clear_range_analysis_tooltips();
 
-	void update_layout(const VoxelGeneratorGraph &graph);
-	void update_comment_text(const VoxelGeneratorGraph &graph);
+	void update_layout(const VoxelGraphFunction &graph);
+	void update_comment_text(const VoxelGraphFunction &graph);
 
 	bool has_outputs() const {
 		return _output_labels.size() > 0;
@@ -45,9 +46,9 @@ public:
 	void set_profiling_ratio(float ratio);
 
 private:
-	void poll_default_inputs(const VoxelGeneratorGraph &graph);
-	void poll_params(const VoxelGeneratorGraph &graph);
-	void _on_resize_request(Vector2 new_size);
+	void update_title(const VoxelGraphFunction &graph, uint32_t node_id);
+	void poll_default_inputs(const VoxelGraphFunction &graph);
+	void poll_params(const VoxelGraphFunction &graph);
 
 	void _notification(int p_what);
 
@@ -68,6 +69,7 @@ private:
 
 	float _profiling_ratio = 0.f;
 	bool _profiling_ratio_enabled = false;
+	bool _is_relay = false;
 };
 
 } // namespace zylann::voxel

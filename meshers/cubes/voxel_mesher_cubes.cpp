@@ -1016,6 +1016,7 @@ int VoxelMesherCubes::get_used_channels_mask() const {
 }
 
 void VoxelMesherCubes::set_material_by_index(Materials id, Ref<Material> material) {
+	ERR_FAIL_INDEX(id, int(_materials.size()));
 	_materials[id] = material;
 }
 

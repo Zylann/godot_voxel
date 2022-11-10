@@ -24,17 +24,6 @@ inline T *get_node_typed(const Node &self, const NodePath &path) {
 #endif
 }
 
-inline void queue_free_node(Node *node) {
-#ifdef DEBUG_ENABLED
-	ZN_ASSERT_RETURN(node != nullptr);
-#endif
-#if defined(ZN_GODOT)
-	node->queue_delete();
-#elif defined(ZN_GODOT_EXTENSION)
-	node->queue_free();
-#endif
-}
-
 } // namespace zylann
 
 #endif // ZN_GODOT_NODE_H

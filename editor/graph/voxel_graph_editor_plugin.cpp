@@ -12,7 +12,9 @@
 #include "editor_property_text_change_on_submit.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_editor_inspector_plugin.h"
+#include "voxel_graph_editor_io_dialog.h"
 #include "voxel_graph_editor_window.h"
+#include "voxel_graph_function_inspector_plugin.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
 namespace zylann::voxel {
@@ -35,9 +37,14 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	_bottom_panel_button->hide();
 
 	// TODO Move this to `_enter_tree` and remove it on `_exit_tree`?
-	Ref<VoxelGraphEditorInspectorPlugin> inspector_plugin;
-	inspector_plugin.instantiate();
-	add_inspector_plugin(inspector_plugin);
+	Ref<VoxelGraphEditorInspectorPlugin> vge_inspector_plugin;
+	vge_inspector_plugin.instantiate();
+	add_inspector_plugin(vge_inspector_plugin);
+
+	Ref<VoxelGraphFunctionInspectorPlugin> vgf_inspector_plugin;
+	vgf_inspector_plugin.instantiate();
+	vgf_inspector_plugin->set_listener(this);
+	add_inspector_plugin(vgf_inspector_plugin);
 }
 
 #if defined(ZN_GODOT)
@@ -49,7 +56,11 @@ bool VoxelGraphEditorPlugin::_handles(const Variant &p_object_v) const {
 	if (p_object == nullptr) {
 		return false;
 	}
-	const VoxelGeneratorGraph *graph_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
+	const VoxelGeneratorGraph *generator_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
+	if (generator_ptr != nullptr) {
+		return true;
+	}
+	const VoxelGraphFunction *graph_ptr = Object::cast_to<VoxelGraphFunction>(p_object);
 	if (graph_ptr != nullptr) {
 		return true;
 	}
@@ -66,30 +77,53 @@ void VoxelGraphEditorPlugin::edit(Object *p_object) {
 void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
 	Object *p_object = p_object_v;
 #endif
-	VoxelGeneratorGraph *graph_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
-	if (graph_ptr == nullptr) {
-		VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
-		if (wrapper != nullptr) {
-			graph_ptr = *wrapper->get_graph();
-		}
-	}
-	Ref<VoxelGeneratorGraph> graph(graph_ptr);
-	_graph_editor->set_undo_redo(get_undo_redo()); // UndoRedo isn't available in constructor
-	_graph_editor->set_graph(graph);
 
-	VoxelNode *voxel_node = nullptr;
-	Array selected_nodes = get_editor_interface()->get_selection()->get_selected_nodes();
-	for (int i = 0; i < selected_nodes.size(); ++i) {
-		Node *node = Object::cast_to<Node>(selected_nodes[i]);
-		ERR_FAIL_COND(node == nullptr);
-		VoxelNode *vn = Object::cast_to<VoxelNode>(node);
-		if (vn != nullptr && vn->get_generator() == graph_ptr) {
-			voxel_node = vn;
-			break;
+	Ref<VoxelGeneratorGraph> generator;
+	Ref<VoxelGraphFunction> graph;
+	{
+		VoxelGeneratorGraph *generator_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
+		if (generator_ptr != nullptr) {
+			generator.reference_ptr(generator_ptr);
 		}
 	}
-	_voxel_node = voxel_node;
-	_graph_editor->set_voxel_node(voxel_node);
+	{
+		VoxelGraphFunction *graph_ptr = Object::cast_to<VoxelGraphFunction>(p_object);
+		if (graph_ptr != nullptr) {
+			graph.reference_ptr(graph_ptr);
+		}
+	}
+	{
+		VoxelGraphNodeInspectorWrapper *wrapper_ptr = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
+		if (wrapper_ptr != nullptr) {
+			generator = wrapper_ptr->get_generator();
+			graph = wrapper_ptr->get_graph();
+		}
+	}
+
+	_graph_editor->set_undo_redo(get_undo_redo()); // UndoRedo isn't available in constructor
+
+	_graph_editor->set_generator(generator);
+	if (generator.is_null()) {
+		_graph_editor->set_graph(graph);
+	}
+
+	{
+		VoxelNode *voxel_node = nullptr;
+		if (generator.is_valid()) {
+			Array selected_nodes = get_editor_interface()->get_selection()->get_selected_nodes();
+			for (int i = 0; i < selected_nodes.size(); ++i) {
+				Node *node = Object::cast_to<Node>(selected_nodes[i]);
+				ERR_FAIL_COND(node == nullptr);
+				VoxelNode *vn = Object::cast_to<VoxelNode>(node);
+				if (vn != nullptr && vn->get_generator() == generator) {
+					voxel_node = vn;
+					break;
+				}
+			}
+		}
+		_voxel_node = voxel_node;
+		_graph_editor->set_voxel_node(voxel_node);
+	}
 
 	if (_graph_editor_window != nullptr) {
 		update_graph_editor_window_title();
@@ -147,7 +181,7 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
-	wrapper->setup(_graph_editor->get_graph(), node_id, get_undo_redo(), _graph_editor);
+	wrapper->setup(node_id, get_undo_redo(), _graph_editor);
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
 	// TODO Absurd situation here...
@@ -156,23 +190,31 @@ void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	// -_- https://github.com/godotengine/godot/issues/40166
 }
 
+void inspect_graph_or_generator(const VoxelGraphEditor &graph_editor, EditorPlugin &ed) {
+	Ref<VoxelGeneratorGraph> generator = graph_editor.get_generator();
+	if (generator.is_valid()) {
+		ed.get_editor_interface()->inspect_object(*generator);
+		return;
+	}
+	Ref<VoxelGraphFunction> graph = graph_editor.get_graph();
+	if (graph.is_valid()) {
+		ed.get_editor_interface()->inspect_object(*graph);
+		return;
+	}
+}
+
 void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	// The inspector is a glorious singleton, so when we select nodes to edit their properties, it prevents
 	// from accessing the graph resource itself, to save it for example.
 	// I'd like to embed properties inside the nodes themselves, but it's a bit more work (and a waste of space),
 	// so for now I make it so deselecting all nodes in the graph (like clicking in the background) selects the graph.
-	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
-	if (graph.is_valid()) {
-		get_editor_interface()->inspect_object(*graph);
-	}
+	inspect_graph_or_generator(*_graph_editor, *this);
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
 	// When deleting nodes, the selected one can be in them, but the inspector wrapper will still point at it.
 	// Clean it up and inspect the graph itself.
-	Ref<VoxelGeneratorGraph> graph = _graph_editor->get_graph();
-	ERR_FAIL_COND(graph.is_null());
-	get_editor_interface()->inspect_object(*graph);
+	inspect_graph_or_generator(*_graph_editor, *this);
 }
 
 template <typename F>
@@ -194,7 +236,7 @@ void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 		Node *root = get_editor_interface()->get_edited_scene_root();
 
 		if (root != nullptr) {
-			Ref<VoxelGeneratorGraph> generator = _graph_editor->get_graph();
+			Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
 			ERR_FAIL_COND(generator.is_null());
 
 			for_each_node(root, [&generator](Node *node) {
@@ -244,7 +286,7 @@ void VoxelGraphEditorPlugin::dock_graph_editor() {
 	ZN_PRINT_VERBOSE("Dock voxel graph editor");
 
 	_graph_editor->get_parent()->remove_child(_graph_editor);
-	queue_free_node(_graph_editor_window);
+	_graph_editor_window->queue_free();
 	_graph_editor_window = nullptr;
 
 	_graph_editor->set_popout_button_enabled(true);
@@ -257,13 +299,41 @@ void VoxelGraphEditorPlugin::dock_graph_editor() {
 
 void VoxelGraphEditorPlugin::update_graph_editor_window_title() {
 	ERR_FAIL_COND(_graph_editor_window == nullptr);
-	String title;
-	if (_graph_editor->get_graph().is_valid()) {
-		title = _graph_editor->get_graph()->get_path();
-		title += " - ";
+
+	String res_path;
+	String type_name;
+
+	if (_graph_editor->get_generator().is_valid()) {
+		res_path = _graph_editor->get_generator()->get_path();
+		type_name = VoxelGeneratorGraph::get_class_static();
+
+	} else if (_graph_editor->get_graph().is_valid()) {
+		res_path = _graph_editor->get_graph()->get_path();
+		type_name = VoxelGraphFunction::get_class_static();
 	}
-	title += VoxelGeneratorGraph::get_class_static();
+
+	String title;
+	if (!res_path.is_empty()) {
+		title = res_path;
+		title += " - ";
+		title += type_name;
+	} else {
+		title = "VoxelGraphEditor (no graph opened)";
+	}
+
 	_graph_editor_window->set_title(title);
+}
+
+void VoxelGraphEditorPlugin::edit_ios(Ref<VoxelGraphFunction> graph) {
+	if (_io_dialog == nullptr) {
+		_io_dialog = memnew(VoxelGraphEditorIODialog);
+		_io_dialog->set_undo_redo(get_undo_redo());
+		Control *base_control = get_editor_interface()->get_base_control();
+		base_control->add_child(_io_dialog);
+	}
+
+	_io_dialog->set_graph(graph);
+	_io_dialog->popup_centered();
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {

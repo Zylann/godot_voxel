@@ -31,7 +31,7 @@ template <typename F>
 inline void do_monop(VoxelGraphRuntime::ProcessBufferContext &ctx, F f) {
 	const VoxelGraphRuntime::Buffer &a = ctx.get_input(0);
 	VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
-	if (a.constant_value) {
+	if (a.is_constant) {
 		// Normally this case should have been optimized out at compile-time
 		const float v = f(a.constant_value);
 		for (uint32_t i = 0; i < a.size; ++i) {
@@ -268,6 +268,8 @@ const char *VoxelGraphNodeDB::get_category_name(Category category) {
 			return "Sdf";
 		case CATEGORY_DEBUG:
 			return "Debug";
+		case CATEGORY_FUNCTIONS:
+			return "Functions";
 		default:
 			CRASH_NOW_MSG("Unhandled category");
 	}
@@ -280,7 +282,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	typedef VoxelGraphRuntime::RangeAnalysisContext RangeAnalysisContext;
 	//typedef VoxelGraphRuntime::ShaderGenContext ShaderGenContext;
 
-	FixedArray<NodeType, VoxelGeneratorGraph::NODE_TYPE_COUNT> &types = _types;
+	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> &types = _types;
 
 	// TODO Most operations need SIMD support
 
@@ -288,41 +290,41 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	// but I find that the data struct approach is kinda convenient too?
 
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CONSTANT];
+		NodeType &t = types[VoxelGraphFunction::NODE_CONSTANT];
 		t.name = "Constant";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("value"));
 		t.params.push_back(Param("value", Variant::FLOAT));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_X];
+		NodeType &t = types[VoxelGraphFunction::NODE_INPUT_X];
 		t.name = "InputX";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("x"));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Y];
+		NodeType &t = types[VoxelGraphFunction::NODE_INPUT_Y];
 		t.name = "InputY";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("y"));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_Z];
+		NodeType &t = types[VoxelGraphFunction::NODE_INPUT_Z];
 		t.name = "InputZ";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("z"));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_INPUT_SDF];
+		NodeType &t = types[VoxelGraphFunction::NODE_INPUT_SDF];
 		t.name = "InputSDF";
 		t.category = CATEGORY_INPUT;
 		t.outputs.push_back(Port("sdf"));
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SDF];
+		NodeType &t = types[VoxelGraphFunction::NODE_OUTPUT_SDF];
 		t.name = "OutputSDF";
 		t.category = CATEGORY_OUTPUT;
-		t.inputs.push_back(Port("sdf", AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("sdf", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
 		t.outputs.push_back(Port("_out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
@@ -336,7 +338,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_WEIGHT];
+		NodeType &t = types[VoxelGraphFunction::NODE_OUTPUT_WEIGHT];
 		t.name = "OutputWeight";
 		t.category = CATEGORY_OUTPUT;
 		t.inputs.push_back(Port("weight"));
@@ -359,7 +361,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_TYPE];
+		NodeType &t = types[VoxelGraphFunction::NODE_OUTPUT_TYPE];
 		t.name = "OutputType";
 		t.category = CATEGORY_OUTPUT;
 		t.inputs.push_back(Port("type"));
@@ -375,7 +377,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_OUTPUT_SINGLE_TEXTURE];
+		NodeType &t = types[VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE];
 		t.name = "OutputSingleTexture";
 		t.category = CATEGORY_OUTPUT;
 		t.inputs.push_back(Port("index"));
@@ -391,11 +393,43 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_ADD];
+		NodeType &t = types[VoxelGraphFunction::NODE_CUSTOM_INPUT];
+		t.name = "CustomInput";
+		// t.params.push_back(Param("binding", Variant::INT, 0));
+		t.category = CATEGORY_INPUT;
+		t.outputs.push_back(Port("value"));
+	}
+	{
+		NodeType &t = types[VoxelGraphFunction::NODE_CUSTOM_OUTPUT];
+		t.name = "CustomOutput";
+		t.category = CATEGORY_OUTPUT;
+		t.inputs.push_back(Port("value"));
+		t.outputs.push_back(Port("_out"));
+		// t.params.push_back(Param("binding", Variant::INT, 0));
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const VoxelGraphRuntime::Buffer &input = ctx.get_input(0);
+			VoxelGraphRuntime::Buffer &out = ctx.get_output(0);
+			memcpy(out.data, input.data, input.size * sizeof(float));
+		};
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval a = ctx.get_input(0);
+			ctx.set_output(0, a);
+		};
+	}
+	{
+		NodeType &t = types[VoxelGraphFunction::NODE_RELAY];
+		t.name = "Relay";
+		t.category = CATEGORY_RELAY;
+		t.inputs.push_back(Port("in"));
+		t.outputs.push_back(Port("out"));
+		t.is_pseudo_node = true;
+	}
+	{
+		NodeType &t = types[VoxelGraphFunction::NODE_ADD];
 		t.name = "Add";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.compile_func = nullptr;
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -411,11 +445,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SUBTRACT];
+		NodeType &t = types[VoxelGraphFunction::NODE_SUBTRACT];
 		t.name = "Subtract";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return a - b; });
@@ -430,11 +464,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MULTIPLY];
+		NodeType &t = types[VoxelGraphFunction::NODE_MULTIPLY];
 		t.name = "Multiply";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return a * b; });
@@ -454,11 +488,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_DIVIDE];
+		NodeType &t = types[VoxelGraphFunction::NODE_DIVIDE];
 		t.name = "Divide";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 1.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 1.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = do_division;
 		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
@@ -471,10 +505,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SIN];
+		NodeType &t = types[VoxelGraphFunction::NODE_SIN];
 		t.name = "Sin";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
 			do_monop(ctx, [](float a) { return Math::sin(a); });
@@ -492,10 +526,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FLOOR];
+		NodeType &t = types[VoxelGraphFunction::NODE_FLOOR];
 		t.name = "Floor";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_monop(ctx, [](float a) { return Math::floor(a); });
@@ -513,10 +547,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_ABS];
+		NodeType &t = types[VoxelGraphFunction::NODE_ABS];
 		t.name = "Abs";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
 			do_monop(ctx, [](float a) { return Math::abs(a); });
@@ -534,10 +568,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SQRT];
+		NodeType &t = types[VoxelGraphFunction::NODE_SQRT];
 		t.name = "Sqrt";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) { //
 			do_monop(ctx, [](float a) { return Math::sqrt(math::max(a, 0.f)); });
@@ -555,10 +589,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FRACT];
+		NodeType &t = types[VoxelGraphFunction::NODE_FRACT];
 		t.name = "Fract";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_monop(ctx, [](float a) { return a - Math::floor(a); });
@@ -576,11 +610,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_STEPIFY];
+		NodeType &t = types[VoxelGraphFunction::NODE_STEPIFY];
 		t.name = "Stepify";
 		t.category = CATEGORY_CONVERT;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("step", 1.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("step", 1.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return math::snappedf(a, b); });
@@ -604,11 +638,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_WRAP];
+		NodeType &t = types[VoxelGraphFunction::NODE_WRAP];
 		t.name = "Wrap";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("length", 1.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("length", 1.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return wrapf(a, b); });
@@ -632,11 +666,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MIN];
+		NodeType &t = types[VoxelGraphFunction::NODE_MIN];
 		t.name = "Min";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return min(a, b); });
@@ -655,11 +689,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MAX];
+		NodeType &t = types[VoxelGraphFunction::NODE_MAX];
 		t.name = "Max";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("a", 0.f, AUTO_CONNECT_NONE, false));
-		t.inputs.push_back(Port("b", 0.f, AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("a", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
+		t.inputs.push_back(Port("b", 0.f, VoxelGraphFunction::AUTO_CONNECT_NONE, false));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			do_binop(ctx, [](float a, float b) { return max(a, b); });
@@ -678,13 +712,13 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_DISTANCE_2D];
 		t.name = "Distance2D";
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x0"));
 		t.inputs.push_back(Port("y0"));
-		t.inputs.push_back(Port("x1", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y1", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x1", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y1", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x0 = ctx.get_input(0);
@@ -712,15 +746,15 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_DISTANCE_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_DISTANCE_3D];
 		t.name = "Distance3D";
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x0"));
 		t.inputs.push_back(Port("y0"));
 		t.inputs.push_back(Port("z0"));
-		t.inputs.push_back(Port("x1", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y1", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z1", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x1", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y1", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z1", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
 			const VoxelGraphRuntime::Buffer &x0 = ctx.get_input(0);
@@ -755,7 +789,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP];
+		NodeType &t = types[VoxelGraphFunction::NODE_CLAMP];
 		t.name = "Clamp";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
@@ -791,7 +825,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float min;
 			float max;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CLAMP_C];
+		NodeType &t = types[VoxelGraphFunction::NODE_CLAMP_C];
 		t.name = "ClampC";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
@@ -825,7 +859,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_MIX];
+		NodeType &t = types[VoxelGraphFunction::NODE_MIX];
 		t.name = "Mix";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("a"));
@@ -935,7 +969,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 				return { a, b };
 			}
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_REMAP];
+		NodeType &t = types[VoxelGraphFunction::NODE_REMAP];
 		t.name = "Remap";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
@@ -975,7 +1009,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float edge0;
 			float edge1;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SMOOTHSTEP];
+		NodeType &t = types[VoxelGraphFunction::NODE_SMOOTHSTEP];
 		t.name = "Smoothstep";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
@@ -1012,7 +1046,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Curve *curve;
 			const CurveRangeData *curve_range_data;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_CURVE];
+		NodeType &t = types[VoxelGraphFunction::NODE_CURVE];
 		t.name = "Curve";
 		t.category = CATEGORY_CONVERT;
 		t.inputs.push_back(Port("x"));
@@ -1073,11 +1107,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Noise *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_NOISE_2D];
 		t.name = "Noise2D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("noise", Noise::get_class_static(), &create_resource_to_variant<FastNoiseLite>));
 
@@ -1118,12 +1152,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			Noise *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_NOISE_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_NOISE_3D];
 		t.name = "Noise3D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("noise", Noise::get_class_static(), &create_resource_to_variant<FastNoiseLite>));
 
@@ -1164,11 +1198,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const Image *image;
 			const ImageRangeGrid *image_range_grid;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_IMAGE_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_IMAGE_2D];
 		t.name = "Image";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("image", Image::get_class_static(), nullptr));
 		t.compile_func = [](CompileContext &ctx) {
@@ -1210,10 +1244,10 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_PLANE];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_PLANE];
 		t.name = "SdfPlane";
 		t.category = CATEGORY_SDF;
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
 		t.inputs.push_back(Port("height"));
 		t.outputs.push_back(Port("sdf"));
 		t.process_buffer_func = [](ProcessBufferContext &ctx) {
@@ -1234,12 +1268,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float size_y;
 			float size_z;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_BOX];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_BOX];
 		t.name = "SdfBox";
 		t.category = CATEGORY_SDF;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.params.push_back(Param("size_x", Variant::FLOAT, 10.0));
 		t.params.push_back(Param("size_y", Variant::FLOAT, 10.0));
 		t.params.push_back(Param("size_z", Variant::FLOAT, 10.0));
@@ -1287,12 +1321,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		struct Params {
 			float radius;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_SPHERE];
 		t.name = "SdfSphere";
 		t.category = CATEGORY_SDF;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("sdf"));
 		t.params.push_back(Param("radius", Variant::FLOAT, 1.f));
 		t.compile_func = [](CompileContext &ctx) {
@@ -1328,12 +1362,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			float r1;
 			float r2;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_TORUS];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_TORUS];
 		t.name = "SdfTorus";
 		t.category = CATEGORY_SDF;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("sdf"));
 		t.params.push_back(Param("radius1", Variant::FLOAT, 16.f));
 		t.params.push_back(Param("radius2", Variant::FLOAT, 4.f));
@@ -1377,7 +1411,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		struct Params {
 			float smoothness;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SMOOTH_UNION];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_SMOOTH_UNION];
 		t.name = "SdfSmoothUnion";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(Port("a"));
@@ -1471,7 +1505,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		struct Params {
 			float smoothness;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SMOOTH_SUBTRACT];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_SMOOTH_SUBTRACT];
 		t.name = "SdfSmoothSubtract";
 		t.category = CATEGORY_SDF;
 		t.inputs.push_back(Port("a"));
@@ -1562,7 +1596,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_PREVIEW];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_PREVIEW];
 		t.name = "SdfPreview";
 		t.category = CATEGORY_DEBUG;
 		t.inputs.push_back(Port("value"));
@@ -1572,7 +1606,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.is_pseudo_node = true;
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_COMMENT];
+		NodeType &t = types[VoxelGraphFunction::NODE_COMMENT];
 		t.name = "Comment";
 		t.category = CATEGORY_DEBUG;
 		Param text_param("text", Variant::STRING, Variant(""));
@@ -1582,10 +1616,22 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		t.is_pseudo_node = true;
 	}
 	{
+		NodeType &t = types[VoxelGraphFunction::NODE_FUNCTION];
+		t.name = "Function";
+		t.category = CATEGORY_FUNCTIONS;
+
+		Param func_param("_function", VoxelGraphFunction::get_class_static(), nullptr);
+		func_param.hidden = true;
+		t.params.push_back(func_param);
+
+		t.debug_only = false;
+		t.is_pseudo_node = true;
+	}
+	{
 		struct Params {
 			float threshold;
 		};
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SELECT];
+		NodeType &t = types[VoxelGraphFunction::NODE_SELECT];
 		// t < threshold ? a : b
 		t.name = "Select";
 		t.category = CATEGORY_CONVERT;
@@ -1666,12 +1712,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const ImageRangeGrid *image_range_grid;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_SDF_SPHERE_HEIGHTMAP];
+		NodeType &t = types[VoxelGraphFunction::NODE_SDF_SPHERE_HEIGHTMAP];
 		t.name = "SdfSphereHeightmap";
 		t.category = CATEGORY_SDF;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("sdf"));
 		t.params.push_back(Param("image", Image::get_class_static(), nullptr));
 		t.params.push_back(Param("radius", Variant::FLOAT, 10.f));
@@ -1730,12 +1776,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_NORMALIZE_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_NORMALIZE_3D];
 		t.name = "Normalize";
 		t.category = CATEGORY_MATH;
-		t.inputs.push_back(Port("x", 1.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 1.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 1.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 1.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 1.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 1.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("nx"));
 		t.outputs.push_back(Port("ny"));
 		t.outputs.push_back(Port("nz"));
@@ -1795,11 +1841,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const ZN_FastNoiseLite *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_2D];
 		t.name = "FastNoise2D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(
 				Param("noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>));
@@ -1862,12 +1908,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const ZN_FastNoiseLite *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_3D];
 		t.name = "FastNoise3D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(
 				Param("noise", ZN_FastNoiseLite::get_class_static(), &create_resource_to_variant<ZN_FastNoiseLite>));
@@ -1932,11 +1978,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ZN_FastNoiseLiteGradient *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_GRADIENT_2D];
 		t.name = "FastNoiseGradient2D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
 		t.params.push_back(Param("noise", ZN_FastNoiseLiteGradient::get_class_static(),
@@ -1985,12 +2031,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			ZN_FastNoiseLiteGradient *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_GRADIENT_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_GRADIENT_3D];
 		t.name = "FastNoiseGradient3D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out_x"));
 		t.outputs.push_back(Port("out_y"));
 		t.outputs.push_back(Port("out_z"));
@@ -2047,11 +2093,11 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const FastNoise2 *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_2D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_2_2D];
 		t.name = "FastNoise2_2D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("noise", FastNoise2::get_class_static(), &create_resource_to_variant<FastNoise2>));
 
@@ -2094,12 +2140,12 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			const FastNoise2 *noise;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_FAST_NOISE_2_3D];
+		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_2_3D];
 		t.name = "FastNoise2_3D";
 		t.category = CATEGORY_GENERATE;
-		t.inputs.push_back(Port("x", 0.f, AUTO_CONNECT_X));
-		t.inputs.push_back(Port("y", 0.f, AUTO_CONNECT_Y));
-		t.inputs.push_back(Port("z", 0.f, AUTO_CONNECT_Z));
+		t.inputs.push_back(Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(Port("out"));
 		t.params.push_back(Param("noise", FastNoise2::get_class_static(), &create_resource_to_variant<FastNoise2>));
 
@@ -2141,7 +2187,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 	}
 #endif // VOXEL_ENABLE_FAST_NOISE_2
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_EXPRESSION];
+		NodeType &t = types[VoxelGraphFunction::NODE_EXPRESSION];
 		t.name = "Expression";
 		t.category = CATEGORY_MATH;
 		Param expression_param("expression", Variant::STRING, "0");
@@ -2158,7 +2204,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 			unsigned int power;
 		};
 
-		NodeType &t = types[VoxelGeneratorGraph::NODE_POWI];
+		NodeType &t = types[VoxelGraphFunction::NODE_POWI];
 		t.name = "Powi";
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x"));
@@ -2221,7 +2267,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 		};
 	}
 	{
-		NodeType &t = types[VoxelGeneratorGraph::NODE_POW];
+		NodeType &t = types[VoxelGraphFunction::NODE_POW];
 		t.name = "Pow";
 		t.category = CATEGORY_MATH;
 		t.inputs.push_back(Port("x"));
@@ -2252,7 +2298,7 @@ VoxelGraphNodeDB::VoxelGraphNodeDB() {
 
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		NodeType &t = _types[i];
-		_type_name_to_id.insert({ t.name, (VoxelGeneratorGraph::NodeTypeID)i });
+		_type_name_to_id.insert({ t.name, (VoxelGraphFunction::NodeTypeID)i });
 
 		for (uint32_t param_index = 0; param_index < t.params.size(); ++param_index) {
 			Param &p = t.params[param_index];
@@ -2343,7 +2389,7 @@ Dictionary VoxelGraphNodeDB::get_type_info_dict(uint32_t id) const {
 }
 
 bool VoxelGraphNodeDB::try_get_type_id_from_name(
-		const String &name, VoxelGeneratorGraph::NodeTypeID &out_type_id) const {
+		const String &name, VoxelGraphFunction::NodeTypeID &out_type_id) const {
 	auto it = _type_name_to_id.find(name);
 	if (it == _type_name_to_id.end()) {
 		return false;

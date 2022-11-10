@@ -202,6 +202,13 @@ If more variety is needed, `Select` nodes can be chained to combine multiple lay
 Currently, graph generators only work per voxel. That makes them good to generate base ground and biomes, but it isn't practical to generate structures like trees or villages with it. This may be easier to accomplish using a second pass on the whole block instead, using a custom generator.
 
 
+### Relays
+
+A special `Relay` node exists to organize long connections between nodes. They do nothing on their own, they just redirect a connection. It also remains possible for a relay to have multiple destinations.
+
+![Screenshot of a relay node](images/relay_node.webp)
+
+
 ### Performance tuning
 
 This is a more technical section.
@@ -357,6 +364,58 @@ A more complex flattening brush, which both subtracts matter in a sphere and add
 One more detail to consider, is how big the original brush is. Usually voxel generators have no particular bounds, but it matters here because it will be used locally. For example if your make a spherical brush, you might use a `SdfSphere` node with radius `1`. Then, your original size will be `(2,2,2)`. You can then transform that brush (scale, rotate...) when using `do_graph` at the desired position.
 
 
+Re-usable graphs with `VoxelGraphFunction`
+--------------------------------------------
+
+`VoxelGraphFunction` allows to create graphs that can be used inside other graphs. This is a convenient way to re-use and share graphs.
+
+### Creating a function
+
+A `VoxelGraphFunction` can be created in the inspector and edited just like a `VoxelGeneratorGraph`, except it will lack some features only found on the latter. It is recommended to save functions as their own `.tres` files, because this is what allows to pick them up in other graphs.
+
+!!! note
+    A `VoxelGraphFunction` cannot contain itself, directly or indirectly. Doing this will result in Godot failing to load it.
+
+
+### Exposing inputs and outputs
+
+To be usable in other graphs, functions should have inputs and outputs. Inputs can be added to the function by creating nodes `InputX`, `InputY`, `InputZ`, `InputSDF` or `CustomInput`. Outputs can be added by creating nodes `OutputX`, `OutputY`, `OutputZ`, `CustomOutput` etc.
+
+However, an extra step is necessary to expose those inputs and outputs to external users of the function. To expose them, select the graph (or click in the background if opened already), go to the inspector, and click `Edit input/outputs`.
+
+![Screenshot of the function input/output editor dialog](images/function_io_dialog.webp)
+
+Currently, defining manually exposed inputs and outputs isn't supported, but is planned. You may instead click on `Auto-generate`, which will find nodes automatically and expose them as inputs and outputs. This also defines the order in which they will be exposed.
+
+Non-custom inputs and outputs such as `InputX` or `OutputX` are *special* nodes, and are identified by their type. They are recognized by the engine for specific purposes. You can have multiple nodes with the same type, but they will always refer to the same input of the function.
+
+Custom inputs and outputs *are identified by their name*. If you add 2 `CustomInput` nodes and give them the same name, they will get their data from the same input. It is recommended to give a name to custom input and output nodes. Empty names still count as a name (so multiple `CustomInput` without names will refer to the same unnamed input).
+
+Multiple special inputs or inputs with the same type is not allowed.
+Multiple custom inputs or outputs with the same name is not allowed.
+
+
+### Exposing parameters
+
+Currently parameters cannot be exposed, but it is planned.
+
+
+### Handling changes
+
+When an existing function changes (new/removed inputs/outputs for example), it is possible that other graphs using it will break. If you try to open them, some of the nodes and connections could be missing.
+
+Currently, you are expected to fix these graphs, and save them. You can also change the offending function so that its inputs, outputs and parameters are what you expect. However if you save a broken graph, you might loose some connections or nodes.
+
+
+### Debugging
+
+Editor tools such as profiling, output previews or range analysis are currently unsupported inside a `VoxelGraphFunction`. It is also not possible to inspect internal nodes of a function when editing a `VoxelGeneratorGraph`.
+
+It is planned to have these tools available when editing a standalone `VoxelGraphFunction` in the future. This will be done by moving features out of `VoxelGeneratorGraph` so they become more generic.
+
+Inspecting a function "instance" (and sub-instances...) may be desirable, but it is tricky to implement. It could be done as an "Open Inside" feature, to inspect data within the context of the "containing graph". However because functions are fully unpacked and optimized out internally, the engine has to trace back the information to original nodes. Tracing is already present to some degree, but only maps the "top-level" graph to fully-expanded/optimized graph, with no in-between information. This might be worked on further in the future.
+
+
 VoxelGeneratorGraph nodes
 -----------------------------
 
@@ -369,6 +428,7 @@ InputX                | Outputs the X coordinate of the current voxel.
 InputY                | Outputs the Y coordinate of the current voxel.
 InputZ                | Outputs the Z coordinate of the current voxel.
 InputSDF              | Outputs the existing signed distance at the current voxel. This may only be used in specific situations, such as using the graph as a procedural brush.
+CustomInput           | Outputs values from the custom input having the same name as the node. May be used in `VoxelGraphFunction`. It won't be used in `VoxelGeneratorGraph`.
 
 
 ### Outputs
@@ -379,6 +439,7 @@ OutputSDF             | Sets the Signed Distance Field value of the current voxe
 OutputSingleTexture   | Sets the texture index of the current voxel. This is an alternative to using `OutputWeight` nodes, if your voxels only have one texture. This is easier to use but does not allow for long gradients. Using this node in combination with `OutputWeight` is not supported.
 OutputType            | Sets the TYPE index of the current voxel. This is for use with `VoxelMesherBlocky`. If you use this output, you don't need to use `OutputSDF`.
 OutputWeight          | Sets the value of a specific texture weight for the current voxel. The texture is specified as an index with the `layer` parameter. There can only be one output using a given layer index.
+CustomOutput          | Sets the value of the custom output having the same name as the node. May be used in `VoxelGraphFunction`. It won't be used in `VoxelGeneratorGraph`.
 
 
 ### Math
@@ -445,6 +506,7 @@ Node name             | Description
 ----------------------|----------------------------------
 Curve                 | Returns the value of a custom `curve` at coordinate `x`, where `x` is in the range `[0..1]`. The `curve` is specified with a `Curve` resource.
 Image2D               | Returns the value of the red channel of an `image` at coordinates `(x, y)`, where `x` and `y` are in pixels and the return value is in the range `[0..1]` (or more if the image has an HDR format). If coordinates are outside the image, they will be wrapped around. No filtering is performed. The image must have an uncompressed format.
+Function              | Runs a custom function, like a re-usable sub-graph. The first parameter (parameter 0) of this node is a reference to a `VoxelGraphFunction`. Further parameters (starting from 1) are those exposed by the function.
 
 
 Modifiers

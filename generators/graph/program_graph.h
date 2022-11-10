@@ -38,6 +38,7 @@ public:
 		// Because it can't be deduced from `type_id`, they must be given a name.
 		// Initially needed for expression nodes.
 		std::string dynamic_name;
+		uint32_t autoconnect_hint = 0;
 
 		inline bool is_dynamic() const {
 			return dynamic_name.size() > 0;
@@ -114,6 +115,18 @@ public:
 			ZN_ASSERT_CONTINUE(node != nullptr);
 			f(*node);
 		}
+	}
+
+	template <typename F>
+	inline uint32_t find_node(F f) const {
+		for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
+			const Node *node = it->second;
+			ZN_ASSERT_CONTINUE(node != nullptr);
+			if (f(*node)) {
+				return it->first;
+			}
+		}
+		return ProgramGraph::NULL_ID;
 	}
 
 	void copy_from(const ProgramGraph &other, bool copy_subresources);

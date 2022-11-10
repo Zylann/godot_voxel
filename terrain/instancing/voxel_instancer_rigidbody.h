@@ -34,7 +34,7 @@ public:
 
 	void detach_and_destroy() {
 		_parent = nullptr;
-		queue_free_node(this);
+		queue_free();
 	}
 
 	// Note, for this the body must switch to convex shapes
