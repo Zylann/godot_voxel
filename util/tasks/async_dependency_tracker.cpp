@@ -35,6 +35,8 @@ AsyncDependencyTracker::AsyncDependencyTracker(
 }
 
 AsyncDependencyTracker::~AsyncDependencyTracker() {
+	// If we get to destroy tasks from here, it means we aborted. They were not scheduled so we still have
+	// ownership on them, so we have to clean them up.
 	for (auto it = _next_tasks.begin(); it != _next_tasks.end(); ++it) {
 		IThreadedTask *task = *it;
 		// TODO Might want to allow customizing that, maybe calling a `->dispose()` function instead?
@@ -51,12 +53,14 @@ void AsyncDependencyTracker::set_count(int count) {
 
 void AsyncDependencyTracker::post_complete() {
 	_tasks_have_started = true;
+	// Note, this class only allows decrementing this counter down to zero
 	ZN_ASSERT_RETURN_MSG(_count > 0, "post_complete() called more times than expected");
 	ZN_ASSERT_RETURN_MSG(_aborted == false, "post_complete() called after abortion");
 	--_count;
-	// Note, this class only allows decrementing this counter down to zero
-	if (_count == 0) {
+	if (_count == 0 && _next_tasks.size() > 0) {
+		ZN_ASSERT_RETURN(_next_tasks_schedule_callback != nullptr);
 		_next_tasks_schedule_callback(to_span(_next_tasks));
+		// Clearing tasks because once they are scheduled we no longer have ownership on them.
 		_next_tasks.clear();
 	}
 	// The idea of putting next tasks inside this class instead of the tasks directly,
