@@ -4,6 +4,7 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
+#include "voxel_graph_function.h"
 #include "voxel_graph_node_db.h"
 #include <limits>
 #include <unordered_set>
@@ -453,6 +454,7 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 	return true;
 }
 
+// Removes node 2 and moves its output connections to node 1. The two nodes must have the same type.
 static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
 	const ProgramGraph::Node &node1 = graph.get_node(node1_id);
 	const ProgramGraph::Node &node2 = graph.get_node(node2_id);
@@ -520,8 +522,10 @@ static void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_in
 }
 
 // For each node with auto-connect enabled, if they have non-connected ports supporting auto-connect, connects them to a
-// default input node. If no such node exists in the graph, it is created.
-static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &type_db) {
+// default input node. If no such node exists in the graph but it is present in input definitions of the graph, it is
+// created.
+static void apply_auto_connects(
+		ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs, const VoxelGraphNodeDB &type_db) {
 	// Copy ids first because we might create new nodes
 	std::vector<uint32_t> node_ids;
 	graph.get_node_ids(node_ids);
@@ -540,6 +544,7 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 				// Already connected
 				continue;
 			}
+
 			//const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 			//ZN_ASSERT(node.inputs.size() == type.inputs.size());
 			//const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
@@ -547,8 +552,24 @@ static void apply_auto_connects(ProgramGraph &graph, const VoxelGraphNodeDB &typ
 					VoxelGraphFunction::AutoConnect(input_port.autoconnect_hint);
 			VoxelGraphFunction::NodeTypeID src_type;
 			if (!VoxelGraphFunction::try_get_node_type_id_from_auto_connect(auto_connect, src_type)) {
+				// No hint or invalid hint
 				continue;
 			}
+
+			bool found_in_input_defs = false;
+			for (const VoxelGraphFunction::Port &input_def : input_defs) {
+				if (input_def.type == src_type) {
+					found_in_input_defs = true;
+					break;
+				}
+			}
+			if (!found_in_input_defs) {
+				// Not a declared input
+				ZN_PRINT_VERBOSE("Not applying auto-connect because the corresponding node type isn't present in input "
+								 "definitions of the function.");
+				continue;
+			}
+
 			// Graph input node instances are all equivalent, so we can pick any
 			uint32_t src_node_id = graph.find_node_by_type(src_type);
 			if (src_node_id == ProgramGraph::NULL_ID) {
@@ -651,51 +672,61 @@ ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::
 	return dst_node;
 }
 
+// If the passed node corresponds to a port, adds it to the list of nodes corresponding to the port.
+bool try_add_io_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
+		Span<std::vector<uint32_t>> &node_ids_per_port) {
+	for (unsigned int i = 0; i < ports.size(); ++i) {
+		const VoxelGraphFunction::Port &port = ports[i];
+		if (node.type_id == port.type) {
+			if (port.is_custom()) {
+				if (port.name == node.name) {
+					ZN_ASSERT(i < node_ids_per_port.size());
+					node_ids_per_port[i].push_back(node.id);
+					return true;
+				}
+			} else {
+				ZN_ASSERT(i < node_ids_per_port.size());
+				node_ids_per_port[i].push_back(node.id);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void get_input_and_output_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
 		Span<const VoxelGraphFunction::Port> output_defs, std::vector<std::vector<uint32_t>> &input_node_ids,
 		std::vector<std::vector<uint32_t>> &output_node_ids) {
-	struct L {
-		static bool try_add_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
-				std::vector<std::vector<uint32_t>> &node_ids) {
-			for (unsigned int i = 0; i < ports.size(); ++i) {
-				const VoxelGraphFunction::Port &port = ports[i];
-				if (node.type_id == port.type) {
-					if (port.is_custom()) {
-						if (port.name == node.name) {
-							ZN_ASSERT(i < node_ids.size());
-							node_ids[i].push_back(node.id);
-							return true;
-						}
-					} else {
-						ZN_ASSERT(i < node_ids.size());
-						node_ids[i].push_back(node.id);
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-	};
-
 	input_node_ids.resize(input_defs.size());
 	for (std::vector<uint32_t> &node_ids : input_node_ids) {
 		node_ids.clear();
 	}
-
 	output_node_ids.resize(output_defs.size());
 	for (std::vector<uint32_t> &node_ids : output_node_ids) {
 		node_ids.clear();
 	}
-
 	graph.for_each_node_const(
 			[&input_node_ids, &output_node_ids, &input_defs, &output_defs](const ProgramGraph::Node &node) {
-				if (L::try_add_node(input_defs, node, input_node_ids)) {
+				if (try_add_io_node(input_defs, node, to_span(input_node_ids))) {
 					return;
 				}
-				if (L::try_add_node(output_defs, node, output_node_ids)) {
+				if (try_add_io_node(output_defs, node, to_span(output_node_ids))) {
 					return;
 				}
 			});
+}
+
+void get_input_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
+		std::vector<std::vector<uint32_t>> &input_node_ids) {
+	input_node_ids.resize(input_defs.size());
+	for (std::vector<uint32_t> &node_ids : input_node_ids) {
+		node_ids.clear();
+	}
+	graph.for_each_node_const([&input_node_ids, &input_defs](const ProgramGraph::Node &node) {
+		if (try_add_io_node(input_defs, node, to_span(input_node_ids))) {
+			return;
+		}
+	});
 }
 
 bool find_port_index_from_node(
@@ -740,7 +771,7 @@ VoxelGraphRuntime::CompilationResult expand_function(
 	{
 		const ProgramGraph &fgraph_original = function->get_graph();
 		fgraph.copy_from(fgraph_original, false);
-		apply_auto_connects(fgraph, type_db);
+		apply_auto_connects(fgraph, func_inputs, type_db);
 	}
 
 	std::unordered_map<uint32_t, uint32_t> fn_to_expanded_node_ids;
@@ -1031,13 +1062,46 @@ void remove_relays(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
 	}
 }
 
+void combine_inputs(
+		ProgramGraph &graph, uint32_t node_id, uint32_t node_id_to_combine, GraphRemappingInfo *remap_info) {
+	const ProgramGraph::Node &node = graph.get_node(node_id_to_combine);
+	ZN_ASSERT(node.inputs.size() == 0);
+	ZN_ASSERT(node.outputs.size() == 1);
+	merge_node(graph, node_id, node_id_to_combine, remap_info);
+}
+
+// Input nodes can appear more than once for convenience, but they should appear only once when we compile.
+void combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
+		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info, std::vector<uint32_t> *out_input_node_ids) {
+	std::vector<std::vector<uint32_t>> node_ids_per_port;
+	get_input_node_ids(graph, input_defs, node_ids_per_port);
+
+	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
+		const std::vector<uint32_t> &node_ids = node_ids_per_port[input_index];
+		const uint32_t node_id = node_ids[0];
+		for (unsigned int i = 1; i < node_ids.size(); ++i) {
+			combine_inputs(graph, node_id, node_ids[i], remap_info);
+		}
+	}
+
+	if (out_input_node_ids != nullptr) {
+		out_input_node_ids->resize(input_defs.size());
+		for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
+			const std::vector<uint32_t> &node_ids = node_ids_per_port[input_index];
+			ZN_ASSERT(node_ids.size() > 0);
+			(*out_input_node_ids)[input_index] = node_ids[0];
+		}
+	}
+}
+
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
 	// First make a copy of the graph which we'll modify
 	expanded_graph.copy_from(graph, false);
 
-	apply_auto_connects(expanded_graph, type_db);
+	apply_auto_connects(expanded_graph, input_defs, type_db);
 
 	VoxelGraphRuntime::CompilationResult func_expand_result = expand_functions(expanded_graph, type_db, remap_info);
 	if (!func_expand_result.success) {
@@ -1054,24 +1118,28 @@ VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, Pro
 
 	merge_equivalences(expanded_graph, remap_info);
 	replace_simplifiable_nodes(expanded_graph, type_db, remap_info);
+	combine_inputs(expanded_graph, input_defs, type_db, remap_info, input_node_ids);
 
 	return expr_expand_result;
 }
 
-VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGraph &p_graph, bool debug) {
+VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const VoxelGraphFunction &function, bool debug) {
 	ZN_PROFILE_SCOPE();
 
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	GraphRemappingInfo remap_info;
 	ProgramGraph expanded_graph;
+	std::vector<uint32_t> input_node_ids;
+	Span<const VoxelGraphFunction::Port> input_defs = function.get_input_definitions();
 	const VoxelGraphRuntime::CompilationResult expand_result =
-			expand_graph(p_graph, expanded_graph, type_db, &remap_info);
+			expand_graph(function.get_graph(), expanded_graph, input_defs, &input_node_ids, type_db, &remap_info);
 	if (!expand_result.success) {
 		return expand_result;
 	}
 
-	VoxelGraphRuntime::CompilationResult result = _compile(expanded_graph, debug, type_db);
+	VoxelGraphRuntime::CompilationResult result =
+			_compile(expanded_graph, input_defs.size(), to_span(input_node_ids), debug, type_db);
 	if (!result.success) {
 		clear();
 	}
@@ -1092,68 +1160,64 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const ProgramGra
 		}
 	}
 
+	//debug_print_operations();
+
 	result.expanded_nodes_count = expanded_graph.get_nodes_count();
 	return result;
 }
 
-// Optimize parts of the graph that only depend on X and Z,
+// Optimize parts of the graph that only depend on inputs tagged as "outer group",
 // so they can be moved in the outer loop when blocks are generated, running less times.
 // Moves them all at the beginning.
-static uint32_t move_xz_operations_up(std::vector<uint32_t> &order, const ProgramGraph &graph) {
+// `order` is a previously computed order of execution of each node.
+static uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, const ProgramGraph &graph) {
+	ZN_PROFILE_SCOPE();
 	std::vector<uint32_t> immediate_deps;
-	std::unordered_set<uint32_t> nodes_depending_on_y;
-	std::vector<uint32_t> order_xz;
-	std::vector<uint32_t> order_xzy;
+	std::unordered_set<uint32_t> outer_group_node_ids;
+	std::vector<uint32_t> order_outer_group;
+	std::vector<uint32_t> order_inner_group;
 
 	for (const uint32_t node_id : order) {
 		const ProgramGraph::Node &node = graph.get_node(node_id);
 
-		bool depends_on_y = false;
+		// We consider X and Z as the beginning of the outer group.
+		bool is_outer_group =
+				node.type_id == VoxelGraphFunction::NODE_INPUT_X || node.type_id == VoxelGraphFunction::NODE_INPUT_Z;
 
-		if (node.type_id == VoxelGraphFunction::NODE_INPUT_Y) {
-			nodes_depending_on_y.insert(node_id);
-			depends_on_y = true;
-		}
-
-		if (!depends_on_y) {
+		if (!is_outer_group) {
 			immediate_deps.clear();
 			graph.find_immediate_dependencies(node_id, immediate_deps);
 
+			// Assume outer group, unless a dependency is not in the outer group
+			is_outer_group = true;
 			for (const uint32_t dep_node_id : immediate_deps) {
-				if (nodes_depending_on_y.find(dep_node_id) != nodes_depending_on_y.end()) {
-					depends_on_y = true;
-					nodes_depending_on_y.insert(node_id);
+				if (outer_group_node_ids.find(dep_node_id) == outer_group_node_ids.end()) {
+					is_outer_group = false;
 					break;
 				}
 			}
 		}
 
-		if (depends_on_y) {
-			order_xzy.push_back(node_id);
+		if (is_outer_group) {
+			order_outer_group.push_back(node_id);
+			outer_group_node_ids.insert(node_id);
 		} else {
-			order_xz.push_back(node_id);
+			order_inner_group.push_back(node_id);
 		}
 	}
 
-	const uint32_t xzy_start_index = order_xz.size();
-
-	//#ifdef DEBUG_ENABLED
-	//		const uint32_t order_xz_raw_size = order_xz.size();
-	//		const uint32_t *order_xz_raw = order_xz.data();
-	//		const uint32_t order_xzy_raw_size = order_xzy.size();
-	//		const uint32_t *order_xzy_raw = order_xzy.data();
-	//#endif
+	const uint32_t inner_group_start_index = order_outer_group.size();
 
 	size_t i = 0;
-	for (const uint32_t node_id : order_xz) {
+	for (const uint32_t node_id : order_outer_group) {
 		order[i++] = node_id;
 	}
-	for (const uint32_t node_id : order_xzy) {
+	for (const uint32_t node_id : order_inner_group) {
 		order[i++] = node_id;
 	}
 	ZN_ASSERT(i == order.size());
 
-	return xzy_start_index;
+	return inner_group_start_index;
 }
 
 static void compute_node_execution_order(
@@ -1180,20 +1244,17 @@ static void compute_node_execution_order(
 	graph.find_dependencies(terminal_nodes, order);
 }
 
-VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
-		const ProgramGraph &graph, bool debug, const VoxelGraphNodeDB &type_db) {
+VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGraph &graph, unsigned int input_count,
+		Span<const uint32_t> input_node_ids, bool debug, const VoxelGraphNodeDB &type_db) {
 	ZN_PROFILE_SCOPE();
 	clear();
+
+	_program.inputs.resize(input_count);
 
 	std::vector<uint32_t> order;
 	compute_node_execution_order(order, graph, debug, type_db);
 
-	const uint32_t xzy_start_index = move_xz_operations_up(order, graph);
-
-	//#ifdef DEBUG_ENABLED
-	//	const uint32_t order_raw_size = order.size();
-	//	const uint32_t *order_raw = order.data();
-	//#endif
+	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph);
 
 	struct MemoryHelper {
 		std::vector<BufferSpec> &buffer_specs;
@@ -1241,14 +1302,37 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 	MemoryHelper mem{ _program.buffer_specs };
 
-	// Main inputs X, Y, Z
-	_program.x_input_address = mem.add_binding();
-	_program.y_input_address = mem.add_binding();
-	_program.z_input_address = mem.add_binding();
-
 	std::vector<uint16_t> &operations = _program.operations;
 	std::unordered_map<uint32_t, uint32_t> node_id_to_dependency_graph;
 	std::vector<uint16_t> input_buffer_indices;
+
+	// Allocate input slots
+	// Note, even if an input isn't connected to anything, it still gets its binding space (but it won't be in `order`).
+	// It means the query will still contain that input because it's how the source graph defines it, but the runtime
+	// won't use it.
+	for (unsigned int input_index = 0; input_index < input_node_ids.size(); ++input_index) {
+		const uint32_t node_id = input_node_ids[input_index];
+
+#ifdef DEBUG_ENABLED
+		const ProgramGraph::Node &node = graph.get_node(node_id);
+		ZN_ASSERT(node.inputs.size() == 0);
+		ZN_ASSERT(node.outputs.size() == 1);
+#endif
+
+		InputInfo &input = _program.inputs[input_index];
+		input.buffer_address = mem.add_binding();
+		_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = input.buffer_address;
+
+		const unsigned int dg_node_index = _program.dependency_graph.nodes.size();
+		_program.dependency_graph.nodes.push_back(DependencyGraph::Node());
+		DependencyGraph::Node &dg_node = _program.dependency_graph.nodes.back();
+		dg_node.is_input = true;
+		dg_node.op_address = 0;
+		dg_node.first_dependency = 0;
+		dg_node.end_dependency = 0;
+		dg_node.debug_node_id = node_id;
+		node_id_to_dependency_graph.insert(std::make_pair(node_id, dg_node_index));
+	}
 
 	// Run through each node in order, and turn them into program instructions
 	for (size_t order_index = 0; order_index < order.size(); ++order_index) {
@@ -1259,8 +1343,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 		ZN_ASSERT(node.inputs.size() == type.inputs.size());
 		ZN_ASSERT(node.outputs.size() == type.outputs.size());
 
-		if (order_index == xzy_start_index) {
-			_program.xzy_start_op_address = operations.size();
+		if (order_index == inner_group_start_index) {
+			_program.inner_group_start_op_index = operations.size();
 		}
 
 		const unsigned int dg_node_index = _program.dependency_graph.nodes.size();
@@ -1286,34 +1370,12 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 				continue;
 			}
 
-			// Input nodes can appear multiple times in the graph, for convenience.
-			// Multiple instances of the same node will refer to the same data.
 			case VoxelGraphFunction::NODE_INPUT_X:
-				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.x_input_address;
-				dg_node.is_input = true;
-				continue;
-
 			case VoxelGraphFunction::NODE_INPUT_Y:
-				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.y_input_address;
-				dg_node.is_input = true;
-				continue;
-
 			case VoxelGraphFunction::NODE_INPUT_Z:
-				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.z_input_address;
-				dg_node.is_input = true;
-				continue;
-
 			case VoxelGraphFunction::NODE_INPUT_SDF:
-				if (_program.sdf_input_address == -1) {
-					_program.sdf_input_address = mem.add_binding();
-				}
-				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = _program.sdf_input_address;
-				dg_node.is_input = true;
-				continue;
-
 			case VoxelGraphFunction::NODE_CUSTOM_INPUT:
-				_program.output_port_addresses[ProgramGraph::PortLocation{ node_id, 0 }] = mem.add_binding();
-				dg_node.is_input = true;
+				// Handled earlier
 				continue;
 
 			case VoxelGraphFunction::NODE_SDF_PREVIEW: {
@@ -1339,8 +1401,8 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 		ZN_ASSERT(node.type_id <= std::numeric_limits<uint16_t>::max());
 
-		if (order_index == xzy_start_index) {
-			_program.default_execution_map.xzy_start_index = _program.default_execution_map.operations.size();
+		if (order_index == inner_group_start_index) {
+			_program.default_execution_map.inner_group_start_index = _program.default_execution_map.operations.size();
 		}
 		_program.default_execution_map.operations.push_back(
 				ExecutionMap::OperationInfo{ uint16_t(operations.size()), 0 });
@@ -1495,14 +1557,14 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 	_program.buffer_count = mem.next_address;
 
-	// Pin buffers from the XZ group that are read by operations of the XZY group.
-	// Buffer data coming from the XZ group must be pinned if it is read by the XZY group,
+	// Pin buffers from the outer group that are read by operations of the inner group.
+	// Buffer data coming from the outer group must be pinned if it is read by the inner group,
 	// because it is re-used across multiple executions.
 	{
 		Span<BufferSpec> buffer_specs = to_span(_program.buffer_specs);
 
-		// For each node of the XZY group
-		for (unsigned int order_index = xzy_start_index; order_index < order.size(); ++order_index) {
+		// For each node of the inner group
+		for (unsigned int order_index = inner_group_start_index; order_index < order.size(); ++order_index) {
 			const uint32_t node_id = order[order_index];
 			const ProgramGraph::Node &node = graph.get_node(node_id);
 			//const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
@@ -1515,7 +1577,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(
 
 				// Find if the source node is part of the XZ group
 				bool found = false;
-				for (unsigned int i = 0; i < xzy_start_index; ++i) {
+				for (unsigned int i = 0; i < inner_group_start_index; ++i) {
 					if (order[i] == src_port.node_id) {
 						found = true;
 						break;

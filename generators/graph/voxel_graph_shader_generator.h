@@ -5,11 +5,13 @@
 #include "../../util/godot/variant.h"
 #include "../../util/span.h"
 #include "code_gen_helper.h"
+#include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 
 namespace zylann::voxel {
 
-VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph, FwdMutableStdString output);
+VoxelGraphRuntime::CompilationResult generate_shader(
+		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output);
 
 // Sent as argument to functions implementing generator nodes, in order to generate shader code.
 class ShaderGenContext {

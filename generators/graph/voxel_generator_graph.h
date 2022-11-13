@@ -153,11 +153,17 @@ private:
 
 	// Only compiling and generation methods are thread-safe.
 
+	// Wrapper around the runtime with extra information specialized for the use case
 	struct Runtime {
 		VoxelGraphRuntime runtime;
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
+
+		int x_input_index = -1;
+		int y_input_index = -1;
+		int z_input_index = -1;
+		int sdf_input_index = -1;
 
 		int sdf_output_index = -1;
 		int sdf_output_buffer_index = -1;
@@ -172,6 +178,33 @@ private:
 		// List of indices to feed queries. The order doesn't matter, can be different from `weight_outputs`.
 		FixedArray<unsigned int, 16> weight_output_indices;
 		unsigned int weight_outputs_count = 0;
+	};
+
+	// Helper to setup inputs for runtime queries
+	template <typename T>
+	struct QueryInputs {
+		FixedArray<T, 4> query_inputs;
+		unsigned int input_count = 0;
+
+		inline QueryInputs(const Runtime &runtime_wrapper, T x, T y, T z, T sdf) {
+			if (runtime_wrapper.x_input_index != -1) {
+				query_inputs[runtime_wrapper.x_input_index] = x;
+			}
+			if (runtime_wrapper.y_input_index != -1) {
+				query_inputs[runtime_wrapper.y_input_index] = y;
+			}
+			if (runtime_wrapper.z_input_index != -1) {
+				query_inputs[runtime_wrapper.z_input_index] = z;
+			}
+			if (runtime_wrapper.sdf_input_index != -1) {
+				query_inputs[runtime_wrapper.sdf_input_index] = sdf;
+			}
+			input_count = runtime_wrapper.runtime.get_input_count();
+		}
+
+		inline Span<T> get() {
+			return to_span(query_inputs, input_count);
+		}
 	};
 
 	std::shared_ptr<Runtime> _runtime = nullptr;

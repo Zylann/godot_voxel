@@ -11,6 +11,7 @@
 namespace zylann::voxel {
 
 class VoxelGraphNodeDB;
+class VoxelGraphFunction;
 
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
@@ -82,8 +83,9 @@ public:
 		// It can also include some nodes not explicitely present in the user graph (like auto-inputs).
 		std::vector<uint32_t> debug_nodes;
 
-		// From which index in the adress list operations will start depending on Y
-		unsigned int xzy_start_index = 0;
+		// Every operation before this index in the `operations` list will only depend on inputs tagged as "outer
+		// group". This is the index from which operations won't only depend on the outer group.
+		unsigned int inner_group_start_index = 0;
 
 		struct ConstantFill {
 			float *data = nullptr;
@@ -99,7 +101,7 @@ public:
 		void clear() {
 			operations.clear();
 			debug_nodes.clear();
-			xzy_start_index = 0;
+			inner_group_start_index = 0;
 			constant_fills.clear();
 		}
 	};
@@ -152,7 +154,7 @@ public:
 		}
 
 	private:
-		friend class VoxelGraphRuntime;
+		friend class VoxelGraphRuntime; // TODO Why is friend needed? This class is nested inside
 
 		std::vector<math::Interval> ranges;
 		std::vector<Buffer> buffers;
@@ -162,6 +164,14 @@ public:
 
 		unsigned int buffer_size = 0;
 		unsigned int buffer_capacity = 0;
+	};
+
+	struct InputInfo {
+		// Note: the following buffer are allocated by the user.
+		// They are mapped temporarily into the same array of buffers inside `State`,
+		// so we won't need specific code to handle them. This requires knowing at which index they are reserved.
+		// They must be all assigned for the program to run correctly.
+		unsigned int buffer_address = 0;
 	};
 
 	// Info about a terminal node of the graph
@@ -175,7 +185,7 @@ public:
 	~VoxelGraphRuntime();
 
 	void clear();
-	CompilationResult compile(const ProgramGraph &p_graph, bool debug);
+	CompilationResult compile(const VoxelGraphFunction &function, bool debug);
 
 	// Call this before you use a state with generation functions.
 	// You need to call it once, until you want to use a different graph, buffer size or buffer count.
@@ -184,12 +194,20 @@ public:
 
 	// Convenience for set generation with only one value
 	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
-	void generate_single(State &state, Vector3f position_f, const ExecutionMap *execution_map) const;
+	void generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const;
 
-	void generate_set(State &state, Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf,
-			bool skip_xz, const ExecutionMap *p_execution_map) const;
+	void generate_set(
+			State &state, Span<Span<float>> inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const;
 
-	bool has_input(unsigned int node_type) const;
+#ifdef DEBUG_ENABLED
+	void debug_print_operations();
+#endif
+
+	//bool has_input(unsigned int node_type) const;
+
+	inline unsigned int get_input_count() const {
+		return _program.inputs.size();
+	}
 
 	inline unsigned int get_output_count() const {
 		return _program.outputs_count;
@@ -202,7 +220,7 @@ public:
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	void analyze_range(State &state, Vector3i min_pos, Vector3i max_pos, math::Interval sdf_input_range) const;
+	void analyze_range(State &state, Span<math::Interval> inputs) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.
@@ -327,7 +345,8 @@ public:
 	typedef void (*RangeAnalysisFunc)(RangeAnalysisContext &);
 
 private:
-	CompilationResult _compile(const ProgramGraph &graph, bool debug, const VoxelGraphNodeDB &type_db);
+	CompilationResult _compile(const ProgramGraph &graph, unsigned int input_count, Span<const uint32_t> input_node_ids,
+			bool debug, const VoxelGraphNodeDB &type_db);
 
 	bool is_operation_constant(const State &state, uint16_t op_address) const;
 
@@ -415,23 +434,12 @@ private:
 		// Describes the list of buffers to prepare in `State` before the program can be run
 		std::vector<BufferSpec> buffer_specs;
 
-		// Address in `operations` from which operations will depend on Y. Operations before never depend on it.
-		// It is used to optimize away calculations that would otherwise be the same in planar terrain use cases.
-		uint32_t xzy_start_op_address;
+		// Address in `operations` from which operations will start to not only depend on inputs tagged as "outer
+		// group". It is used to optimize away calculations that would otherwise be the same in planar terrain use
+		// cases.
+		uint32_t inner_group_start_op_index;
 
-		// Note: the following buffers are allocated by the user.
-		// They are mapped temporarily into the same array of buffers inside `State`,
-		// so we won't need specific code to handle them. This requires knowing at which index they are reserved.
-		// They must be all assigned for the program to run correctly.
-		//
-		// Address within the State's array of buffers where the X input may be.
-		int x_input_address = -1;
-		// Address within the State's array of buffers where the Y input may be.
-		int y_input_address = -1;
-		// Address within the State's array of buffers where the Z input may be.
-		int z_input_address = -1;
-		// Address within the State's array of buffers where the SDF input may be.
-		int sdf_input_address = -1;
+		std::vector<InputInfo> inputs;
 
 		FixedArray<OutputInfo, MAX_OUTPUTS> outputs;
 		unsigned int outputs_count = 0;
@@ -459,16 +467,13 @@ private:
 		void clear() {
 			operations.clear();
 			buffer_specs.clear();
-			xzy_start_op_address = 0;
+			inner_group_start_op_index = 0;
 			default_execution_map.clear();
 			output_port_addresses.clear();
 			user_port_to_expanded_port.clear();
 			expanded_node_id_to_user_node_id.clear();
 			dependency_graph.clear();
-			x_input_address = -1;
-			y_input_address = -1;
-			z_input_address = -1;
-			sdf_input_address = -1;
+			inputs.clear();
 			outputs_count = 0;
 			compilation_result = CompilationResult();
 			for (auto it = heap_resources.begin(); it != heap_resources.end(); ++it) {

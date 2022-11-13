@@ -448,7 +448,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	math::Interval sdf_input_range;
 	Span<float> input_sdf_full_cache;
 	Span<float> input_sdf_slice_cache;
-	if (runtime.has_input(VoxelGraphFunction::NODE_INPUT_SDF)) {
+	if (runtime_ptr->sdf_input_index != -1) {
 		ZN_PROFILE_SCOPE();
 		cache.input_sdf_slice_cache.resize(slice_buffer_size);
 		input_sdf_slice_cache = to_span(cache.input_sdf_slice_cache);
@@ -478,7 +478,11 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				const Vector3i gmax = origin + (rmax << input.lod);
 
 				// Do a quick analysis of the area. We'll only compute voxels if necessary.
-				runtime.analyze_range(cache.state, gmin, gmax, sdf_input_range);
+				{
+					QueryInputs<math::Interval> range_inputs(*runtime_ptr, math::Interval(gmin.x, gmax.x),
+							math::Interval(gmin.y, gmax.y), math::Interval(gmin.z, gmax.z), sdf_input_range);
+					runtime.analyze_range(cache.state, range_inputs.get());
+				}
 
 				bool sdf_is_air = true;
 				if (sdf_output_buffer_index != -1) {
@@ -582,9 +586,11 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 
 					// Full query (unless using execution map)
-					runtime.generate_set(cache.state, x_cache, y_cache, z_cache, input_sdf_slice_cache,
-							_use_xz_caching && ry != rmin.y,
-							_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
+					{
+						QueryInputs query_inputs(*runtime_ptr, x_cache, y_cache, z_cache, input_sdf_slice_cache);
+						runtime.generate_set(cache.state, query_inputs.get(), _use_xz_caching && ry != rmin.y,
+								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
+					}
 
 					if (sdf_output_buffer_index != -1) {
 						const VoxelGraphRuntime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
@@ -648,26 +654,56 @@ static bool has_output_type(
 }
 
 VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
+	// This is a specialized compilation. We use VoxelGraphFunction for a more precise use case, which is to generate
+	// voxels based on 3D coordinates and some other attributes. So we expect specific inputs and outputs to be used.
+
 	ERR_FAIL_COND_V(
 			_main_function.is_null(), VoxelGraphRuntime::CompilationResult::make_error("Main function not defined"));
-	const ProgramGraph &graph = _main_function->get_graph();
 
 	const int64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	std::shared_ptr<Runtime> r = make_shared_instance<Runtime>();
-	VoxelGraphRuntime &runtime = r->runtime;
+
+	// We usually expect X, Y, Z and SDF inputs. Custom inputs are not supported.
+	_main_function->auto_pick_inputs_and_outputs();
+	Span<const VoxelGraphFunction::Port> input_defs = _main_function->get_input_definitions();
+	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
+		const VoxelGraphFunction::Port &port = input_defs[input_index];
+		switch (port.type) {
+			case VoxelGraphFunction::NODE_INPUT_X:
+				r->x_input_index = input_index;
+				break;
+			case VoxelGraphFunction::NODE_INPUT_Y:
+				r->y_input_index = input_index;
+				break;
+			case VoxelGraphFunction::NODE_INPUT_Z:
+				r->z_input_index = input_index;
+				break;
+			case VoxelGraphFunction::NODE_INPUT_SDF:
+				r->sdf_input_index = input_index;
+				break;
+			case VoxelGraphFunction::NODE_CUSTOM_INPUT:
+				return VoxelGraphRuntime::CompilationResult::make_error(
+						"Custom inputs are not allowed in main generator graphs.");
+			default:
+				return VoxelGraphRuntime::CompilationResult::make_error("Unsupported input. Bug?");
+		}
+	}
 
 	// Core compilation
-	const VoxelGraphRuntime::CompilationResult result = runtime.compile(graph, debug);
+	VoxelGraphRuntime &runtime = r->runtime;
+	const VoxelGraphRuntime::CompilationResult result = runtime.compile(**_main_function, debug);
 
 	if (!result.success) {
 		return result;
 	}
 
+	const ProgramGraph &source_graph = _main_function->get_graph();
+
 	// Extra steps
 	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
 		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
-		const ProgramGraph::Node &node = graph.get_node(output.node_id);
+		const ProgramGraph::Node &node = source_graph.get_node(output.node_id);
 
 		// TODO Allow specifying max count in VoxelGraphNodeDB so we can make some of these checks more generic
 		switch (node.type_id) {
@@ -751,7 +787,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 					error.node_id = output.node_id;
 					return error;
 				}
-				if (has_output_type(runtime, graph, VoxelGraphFunction::NODE_OUTPUT_WEIGHT)) {
+				if (has_output_type(runtime, source_graph, VoxelGraphFunction::NODE_OUTPUT_WEIGHT)) {
 					VoxelGraphRuntime::CompilationResult error;
 					error.success = false;
 					error.message =
@@ -830,16 +866,18 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	Cache &cache = get_tls_cache();
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 
-	// Support graphs having an SDF input, give it default values
 	Span<float> in_sdf;
-	if (runtime.has_input(VoxelGraphFunction::NODE_INPUT_SDF)) {
+	if (_runtime->sdf_input_index != -1) {
+		// Support graphs having an SDF input, give it default values
 		cache.input_sdf_full_cache.resize(in_x.size());
 		in_sdf = to_span(cache.input_sdf_full_cache);
 		in_sdf.fill(0.f);
 	}
 
+	QueryInputs inputs(*_runtime, in_x, in_y, in_z, in_sdf);
+
 	runtime.prepare_state(cache.state, in_x.size(), false);
-	runtime.generate_set(cache.state, in_x, in_y, in_z, in_sdf, false, nullptr);
+	runtime.generate_set(cache.state, inputs.get(), false, nullptr);
 	// Note, when generating SDF, we don't scale it because the return values are uncompressed floats. Scale only
 	// matters if we are storing it inside 16-bit or 8-bit VoxelBuffer.
 }
@@ -850,8 +888,10 @@ void VoxelGeneratorGraph::generate_series(Span<float> in_x, Span<float> in_y, Sp
 	Cache &cache = get_tls_cache();
 	VoxelGraphRuntime &runtime = _runtime->runtime;
 
+	QueryInputs inputs(*_runtime, in_x, in_y, in_z, in_sdf);
+
 	runtime.prepare_state(cache.state, in_x.size(), false);
-	runtime.generate_set(cache.state, in_x, in_y, in_z, in_sdf, false, nullptr);
+	runtime.generate_set(cache.state, inputs.get(), false, nullptr);
 	// Note, when generating SDF, we don't scale it because the return values are uncompressed floats. Scale only
 	// matters if we are storing it inside 16-bit or 8-bit VoxelBuffer.
 }
@@ -977,22 +1017,21 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		std::vector<float> y_coords;
 		std::vector<float> z_coords;
 		std::vector<float> in_sdf_cache;
-		Ref<Image> im;
-		const VoxelGraphRuntime &runtime;
+		Image &im;
+		const Runtime &runtime_wrapper;
 		VoxelGraphRuntime::State &state;
-		const unsigned int sdf_buffer_index;
 		const float ref_radius;
 		const float sdf_min;
 		const float sdf_max;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, unsigned int p_sdf_buffer_index,
-				const VoxelGraphRuntime &p_runtime, float p_ref_radius, float p_sdf_min, float p_sdf_max) :
-				runtime(p_runtime),
+		ProcessChunk(VoxelGraphRuntime::State &p_state, const Runtime &p_runtime, float p_ref_radius, float p_sdf_min,
+				float p_sdf_max, Image &p_im) :
+				runtime_wrapper(p_runtime),
 				state(p_state),
-				sdf_buffer_index(p_sdf_buffer_index),
 				ref_radius(p_ref_radius),
 				sdf_min(p_sdf_min),
-				sdf_max(p_sdf_max) {}
+				sdf_max(p_sdf_max),
+				im(p_im) {}
 
 		void operator()(int x0, int y0, int width, int height) {
 			ZN_PROFILE_SCOPE();
@@ -1001,10 +1040,10 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			x_coords.resize(area);
 			y_coords.resize(area);
 			z_coords.resize(area);
-			runtime.prepare_state(state, area, false);
+			runtime_wrapper.runtime.prepare_state(state, area, false);
 
 			const Vector2 suv =
-					Vector2(1.f / static_cast<float>(im->get_width()), 1.f / static_cast<float>(im->get_height()));
+					Vector2(1.f / static_cast<float>(im.get_width()), 1.f / static_cast<float>(im.get_height()));
 
 			const float nr = 1.f / (sdf_max - sdf_min);
 
@@ -1025,15 +1064,16 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 			// Support graphs having an SDF input, give it default values
 			Span<float> in_sdf;
-			if (runtime.has_input(VoxelGraphFunction::NODE_INPUT_SDF)) {
+			if (runtime_wrapper.sdf_input_index != -1) {
 				in_sdf_cache.resize(x_coords.size());
-				in_sdf = to_span(in_sdf_cache);
+				Span<float> in_sdf = to_span(in_sdf_cache);
 				in_sdf.fill(0.f);
 			}
 
-			runtime.generate_set(
-					state, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf, false, nullptr);
-			const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(sdf_buffer_index);
+			QueryInputs inputs(runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf);
+
+			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
+			const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
 
 			// Calculate final pixels
 			// TODO Optimize: could convert to buffer directly?
@@ -1042,7 +1082,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 				for (int ix = x0; ix < xmax; ++ix) {
 					const float sdf = buffer.data[i];
 					const float nh = (-sdf - sdf_min) * nr;
-					im->set_pixel(ix, iy, Color(nh, nh, nh));
+					im.set_pixel(ix, iy, Color(nh, nh, nh));
 					++i;
 				}
 			}
@@ -1051,9 +1091,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 	Cache &cache = get_tls_cache();
 
-	ProcessChunk pc(
-			cache.state, runtime_ptr->sdf_output_buffer_index, runtime_ptr->runtime, ref_radius, sdf_min, sdf_max);
-	pc.im = im;
+	ProcessChunk pc(cache.state, *runtime_ptr, ref_radius, sdf_min, sdf_max, **im);
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
@@ -1083,18 +1121,16 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		std::vector<float> sdf_values_px;
 		std::vector<float> sdf_values_py;
 		std::vector<float> in_sdf_cache;
-		unsigned int sdf_buffer_index;
-		Ref<Image> im;
-		const VoxelGraphRuntime &runtime;
+		Image &im;
+		const Runtime &runtime_wrapper;
 		VoxelGraphRuntime::State &state;
 		const float strength;
 		const float ref_radius;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, unsigned int p_sdf_buffer_index, Ref<Image> p_im,
-				const VoxelGraphRuntime &p_runtime, float p_strength, float p_ref_radius) :
-				sdf_buffer_index(p_sdf_buffer_index),
+		ProcessChunk(VoxelGraphRuntime::State &p_state, Image &p_im, const Runtime &p_runtime_wrapper, float p_strength,
+				float p_ref_radius) :
 				im(p_im),
-				runtime(p_runtime),
+				runtime_wrapper(p_runtime_wrapper),
 				state(p_state),
 				strength(p_strength),
 				ref_radius(p_ref_radius) {}
@@ -1109,25 +1145,26 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			sdf_values_p.resize(area);
 			sdf_values_px.resize(area);
 			sdf_values_py.resize(area);
-			runtime.prepare_state(state, area, false);
+			runtime_wrapper.runtime.prepare_state(state, area, false);
 
 			const float ns = 2.f / strength;
 
 			const Vector2 suv =
-					Vector2(1.f / static_cast<float>(im->get_width()), 1.f / static_cast<float>(im->get_height()));
+					Vector2(1.f / static_cast<float>(im.get_width()), 1.f / static_cast<float>(im.get_height()));
 
-			const Vector2 normal_step = 0.5f * Vector2(1.f, 1.f) / im->get_size();
+			const Vector2 normal_step = 0.5f * Vector2(1.f, 1.f) / im.get_size();
 			const Vector2 normal_step_x = Vector2(normal_step.x, 0.f);
 			const Vector2 normal_step_y = Vector2(0.f, normal_step.y);
 
 			const int xmax = x0 + width;
 			const int ymax = y0 + height;
 
-			const VoxelGraphRuntime::Buffer &sdf_buffer = state.get_buffer(sdf_buffer_index);
+			const VoxelGraphRuntime::Buffer &sdf_output_buffer =
+					state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
 
 			// Support graphs having an SDF input, give it default values
 			Span<float> in_sdf;
-			if (runtime.has_input(VoxelGraphFunction::NODE_INPUT_SDF)) {
+			if (runtime_wrapper.sdf_input_index != -1) {
 				in_sdf_cache.resize(x_coords.size());
 				in_sdf = to_span(in_sdf_cache);
 				in_sdf.fill(0.f);
@@ -1147,11 +1184,13 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
+
+			QueryInputs inputs(runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf);
+
 			// TODO Perform range analysis on the range of coordinates, it might still yield performance benefits
-			runtime.generate_set(
-					state, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf, false, nullptr);
-			CRASH_COND(sdf_values_p.size() != sdf_buffer.size);
-			memcpy(sdf_values_p.data(), sdf_buffer.data, sdf_values_p.size() * sizeof(float));
+			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
+			CRASH_COND(sdf_values_p.size() != sdf_output_buffer.size);
+			memcpy(sdf_values_p.data(), sdf_output_buffer.data, sdf_values_p.size() * sizeof(float));
 
 			// Get neighbors along X
 			i = 0;
@@ -1165,10 +1204,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
-			runtime.generate_set(
-					state, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf, false, nullptr);
-			CRASH_COND(sdf_values_px.size() != sdf_buffer.size);
-			memcpy(sdf_values_px.data(), sdf_buffer.data, sdf_values_px.size() * sizeof(float));
+			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
+			CRASH_COND(sdf_values_px.size() != sdf_output_buffer.size);
+			memcpy(sdf_values_px.data(), sdf_output_buffer.data, sdf_values_px.size() * sizeof(float));
 
 			// Get neighbors along Y
 			i = 0;
@@ -1182,10 +1220,9 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 				}
 			}
-			runtime.generate_set(
-					state, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf, false, nullptr);
-			CRASH_COND(sdf_values_py.size() != sdf_buffer.size);
-			memcpy(sdf_values_py.data(), sdf_buffer.data, sdf_values_py.size() * sizeof(float));
+			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
+			CRASH_COND(sdf_values_py.size() != sdf_output_buffer.size);
+			memcpy(sdf_values_py.data(), sdf_output_buffer.data, sdf_values_py.size() * sizeof(float));
 
 			// TODO This is probably invalid due to the distortion, may need to use another approach.
 			// Compute the 3D normal from gradient, then project it?
@@ -1201,7 +1238,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 					++i;
 					const Vector3 normal = Vector3(h_px - h, ns, h_py - h).normalized();
 					const Color en(0.5f * normal.x + 0.5f, -0.5f * normal.z + 0.5f, 0.5f * normal.y + 0.5f);
-					im->set_pixel(ix, iy, en);
+					im.set_pixel(ix, iy, en);
 				}
 			}
 		}
@@ -1219,7 +1256,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		}
 	}
 
-	ProcessChunk pc(cache.state, runtime_ptr->sdf_output_buffer_index, im, runtime_ptr->runtime, strength, ref_radius);
+	ProcessChunk pc(cache.state, **im, *runtime_ptr, strength, ref_radius);
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
@@ -1229,7 +1266,8 @@ String VoxelGeneratorGraph::generate_shader() {
 	const ProgramGraph &graph = _main_function->get_graph();
 
 	std::string code_utf8;
-	VoxelGraphRuntime::CompilationResult result = zylann::voxel::generate_shader(graph, code_utf8);
+	VoxelGraphRuntime::CompilationResult result =
+			zylann::voxel::generate_shader(graph, _main_function->get_input_definitions(), code_utf8);
 
 	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
 
@@ -1253,10 +1291,13 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	if (runtime_ptr->sdf_output_buffer_index == -1) {
 		return v;
 	}
+
+	QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
+
 	Cache &cache = get_tls_cache();
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1, false);
-	runtime.generate_single(cache.state, to_vec3f(position), nullptr);
+	runtime.generate_single(cache.state, inputs.get(), nullptr);
 	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
 	ERR_FAIL_COND_V(buffer.size == 0, v);
 	ERR_FAIL_COND_V(buffer.data == nullptr, v);
@@ -1276,9 +1317,13 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 	ERR_FAIL_COND_V(runtime_ptr == nullptr, math::Interval::from_single_value(0.f));
 	Cache &cache = get_tls_cache();
 	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
+
+	QueryInputs query_inputs(*runtime_ptr, math::Interval(min_pos.x, max_pos.x), math::Interval(min_pos.y, max_pos.y),
+			math::Interval(min_pos.z, max_pos.z), math::Interval());
+
 	// Note, buffer size is irrelevant here, because range analysis doesn't use buffers
 	runtime.prepare_state(cache.state, 1, false);
-	runtime.analyze_range(cache.state, min_pos, max_pos, math::Interval());
+	runtime.analyze_range(cache.state, query_inputs.get());
 	if (optimize_execution_map) {
 		runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map, true);
 	}
@@ -1331,7 +1376,8 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 			for (uint32_t z = 0; z < cube_size; ++z) {
 				for (uint32_t y = 0; y < cube_size; ++y) {
 					for (uint32_t x = 0; x < cube_size; ++x) {
-						runtime.generate_single(cache.state, Vector3f(x, y, z), nullptr);
+						QueryInputs<float> inputs(*runtime_ptr, x, y, z, 0.f);
+						runtime.generate_single(cache.state, inputs.get(), nullptr);
 					}
 				}
 			}
@@ -1354,6 +1400,8 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 		Span<float> sz = to_span(src_z);
 		Span<float> ssdf = to_span(src_sdf);
 
+		QueryInputs inputs(*runtime_ptr, sx, sy, sz, ssdf);
+
 		const bool per_node_profiling = node_profiling_info != nullptr;
 		runtime.prepare_state(cache.state, sx.size(), per_node_profiling);
 
@@ -1361,7 +1409,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 			profiling_clock.restart();
 
 			for (uint32_t y = 0; y < cube_size; ++y) {
-				runtime.generate_set(cache.state, sx, sy, sz, ssdf, false, nullptr);
+				runtime.generate_set(cache.state, inputs.get(), false, nullptr);
 			}
 
 			total_elapsed_us += profiling_clock.restart();

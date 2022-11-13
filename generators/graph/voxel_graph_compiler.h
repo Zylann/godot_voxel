@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_COMPILER_H
 #define VOXEL_GRAPH_COMPILER_H
 
+#include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 
 namespace zylann::voxel {
@@ -26,6 +27,7 @@ struct GraphRemappingInfo {
 // Pre-processes the graph and applies some optimizations before doing the main compilation pass.
 // This can involve some nodes getting removed or replaced with new ones.
 VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
 		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info);
 
 // Functions usable by node implementations during the compilation stage

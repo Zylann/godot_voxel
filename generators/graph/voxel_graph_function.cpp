@@ -86,6 +86,11 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 
 			} else {
 				// Special I/O
+
+				// TODO OutputWeight outputs will not work with this logic.
+				// What identifies such output is not just the type, but also an index property. It is pretty much like
+				// a custom output, but with an index instead of a name...
+
 				for (VoxelGraphFunction::Port &p : added_ports) {
 					if (p.type == node.type_id) {
 						// Already added

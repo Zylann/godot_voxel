@@ -16,13 +16,15 @@ void ShaderGenContext::require_lib_code(const char *lib_name, const char **code)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VoxelGraphRuntime::CompilationResult generate_shader(const ProgramGraph &p_graph, FwdMutableStdString output) {
+VoxelGraphRuntime::CompilationResult generate_shader(
+		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output) {
 	ZN_PROFILE_SCOPE();
 
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	ProgramGraph expanded_graph;
-	const VoxelGraphRuntime::CompilationResult expand_result = expand_graph(p_graph, expanded_graph, type_db, nullptr);
+	const VoxelGraphRuntime::CompilationResult expand_result =
+			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr);
 	if (!expand_result.success) {
 		return expand_result;
 	}
