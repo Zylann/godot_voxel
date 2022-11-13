@@ -1,5 +1,5 @@
 name: 🐺️ Fuzzer
-on: 
+on:
   push:
   pull_request:
   schedule:
@@ -9,57 +9,43 @@ on:
 env:
   GODOT_BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
-  GODOT_BINARY_NAME: godot.linuxbsd.editor.dev.x86_64
-  # if we could compile with sanitisers
-  #GODOT_BINARY_NAME: godot.linuxbsd.tools.64s
+  GODOT_BINARY_NAME: godot.linuxbsd.editor.dev.x86_64.san
 
 jobs:
-  test-project:
-    runs-on: "ubuntu-20.04"
+  module-compilation:
+    runs-on: "ubuntu-22.04"
     name: Editor
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: godotengine/godot
           ref: master
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: modules/voxel
-
-      # Clone fuzzer
-      - name: Checkout Goost fuzzer backend
-        uses: actions/checkout@v2
-        with:
-          repository: qarmin/Qarminer
-          ref: master
-          path: fuzzer
-
-      - name: Copy fuzzer settings
-        run: |
-          mv modules/voxel/misc/fuzzer_config.txt fuzzer/settings.txt
 
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       - name: Make apt sources.list use the default Ubuntu repositories
         run: |
           sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo cp -f modules/voxel/misc/sources.list /etc/apt/sources.list
           sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
         run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
-            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm scons \
             xvfb wget unzip
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: fuzzer-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -68,62 +54,206 @@ jobs:
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
 
-      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v2
-        with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-
-      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
-      - name: Configuring Python packages
-        run: |
-          python -c "import sys; print(sys.version)"
-          python -m pip install scons
-          python --version
-          scons --version
-
-      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      # NO-PIE is for more detailed bactraces with line symbols
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        # TODO Enhancement: can't make sanitized builds because the CI doesn't have enough memory to perform linking...
-        # Use another linker like `mold`? Or wait till we use GDExtension to hope for a smaller link phase?
-        # (even though official Godot has no problem with it :shrug:)
-        #run: scons -j2 use_asan=yes use_ubsan=yes
-        run: scons target=editor dev_build=yes -j2
-
-      - name: Run fuzzer
         run: |
-          DRI_PRIME=0 xvfb-run bin/${{env.GODOT_BINARY_NAME}} FunctionExecutor.tscn 600 --audio-driver Dummy --video-driver GLES3 --path fuzzer 2>&1 | tee sanitizers_log.txt || true
-          tail -n 300 sanitizers_log.txt > project_results.txt
+          # Helpful to test later code without needing to compile entire editor
+          #wget https://downloads.tuxfamily.org/godotengine/4.0/beta3/Godot_v4.0-beta3_linux.x86_64.zip -O a.zip
+          #unzip a.zip
+          #mkdir bin/
+          #mv Godot_v4.0-beta3_linux.x86_64 bin/godot.linuxbsd.editor.dev.x86_64.san
+
+          scons target=editor use_ubsan=yes use_asan=yes -j2 linker=gold dev_build=yes CCFLAGS="-fpie" LINKFLAGS="-no-pie"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: godot-linux
+          path: |
+            bin/
+
+  # Different step, to be able to repeat it if needed
+  fuzz-project:
+    runs-on: "ubuntu-22.04"
+    name: Fuzzer
+    needs: module-compilation
+    steps:
+
+      # Download binaries from
+      - name: Download Executed project
+        uses: actions/download-artifact@v3
+        with:
+          name: godot-linux
+          path: bin
+
+      # Add execute bit to downloaded binary
+      - name: Download Executed project
+        run: |
+          chmod +x bin/godot.linuxbsd.editor.dev.x86_64.san
+
+      # Clone our module under the correct directory
+      - uses: actions/checkout@v3
+        with:
+          path: modules/voxel
+
+      # Clone fuzzer
+      - name: Checkout Godot fuzzer backend
+        uses: actions/checkout@v3
+        with:
+          repository: qarmin/Qarminer
+          ref: "4.0"
+          path: fuzzer
+
+      - name: Copy fuzzer settings
+        run: |
+          cp modules/voxel/misc/fuzzer_config.txt fuzzer/settings.txt
+
+      # Download, unzip and setup SwiftShader library
+      # See https://github.com/godotengine/regression-test-project/releases/tag/_ci-deps for details
+      - name: Download SwiftShader
+        if: ${{ matrix.tests }}
+        run: |
+          wget https://github.com/godotengine/regression-test-project/releases/download/_ci-deps/swiftshader-ubuntu20.04-20211002.zip
+          unzip swiftshader-ubuntu20.04-20211002.zip
+          curr="$(pwd)/libvk_swiftshader.so"
+          sed -i "s|PATH_TO_CHANGE|$curr|" vk_swiftshader_icd.json
+
+      # Download reproducer
+      - name: Download reproducer
+        run: |
+          wget -nv https://github.com/qarmin/Qarminer/releases/download/reproducer/find_minimal_godot_crash_0.1.0 -O reproducer
+          chmod +x ./reproducer
+
+      # 960 seconds - Hard timeout time, controlled by OS/timeout app
+      # 600 seconds - Timeout controlled by Fuzzer app(certain functions may freeze Godot, so this is not reliable method, so using also method from above with little bigger timeout value)
+      # FunctionsExectuor.tscn - Scene which tests almost all function of choosen classes
+      # UBSAN_OPTIONS - suppress false positives from thirdparty Godot libraries
+
+      # Reproducer options
+      # timeout -v 3600 - protection from timeout(should not happen anyway)
+      # arguments - should be same like in normal fuzzer run(without xvfb-run and scene)
+      # 60_50 - timeouts, 60 means 60s for single run, if this time exceed, that means that current scene timeouts, 50 means 50 minutes for all checking, if reproducer cannot find problem within this time, then returned is 0 status, because problem probably happens not regulary due e.g. big amount of checked functions
+
+      # HEADLESS
+      - name: Run fuzzer Headless
+        run: |
+          UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 960 xvfb-run bin/godot.linuxbsd.editor.dev.x86_64.san FunctionExecutor.tscn 600 --headless --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          tail -n 200 sanitizers_log.txt >> project_results.txt
+
+      - name: Copy results from fuzzer directory
+        run: |
+          mv fuzzer/results.txt . || true
+          mv fuzzer/CRASH_FOUND . || true
+          mv fuzzer/crash_reproduce.gd results.txt || true
+
+      - name: Run reproducer Headless
+        run: |
+          echo "extends Node" > temp.txt
+          echo "func _process(delta):" >> temp.txt
+          if [ -f results.txt ]; then
+            cat temp.txt results.txt > fuzzer/Node.gd.test || true
+            UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 3600 ./reproducer bin/godot.linuxbsd.editor.dev.x86_64.san 60_50 fuzzer --headless
+          fi
+
+      - name: Store reproducer Headless
+        uses: actions/upload-artifact@v3
+        with:
+          name: reproducer_4_headless
+          path: crash_reproduce.gd
+          if-no-files-found: ignore
+
+      - name: Clear data before next run
+        run: |
+          echo "==================================" >> results_connected.txt || true
+          cat results.txt >> results_connected.txt || true
+          rm results.txt || true
+          rm crash_reproduce.gd || true
+
+
+      # GLES 3
+      - name: Run fuzzer GLES3
+        run: |
+          UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 960 xvfb-run bin/godot.linuxbsd.editor.dev.x86_64.san FunctionExecutor.tscn 600 --rendering-driver opengl3 --audio-driver Dummy --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          tail -n 200 sanitizers_log.txt >> project_results.txt
+
+      - name: Copy results from fuzzer directory
+        run: |
+          mv fuzzer/results.txt . || true
+          mv fuzzer/CRASH_FOUND . || true
+          mv fuzzer/crash_reproduce.gd results.txt || true
+
+      - name: Run reproducer GLES3
+        run: |
+          echo "extends Node" > temp.txt
+          echo "func _process(delta):" >> temp.txt
+          if [ -f results.txt ]; then
+            cat temp.txt results.txt > fuzzer/Node.gd.test || true
+            UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 3600 ./reproducer bin/godot.linuxbsd.editor.dev.x86_64.san 60_50 fuzzer --rendering-driver opengl3 --audio-driver Dummy
+          fi
+
+      - name: Store reproducer Headless
+        uses: actions/upload-artifact@v3
+        with:
+          name: reproducer_4_gles3
+          path: crash_reproduce.gd
+          if-no-files-found: ignore
+
+      - name: Clear data before next run
+        run: |
+          echo "==================================" >> results_connected.txt || true
+          cat results.txt >> results_connected.txt || true
+          rm results.txt || true
+          rm crash_reproduce.gd || true
+
+      # Vulkan
+      - name: Run fuzzer Vulkan
+        run: |
+          VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 960 xvfb-run bin/godot.linuxbsd.editor.dev.x86_64.san FunctionExecutor.tscn 600 --rendering-driver opengl3 --audio-driver Dummy  --path fuzzer 2>&1 | tee sanitizers_log.txt || true
+          tail -n 200 sanitizers_log.txt >> project_results.txt
+
+      - name: Copy results from fuzzer directory
+        run: |
+          mv fuzzer/results.txt . || true
+          mv fuzzer/CRASH_FOUND . || true
+          mv fuzzer/crash_reproduce.gd results.txt || true
+
+      - name: Run reproducer Vulkan
+        run: |
+          echo "extends Node" > temp.txt
+          echo "func _process(delta):" >> temp.txt
+          if [ -f results.txt ]; then
+            cat temp.txt results.txt > fuzzer/Node.gd.test || true
+            VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json UBSAN_OPTIONS=suppressions=../modules/voxel/misc/suppressions.supp DRI_PRIME=0 timeout -v 3600 ./reproducer bin/godot.linuxbsd.editor.dev.x86_64.san 60_50 fuzzer --rendering-driver opengl3 --audio-driver Dummy
+          fi
+
+      - name: Store reproducer Vulkan
+        uses: actions/upload-artifact@v3
+        with:
+          name: reproducer_4_vulkan
+          path: crash_reproduce.gd
+          if-no-files-found: ignore
+
+      - name: Clear data before next run
+        run: |
+          echo "==================================" >> results_connected.txt || true
+          cat results.txt >> results_connected.txt || true
+          rm results.txt || true
+          rm crash_reproduce.gd || true
+
 
       - name: Store project results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: project-results
           path: project_results.txt
 
-      - name: Store test results
-        uses: actions/upload-artifact@v2
+      - name: Store last run functions
+        uses: actions/upload-artifact@v3
         with:
-          name: last-run-results
-          path: fuzzer/results.txt
-
-      - name: Store time results
-        uses: actions/upload-artifact@v2
-        with:
-          name: timer
-          path: fuzzer/timer.txt
-
-      - name: Store memory usage results
-        uses: actions/upload-artifact@v2
-        with:
-          name: memory_usage
-          path: fuzzer/memory_usage.txt
+          name: last-run-functions
+          path: results_connected.txt
 
       - name: Check fuzzer output
         run: |
-          fuzzer/misc/check_ci_log.py sanitizers_log.txt
+          modules/voxel/misc/check_ci_log.py sanitizers_log.txt
