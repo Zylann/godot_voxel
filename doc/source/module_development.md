@@ -327,14 +327,16 @@ void process_every_frame() {
 
 ### Adding Tracy to Godot
 
-To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the voxel module), and add the following lines in `core/SCsub`:
+To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the voxel module). Then in `modules/voxel/SCsub`, add the following lines:
 
 ```python
 # tracy library
 env.Append(CPPDEFINES="TRACY_ENABLE")
-env_thirdparty.Append(CPPDEFINES="TRACY_ENABLE")
-env_thirdparty.add_source_files(env.core_sources, ["#thirdparty/tracy/TracyClient.cpp"])
+env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
+voxel_files += ["#thirdparty/tracy/TracyClient.cpp"]
 ```
+
+Those lines might already be there, if so just uncomment them.
 
 Once you are done profiling, don't forget to remove these lines, otherwise profiling data will accumulate in memory without being retrieved.
 
