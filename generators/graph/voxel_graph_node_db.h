@@ -133,6 +133,9 @@ private:
 	std::vector<ExpressionParser::Function> _expression_functions;
 };
 
+VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const VoxelGraphNodeDB::NodeType &type);
+bool is_node_matching_port(const ProgramGraph::Node &node, const VoxelGraphFunction::Port &port);
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_GRAPH_NODE_DB_H

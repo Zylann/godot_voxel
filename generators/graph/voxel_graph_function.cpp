@@ -57,60 +57,20 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
 
 	struct L {
-		static void try_add_input(std::vector<VoxelGraphFunction::Port> &added_ports,
-				VoxelGraphFunction::NodeTypeID type_id, String name) {
+		static void try_add_port(
+				const VoxelGraphFunction::Port &port, std::vector<VoxelGraphFunction::Port> &added_ports) {
 			for (VoxelGraphFunction::Port &p : added_ports) {
-				if (p.type == type_id) {
+				if (p.equals(port)) {
 					// Already added
 					return;
 				}
 			}
-			added_ports.push_back(VoxelGraphFunction::Port());
-			VoxelGraphFunction::Port &port = added_ports.back();
-			port.name = name;
-			port.type = type_id;
+			added_ports.push_back(port);
 		}
 
-		static void try_add_port(const ProgramGraph::Node &node, std::vector<VoxelGraphFunction::Port> &added_ports,
-				VoxelGraphFunction::NodeTypeID custom_type, const VoxelGraphNodeDB::NodeType &type) {
-			String name;
-			if (node.type_id == custom_type) {
-				// Custom I/O
-				for (VoxelGraphFunction::Port &p : added_ports) {
-					if (p.name == node.name) {
-						// Already added
-						return;
-					}
-				}
-				name = node.name;
-
-			} else {
-				// Special I/O
-
-				// TODO OutputWeight outputs will not work with this logic.
-				// What identifies such output is not just the type, but also an index property. It is pretty much like
-				// a custom output, but with an index instead of a name...
-
-				for (VoxelGraphFunction::Port &p : added_ports) {
-					if (p.type == node.type_id) {
-						// Already added
-						return;
-					}
-				}
-				if (custom_type == VoxelGraphFunction::NODE_CUSTOM_INPUT) {
-					ZN_ASSERT(type.outputs.size() == 1);
-					name = type.outputs[0].name;
-				} else if (custom_type == VoxelGraphFunction::NODE_CUSTOM_OUTPUT) {
-					ZN_ASSERT(type.inputs.size() == 1);
-					name = type.inputs[0].name;
-				} else {
-					ZN_CRASH();
-				}
-			}
-			added_ports.push_back(VoxelGraphFunction::Port());
-			VoxelGraphFunction::Port &port = added_ports.back();
-			port.name = name;
-			port.type = VoxelGraphFunction::NodeTypeID(node.type_id);
+		static void try_add_port(const ProgramGraph::Node &node, const VoxelGraphNodeDB::NodeType &type,
+				std::vector<VoxelGraphFunction::Port> &added_ports) {
+			try_add_port(make_port_from_io_node(node, type), added_ports);
 		}
 	};
 
@@ -126,7 +86,11 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 			} else if (b.is_custom()) {
 				return true;
 			} else {
-				return a.type < b.type;
+				if (a.type == b.type) {
+					return a.sub_index < b.sub_index;
+				} else {
+					return a.type < b.type;
+				}
 			}
 		}
 	};
@@ -138,10 +102,10 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
 		if (type.category == VoxelGraphNodeDB::CATEGORY_INPUT) {
-			L::try_add_port(node, inputs, VoxelGraphFunction::NODE_CUSTOM_INPUT, type);
+			L::try_add_port(node, type, inputs);
 
 		} else if (type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT) {
-			L::try_add_port(node, outputs, VoxelGraphFunction::NODE_CUSTOM_OUTPUT, type);
+			L::try_add_port(node, type, outputs);
 
 		} else if (node.autoconnect_default_inputs) {
 			// The input node is implicit
@@ -153,7 +117,8 @@ void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGra
 								VoxelGraphFunction::AutoConnect(port.autoconnect_hint), input_type_id)) {
 					const VoxelGraphNodeDB::NodeType &input_type = type_db.get_type(input_type_id);
 					ZN_ASSERT(input_type.outputs.size() == 1);
-					L::try_add_input(inputs, input_type_id, input_type.outputs[0].name);
+					const VoxelGraphFunction::Port port(input_type_id, input_type.outputs[0].name);
+					L::try_add_port(port, inputs);
 				}
 			}
 		}
@@ -1318,12 +1283,17 @@ Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports) {
 	for (unsigned int i = 0; i < ports.size(); ++i) {
 		const VoxelGraphFunction::Port &port = ports[i];
 		Array port_data;
-		port_data.resize(2);
+		port_data.resize(3);
 
+		// Name
 		port_data[0] = port.name;
 
+		// Type as a string
 		const VoxelGraphNodeDB::NodeType &ntype = type_db.get_type(port.type);
 		port_data[1] = ntype.name;
+
+		// Sub-index
+		port_data[2] = port.sub_index;
 
 		data[i] = port_data;
 	}
@@ -1336,7 +1306,8 @@ void deserialize_io_definitions(
 	ports.clear();
 	for (int i = 0; i < data.size(); ++i) {
 		Array port_data = data[i];
-		ERR_FAIL_COND(port_data.size() != 2);
+
+		ERR_FAIL_COND(port_data.size() < 2 || port_data.size() > 3);
 
 		VoxelGraphFunction::Port port;
 
@@ -1348,6 +1319,10 @@ void deserialize_io_definitions(
 		const VoxelGraphNodeDB::NodeType &ntype = type_db.get_type(type_id);
 		ERR_FAIL_COND(ntype.category != expected_category);
 		port.type = type_id;
+
+		if (port_data.size() >= 3) {
+			port.sub_index = port_data[2];
+		}
 
 		ports.push_back(port);
 

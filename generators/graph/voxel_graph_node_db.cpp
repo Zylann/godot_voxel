@@ -2422,4 +2422,58 @@ bool VoxelGraphNodeDB::try_get_input_index_from_name(
 	return true;
 }
 
+VoxelGraphFunction::Port make_port_from_io_node(
+		const ProgramGraph::Node &node, const VoxelGraphNodeDB::NodeType &type) {
+	ZN_ASSERT(type.category == VoxelGraphNodeDB::CATEGORY_INPUT || type.category == VoxelGraphNodeDB::CATEGORY_OUTPUT);
+
+	VoxelGraphFunction::Port port;
+	port.type = VoxelGraphFunction::NodeTypeID(node.type_id);
+
+	switch (port.type) {
+		case VoxelGraphFunction::NODE_CUSTOM_INPUT:
+		case VoxelGraphFunction::NODE_CUSTOM_OUTPUT:
+			port.name = node.name;
+			break;
+
+		case VoxelGraphFunction::NODE_OUTPUT_WEIGHT:
+			ZN_ASSERT(node.params.size() >= 1);
+			port.sub_index = node.params[0];
+			ZN_ASSERT(type.outputs.size() == 1);
+			port.name = type.outputs[0].name + "_" + String::num_int64(port.sub_index);
+			break;
+
+		default:
+			if (type.category == VoxelGraphNodeDB::CATEGORY_INPUT) {
+				ZN_ASSERT(type.outputs.size() == 1);
+				port.name = type.outputs[0].name;
+			} else {
+				ZN_ASSERT(type.inputs.size() == 1);
+				port.name = type.inputs[0].name;
+			}
+			break;
+	}
+
+	return port;
+}
+
+bool is_node_matching_port(const ProgramGraph::Node &node, const VoxelGraphFunction::Port &port) {
+	if (node.type_id != port.type) {
+		return false;
+	}
+
+	if (port.is_custom()) {
+		return port.name == node.name;
+	}
+
+	if (node.type_id == VoxelGraphFunction::NODE_OUTPUT_WEIGHT) {
+		ZN_ASSERT(node.params.size() >= 1);
+		const unsigned int sub_index = node.params[0];
+		if (sub_index != port.sub_index) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 } // namespace zylann::voxel

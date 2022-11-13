@@ -82,7 +82,14 @@ public:
 
 	struct Port {
 		NodeTypeID type;
+		// Used for port types that can appear multiple times, but with different indices.
+		// Initially used for OutputWeight nodes.
+		unsigned int sub_index = 0;
+		// Name of the port. If the port is custom, it identifies it (it doesn't matter otherwise).
 		String name;
+
+		Port() {}
+		Port(NodeTypeID p_type, const String &p_name) : type(p_type), name(p_name) {}
 
 		inline bool is_custom() const {
 			return type == NODE_CUSTOM_INPUT || type == NODE_CUSTOM_OUTPUT;
@@ -92,7 +99,7 @@ public:
 			if (is_custom()) {
 				return name == other.name;
 			} else {
-				return type == other.type;
+				return type == other.type && sub_index == other.sub_index;
 			}
 		}
 	};
