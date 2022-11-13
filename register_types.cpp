@@ -270,7 +270,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::add_compatibility_class("VoxelInstanceLibraryItem", "VoxelInstanceLibraryMultiMeshItem");
 		// Not possible to add a compat class for this one because the new name is indistinguishable from an old one.
 		// However this is an abstract class so it should not be found in resources hopefully
-		//ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
+		// ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
 #endif
 
 #ifdef VOXEL_RUN_TESTS
