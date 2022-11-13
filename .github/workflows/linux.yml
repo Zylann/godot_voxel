@@ -56,11 +56,12 @@ jobs:
 
       # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
       # This allows to make production builds that are compatible with older Linux distros.
-      # TODO Cache it so future runs can use it?
-      # TODO Make this step self-contained? Currently I also setup `PATH` in the Compilation step because modifications
+      # TODO Enhancement: cache buildroot so future runs can use it?
+      # TODO Enhancement: make buildroot setup a self-contained step. There are bits of setup elsewhere.
+      #      Currently I also setup `PATH` in the Compilation step because modifications
       #      do not persist between steps (?). I also placed this step after checkout because the checkout step changes
       #      the working directory for all following steps.
-      # TODO pkg-config wrongly points to lib instead of lib64 for arch-dependent header.
+      # TODO Bug: pkg-config wrongly points to lib instead of lib64 for arch-dependent header.
       #      Using `sed` to patch it as a workaround.
       #      See https://github.com/godotengine/buildroot/issues/6
       - name: Setup buildroot

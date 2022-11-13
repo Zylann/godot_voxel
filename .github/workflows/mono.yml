@@ -241,7 +241,7 @@ jobs:
         run: |
           scons -j2 verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
 
-      # TODO Such tests are able to run from Godot 4.0 only
+      # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
       #- name: Unit Tests
       #  run: |

@@ -28,7 +28,7 @@ jobs:
 
           - name: Release build
             target: template_release
-            # TODO I don't remember why this one uses a different action?
+            # I don't remember why this one used a different action in the past?
             # Either way, Github Actions does not support matrix variables in `uses` yet.
             # See https://github.com/orgs/community/discussions/9049
             #cache_action: RevoluPowered/cache@v2.1
@@ -78,7 +78,7 @@ jobs:
           scons --version
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
-      # TODO We'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
+      # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
       - name: Compilation
         env:

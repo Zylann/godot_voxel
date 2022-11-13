@@ -151,11 +151,11 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelEngine::create_singleton(threads_config);
 		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 #if defined(ZN_GODOT)
-		// TODO Pick this from the current renderer + user option (at time of writing, Godot 4 has only one renderer and
-		// has not figured out how such option would be exposed).
-		// Could use `can_create_resources_async` but this is internal.
-		// AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not supporting async
-		// resource creation.
+		// TODO Enhancement: threaded graphics resource building should be initialized better.
+		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
+		// renderer and has not figured out how such option would be exposed). Could use `can_create_resources_async`
+		// but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not
+		// supporting async resource creation.
 		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
 				RenderingServer::get_singleton()->is_low_end() == false);
 #else
@@ -171,8 +171,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		VoxelMesherTransvoxel::load_static_resources();
 
-		// TODO Can I prevent users from instancing it? is "register_virtual_class" correct for a class that's not
-		// abstract?
+		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
+		// This class is used as a singleton so it's not really abstract.
+		// Should I use `register_abstract_class` anyways?
 		ClassDB::register_class<gd::VoxelEngine>();
 
 		// Misc

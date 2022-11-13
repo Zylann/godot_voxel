@@ -11,7 +11,7 @@ import common
 LIB_NAME = "libvoxel"
 BIN_FOLDER = "bin"
 
-# TODO Not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
+# TODO Enhancement: not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
 #env_vars.Add(PathVariable("godot_cpp_path", "Path to the GodotCpp library source code", None, PathVariable.PathIsDir))
 # TODO GDX: Have GodotCpp in thirdparty/ eventually
 godot_cpp_path = os.environ.get("GODOT_CPP_PATH", "D:/PROJETS/INFO/GODOT/Engine/godot_cpp_fork")
@@ -28,7 +28,7 @@ env = SConscript(godot_cpp_path + "/SConstruct")
 # If such a check should exist, it needs to be HERE, not in GodotCpp.
 
 env_vars = Variables()
-# TODO Share options between module and extension?
+# TODO Enhancement: share options between module and extension?
 env_vars.Add(BoolVariable("voxel_tests", 
     "Build with tests for the voxel module, which will run on startup of the engine", False))
 # FastNoise2 is disabled by default, may want to integrate as dynamic library
@@ -45,7 +45,7 @@ is_editor_build = (env["target"] == "editor")
 
 sources = common.get_sources(env, is_editor_build)
 
-# TODO The way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+# TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
 # It cannot be in the common script...
 # Because when compiling with warnings=extra, SQLite produces warnings, so we have to turn them off only for SQLite.
 # But doing this requires specific code from Godot's build system, and no idea what code to use with GodotCpp...

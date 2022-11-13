@@ -18,7 +18,7 @@ AlignTrailingComments: false
 # AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: false
 
-# TODO I want this, but if I enable it, enums will always end up with a line break before the opening brace,
+# TODO Formatting: I want this, but if I enable it, enums will always end up with a line break before the opening brace,
 # even if I set `BreakBeforeBraces: Attach` or specify `BraceWrapping`...
 # AllowShortEnumsOnASingleLine: false
 

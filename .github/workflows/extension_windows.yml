@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v2
 
       # Clone GodotCpp
-      # TODO the master branch keeps diverging so it might not always compile...
+      # TODO Enhancement: the master branch keeps diverging so it might not always compile...
       # we'd need an up-to date extension_api.json but we have to compile Godot for that -_____-
       - uses: actions/checkout@v2
         with:

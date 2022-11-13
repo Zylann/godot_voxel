@@ -40,7 +40,7 @@ if env["warnings"] == "extra":
 # if not env_sqlite.msvc:
 #     env_sqlite.Append(CXXFLAGS=["-Wno-discarded-qualifiers"])
 
-# TODO The way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
+# TODO Enhancement: the way SQLite is integrated should not be duplicated between Godot and GodotCpp targets.
 # Had to do so, because this line below is specific to Godot's build system!
 env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"])
 
@@ -49,7 +49,7 @@ env_sqlite.add_source_files(env.modules_sources, ["thirdparty/sqlite/sqlite3.c"]
 
 if FAST_NOISE_2_SRC:
 	if not env.msvc:
-		# TODO Workaround for https://github.com/Auburn/FastNoise2/issues/80
+		# TODO Enhancement: workaround for https://github.com/Auburn/FastNoise2/issues/80
 		# FastNoise2 is using MSVC-specific compiler directives.
 		# Done before calling FastNoise2 SConscript, as FastNoise2 also includes the headers
 		env_voxel.Append(CXXFLAGS=["-Wno-unknown-pragmas"])
@@ -83,7 +83,7 @@ if FAST_NOISE_2_SRC:
 for f in voxel_files:
 	env_voxel.add_source_files(env.modules_sources, f)
 
-# TODO Check webassembly builds (`env["platform"] == "javascript"`)
+# TODO Feature: check webassembly builds (`env["platform"] == "javascript"`)
 
 # Doesn't work, since the rest of Godot doesn't use this, linking fails.
 # No safe STL boundary checks for you.

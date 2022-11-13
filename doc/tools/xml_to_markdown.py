@@ -62,7 +62,7 @@ def format_regular_text(text, module_class_names):
             # [typename]
             s += make_type(cmd, module_class_names)
         else:
-            # TODO members and shit
+            # TODO Enhancement: members and shit
             s += cmd
     return s
 

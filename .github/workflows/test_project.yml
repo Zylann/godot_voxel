@@ -77,8 +77,8 @@ jobs:
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
-        # Had to give up making sanitized builds because the CI doesn't have enough memory to perform linking...
-        # TODO Use another linker like `mold`? Or wait till we use GDExtension to hope for a smaller link phase?
+        # TODO Enhancement: can't make sanitized builds because the CI doesn't have enough memory to perform linking...
+        # Use another linker like `mold`? Or wait till we use GDExtension to hope for a smaller link phase?
         # (even though official Godot has no problem with it :shrug:)
         #run: scons -j2 use_asan=yes use_ubsan=yes
         run: scons target=editor dev_build=no -j2

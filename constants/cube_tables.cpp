@@ -52,14 +52,14 @@ const int g_side_quad_triangles[SIDE_COUNT][6] = {
 //const unsigned int g_side_sign[SIDE_COUNT] = { 0, 1, 0, 1, 0, 1 };
 
 const Vector3i g_side_normals[SIDE_COUNT] = {
-	// TODO Wrong! Left should be -X
+	// TODO Bug: wrong! Left should be -X
 	Vector3i(1, 0, 0), // LEFT
 	Vector3i(-1, 0, 0), // RIGHT
 
 	Vector3i(0, -1, 0), // BOTTOM
 	Vector3i(0, 1, 0), // TOP
 
-	// TODO Wrong! Front should be -Z
+	// TODO Bug: wrong! Front should be -Z
 	Vector3i(0, 0, -1), // BACK
 	Vector3i(0, 0, 1), // FRONT
 };
@@ -209,4 +209,4 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = { //
 	Vector3i(1, 1, 1)
 };
 
-} //namespace zylann::voxel::Cube
+} // namespace zylann::voxel::Cube
