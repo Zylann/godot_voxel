@@ -1129,11 +1129,11 @@ bool VoxelGraphFunction::try_get_auto_connect_from_node_type_id(NodeTypeID node_
 	}
 }
 
-Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_input_definitions() {
+Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_input_definitions() const {
 	return to_span(_inputs);
 }
 
-Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions() {
+Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions() const {
 	return to_span(_outputs);
 }
 

@@ -193,8 +193,8 @@ public:
 	void get_node_input_info(
 			uint32_t node_id, unsigned int input_index, String *out_name, AutoConnect *out_autoconnect) const;
 	String get_node_output_name(uint32_t node_id, unsigned int output_index) const;
-	Span<const Port> get_input_definitions();
-	Span<const Port> get_output_definitions();
+	Span<const Port> get_input_definitions() const;
+	Span<const Port> get_output_definitions() const;
 	// Currently used for testing
 	void set_io_definitions(Span<const Port> inputs, Span<const Port> outputs);
 	bool contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion = 16) const;
