@@ -51,7 +51,7 @@ public:
 		// This size is not the allocated count, it's an available count below capacity.
 		// All buffers have the same available count, size is here only for convenience.
 		unsigned int size;
-		//unsigned int capacity;
+		// unsigned int capacity;
 		// Constant value of the buffer, if it is a compile-time constant
 		float constant_value;
 		// Is the buffer holding a compile-time constant
@@ -128,7 +128,7 @@ public:
 
 		void clear() {
 			buffer_size = 0;
-			//buffer_capacity = 0;
+			// buffer_capacity = 0;
 			for (BufferData &bd : buffer_datas) {
 				ZN_ASSERT(bd.data != nullptr);
 				memfree(bd.data);
@@ -203,7 +203,7 @@ public:
 	void debug_print_operations();
 #endif
 
-	//bool has_input(unsigned int node_type) const;
+	// bool has_input(unsigned int node_type) const;
 
 	inline unsigned int get_input_count() const {
 		return _program.inputs.size();
@@ -395,7 +395,7 @@ private:
 		}
 	};
 
-	// Precalculated program data.
+	// Compiled program data.
 	// Remains constant and read-only after compilation.
 	struct Program {
 		// Serialized operations and arguments, aligned at minimum with uint16.

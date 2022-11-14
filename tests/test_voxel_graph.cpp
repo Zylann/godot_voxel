@@ -686,7 +686,7 @@ void test_voxel_graph_equivalence_merging() {
 bool sd_equals_approx(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2) {
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	const VoxelBufferInternal::Depth depth = vb1.get_channel_depth(channel);
-	//const float error_margin = 1.1f * VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	// const float error_margin = 1.1f * VoxelBufferInternal::get_sdf_quantization_scale(depth);
 	// There can be a small difference due to scaling operations, so instead of an exact equality, we check approximate
 	// equality.
 	Vector3i pos;
@@ -1225,7 +1225,7 @@ void test_voxel_graph_fuzzing() {
 
 	int successful_compiles_count = 0;
 
-	//print_line("--- Begin of zone with possible errors ---");
+	// print_line("--- Begin of zone with possible errors ---");
 
 	for (int i = 0; i < attempts; ++i) {
 		ZN_PRINT_VERBOSE(format("Testing random graph #{}", i));
@@ -1242,7 +1242,7 @@ void test_voxel_graph_fuzzing() {
 		}
 	}
 
-	//print_line("--- End of zone with possible errors ---");
+	// print_line("--- End of zone with possible errors ---");
 	print_line(String("Successful random compiles: {0}/{1}").format(varray(successful_compiles_count, attempts)));
 }
 

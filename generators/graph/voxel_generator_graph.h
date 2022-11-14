@@ -54,7 +54,7 @@ public:
 	int get_used_channels_mask() const override;
 
 	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
-	//float generate_single(const Vector3i &position);
+	// float generate_single(const Vector3i &position);
 	bool supports_single_generation() const override {
 		return true;
 	}
@@ -66,7 +66,7 @@ public:
 	void generate_series(Span<const float> positions_x, Span<const float> positions_y, Span<const float> positions_z,
 			unsigned int channel, Span<float> out_values, Vector3f min_pos, Vector3f max_pos) override;
 
-	//Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
+	// Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
 
 	// Utility
 

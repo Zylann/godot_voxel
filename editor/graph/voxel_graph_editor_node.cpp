@@ -37,7 +37,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 		const Vector2 node_size = graph.get_node_gui_size(node_id) * EDSCALE;
 		node_view->set_size(node_size);
 	}
-	//node_view.rect_size = Vector2(200, 100)
+	// node_view.rect_size = Vector2(200, 100)
 
 	if (node_type_id == VoxelGraphFunction::NODE_COMMENT) {
 		node_view->set_comment(true);
@@ -87,7 +87,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 	const unsigned int row_count = math::max(inputs.size(), hide_outputs ? 0 : outputs.size());
 	const Color hint_label_modulate(0.6, 0.6, 0.6);
 
-	//const int middle_min_width = EDSCALE * 32.0;
+	// const int middle_min_width = EDSCALE * 32.0;
 
 	// Temporarily remove preview if any
 	if (_preview != nullptr) {
@@ -138,8 +138,8 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 			Label *hint_label = memnew(Label);
 			hint_label->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 			hint_label->set_modulate(hint_label_modulate);
-			//hint_label->set_clip_text(true);
-			//hint_label->set_custom_minimum_size(Vector2(middle_min_width, 0));
+			// hint_label->set_clip_text(true);
+			// hint_label->set_custom_minimum_size(Vector2(middle_min_width, 0));
 			property_control->add_child(hint_label);
 			VoxelGraphEditorNode::InputHint input_hint;
 			input_hint.label = hint_label;
@@ -150,7 +150,7 @@ void VoxelGraphEditorNode::update_layout(const VoxelGraphFunction &graph) {
 			if (property_control->get_child_count() < 2) {
 				Control *spacer = memnew(Control);
 				spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				//spacer->set_custom_minimum_size(Vector2(middle_min_width, 0));
+				// spacer->set_custom_minimum_size(Vector2(middle_min_width, 0));
 				property_control->add_child(spacer);
 			}
 

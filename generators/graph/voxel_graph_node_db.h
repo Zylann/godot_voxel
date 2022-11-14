@@ -24,7 +24,7 @@ public:
 		// This option exists to avoid having to implement all possible combinations of constant values vs variable
 		// values in input buffers.
 		bool require_input_buffer_when_constant = true;
-		//PortType port_type;
+		// PortType port_type;
 
 		Port(String p_name, float p_default_value = 0.f,
 				VoxelGraphFunction::AutoConnect ac = VoxelGraphFunction::AUTO_CONNECT_NONE,

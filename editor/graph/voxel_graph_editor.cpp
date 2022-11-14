@@ -294,7 +294,7 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	build_gui_from_graph();
 	update_functions();
 
-	//schedule_preview_update();
+	// schedule_preview_update();
 }
 
 Ref<VoxelGraphFunction> VoxelGraphEditor::get_graph() const {
@@ -577,7 +577,7 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	const uint32_t src_node_id = src_node_view->get_generator_node_id();
 	const uint32_t dst_node_id = dst_node_view->get_generator_node_id();
 
-	//print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
+	// print("Connection attempt from ", from, ":", from_slot, " to ", to, ":", to_slot)
 
 	if (!_graph->is_valid_connection(src_node_id, from_slot, dst_node_id, to_slot)) {
 		ZN_PRINT_VERBOSE("Connection is invalid");
@@ -861,7 +861,7 @@ void VoxelGraphEditor::_on_graph_edit_node_selected(Object *p_node_o) {
 void VoxelGraphEditor::_on_graph_edit_node_deselected(Node *p_node) {
 #elif defined(ZN_GODOT_EXTENSION)
 void VoxelGraphEditor::_on_graph_edit_node_deselected(Object *p_node_o) {
-	//Node *p_node = Object::cast_to<Node>(p_node_o);
+	// Node *p_node = Object::cast_to<Node>(p_node_o);
 #endif
 	// Just checking if nothing is selected _now_ is unreliable, because the user could have just selected another
 	// node, and I don't know when `GraphEdit` will update the `selected` flags in the current call stack.

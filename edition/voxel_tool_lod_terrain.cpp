@@ -473,8 +473,8 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	};
 	std::vector<InstanceInfo> instances_info;
 
-	const int min_padding = 2; //mesher->get_minimum_padding();
-	const int max_padding = 2; //mesher->get_maximum_padding();
+	const int min_padding = 2; // mesher->get_minimum_padding();
+	const int max_padding = 2; // mesher->get_maximum_padding();
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Extraction");
@@ -748,7 +748,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	op.shape.isolevel = isolevel;
 	op.shape.sdf_scale = sdf_scale;
 	// Note, the passed buffer must not be shared with another thread.
-	//buffer.decompress_channel(channel);
+	// buffer.decompress_channel(channel);
 	ZN_ASSERT_RETURN(buffer.get_channel_data(channel, op.shape.buffer));
 
 	VoxelDataGrid grid;

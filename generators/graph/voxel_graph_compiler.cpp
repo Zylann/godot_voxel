@@ -545,9 +545,9 @@ static void apply_auto_connects(
 				continue;
 			}
 
-			//const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
-			//ZN_ASSERT(node.inputs.size() == type.inputs.size());
-			//const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
+			// const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			// ZN_ASSERT(node.inputs.size() == type.inputs.size());
+			// const VoxelGraphNodeDB::AutoConnect auto_connect = type.inputs[input_index].auto_connect;
 			const VoxelGraphFunction::AutoConnect auto_connect =
 					VoxelGraphFunction::AutoConnect(input_port.autoconnect_hint);
 			VoxelGraphFunction::NodeTypeID src_type;
@@ -1155,7 +1155,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::compile(const VoxelGraph
 		}
 	}
 
-	//debug_print_operations();
+	// debug_print_operations();
 
 	result.expanded_nodes_count = expanded_graph.get_nodes_count();
 	return result;
@@ -1385,7 +1385,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 					BufferSpec &src_buffer_spec = _program.buffer_specs[a];
 					// Add a fake user, we want to see their result.
 					// Pinning would work too, but it allocates more buffers.
-					//src_buffer_spec.is_pinned = true;
+					// src_buffer_spec.is_pinned = true;
 					++src_buffer_spec.users_count;
 				}
 				continue;
@@ -1562,7 +1562,7 @@ VoxelGraphRuntime::CompilationResult VoxelGraphRuntime::_compile(const ProgramGr
 		for (unsigned int order_index = inner_group_start_index; order_index < order.size(); ++order_index) {
 			const uint32_t node_id = order[order_index];
 			const ProgramGraph::Node &node = graph.get_node(node_id);
-			//const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+			// const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
 
 			for (const ProgramGraph::Port &input : node.inputs) {
 				if (input.connections.size() == 0) {

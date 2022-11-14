@@ -838,7 +838,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				++spare_indices_count;
 			}
 		}
-		//debug_check_texture_indices(spare_indices);
+		// debug_check_texture_indices(spare_indices);
 		ERR_FAIL_COND_V(spare_indices_count != 4, VoxelGraphRuntime::CompilationResult());
 		r->spare_texture_indices = spare_indices;
 	}
@@ -1600,7 +1600,7 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("compile"), &VoxelGeneratorGraph::_b_compile);
 
-	//ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
+	// ClassDB::bind_method(D_METHOD("generate_single"), &VoxelGeneratorGraph::_b_generate_single);
 	ClassDB::bind_method(
 			D_METHOD("debug_analyze_range", "min_pos", "max_pos"), &VoxelGeneratorGraph::_b_debug_analyze_range);
 
