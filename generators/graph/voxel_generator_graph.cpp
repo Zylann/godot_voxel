@@ -1066,7 +1066,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			Span<float> in_sdf;
 			if (runtime_wrapper.sdf_input_index != -1) {
 				in_sdf_cache.resize(x_coords.size());
-				Span<float> in_sdf = to_span(in_sdf_cache);
+				in_sdf = to_span(in_sdf_cache);
 				in_sdf.fill(0.f);
 			}
 
