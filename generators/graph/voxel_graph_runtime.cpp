@@ -580,7 +580,7 @@ void VoxelGraphRuntime::debug_print_operations() {
 		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
 		pc += outputs_count;
 
-		Span<const uint8_t> params = read_params(operations, pc);
+		/*Span<const uint8_t> params = */ read_params(operations, pc);
 
 		ss << "[";
 		ss << op_index;
