@@ -674,7 +674,7 @@ ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::
 
 // If the passed node corresponds to a port, adds it to the list of nodes corresponding to the port.
 bool try_add_io_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
-		Span<std::vector<uint32_t>> &node_ids_per_port) {
+		Span<std::vector<uint32_t>> node_ids_per_port) {
 	ZN_ASSERT(ports.size() == node_ids_per_port.size());
 
 	for (unsigned int port_index = 0; port_index < ports.size(); ++port_index) {
