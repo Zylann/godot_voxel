@@ -197,7 +197,7 @@ public:
 	void generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const;
 
 	void generate_set(
-			State &state, Span<Span<float>> inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const;
+			State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const;
 
 #ifdef DEBUG_ENABLED
 	void debug_print_operations();
@@ -220,7 +220,7 @@ public:
 	// Analyzes a specific region of inputs to find out what ranges of outputs we can expect.
 	// It can be used to speed up calls to `generate_set` thanks to execution mapping,
 	// so that operations can be optimized out if they don't contribute to the result.
-	void analyze_range(State &state, Span<math::Interval> inputs) const;
+	void analyze_range(State &state, Span<math::Interval> p_inputs) const;
 
 	// Call this after `analyze_range` if you intend to actually generate a set or single values in the area.
 	// This allows to use the execution map optimization, until you choose another area.

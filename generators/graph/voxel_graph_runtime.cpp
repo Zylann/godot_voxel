@@ -386,7 +386,7 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 }
 
 void VoxelGraphRuntime::generate_set(
-		State &state, Span<Span<float>> inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const {
+		State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const {
 	// I don't like putting private helper functions in headers.
 	struct L {
 		static inline void bind_buffer(Span<Buffer> buffers, int a, Span<float> d) {
@@ -405,19 +405,19 @@ void VoxelGraphRuntime::generate_set(
 
 	ZN_PROFILE_SCOPE();
 
-	ZN_ASSERT_RETURN(inputs.size() == _program.inputs.size());
+	ZN_ASSERT_RETURN(p_inputs.size() == _program.inputs.size());
 
 #ifdef DEBUG_ENABLED
 	// Each array must have the same size
-	for (unsigned int i = 1; i < inputs.size(); ++i) {
-		ZN_ASSERT(inputs[0].size() == inputs[i].size());
+	for (unsigned int i = 1; i < p_inputs.size(); ++i) {
+		ZN_ASSERT(p_inputs[0].size() == p_inputs[i].size());
 	}
 #endif
 
 #ifdef TOOLS_ENABLED
 	ZN_ASSERT_RETURN(state.buffers.size() >= _program.buffer_count);
 	ZN_ASSERT_RETURN(state.buffers.size() != 0);
-	const unsigned int buffer_size = inputs.size() > 0 ? inputs[0].size() : state.buffer_size;
+	const unsigned int buffer_size = p_inputs.size() > 0 ? p_inputs[0].size() : state.buffer_size;
 	ZN_ASSERT_RETURN(state.buffer_size >= buffer_size);
 	ZN_ASSERT_RETURN(state.buffers[0].size >= buffer_size);
 #ifdef DEBUG_ENABLED
@@ -438,8 +438,8 @@ void VoxelGraphRuntime::generate_set(
 	Span<Buffer> buffers = to_span(state.buffers);
 
 	// Bind inputs
-	for (unsigned int i = 0; i < inputs.size(); ++i) {
-		L::bind_buffer(buffers, _program.inputs[i].buffer_address, inputs[i]);
+	for (unsigned int i = 0; i < p_inputs.size(); ++i) {
+		L::bind_buffer(buffers, _program.inputs[i].buffer_address, p_inputs[i]);
 	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
@@ -480,16 +480,16 @@ void VoxelGraphRuntime::generate_set(
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
 
-		const Span<const uint16_t> inputs = operations.sub(pc, inputs_count);
+		const Span<const uint16_t> op_inputs = operations.sub(pc, inputs_count);
 		pc += inputs_count;
-		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
+		const Span<const uint16_t> op_outputs = operations.sub(pc, outputs_count);
 		pc += outputs_count;
 
-		Span<const uint8_t> params = read_params(operations, pc);
+		Span<const uint8_t> op_params = read_params(operations, pc);
 
 		// TODO Buffers will stay bound if this error occurs!
 		ZN_ASSERT_RETURN(node_type.process_buffer_func != nullptr);
-		ProcessBufferContext ctx(inputs, outputs, params, buffers, p_execution_map != nullptr);
+		ProcessBufferContext ctx(op_inputs, op_outputs, op_params, buffers, p_execution_map != nullptr);
 		node_type.process_buffer_func(ctx);
 
 #ifdef TOOLS_ENABLED
@@ -502,13 +502,13 @@ void VoxelGraphRuntime::generate_set(
 	}
 
 	// Unbind buffers
-	for (unsigned int i = 0; i < inputs.size(); ++i) {
+	for (unsigned int i = 0; i < p_inputs.size(); ++i) {
 		L::unbind_buffer(buffers, _program.inputs[i].buffer_address);
 	}
 }
 
 // TODO Accept float bounds
-void VoxelGraphRuntime::analyze_range(State &state, Span<math::Interval> inputs) const {
+void VoxelGraphRuntime::analyze_range(State &state, Span<math::Interval> p_inputs) const {
 	ZN_PROFILE_SCOPE();
 
 #ifdef TOOLS_ENABLED
@@ -525,9 +525,9 @@ void VoxelGraphRuntime::analyze_range(State &state, Span<math::Interval> inputs)
 		b.local_users_count = bs.users_count;
 	}
 
-	for (unsigned int i = 0; i < inputs.size(); ++i) {
+	for (unsigned int i = 0; i < p_inputs.size(); ++i) {
 		const unsigned int bi = _program.inputs[i].buffer_address;
-		ranges[bi] = inputs[i];
+		ranges[bi] = p_inputs[i];
 	}
 
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
@@ -542,15 +542,15 @@ void VoxelGraphRuntime::analyze_range(State &state, Span<math::Interval> inputs)
 		const uint32_t inputs_count = node_type.inputs.size();
 		const uint32_t outputs_count = node_type.outputs.size();
 
-		const Span<const uint16_t> inputs = operations.sub(pc, inputs_count);
+		const Span<const uint16_t> op_inputs = operations.sub(pc, inputs_count);
 		pc += inputs_count;
-		const Span<const uint16_t> outputs = operations.sub(pc, outputs_count);
+		const Span<const uint16_t> op_outputs = operations.sub(pc, outputs_count);
 		pc += outputs_count;
 
-		Span<const uint8_t> params = read_params(operations, pc);
+		Span<const uint8_t> op_params = read_params(operations, pc);
 
 		ZN_ASSERT_RETURN(node_type.range_analysis_func != nullptr);
-		RangeAnalysisContext ctx(inputs, outputs, params, ranges, buffers);
+		RangeAnalysisContext ctx(op_inputs, op_outputs, op_params, ranges, buffers);
 		node_type.range_analysis_func(ctx);
 
 #ifdef VOXEL_DEBUG_GRAPH_PROG_SENTINEL
