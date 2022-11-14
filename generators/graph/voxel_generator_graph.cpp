@@ -1026,12 +1026,12 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 
 		ProcessChunk(VoxelGraphRuntime::State &p_state, const Runtime &p_runtime, float p_ref_radius, float p_sdf_min,
 				float p_sdf_max, Image &p_im) :
+				im(p_im),
 				runtime_wrapper(p_runtime),
 				state(p_state),
 				ref_radius(p_ref_radius),
 				sdf_min(p_sdf_min),
-				sdf_max(p_sdf_max),
-				im(p_im) {}
+				sdf_max(p_sdf_max) {}
 
 		void operator()(int x0, int y0, int width, int height) {
 			ZN_PROFILE_SCOPE();
