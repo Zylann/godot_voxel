@@ -246,7 +246,7 @@ void VoxelGraphRuntime::generate_optimized_execution_map(
 }
 
 void VoxelGraphRuntime::generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const {
-	FixedArray<Span<float>, 8> input_bindings;
+	FixedArray<Span<float>, MAX_INPUTS> input_bindings;
 	ZN_ASSERT_RETURN_MSG(inputs.size() < input_bindings.size(), "Too many inputs, not supported");
 	for (unsigned int i = 0; i < inputs.size(); ++i) {
 		input_bindings[i] = Span<float>(&inputs[i], 1);

@@ -18,6 +18,7 @@ class VoxelGraphFunction;
 // Some of the logic dedicated to voxel data is moved in other classes.
 class VoxelGraphRuntime {
 public:
+	static const unsigned int MAX_INPUTS = 8;
 	static const unsigned int MAX_OUTPUTS = 24;
 
 	struct CompilationResult {
