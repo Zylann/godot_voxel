@@ -264,7 +264,7 @@ uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, u
 					// ZN_ASSERT(node->params.size() >= 1);
 					// node->params[0] = input_index;
 					node.name = port.name;
-					//port.node_ids.push_back(node.id);
+					// port.node_ids.push_back(node.id);
 					break;
 				}
 			}
@@ -523,7 +523,7 @@ void VoxelGraphFunction::set_node_default_input(uint32_t node_id, uint32_t input
 	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
 	Variant &defval = node->default_inputs[input_index];
 	if (defval != value) {
-		//node->autoconnect_default_inputs = false;
+		// node->autoconnect_default_inputs = false;
 		defval = value;
 		emit_changed();
 	}
@@ -664,13 +664,13 @@ const ProgramGraph &VoxelGraphFunction::get_graph() const {
 }
 
 void VoxelGraphFunction::register_subresource(Resource &resource) {
-	//print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
+	// print_line(String("{0}: Registering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
 	resource.connect(VoxelStringNames::get_singleton().changed,
 			ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunction, _on_subresource_changed));
 }
 
 void VoxelGraphFunction::unregister_subresource(Resource &resource) {
-	//print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
+	// print_line(String("{0}: Unregistering subresource {1}").format(varray(int64_t(this), int64_t(&resource))));
 	resource.disconnect(VoxelStringNames::get_singleton().changed,
 			ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunction, _on_subresource_changed));
 }
