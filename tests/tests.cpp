@@ -1747,6 +1747,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_hash);
 #endif
 #endif
+	VOXEL_TEST(test_voxel_graph_issue471);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

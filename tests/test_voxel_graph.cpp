@@ -1368,4 +1368,20 @@ void test_voxel_graph_hash() {
 #endif // TOOLS_ENABLED
 #endif // VOXEL_ENABLE_FAST_NOISE_2
 
+void test_voxel_graph_issue471() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	Ref<VoxelGraphFunction> func = generator->get_main_function();
+	ZN_ASSERT(func.is_valid());
+	FixedArray<VoxelGraphFunction::Port, 1> inputs;
+	inputs[0].name = "test_input";
+	inputs[0].type = VoxelGraphFunction::NODE_INPUT_X;
+	FixedArray<VoxelGraphFunction::Port, 1> outputs;
+	outputs[0].name = "test_output";
+	outputs[0].type = VoxelGraphFunction::NODE_OUTPUT_SDF;
+	func->set_io_definitions(to_span(inputs), to_span(outputs));
+	// Was crashing because input definition wasn't fulfilled (the graph is empty). It should fail with an error.
+	generator->generate_shader();
+}
+
 } // namespace zylann::voxel::tests

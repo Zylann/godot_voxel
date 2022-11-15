@@ -19,6 +19,12 @@ struct CompilationResult {
 	int expanded_nodes_count = 0; // For testing and debugging
 	String message;
 
+	static CompilationResult make_success() {
+		CompilationResult res;
+		res.success = true;
+		return res;
+	}
+
 	static CompilationResult make_error(const char *p_message, int p_node_id = -1) {
 		CompilationResult res;
 		res.success = false;

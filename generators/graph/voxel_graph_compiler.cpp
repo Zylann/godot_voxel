@@ -1063,13 +1063,24 @@ void combine_inputs(
 }
 
 // Input nodes can appear more than once for convenience, but they should appear only once when we compile.
-void combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs, const NodeTypeDB &type_db,
-		GraphRemappingInfo *remap_info, std::vector<uint32_t> *out_input_node_ids) {
+CompilationResult combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
+		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info, std::vector<uint32_t> *out_input_node_ids) {
 	std::vector<std::vector<uint32_t>> node_ids_per_port;
 	get_input_node_ids(graph, input_defs, node_ids_per_port);
 
 	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
 		const std::vector<uint32_t> &node_ids = node_ids_per_port[input_index];
+		if (node_ids.size() == 0) {
+			const VoxelGraphFunction::Port &input_def = input_defs[input_index];
+			const NodeType &type = type_db.get_type(input_def.type);
+			CompilationResult result;
+			result.success = false;
+			result.message = String(
+					"The graph requires at least one input node matching '{0}' ({1}). Add the missing node or remove "
+					"the input in I/O settings.")
+									 .format(varray(input_def.name, type.name));
+			return result;
+		}
 		const uint32_t node_id = node_ids[0];
 		for (unsigned int i = 1; i < node_ids.size(); ++i) {
 			combine_inputs(graph, node_id, node_ids[i], remap_info);
@@ -1084,6 +1095,8 @@ void combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunction::Port> in
 			(*out_input_node_ids)[input_index] = node_ids[0];
 		}
 	}
+
+	return CompilationResult::make_success();
 }
 
 CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
@@ -1109,7 +1122,11 @@ CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded
 
 	merge_equivalences(expanded_graph, remap_info);
 	replace_simplifiable_nodes(expanded_graph, type_db, remap_info);
-	combine_inputs(expanded_graph, input_defs, type_db, remap_info, input_node_ids);
+	const CompilationResult input_combining_result =
+			combine_inputs(expanded_graph, input_defs, type_db, remap_info, input_node_ids);
+	if (!input_combining_result.success) {
+		return input_combining_result;
+	}
 
 	return expr_expand_result;
 }
