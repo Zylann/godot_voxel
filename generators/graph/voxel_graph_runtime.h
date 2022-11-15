@@ -8,33 +8,33 @@
 #include "../../util/span.h"
 #include "program_graph.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::pg {
 
-class VoxelGraphNodeDB;
 class VoxelGraphFunction;
+class NodeTypeDB;
+
+struct CompilationResult {
+	bool success = false;
+	int node_id = -1;
+	int expanded_nodes_count = 0; // For testing and debugging
+	String message;
+
+	static CompilationResult make_error(const char *p_message, int p_node_id = -1) {
+		CompilationResult res;
+		res.success = false;
+		res.node_id = p_node_id;
+		res.message = p_message;
+		return res;
+	}
+};
 
 // CPU VM to execute a voxel graph generator.
 // This is a more generic class implementing the core of a 3D expression processing system.
 // Some of the logic dedicated to voxel data is moved in other classes.
-class VoxelGraphRuntime {
+class Runtime {
 public:
 	static const unsigned int MAX_INPUTS = 8;
 	static const unsigned int MAX_OUTPUTS = 24;
-
-	struct CompilationResult {
-		bool success = false;
-		int node_id = -1;
-		int expanded_nodes_count = 0; // For testing and debugging
-		String message;
-
-		static CompilationResult make_error(const char *p_message, int p_node_id = -1) {
-			VoxelGraphRuntime::CompilationResult res;
-			res.success = false;
-			res.node_id = p_node_id;
-			res.message = p_message;
-			return res;
-		}
-	};
 
 	struct BufferData {
 		// Owns the data.
@@ -155,7 +155,7 @@ public:
 		}
 
 	private:
-		friend class VoxelGraphRuntime; // TODO Why is friend needed? This class is nested inside
+		friend class Runtime; // TODO Why is friend needed? This class is nested inside
 
 		std::vector<math::Interval> ranges;
 		std::vector<Buffer> buffers;
@@ -182,8 +182,8 @@ public:
 		unsigned int node_id;
 	};
 
-	VoxelGraphRuntime();
-	~VoxelGraphRuntime();
+	Runtime();
+	~Runtime();
 
 	void clear();
 	CompilationResult compile(const VoxelGraphFunction &function, bool debug);
@@ -194,7 +194,7 @@ public:
 	void prepare_state(State &state, unsigned int buffer_size, bool with_profiling) const;
 
 	// Convenience for set generation with only one value
-	// TODO Evaluate needs for double-precision in VoxelGraphRuntime
+	// TODO Evaluate needs for double-precision in pg::Runtime
 	void generate_single(State &state, Span<float> inputs, const ExecutionMap *execution_map) const;
 
 	void generate_set(
@@ -346,8 +346,10 @@ public:
 	typedef void (*RangeAnalysisFunc)(RangeAnalysisContext &);
 
 private:
-	CompilationResult _compile(const ProgramGraph &graph, unsigned int input_count, Span<const uint32_t> input_node_ids,
-			bool debug, const VoxelGraphNodeDB &type_db);
+	struct Program;
+
+	static CompilationResult compile_preprocessed_graph(Program &program, const ProgramGraph &graph,
+			unsigned int input_count, Span<const uint32_t> input_node_ids, bool debug, const NodeTypeDB &type_db);
 
 	bool is_operation_constant(const State &state, uint16_t op_address) const;
 
@@ -493,6 +495,6 @@ private:
 	Program _program;
 };
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::pg
 
 #endif // VOXEL_GRAPH_RUNTIME_H

@@ -143,7 +143,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		VoxelMemoryPool::create_singleton();
 		VoxelStringNames::create_singleton();
-		VoxelGraphNodeDB::create_singleton();
+		pg::NodeTypeDB::create_singleton();
 
 		unsigned int main_thread_budget_usec;
 		const VoxelEngine::ThreadsConfig threads_config =
@@ -186,7 +186,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
 		ClassDB::register_class<VoxelSaveCompletionTracker>();
-		ClassDB::register_class<VoxelGraphFunction>();
+		ClassDB::register_class<pg::VoxelGraphFunction>();
 
 		// Storage
 		ClassDB::register_class<gd::VoxelBuffer>();
@@ -359,7 +359,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
-		VoxelGraphNodeDB::destroy_singleton();
+		pg::NodeTypeDB::destroy_singleton();
 		gd::VoxelEngine::destroy_singleton();
 		VoxelEngine::destroy_singleton();
 

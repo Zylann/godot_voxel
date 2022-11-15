@@ -19,6 +19,8 @@
 
 namespace zylann::voxel {
 
+using namespace pg;
+
 VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	// EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);

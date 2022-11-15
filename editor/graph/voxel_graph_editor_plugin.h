@@ -29,7 +29,7 @@ public:
 	void _make_visible(bool visible) override;
 #endif
 
-	void edit_ios(Ref<VoxelGraphFunction> graph);
+	void edit_ios(Ref<pg::VoxelGraphFunction> graph);
 
 private:
 	void undock_graph_editor();

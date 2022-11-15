@@ -4,7 +4,7 @@
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_node_db.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::pg {
 
 void ShaderGenContext::require_lib_code(const char *lib_name, const char *code) {
 	_code_gen.require_lib_code(lib_name, code);
@@ -16,14 +16,14 @@ void ShaderGenContext::require_lib_code(const char *lib_name, const char **code)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-VoxelGraphRuntime::CompilationResult generate_shader(
+CompilationResult generate_shader(
 		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
 	ProgramGraph expanded_graph;
-	const VoxelGraphRuntime::CompilationResult expand_result =
+	const CompilationResult expand_result =
 			expand_graph(p_graph, expanded_graph, input_defs, nullptr, type_db, nullptr);
 	if (!expand_result.success) {
 		return expand_result;
@@ -40,13 +40,13 @@ VoxelGraphRuntime::CompilationResult generate_shader(
 	});
 
 	if (terminal_nodes.size() == 0) {
-		return VoxelGraphRuntime::CompilationResult::make_error("The graph must contain an SDF output.");
+		return CompilationResult::make_error("The graph must contain an SDF output.");
 	}
 
 	// Exclude debug nodes
 	// unordered_remove_if(terminal_nodes, [&expanded_graph, &type_db](uint32_t node_id) {
 	// 	const ProgramGraph::Node &node = expanded_graph.get_node(node_id);
-	// 	const VoxelGraphNodeDB::NodeType &type = type_db.get_type(node.type_id);
+	// 	const NodeType &type = type_db.get_type(node.type_id);
 	// 	return type.debug_only;
 	// });
 
@@ -65,7 +65,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(
 
 	for (const uint32_t node_id : order) {
 		const ProgramGraph::Node &node = expanded_graph.get_node(node_id);
-		const VoxelGraphNodeDB::NodeType node_type = type_db.get_type(node.type_id);
+		const NodeType node_type = type_db.get_type(node.type_id);
 
 		switch (node.type_id) {
 			case VoxelGraphFunction::NODE_INPUT_X: {
@@ -114,8 +114,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(
 		}
 
 		if (node_type.shader_gen_func == nullptr) {
-			return VoxelGraphRuntime::CompilationResult::make_error(
-					"A node does not support conversion to shader.", node_id);
+			return CompilationResult::make_error("A node does not support conversion to shader.", node_id);
 		}
 
 		for (unsigned int port_index = 0; port_index < node.inputs.size(); ++port_index) {
@@ -153,7 +152,7 @@ VoxelGraphRuntime::CompilationResult generate_shader(
 		node_type.shader_gen_func(ctx);
 
 		if (ctx.has_error()) {
-			VoxelGraphRuntime::CompilationResult result;
+			CompilationResult result;
 			result.success = false;
 			result.message = ctx.get_error_message();
 			result.node_id = node_id;
@@ -169,9 +168,9 @@ VoxelGraphRuntime::CompilationResult generate_shader(
 
 	codegen.print(output);
 
-	VoxelGraphRuntime::CompilationResult result;
+	CompilationResult result;
 	result.success = true;
 	return result;
 }
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::pg

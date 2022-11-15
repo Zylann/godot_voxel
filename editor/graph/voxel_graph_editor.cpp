@@ -38,6 +38,8 @@
 
 namespace zylann::voxel {
 
+using namespace pg;
+
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
 const char *VoxelGraphEditor::SIGNAL_NODES_DELETED = "nodes_deleted";
@@ -169,14 +171,14 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	add_child(vbox_container);
 
 	_context_menu = memnew(PopupMenu);
-	FixedArray<PopupMenu *, VoxelGraphNodeDB::CATEGORY_COUNT> category_menus;
+	FixedArray<PopupMenu *, CATEGORY_COUNT> category_menus;
 	for (unsigned int i = 0; i < category_menus.size(); ++i) {
-		if (i == VoxelGraphNodeDB::CATEGORY_RELAY) {
+		if (i == CATEGORY_RELAY) {
 			category_menus[i] = nullptr;
 			_context_menu->add_item("Relay", VoxelGraphFunction::NODE_RELAY);
 			continue;
 		}
-		String name = VoxelGraphNodeDB::get_category_name(VoxelGraphNodeDB::Category(i));
+		String name = get_category_name(Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
 		menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_context_menu_id_pressed));
@@ -186,11 +188,11 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	}
 	// TODO Usability: have CustomInput and CustomOutput subcategories based on I/O definitions, + a "new" option for
 	// unbound
-	for (int i = 0; i < VoxelGraphNodeDB::get_singleton().get_type_count(); ++i) {
+	for (int i = 0; i < NodeTypeDB::get_singleton().get_type_count(); ++i) {
 		if (i == VoxelGraphFunction::NODE_RELAY) {
 			continue;
 		}
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(i);
+		const NodeType &node_type = NodeTypeDB::get_singleton().get_type(i);
 		PopupMenu *menu = category_menus[node_type.category];
 		ZN_ASSERT(menu != nullptr);
 		if (i == VoxelGraphFunction::NODE_FUNCTION) {
@@ -681,7 +683,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 		}
 
 		// Params undo
-		const size_t param_count = VoxelGraphNodeDB::get_singleton().get_type(node_type_id).params.size();
+		const size_t param_count = NodeTypeDB::get_singleton().get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
 			_undo_redo->add_undo_method(*_graph, "set_node_param", node_id, ZN_SIZE_T_TO_VARIANT(j), param_value);
@@ -902,7 +904,7 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const VoxelGraphRuntime::CompilationResult result = _generator->compile(true);
+	const pg::CompilationResult result = _generator->compile(true);
 	if (!result.success) {
 		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
 
@@ -963,7 +965,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 	_generator->debug_analyze_range(
 			math::floor_to_int(aabb.position), math::floor_to_int(aabb.position + aabb.size), true);
 
-	const VoxelGraphRuntime::State &state = _generator->get_last_state_from_current_thread();
+	const pg::Runtime::State &state = _generator->get_last_state_from_current_thread();
 
 	const Color greyed_out_color(1, 1, 1, 0.5);
 
@@ -1103,13 +1105,13 @@ void VoxelGraphEditor::update_slice_previews() {
 		_generator->generate_set(x_coords, y_coords, z_coords);
 	}
 
-	const VoxelGraphRuntime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+	const pg::Runtime::State &last_state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 	// Update previews
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
 
-		const VoxelGraphRuntime::Buffer &buffer = last_state.get_buffer(info.address);
+		const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
 
 		Image &im = **info.control->get_image();
 		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));

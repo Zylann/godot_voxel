@@ -48,7 +48,7 @@ void VoxelGeneratorGraph::clear() {
 	}
 }
 
-Ref<VoxelGraphFunction> VoxelGeneratorGraph::get_main_function() const {
+Ref<pg::VoxelGraphFunction> VoxelGeneratorGraph::get_main_function() const {
 	return _main_function;
 }
 
@@ -125,8 +125,8 @@ bool VoxelGeneratorGraph::is_using_xz_caching() const {
 // Instead, we could only generate them near zero-crossings, because this is where materials will be seen.
 // The problem is that it's harder to manage at the moment, to support edited blocks and LOD...
 void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
-		VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices) {
+		const pg::Runtime::State &state, Vector3i rmin, Vector3i rmax, int ry, VoxelBufferInternal &out_voxel_buffer,
+		FixedArray<uint8_t, 4> spare_indices) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO Optimization: exclude up-front outputs that are known to be zero?
@@ -137,7 +137,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	const unsigned int buffers_count = weight_outputs.size();
 	for (unsigned int oi = 0; oi < buffers_count; ++oi) {
 		const WeightOutput &info = weight_outputs[oi];
-		const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
+		const pg::Runtime::Buffer &buffer = state.get_buffer(info.output_buffer_index);
 		buffers[oi] = Span<const float>(buffer.data, buffer.size);
 	}
 
@@ -240,12 +240,11 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 
 // TODO Optimization: this is a simplified output using a complex system.
 // We should implement a texturing system that knows each voxel has a single texture.
-void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_index,
-		const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
-		VoxelBufferInternal &out_voxel_buffer) {
+void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_index, const pg::Runtime::State &state,
+		Vector3i rmin, Vector3i rmax, int ry, VoxelBufferInternal &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(output_buffer_index);
+	const pg::Runtime::Buffer &buffer = state.get_buffer(output_buffer_index);
 	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
 
 	// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
@@ -280,7 +279,7 @@ void fill_zx_sdf_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin
 	}
 }
 
-static void fill_zx_sdf_slice(const VoxelGraphRuntime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
+static void fill_zx_sdf_slice(const pg::Runtime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
 		unsigned int channel, VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax,
 		int ry) {
 	ZN_PROFILE_SCOPE_NAMED("Copy SDF to block");
@@ -335,7 +334,7 @@ void fill_zx_integer_slice(Span<Data_T> channel_data, Vector3i rmin, Vector3i rm
 	}
 }
 
-static void fill_zx_integer_slice(const VoxelGraphRuntime::Buffer &src_buffer, VoxelBufferInternal &out_buffer,
+static void fill_zx_integer_slice(const pg::Runtime::Buffer &src_buffer, VoxelBufferInternal &out_buffer,
 		unsigned int channel, VoxelBufferInternal::Depth channel_depth, Vector3i rmin, Vector3i rmax, int ry) {
 	ZN_PROFILE_SCOPE_NAMED("Copy integer data to block");
 
@@ -421,7 +420,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 	// Slice is on the Y axis
 	const unsigned int slice_buffer_size = section_size.x * section_size.z;
-	VoxelGraphRuntime &runtime = runtime_ptr->runtime;
+	pg::Runtime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, slice_buffer_size, false);
 
 	cache.x_cache.resize(slice_buffer_size);
@@ -439,7 +438,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
 	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
 
-	FixedArray<unsigned int, VoxelGraphRuntime::MAX_OUTPUTS> required_outputs;
+	FixedArray<unsigned int, pg::Runtime::MAX_OUTPUTS> required_outputs;
 	unsigned int required_outputs_count = 0;
 
 	bool all_sdf_is_air = (sdf_output_buffer_index != -1) && (type_output_buffer_index == -1);
@@ -593,13 +592,13 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 
 					if (sdf_output_buffer_index != -1) {
-						const VoxelGraphRuntime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
+						const pg::Runtime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
 						fill_zx_sdf_slice(
 								sdf_buffer, out_buffer, sdf_channel, sdf_channel_depth, sdf_scale, rmin, rmax, ry);
 					}
 
 					if (type_output_buffer_index != -1) {
-						const VoxelGraphRuntime::Buffer &type_buffer = cache.state.get_buffer(type_output_buffer_index);
+						const pg::Runtime::Buffer &type_buffer = cache.state.get_buffer(type_output_buffer_index);
 						fill_zx_integer_slice(
 								type_buffer, out_buffer, type_channel, type_channel_depth, rmin, rmax, ry);
 					}
@@ -642,23 +641,22 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 }
 
 static bool has_output_type(
-		const VoxelGraphRuntime &runtime, const ProgramGraph &graph, VoxelGraphFunction::NodeTypeID node_type_id) {
+		const pg::Runtime &runtime, const ProgramGraph &graph, pg::VoxelGraphFunction::NodeTypeID node_type_id) {
 	for (unsigned int other_output_index = 0; other_output_index < runtime.get_output_count(); ++other_output_index) {
-		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(other_output_index);
+		const pg::Runtime::OutputInfo output = runtime.get_output_info(other_output_index);
 		const ProgramGraph::Node &node = graph.get_node(output.node_id);
-		if (node.type_id == VoxelGraphFunction::NODE_OUTPUT_WEIGHT) {
+		if (node.type_id == pg::VoxelGraphFunction::NODE_OUTPUT_WEIGHT) {
 			return true;
 		}
 	}
 	return false;
 }
 
-VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
+pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	// This is a specialized compilation. We use VoxelGraphFunction for a more precise use case, which is to generate
 	// voxels based on 3D coordinates and some other attributes. So we expect specific inputs and outputs to be used.
 
-	ERR_FAIL_COND_V(
-			_main_function.is_null(), VoxelGraphRuntime::CompilationResult::make_error("Main function not defined"));
+	ERR_FAIL_COND_V(_main_function.is_null(), pg::CompilationResult::make_error("Main function not defined"));
 
 	const int64_t time_before = Time::get_singleton()->get_ticks_usec();
 
@@ -666,33 +664,32 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 
 	// We usually expect X, Y, Z and SDF inputs. Custom inputs are not supported.
 	_main_function->auto_pick_inputs_and_outputs();
-	Span<const VoxelGraphFunction::Port> input_defs = _main_function->get_input_definitions();
+	Span<const pg::VoxelGraphFunction::Port> input_defs = _main_function->get_input_definitions();
 	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
-		const VoxelGraphFunction::Port &port = input_defs[input_index];
+		const pg::VoxelGraphFunction::Port &port = input_defs[input_index];
 		switch (port.type) {
-			case VoxelGraphFunction::NODE_INPUT_X:
+			case pg::VoxelGraphFunction::NODE_INPUT_X:
 				r->x_input_index = input_index;
 				break;
-			case VoxelGraphFunction::NODE_INPUT_Y:
+			case pg::VoxelGraphFunction::NODE_INPUT_Y:
 				r->y_input_index = input_index;
 				break;
-			case VoxelGraphFunction::NODE_INPUT_Z:
+			case pg::VoxelGraphFunction::NODE_INPUT_Z:
 				r->z_input_index = input_index;
 				break;
-			case VoxelGraphFunction::NODE_INPUT_SDF:
+			case pg::VoxelGraphFunction::NODE_INPUT_SDF:
 				r->sdf_input_index = input_index;
 				break;
-			case VoxelGraphFunction::NODE_CUSTOM_INPUT:
-				return VoxelGraphRuntime::CompilationResult::make_error(
-						"Custom inputs are not allowed in main generator graphs.");
+			case pg::VoxelGraphFunction::NODE_CUSTOM_INPUT:
+				return pg::CompilationResult::make_error("Custom inputs are not allowed in main generator graphs.");
 			default:
-				return VoxelGraphRuntime::CompilationResult::make_error("Unsupported input. Bug?");
+				return pg::CompilationResult::make_error("Unsupported input. Bug?");
 		}
 	}
 
 	// Core compilation
-	VoxelGraphRuntime &runtime = r->runtime;
-	const VoxelGraphRuntime::CompilationResult result = runtime.compile(**_main_function, debug);
+	pg::Runtime &runtime = r->runtime;
+	const pg::CompilationResult result = runtime.compile(**_main_function, debug);
 
 	if (!result.success) {
 		return result;
@@ -702,14 +699,14 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 
 	// Extra steps
 	for (unsigned int output_index = 0; output_index < runtime.get_output_count(); ++output_index) {
-		const VoxelGraphRuntime::OutputInfo output = runtime.get_output_info(output_index);
+		const pg::Runtime::OutputInfo output = runtime.get_output_info(output_index);
 		const ProgramGraph::Node &node = source_graph.get_node(output.node_id);
 
-		// TODO Allow specifying max count in VoxelGraphNodeDB so we can make some of these checks more generic
+		// TODO Allow specifying max count in pg::NodeTypeDB so we can make some of these checks more generic
 		switch (node.type_id) {
-			case VoxelGraphFunction::NODE_OUTPUT_SDF:
+			case pg::VoxelGraphFunction::NODE_OUTPUT_SDF:
 				if (r->sdf_output_buffer_index != -1) {
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message = ZN_TTR("Multiple SDF outputs are not supported");
 					error.node_id = output.node_id;
@@ -720,9 +717,9 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				}
 				break;
 
-			case VoxelGraphFunction::NODE_OUTPUT_WEIGHT: {
+			case pg::VoxelGraphFunction::NODE_OUTPUT_WEIGHT: {
 				if (r->weight_outputs_count >= r->weight_outputs.size()) {
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message = String(ZN_TTR("Cannot use more than {0} weight outputs"))
 											.format(varray(r->weight_outputs.size()));
@@ -733,14 +730,14 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				const int layer_index = node.params[0];
 				if (layer_index < 0) {
 					// Should not be allowed by the UI, but who knows
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message = String(ZN_TTR("Cannot use negative layer index in weight output"));
 					error.node_id = output.node_id;
 					return error;
 				}
 				if (layer_index >= static_cast<int>(r->weight_outputs.size())) {
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message =
 							String(ZN_TTR("Weight layers cannot exceed {0}")).format(varray(r->weight_outputs.size()));
@@ -750,7 +747,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				for (unsigned int i = 0; i < r->weight_outputs_count; ++i) {
 					const WeightOutput &wo = r->weight_outputs[i];
 					if (static_cast<int>(wo.layer_index) == layer_index) {
-						VoxelGraphRuntime::CompilationResult error;
+						pg::CompilationResult error;
 						error.success = false;
 						error.message =
 								String(ZN_TTR("Only one weight output node can use layer index {0}, found duplicate"))
@@ -766,9 +763,9 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				++r->weight_outputs_count;
 			} break;
 
-			case VoxelGraphFunction::NODE_OUTPUT_TYPE:
+			case pg::VoxelGraphFunction::NODE_OUTPUT_TYPE:
 				if (r->type_output_buffer_index != -1) {
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message = ZN_TTR("Multiple TYPE outputs are not supported");
 					error.node_id = output.node_id;
@@ -779,16 +776,16 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 				}
 				break;
 
-			case VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE:
+			case pg::VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE:
 				if (r->single_texture_output_buffer_index != -1) {
-					VoxelGraphRuntime::CompilationResult error;
+					pg::CompilationResult error;
 					error.success = false;
 					error.message = ZN_TTR("Multiple TYPE outputs are not supported");
 					error.node_id = output.node_id;
 					return error;
 				}
-				if (has_output_type(runtime, source_graph, VoxelGraphFunction::NODE_OUTPUT_WEIGHT)) {
-					VoxelGraphRuntime::CompilationResult error;
+				if (has_output_type(runtime, source_graph, pg::VoxelGraphFunction::NODE_OUTPUT_WEIGHT)) {
+					pg::CompilationResult error;
 					error.success = false;
 					error.message =
 							ZN_TTR("Using both OutputWeight nodes and an OutputSingleTexture node is not allowed");
@@ -805,7 +802,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	}
 
 	if (r->sdf_output_buffer_index == -1 && r->type_output_buffer_index == -1) {
-		VoxelGraphRuntime::CompilationResult error;
+		pg::CompilationResult error;
 		error.success = false;
 		error.message = String(ZN_TTR("An SDF or TYPE output is required for the graph to be valid."));
 		return error;
@@ -839,7 +836,7 @@ VoxelGraphRuntime::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 			}
 		}
 		// debug_check_texture_indices(spare_indices);
-		ERR_FAIL_COND_V(spare_indices_count != 4, VoxelGraphRuntime::CompilationResult());
+		ERR_FAIL_COND_V(spare_indices_count != 4, pg::CompilationResult());
 		r->spare_texture_indices = spare_indices;
 	}
 
@@ -864,7 +861,7 @@ void VoxelGeneratorGraph::generate_set(Span<float> in_x, Span<float> in_y, Span<
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = get_tls_cache();
-	VoxelGraphRuntime &runtime = _runtime->runtime;
+	pg::Runtime &runtime = _runtime->runtime;
 
 	Span<float> in_sdf;
 	if (_runtime->sdf_input_index != -1) {
@@ -886,7 +883,7 @@ void VoxelGeneratorGraph::generate_series(Span<float> in_x, Span<float> in_y, Sp
 	RWLockRead rlock(_runtime_lock);
 	ERR_FAIL_COND(_runtime == nullptr);
 	Cache &cache = get_tls_cache();
-	VoxelGraphRuntime &runtime = _runtime->runtime;
+	pg::Runtime &runtime = _runtime->runtime;
 
 	QueryInputs inputs(*_runtime, in_x, in_y, in_z, in_sdf);
 
@@ -938,11 +935,11 @@ void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<co
 				Span<float>(ptr_z, positions_z.size()));
 	}
 
-	const VoxelGraphRuntime::Buffer &buffer = get_tls_cache().state.get_buffer(buffer_index);
+	const pg::Runtime::Buffer &buffer = get_tls_cache().state.get_buffer(buffer_index);
 	memcpy(out_values.data(), buffer.data, sizeof(float) * out_values.size());
 }
 
-const VoxelGraphRuntime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
+const pg::Runtime::State &VoxelGeneratorGraph::get_last_state_from_current_thread() {
 	return get_tls_cache().state;
 }
 
@@ -1019,12 +1016,12 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 		std::vector<float> in_sdf_cache;
 		Image &im;
 		const Runtime &runtime_wrapper;
-		VoxelGraphRuntime::State &state;
+		pg::Runtime::State &state;
 		const float ref_radius;
 		const float sdf_min;
 		const float sdf_max;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, const Runtime &p_runtime, float p_ref_radius, float p_sdf_min,
+		ProcessChunk(pg::Runtime::State &p_state, const Runtime &p_runtime, float p_ref_radius, float p_sdf_min,
 				float p_sdf_max, Image &p_im) :
 				im(p_im),
 				runtime_wrapper(p_runtime),
@@ -1073,7 +1070,7 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 			QueryInputs inputs(runtime_wrapper, to_span(x_coords), to_span(y_coords), to_span(z_coords), in_sdf);
 
 			runtime_wrapper.runtime.generate_set(state, inputs.get(), false, nullptr);
-			const VoxelGraphRuntime::Buffer &buffer = state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
+			const pg::Runtime::Buffer &buffer = state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
 
 			// Calculate final pixels
 			// TODO Optimize: could convert to buffer directly?
@@ -1123,11 +1120,11 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 		std::vector<float> in_sdf_cache;
 		Image &im;
 		const Runtime &runtime_wrapper;
-		VoxelGraphRuntime::State &state;
+		pg::Runtime::State &state;
 		const float strength;
 		const float ref_radius;
 
-		ProcessChunk(VoxelGraphRuntime::State &p_state, Image &p_im, const Runtime &p_runtime_wrapper, float p_strength,
+		ProcessChunk(pg::Runtime::State &p_state, Image &p_im, const Runtime &p_runtime_wrapper, float p_strength,
 				float p_ref_radius) :
 				im(p_im),
 				runtime_wrapper(p_runtime_wrapper),
@@ -1159,8 +1156,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 			const int xmax = x0 + width;
 			const int ymax = y0 + height;
 
-			const VoxelGraphRuntime::Buffer &sdf_output_buffer =
-					state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
+			const pg::Runtime::Buffer &sdf_output_buffer = state.get_buffer(runtime_wrapper.sdf_output_buffer_index);
 
 			// Support graphs having an SDF input, give it default values
 			Span<float> in_sdf;
@@ -1266,8 +1262,7 @@ String VoxelGeneratorGraph::generate_shader() {
 	const ProgramGraph &graph = _main_function->get_graph();
 
 	std::string code_utf8;
-	VoxelGraphRuntime::CompilationResult result =
-			zylann::voxel::generate_shader(graph, _main_function->get_input_definitions(), code_utf8);
+	pg::CompilationResult result = pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8);
 
 	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
 
@@ -1295,10 +1290,10 @@ VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigne
 	QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
 
 	Cache &cache = get_tls_cache();
-	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
+	const pg::Runtime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1, false);
 	runtime.generate_single(cache.state, inputs.get(), nullptr);
-	const VoxelGraphRuntime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+	const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
 	ERR_FAIL_COND_V(buffer.size == 0, v);
 	ERR_FAIL_COND_V(buffer.data == nullptr, v);
 	v.f = buffer.data[0];
@@ -1316,7 +1311,7 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 	}
 	ERR_FAIL_COND_V(runtime_ptr == nullptr, math::Interval::from_single_value(0.f));
 	Cache &cache = get_tls_cache();
-	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
+	const pg::Runtime &runtime = runtime_ptr->runtime;
 
 	QueryInputs query_inputs(*runtime_ptr, math::Interval(min_pos.x, max_pos.x), math::Interval(min_pos.y, max_pos.y),
 			math::Interval(min_pos.z, max_pos.z), math::Interval());
@@ -1355,7 +1350,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 		runtime_ptr = _runtime;
 	}
 	ERR_FAIL_COND_V_MSG(runtime_ptr == nullptr, 0.f, "The graph hasn't been compiled yet");
-	const VoxelGraphRuntime &runtime = runtime_ptr->runtime;
+	const pg::Runtime &runtime = runtime_ptr->runtime;
 
 	const uint32_t cube_size = 16;
 	const uint32_t cube_count = 250;
@@ -1416,7 +1411,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 		}
 
 		if (per_node_profiling) {
-			const VoxelGraphRuntime::ExecutionMap &execution_map = runtime.get_default_execution_map();
+			const pg::Runtime::ExecutionMap &execution_map = runtime.get_default_execution_map();
 			node_profiling_info->resize(execution_map.debug_nodes.size());
 			for (unsigned int i = 0; i < node_profiling_info->size(); ++i) {
 				NodeProfilingInfo &info = (*node_profiling_info)[i];
@@ -1432,6 +1427,7 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 
 // This may be used as template when creating new graphs
 void VoxelGeneratorGraph::load_plane_preset() {
+	using namespace pg;
 	clear();
 
 	/*
@@ -1443,7 +1439,7 @@ void VoxelGeneratorGraph::load_plane_preset() {
 	 */
 
 	ERR_FAIL_COND(_main_function.is_null());
-	VoxelGraphFunction &g = **_main_function;
+	pg::VoxelGraphFunction &g = **_main_function;
 
 	const Vector2 k(40, 50);
 
@@ -1458,6 +1454,7 @@ void VoxelGeneratorGraph::load_plane_preset() {
 }
 
 void VoxelGeneratorGraph::debug_load_waves_preset() {
+	using namespace pg;
 	clear();
 	// This is mostly for testing
 
@@ -1541,7 +1538,7 @@ Vector2 VoxelGeneratorGraph::_b_debug_analyze_range(Vector3 min_pos, Vector3 max
 }
 
 Dictionary VoxelGeneratorGraph::_b_compile() {
-	VoxelGraphRuntime::CompilationResult res = compile(false);
+	pg::CompilationResult res = compile(false);
 	Dictionary d;
 	d["success"] = res.success;
 	if (!res.success) {

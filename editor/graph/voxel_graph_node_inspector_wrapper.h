@@ -16,7 +16,7 @@ class VoxelGraphNodeInspectorWrapper : public RefCounted {
 	GDCLASS(VoxelGraphNodeInspectorWrapper, RefCounted)
 public:
 	void setup(uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed);
-	inline Ref<VoxelGraphFunction> get_graph() const {
+	inline Ref<pg::VoxelGraphFunction> get_graph() const {
 		return _graph;
 	}
 	inline Ref<VoxelGeneratorGraph> get_generator() const {
@@ -32,7 +32,7 @@ protected:
 private:
 	static void _bind_methods();
 
-	Ref<VoxelGraphFunction> _graph;
+	Ref<pg::VoxelGraphFunction> _graph;
 	Ref<VoxelGeneratorGraph> _generator;
 	uint32_t _node_id = ProgramGraph::NULL_ID;
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?

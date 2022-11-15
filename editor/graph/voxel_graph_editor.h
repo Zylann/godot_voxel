@@ -43,8 +43,8 @@ public:
 		return _generator;
 	}
 
-	void set_graph(Ref<VoxelGraphFunction> graph);
-	Ref<VoxelGraphFunction> get_graph() const;
+	void set_graph(Ref<pg::VoxelGraphFunction> graph);
+	Ref<pg::VoxelGraphFunction> get_graph() const;
 
 	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
 	void set_voxel_node(VoxelNode *node);
@@ -121,7 +121,7 @@ private:
 	static void _bind_methods();
 
 	Ref<VoxelGeneratorGraph> _generator;
-	Ref<VoxelGraphFunction> _graph;
+	Ref<pg::VoxelGraphFunction> _graph;
 
 	GraphEdit *_graph_edit = nullptr;
 	PopupMenu *_context_menu = nullptr;

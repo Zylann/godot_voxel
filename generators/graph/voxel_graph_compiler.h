@@ -4,7 +4,7 @@
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::pg {
 
 struct PortRemap {
 	ProgramGraph::PortLocation original;
@@ -26,15 +26,15 @@ struct GraphRemappingInfo {
 
 // Pre-processes the graph and applies some optimizations before doing the main compilation pass.
 // This can involve some nodes getting removed or replaced with new ones.
-VoxelGraphRuntime::CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
+CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
-		const VoxelGraphNodeDB &type_db, GraphRemappingInfo *remap_info);
+		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info);
 
 // Functions usable by node implementations during the compilation stage
 class CompileContext {
 public:
 	CompileContext(/*const ProgramGraph::Node &node,*/ std::vector<uint16_t> &program,
-			std::vector<VoxelGraphRuntime::HeapResource> &heap_resources, std::vector<Variant> &params) :
+			std::vector<Runtime::HeapResource> &heap_resources, std::vector<Variant> &params) :
 			/*_node(node),*/ _program(program), _heap_resources(heap_resources), _params(params) {}
 
 	Variant get_param(size_t i) const {
@@ -78,7 +78,7 @@ public:
 	// In case the compilation step produces a resource to be deleted
 	template <typename T>
 	void add_memdelete_cleanup(T *ptr) {
-		VoxelGraphRuntime::HeapResource hr;
+		Runtime::HeapResource hr;
 		hr.ptr = ptr;
 		hr.deleter = [](void *p) {
 			// TODO We have no guarantee it was allocated with memnew :|
@@ -108,7 +108,7 @@ public:
 private:
 	// const ProgramGraph::Node &_node;
 	std::vector<uint16_t> &_program;
-	std::vector<VoxelGraphRuntime::HeapResource> &_heap_resources;
+	std::vector<Runtime::HeapResource> &_heap_resources;
 	std::vector<Variant> &_params;
 	String _error_message;
 	size_t _params_size_in_words = 0;
@@ -118,6 +118,6 @@ private:
 
 typedef void (*CompileFunc)(CompileContext &);
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::pg
 
 #endif // VOXEL_GRAPH_COMPILER_H

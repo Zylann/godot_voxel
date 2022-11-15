@@ -863,8 +863,8 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 			graph->generate_series(in_x, in_y, in_z, in_sdf);
 
 			// Read result
-			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
-			const VoxelGraphRuntime::Buffer &graph_buffer = state.get_buffer(output_sdf_buffer_index);
+			const pg::Runtime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+			const pg::Runtime::Buffer &graph_buffer = state.get_buffer(output_sdf_buffer_index);
 
 			// Apply strength and graph scale. Input serves as output too, shouldn't overlap
 			for (unsigned int i = 0; i < in_sdf.size(); ++i) {

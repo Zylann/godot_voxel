@@ -9,6 +9,8 @@
 
 namespace zylann::voxel {
 
+using namespace pg;
+
 namespace {
 const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
 }
@@ -39,12 +41,12 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 	// Params
 	{
 		const uint32_t node_type_id = graph->get_node_type_id(_node_id);
-		const VoxelGraphNodeDB::NodeType &node_type = VoxelGraphNodeDB::get_singleton().get_type(node_type_id);
+		const NodeType &node_type = NodeTypeDB::get_singleton().get_type(node_type_id);
 
 		p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
 		for (size_t i = 0; i < node_type.params.size(); ++i) {
-			const VoxelGraphNodeDB::Param &param = node_type.params[i];
+			const NodeType::Param &param = node_type.params[i];
 			if (param.hidden) {
 				continue;
 			}

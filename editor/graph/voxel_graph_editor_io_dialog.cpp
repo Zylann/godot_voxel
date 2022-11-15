@@ -16,6 +16,8 @@
 
 namespace zylann::voxel {
 
+using namespace pg;
+
 VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 	set_title(TTR("{0} inputs / outputs").format(varray(VoxelGraphFunction::get_class_static())));
 	set_min_size(EDSCALE * Vector2i(600, 230));
@@ -82,11 +84,10 @@ Control *VoxelGraphEditorIODialog::create_ui(PortsUI &ui, String title, bool is_
 
 		// TODO Don't allow choosing a non-custom input twice
 		ui.usage = memnew(OptionButton);
-		const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
-		const VoxelGraphNodeDB::Category category =
-				is_input ? VoxelGraphNodeDB::CATEGORY_INPUT : VoxelGraphNodeDB::CATEGORY_OUTPUT;
+		const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
+		const Category category = is_input ? CATEGORY_INPUT : CATEGORY_OUTPUT;
 		for (unsigned int type_id = 0; type_id < VoxelGraphFunction::NODE_TYPE_COUNT; ++type_id) {
-			const VoxelGraphNodeDB::NodeType ntype = type_db.get_type(type_id);
+			const NodeType &ntype = type_db.get_type(type_id);
 			if (ntype.category == category) {
 				ui.usage->add_item(ntype.name, type_id);
 			}
@@ -193,7 +194,7 @@ void VoxelGraphEditorIODialog::clear(PortsUI &ui) {
 void VoxelGraphEditorIODialog::_notification(int p_what) {
 	if (p_what == NOTIFICATION_VISIBILITY_CHANGED) {
 		set_process(is_visible());
-		//process();
+		// process();
 	} else if (p_what == NOTIFICATION_PROCESS) {
 		process();
 	}

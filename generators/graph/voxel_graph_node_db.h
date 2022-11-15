@@ -1,3 +1,5 @@
+// TODO Rename file
+
 #ifndef VOXEL_GRAPH_NODE_DB_H
 #define VOXEL_GRAPH_NODE_DB_H
 
@@ -7,15 +9,29 @@
 #include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::pg {
 
-class VoxelGraphNodeDB {
-public:
+enum Category {
+	CATEGORY_INPUT = 0,
+	CATEGORY_OUTPUT,
+	CATEGORY_MATH,
+	CATEGORY_CONVERT,
+	CATEGORY_GENERATE,
+	CATEGORY_SDF,
+	CATEGORY_DEBUG,
+	CATEGORY_FUNCTIONS,
+	CATEGORY_RELAY,
+	CATEGORY_COUNT
+};
+
+const char *get_category_name(Category category);
+
+struct NodeType {
 	// TODO Separate Input and Output port types? Some member values don't make sense.
 	struct Port {
 		String name;
 		// Only relevant for inputs.
-		Variant default_value;
+		float default_value;
 		// Which connection will be automatically made if the input port is not connected and no fixed value has been
 		// explicitely specified. Only relevant for inputs.
 		VoxelGraphFunction::AutoConnect auto_connect = VoxelGraphFunction::AUTO_CONNECT_NONE;
@@ -57,57 +73,43 @@ public:
 				name(p_name), default_value_func(dvf), type(Variant::OBJECT), class_name(p_class_name) {}
 	};
 
-	enum Category {
-		CATEGORY_INPUT = 0,
-		CATEGORY_OUTPUT,
-		CATEGORY_MATH,
-		CATEGORY_CONVERT,
-		CATEGORY_GENERATE,
-		CATEGORY_SDF,
-		CATEGORY_DEBUG,
-		CATEGORY_FUNCTIONS,
-		CATEGORY_RELAY,
-		CATEGORY_COUNT
-	};
+	String name;
+	// Debug-only nodes are ignored in non-debug compilation.
+	bool debug_only = false;
+	// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
+	bool is_pseudo_node = false;
+	Category category;
+	std::vector<Port> inputs;
+	std::vector<Port> outputs;
+	std::vector<Param> params;
+	std::unordered_map<String, uint32_t> param_name_to_index;
+	std::unordered_map<String, uint32_t> input_name_to_index;
+	CompileFunc compile_func = nullptr;
+	Runtime::ProcessBufferFunc process_buffer_func = nullptr;
+	Runtime::RangeAnalysisFunc range_analysis_func = nullptr;
+	// If available, name of the corresponding function to be used in expression nodes
+	const char *expression_func_name = nullptr;
+	// The Expression node can invoke the logic of other nodes, but it then needs a specific implementation
+	ExpressionParser::FunctionCallback expression_func = nullptr;
+	ShaderGenFunc shader_gen_func = nullptr;
 
-	struct NodeType {
-		String name;
-		// Debug-only nodes are ignored in non-debug compilation.
-		bool debug_only = false;
-		// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
-		bool is_pseudo_node = false;
-		Category category;
-		std::vector<Port> inputs;
-		std::vector<Port> outputs;
-		std::vector<Param> params;
-		std::unordered_map<String, uint32_t> param_name_to_index;
-		std::unordered_map<String, uint32_t> input_name_to_index;
-		CompileFunc compile_func = nullptr;
-		VoxelGraphRuntime::ProcessBufferFunc process_buffer_func = nullptr;
-		VoxelGraphRuntime::RangeAnalysisFunc range_analysis_func = nullptr;
-		// If available, name of the corresponding function to be used in expression nodes
-		const char *expression_func_name = nullptr;
-		// The Expression node can invoke the logic of other nodes, but it then needs a specific implementation
-		ExpressionParser::FunctionCallback expression_func = nullptr;
-		ShaderGenFunc shader_gen_func = nullptr;
-
-		inline bool has_autoconnect_inputs() const {
-			for (const Port &port : inputs) {
-				if (port.auto_connect != VoxelGraphFunction::AUTO_CONNECT_NONE) {
-					return true;
-				}
+	inline bool has_autoconnect_inputs() const {
+		for (const Port &port : inputs) {
+			if (port.auto_connect != VoxelGraphFunction::AUTO_CONNECT_NONE) {
+				return true;
 			}
-			return false;
 		}
-	};
+		return false;
+	}
+};
 
-	VoxelGraphNodeDB();
+class NodeTypeDB {
+public:
+	NodeTypeDB();
 
-	static const VoxelGraphNodeDB &get_singleton();
+	static const NodeTypeDB &get_singleton();
 	static void create_singleton();
 	static void destroy_singleton();
-
-	static const char *get_category_name(Category category);
 
 	int get_type_count() const {
 		return _types.size();
@@ -133,9 +135,9 @@ private:
 	std::vector<ExpressionParser::Function> _expression_functions;
 };
 
-VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const VoxelGraphNodeDB::NodeType &type);
+VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const NodeType &type);
 bool is_node_matching_port(const ProgramGraph::Node &node, const VoxelGraphFunction::Port &port);
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::pg
 
 #endif // VOXEL_GRAPH_NODE_DB_H

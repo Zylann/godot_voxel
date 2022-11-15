@@ -8,9 +8,9 @@
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
 
-namespace zylann::voxel {
+namespace zylann::voxel::pg {
 
-VoxelGraphRuntime::CompilationResult generate_shader(
+CompilationResult generate_shader(
 		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output);
 
 // Sent as argument to functions implementing generator nodes, in order to generate shader code.
@@ -65,6 +65,6 @@ private:
 
 typedef void (*ShaderGenFunc)(ShaderGenContext &);
 
-} // namespace zylann::voxel
+} // namespace zylann::voxel::pg
 
 #endif // VOXEL_GRAPH_SHADER_GENERATOR_H

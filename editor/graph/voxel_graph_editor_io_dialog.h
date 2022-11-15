@@ -19,7 +19,7 @@ class VoxelGraphEditorIODialog : public ConfirmationDialog {
 public:
 	VoxelGraphEditorIODialog();
 
-	void set_graph(Ref<VoxelGraphFunction> graph);
+	void set_graph(Ref<pg::VoxelGraphFunction> graph);
 	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
 
 private:
@@ -28,7 +28,7 @@ private:
 	void _on_auto_generate_button_pressed();
 	void _on_ok_pressed();
 
-	void reshow(Ref<VoxelGraphFunction> graph);
+	void reshow(Ref<pg::VoxelGraphFunction> graph);
 
 	void process();
 
@@ -49,15 +49,15 @@ private:
 	static Control *create_ui(PortsUI &ui, String title, bool has_default_values);
 	static void set_enabled(PortsUI &ui, bool enabled);
 	static void clear(PortsUI &ui);
-	void copy_ui_to_data(const PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports);
-	void copy_data_to_ui(PortsUI &ui, const std::vector<VoxelGraphFunction::Port> &ports);
-	void process_ui(PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports);
+	void copy_ui_to_data(const PortsUI &ui, std::vector<pg::VoxelGraphFunction::Port> &ports);
+	void copy_data_to_ui(PortsUI &ui, const std::vector<pg::VoxelGraphFunction::Port> &ports);
+	void process_ui(PortsUI &ui, std::vector<pg::VoxelGraphFunction::Port> &ports);
 
 	static void _bind_methods();
 
-	Ref<VoxelGraphFunction> _graph;
-	std::vector<VoxelGraphFunction::Port> _inputs;
-	std::vector<VoxelGraphFunction::Port> _outputs;
+	Ref<pg::VoxelGraphFunction> _graph;
+	std::vector<pg::VoxelGraphFunction::Port> _inputs;
+	std::vector<pg::VoxelGraphFunction::Port> _outputs;
 
 	PortsUI _inputs_ui;
 	PortsUI _outputs_ui;

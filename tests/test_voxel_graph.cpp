@@ -16,6 +16,8 @@
 
 namespace zylann::voxel::tests {
 
+using namespace pg;
+
 math::Interval get_sdf_range(const VoxelBufferInternal &block) {
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	math::Interval range = math::Interval::from_single_value(block.get_voxel_f(Vector3i(), channel));
@@ -91,14 +93,14 @@ void test_voxel_graph_generator_default_graph_compilation() {
 	{
 		generator_debug.instantiate();
 		generator_debug->load_plane_preset();
-		VoxelGraphRuntime::CompilationResult result = generator_debug->compile(true);
+		pg::CompilationResult result = generator_debug->compile(true);
 		ZN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 	}
 	{
 		generator.instantiate();
 		generator->load_plane_preset();
-		VoxelGraphRuntime::CompilationResult result = generator->compile(false);
+		pg::CompilationResult result = generator->compile(false);
 		ZN_TEST_ASSERT_MSG(result.success,
 				String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 	}
@@ -146,7 +148,7 @@ void load_graph_with_sphere_on_plane(VoxelGraphFunction &g, float radius) {
 	const uint32_t n_union = g.create_node(VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, Vector2());
 
 	uint32_t union_smoothness_id;
-	ZN_ASSERT(VoxelGraphNodeDB::get_singleton().try_get_param_index_from_name(
+	ZN_ASSERT(NodeTypeDB::get_singleton().try_get_param_index_from_name(
 			VoxelGraphFunction::NODE_SDF_SMOOTH_UNION, "smoothness", union_smoothness_id));
 
 	g.add_connection(n_in_x, 0, n_sphere, 0);
@@ -276,7 +278,7 @@ void test_voxel_graph_clamp_simplification() {
 			generator.instantiate();
 			ZN_ASSERT(generator->get_main_function().is_valid());
 			load_graph_with_clamp(**generator->get_main_function(), RAMP_HALF_SIZE);
-			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
+			pg::CompilationResult result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 			return generator;
@@ -312,7 +314,7 @@ void test_voxel_graph_generator_expressions() {
 			generator.instantiate();
 			ZN_ASSERT(generator->get_main_function().is_valid());
 			load_graph_with_expression(**generator->get_main_function());
-			VoxelGraphRuntime::CompilationResult result = generator->compile(debug);
+			pg::CompilationResult result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 			return generator;
@@ -332,7 +334,7 @@ void test_voxel_graph_generator_expressions_2() {
 			Ref<VoxelGraphFunction> graph = generator_debug->get_main_function();
 			ZN_ASSERT(graph.is_valid());
 			load_graph_with_expression_and_noises(**graph, &zfnl);
-			VoxelGraphRuntime::CompilationResult result = generator_debug->compile(true);
+			pg::CompilationResult result = generator_debug->compile(true);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 
@@ -351,7 +353,7 @@ void test_voxel_graph_generator_expressions_2() {
 			generator.instantiate();
 			ZN_ASSERT(generator->get_main_function().is_valid());
 			load_graph_with_expression_and_noises(**generator->get_main_function(), nullptr);
-			VoxelGraphRuntime::CompilationResult result = generator->compile(false);
+			pg::CompilationResult result = generator->compile(false);
 			ZN_TEST_ASSERT_MSG(result.success,
 					String("Failed to compile graph: {0}: {1}").format(varray(result.node_id, result.message)));
 		}
@@ -408,7 +410,7 @@ void test_voxel_graph_generator_texturing() {
 	g.add_connection(n_sub1, 0, out_weight0, 0);
 	g.add_connection(n_clamp, 0, out_weight1, 0);
 
-	VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	pg::CompilationResult compilation_result = generator->compile(false);
 	ZN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -434,10 +436,10 @@ void test_voxel_graph_generator_texturing() {
 		{
 			const float sdf = generator->generate_single(Vector3i(-2, -3, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 			ZN_TEST_ASSERT(sdf < 0.f);
-			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+			const pg::Runtime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
-			const VoxelGraphRuntime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
-			const VoxelGraphRuntime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
+			const pg::Runtime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
+			const pg::Runtime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
 
 			ZN_TEST_ASSERT(out_weight0_buffer.size >= 1);
 			ZN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
@@ -450,10 +452,10 @@ void test_voxel_graph_generator_texturing() {
 		{
 			const float sdf = generator->generate_single(Vector3i(2, 1, 0), VoxelBufferInternal::CHANNEL_SDF).f;
 			ZN_TEST_ASSERT(sdf < 0.f);
-			const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+			const pg::Runtime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
-			const VoxelGraphRuntime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
-			const VoxelGraphRuntime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
+			const pg::Runtime::Buffer &out_weight0_buffer = state.get_buffer(out_weight0_buffer_index);
+			const pg::Runtime::Buffer &out_weight1_buffer = state.get_buffer(out_weight1_buffer_index);
 
 			ZN_TEST_ASSERT(out_weight0_buffer.size >= 1);
 			ZN_TEST_ASSERT(out_weight0_buffer.data != nullptr);
@@ -539,7 +541,7 @@ void test_voxel_graph_generator_texturing() {
 		};
 
 		// Putting state on the stack because the debugger doesnt let me access it
-		//const VoxelGraphRuntime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
+		// const pg::Runtime::State &state = VoxelGeneratorGraph::get_last_state_from_current_thread();
 
 		// Try first without optimization
 		generator->set_use_optimized_execution_map(false);
@@ -578,7 +580,7 @@ void test_voxel_graph_equivalence_merging() {
 		g.add_connection(n_x2, 0, n_add2, 1);
 		g.add_connection(n_add2, 0, n_add3, 1);
 		g.add_connection(n_add3, 0, n_out, 0);
-		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
+		pg::CompilationResult result = graph->compile(false);
 		ZN_TEST_ASSERT(result.success);
 		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
@@ -610,7 +612,7 @@ void test_voxel_graph_equivalence_merging() {
 		g.add_connection(n_x, 0, n_add2, 1);
 		g.add_connection(n_add2, 0, n_add3, 1);
 		g.add_connection(n_add3, 0, n_out, 0);
-		VoxelGraphRuntime::CompilationResult result = graph->compile(false);
+		pg::CompilationResult result = graph->compile(false);
 		ZN_TEST_ASSERT(result.success);
 		ZN_TEST_ASSERT(result.expanded_nodes_count == 4);
 		const VoxelSingleValue value = graph->generate_single(Vector3i(10, 0, 0), VoxelBufferInternal::CHANNEL_SDF);
@@ -740,7 +742,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
 			L::load_graph(**generator->get_main_function());
-			const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+			const pg::CompilationResult compilation_result = generator->compile(false);
 			ZN_TEST_ASSERT_MSG(compilation_result.success,
 					String("Failed to compile graph: {0}: {1}")
 							.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -820,7 +822,7 @@ void test_voxel_graph_functions_pass_through() {
 		g.add_connection(n_x, 0, n_f, 0);
 		g.add_connection(n_f, 0, n_out_sdf, 0);
 	}
-	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	const pg::CompilationResult compilation_result = generator->compile(false);
 	ZN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -858,7 +860,7 @@ void test_voxel_graph_functions_nested_pass_through() {
 		g.add_connection(n_x, 0, n_f, 0);
 		g.add_connection(n_f, 0, n_out_sdf, 0);
 	}
-	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	const pg::CompilationResult compilation_result = generator->compile(false);
 	ZN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -901,7 +903,7 @@ void test_voxel_graph_functions_autoconnect() {
 		g.add_connection(n_add, 0, n_f, 2);
 		g.add_connection(n_f, 0, n_out_sdf, 0);
 	}
-	const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+	const pg::CompilationResult compilation_result = generator->compile(false);
 	ZN_TEST_ASSERT_MSG(compilation_result.success,
 			String("Failed to compile graph: {0}: {1}")
 					.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -948,7 +950,7 @@ void test_voxel_graph_functions_io_mismatch() {
 		g.add_connection(n_f, 0, n_out_sdf, 0);
 	}
 	{
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		ZN_TEST_ASSERT_MSG(compilation_result.success,
 				String("Failed to compile graph: {0}: {1}")
 						.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -963,14 +965,14 @@ void test_voxel_graph_functions_io_mismatch() {
 		func->set_io_definitions(to_span(inputs), to_span(outputs));
 	}
 	{
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		// Compiling should fail, but not crash
 		ZN_TEST_ASSERT(compilation_result.success == false);
 		ZN_PRINT_VERBOSE(format("Compiling failed with message '{}'", compilation_result.message));
 	}
 	generator->get_main_function()->update_function_nodes(nullptr);
 	{
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		// Compiling should work now
 		ZN_TEST_ASSERT(compilation_result.success == true);
 	}
@@ -1054,7 +1056,7 @@ void test_voxel_graph_functions_misc() {
 
 		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 4);
 
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		ZN_TEST_ASSERT_MSG(compilation_result.success,
 				String("Failed to compile graph: {0}: {1}")
 						.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -1078,7 +1080,7 @@ void test_voxel_graph_functions_misc() {
 
 		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 2);
 
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		ZN_TEST_ASSERT_MSG(compilation_result.success,
 				String("Failed to compile graph: {0}: {1}")
 						.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -1101,7 +1103,7 @@ void test_voxel_graph_functions_misc() {
 
 		Ref<VoxelGeneratorGraph> generator = L::create_generator(func, 2);
 
-		const VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		const pg::CompilationResult compilation_result = generator->compile(false);
 		ZN_TEST_ASSERT_MSG(compilation_result.success,
 				String("Failed to compile graph: {0}: {1}")
 						.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -1119,9 +1121,9 @@ void test_voxel_graph_issue461() {
 }
 
 template <typename T>
-void get_node_types(const VoxelGraphNodeDB &type_db, std::vector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
+void get_node_types(const NodeTypeDB &type_db, std::vector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
 	for (unsigned int i = 0; i < VoxelGraphFunction::NODE_TYPE_COUNT; ++i) {
-		const VoxelGraphNodeDB::NodeType &type = type_db.get_type(i);
+		const NodeType &type = type_db.get_type(i);
 		if (predicate(type)) {
 			types.push_back(VoxelGraphFunction::NodeTypeID(i));
 		}
@@ -1147,18 +1149,18 @@ void test_voxel_graph_fuzzing() {
 			const int output_count = rng.rand() % 4;
 			const int intermediary_node_count = rng.rand() % 8;
 
-			const VoxelGraphNodeDB &type_db = VoxelGraphNodeDB::get_singleton();
+			const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
 			std::vector<VoxelGraphFunction::NodeTypeID> input_types;
 			get_node_types(type_db, input_types,
-					[](const VoxelGraphNodeDB::NodeType &t) { //
-						return t.category == VoxelGraphNodeDB::CATEGORY_INPUT;
+					[](const NodeType &t) { //
+						return t.category == CATEGORY_INPUT;
 					});
 
 			std::vector<VoxelGraphFunction::NodeTypeID> output_types;
 			get_node_types(type_db, output_types,
-					[](const VoxelGraphNodeDB::NodeType &t) { //
-						return t.category == VoxelGraphNodeDB::CATEGORY_OUTPUT;
+					[](const NodeType &t) { //
+						return t.category == CATEGORY_OUTPUT;
 					});
 
 			if (!allow_custom_io) {
@@ -1180,9 +1182,8 @@ void test_voxel_graph_fuzzing() {
 
 			std::vector<VoxelGraphFunction::NodeTypeID> node_types;
 			get_node_types(type_db, node_types,
-					[](const VoxelGraphNodeDB::NodeType &t) { //
-						return t.category != VoxelGraphNodeDB::CATEGORY_OUTPUT &&
-								t.category != VoxelGraphNodeDB::CATEGORY_INPUT;
+					[](const NodeType &t) { //
+						return t.category != CATEGORY_OUTPUT && t.category != CATEGORY_INPUT;
 					});
 
 			for (int i = 0; i < intermediary_node_count; ++i) {
@@ -1234,7 +1235,7 @@ void test_voxel_graph_fuzzing() {
 		L::make_random_graph(**generator->get_main_function(), rng,
 				// Disallowing custom I/Os because VoxelGeneratorGraph cannot handle them at the moment
 				false);
-		VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(false);
+		pg::CompilationResult compilation_result = generator->compile(false);
 		if (compilation_result.success) {
 			generator->generate_single(Vector3i(1, 2, 3), VoxelBufferInternal::CHANNEL_SDF);
 		} else {
@@ -1253,7 +1254,7 @@ void test_voxel_graph_sphere_on_plane() {
 			Ref<VoxelGeneratorGraph> generator;
 			generator.instantiate();
 			load_graph_with_sphere_on_plane(**generator->get_main_function(), RADIUS);
-			VoxelGraphRuntime::CompilationResult compilation_result = generator->compile(debug);
+			pg::CompilationResult compilation_result = generator->compile(debug);
 			ZN_TEST_ASSERT_MSG(compilation_result.success,
 					String("Failed to compile graph: {0}: {1}")
 							.format(varray(compilation_result.node_id, compilation_result.message)));
@@ -1308,7 +1309,7 @@ void test_voxel_graph_issue427() {
 	// Was crashing after adding this connection
 	g.add_connection(n_mul, 0, n_sub, 1);
 
-	VoxelGraphRuntime::CompilationResult result = graph->compile(true);
+	pg::CompilationResult result = graph->compile(true);
 	ZN_TEST_ASSERT(result.success);
 }
 

@@ -8,6 +8,8 @@
 
 namespace zylann::voxel {
 
+using namespace pg;
+
 bool VoxelGraphFunctionInspectorPlugin::_zn_can_handle(Object *obj) {
 	return Object::cast_to<VoxelGraphFunction>(obj) != nullptr;
 }

@@ -27,7 +27,7 @@ public:
 	void clear();
 	void load_plane_preset();
 
-	Ref<VoxelGraphFunction> get_main_function() const;
+	Ref<pg::VoxelGraphFunction> get_main_function() const;
 
 	// Performance tuning (advanced)
 
@@ -76,14 +76,14 @@ public:
 
 	// Internal
 
-	VoxelGraphRuntime::CompilationResult compile(bool debug);
+	pg::CompilationResult compile(bool debug);
 	bool is_good() const;
 
 	void generate_set(Span<float> in_x, Span<float> in_y, Span<float> in_z);
 	void generate_series(Span<float> in_x, Span<float> in_y, Span<float> in_z, Span<float> in_sdf);
 
 	// Returns state from the last generator used in the current thread
-	static const VoxelGraphRuntime::State &get_last_state_from_current_thread();
+	static const pg::Runtime::State &get_last_state_from_current_thread();
 	static Span<const uint32_t> get_last_execution_map_debug_from_current_thread();
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
@@ -122,13 +122,13 @@ private:
 		unsigned int output_buffer_index;
 	};
 
-	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs,
-			const VoxelGraphRuntime::State &state, Vector3i rmin, Vector3i rmax, int ry,
-			VoxelBufferInternal &out_voxel_buffer, FixedArray<uint8_t, 4> spare_indices);
+	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs, const pg::Runtime::State &state,
+			Vector3i rmin, Vector3i rmax, int ry, VoxelBufferInternal &out_voxel_buffer,
+			FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();
 
-	Ref<VoxelGraphFunction> _main_function;
+	Ref<pg::VoxelGraphFunction> _main_function;
 
 	// This generator performs range analysis using nodes of the graph. Terrain surface can only appear when SDF
 	// crosses zero within a block. For each generated block, an estimated range of the output is calculated.
@@ -155,7 +155,7 @@ private:
 
 	// Wrapper around the runtime with extra information specialized for the use case
 	struct Runtime {
-		VoxelGraphRuntime runtime;
+		pg::Runtime runtime;
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
@@ -216,8 +216,8 @@ private:
 		std::vector<float> z_cache;
 		std::vector<float> input_sdf_slice_cache;
 		std::vector<float> input_sdf_full_cache;
-		VoxelGraphRuntime::State state;
-		VoxelGraphRuntime::ExecutionMap optimized_execution_map;
+		pg::Runtime::State state;
+		pg::Runtime::ExecutionMap optimized_execution_map;
 	};
 
 	static Cache &get_tls_cache();
