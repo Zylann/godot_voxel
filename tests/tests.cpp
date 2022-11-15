@@ -901,7 +901,7 @@ void test_block_serializer_stream_peer() {
 
 	Ref<StreamPeerBuffer> peer;
 	peer.instantiate();
-	//peer->clear();
+	// peer->clear();
 
 	Ref<gd::VoxelBlockSerializer> serializer;
 	serializer.instantiate();
@@ -1101,7 +1101,7 @@ void test_fast_noise_2_basic() {
 	print_line(String("Noise: {0}").format(varray(nv)));
 	Ref<Image> im = Image::create_empty(256, 256, false, Image::FORMAT_RGB8);
 	noise->generate_image(im, false);
-	//im->save_png("zylann_test_fastnoise2.png");
+	// im->save_png("zylann_test_fastnoise2.png");
 }
 
 void test_fast_noise_2_empty_encoded_node_tree() {
