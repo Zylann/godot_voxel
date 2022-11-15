@@ -277,10 +277,8 @@ const char *VoxelGraphNodeDB::get_category_name(Category category) {
 }
 
 VoxelGraphNodeDB::VoxelGraphNodeDB() {
-	//typedef VoxelGraphRuntime::CompileContext CompileContext;
 	typedef VoxelGraphRuntime::ProcessBufferContext ProcessBufferContext;
 	typedef VoxelGraphRuntime::RangeAnalysisContext RangeAnalysisContext;
-	//typedef VoxelGraphRuntime::ShaderGenContext ShaderGenContext;
 
 	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> &types = _types;
 
