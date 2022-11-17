@@ -155,6 +155,13 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit = memnew(GraphEdit);
 	_graph_edit->set_anchors_preset(Control::PRESET_FULL_RECT);
 	_graph_edit->set_right_disconnects(true);
+	// TODO Performance: sorry, had to turn off AA because Godot's current implementation is incredibly slow.
+	// It slows down the editor a lot when a graph has lots of connections. Because despite Godot 4 now supporting
+	// 2D MSAA, it still relies on a fake AA method which draws 9 times the same line and allocates
+	// memory (malloc) on the fly. See `RendererCanvasCull::canvas_item_add_polyline`.
+	// 2D MSAA also is only exposed in Project Settings, which does not apply to editor UIs... (and shouldn't, but there
+	// should be a setting in Editor Settings).
+	_graph_edit->set_connection_lines_antialiased(false);
 	_graph_edit->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	_graph_edit->connect("gui_input", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_gui_input));
 	_graph_edit->connect(
