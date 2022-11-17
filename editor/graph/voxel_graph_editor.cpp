@@ -1,7 +1,7 @@
 #include "voxel_graph_editor.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/voxel_generator_graph.h"
-#include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../generators/graph/node_type_db.h"
 #include "../../terrain/voxel_node.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/button.h"

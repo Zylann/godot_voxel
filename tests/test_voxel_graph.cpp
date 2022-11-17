@@ -1,6 +1,6 @@
 #include "test_voxel_graph.h"
+#include "../generators/graph/node_type_db.h"
 #include "../generators/graph/voxel_generator_graph.h"
-#include "../generators/graph/voxel_graph_node_db.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/container_funcs.h"
 #include "../util/math/sdf.h"

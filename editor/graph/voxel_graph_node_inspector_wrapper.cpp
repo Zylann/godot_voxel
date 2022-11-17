@@ -1,5 +1,5 @@
 #include "voxel_graph_node_inspector_wrapper.h"
-#include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../generators/graph/node_type_db.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"

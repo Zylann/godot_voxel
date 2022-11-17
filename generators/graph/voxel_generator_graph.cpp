@@ -16,8 +16,8 @@
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
+#include "node_type_db.h"
 #include "voxel_graph_function.h"
-#include "voxel_graph_node_db.h"
 
 namespace zylann::voxel {
 

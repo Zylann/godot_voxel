@@ -2,7 +2,7 @@
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_compiler.h"
-#include "voxel_graph_node_db.h"
+#include "node_type_db.h"
 
 namespace zylann::voxel::pg {
 

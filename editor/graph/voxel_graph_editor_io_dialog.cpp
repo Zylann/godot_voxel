@@ -1,5 +1,5 @@
 #include "voxel_graph_editor_io_dialog.h"
-#include "../../generators/graph/voxel_graph_node_db.h"
+#include "../../generators/graph/node_type_db.h"
 #include "../../util/godot/button.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/editor_scale.h"

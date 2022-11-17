@@ -7,8 +7,8 @@
 #ifdef TOOLS_ENABLED
 #include "../../util/profiling_clock.h"
 #endif
+#include "node_type_db.h"
 #include "voxel_generator_graph.h"
-#include "voxel_graph_node_db.h"
 
 #include <unordered_set>
 

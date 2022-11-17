@@ -5,7 +5,7 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/godot/object.h"
 #include "../../util/string_funcs.h"
-#include "voxel_graph_node_db.h"
+#include "node_type_db.h"
 #include <algorithm>
 
 namespace zylann::voxel::pg {

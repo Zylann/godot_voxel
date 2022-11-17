@@ -1,6 +1,4 @@
-// TODO Rename file
-
-#include "voxel_graph_node_db.h"
+#include "node_type_db.h"
 #include "../../constants/voxel_constants.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/curve.h"

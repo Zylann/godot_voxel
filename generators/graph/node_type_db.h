@@ -1,7 +1,5 @@
-// TODO Rename file
-
-#ifndef VOXEL_GRAPH_NODE_DB_H
-#define VOXEL_GRAPH_NODE_DB_H
+#ifndef VOXEL_GRAPH_NODE_TYPE_DB_H
+#define VOXEL_GRAPH_NODE_TYPE_DB_H
 
 #include "../../util/expression_parser.h"
 #include "../../util/godot/string.h" // For String hash
@@ -140,4 +138,4 @@ bool is_node_matching_port(const ProgramGraph::Node &node, const VoxelGraphFunct
 
 } // namespace zylann::voxel::pg
 
-#endif // VOXEL_GRAPH_NODE_DB_H
+#endif // VOXEL_GRAPH_NODE_TYPE_DB_H

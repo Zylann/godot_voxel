@@ -1,6 +1,6 @@
 #include "voxel_graph_editor_node.h"
+#include "../../generators/graph/node_type_db.h"
 #include "../../generators/graph/voxel_generator_graph.h"
-#include "../../generators/graph/voxel_graph_node_db.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/editor_scale.h"

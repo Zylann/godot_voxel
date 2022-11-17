@@ -5,7 +5,7 @@
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "voxel_graph_function.h"
-#include "voxel_graph_node_db.h"
+#include "node_type_db.h"
 #include <limits>
 #include <unordered_set>
 
