@@ -314,6 +314,10 @@ void VoxelGraphEditor::set_undo_redo(Ref<EditorUndoRedoManager> undo_redo) {
 	_undo_redo = undo_redo;
 }
 
+Ref<EditorUndoRedoManager> VoxelGraphEditor::get_undo_redo() const {
+	return _undo_redo;
+}
+
 void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 	_voxel_node = node;
 	if (_voxel_node == nullptr) {

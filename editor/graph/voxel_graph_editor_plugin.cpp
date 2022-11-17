@@ -15,7 +15,6 @@
 #include "voxel_graph_editor_io_dialog.h"
 #include "voxel_graph_editor_window.h"
 #include "voxel_graph_function_inspector_plugin.h"
-#include "voxel_graph_node_inspector_wrapper.h"
 
 namespace zylann::voxel {
 
@@ -181,11 +180,13 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
+	// We have to make a new wrapper every time because it has to target the same node for a given time.
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
-	wrapper->setup(node_id, get_undo_redo(), _graph_editor);
+	wrapper->setup(node_id, _graph_editor);
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
 	get_editor_interface()->inspect_object(*wrapper);
+	_node_wrappers.push_back(wrapper);
 	// TODO Absurd situation here...
 	// `inspect_object()` gets to a point where Godot hides ALL plugins for some reason...
 	// And all this, to have the graph editor rebuilt and shown again, because it DOES also handle that resource type
@@ -257,6 +258,15 @@ void VoxelGraphEditorPlugin::_on_graph_editor_popout_requested() {
 
 void VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested() {
 	dock_graph_editor();
+}
+
+void VoxelGraphEditorPlugin::_notification(int p_what) {
+	if (p_what == NOTIFICATION_EXIT_TREE) {
+		for (Ref<VoxelGraphNodeInspectorWrapper> &w : _node_wrappers) {
+			ERR_CONTINUE(w.is_null());
+			w->detach_from_graph_editor();
+		}
+	}
 }
 
 void VoxelGraphEditorPlugin::undock_graph_editor() {

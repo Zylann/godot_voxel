@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/editor_plugin.h"
 #include "../../util/macros.h"
+#include "voxel_graph_node_inspector_wrapper.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Button)
 
@@ -32,6 +33,8 @@ public:
 	void edit_ios(Ref<pg::VoxelGraphFunction> graph);
 
 private:
+	void _notification(int p_what);
+
 	void undock_graph_editor();
 	void dock_graph_editor();
 	void update_graph_editor_window_title();
@@ -52,6 +55,7 @@ private:
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
 	VoxelNode *_voxel_node = nullptr;
+	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
 };
 
 } // namespace zylann::voxel

@@ -47,6 +47,8 @@ public:
 	Ref<pg::VoxelGraphFunction> get_graph() const;
 
 	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
+	Ref<EditorUndoRedoManager> get_undo_redo() const;
+
 	void set_voxel_node(VoxelNode *node);
 
 	// To be called when the number of inputs in a node changes.

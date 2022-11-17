@@ -15,13 +15,18 @@ namespace {
 const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
 }
 
-void VoxelGraphNodeInspectorWrapper::setup(uint32_t p_node_id, Ref<EditorUndoRedoManager> ur, VoxelGraphEditor *ed) {
+void VoxelGraphNodeInspectorWrapper::setup(uint32_t p_node_id, VoxelGraphEditor *ed) {
 	ZN_ASSERT(ed != nullptr);
 	_graph = ed->get_graph();
 	_generator = ed->get_generator();
 	_node_id = p_node_id;
-	_undo_redo = ur;
 	_graph_editor = ed;
+}
+
+void VoxelGraphNodeInspectorWrapper::detach_from_graph_editor() {
+	_graph = Ref<VoxelGraphFunction>();
+	_generator = Ref<VoxelGeneratorGraph>();
+	_graph_editor = nullptr;
 }
 
 void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_list) const {
@@ -198,9 +203,12 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Variant &p_value) {
 	Ref<VoxelGraphFunction> graph = get_graph();
 	ERR_FAIL_COND_V(graph.is_null(), false);
-
-	ERR_FAIL_COND_V(_undo_redo == nullptr, false);
-	EditorUndoRedoManager &ur = **_undo_redo;
+	ERR_FAIL_COND_V(_graph_editor == nullptr, false);
+	// We cannot keep a reference to UndoRedo in our object because our object can be referenced by UndoRedo, which
+	// would cause a cyclic reference. So we access it from a weak reference to the editor.
+	Ref<EditorUndoRedoManager> undo_redo = _graph_editor->get_undo_redo();
+	ERR_FAIL_COND_V(undo_redo.is_null(), false);
+	EditorUndoRedoManager &ur = **undo_redo;
 
 	const String name = p_name;
 
