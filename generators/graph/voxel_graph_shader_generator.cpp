@@ -114,7 +114,11 @@ CompilationResult generate_shader(
 		}
 
 		if (node_type.shader_gen_func == nullptr) {
-			return CompilationResult::make_error("A node does not support conversion to shader.", node_id);
+			CompilationResult error;
+			error.message =
+					String("The node {0} does not support conversion to shader.").format(varray(node_type.name));
+			error.node_id = node_id;
+			return error;
 		}
 
 		for (unsigned int port_index = 0; port_index < node.inputs.size(); ++port_index) {
