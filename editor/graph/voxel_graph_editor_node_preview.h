@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_EDITOR_NODE_PREVIEW_H
 #define VOXEL_GRAPH_EDITOR_NODE_PREVIEW_H
 
+#include "../../generators/graph/voxel_graph_runtime.h"
 #include "../../util/godot/image.h"
 #include "../../util/godot/image_texture.h"
 #include "../../util/godot/v_box_container.h"
@@ -16,10 +17,19 @@ class VoxelGraphEditorNodePreview : public VBoxContainer {
 public:
 	static const int RESOLUTION = 128;
 
+	enum DisplayMode { //
+		MODE_GREYSCALE = 0,
+		MODE_SDF = 1,
+		MODE_COUNT
+	};
+
+	static void load_resources();
+	static void unload_resources();
+
 	VoxelGraphEditorNodePreview();
 
-	Ref<Image> get_image() const;
-	void update_texture();
+	void update_from_buffer(const pg::Runtime::Buffer &buffer);
+	void update_display_settings(const pg::VoxelGraphFunction &graph, uint32_t node_id);
 
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional
@@ -28,6 +38,7 @@ private:
 	TextureRect *_texture_rect = nullptr;
 	Ref<ImageTexture> _texture;
 	Ref<Image> _image;
+	Ref<ShaderMaterial> _material;
 };
 
 } // namespace zylann::voxel

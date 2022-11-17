@@ -67,6 +67,17 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 				if (param.multiline) {
 					pi.hint = PROPERTY_HINT_MULTILINE_TEXT;
 				}
+
+			} else if (param.enum_items.size() > 0) {
+				std::string hint_string;
+				for (unsigned int i = 0; i < param.enum_items.size(); ++i) {
+					if (i > 0) {
+						hint_string += ",";
+					}
+					hint_string += param.enum_items[i];
+				}
+				pi.hint_string = to_godot(hint_string);
+				pi.hint = PROPERTY_HINT_ENUM;
 			}
 
 			pi.usage = PROPERTY_USAGE_EDITOR;

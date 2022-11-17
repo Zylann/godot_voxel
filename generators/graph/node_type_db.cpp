@@ -952,19 +952,9 @@ NodeTypeDB::NodeTypeDB() {
 			float b;
 
 			static Params from_intervals(float min0, float max0, float min1, float max1) {
-				// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
-				// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
-				// min1 +       A       * (x - min0) *        B
-				// min1 + A * B * (x - min0)
-				// min1 + A * B * x - A * B * min0
-				// min1 +   C   * x -   C   * min0
-				// min1 - C * min0 + C * x
-				// (min1 - C * min0) + C * x
-				//         b         + a * x
-				// a * x + b
-				const float a = (max1 - min1) * (Math::is_equal_approx(max0, min0) ? 999999.f : 1.f / (max0 - min0));
-				const float b = min1 - a * min0;
-				return { a, b };
+				Params p;
+				math::remap_intervals_to_linear_params(min0, max0, min1, max1, p.a, p.b);
+				return p;
 			}
 		};
 		NodeType &t = types[VoxelGraphFunction::NODE_REMAP];
@@ -1600,8 +1590,16 @@ NodeTypeDB::NodeTypeDB() {
 		t.name = "SdfPreview";
 		t.category = CATEGORY_DEBUG;
 		t.inputs.push_back(NodeType::Port("value"));
+
 		t.params.push_back(NodeType::Param("min_value", Variant::FLOAT, -1.f));
 		t.params.push_back(NodeType::Param("max_value", Variant::FLOAT, 1.f));
+
+		// Matches an enum in editor code `VoxelGraphEditorNodePreview`
+		NodeType::Param mode_param("mode", Variant::INT, 0);
+		mode_param.enum_items.push_back("Greyscale");
+		mode_param.enum_items.push_back("SDF");
+		t.params.push_back(mode_param);
+
 		t.debug_only = true;
 		t.is_pseudo_node = true;
 	}

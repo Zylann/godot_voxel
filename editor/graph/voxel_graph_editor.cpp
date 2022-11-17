@@ -1,7 +1,7 @@
 #include "voxel_graph_editor.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../generators/graph/voxel_generator_graph.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../generators/graph/voxel_generator_graph.h"
 #include "../../terrain/voxel_node.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/button.h"
@@ -447,6 +447,11 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 				   "UndoRedo.");
 #endif
 
+	VoxelGraphEditorNodePreview *preview = node_view->get_preview();
+	if (preview != nullptr) {
+		preview->update_display_settings(**_graph, node_id);
+	}
+
 	_graph_edit->add_child(node_view);
 }
 
@@ -726,13 +731,13 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			break;
 
 		case MENU_PREVIEW_AXES_XY:
-			_preview_axes = PREVIEW_XY;
+			_preview_axes = PREVIEW_AXES_XY;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
 
 		case MENU_PREVIEW_AXES_XZ:
-			_preview_axes = PREVIEW_XZ;
+			_preview_axes = PREVIEW_AXES_XZ;
 			schedule_preview_update();
 			update_preview_axes_menu();
 			break;
@@ -1039,8 +1044,7 @@ void VoxelGraphEditor::update_slice_previews() {
 	struct PreviewInfo {
 		VoxelGraphEditorNodePreview *control;
 		uint32_t address;
-		float min_value;
-		float value_scale;
+		uint32_t node_id;
 	};
 
 	std::vector<PreviewInfo> previews;
@@ -1065,9 +1069,7 @@ void VoxelGraphEditor::update_slice_previews() {
 			// Not part of the compiled result
 			continue;
 		}
-		info.min_value = _graph->get_node_param(dst.node_id, 0);
-		const float max_value = _graph->get_node_param(dst.node_id, 1);
-		info.value_scale = 1.f / (max_value - info.min_value);
+		info.node_id = dst.node_id;
 		previews.push_back(info);
 	}
 
@@ -1101,7 +1103,7 @@ void VoxelGraphEditor::update_slice_previews() {
 		Span<float> x_coords = to_span(x_vec);
 		Span<float> y_coords;
 		Span<float> z_coords;
-		if (_preview_axes == PREVIEW_XY) {
+		if (_preview_axes == PREVIEW_AXES_XY) {
 			y_coords = to_span(y_vec);
 			z_coords = to_span(z_vec);
 		} else {
@@ -1117,28 +1119,9 @@ void VoxelGraphEditor::update_slice_previews() {
 	// Update previews
 	for (size_t preview_index = 0; preview_index < previews.size(); ++preview_index) {
 		PreviewInfo &info = previews[preview_index];
-
 		const pg::Runtime::Buffer &buffer = last_state.get_buffer(info.address);
-
-		Image &im = **info.control->get_image();
-		ERR_FAIL_COND(im.get_width() * im.get_height() != static_cast<int>(buffer.size));
-
-		// TODO Support debugging inputs
-		ERR_CONTINUE_MSG(buffer.data == nullptr,
-				buffer.is_binding ? "Plugging a debug view on an input is not supported yet."
-								  : "Didn't expect buffer to be null");
-
-		unsigned int i = 0;
-		for (int y = 0; y < im.get_height(); ++y) {
-			for (int x = 0; x < im.get_width(); ++x) {
-				const float v = buffer.data[i];
-				const float g = math::clamp((v - info.min_value) * info.value_scale, 0.f, 1.f);
-				im.set_pixel(x, im.get_height() - y - 1, Color(g, g, g));
-				++i;
-			}
-		}
-
-		info.control->update_texture();
+		info.control->update_from_buffer(buffer);
+		info.control->update_display_settings(**_graph, info.node_id);
 	}
 }
 
@@ -1231,28 +1214,31 @@ void VoxelGraphEditor::profile() {
 	}
 }
 
+static void update_menu_radio_checkable_items(PopupMenu &menu, int checked_id) {
+	for (int i = 0; i < menu.get_item_count(); ++i) {
+		if (menu.is_item_radio_checkable(i)) {
+			const int item_id = menu.get_item_id(i);
+			menu.set_item_checked(i, item_id == checked_id);
+		}
+	}
+}
+
 void VoxelGraphEditor::update_preview_axes_menu() {
+	// Update menu state from current settings
 	ERR_FAIL_COND(_preview_axes_menu == nullptr);
 	ToolbarMenuIDs id;
 	switch (_preview_axes) {
-		case PREVIEW_XY:
+		case PREVIEW_AXES_XY:
 			id = MENU_PREVIEW_AXES_XY;
 			break;
-		case PREVIEW_XZ:
+		case PREVIEW_AXES_XZ:
 			id = MENU_PREVIEW_AXES_XZ;
 			break;
 		default:
 			ERR_PRINT("Unknown preview axes");
-			break;
+			return;
 	}
-	struct L {
-		static void set_menu_item_checked(PopupMenu &menu, int id, bool checked) {
-			const int index = menu.get_item_index(id);
-			menu.set_item_checked(index, checked);
-		}
-	};
-	L::set_menu_item_checked(*_preview_axes_menu, MENU_PREVIEW_AXES_XZ, MENU_PREVIEW_AXES_XZ == id);
-	L::set_menu_item_checked(*_preview_axes_menu, MENU_PREVIEW_AXES_XY, MENU_PREVIEW_AXES_XY == id);
+	update_menu_radio_checkable_items(*_preview_axes_menu, id);
 }
 
 void VoxelGraphEditor::hide_profiling_ratios() {

@@ -388,6 +388,31 @@ inline float deg_to_rad(float p_y) {
 	return p_y * PI_32 / 180.f;
 }
 
+// Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.
+// If the source interval is approximatively empty, returns zero values.
+inline void remap_intervals_to_linear_params(
+		float min0, float max0, float min1, float max1, float &out_a, float &out_b) {
+	// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
+	// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
+	// min1 +       A       * (x - min0) *        B
+	// min1 + A * B * (x - min0)
+	// min1 + A * B * x - A * B * min0
+	// min1 +   C   * x -   C   * min0
+	// min1 - C * min0 + C * x
+	// (min1 - C * min0) + C * x
+	//         b         + a * x
+	// a * x + b
+	if (Math::is_equal_approx(max0, min0)) {
+		out_a = 0;
+		out_b = 0;
+		return;
+	}
+	const float a = (max1 - min1) / (max0 - min0);
+	const float b = min1 - a * min0;
+	out_a = a;
+	out_b = b;
+}
+
 } // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

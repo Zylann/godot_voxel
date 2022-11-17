@@ -68,6 +68,7 @@
 #include "editor/editor_plugin.h"
 #endif
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
+#include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
@@ -280,6 +281,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		VoxelGraphEditorNodePreview::load_resources();
+
 #if defined(ZN_GODOT)
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
@@ -370,6 +373,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		zylann::free_debug_resources();
+		VoxelGraphEditorNodePreview::unload_resources();
 
 		// TODO GDX: Can't remove plugins.
 	}

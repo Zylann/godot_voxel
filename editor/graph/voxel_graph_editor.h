@@ -152,12 +152,12 @@ private:
 	PopupMenu *_preview_axes_menu = nullptr;
 
 	enum PreviewAxes { //
-		PREVIEW_XY = 0,
-		PREVIEW_XZ,
+		PREVIEW_AXES_XY = 0,
+		PREVIEW_AXES_XZ,
 		PREVIEW_AXES_OPTIONS_COUNT
 	};
 
-	PreviewAxes _preview_axes = PREVIEW_XY;
+	PreviewAxes _preview_axes = PREVIEW_AXES_XY;
 };
 
 } // namespace zylann::voxel
