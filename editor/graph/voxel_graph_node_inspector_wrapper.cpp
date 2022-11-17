@@ -50,8 +50,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 		p_list->push_back(PropertyInfo(Variant::NIL, "Params", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_CATEGORY));
 
-		for (size_t i = 0; i < node_type.params.size(); ++i) {
-			const NodeType::Param &param = node_type.params[i];
+		for (const NodeType::Param &param : node_type.params) {
 			if (param.hidden) {
 				continue;
 			}
@@ -75,11 +74,11 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 
 			} else if (param.enum_items.size() > 0) {
 				std::string hint_string;
-				for (unsigned int i = 0; i < param.enum_items.size(); ++i) {
-					if (i > 0) {
+				for (unsigned int item_index = 0; item_index < param.enum_items.size(); ++item_index) {
+					if (item_index > 0) {
 						hint_string += ",";
 					}
-					hint_string += param.enum_items[i];
+					hint_string += param.enum_items[item_index];
 				}
 				pi.hint_string = to_godot(hint_string);
 				pi.hint = PROPERTY_HINT_ENUM;
