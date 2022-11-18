@@ -68,6 +68,14 @@ struct Vector2T {
 	inline Vector2T operator*(const T p_scalar) const {
 		return Vector2T(x * p_scalar, y * p_scalar);
 	}
+
+	inline bool operator==(const Vector2T &p_v) const {
+		return x == p_v.x && y == p_v.y;
+	}
+
+	inline bool operator!=(const Vector2T &p_v) const {
+		return x != p_v.x || y != p_v.y;
+	}
 };
 
 template <typename T>

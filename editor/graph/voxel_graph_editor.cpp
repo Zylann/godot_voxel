@@ -54,6 +54,7 @@ enum ToolbarMenuIDs {
 	MENU_PREVIEW_AXES,
 	MENU_PREVIEW_AXES_XY,
 	MENU_PREVIEW_AXES_XZ,
+	MENU_PREVIEW_RESET_LOCATION,
 	MENU_GENERATE_SHADER
 };
 
@@ -111,6 +112,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 				sub_menu->set_name("PreviewAxisMenu");
 				sub_menu->add_radio_check_item("XY", MENU_PREVIEW_AXES_XY);
 				sub_menu->add_radio_check_item("XZ", MENU_PREVIEW_AXES_XZ);
+				sub_menu->add_item("Reset location", MENU_PREVIEW_RESET_LOCATION);
 				sub_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_menu_id_pressed));
 				popup_menu->add_child(sub_menu);
 				popup_menu->add_submenu_item(TTR("Preview Axes"), sub_menu->get_name(), MENU_PREVIEW_AXES);
@@ -454,6 +456,8 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	VoxelGraphEditorNodePreview *preview = node_view->get_preview();
 	if (preview != nullptr) {
 		preview->update_display_settings(**_graph, node_id);
+
+		preview->connect("gui_input", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_preview_gui_input));
 	}
 
 	_graph_edit->add_child(node_view);
@@ -746,6 +750,10 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 			update_preview_axes_menu();
 			break;
 
+		case MENU_PREVIEW_RESET_LOCATION:
+			set_preview_transform(Vector2f(0, 0), 1.f);
+			break;
+
 		case MENU_PROFILE:
 			profile();
 			break;
@@ -823,6 +831,50 @@ void VoxelGraphEditor::set_node_size(int id, Vector2 size) {
 	// This function is used solely for the UI, since we should not pass node pointers directly to UndoRedo, they could
 	// have been deleted when the Undo action is called later
 	//_graph->set_node_gui_size(id, size / EDSCALE);
+}
+
+void VoxelGraphEditor::_on_graph_node_preview_gui_input(Ref<InputEvent> event) {
+	Ref<InputEventMouseMotion> mm = event;
+	if (mm.is_valid()) {
+		// Ctrl+Drag above any preview to pan around the area they render.
+		if (mm->is_command_or_control_pressed() &&
+				(mm->get_button_mask() & MouseButton::MASK_MIDDLE) != MouseButton::NONE) {
+			const Vector2 rel = mm->get_relative();
+			set_preview_transform(_preview_offset - Vector2f(rel.x, -rel.y) * _preview_scale, _preview_scale);
+
+			// Prevent panning of GraphEdit
+			get_viewport()->set_input_as_handled();
+		}
+	}
+
+	Ref<InputEventMouseButton> mb = event;
+	if (mb.is_valid()) {
+		// Ctrl+Wheel above any preview to zoom in and out the area they render.
+		if (mb->is_command_or_control_pressed()) {
+			const float base_factor = 1.1f;
+			if (mb->get_button_index() == MouseButton::WHEEL_UP) {
+				set_preview_transform(_preview_offset, _preview_scale / base_factor);
+				// Prevent panning of GraphEdit
+				get_viewport()->set_input_as_handled();
+			}
+			if (mb->get_button_index() == MouseButton::WHEEL_DOWN) {
+				set_preview_transform(_preview_offset, _preview_scale * base_factor);
+				// Prevent panning of GraphEdit
+				get_viewport()->set_input_as_handled();
+			}
+		}
+	}
+}
+
+void VoxelGraphEditor::set_preview_transform(Vector2f offset, float scale) {
+	if (offset != _preview_offset || scale != _preview_scale) {
+		_preview_offset = offset;
+		_preview_scale = scale;
+		// Update quickly
+		if (_time_before_preview_update <= 0.f) {
+			_time_before_preview_update = 0.1f;
+		}
+	}
 }
 
 Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 local_mouse_pos) {
@@ -1089,8 +1141,11 @@ void VoxelGraphEditor::update_slice_previews() {
 		y_vec.resize(buffer_size);
 		z_vec.resize(buffer_size);
 
-		const Vector3f min_pos(-preview_size_x / 2, -preview_size_y / 2, 0);
-		const Vector3f max_pos = min_pos + Vector3f(preview_size_x, preview_size_x, 0);
+		const float view_size_x = _preview_scale * float(preview_size_x);
+		const float view_size_y = _preview_scale * float(preview_size_x);
+		const Vector3f min_pos =
+				Vector3f(-view_size_x * 0.5f + _preview_offset.x, -view_size_y * 0.5f + _preview_offset.y, 0);
+		const Vector3f max_pos = min_pos + Vector3f(view_size_x, view_size_y, 0);
 
 		int i = 0;
 		for (int iy = 0; iy < preview_size_x; ++iy) {
@@ -1405,6 +1460,8 @@ void VoxelGraphEditor::_bind_methods() {
 			&VoxelGraphEditor::_on_function_quick_open_dialog_quick_open);
 	ClassDB::bind_method(
 			D_METHOD("_on_node_resize_request", "new_size", "node_id"), &VoxelGraphEditor::_on_node_resize_request);
+	ClassDB::bind_method(
+			D_METHOD("_on_graph_node_preview_gui_input", "event"), &VoxelGraphEditor::_on_graph_node_preview_gui_input);
 #endif
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
