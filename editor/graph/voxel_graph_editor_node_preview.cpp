@@ -101,7 +101,8 @@ void VoxelGraphEditorNodePreview::update_from_buffer(const pg::Runtime::Buffer &
 void VoxelGraphEditorNodePreview::update_display_settings(const pg::VoxelGraphFunction &graph, uint32_t node_id) {
 	const float min_value = graph.get_node_param(node_id, 0);
 	const float max_value = graph.get_node_param(node_id, 1);
-	const int mode = graph.get_node_param(node_id, 2);
+	const float fraction_period = graph.get_node_param(node_id, 2);
+	const int mode = graph.get_node_param(node_id, 3);
 
 	// Note, remap is only used with greyscale display mode, such that min is black and max is white.
 	// When using SDF it's more useful to keep -1..1 to measure distortions of the field.
@@ -113,7 +114,7 @@ void VoxelGraphEditorNodePreview::update_display_settings(const pg::VoxelGraphFu
 	_material->set_shader(g_mode_shaders[mode]);
 	_material->set_shader_parameter("u_remap", Vector2(remap_a, remap_b));
 	_material->set_shader_parameter("u_fraction_amount", 0.5);
-	_material->set_shader_parameter("u_fraction_frequency", 0.1);
+	_material->set_shader_parameter("u_fraction_frequency", fraction_period > 0.0001f ? 1.f / fraction_period : 0.f);
 	_material->set_shader_parameter("u_negative_color", Color(0.5, 0.5, 1.0, 1.0));
 	_material->set_shader_parameter("u_positive_color", Color(1.0, 0.7, 0.0, 1.0));
 }

@@ -1593,6 +1593,7 @@ NodeTypeDB::NodeTypeDB() {
 
 		t.params.push_back(NodeType::Param("min_value", Variant::FLOAT, -1.f));
 		t.params.push_back(NodeType::Param("max_value", Variant::FLOAT, 1.f));
+		t.params.push_back(NodeType::Param("fraction_period", Variant::FLOAT, 10.f));
 
 		// Matches an enum in editor code `VoxelGraphEditorNodePreview`
 		NodeType::Param mode_param("mode", Variant::INT, 0);
