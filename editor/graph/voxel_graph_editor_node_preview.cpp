@@ -11,7 +11,7 @@ const char *g_sdf_greyscale_shader_code = //
 		"uniform vec2 u_remap = vec2(1.0, 0.0);\n"
 		"void fragment() {\n"
 		"    float sd = texture(TEXTURE, UV).r;\n"
-		"    sd *= u_remap.x * sd + u_remap.y;\n"
+		"    sd = u_remap.x * sd + u_remap.y;\n"
 		"    float g = clamp(sd, 0.0, 1.0);\n"
 		"    COLOR = vec4(g, g, g, 1.0);\n"
 		"}\n";
