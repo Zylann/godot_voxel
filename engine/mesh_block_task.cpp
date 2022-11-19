@@ -158,10 +158,10 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 		for (unsigned int i = 0; i < boxes_to_generate.size(); ++i) {
 			const Box3i &box = boxes_to_generate[i];
-			//print_line(String("size={0}").format(varray(box.size.to_vec3())));
+			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
-			//generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
-			//VoxelBufferInternal::CHANNEL_SDF);
+			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
+			// VoxelBufferInternal::CHANNEL_SDF);
 			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
 
 			if (generator.is_valid()) {
@@ -237,7 +237,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 
 namespace {
 std::atomic_int g_debug_mesh_tasks_count;
-} //namespace
+} // namespace
 
 MeshBlockTask::MeshBlockTask() {
 	++g_debug_mesh_tasks_count;

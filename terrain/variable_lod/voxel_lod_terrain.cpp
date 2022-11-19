@@ -332,7 +332,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 	Ref<VoxelStream> stream = get_stream();
 
 	if (stream.is_valid()) {
-		//const int stream_block_size_po2 = _stream->get_block_size_po2();
+		// const int stream_block_size_po2 = _stream->get_block_size_po2();
 		//_set_block_size_po2(stream_block_size_po2);
 
 		// TODO We have to figure out streams that have a LOD requirement
@@ -532,7 +532,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 }
 
 void VoxelLodTerrain::post_edit_modifiers(Box3i p_voxel_box) {
-	//clear_cached_blocks_in_voxel_area(*_data, p_voxel_box);
+	// clear_cached_blocks_in_voxel_area(*_data, p_voxel_box);
 	_data->clear_cached_blocks_in_voxel_area(p_voxel_box);
 	// Not sure if it is worth re-caching these blocks. We may see about that in the future if performance is an issue.
 
@@ -706,7 +706,7 @@ void VoxelLodTerrain::reset_maps() {
 	// Clears all blocks and reconfigures maps to account for new LOD count and block sizes
 
 	// Don't reset while streaming, the result can be dirty?
-	//CRASH_COND(_stream_thread != nullptr);
+	// CRASH_COND(_stream_thread != nullptr);
 
 	_update_data->wait_for_end_of_task();
 
@@ -735,7 +735,7 @@ void VoxelLodTerrain::reset_mesh_maps() {
 			});
 		}
 
-		//mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
+		// mesh_map.for_each_block(BeforeUnloadMeshAction{ _shader_material_pool });
 
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < lod_count) {
@@ -925,7 +925,7 @@ void VoxelLodTerrain::_notification(int p_what) {
 			}
 #endif
 			// DEBUG
-			//set_show_gizmos(true);
+			// set_show_gizmos(true);
 		} break;
 
 		case NOTIFICATION_EXIT_WORLD: {
@@ -1024,7 +1024,7 @@ void VoxelLodTerrain::process(float delta) {
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
-	//process_block_loading_responses();
+	// process_block_loading_responses();
 
 	// TODO This could go into time spread tasks too
 	process_deferred_collision_updates(VoxelEngine::get_singleton().get_main_thread_time_budget_usec());
@@ -1094,7 +1094,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (block == nullptr) {
 				continue;
 			}
-			//ERR_CONTINUE(block == nullptr);
+			// ERR_CONTINUE(block == nullptr);
 			bool with_fading = false;
 			if (_lod_fade_duration > 0.f) {
 				const Vector3 block_center = volume_transform.xform(
@@ -1113,7 +1113,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (block == nullptr) {
 				continue;
 			}
-			//ERR_CONTINUE(block == nullptr);
+			// ERR_CONTINUE(block == nullptr);
 			bool with_fading = false;
 			if (_lod_fade_duration > 0.f) {
 				const Vector3 block_center = volume_transform.xform(
@@ -1166,7 +1166,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				*/
 				continue;
 			}
-			//CRASH_COND(block == nullptr);
+			// CRASH_COND(block == nullptr);
 			if (block->active) {
 				Ref<ShaderMaterial> shader_material = block->get_shader_material();
 
@@ -1188,7 +1188,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						item.progress = 1.f;
 
 						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
-						//item.shader_material = shader_material->duplicate(false);
+						// item.shader_material = shader_material->duplicate(false);
 						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());
 						copy_shader_params(**shader_material, **item.shader_material,
@@ -1290,7 +1290,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 
 		//				print_line(String("Received a block loading drop while we were still expecting it: lod{0} ({1},
 		//{2}, {3})") 								   .format(varray(ob.lod, ob.position.x, ob.position.y,
-		//ob.position.z)));
+		// ob.position.z)));
 
 		++_stats.dropped_block_loads;
 		return;
@@ -1444,8 +1444,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 		// Lazy initialization
 
-		//print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
-		//set_mesh_block_active(*block, false);
+		// print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
+		// set_mesh_block_active(*block, false);
 		block->set_parent_visible(is_visible());
 		block->set_world(get_world_3d());
 
@@ -1776,7 +1776,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 
 	{
 		ZN_PROFILE_SCOPE();
-		//ZN_PROFILE_PLOT("fading_out_meshes", int64_t(_fading_out_meshes.size()));
+		// ZN_PROFILE_PLOT("fading_out_meshes", int64_t(_fading_out_meshes.size()));
 		for (unsigned int i = 0; i < _fading_out_meshes.size();) {
 			FadingOutMesh &item = _fading_out_meshes[i];
 			item.progress -= speed;
@@ -1788,7 +1788,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 				// updates hundreds of materials (supposedly from every block). Can take 1ms for a single instance,
 				// while the rest of the work is barely 1%! Why is Godot doing this? I tried resetting the material like
 				// with blocks, but that didn't improve anything...
-				//item.mesh_instance.set_material_override(Ref<Material>());
+				// item.mesh_instance.set_material_override(Ref<Material>());
 				_fading_out_meshes[i] = std::move(_fading_out_meshes.back());
 				_fading_out_meshes.pop_back();
 			} else {
@@ -2805,7 +2805,7 @@ void VoxelLodTerrain::_bind_methods() {
 			D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &VoxelLodTerrain::debug_set_draw_flag);
 	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &VoxelLodTerrain::debug_get_draw_flag);
 
-	//ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
+	// ClassDB::bind_method(D_METHOD("_on_stream_params_changed"), &VoxelLodTerrain::_on_stream_params_changed);
 
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_IDLE);
 	BIND_ENUM_CONSTANT(PROCESS_CALLBACK_PHYSICS);

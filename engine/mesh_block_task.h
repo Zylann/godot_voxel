@@ -29,7 +29,7 @@ public:
 	// 3x3x3 or 4x4x4 grid of voxel blocks.
 	FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 	// TODO Need to provide format
-	//FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
+	// FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 	Vector3i mesh_block_position; // In mesh blocks of the specified lod
 	uint32_t volume_id;
 	uint8_t lod_index = 0;

@@ -193,8 +193,8 @@ static void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::St
 			RWLockWrite wlock(lod.mesh_map_state.map_lock);
 			prev_box.difference(new_box, [&lod](Box3i out_of_range_box) {
 				out_of_range_box.for_each_cell([&lod](Vector3i pos) {
-					//print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
-					//unload_mesh_block(pos, lod_index);
+					// print_line(String("Immerge {0}").format(varray(pos.to_vec3())));
+					// unload_mesh_block(pos, lod_index);
 					lod.mesh_map_state.map.erase(pos);
 					lod.mesh_blocks_to_unload.push_back(pos);
 				});
@@ -337,7 +337,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
-	//ZN_PROFILE_SCOPE();
+	// ZN_PROFILE_SCOPE();
 
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
@@ -630,7 +630,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				CRASH_COND(mesh_block_it == lod.mesh_map_state.map.end());
 				CRASH_COND(mesh_block_it->second.state != VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
 
-				//self->set_mesh_block_active(*block, true);
+				// self->set_mesh_block_active(*block, true);
 				lod.mesh_blocks_to_activate.push_back(bpos);
 				mesh_block_it->second.active = true;
 				lods_to_update_transitions |= (0b111 << lod_index);
@@ -642,7 +642,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
 				if (mesh_block_it != lod.mesh_map_state.map.end()) {
-					//self->set_mesh_block_active(*block, false);
+					// self->set_mesh_block_active(*block, false);
 					mesh_block_it->second.active = false;
 					lod.mesh_blocks_to_deactivate.push_back(bpos);
 					lods_to_update_transitions |= (0b111 << lod_index);
@@ -660,7 +660,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				// Otherwise, there must always be a visible parent in the end, unless the octree vanished.
 				if (mesh_block_it != lod.mesh_map_state.map.end() &&
 						mesh_block_it->second.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE) {
-					//self->set_mesh_block_active(*block, true);
+					// self->set_mesh_block_active(*block, true);
 					mesh_block_it->second.active = true;
 					lod.mesh_blocks_to_activate.push_back(bpos);
 					lods_to_update_transitions |= (0b111 << lod_index);
