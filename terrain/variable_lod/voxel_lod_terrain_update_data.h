@@ -60,8 +60,10 @@ struct VoxelLodTerrainUpdateData {
 		// Not really exposed for now, will wait for it to be really needed. It might never be.
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
+		uint8_t virtual_texture_generator_override_begin_lod_index = 0;
 		unsigned int mesh_block_size_po2 = 4;
 		NormalMapSettings virtual_texture_settings;
+		Ref<VoxelGenerator> virtual_texture_generator_override;
 	};
 
 	enum MeshState {

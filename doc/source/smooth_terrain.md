@@ -479,7 +479,7 @@ This technique has some limitations:
 - Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
 
 
-### Distance normals
+### Virtual rendering of normalmaps
 
 LOD decimates geometric details quite fast in the distance. It can be tuned up, but it quickly gets very expensive to generate and render a lot of polygons. An alternative is to generate normalmaps instead for medium/far meshes, to give the illusion of detail on otherwise flat polygons.
 
@@ -500,6 +500,12 @@ The number of polygons is the same:
 This can be turned on in the inspector when using `VoxelLodTerrain`. The cost is slower mesh generation and more memory usage to store normalmap textures.
 
 This feature is only available in `VoxelLodTerrain`. It also works best with data streaming turned off (`full_load_mode_enabled`), because being able to see all details from far away requires to not unload edited blocks. It will still use the generator if data streaming is on, but you won't see edited regions.
+
+Despite improving detail at lower cost than geometry, virtual rendering is significantly more expensive than generating regular blocks. Several ways to optimize it are:
+
+- Tweak tile sizes and LOD levels. The bigger tiles are, the higher the quality, but the more expensive it gets. Also the feature is usually not doing much if used at LODs 0 and 1, so usually a good default is to begin at LOD 2, with minimum tile size 4 and maximum 16.
+- Use a simplified version of the `VoxelGenerator`. It is possible to override the generator that will be used to compute normalmaps, with `VoxelLodTerrain.set_normalmap_generator_override`. A typical use case is when the generator can produce caves. Caves don't have enough impact on surface visuals, so they could be ignored beyond a certain LOD level.
+- Use SIMD noise. Noise is often the biggest bottleneck. In general, SIMD noise such as `FastNoise2` will perform better.
 
 #### Shader 
 

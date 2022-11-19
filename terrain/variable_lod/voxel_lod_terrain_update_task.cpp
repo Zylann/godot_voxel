@@ -1006,6 +1006,9 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 			task->data = data_ptr;
 			task->collision_hint = settings.collision_enabled;
 			task->virtual_texture_settings = settings.virtual_texture_settings;
+			task->virtual_texture_generator_override = settings.virtual_texture_generator_override;
+			task->virtual_texture_generator_override_begin_lod_index =
+					settings.virtual_texture_generator_override_begin_lod_index;
 
 			// Don't update a virtual texture if one update is already processing
 			if (settings.virtual_texture_settings.enabled &&

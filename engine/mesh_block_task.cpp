@@ -340,7 +340,13 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		nm_task->mesh_vertices = mesh_arrays.vertices;
 		nm_task->mesh_normals = mesh_arrays.normals;
 		nm_task->mesh_indices = mesh_arrays.indices;
-		nm_task->generator = meshing_dependency->generator;
+		if (virtual_texture_generator_override.is_valid()) {
+			nm_task->generator = lod_index >= virtual_texture_generator_override_begin_lod_index
+					? virtual_texture_generator_override
+					: meshing_dependency->generator;
+		} else {
+			nm_task->generator = meshing_dependency->generator;
+		}
 		nm_task->voxel_data = data;
 		nm_task->mesh_block_size = mesh_block_size;
 		nm_task->lod_index = lod_index;

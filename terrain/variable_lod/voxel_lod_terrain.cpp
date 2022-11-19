@@ -2085,6 +2085,25 @@ bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
 	return _update_data->settings.virtual_texture_settings.octahedral_encoding_enabled;
 }
 
+void VoxelLodTerrain::set_normalmap_generator_override(Ref<VoxelGenerator> generator_override) {
+	_update_data->wait_for_end_of_task();
+	_update_data->settings.virtual_texture_generator_override = generator_override;
+}
+
+Ref<VoxelGenerator> VoxelLodTerrain::get_normalmap_generator_override() const {
+	return _update_data->settings.virtual_texture_generator_override;
+}
+
+void VoxelLodTerrain::set_normalmap_generator_override_begin_lod_index(int lod_index) {
+	ERR_FAIL_COND(lod_index < 0);
+	ERR_FAIL_COND(lod_index > constants::MAX_LOD);
+	_update_data->settings.virtual_texture_generator_override_begin_lod_index = lod_index;
+}
+
+int VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index() const {
+	return _update_data->settings.virtual_texture_generator_override_begin_lod_index;
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -2763,6 +2782,16 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_octahedral_normal_encoding", "enabled"), &VoxelLodTerrain::set_octahedral_normal_encoding);
 	ClassDB::bind_method(D_METHOD("get_octahedral_normal_encoding"), &VoxelLodTerrain::get_octahedral_normal_encoding);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_generator_override", "generator_override"),
+			&VoxelLodTerrain::set_normalmap_generator_override);
+	ClassDB::bind_method(
+			D_METHOD("get_normalmap_generator_override"), &VoxelLodTerrain::get_normalmap_generator_override);
+
+	ClassDB::bind_method(D_METHOD("set_normalmap_generator_override_begin_lod_index", "lod_index"),
+			&VoxelLodTerrain::set_normalmap_generator_override_begin_lod_index);
+	ClassDB::bind_method(D_METHOD("get_normalmap_generator_override_begin_lod_index"),
+			&VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index);
 
 	// Advanced
 

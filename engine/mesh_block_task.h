@@ -40,10 +40,12 @@ public:
 	// Virtual textures might be enabled, but we don't always want to update them in every mesh update.
 	// So this boolean is also checked to know if they should be computed.
 	bool require_virtual_texture = false;
+	uint8_t virtual_texture_generator_override_begin_lod_index = 0;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelData> data;
 	NormalMapSettings virtual_texture_settings;
+	Ref<VoxelGenerator> virtual_texture_generator_override;
 
 private:
 	bool _has_run = false;

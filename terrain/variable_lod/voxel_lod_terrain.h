@@ -114,6 +114,12 @@ public:
 	void set_normalmap_max_deviation_degrees(int angle);
 	int get_normalmap_max_deviation_degrees() const;
 
+	void set_normalmap_generator_override(Ref<VoxelGenerator> generator_override);
+	Ref<VoxelGenerator> get_normalmap_generator_override() const;
+
+	void set_normalmap_generator_override_begin_lod_index(int lod_index);
+	int get_normalmap_generator_override_begin_lod_index() const;
+
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 	void post_edit_modifiers(Box3i p_voxel_box);
