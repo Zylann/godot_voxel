@@ -304,7 +304,7 @@ Error Data::_load_from_file(String fpath) {
 			const int frame_count = f.get_32();
 			ERR_FAIL_COND_V(frame_count != 1, ERR_INVALID_DATA);
 
-			//for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
+			// for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
 
 			std::unordered_map<String, String> frame;
 			const Error frame_err = parse_dictionary(f, frame);
@@ -315,7 +315,7 @@ Error Data::_load_from_file(String fpath) {
 				// It is 3 integers formatted as text
 				const PackedFloat32Array coords = t_it->second.split_floats(" ");
 				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
-				//ZN_PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
+				// ZN_PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
 				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
 			}
 
@@ -360,7 +360,7 @@ Error Data::_load_from_file(String fpath) {
 			const unsigned int model_count = f.get_32();
 			ERR_FAIL_COND_V(model_count != 1, ERR_INVALID_DATA);
 
-			//for (unsigned int i = 0; i < model_count; ++i) {
+			// for (unsigned int i = 0; i < model_count; ++i) {
 
 			node.model_id = f.get_32();
 			ERR_FAIL_COND_V(node.model_id > 65536, ERR_INVALID_DATA);
