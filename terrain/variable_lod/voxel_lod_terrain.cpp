@@ -2096,7 +2096,7 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_normalmap_generator_override() const {
 
 void VoxelLodTerrain::set_normalmap_generator_override_begin_lod_index(int lod_index) {
 	ERR_FAIL_COND(lod_index < 0);
-	ERR_FAIL_COND(lod_index > constants::MAX_LOD);
+	ERR_FAIL_COND(lod_index > static_cast<int>(constants::MAX_LOD));
 	_update_data->settings.virtual_texture_generator_override_begin_lod_index = lod_index;
 }
 
