@@ -313,7 +313,7 @@ Error Data::_load_from_file(String fpath) {
 			auto t_it = frame.find("_t");
 			if (t_it != frame.end()) {
 				// It is 3 integers formatted as text
-				const PackedFloat32Array coords = t_it->second.split_floats(" ");
+				const PackedFloat64Array coords = t_it->second.split_floats(" ");
 				ERR_FAIL_COND_V(coords.size() < 3, ERR_PARSE_ERROR);
 				// ZN_PRINT_VERBOSE(String("Pos: {0}, {1}, {2}").format(varray(coords[0], coords[1], coords[2])));
 				node.position = magica_to_opengl(Vector3i(coords[0], coords[1], coords[2]));
