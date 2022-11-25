@@ -303,7 +303,10 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	_debug_renderer.clear();
 
 	build_gui_from_graph();
-	update_functions();
+
+	if (_graph.is_valid()) {
+		update_functions();
+	}
 
 	// schedule_preview_update();
 }
