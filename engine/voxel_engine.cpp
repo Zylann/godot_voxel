@@ -63,6 +63,14 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	ZN_PRINT_VERBOSE(format("Size of LoadBlockDataTask: {}", sizeof(LoadBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
+
+	_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
+
+	if (_rendering_device != nullptr) {
+		_gpu_task_runner.start(_rendering_device);
+	} else {
+		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
+	}
 }
 
 VoxelEngine::~VoxelEngine() {
@@ -72,6 +80,10 @@ VoxelEngine::~VoxelEngine() {
 	// but doing it anyways for correctness, it's how it should have been...
 	// See https://github.com/Zylann/godot_voxel/issues/189
 	wait_and_clear_all_tasks(true);
+
+	if (_rendering_device != nullptr) {
+		memdelete(_rendering_device);
+	}
 }
 
 void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
@@ -220,6 +232,10 @@ void VoxelEngine::push_async_io_task(zylann::IThreadedTask *task) {
 
 void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks, true);
+}
+
+void VoxelEngine::push_gpu_task(IGPUTask *task) {
+	_gpu_task_runner.push(task);
 }
 
 void VoxelEngine::process() {

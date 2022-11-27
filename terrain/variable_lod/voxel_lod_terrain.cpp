@@ -1021,6 +1021,17 @@ void VoxelLodTerrain::process(float delta) {
 		return;
 	}
 
+	// TODO It is currently not possible to fully compile those shaders on the fly in a thread.
+	// The GLSL functions of VoxelGenerator need to be thread-safe. Compiling should be safe, but getting the source
+	// code isn't. VoxelGeneratorGraph's shader generation is not thread-safe, because it accesses its graph.
+	if (get_normalmap_use_gpu()) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid() && generator->supports_glsl() &&
+				generator->get_virtual_rendering_shader() == nullptr) {
+			generator->compile_shaders();
+		}
+	}
+
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
 	// It should only happen on first load, though.
@@ -2104,6 +2115,15 @@ int VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index() const {
 	return _update_data->settings.virtual_texture_generator_override_begin_lod_index;
 }
 
+void VoxelLodTerrain::set_normalmap_use_gpu(bool enabled) {
+	_update_data->settings.virtual_textures_use_gpu = enabled;
+	update_configuration_warnings();
+}
+
+bool VoxelLodTerrain::get_normalmap_use_gpu() const {
+	return _update_data->settings.virtual_textures_use_gpu;
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -2206,6 +2226,12 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 															ShaderMaterial::get_class_static(), missing_uniforms)));
 						}
 					}
+				}
+
+				if (get_normalmap_use_gpu() && !generator->supports_glsl()) {
+					warnings.append(ZN_TTR("Normalmaps are enabled with the option to use the GPU, but the current "
+										   "generator ({0}) does not support GLSL.")
+											.format(varray(generator->get_class())));
 				}
 			}
 		}
@@ -2793,6 +2819,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_normalmap_generator_override_begin_lod_index"),
 			&VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index);
 
+	ClassDB::bind_method(D_METHOD("set_normalmap_use_gpu", "enabled"), &VoxelLodTerrain::set_normalmap_use_gpu);
+	ClassDB::bind_method(D_METHOD("get_normalmap_use_gpu"), &VoxelLodTerrain::get_normalmap_use_gpu);
+
 	// Advanced
 
 	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelLodTerrain::get_mesh_block_size);
@@ -2878,6 +2907,7 @@ void VoxelLodTerrain::_bind_methods() {
 			"get_normalmap_max_deviation_degrees");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_octahedral_encoding_enabled"), "set_octahedral_normal_encoding",
 			"get_octahedral_normal_encoding");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "normalmap_use_gpu"), "set_normalmap_use_gpu", "get_normalmap_use_gpu");
 
 	ADD_GROUP("Collisions", "");
 

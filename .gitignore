@@ -13,3 +13,5 @@
 *.pdb
 *.dll
 *.ilk
+
+shaders/.godot/

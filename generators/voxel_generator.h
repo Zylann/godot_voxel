@@ -9,6 +9,7 @@
 namespace zylann::voxel {
 
 class VoxelBufferInternal;
+class ComputeShader;
 
 namespace gd {
 class VoxelBuffer;
@@ -62,6 +63,18 @@ public:
 	// Declares the channels this generator will use
 	virtual int get_used_channels_mask() const;
 
+	// GPU support
+
+	virtual bool supports_glsl() const {
+		return false;
+	}
+
+	virtual String get_glsl() const;
+	std::shared_ptr<ComputeShader> get_virtual_rendering_shader();
+	void compile_shaders();
+
+	// Editor
+
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const {}
 #endif
@@ -70,6 +83,9 @@ protected:
 	static void _bind_methods();
 
 	void _b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+
+	std::shared_ptr<ComputeShader> _virtual_rendering_shader;
+	Mutex _shader_mutex;
 };
 
 } // namespace zylann::voxel

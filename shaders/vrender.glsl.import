@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://rldkwqe2x241"
+path="res://.godot/imported/vrender.glsl-b0433962302622c2d4adfa1d87f8ee46.res"
+
+[deps]
+
+source_file="res://vrender.glsl"
+dest_files=["res://.godot/imported/vrender.glsl-b0433962302622c2d4adfa1d87f8ee46.res"]
+
+[params]
+

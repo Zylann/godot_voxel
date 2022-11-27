@@ -73,6 +73,7 @@ def get_sources(env, is_editor_build):
         "util/godot/node.cpp",
         "util/godot/object.cpp",
         "util/godot/project_settings.cpp",
+        "util/godot/rendering_device.cpp",
         "util/godot/rendering_server.cpp",
         "util/godot/resource_loader.cpp",
         "util/godot/shader_material_pool.cpp",

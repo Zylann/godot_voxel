@@ -10,6 +10,8 @@
 
 namespace zylann::voxel {
 
+class GenerateDistanceNormalMapGPUTask;
+
 // Renders textures providing extra details to far away voxel meshes.
 // This is separate from the meshing task because it takes significantly longer to complete. It has different priority
 // so most of the time we can get the mesh earlier and affine later with the results.
@@ -27,6 +29,7 @@ public:
 	std::shared_ptr<VoxelData> voxel_data;
 	Vector3i mesh_block_size;
 	uint8_t lod_index;
+	bool use_gpu = false;
 	NormalMapSettings virtual_texture_settings;
 
 	// Output (to be assigned so it can be populated)
@@ -41,6 +44,30 @@ public:
 	void apply_result() override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;
+
+	// This is exposed for testing
+	GenerateDistanceNormalMapGPUTask *make_gpu_task();
+
+private:
+	void run_on_cpu();
+	void run_on_gpu();
+};
+
+// Performs final operations on the CPU after the GPU work is done
+class RenderVirtualTexturePass2Task : public IThreadedTask {
+public:
+	PackedByteArray atlas_data;
+	std::vector<NormalMapData::Tile> tile_data;
+	std::shared_ptr<VirtualTextureOutput> virtual_textures;
+	uint32_t volume_id;
+	Vector3i mesh_block_position;
+	Vector3i mesh_block_size;
+	uint16_t atlas_width;
+	uint16_t atlas_height;
+	uint8_t lod_index;
+
+	void run(ThreadedTaskContext ctx) override;
+	void apply_result() override;
 };
 
 } // namespace zylann::voxel

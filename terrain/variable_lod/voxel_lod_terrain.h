@@ -120,6 +120,9 @@ public:
 	void set_normalmap_generator_override_begin_lod_index(int lod_index);
 	int get_normalmap_generator_override_begin_lod_index() const;
 
+	void set_normalmap_use_gpu(bool enabled);
+	bool get_normalmap_use_gpu() const;
+
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 	void post_edit_modifiers(Box3i p_voxel_box);

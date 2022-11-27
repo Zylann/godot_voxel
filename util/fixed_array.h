@@ -93,6 +93,43 @@ public:
 		return ConstIterator(_data + N);
 	}
 
+	class Iterator {
+	public:
+		inline Iterator(T *p) : _current(p) {}
+
+		inline T &operator*() {
+			return *_current;
+		}
+
+		inline T *operator->() {
+			return _current;
+		}
+
+		inline Iterator &operator++() {
+			++_current;
+			return *this;
+		}
+
+		inline bool operator==(Iterator other) const {
+			return _current == other._current;
+		}
+
+		inline bool operator!=(Iterator other) const {
+			return _current != other._current;
+		}
+
+	private:
+		T *_current;
+	};
+
+	inline Iterator begin() {
+		return Iterator(_data);
+	}
+
+	inline Iterator end() {
+		return Iterator(_data + N);
+	}
+
 private:
 	T _data[N];
 };

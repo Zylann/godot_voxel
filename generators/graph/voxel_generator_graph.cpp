@@ -1256,7 +1256,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
-String VoxelGeneratorGraph::generate_shader() {
+String VoxelGeneratorGraph::generate_shader() const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_main_function.is_null(), "");
 	const ProgramGraph &graph = _main_function->get_graph();

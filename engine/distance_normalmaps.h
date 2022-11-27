@@ -86,6 +86,7 @@ public:
 	virtual ~ICellIterator() {}
 	virtual unsigned int get_count() const = 0;
 	virtual bool next(CurrentCellInfo &info) = 0;
+	virtual void rewind() = 0;
 };
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
@@ -115,6 +116,8 @@ struct NormalMapTextures {
 	Ref<Texture2D> lookup;
 };
 
+Ref<Image> store_lookup_to_image(const std::vector<NormalMapData::Tile> &tiles, Vector3i block_size);
+
 NormalMapImages store_normalmap_data_to_images(
 		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding);
 
@@ -130,6 +133,11 @@ struct VirtualTextureOutput {
 	// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
 	std::atomic_bool valid;
 };
+
+// Given a number of items, tells which size a 2D square grid should be in order to contain them
+inline unsigned int get_square_grid_size_from_item_count(unsigned int item_count) {
+	return int(Math::ceil(Math::sqrt(double(item_count))));
+}
 
 } // namespace zylann::voxel
 

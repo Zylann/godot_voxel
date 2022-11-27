@@ -1,5 +1,7 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
+#include "../engine/compute_shader.h"
+#include "../engine/virtual_rendering_compute_shader.h"
 #include "../storage/voxel_buffer_gd.h"
 
 namespace zylann::voxel {
@@ -46,6 +48,28 @@ void VoxelGenerator::_b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 
 	ERR_FAIL_COND(out_buffer.is_null());
 	VoxelQueryData q = { out_buffer->get_buffer(), origin_in_voxels, uint8_t(lod) };
 	generate_block(q);
+}
+
+String VoxelGenerator::get_glsl() const {
+	ZN_PRINT_ERROR("Not implemented");
+	return "";
+}
+
+std::shared_ptr<ComputeShader> VoxelGenerator::get_virtual_rendering_shader() {
+	{
+		MutexLock mlock(_shader_mutex);
+		return _virtual_rendering_shader;
+	}
+}
+
+void VoxelGenerator::compile_shaders() {
+	ERR_FAIL_COND(!supports_glsl());
+	ZN_PRINT_VERBOSE("Compiling compute shaders for virtual rendering");
+	std::shared_ptr<ComputeShader> vrender_shader = compile_virtual_rendering_compute_shader(*this);
+	{
+		MutexLock mlock(_shader_mutex);
+		_virtual_rendering_shader = vrender_shader;
+	}
 }
 
 void VoxelGenerator::_bind_methods() {

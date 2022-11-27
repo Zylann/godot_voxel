@@ -10,7 +10,12 @@
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
 #include "distance_normalmaps.h"
+#include "gpu_task_runner.h"
 #include "priority_dependency.h"
+
+#include "../util/godot/rendering_device.h"
+
+ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 
 namespace zylann::voxel {
 
@@ -167,6 +172,7 @@ public:
 	void push_async_io_task(IThreadedTask *task);
 	// Thread-safe.
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
+	void push_gpu_task(IGPUTask *task);
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -197,6 +203,14 @@ public:
 	};
 
 	Stats get_stats() const;
+
+	RenderingDevice *get_rendering_device() {
+		return _rendering_device;
+	}
+
+	Mutex &get_rendering_device_mutex() {
+		return _rendering_device_mutex;
+	}
 
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
@@ -240,6 +254,13 @@ private:
 	FileLocker _file_locker;
 
 	bool _threaded_graphics_resource_building_enabled = false;
+
+	// Rendering device used for compute shaders. May not be available depending on the chosen renderer.
+	RenderingDevice *_rendering_device = nullptr;
+	// TODO Can `RenderingDevice` be used on multiple threads? There is no documentation.
+	// So I'll assume I can't...
+	Mutex _rendering_device_mutex;
+	GPUTaskRunner _gpu_task_runner;
 };
 
 struct VoxelFileLockerRead {

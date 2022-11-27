@@ -1,8 +1,8 @@
 #include "voxel_graph_shader_generator.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
-#include "voxel_graph_compiler.h"
 #include "node_type_db.h"
+#include "voxel_graph_compiler.h"
 
 namespace zylann::voxel::pg {
 
@@ -56,7 +56,8 @@ CompilationResult generate_shader(
 	std::stringstream lib_ss;
 	CodeGenHelper codegen(main_ss, lib_ss);
 
-	codegen.add("float get_sdf(vec3 pos) {\n");
+	// This function name is chosen to match the expected signature when used with normalmap baking compute shaders.
+	codegen.add("float generate_sdf(vec3 pos) {\n");
 	codegen.indent();
 
 	std::unordered_map<ProgramGraph::PortLocation, std::string> port_to_var;

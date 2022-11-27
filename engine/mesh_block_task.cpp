@@ -355,6 +355,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		nm_task->virtual_textures = virtual_textures;
 		nm_task->virtual_texture_settings = virtual_texture_settings;
 		nm_task->priority_dependency = priority_dependency;
+		nm_task->use_gpu = virtual_texture_use_gpu;
 
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}

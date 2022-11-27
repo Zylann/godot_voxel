@@ -32,6 +32,23 @@ void copy_to(PackedFloat32Array &dst, const std::vector<float> &src);
 void copy_to(PackedByteArray &dst, Span<const uint8_t> src);
 void copy_to(Span<uint8_t> dst, const PackedByteArray &src);
 
+template <typename T>
+inline void copy_bytes_to(PackedByteArray &dst, Span<const T> src) {
+	const size_t bytes_count = src.size() * sizeof(T);
+	dst.resize(bytes_count);
+	uint8_t *dst_w = dst.ptrw();
+	ZN_ASSERT(dst_w != nullptr);
+	memcpy(dst_w, src.data(), bytes_count);
+}
+
+template <typename T>
+inline void copy_bytes_to(PackedByteArray &dst, T src) {
+	dst.resize(sizeof(T));
+	uint8_t *dst_w = dst.ptrw();
+	ZN_ASSERT(dst_w != nullptr);
+	memcpy(dst_w, &src, sizeof(T));
+}
+
 // TODO Can't have code using template Vector if we want to support compiling both as module and extension
 #ifdef ZN_GODOT
 template <typename T>
