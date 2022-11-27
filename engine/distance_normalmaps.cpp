@@ -338,7 +338,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 	ZN_ASSERT_RETURN_MSG(max_deviation_radians > 0.001f, "Max deviation angle is too small.");
 
 	const float max_deviation_cosine = Math::cos(max_deviation_radians);
-	const float max_deviation_sine = Math::cos(max_deviation_radians);
+	const float max_deviation_sine = Math::sin(max_deviation_radians);
 
 	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
