@@ -113,21 +113,21 @@ inline T cubed(const T x) {
 //
 // Example with division by 3:
 //
-//    x   | `/` | floordiv
-// ----------------------
-//    -6  | -2  | -2
-//    -5  | -1  | -2
-//    -4  | -1  | -2
-//    -3  | -1  | -1
-//    -2  | 0   | -1
-//    -1  | 0   | -1
-//    0   | 0   | 0
-//    1   | 0   | 0
-//    2   | 0   | 0
-//    3   | 1   | 1
-//    4   | 1   | 1
-//    5   | 1   | 1
-//    6   | 2   | 2
+//    x   | `/` | floordiv | ceildiv
+// ----------------------------------
+//    -6  | -2  | -2       | -2
+//    -5  | -1  | -2       | -1
+//    -4  | -1  | -2       | -1
+//    -3  | -1  | -1       | -1
+//    -2  | 0   | -1       | 0
+//    -1  | 0   | -1       | 0
+//    0   | 0   | 0        | 0
+//    1   | 0   | 0        | 1
+//    2   | 0   | 0        | 1
+//    3   | 1   | 1        | 1
+//    4   | 1   | 1        | 2
+//    5   | 1   | 1        | 2
+//    6   | 2   | 2        | 2
 inline int floordiv(int x, int d) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(d > 0);
@@ -139,8 +139,21 @@ inline int floordiv(int x, int d) {
 	}
 }
 
+// ceildiv(0, 10) == 0
+// ceildiv(1, 10) == 1
+// ceildiv(5, 10) == 1
+// ceildiv(10, 10) == 1
+// ceildiv(11, 10) == 2
 inline int ceildiv(int x, int d) {
-	return -floordiv(-x, d);
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(d > 0);
+#endif
+	if (x > 0) {
+		return (x + d - 1) / d;
+	} else {
+		return x / d;
+	}
+	// return -floordiv(-x, d);
 }
 
 // TODO Rename `wrapi`
