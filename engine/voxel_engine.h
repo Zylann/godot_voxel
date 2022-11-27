@@ -82,7 +82,7 @@ public:
 		inline bool check_callbacks() const {
 			ZN_ASSERT_RETURN_V(mesh_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data_output_callback != nullptr, false);
-			//ZN_ASSERT_RETURN_V(normalmap_output_callback != nullptr, false);
+			// ZN_ASSERT_RETURN_V(normalmap_output_callback != nullptr, false);
 			ZN_ASSERT_RETURN_V(data != nullptr, false);
 			return true;
 		}

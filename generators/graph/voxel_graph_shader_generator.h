@@ -10,6 +10,7 @@
 
 namespace zylann::voxel::pg {
 
+// Generates GLSL code from the given graph.
 CompilationResult generate_shader(
 		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output);
 
@@ -52,6 +53,7 @@ public:
 	}
 
 	void require_lib_code(const char *lib_name, const char *code);
+	// If the code is too long for a string constant, it can be provided as a list of strings
 	void require_lib_code(const char *lib_name, const char **code);
 
 private:

@@ -109,6 +109,8 @@ CompilationResult generate_shader(
 				}
 				continue;
 			}
+			// TODO Custom inputs
+			// TODO Custom outputs
 			default:
 				break;
 		}
