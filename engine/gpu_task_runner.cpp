@@ -47,6 +47,8 @@ void GPUTaskRunner::push(IGPUTask *task) {
 }
 
 void GPUTaskRunner::thread_func() {
+	ZN_PROFILE_SET_THREAD_NAME("Voxel GPU tasks");
+
 	std::vector<IGPUTask *> tasks;
 	unsigned int begin_index = 0;
 	unsigned int end_index = 0;
