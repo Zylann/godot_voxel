@@ -12,6 +12,8 @@
 
 namespace zylann::voxel {
 
+#include "dilate_normalmap_shader.h"
+
 VoxelEngine *g_voxel_engine = nullptr;
 
 VoxelEngine &VoxelEngine::get_singleton() {
@@ -22,6 +24,8 @@ VoxelEngine &VoxelEngine::get_singleton() {
 void VoxelEngine::create_singleton(ThreadsConfig threads_config) {
 	ZN_ASSERT_MSG(g_voxel_engine == nullptr, "Creating singleton twice");
 	g_voxel_engine = ZN_NEW(VoxelEngine(threads_config));
+	// Do separately because it involves accessing `g_voxel_engine`
+	g_voxel_engine->load_shaders();
 }
 
 void VoxelEngine::destroy_singleton() {
@@ -68,8 +72,15 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 
 	if (_rendering_device != nullptr) {
 		_gpu_task_runner.start(_rendering_device);
+
 	} else {
 		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
+	}
+}
+
+void VoxelEngine::load_shaders() {
+	if (_rendering_device != nullptr) {
+		_dilate_normalmap_shader.load_from_glsl(g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
 	}
 }
 
@@ -82,6 +93,8 @@ VoxelEngine::~VoxelEngine() {
 	wait_and_clear_all_tasks(true);
 
 	if (_rendering_device != nullptr) {
+		_dilate_normalmap_shader.clear();
+
 		memdelete(_rendering_device);
 	}
 }
@@ -307,6 +320,10 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
+}
+
+const ComputeShader &VoxelEngine::get_dilate_normalmap_compute_shader() const {
+	return _dilate_normalmap_shader;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

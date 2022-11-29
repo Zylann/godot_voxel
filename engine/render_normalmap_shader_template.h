@@ -4,8 +4,6 @@
 const char *g_render_normalmap_shader_template_0 = 
 "#version 450\n"
 "\n"
-"#define MAX_TRIANGLES_PER_CELL 5\n"
-"\n"
 "layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
 "\n"
 "// TODO When should I use `restrict` or not?\n"
@@ -178,7 +176,7 @@ const char *g_render_normalmap_shader_template_1 =
 "	const int tri_count = (tile_data.y >> 4) & 0x7;\n"
 "\n"
 "	if (tri_count == 0) {\n"
-"		//imageStore(u_target_image, pixel_pos, ivec4(255,0,255,255));\n"
+"		//imageStore(u_target_image, pixel_pos, ivec4(127,127,127,255));\n"
 "		return;\n"
 "	}\n"
 "\n"

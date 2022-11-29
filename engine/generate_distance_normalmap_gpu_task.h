@@ -64,13 +64,15 @@ public:
 	PackedByteArray collect_texture_and_cleanup(RenderingDevice &rd);
 
 private:
-	RID _texture_rid;
-	RID _pipeline_rid;
+	RID _normalmap_texture0_rid;
+	RID _normalmap_texture1_rid;
+	RID _normalmap_rendering_pipeline_rid;
+	RID _normalmap_dilation_pipeline_rid;
 	RID _mesh_vertices_rid;
 	RID _mesh_indices_rid;
 	RID _cell_triangles_rid;
 	RID _tile_data_rid;
-	RID _params_rid;
+	RID _normalmap_rendering_params_rid;
 };
 
 } // namespace zylann::voxel

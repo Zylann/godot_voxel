@@ -174,7 +174,7 @@ void main() {
 	const int tri_count = (tile_data.y >> 4) & 0x7;
 
 	if (tri_count == 0) {
-		//imageStore(u_target_image, pixel_pos, ivec4(255,0,255,255));
+		//imageStore(u_target_image, pixel_pos, ivec4(127,127,127,255));
 		return;
 	}
 

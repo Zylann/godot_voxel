@@ -25,7 +25,9 @@ std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(VoxelGen
 		print_line("-------------------------------------");
 	}
 
-	std::shared_ptr<ComputeShader> shader = ComputeShader::create_from_glsl(source_text);
+	// TODO Pick different name somehow for different generators
+	std::shared_ptr<ComputeShader> shader =
+			ComputeShader::create_from_glsl(source_text, "zylann.voxel.render_normalmap.gen");
 	return shader;
 }
 

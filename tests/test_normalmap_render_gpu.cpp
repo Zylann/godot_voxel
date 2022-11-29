@@ -106,23 +106,20 @@ void test_normalmap_render_gpu() {
 	nm_task.use_gpu = true;
 	GenerateDistanceNormalMapGPUTask *gpu_task = nm_task.make_gpu_task();
 
-	RenderingDevice *rd = VoxelEngine::get_singleton().get_rendering_device();
-	ZN_TEST_ASSERT(rd != nullptr);
+	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
 
-	GPUTaskContext gpu_task_context{ *rd };
+	GPUTaskContext gpu_task_context{ rd };
 	gpu_task->prepare(gpu_task_context);
 
-	rd->submit();
-	rd->sync();
+	rd.submit();
+	rd.sync();
 
-	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(*rd);
+	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd);
 
-	Ref<Image> atlas_image = Image::create_from_data(
+	Ref<Image> gpu_atlas_image = Image::create_from_data(
 			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data);
-	ERR_FAIL_COND(atlas_image.is_null());
-	atlas_image->convert(Image::FORMAT_RGB8);
-
-	atlas_image->save_png("test_gpu_normalmap.png");
+	ERR_FAIL_COND(gpu_atlas_image.is_null());
+	gpu_atlas_image->convert(Image::FORMAT_RGB8);
 
 	ZN_DELETE(gpu_task);
 
@@ -140,7 +137,38 @@ void test_normalmap_render_gpu() {
 			store_normalmap_data_to_images(normalmap_data, virtual_texture_settings.tile_resolution_min,
 					nm_task.mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);
 	ZN_ASSERT(images.atlas.is_valid());
-	images.atlas->save_png("test_cpu_normalmap.png");
+	Ref<Image> cpu_atlas_image = images.atlas;
+
+	// Analyze
+
+	struct L {
+		static float compare(const Image &im1, const Image &im2) {
+			ZN_ASSERT(im1.get_size() == im2.get_size());
+			const Vector2i size = im1.get_size();
+			float dsum = 0.f;
+			int counted_pixels = 0;
+			for (int y = 0; y < size.y; ++y) {
+				for (int x = 0; x < size.x; ++x) {
+					const Color c1 = im1.get_pixel(x, y);
+					const Color c2 = im2.get_pixel(x, y);
+					const float d = Math::sqrt(math::squared(c1.r - c2.r) + math::squared(c1.g - c2.g) +
+							math::squared(c1.b - c2.b) + math::squared(c1.a - c2.a));
+					dsum += d;
+					++counted_pixels;
+				}
+			}
+			return dsum / float(counted_pixels);
+		}
+	};
+
+	// Simple compare for now. Ideally we should analyze more things. A challenge is that the two approaches produce
+	// slightly different images, even though they are functionally equivalent.
+	const float diff = L::compare(**cpu_atlas_image, **gpu_atlas_image);
+	ZN_TEST_ASSERT(diff < 0.1);
+
+	// Debug dumps
+	gpu_atlas_image->save_png("test_gpu_normalmap.png");
+	cpu_atlas_image->save_png("test_cpu_normalmap.png");
 }
 
 } // namespace zylann::voxel::tests

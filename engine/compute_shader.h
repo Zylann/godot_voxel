@@ -8,15 +8,22 @@
 namespace zylann::voxel {
 
 // Thin RAII wrapper around compute shaders created with VoxelEngine RenderingDevice.
-// May be passed around using shared pointers.
-// A reference should be kept as long as a dispatch of this shader is running on the graphics card.
+// If the source can change at runtime, it may be passed around using shared pointers and a new instance may be created,
+// rather than clearing the old shader anytime. A reference should be kept as long as a dispatch of this shader is
+// running on the graphics card.
 class ComputeShader {
 public:
-	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text);
+	static std::shared_ptr<ComputeShader> create_from_glsl(String source_text, String name);
 	static std::shared_ptr<ComputeShader> create_invalid();
 
+	ComputeShader();
 	ComputeShader(RID p_rid);
+
 	~ComputeShader();
+
+	void clear();
+
+	void load_from_glsl(String source_text, String name);
 
 	// An invalid instance means the shader failed to compile
 	inline bool is_valid() const {

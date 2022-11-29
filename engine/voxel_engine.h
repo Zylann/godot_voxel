@@ -9,6 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "compute_shader.h"
 #include "distance_normalmaps.h"
 #include "gpu_task_runner.h"
 #include "priority_dependency.h"
@@ -204,19 +205,24 @@ public:
 
 	Stats get_stats() const;
 
-	RenderingDevice *get_rendering_device() {
-		return _rendering_device;
+	bool has_rendering_device() const {
+		return _rendering_device != nullptr;
 	}
 
-	Mutex &get_rendering_device_mutex() {
-		return _rendering_device_mutex;
+	RenderingDevice &get_rendering_device() const {
+		ZN_ASSERT(_rendering_device != nullptr);
+		return *_rendering_device;
 	}
+
+	const ComputeShader &get_dilate_normalmap_compute_shader() const;
 
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
 
 private:
 	VoxelEngine(ThreadsConfig threads_config);
+
+	void load_shaders();
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -261,6 +267,9 @@ private:
 	// So I'll assume I can't...
 	Mutex _rendering_device_mutex;
 	GPUTaskRunner _gpu_task_runner;
+
+	// TODO I don't know yet where to store this resource, at some point we may find a more dedicated place
+	ComputeShader _dilate_normalmap_shader;
 };
 
 struct VoxelFileLockerRead {
