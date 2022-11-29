@@ -73,6 +73,7 @@ private:
 	RID _cell_triangles_rid;
 	RID _tile_data_rid;
 	RID _normalmap_rendering_params_rid;
+	RID _dilation_params_rid;
 };
 
 } // namespace zylann::voxel

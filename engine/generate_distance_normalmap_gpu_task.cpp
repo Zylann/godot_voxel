@@ -51,8 +51,8 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	// the size of the data...
 	// - Do I really have to create a new uniform set every time I modify just one of the passed values?
 
-	// We can't create resources while making the compute list, so we'll have to create them first for all shaders, and
-	// only then we'll create the list.
+	// We can't create resources while making the compute list, so we'll spaghetti a bit and have to create them first
+	// for all shaders, and only then we'll create the list.
 
 	// First output image
 
@@ -139,19 +139,37 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	tile_data_uniform->set_binding(4);
 	tile_data_uniform->add_id(_tile_data_rid);
 
-	// Params
+	// Normalmap params
 
-	PackedByteArray params_pba;
-	copy_bytes_to(params_pba, params);
+	PackedByteArray normalmap_params_pba;
+	copy_bytes_to(normalmap_params_pba, params);
 
-	_normalmap_rendering_params_rid = rd.storage_buffer_create(params_pba.size(), params_pba);
+	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data.
+	_normalmap_rendering_params_rid = rd.storage_buffer_create(normalmap_params_pba.size(), normalmap_params_pba);
 	ERR_FAIL_COND(_normalmap_rendering_params_rid.is_null());
 
-	Ref<RDUniform> params_uniform;
-	params_uniform.instantiate();
-	params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	params_uniform->set_binding(5);
-	params_uniform->add_id(_normalmap_rendering_params_rid);
+	Ref<RDUniform> normalmap_params_uniform;
+	normalmap_params_uniform.instantiate();
+	normalmap_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	normalmap_params_uniform->set_binding(5);
+	normalmap_params_uniform->add_id(_normalmap_rendering_params_rid);
+
+	// Dilation params
+
+	PackedByteArray dilation_params_pba;
+	// I need only 4 but apparently the minimum size for UBO is 16 bytes
+	dilation_params_pba.resize(16);
+	*reinterpret_cast<int32_t *>(dilation_params_pba.ptrw()) = params.tile_size_pixels;
+
+	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data.
+	_dilation_params_rid = rd.uniform_buffer_create(dilation_params_pba.size(), dilation_params_pba);
+	ERR_FAIL_COND(_dilation_params_rid.is_null());
+
+	Ref<RDUniform> dilation_params_uniform;
+	dilation_params_uniform.instantiate();
+	dilation_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_UNIFORM_BUFFER);
+	dilation_params_uniform->set_binding(2);
+	dilation_params_uniform->add_id(_dilation_params_rid);
 
 	// Normalmap uniform set
 
@@ -162,7 +180,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	uniforms[2] = mesh_indices_uniform;
 	uniforms[3] = cell_triangles_uniform;
 	uniforms[4] = tile_data_uniform;
-	uniforms[5] = params_uniform;
+	uniforms[5] = normalmap_params_uniform;
 	const RID uniform_set_rid = uniform_set_create(rd, uniforms, shader_rid, 0);
 
 	// Normalmap rendering pipeline
@@ -192,7 +210,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	}
 
 	// Ensure dependencies are ready before running dilation on the result (I though this was automatically handled?
-	// Why is barrier necessary anyways?)
+	// Why is barrier necessary anyways? Is dependency resolution actually not automatic?)
 	rd.compute_list_add_barrier(compute_list_id);
 
 	// Dilation step 1
@@ -200,10 +218,11 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 		// Uniform set
 
 		Array dilation_uniforms;
-		dilation_uniforms.resize(2);
+		dilation_uniforms.resize(3);
 		// Bindings should be respectively 0 and 1 at this point
 		dilation_uniforms[0] = image0_uniform;
 		dilation_uniforms[1] = image1_uniform;
+		dilation_uniforms[2] = dilation_params_uniform;
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
@@ -224,9 +243,10 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 		// Uniform set
 
 		Array dilation_uniforms;
-		dilation_uniforms.resize(2);
+		dilation_uniforms.resize(3);
 		dilation_uniforms[0] = image1_uniform;
 		dilation_uniforms[1] = image0_uniform;
+		dilation_uniforms[2] = dilation_params_uniform;
 		// TODO Do I really have to create a new uniform set every time I modify just one of the passed values?
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 
@@ -260,6 +280,7 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(Re
 		free_rendering_device_rid(rd, _mesh_vertices_rid);
 		free_rendering_device_rid(rd, _normalmap_rendering_pipeline_rid);
 		free_rendering_device_rid(rd, _normalmap_dilation_pipeline_rid);
+		free_rendering_device_rid(rd, _dilation_params_rid);
 	}
 
 	// Uniform sets auto-free themselves once their contents are freed.

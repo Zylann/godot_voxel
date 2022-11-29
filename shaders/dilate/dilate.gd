@@ -8,6 +8,7 @@ var _shader_rid : RID
 var _input_image : Image
 var _output_image : Image
 var _texture_format : RDTextureFormat
+var _params_uniform_buffer_rid : RID
 
 
 func _ready():
@@ -49,6 +50,11 @@ func setup():
 		| RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	texture_format.texture_type = RenderingDevice.TEXTURE_TYPE_2D
 	_texture_format = texture_format
+	
+	# Params
+	
+	# I need only 4 but apparently the minimum size is 16
+	_params_uniform_buffer_rid = rd.uniform_buffer_create(16)
 
 
 func run():
@@ -78,10 +84,22 @@ func run():
 	dst_image_uniform.binding = 1
 	dst_image_uniform.add_id(dst_texture_rid)
 	
+	# Params
+	
+	var tile_size := 16
+	var params_pba = PackedByteArray()
+	params_pba.resize(4)
+	params_pba.encode_s32(0, tile_size)
+	rd.buffer_update(_params_uniform_buffer_rid, 0, 4, params_pba)
+	var params_uniform = RDUniform.new()
+	params_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_UNIFORM_BUFFER
+	params_uniform.binding = 2
+	params_uniform.add_id(_params_uniform_buffer_rid)
+	
 	# Uniform set
 	
 	var uniform_set_rid = rd.uniform_set_create(
-		[src_image_uniform, dst_image_uniform], _shader_rid, 0)
+		[src_image_uniform, dst_image_uniform, params_uniform], _shader_rid, 0)
 	
 	# Pipeline
 	
@@ -118,6 +136,7 @@ func run():
 func cleanup():
 	assert(_rendering_device != null)
 
+	_rendering_device.free_rid(_params_uniform_buffer_rid)
 	_rendering_device.free_rid(_shader_rid)
 
 	_rendering_device.free()

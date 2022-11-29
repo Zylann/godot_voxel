@@ -20,14 +20,12 @@ offset_right = 455.0
 offset_bottom = 512.0
 
 [node name="Result" type="TextureRect" parent="VBoxContainer"]
-layout_mode = 2
 offset_right = 320.0
 offset_bottom = 320.0
 texture = ExtResource("2_1gwlp")
 stretch_mode = 4
 
 [node name="Run" type="Button" parent="VBoxContainer"]
-layout_mode = 2
 offset_top = 324.0
 offset_right = 320.0
 offset_bottom = 355.0
