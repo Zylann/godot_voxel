@@ -22,6 +22,7 @@
 #include "../util/string_funcs.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "test_expression_parser.h"
+#include "test_normalmap_render_gpu.h"
 #include "test_octree.h"
 #include "test_voxel_graph.h"
 #include "testing.h"
@@ -1773,6 +1774,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_threaded_task_runner);
 	VOXEL_TEST(test_task_priority_values);
 	VOXEL_TEST(test_issue463);
+	VOXEL_TEST(test_normalmap_render_gpu);
 
 	print_line("------------ Voxel tests end -------------");
 }

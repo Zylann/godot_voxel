@@ -167,8 +167,8 @@ void test_normalmap_render_gpu() {
 	ZN_TEST_ASSERT(diff < 0.1);
 
 	// Debug dumps
-	gpu_atlas_image->save_png("test_gpu_normalmap.png");
-	cpu_atlas_image->save_png("test_cpu_normalmap.png");
+	// gpu_atlas_image->save_png("test_gpu_normalmap.png");
+	// cpu_atlas_image->save_png("test_cpu_normalmap.png");
 }
 
 } // namespace zylann::voxel::tests
