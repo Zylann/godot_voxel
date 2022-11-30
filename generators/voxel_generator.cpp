@@ -99,6 +99,13 @@ void VoxelGenerator::compile_shaders() {
 	}
 }
 
+void VoxelGenerator::invalidate_shaders() {
+	{
+		MutexLock mlock(_shader_mutex);
+		_virtual_rendering_shader.reset();
+	}
+}
+
 void VoxelGenerator::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);

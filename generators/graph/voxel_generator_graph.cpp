@@ -847,6 +847,10 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(format("Voxel graph compiled in {} us", time_spent));
 
+	if (result.success) {
+		invalidate_shaders();
+	}
+
 	return result;
 }
 

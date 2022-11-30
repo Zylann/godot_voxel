@@ -72,6 +72,8 @@ public:
 	virtual String get_glsl() const;
 	std::shared_ptr<ComputeShader> get_virtual_rendering_shader();
 	void compile_shaders();
+	// Drops currently compiled shaders if any, so that they get recompiled when they are needed again
+	void invalidate_shaders();
 
 	// Editor
 
