@@ -7,6 +7,7 @@
 #include "../util/dstack.h"
 #include "../util/godot/callable.h"
 #include "../util/godot/collision_shape_3d.h"
+#include "../util/godot/convex_polygon_shape_3d.h"
 #include "../util/godot/mesh.h"
 #include "../util/godot/mesh_instance_3d.h"
 #include "../util/godot/rigid_body_3d.h"
