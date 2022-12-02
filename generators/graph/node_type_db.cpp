@@ -276,6 +276,32 @@ const char *get_category_name(Category category) {
 	return "";
 }
 
+void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite &fnl) {
+	// TODO Add missing options
+	ctx.add_format("fnl_state state = fnlCreateState({});\n"
+				   "state.noise_type = {};\n"
+				   "state.fractal_type = {};\n"
+				   "state.octaves = {};\n"
+				   "state.gain = {};\n"
+				   "state.frequency = {};\n"
+				   "state.lacunarity = {};\n",
+			fnl.get_seed(), fnl.get_noise_type(), fnl.get_fractal_type(), fnl.get_fractal_octaves(),
+			fnl.get_fractal_gain(), fnl.get_frequency(), fnl.get_fractal_lacunarity());
+}
+
+void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLite &fnl) {
+	// TODO Add missing options
+	ctx.add_format("fnl_state state = fnlCreateState({});\n"
+				   "state.noise_type = {};\n"
+				   "state.fractal_type = {};\n"
+				   "state.octaves = {};\n"
+				   "state.gain = {};\n"
+				   "state.frequency = {};\n"
+				   "state.lacunarity = {};\n",
+			fnl.get_seed(), fnl.get_noise_type(), fnl.get_fractal_type(), fnl.get_fractal_octaves(),
+			fnl.get_fractal_gain(), 1.0 / fnl.get_period(), fnl.get_fractal_lacunarity());
+}
+
 NodeTypeDB::NodeTypeDB() {
 	typedef Runtime::ProcessBufferContext ProcessBufferContext;
 	typedef Runtime::RangeAnalysisContext RangeAnalysisContext;
@@ -1133,6 +1159,24 @@ NodeTypeDB::NodeTypeDB() {
 			// Shouldn't be null, it is checked when the graph is compiled
 			ctx.set_output(0, get_range_2d(*p.noise, x, y));
 		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<Noise> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Noise::get_class_static())));
+				return;
+			}
+			Ref<FastNoiseLite> fnl = noise;
+			if (fnl.is_null()) {
+				ctx.make_error(String(ZN_TTR("Shader generation with {0} is not supported."))
+									   .format(varray(noise->get_class())));
+				return;
+			}
+			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			add_fast_noise_lite_state_config(ctx, **fnl);
+			ctx.add_format("{} = fnlGetNoise2D(state, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1));
+		};
 	}
 	{
 		struct Params {
@@ -1181,6 +1225,25 @@ NodeTypeDB::NodeTypeDB() {
 			const Params p = ctx.get_params<Params>();
 			// Shouldn't be null, it is checked when the graph is compiled
 			ctx.set_output(0, get_range_3d(*p.noise, x, y, z));
+		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<Noise> noise = ctx.get_param(0);
+			if (noise.is_null()) {
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Noise::get_class_static())));
+				return;
+			}
+			Ref<FastNoiseLite> fnl = noise;
+			if (fnl.is_null()) {
+				ctx.make_error(String(ZN_TTR("Shader generation with {0} is not supported."))
+									   .format(varray(noise->get_class())));
+				return;
+			}
+			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			add_fast_noise_lite_state_config(ctx, **fnl);
+			// TODO Add missing options
+			ctx.add_format("{} = fnlGetNoise3D(state, {}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2));
 		};
 	}
 	{
@@ -1888,18 +1951,9 @@ NodeTypeDB::NodeTypeDB() {
 				return;
 			}
 			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
-			// TODO Add missing options
-			ctx.add_format("fnl_state state = fnlCreateState({});\n"
-						   "state.noise_type = {};\n"
-						   "state.fractal_type = {};\n"
-						   "state.octaves = {};\n"
-						   "state.gain = {};\n"
-						   "state.frequency = {};\n"
-						   "state.lacunarity = {};\n"
-						   "{} = fnlGetNoise2D(state, {}, {});\n",
-					noise->get_seed(), noise->get_noise_type(), noise->get_fractal_type(), noise->get_fractal_octaves(),
-					noise->get_fractal_gain(), 1.0 / noise->get_period(), noise->get_fractal_lacunarity(),
-					ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
+			add_fast_noise_lite_state_config(ctx, **noise);
+			ctx.add_format("{} = fnlGetNoise2D(state, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1));
 		};
 	}
 	{
@@ -1958,18 +2012,9 @@ NodeTypeDB::NodeTypeDB() {
 				return;
 			}
 			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
-			// TODO Add missing options
-			ctx.add_format("fnl_state state = fnlCreateState({});\n"
-						   "state.noise_type = {};\n"
-						   "state.fractal_type = {};\n"
-						   "state.octaves = {};\n"
-						   "state.gain = {};\n"
-						   "state.frequency = {};\n"
-						   "state.lacunarity = {};\n"
-						   "{} = fnlGetNoise3D(state, {}, {}, {});\n",
-					noise->get_seed(), noise->get_noise_type(), noise->get_fractal_type(), noise->get_fractal_octaves(),
-					noise->get_fractal_gain(), 1.0 / noise->get_period(), noise->get_fractal_lacunarity(),
-					ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1), ctx.get_input_name(2));
+			add_fast_noise_lite_state_config(ctx, **noise);
+			ctx.add_format("{} = fnlGetNoise3D(state, {}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2));
 		};
 	}
 	{
