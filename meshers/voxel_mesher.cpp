@@ -23,13 +23,14 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	virtual_texture_settings.begin_lod_index = 0;
 
 	if (additional_data.size() > 0) {
+		// This is mainly for testing purposes, or small-scale meshing.
 		Ref<VoxelGenerator> generator = additional_data.get("generator", Variant());
 		input.generator = generator.ptr();
 		input.origin_in_voxels = additional_data.get("origin_in_voxels", Vector3i());
 		virtual_texture_settings.enabled = additional_data.get("normalmap_enabled", false);
 		virtual_texture_settings.octahedral_encoding_enabled =
 				additional_data.get("octahedral_normal_encoding_enabled", false);
-		virtual_texture_settings.tile_resolution_min = additional_data.get("normalmap_tile_resolution", 16);
+		virtual_texture_settings.tile_resolution_min = int(additional_data.get("normalmap_tile_resolution", 16));
 		virtual_texture_settings.tile_resolution_max = virtual_texture_settings.tile_resolution_min;
 		virtual_texture_settings.max_deviation_degrees =
 				math::clamp(int(additional_data.get("normalmap_max_deviation_degrees", 0)),
