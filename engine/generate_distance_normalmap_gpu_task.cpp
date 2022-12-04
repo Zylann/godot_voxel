@@ -304,6 +304,7 @@ void GenerateDistanceNormalMapGPUTask::collect(GPUTaskContext &ctx) {
 		RenderVirtualTexturePass2Task *task = ZN_NEW(RenderVirtualTexturePass2Task);
 		task->atlas_data = texture_data;
 		task->tile_data = std::move(tile_data2);
+		task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
 		task->virtual_textures = output;
 		task->volume_id = volume_id;
 		task->mesh_block_position = block_position;
@@ -311,6 +312,7 @@ void GenerateDistanceNormalMapGPUTask::collect(GPUTaskContext &ctx) {
 		task->atlas_width = texture_width;
 		task->atlas_height = texture_height;
 		task->lod_index = lod_index;
+		task->tile_size_pixels = params.tile_size_pixels;
 
 		VoxelEngine::get_singleton().push_async_task(task);
 	}

@@ -57,6 +57,7 @@ private:
 class RenderVirtualTexturePass2Task : public IThreadedTask {
 public:
 	PackedByteArray atlas_data;
+	NormalMapData edited_tiles_normalmap_data;
 	std::vector<NormalMapData::Tile> tile_data;
 	std::shared_ptr<VirtualTextureOutput> virtual_textures;
 	uint32_t volume_id;
@@ -65,6 +66,7 @@ public:
 	uint16_t atlas_width;
 	uint16_t atlas_height;
 	uint8_t lod_index;
+	uint8_t tile_size_pixels;
 
 	void run(ThreadedTaskContext ctx) override;
 	void apply_result() override;

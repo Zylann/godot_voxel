@@ -8,6 +8,13 @@
 
 namespace zylann::voxel {
 
+namespace {
+NormalMapData &get_tls_normalmap_data() {
+	static thread_local NormalMapData tls_normalmap_data;
+	return tls_normalmap_data;
+}
+} // namespace
+
 /*static void debug_dump_atlas(Vector<Ref<Image>> images, String fpath) {
 	if (images.size() == 0) {
 		return;
@@ -48,21 +55,21 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 }
 
 void GenerateDistanceNormalmapTask::run_on_cpu() {
-	static thread_local NormalMapData tls_normalmap_data;
-	tls_normalmap_data.clear();
+	NormalMapData &normalmap_data = get_tls_normalmap_data();
+	normalmap_data.clear();
 
 	const unsigned int tile_resolution =
 			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
 
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
-	compute_normalmap(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			tls_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
+	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
+			normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
 			virtual_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
+			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
 
 	NormalMapImages images = store_normalmap_data_to_images(
-			tls_normalmap_data, tile_resolution, mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);
+			normalmap_data, tile_resolution, mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);
 
 	// Debug
 	// debug_dump_atlas(images.atlas,
@@ -180,7 +187,14 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	const unsigned int tile_resolution =
 			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
 
+	// Fallback on CPU for tiles containing edited voxels.
+	// TODO Figure out an efficient way to have sparse voxel data available on the GPU
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
+	NormalMapData edited_tiles_normalmap_data;
+	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
+			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
+			false, /*virtual_texture_settings.octahedral_encoding_enabled*/
+			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), true);
 
 	const unsigned int tile_count = cell_iterator->get_count();
 	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
@@ -222,6 +236,7 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	gpu_task->params = params;
 	gpu_task->shader = generator->get_virtual_rendering_shader();
 	gpu_task->output = virtual_textures;
+	gpu_task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
 	gpu_task->block_position = mesh_block_position;
 	gpu_task->block_size = mesh_block_size;
 	gpu_task->lod_index = lod_index;
@@ -230,19 +245,81 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	return gpu_task;
 }
 
-void run_on_gpu_synchronous() {}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// PackedByteArray convert_pixels_from_rgba8_to_rgb8(const PackedByteArray &src) {
+// 	ZN_ASSERT((src.size() % 4) == 0);
+// 	const unsigned int pixel_count = src.size() / 4;
+// 	PackedByteArray dst;
+// 	uint8_t *dst_w = dst.ptrw();
+// 	const uint8_t *src_r = src.ptr();
+// 	for (unsigned int pi = 0; pi < pixel_count; ++pi) {
+// 		const unsigned int src_i = pi * 4;
+// 		const unsigned int dst_i = pi * 3;
+// 		dst_w[dst_i] = src_r[src_i];
+// 		dst_w[dst_i + 1] = src_r[src_i + 1];
+// 		dst_w[dst_i + 2] = src_r[src_i + 2];
+// 	}
+// 	return dst;
+// }
+
+void convert_pixels_from_rgba8_to_rgb8_in_place(PackedByteArray &pba) {
+	ZN_ASSERT((pba.size() % 4) == 0);
+	const unsigned int pixel_count = pba.size() / 4;
+	uint8_t *pba_w = pba.ptrw();
+	for (unsigned int pi = 0; pi < pixel_count; ++pi) {
+		const unsigned int src_i = pi * 4;
+		const unsigned int dst_i = pi * 3;
+		pba_w[dst_i] = pba_w[src_i];
+		pba_w[dst_i + 1] = pba_w[src_i + 1];
+		pba_w[dst_i + 2] = pba_w[src_i + 2];
+	}
+	pba.resize(pixel_count * 3);
+}
+
+void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pixels, Vector2i atlas_size_pixels,
+		const NormalMapData &edited_tiles_normalmap_data) {
+	ZN_PROFILE_SCOPE();
+
+	uint8_t *dst_w = atlas_data.ptrw();
+	Span<uint8_t> dst(dst_w, atlas_data.size());
+
+	const unsigned int tile_size_in_bytes = math::squared(tile_size_pixels) * 3;
+	const unsigned int tiles_x = atlas_size_pixels.x / tile_size_pixels;
+
+	for (unsigned int tile_index = 0; tile_index < edited_tiles_normalmap_data.tiles.size(); ++tile_index) {
+		const NormalMapData::Tile &tile = edited_tiles_normalmap_data.tiles[tile_index];
+
+		Span<const uint8_t> src_pixels = to_span_from_position_and_size(
+				edited_tiles_normalmap_data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
+
+		const unsigned int dst_tile_index = edited_tiles_normalmap_data.tile_indices[tile_index];
+		const Vector2i dst_tile_pos_pixels =
+				Vector2i(dst_tile_index % tiles_x, dst_tile_index / tiles_x) * tile_size_pixels;
+
+		copy_2d_region_from_packed_to_atlased(dst, atlas_size_pixels, src_pixels,
+				Vector2i(tile_size_pixels, tile_size_pixels), dst_tile_pos_pixels, 3);
+	}
+}
 
 void RenderVirtualTexturePass2Task::run(ThreadedTaskContext ctx) {
 	ZN_PROFILE_SCOPE();
+
+	convert_pixels_from_rgba8_to_rgb8_in_place(atlas_data);
+
+	// TODO Optimization: currently, the GPU task still generates tiles that would otherwise be replaced with edited
+	// tiles. Maybe we should find a way to tell the GPU task to exclude these tiles efficiently?
+	if (edited_tiles_normalmap_data.tiles.size() > 0) {
+		combine_edited_tiles(
+				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_normalmap_data);
+	}
 
 	NormalMapImages images;
 
 	// TODO Octahedral compression
 	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, Image::FORMAT_RGBA8, atlas_data);
 	ERR_FAIL_COND(images.atlas.is_null());
-	images.atlas->convert(Image::FORMAT_RGB8);
+	// images.atlas->convert(Image::FORMAT_RGB8);
 
 	images.lookup = store_lookup_to_image(tile_data, mesh_block_size);
 

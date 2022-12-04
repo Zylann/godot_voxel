@@ -52,6 +52,7 @@ public:
 
 	// Stuff to carry over for the second CPU pass
 	std::shared_ptr<VirtualTextureOutput> output;
+	NormalMapData edited_tiles_normalmap_data;
 	Vector3i block_position;
 	Vector3i block_size;
 	uint32_t volume_id;
