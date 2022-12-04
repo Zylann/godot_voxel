@@ -1025,7 +1025,13 @@ void VoxelLodTerrain::process(float delta) {
 	// The GLSL functions of VoxelGenerator need to be thread-safe. Compiling should be safe, but getting the source
 	// code isn't. VoxelGeneratorGraph's shader generation is not thread-safe, because it accesses its graph.
 	if (get_normalmap_use_gpu()) {
-		Ref<VoxelGenerator> generator = get_generator();
+		Ref<VoxelGenerator> generator;
+		Ref<VoxelGenerator> generator_override = get_normalmap_generator_override();
+		if (generator_override.is_valid()) {
+			generator = generator_override;
+		} else {
+			generator = get_generator();
+		}
 		if (generator.is_valid() && generator->supports_glsl() &&
 				generator->get_virtual_rendering_shader() == nullptr) {
 			generator->compile_shaders();
