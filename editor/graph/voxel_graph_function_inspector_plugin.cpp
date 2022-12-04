@@ -1,5 +1,6 @@
 #include "voxel_graph_function_inspector_plugin.h"
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/godot/button.h"
 #include "../../util/godot/callable.h"
 #include "../../util/godot/h_separator.h"
 #include "../../util/godot/label.h"
