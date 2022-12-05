@@ -202,7 +202,9 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 
 	std::vector<GenerateDistanceNormalMapGPUTask::TileData> tile_data;
 	std::vector<int32_t> cell_triangles;
+	cell_iterator->rewind();
 	build_gpu_tiles_data(*cell_iterator, tile_count, cell_triangles, tile_data, mesh_indices, mesh_normals);
+	ZN_ASSERT(cell_triangles.size() > 0);
 
 	// Complete with empty entries, necessary to cover the whole texture the shader will run on. There can be a few
 	// empty entries.
@@ -317,7 +319,7 @@ void RenderVirtualTexturePass2Task::run(ThreadedTaskContext ctx) {
 	NormalMapImages images;
 
 	// TODO Octahedral compression
-	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, Image::FORMAT_RGBA8, atlas_data);
+	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, Image::FORMAT_RGB8, atlas_data);
 	ERR_FAIL_COND(images.atlas.is_null());
 	// images.atlas->convert(Image::FORMAT_RGB8);
 
