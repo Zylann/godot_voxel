@@ -545,7 +545,7 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 
 				const unsigned int normal_index = sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
-				ZN_ASSERT(normal_index < normal_map_data.normals.size());
+				ZN_ASSERT(normal_index < tls_tile_normals.size());
 #endif
 				tls_tile_normals[normal_index] = normal;
 			}
