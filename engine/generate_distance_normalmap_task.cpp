@@ -307,6 +307,10 @@ void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pi
 void RenderVirtualTexturePass2Task::run(ThreadedTaskContext ctx) {
 	ZN_PROFILE_SCOPE();
 
+	// TODO Suggestion: given how fast GPU normalmaps are computed, maybe we could output them first,
+	// and get the edits later, even if that means computing tiles redundantly, because at least we get a
+	// result quicker rather than a "hole" of lack of detail
+
 	convert_pixels_from_rgba8_to_rgb8_in_place(atlas_data);
 
 	// TODO Optimization: currently, the GPU task still generates tiles that would otherwise be replaced with edited

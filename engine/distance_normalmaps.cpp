@@ -292,8 +292,8 @@ struct ClearVoxelDataGridOnExit {
 
 inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_voxel_data,
 		const VoxelModifierStack *modifiers, Span<const float> query_x_buffer, Span<const float> query_y_buffer,
-		Span<const float> query_z_buffer, Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos,
-		uint32_t &skipped_count_due_to_high_volume) {
+		Span<const float> query_z_buffer, Span<float> query_sdf_buffer, Vector3f query_min_pos,
+		Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
 
 	if (edited_voxel_data != nullptr) {
@@ -337,14 +337,16 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 	const float max_deviation_cosine = Math::cos(max_deviation_radians);
 	const float max_deviation_sine = Math::sin(max_deviation_radians);
 
-	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
-	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_count * encoded_normal_size);
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
 
-	normal_map_data.tiles.reserve(cell_count);
+	if (!edited_tiles_only) {
+		const unsigned int cell_count = cell_iterator.get_count();
+		normal_map_data.tiles.reserve(cell_count);
+		normal_map_data.normals.reserve(math::squared(tile_resolution) * cell_count * encoded_normal_size);
+	}
 
 	uint32_t skipped_count_due_to_high_volume = 0;
 
@@ -492,7 +494,7 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 			// Query voxel data
 			query_sdf(generator, edits_grid, modifiers, to_span(tls_x_buffer), to_span(tls_y_buffer),
 					to_span(tls_z_buffer), to_span(tls_sdf_buffer), cell_origin_world,
-					cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);
+					cell_origin_world + Vector3f(cell_size));
 		}
 
 		static thread_local std::vector<Vector3f> tls_tile_normals;
@@ -556,8 +558,12 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 			dilate_normalmap(to_span(tls_tile_normals), Vector2i(tile_resolution, tile_resolution));
 		}
 
+		// Resizing as we go, because depending on settings we may have to skip some cells
+		const unsigned int tile_begin = normal_map_data.normals.size();
+		normal_map_data.normals.resize(
+				normal_map_data.normals.size() + math::squared(tile_resolution) * encoded_normal_size);
+
 		// Encode normals
-		const unsigned int tile_begin = cell_index * math::squared(tile_resolution) * encoded_normal_size;
 		if (octahedral_encoding) {
 			for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
 				const unsigned int offset = tile_begin + i * encoded_normal_size;
