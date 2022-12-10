@@ -24,6 +24,7 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 RID texture_create(RenderingDevice &rd, RDTextureFormat &p_format, RDTextureView &p_view,
 		const TypedArray<PackedByteArray> &p_data);
 RID uniform_set_create(RenderingDevice &rd, Array uniforms, RID shader, int shader_set);
+RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state);
 void update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
 		const PackedByteArray &pba, unsigned int post_barrier = RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
 

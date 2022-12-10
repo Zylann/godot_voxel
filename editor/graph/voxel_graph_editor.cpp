@@ -774,11 +774,12 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 
 		case MENU_GENERATE_SHADER: {
 			ERR_FAIL_COND(_generator.is_null());
-			const String code = _generator->generate_shader();
-			if (code == "") {
+			VoxelGenerator::ShaderSourceData sd;
+			if (!_generator->generate_shader(sd)) {
 				return;
 			}
-			_shader_dialog->set_shader_code(code);
+			// TODO Include uniforms in that version?
+			_shader_dialog->set_shader_code(sd.glsl);
 			_shader_dialog->popup_centered();
 		} break;
 

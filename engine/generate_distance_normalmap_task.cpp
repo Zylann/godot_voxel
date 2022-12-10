@@ -237,6 +237,7 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	gpu_task->tile_data = std::move(tile_data);
 	gpu_task->params = params;
 	gpu_task->shader = generator->get_virtual_rendering_shader();
+	gpu_task->shader_params = generator->get_virtual_rendering_shader_parameters();
 	gpu_task->output = virtual_textures;
 	gpu_task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
 	gpu_task->block_position = mesh_block_position;

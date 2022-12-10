@@ -1,4 +1,6 @@
 #include "voxel_graph_shader_generator.h"
+#include "../../engine/compute_shader_parameters.h"
+#include "../../engine/compute_shader_resource.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "node_type_db.h"
@@ -14,10 +16,19 @@ void ShaderGenContext::require_lib_code(const char *lib_name, const char **code)
 	_code_gen.require_lib_code(lib_name, code);
 }
 
+std::string ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
+	std::string name = format("u_vg_resource_{}", _uniforms.size());
+	_uniforms.push_back(ShaderParameter());
+	ShaderParameter &sp = _uniforms.back();
+	sp.name = name;
+	sp.resource = std::move(res);
+	return name;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CompilationResult generate_shader(
-		const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs, FwdMutableStdString output) {
+CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
+		FwdMutableStdString output, std::vector<ShaderParameter> &shader_params) {
 	ZN_PROFILE_SCOPE();
 
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -155,7 +166,7 @@ CompilationResult generate_shader(
 		codegen.indent();
 
 		ShaderGenContext ctx(node.params, to_span(input_names, node.inputs.size()),
-				to_span(output_names, node.outputs.size()), codegen);
+				to_span(output_names, node.outputs.size()), codegen, shader_params);
 		node_type.shader_gen_func(ctx);
 
 		if (ctx.has_error()) {

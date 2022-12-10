@@ -114,6 +114,37 @@ RID uniform_set_create(RenderingDevice &rd, Array uniforms, RID shader, int shad
 #endif
 }
 
+RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state) {
+#if defined(ZN_GODOT)
+	// Can't access the version of that method taking an `RDSamplerState` object because it is private...
+
+	// return rd.call(SNAME("sampler_create"), sampler_state_ref);
+
+	RenderingDevice::SamplerState ss;
+	ss.mag_filter = sampler_state.get_mag_filter();
+	ss.min_filter = sampler_state.get_min_filter();
+	ss.mip_filter = sampler_state.get_mip_filter();
+	ss.repeat_u = sampler_state.get_repeat_u();
+	ss.repeat_v = sampler_state.get_repeat_v();
+	ss.repeat_w = sampler_state.get_repeat_w();
+	ss.lod_bias = sampler_state.get_lod_bias();
+	ss.use_anisotropy = sampler_state.get_use_anisotropy();
+	ss.anisotropy_max = sampler_state.get_anisotropy_max();
+	ss.enable_compare = sampler_state.get_enable_compare();
+	ss.compare_op = sampler_state.get_compare_op();
+	ss.min_lod = sampler_state.get_min_lod();
+	ss.max_lod = sampler_state.get_max_lod();
+	ss.border_color = sampler_state.get_border_color();
+	ss.unnormalized_uvw = sampler_state.get_unnormalized_uvw();
+
+	return rd.sampler_create(ss);
+
+#elif defined(ZN_GODOT_EXTENSION)
+	Ref<RDSamplerState> sampler_state_ref(&sampler_state);
+	return rd.sampler_create(sampler_state_ref);
+#endif
+}
+
 void update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
 		const PackedByteArray &pba, unsigned int post_barrier) {
 #if defined(ZN_GODOT)

@@ -9,6 +9,7 @@
 namespace zylann::voxel {
 
 class ComputeShader;
+struct ComputeShaderParameters;
 
 class GenerateDistanceNormalMapGPUTask : public IGPUTask {
 public:
@@ -49,6 +50,7 @@ public:
 	Params params;
 
 	std::shared_ptr<ComputeShader> shader;
+	std::shared_ptr<ComputeShaderParameters> shader_params;
 
 	// Stuff to carry over for the second CPU pass
 	std::shared_ptr<VirtualTextureOutput> output;
@@ -75,6 +77,7 @@ private:
 	RID _tile_data_rid;
 	RID _normalmap_rendering_params_rid;
 	RID _dilation_params_rid;
+	std::vector<RID> _sampler_rids;
 };
 
 } // namespace zylann::voxel

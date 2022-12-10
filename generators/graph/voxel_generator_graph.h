@@ -90,14 +90,16 @@ public:
 
 	// GPU support
 
-	bool supports_glsl() const override {
+	bool supports_shaders() const override {
 		// To some extent. It might fail if the graph contains nodes that are not compatible.
 		return true;
 	}
 
-	String generate_shader() const;
-	String get_glsl() const override {
-		return generate_shader();
+	// TODO Deprecate
+	bool generate_shader(ShaderSourceData &out_data) const;
+
+	bool get_shader_source(ShaderSourceData &out_data) const override {
+		return generate_shader(out_data);
 	}
 
 	// Debug

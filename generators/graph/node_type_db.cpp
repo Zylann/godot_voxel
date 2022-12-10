@@ -1,5 +1,6 @@
 #include "node_type_db.h"
 #include "../../constants/voxel_constants.h"
+#include "../../engine/compute_shader_resource.h"
 #include "../../util/godot/array.h"
 #include "../../util/godot/curve.h"
 #include "../../util/godot/fast_noise_lite.h"
@@ -1112,6 +1113,18 @@ NodeTypeDB::NodeTypeDB() {
 				const Interval r = get_curve_range(*p.curve, p.curve_range_data->sections, a);
 				ctx.set_output(0, r);
 			}
+		};
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			Ref<Curve> curve = ctx.get_param(0);
+			if (curve.is_null()) {
+				ctx.make_error(String(ZN_TTR("{0} instance is null")).format(varray(Curve::get_class_static())));
+				return;
+			}
+			ComputeShaderResource res;
+			res.create_texture(**curve);
+			const std::string uniform_texture = ctx.add_uniform(std::move(res));
+			ctx.add_format("{} = texture({}, vec2({}, 0.0)).r;\n", ctx.get_output_name(0), uniform_texture,
+					ctx.get_input_name(0));
 		};
 	}
 	{

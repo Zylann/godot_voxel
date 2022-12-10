@@ -1032,7 +1032,7 @@ void VoxelLodTerrain::process(float delta) {
 		} else {
 			generator = get_generator();
 		}
-		if (generator.is_valid() && generator->supports_glsl() &&
+		if (generator.is_valid() && generator->supports_shaders() &&
 				generator->get_virtual_rendering_shader() == nullptr) {
 			generator->compile_shaders();
 		}
@@ -2234,7 +2234,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 					}
 				}
 
-				if (get_normalmap_use_gpu() && !generator->supports_glsl()) {
+				if (get_normalmap_use_gpu() && !generator->supports_shaders()) {
 					warnings.append(ZN_TTR("Normalmaps are enabled with the option to use the GPU, but the current "
 										   "generator ({0}) does not support GLSL.")
 											.format(varray(generator->get_class())));

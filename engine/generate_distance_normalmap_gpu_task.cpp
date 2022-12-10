@@ -2,9 +2,11 @@
 #include "../util/godot/funcs.h"
 #include "../util/profiling.h"
 #include "compute_shader.h"
+#include "compute_shader_parameters.h"
 #include "generate_distance_normalmap_task.h"
 #include "voxel_engine.h"
 
+#include "../util/godot/rd_sampler_state.h"
 #include "../util/godot/rd_shader_source.h"
 #include "../util/godot/rd_shader_spirv.h"
 #include "../util/godot/rd_texture_format.h"
@@ -181,6 +183,38 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	uniforms[3] = cell_triangles_uniform;
 	uniforms[4] = tile_data_uniform;
 	uniforms[5] = normalmap_params_uniform;
+
+	// Extra params
+	if (shader_params != nullptr && shader_params->params.size() > 0) {
+		for (ComputeShaderParameters::Param &p : shader_params->params) {
+			ZN_ASSERT(p.resource.is_valid());
+			// Only textures expected for now
+			ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE);
+
+			// TODO We should be able to re-use only a few samplers with every uniform and shaders.
+			// Since we use them just for filtering we might need just a global one
+			Ref<RDSamplerState> sampler_state;
+			sampler_state.instantiate();
+			// Using samplers for their interpolation features.
+			// Otherwise I dont feel like there is a point in using one IMO
+			sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+			sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+			const RID sampler_rid = sampler_create(rd, **sampler_state);
+			_sampler_rids.push_back(sampler_rid);
+
+			Ref<RDUniform> tex_uniform;
+			tex_uniform.instantiate();
+			tex_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE);
+			tex_uniform->set_binding(p.binding);
+			// This API is just weird. Also, it switches to using a dynamically allocated vector if more than one ID is
+			// provided. But seriously, why is it not a fixed-size vector, considering that I can't think of cases that
+			// would require more than a few IDs?
+			tex_uniform->add_id(sampler_rid);
+			tex_uniform->add_id(p.resource.get_rid());
+			uniforms.append(tex_uniform);
+		}
+	}
+
 	const RID uniform_set_rid = uniform_set_create(rd, uniforms, shader_rid, 0);
 
 	// Normalmap rendering pipeline
@@ -281,6 +315,10 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(Re
 		free_rendering_device_rid(rd, _normalmap_rendering_pipeline_rid);
 		free_rendering_device_rid(rd, _normalmap_dilation_pipeline_rid);
 		free_rendering_device_rid(rd, _dilation_params_rid);
+
+		for (RID rid : _sampler_rids) {
+			free_rendering_device_rid(rd, rid);
+		}
 	}
 
 	// Uniform sets auto-free themselves once their contents are freed.
