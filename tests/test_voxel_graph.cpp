@@ -1117,7 +1117,8 @@ void test_voxel_graph_issue461() {
 	generator->debug_load_waves_preset();
 	generator->debug_load_waves_preset();
 	// This used to crash
-	generator->generate_shader();
+	VoxelGenerator::ShaderSourceData ssd;
+	generator->get_shader_source(ssd);
 }
 
 template <typename T>
@@ -1381,7 +1382,8 @@ void test_voxel_graph_issue471() {
 	outputs[0].type = VoxelGraphFunction::NODE_OUTPUT_SDF;
 	func->set_io_definitions(to_span(inputs), to_span(outputs));
 	// Was crashing because input definition wasn't fulfilled (the graph is empty). It should fail with an error.
-	generator->generate_shader();
+	VoxelGenerator::ShaderSourceData ssd;
+	generator->generate_shader(ssd);
 }
 
 } // namespace zylann::voxel::tests
