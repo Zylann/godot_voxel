@@ -77,7 +77,6 @@ private:
 	RID _tile_data_rid;
 	RID _normalmap_rendering_params_rid;
 	RID _dilation_params_rid;
-	std::vector<RID> _sampler_rids;
 };
 
 } // namespace zylann::voxel

@@ -71,6 +71,14 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
 
 	if (_rendering_device != nullptr) {
+		Ref<RDSamplerState> sampler_state;
+		sampler_state.instantiate();
+		// Using samplers for their interpolation features.
+		// Otherwise I dont feel like there is a point in using one IMO
+		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
+
 		_gpu_task_runner.start(_rendering_device);
 
 	} else {
@@ -92,10 +100,16 @@ VoxelEngine::~VoxelEngine() {
 	// See https://github.com/Zylann/godot_voxel/issues/189
 	wait_and_clear_all_tasks(true);
 
+	_gpu_task_runner.stop();
+
 	if (_rendering_device != nullptr) {
 		_dilate_normalmap_shader.clear();
 
+		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
+		_filtering_sampler_rid = RID();
+
 		memdelete(_rendering_device);
+		_rendering_device = nullptr;
 	}
 }
 

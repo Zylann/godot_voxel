@@ -216,6 +216,10 @@ public:
 
 	const ComputeShader &get_dilate_normalmap_compute_shader() const;
 
+	RID get_filtering_sampler() const {
+		return _filtering_sampler_rid;
+	}
+
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
 
@@ -263,6 +267,7 @@ private:
 
 	// Rendering device used for compute shaders. May not be available depending on the chosen renderer.
 	RenderingDevice *_rendering_device = nullptr;
+	RID _filtering_sampler_rid;
 	// TODO Can `RenderingDevice` be used on multiple threads? There is no documentation.
 	// So I'll assume I can't...
 	Mutex _rendering_device_mutex;
