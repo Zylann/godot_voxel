@@ -1015,7 +1015,7 @@ NodeTypeDB::NodeTypeDB() {
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			const Params p = Params::from_intervals(
 					float(ctx.get_param(0)), float(ctx.get_param(1)), float(ctx.get_param(2)), float(ctx.get_param(3)));
-			ctx.add_format("{} = {} * {} + {};\n", ctx.get_output_name(0), p.a, p.b);
+			ctx.add_format("{} = {} * {} + {};\n", ctx.get_output_name(0), p.a, ctx.get_input_name(0), p.b);
 		};
 	}
 	{
