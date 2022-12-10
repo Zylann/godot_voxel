@@ -95,12 +95,7 @@ public:
 		return true;
 	}
 
-	// TODO Deprecate
-	bool generate_shader(ShaderSourceData &out_data) const;
-
-	bool get_shader_source(ShaderSourceData &out_data) const override {
-		return generate_shader(out_data);
-	}
+	bool get_shader_source(ShaderSourceData &out_data) const override;
 
 	// Debug
 

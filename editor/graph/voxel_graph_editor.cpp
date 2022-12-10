@@ -775,7 +775,7 @@ void VoxelGraphEditor::_on_menu_id_pressed(int id) {
 		case MENU_GENERATE_SHADER: {
 			ERR_FAIL_COND(_generator.is_null());
 			VoxelGenerator::ShaderSourceData sd;
-			if (!_generator->generate_shader(sd)) {
+			if (!_generator->get_shader_source(sd)) {
 				return;
 			}
 			// TODO Include uniforms in that version?

@@ -1383,7 +1383,7 @@ void test_voxel_graph_issue471() {
 	func->set_io_definitions(to_span(inputs), to_span(outputs));
 	// Was crashing because input definition wasn't fulfilled (the graph is empty). It should fail with an error.
 	VoxelGenerator::ShaderSourceData ssd;
-	generator->generate_shader(ssd);
+	generator->get_shader_source(ssd);
 }
 
 } // namespace zylann::voxel::tests

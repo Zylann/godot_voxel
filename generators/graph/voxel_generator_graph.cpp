@@ -1260,7 +1260,7 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
-bool VoxelGeneratorGraph::generate_shader(ShaderSourceData &out_data) const {
+bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_main_function.is_null(), false);
 	const ProgramGraph &graph = _main_function->get_graph();
@@ -1619,7 +1619,6 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::bake_sphere_bumpmap);
 	ClassDB::bind_method(D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"),
 			&VoxelGeneratorGraph::bake_sphere_normalmap);
-	// ClassDB::bind_method(D_METHOD("generate_shader"), &VoxelGeneratorGraph::generate_shader);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel", "use_singular_queries"),
