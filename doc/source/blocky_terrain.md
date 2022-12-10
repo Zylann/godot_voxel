@@ -52,6 +52,11 @@ Make sure to assign its `albedo_texture` to your texture. You may also check the
 
 Each model can use different materials with different textures, but keep in mind the more you re-use materials, the better. It reduces the number of draw calls and makes rendering faster.
 
+Note, there are several levels at which materials get applied, each one overriding the other:
+- Materials present on meshes are the default (if you use meshes explicitely)
+- Materials specified on `VoxelBlockyModel` will override mesh materials
+- The material specified on `VoxelTerrain` will override all library materials
+
 ### Meshes
 
 Creating voxel types with the `Cube` geometry is a shortcut that can be used for simple voxels, but the most versatile workflow is to use actual meshes. If you change `geometry_type` to `CustomMesh`, you are allowed to assign a mesh resource. In this mode, the `Cube tiles` properties are not available, because you will have to assign texture coordinates of the mesh within a 3D modeler like Blender.
