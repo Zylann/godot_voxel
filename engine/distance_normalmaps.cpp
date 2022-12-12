@@ -362,8 +362,9 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 		// In cases we only want tiles with edited voxels, check this early so we can skip the tile.
 		// TODO Optimize: if there are no edited voxels in the entire mesh, completely skip this function.
 		//                Doing this efficiently requires an acceleration structure to do fast "exists" queries.
-		const bool cell_has_edits = try_query_edited_blocks(tls_voxel_data_grid, *voxel_data, cell_origin_world,
-				cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);
+		const bool cell_has_edits = voxel_data != nullptr &&
+				try_query_edited_blocks(tls_voxel_data_grid, *voxel_data, cell_origin_world,
+						cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);
 		if (!cell_has_edits && edited_tiles_only) {
 			continue;
 		} else if (edited_tiles_only) {
