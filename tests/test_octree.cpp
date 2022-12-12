@@ -21,7 +21,7 @@ void test_octree_update() {
 	const Box3i viewer_box_voxels =
 			Box3i::from_center_extents(Vector3i::from_floored(viewer_pos), Vector3i(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
-	viewer_box_octrees.for_each_cell([&octrees, lod_distance](Vector3i pos) {
+	viewer_box_octrees.for_each_cell([&octrees](Vector3i pos) {
 		Map<Vector3i, LodOctree>::Element *e = octrees.insert(pos, LodOctree());
 		LodOctree &octree = e->value();
 		LodOctree::NoDestroyAction nda;
