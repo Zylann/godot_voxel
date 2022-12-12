@@ -69,7 +69,7 @@ std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_virtual_rendering_s
 	}
 }
 
-#include "../engine/render_normalmap_shader_template.h"
+#include "../engine/detail_modifier_shader_template.h"
 
 std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
@@ -83,9 +83,9 @@ std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 
 	String source_text;
 	// We are only sure here what binding it's going to be, we can't do it earlier
-	const unsigned int generator_uniform_binding_start = 6;
+	const unsigned int generator_uniform_binding_start = 4;
 	{
-		source_text += g_render_normalmap_shader_template_0;
+		source_text += g_detail_modifier_shader_template_0;
 
 		for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 			VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
@@ -97,7 +97,7 @@ std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 		source_text += "\n";
 
 		source_text += shader_data.glsl;
-		source_text += g_render_normalmap_shader_template_1;
+		source_text += g_detail_modifier_shader_template_1;
 	}
 
 	// TODO Pick different name somehow for different generators

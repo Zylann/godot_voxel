@@ -1,33 +1,31 @@
 #[compute]
 #version 450
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+// Takes a mesh and a list of tiles, where each tile corresponds to a cubic cell of the mesh.
+// Each cell may contain a few triangles of the mesh,
+// and tiles are oriented with an axis such that they are facing as much triangles as possible.
+// We cast a ray from each pixel of each tile to triangles, to find world-space positions.
+// Hit positions and triangle indices will be used to evaluate voxel data at these positions,
+// which will in turn be used to bake a texture.
 
-// TODO When should I use `restrict` or not?
+layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-// Output image.
-// For now we write only to RGB8, but according to
-// https://www.khronos.org/opengl/wiki/Layout_Qualifier_(GLSL),
-// there doesn't seem to be a format for RGB8.
-// So maybe we could use A for something custom in the future.
-layout (set = 0, binding = 0, rgba8ui) writeonly uniform uimage2D u_target_image;
-
-layout (set = 0, binding = 1, std430) restrict buffer MeshVertices {
+layout (set = 0, binding = 0, std430) restrict buffer MeshVertices {
 	vec3 data[];
 } u_vertices;
 
-layout (set = 0, binding = 2, std430) restrict buffer MeshIndices {
+layout (set = 0, binding = 1, std430) restrict buffer MeshIndices {
 	int data[];
 } u_indices;
 
-layout (set = 0, binding = 3, std430) restrict buffer CellTris {
+layout (set = 0, binding = 2, std430) restrict buffer CellTris {
 	// List of triangle indices.
 	// Grouped in chunks corresponding to triangles within a tile.
 	// Each chunk can have up to 5 triangle indices.
 	int data[];
 } u_cell_tris;
 
-layout (set = 0, binding = 4, std430) restrict buffer AtlasInfo {
+layout (set = 0, binding = 3, std430) restrict buffer AtlasInfo {
 	// [tile index] => cell info
 	// X:
 	// Packed 8-bit coordinates of the cell.
@@ -40,39 +38,19 @@ layout (set = 0, binding = 4, std430) restrict buffer AtlasInfo {
 	ivec2 data[];
 } u_tile_data;
 
-layout (set = 0, binding = 5, std430) restrict buffer Params {
+layout (set = 0, binding = 4, std430) restrict buffer Params {
 	vec3 block_origin_world;
 	// How big is a pixel of the atlas in world space
 	float pixel_world_step;
-	// cos(max_deviation_angle)
-	float max_deviation_cosine;
-	// sin(max_deviation_angle)
-	float max_deviation_sine;
-
 	int tile_size_pixels;
-	int tiles_x;
-	int tiles_y;
 } u_params;
 
-// This part contains functions we expect from the GLSL version of the voxel generator.
-// <PLACEHOLDER_SECTION>
-float generate_sdf(vec3 pos) {
-	return 0.0;
-}
-// </PLACEHOLDER_SECTION>
-
-float get_sd(vec3 pos) {
-	return generate_sdf(pos);
-}
-
-vec3 get_sd_normal(vec3 pos, float s) {
-	float sd000 = get_sd(pos);
-	float sd100 = get_sd(pos + vec3(s, 0.0, 0.0));
-	float sd010 = get_sd(pos + vec3(0.0, s, 0.0));
-	float sd001 = get_sd(pos + vec3(0.0, 0.0, s));
-	vec3 normal = normalize(vec3(sd100 - sd000, sd010 - sd000, sd001 - sd000));
-	return normal;
-}
+layout (set = 0, binding = 5, std430) restrict buffer HitBuffer {
+	// X, Y, Z is hit position
+	// W is integer triangle index
+	// Index is `pixel_pos_in_tile.x + pixel_pos_in_tile.y * tile_resolution + tile_index * (tile_resolution ^ 2)`
+	vec4 positions[];
+} u_hits;
 
 const int TRI_NO_INTERSECTION = 0;
 const int TRI_PARALLEL = 1;
@@ -123,60 +101,17 @@ int ray_intersects_triangle(vec3 p_from, vec3 p_dir, vec3 p_v0, vec3 p_v1, vec3 
 	}
 }
 
-vec3 get_triangle_normal(vec3 v0, vec3 v1, vec3 v2) {
-	vec3 e1 = v1 - v0;
-	vec3 e2 = v2 - v0;
-	return normalize(cross(e2, e1));
-}
-
-mat3 basis_from_axis_angle_cs(vec3 p_axis, float cosine, float sine) {
-	// Rotation matrix from axis and angle, see
-	// https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_angle
-
-	mat3 cols;
-
-	const vec3 axis_sq = vec3(p_axis.x * p_axis.x, p_axis.y * p_axis.y, p_axis.z * p_axis.z);
-	cols[0][0] = axis_sq.x + cosine * (1.0f - axis_sq.x);
-	cols[1][1] = axis_sq.y + cosine * (1.0f - axis_sq.y);
-	cols[2][2] = axis_sq.z + cosine * (1.0f - axis_sq.z);
-
-	const float t = 1 - cosine;
-
-	float xyzt = p_axis.x * p_axis.y * t;
-	float zyxs = p_axis.z * sine;
-	cols[1][0] = xyzt - zyxs;
-	cols[0][1] = xyzt + zyxs;
-
-	xyzt = p_axis.x * p_axis.z * t;
-	zyxs = p_axis.y * sine;
-	cols[2][0] = xyzt + zyxs;
-	cols[0][2] = xyzt - zyxs;
-
-	xyzt = p_axis.y * p_axis.z * t;
-	zyxs = p_axis.x * sine;
-	cols[2][1] = xyzt - zyxs;
-	cols[1][2] = xyzt + zyxs;
-
-	return cols;
-}
-
-vec3 rotate_vec3_cs(const vec3 v, const vec3 axis, float cosine, float sine) {
-	return basis_from_axis_angle_cs(axis, cosine, sine) * v;
-}
-
 void main() {
-	const ivec2 pixel_pos = ivec2(gl_GlobalInvocationID.xy);
-
-	const ivec2 tile_pos = pixel_pos / u_params.tile_size_pixels;
-	const int tile_index = tile_pos.x + tile_pos.y * u_params.tiles_x;
+	const int tile_index = int(gl_GlobalInvocationID.z);
 
 	const ivec2 tile_data = u_tile_data.data[tile_index];
 	const int tri_count = (tile_data.y >> 4) & 0x7;
 
 	if (tri_count == 0) {
-		//imageStore(u_target_image, pixel_pos, ivec4(127,127,127,255));
 		return;
 	}
+
+	const ivec2 pixel_pos_in_tile = ivec2(gl_GlobalInvocationID.xy);
 
 	const int tri_info_begin = tile_data.y >> 8;
 	const int projection = tile_data.y & 0x3;
@@ -195,7 +130,6 @@ void main() {
 	const vec3 dx = vec3(float(projection == 1 || projection == 2), 0.0, float(projection == 0));
 	const vec3 dy = vec3(0.0, float(projection == 0 || projection == 2), float(projection == 1));
 
-	const ivec2 pixel_pos_in_tile = pixel_pos - tile_pos * u_params.tile_size_pixels;
 	const vec2 pos_in_tile = u_params.pixel_world_step * vec2(pixel_pos_in_tile);
 	const vec3 ray_origin_mesh = cell_origin_mesh
 		 - 1.01 * ray_dir * cell_size_world
@@ -204,9 +138,7 @@ void main() {
 	// Find closest hit triangle
 	const float no_hit_distance = 999999.0;
 	float nearest_hit_distance = no_hit_distance;
-	vec3 tri_v0;
-	vec3 tri_v1;
-	vec3 tri_v2;
+	int nearest_hit_tri_index = -1;
 	for (int i = 0; i < tri_count; ++i) {
 		const int tri_index = u_cell_tris.data[tri_info_begin + i];
 		const int ii0 = tri_index * 3;
@@ -224,37 +156,17 @@ void main() {
 
 		if (intersection_result == TRI_INTERSECTION && hit_distance < nearest_hit_distance) {
 			nearest_hit_distance = hit_distance;
-			tri_v0 = v0;
-			tri_v1 = v1;
-			tri_v2 = v2;
+			nearest_hit_tri_index = tri_index;
 		}
 	}
 
-	ivec4 col = ivec4(127, 127, 127, 255);
+	const int index = pixel_pos_in_tile.x + pixel_pos_in_tile.y * u_params.tile_size_pixels 
+		+ tile_index * u_params.tile_size_pixels * u_params.tile_size_pixels;
 
-	if (nearest_hit_distance != no_hit_distance) {
+	if (nearest_hit_tri_index != -1) {
 		const vec3 hit_pos_world = ray_origin_mesh + ray_dir * nearest_hit_distance + u_params.block_origin_world;
-
-		const vec3 sd_normal = get_sd_normal(hit_pos_world, u_params.pixel_world_step);
-		const vec3 tri_normal = get_triangle_normal(tri_v0, tri_v1, tri_v2);
-
-		vec3 normal = sd_normal;
-
-		// Clamp normal if it deviates too much
-		const float tdot = dot(sd_normal, tri_normal);
-		if (tdot < u_params.max_deviation_cosine) {
-			if (tdot < -0.999) {
-				normal = tri_normal;
-			} else {
-				const vec3 axis = normalize(cross(tri_normal, normal));
-				normal = rotate_vec3_cs(tri_normal, axis, 
-					u_params.max_deviation_cosine, 
-					u_params.max_deviation_sine);
-			}
-		}
-
-		col = ivec4(255.0 * (vec3(0.5) + 0.5 * normal), 255);
+		u_hits.positions[index] = vec4(hit_pos_world, nearest_hit_tri_index);
+	} else {
+		u_hits.positions[index] = vec4(0.0, 0.0, 0.0, -1.0);
 	}
-
-	imageStore(u_target_image, pixel_pos, col);
 }

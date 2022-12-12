@@ -85,8 +85,8 @@ void test_normalmap_render_gpu() {
 	virtual_texture_settings.enabled = true;
 	virtual_texture_settings.begin_lod_index = 0;
 	virtual_texture_settings.max_deviation_degrees = 60;
-	virtual_texture_settings.tile_resolution_min = 32;
-	virtual_texture_settings.tile_resolution_max = 32;
+	virtual_texture_settings.tile_resolution_min = 16;
+	virtual_texture_settings.tile_resolution_max = 16;
 	virtual_texture_settings.octahedral_encoding_enabled = false;
 
 	GenerateDistanceNormalmapTask nm_task;
@@ -161,14 +161,14 @@ void test_normalmap_render_gpu() {
 		}
 	};
 
+	// Debug dumps
+	// gpu_atlas_image->save_png("test_gpu_normalmap.png");
+	// cpu_atlas_image->save_png("test_cpu_normalmap.png");
+
 	// Simple compare for now. Ideally we should analyze more things. A challenge is that the two approaches produce
 	// slightly different images, even though they are functionally equivalent.
 	const float diff = L::compare(**cpu_atlas_image, **gpu_atlas_image);
 	ZN_TEST_ASSERT(diff < 0.1);
-
-	// Debug dumps
-	// gpu_atlas_image->save_png("test_gpu_normalmap.png");
-	// cpu_atlas_image->save_png("test_cpu_normalmap.png");
 }
 
 } // namespace zylann::voxel::tests

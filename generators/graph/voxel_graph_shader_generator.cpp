@@ -68,7 +68,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	CodeGenHelper codegen(main_ss, lib_ss);
 
 	// This function name is chosen to match the expected signature when used with normalmap baking compute shaders.
-	codegen.add("float generate_sdf(vec3 pos) {\n");
+	codegen.add("float get_sd(vec3 pos) {\n");
 	codegen.indent();
 
 	std::unordered_map<ProgramGraph::PortLocation, std::string> port_to_var;

@@ -25,13 +25,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 
 	ERR_FAIL_COND(shader == nullptr);
 	ERR_FAIL_COND(!shader->is_valid());
-	const RID shader_rid = shader->get_rid();
-
-	// Each shader has the same group sizes for now.
-	// TODO What about atlases that are not exactly a multiple of 8?
-	const int local_group_size_x = 8;
-	const int local_group_size_y = 8;
-	const int local_group_size_z = 1;
 
 	RenderingDevice &rd = ctx.rendering_device;
 
@@ -50,7 +43,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	// - It seems I could pool storage buffers and call `buffer_update`?
 	// - Creating a texture (image...) also requires a pool, but perhaps a more specialized one? I can't create a
 	// max-sized texture to fit all cases, since it has to be downloaded after, and download speed directly depends on
-	// the size of the data...
+	// the size of the data. Also, why should I use an image anyways?
 	// - Do I really have to create a new uniform set every time I modify just one of the passed values?
 
 	// We can't create resources while making the compute list, so we'll spaghetti a bit and have to create them first
@@ -68,7 +61,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> image0_uniform;
 	image0_uniform.instantiate();
 	image0_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_IMAGE);
-	image0_uniform->set_binding(0);
 	image0_uniform->add_id(_normalmap_texture0_rid);
 
 	// Second temporary image
@@ -83,7 +75,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	image1_uniform.instantiate();
 	image1_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_IMAGE);
 	image1_uniform->add_id(_normalmap_texture1_rid);
-	image1_uniform->set_binding(1);
 
 	// Mesh vertices
 
@@ -96,7 +87,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> mesh_vertices_uniform;
 	mesh_vertices_uniform.instantiate();
 	mesh_vertices_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	mesh_vertices_uniform->set_binding(1);
 	mesh_vertices_uniform->add_id(_mesh_vertices_rid);
 
 	// Mesh indices
@@ -110,7 +100,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> mesh_indices_uniform;
 	mesh_indices_uniform.instantiate();
 	mesh_indices_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	mesh_indices_uniform->set_binding(2);
 	mesh_indices_uniform->add_id(_mesh_indices_rid);
 
 	// Cell tris
@@ -124,7 +113,6 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> cell_triangles_uniform;
 	cell_triangles_uniform.instantiate();
 	cell_triangles_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	cell_triangles_uniform->set_binding(3);
 	cell_triangles_uniform->add_id(_cell_triangles_rid);
 
 	// Tiles data
@@ -138,23 +126,102 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> tile_data_uniform;
 	tile_data_uniform.instantiate();
 	tile_data_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	tile_data_uniform->set_binding(4);
 	tile_data_uniform->add_id(_tile_data_rid);
+
+	// Gather hits params
+
+	struct GatherHitsParams {
+		Vector3f block_origin_world;
+		float pixel_world_step;
+		int32_t tile_size_pixels;
+	};
+
+	PackedByteArray gather_hits_params_pba;
+	copy_bytes_to(gather_hits_params_pba,
+			GatherHitsParams{ params.block_origin_world, params.pixel_world_step, params.tile_size_pixels });
+
+	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data, but need
+	// to care more about alignment
+	_gather_hits_params_rid = rd.storage_buffer_create(gather_hits_params_pba.size(), gather_hits_params_pba);
+	ERR_FAIL_COND(_gather_hits_params_rid.is_null());
+
+	Ref<RDUniform> gather_hits_params_uniform;
+	gather_hits_params_uniform.instantiate();
+	gather_hits_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	gather_hits_params_uniform->add_id(_gather_hits_params_rid);
+
+	// Hit buffer
+
+	const unsigned int hit_positions_buffer_size_bytes =
+			tile_data.size() * math::squared(params.tile_size_pixels) * sizeof(float) * 4;
+	_hit_positions_buffer_rid = rd.storage_buffer_create(hit_positions_buffer_size_bytes);
+
+	Ref<RDUniform> hit_positions_uniform;
+	hit_positions_uniform.instantiate();
+	hit_positions_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	hit_positions_uniform->add_id(_hit_positions_buffer_rid);
+
+	// Modifier params
+
+	struct ModifierParams {
+		enum Ops { OP_UNION = 0, OP_SUBTRACT = 1, OP_REPLACE };
+
+		int32_t tile_size_pixels;
+		float pxiel_world_step;
+		int32_t operation;
+	};
+
+	PackedByteArray modifier_params_pba;
+	// TODO We may have more than one to apply in the future
+	copy_bytes_to(modifier_params_pba,
+			ModifierParams{ params.tile_size_pixels, params.pixel_world_step, ModifierParams::OP_REPLACE });
+
+	_modifier_params_rid = rd.storage_buffer_create(modifier_params_pba.size(), modifier_params_pba);
+
+	Ref<RDUniform> modifier_params_uniform;
+	modifier_params_uniform.instantiate();
+	modifier_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	modifier_params_uniform->add_id(_modifier_params_rid);
+
+	// SD buffers
+
+	// TODO Maybe using half-precision would work well enough?
+	const unsigned int sd_buffer_size_bytes =
+			tile_data.size() * math::squared(params.tile_size_pixels) * 4 * sizeof(float);
+
+	_sd_buffer0_rid = rd.storage_buffer_create(sd_buffer_size_bytes);
+	_sd_buffer1_rid = rd.storage_buffer_create(sd_buffer_size_bytes);
+
+	Ref<RDUniform> sd_buffer0_uniform;
+	sd_buffer0_uniform.instantiate();
+	sd_buffer0_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	sd_buffer0_uniform->add_id(_sd_buffer0_rid);
+
+	Ref<RDUniform> sd_buffer1_uniform;
+	sd_buffer1_uniform.instantiate();
+	sd_buffer1_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+	sd_buffer1_uniform->add_id(_sd_buffer1_rid);
 
 	// Normalmap params
 
-	PackedByteArray normalmap_params_pba;
-	copy_bytes_to(normalmap_params_pba, params);
+	struct NormalmapParams {
+		int32_t tile_size_pixels;
+		int32_t tiles_x;
+		float max_deviation_cosine;
+		float max_deviation_sine;
+	};
 
-	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data.
-	_normalmap_rendering_params_rid = rd.storage_buffer_create(normalmap_params_pba.size(), normalmap_params_pba);
-	ERR_FAIL_COND(_normalmap_rendering_params_rid.is_null());
+	PackedByteArray normalmap_params_pba;
+	copy_bytes_to(normalmap_params_pba,
+			NormalmapParams{
+					params.tile_size_pixels, params.tiles_x, params.max_deviation_cosine, params.max_deviation_sine });
+
+	_normalmap_params_rid = rd.storage_buffer_create(normalmap_params_pba.size(), normalmap_params_pba);
 
 	Ref<RDUniform> normalmap_params_uniform;
 	normalmap_params_uniform.instantiate();
 	normalmap_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	normalmap_params_uniform->set_binding(5);
-	normalmap_params_uniform->add_id(_normalmap_rendering_params_rid);
+	normalmap_params_uniform->add_id(_normalmap_params_rid);
 
 	// Dilation params
 
@@ -170,53 +237,31 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	Ref<RDUniform> dilation_params_uniform;
 	dilation_params_uniform.instantiate();
 	dilation_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_UNIFORM_BUFFER);
-	dilation_params_uniform->set_binding(2);
 	dilation_params_uniform->add_id(_dilation_params_rid);
 
-	// Normalmap uniform set
-
-	Array uniforms;
-	uniforms.resize(6);
-	uniforms[0] = image0_uniform;
-	uniforms[1] = mesh_vertices_uniform;
-	uniforms[2] = mesh_indices_uniform;
-	uniforms[3] = cell_triangles_uniform;
-	uniforms[4] = tile_data_uniform;
-	uniforms[5] = normalmap_params_uniform;
-
-	// Extra params
-	if (shader_params != nullptr && shader_params->params.size() > 0) {
-		for (ComputeShaderParameters::Param &p : shader_params->params) {
-			ZN_ASSERT(p.resource.is_valid());
-			// Only textures expected for now
-			ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE);
-
-			Ref<RDUniform> tex_uniform;
-			tex_uniform.instantiate();
-			tex_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE);
-			tex_uniform->set_binding(p.binding);
-			// This API is just weird. Also, it switches to using a dynamically allocated vector if more than one ID is
-			// provided. But seriously, why is it not a fixed-size vector, considering that I can't think of cases that
-			// would require more than a few IDs?
-			tex_uniform->add_id(VoxelEngine::get_singleton().get_filtering_sampler());
-			tex_uniform->add_id(p.resource.get_rid());
-			uniforms.append(tex_uniform);
-		}
-	}
-
-	const RID uniform_set_rid = uniform_set_create(rd, uniforms, shader_rid, 0);
-
-	// Normalmap rendering pipeline
-
+	// Pipelines
 	// Not sure what a pipeline is required for in compute shaders, it seems to be required "just because"
-	_normalmap_rendering_pipeline_rid = rd.compute_pipeline_create(shader_rid);
-	ERR_FAIL_COND(_normalmap_rendering_pipeline_rid.is_null());
 
-	// Dilation pipeline
+	const RID gather_hits_shader_rid = VoxelEngine::get_singleton().get_detail_gather_hits_compute_shader().get_rid();
+	ERR_FAIL_COND(gather_hits_shader_rid.is_null());
+	// TODO Perhaps we could cache this pipeline?
+	_gather_hits_pipeline_rid = rd.compute_pipeline_create(gather_hits_shader_rid);
+	ERR_FAIL_COND(_gather_hits_pipeline_rid.is_null());
+
+	const RID shader_rid = shader->get_rid();
+	_detail_modifier_pipeline_rid = rd.compute_pipeline_create(shader_rid);
+	ERR_FAIL_COND(_detail_modifier_pipeline_rid.is_null());
+
+	const RID detail_normalmap_shader_rid =
+			VoxelEngine::get_singleton().get_detail_normalmap_compute_shader().get_rid();
+	ERR_FAIL_COND(detail_normalmap_shader_rid.is_null());
+	// TODO Perhaps we could cache this pipeline?
+	_detail_normalmap_pipeline_rid = rd.compute_pipeline_create(detail_normalmap_shader_rid);
+	ERR_FAIL_COND(_detail_normalmap_pipeline_rid.is_null());
 
 	const RID dilation_shader_rid = VoxelEngine::get_singleton().get_dilate_normalmap_compute_shader().get_rid();
 	ERR_FAIL_COND(dilation_shader_rid.is_null());
-
+	// TODO Perhaps we could cache this pipeline?
 	_normalmap_dilation_pipeline_rid = rd.compute_pipeline_create(dilation_shader_rid);
 	ERR_FAIL_COND(_normalmap_dilation_pipeline_rid.is_null());
 
@@ -224,21 +269,132 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 
 	const int compute_list_id = rd.compute_list_begin();
 
-	// Normalmap rendering
+	// Gather hits
 	{
-		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_rendering_pipeline_rid);
-		rd.compute_list_bind_uniform_set(compute_list_id, uniform_set_rid, 0);
-		rd.compute_list_dispatch(compute_list_id, math::ceildiv(texture_width, local_group_size_x),
-				math::ceildiv(texture_height, local_group_size_y), local_group_size_z);
+		mesh_vertices_uniform->set_binding(0);
+		mesh_indices_uniform->set_binding(1);
+		cell_triangles_uniform->set_binding(2);
+		tile_data_uniform->set_binding(3);
+		gather_hits_params_uniform->set_binding(4);
+		hit_positions_uniform->set_binding(5);
+
+		Array gather_hits_uniforms;
+		gather_hits_uniforms.resize(6);
+		gather_hits_uniforms[0] = mesh_vertices_uniform;
+		gather_hits_uniforms[1] = mesh_indices_uniform;
+		gather_hits_uniforms[2] = cell_triangles_uniform;
+		gather_hits_uniforms[3] = tile_data_uniform;
+		gather_hits_uniforms[4] = gather_hits_params_uniform;
+		gather_hits_uniforms[5] = hit_positions_uniform;
+
+		const RID gather_hits_uniform_set_rid = uniform_set_create(rd, gather_hits_uniforms, gather_hits_shader_rid, 0);
+
+		rd.compute_list_bind_compute_pipeline(compute_list_id, _gather_hits_pipeline_rid);
+		rd.compute_list_bind_uniform_set(compute_list_id, gather_hits_uniform_set_rid, 0);
+
+		const int local_group_size_x = 4;
+		const int local_group_size_y = 4;
+		const int local_group_size_z = 4;
+		rd.compute_list_dispatch(compute_list_id, //
+				math::ceildiv(params.tile_size_pixels, local_group_size_x),
+				math::ceildiv(params.tile_size_pixels, local_group_size_y),
+				math::ceildiv(tile_data.size(), local_group_size_z));
 	}
 
 	// Ensure dependencies are ready before running dilation on the result (I though this was automatically handled?
 	// Why is barrier necessary anyways? Is dependency resolution actually not automatic?)
 	rd.compute_list_add_barrier(compute_list_id);
 
+	// Generate signed distances
+	{
+		hit_positions_uniform->set_binding(0);
+		modifier_params_uniform->set_binding(1);
+		sd_buffer0_uniform->set_binding(2);
+		sd_buffer1_uniform->set_binding(3);
+
+		Array detail_modifier_uniforms;
+		detail_modifier_uniforms.resize(4);
+		detail_modifier_uniforms[0] = hit_positions_uniform;
+		detail_modifier_uniforms[1] = modifier_params_uniform;
+		detail_modifier_uniforms[2] = sd_buffer0_uniform;
+		detail_modifier_uniforms[3] = sd_buffer1_uniform;
+
+		// Extra params
+		if (shader_params != nullptr && shader_params->params.size() > 0) {
+			for (ComputeShaderParameters::Param &p : shader_params->params) {
+				ZN_ASSERT(p.resource.is_valid());
+				// Only textures expected for now
+				ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE);
+
+				Ref<RDUniform> tex_uniform;
+				tex_uniform.instantiate();
+				tex_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE);
+				tex_uniform->set_binding(p.binding);
+				// This API is just weird. Also, it switches to using a dynamically allocated vector if more than one ID
+				// is provided. But seriously, why is it not a fixed-size vector, considering that I can't think of
+				// cases that would require more than a few IDs?
+				tex_uniform->add_id(VoxelEngine::get_singleton().get_filtering_sampler());
+				tex_uniform->add_id(p.resource.get_rid());
+				detail_modifier_uniforms.append(tex_uniform);
+			}
+		}
+
+		const RID detail_modifier_uniform_set = uniform_set_create(rd, detail_modifier_uniforms, shader_rid, 0);
+
+		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_modifier_pipeline_rid);
+		rd.compute_list_bind_uniform_set(compute_list_id, detail_modifier_uniform_set, 0);
+
+		const int local_group_size_x = 4;
+		const int local_group_size_y = 4;
+		const int local_group_size_z = 4;
+		rd.compute_list_dispatch(compute_list_id, //
+				math::ceildiv(params.tile_size_pixels, local_group_size_x),
+				math::ceildiv(params.tile_size_pixels, local_group_size_y),
+				math::ceildiv(tile_data.size(), local_group_size_z));
+	}
+
+	rd.compute_list_add_barrier(compute_list_id);
+
+	// Normalmap rendering
+	{
+		sd_buffer1_uniform->set_binding(0);
+		mesh_vertices_uniform->set_binding(1);
+		mesh_indices_uniform->set_binding(2);
+		hit_positions_uniform->set_binding(3);
+		normalmap_params_uniform->set_binding(4);
+		image0_uniform->set_binding(5);
+
+		Array detail_normalmap_uniforms;
+		detail_normalmap_uniforms.resize(6);
+		detail_normalmap_uniforms[0] = sd_buffer1_uniform;
+		detail_normalmap_uniforms[1] = mesh_vertices_uniform;
+		detail_normalmap_uniforms[2] = mesh_indices_uniform;
+		detail_normalmap_uniforms[3] = hit_positions_uniform;
+		detail_normalmap_uniforms[4] = normalmap_params_uniform;
+		detail_normalmap_uniforms[5] = image0_uniform;
+
+		const RID detail_normalmap_uniform_set_rid =
+				uniform_set_create(rd, detail_normalmap_uniforms, detail_normalmap_shader_rid, 0);
+
+		rd.compute_list_bind_compute_pipeline(compute_list_id, _detail_normalmap_pipeline_rid);
+		rd.compute_list_bind_uniform_set(compute_list_id, detail_normalmap_uniform_set_rid, 0);
+
+		const int local_group_size_x = 4;
+		const int local_group_size_y = 4;
+		const int local_group_size_z = 4;
+		rd.compute_list_dispatch(compute_list_id, //
+				math::ceildiv(params.tile_size_pixels, local_group_size_x),
+				math::ceildiv(params.tile_size_pixels, local_group_size_y),
+				math::ceildiv(tile_data.size(), local_group_size_z));
+	}
+
+	rd.compute_list_add_barrier(compute_list_id);
+
 	// Dilation step 1
 	{
-		// Uniform set
+		image0_uniform->set_binding(0);
+		image1_uniform->set_binding(1);
+		dilation_params_uniform->set_binding(2);
 
 		Array dilation_uniforms;
 		dilation_uniforms.resize(3);
@@ -250,6 +406,10 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
+
+		const int local_group_size_x = 8;
+		const int local_group_size_y = 8;
+		const int local_group_size_z = 1;
 		rd.compute_list_dispatch(compute_list_id, math::ceildiv(texture_width, local_group_size_x),
 				math::ceildiv(texture_height, local_group_size_y), local_group_size_z);
 	}
@@ -274,6 +434,10 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 		const RID dilation_uniform_set_rid = uniform_set_create(rd, dilation_uniforms, dilation_shader_rid, 0);
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
+
+		const int local_group_size_x = 8;
+		const int local_group_size_y = 8;
+		const int local_group_size_z = 1;
 		rd.compute_list_dispatch(compute_list_id, math::ceildiv(texture_width, local_group_size_x),
 				math::ceildiv(texture_height, local_group_size_y), local_group_size_z);
 	}
@@ -296,14 +460,23 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(Re
 
 		free_rendering_device_rid(rd, _normalmap_texture0_rid);
 		free_rendering_device_rid(rd, _normalmap_texture1_rid);
-		free_rendering_device_rid(rd, _normalmap_rendering_params_rid);
-		free_rendering_device_rid(rd, _tile_data_rid);
-		free_rendering_device_rid(rd, _cell_triangles_rid);
-		free_rendering_device_rid(rd, _mesh_indices_rid);
-		free_rendering_device_rid(rd, _mesh_vertices_rid);
-		free_rendering_device_rid(rd, _normalmap_rendering_pipeline_rid);
+
+		free_rendering_device_rid(rd, _gather_hits_pipeline_rid);
+		free_rendering_device_rid(rd, _detail_modifier_pipeline_rid);
+		free_rendering_device_rid(rd, _detail_normalmap_pipeline_rid);
 		free_rendering_device_rid(rd, _normalmap_dilation_pipeline_rid);
+
+		free_rendering_device_rid(rd, _mesh_vertices_rid);
+		free_rendering_device_rid(rd, _mesh_indices_rid);
+		free_rendering_device_rid(rd, _cell_triangles_rid);
+		free_rendering_device_rid(rd, _tile_data_rid);
+		free_rendering_device_rid(rd, _gather_hits_params_rid);
 		free_rendering_device_rid(rd, _dilation_params_rid);
+		free_rendering_device_rid(rd, _hit_positions_buffer_rid);
+		free_rendering_device_rid(rd, _modifier_params_rid);
+		free_rendering_device_rid(rd, _sd_buffer0_rid);
+		free_rendering_device_rid(rd, _sd_buffer1_rid);
+		free_rendering_device_rid(rd, _normalmap_params_rid);
 	}
 
 	// Uniform sets auto-free themselves once their contents are freed.

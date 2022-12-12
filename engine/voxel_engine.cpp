@@ -12,6 +12,8 @@
 
 namespace zylann::voxel {
 
+#include "detail_gather_hits_shader.h"
+#include "detail_normalmap_shader.h"
 #include "dilate_normalmap_shader.h"
 
 VoxelEngine *g_voxel_engine = nullptr;
@@ -89,6 +91,8 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 void VoxelEngine::load_shaders() {
 	if (_rendering_device != nullptr) {
 		_dilate_normalmap_shader.load_from_glsl(g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
+		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
+		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
 	}
 }
 
@@ -103,7 +107,10 @@ VoxelEngine::~VoxelEngine() {
 	_gpu_task_runner.stop();
 
 	if (_rendering_device != nullptr) {
+		// Free these explicitely because we are going to free the RenderindDevice too
 		_dilate_normalmap_shader.clear();
+		_detail_gather_hits_shader.clear();
+		_detail_normalmap_shader.clear();
 
 		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
 		_filtering_sampler_rid = RID();
@@ -338,6 +345,14 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 
 const ComputeShader &VoxelEngine::get_dilate_normalmap_compute_shader() const {
 	return _dilate_normalmap_shader;
+}
+
+const ComputeShader &VoxelEngine::get_detail_gather_hits_compute_shader() const {
+	return _detail_gather_hits_shader;
+}
+
+const ComputeShader &VoxelEngine::get_detail_normalmap_compute_shader() const {
+	return _detail_normalmap_shader;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

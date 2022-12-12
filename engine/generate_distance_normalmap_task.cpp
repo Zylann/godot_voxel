@@ -206,10 +206,6 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	build_gpu_tiles_data(*cell_iterator, tile_count, cell_triangles, tile_data, mesh_indices, mesh_normals);
 	ZN_ASSERT(cell_triangles.size() > 0);
 
-	// Complete with empty entries, necessary to cover the whole texture the shader will run on. There can be a few
-	// empty entries.
-	tile_data.resize(math::squared(tiles_across), { 0 });
-
 	GenerateDistanceNormalMapGPUTask::Params params;
 	params.block_origin_world = to_vec3f(origin_in_voxels);
 	params.pixel_world_step = float(1 << lod_index) / float(tile_resolution);

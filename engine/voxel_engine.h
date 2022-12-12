@@ -215,6 +215,8 @@ public:
 	}
 
 	const ComputeShader &get_dilate_normalmap_compute_shader() const;
+	const ComputeShader &get_detail_gather_hits_compute_shader() const;
+	const ComputeShader &get_detail_normalmap_compute_shader() const;
 
 	RID get_filtering_sampler() const {
 		return _filtering_sampler_rid;
@@ -273,8 +275,10 @@ private:
 	Mutex _rendering_device_mutex;
 	GPUTaskRunner _gpu_task_runner;
 
-	// TODO I don't know yet where to store this resource, at some point we may find a more dedicated place
+	// TODO I don't know yet where to store these resource, at some point we may find a more dedicated place
 	ComputeShader _dilate_normalmap_shader;
+	ComputeShader _detail_gather_hits_shader;
+	ComputeShader _detail_normalmap_shader;
 };
 
 struct VoxelFileLockerRead {
