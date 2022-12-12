@@ -22,6 +22,26 @@ void ComputeShader::clear() {
 	}
 }
 
+String format_source_code_with_line_numbers(String src) {
+	String dst;
+	const PackedStringArray lines = src.split("\n", true);
+	for (int i = 0; i < lines.size(); ++i) {
+		const int line_number = i + 1;
+		dst += String::num_int64(line_number);
+		if (line_number < 10) {
+			dst += "   ";
+		} else if (line_number < 100) {
+			dst += "  ";
+		} else if (line_number < 1000) {
+			dst += " ";
+		}
+		dst += "| ";
+		dst += lines[i];
+		dst += "\n";
+	}
+	return dst;
+}
+
 void ComputeShader::load_from_glsl(String source_text, String name) {
 	ZN_PROFILE_SCOPE();
 	clear();
@@ -40,8 +60,14 @@ void ComputeShader::load_from_glsl(String source_text, String name) {
 
 	const String error_message = shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE);
 	if (error_message != "") {
-		ERR_PRINT("Failed to compile compute shader");
+		ERR_PRINT(String("Failed to compile compute shader '{0}'").format(varray(name)));
 		print_line(error_message);
+
+		if (is_verbose_output_enabled()) {
+			const String formatted_source_text = format_source_code_with_line_numbers(source_text);
+			print_line(formatted_source_text);
+		}
+
 		return;
 	}
 

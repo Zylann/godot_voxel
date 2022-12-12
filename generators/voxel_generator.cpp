@@ -71,20 +71,6 @@ std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_virtual_rendering_s
 
 #include "../engine/render_normalmap_shader_template.h"
 
-String format_source_code_with_line_numbers(String src) {
-	String dst;
-	const PackedStringArray lines = src.split("\n", true);
-	for (int i = 0; i < lines.size(); ++i) {
-		dst += String::num_int64(i + 1);
-		while (dst.size() < 5) {
-			dst += " ";
-		}
-		dst += "| ";
-		dst += lines[i];
-	}
-	return dst;
-}
-
 std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
 	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
@@ -117,12 +103,6 @@ std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 	// TODO Pick different name somehow for different generators
 	std::shared_ptr<ComputeShader> shader =
 			ComputeShader::create_from_glsl(source_text, "zylann.voxel.render_normalmap.gen");
-
-	if (is_verbose_output_enabled() && shader != nullptr && !shader->is_valid()) {
-		print_line("----- Virtual Rendering Shader ------");
-		print_line(source_text);
-		print_line("-------------------------------------");
-	}
 
 	return shader;
 }
