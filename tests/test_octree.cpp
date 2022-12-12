@@ -8,10 +8,10 @@
 #include <unordered_set>
 
 void test_octree_update() {
-	const float lod_distance = 80;
-	const float view_distance = 1024;
-	const int lod_count = 6;
-	const int block_size = 16;
+	static const float lod_distance = 80;
+	static const float view_distance = 1024;
+	static const int lod_count = 6;
+	static const int block_size = 16;
 	const Vector3 block_size_v(block_size, block_size, block_size);
 	Vector3 viewer_pos = Vector3(100, 50, 200);
 	const int octree_size = block_size << (lod_count - 1);
