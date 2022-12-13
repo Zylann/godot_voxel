@@ -137,7 +137,7 @@ void VoxelMeshSDF::bake() {
 		case BAKE_MODE_APPROX_FLOODFILL: {
 			mesh_sdf::ChunkGrid chunk_grid;
 			mesh_sdf::partition_triangles(_partition_subdiv, to_span(triangles), box_min_pos, box_max_pos, chunk_grid);
-			//mesh_sdf::compute_near_chunks(chunk_grid);
+			// mesh_sdf::compute_near_chunks(chunk_grid);
 			mesh_sdf::generate_mesh_sdf_approx_floodfill(
 					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix);
 		} break;
@@ -163,7 +163,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
 	VoxelEngineUpdater::ensure_existence(scene_tree);
 
-	//ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
+	// ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
 
 	struct L {
 		static void notify_on_complete(VoxelMeshSDF &obj, mesh_sdf::GenMeshSDFSubBoxTask::SharedData &shared_data) {
@@ -281,7 +281,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
 							shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
 
-					//mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
+					// mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 
 					mesh_sdf::generate_mesh_sdf_approx_floodfill(sdf_grid, res, to_span(shared_data->triangles),
 							shared_data->chunk_grid, box_min_pos, box_max_pos, boundary_sign_fix);

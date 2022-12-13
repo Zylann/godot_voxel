@@ -118,7 +118,7 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
 	CRASH_COND(transforms.size() * sizeof(Transform3D) / sizeof(real_t) != static_cast<size_t>(bulk_array.size()));
 
-	//memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
+	// memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
 	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
 
 	float *w = bulk_array.ptrw();
