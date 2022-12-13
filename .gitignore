@@ -14,5 +14,5 @@
 *.dll
 *.ilk
 
-shaders/.godot/
+shaders/dev/.godot/
 *.gen.glsl
