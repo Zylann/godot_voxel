@@ -216,18 +216,8 @@ void VoxelModifierSphere::_bind_methods() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-zylann::voxel::VoxelModifierBuffer *get_buffer_modifier(VoxelLodTerrain &volume, uint32_t id) {
-	return get_modifier<zylann::voxel::VoxelModifierBuffer>(volume, id, zylann::voxel::VoxelModifier::TYPE_BUFFER);
-}
-
-static void set_buffer(zylann::voxel::VoxelModifierBuffer &bmod, Ref<VoxelMeshSDF> mesh_sdf) {
-	if (mesh_sdf.is_null() || mesh_sdf->get_voxel_buffer() == nullptr) {
-		bmod.set_buffer(nullptr, Vector3f(), Vector3f());
-	} else {
-		const AABB aabb = mesh_sdf->get_aabb();
-		bmod.set_buffer(mesh_sdf->get_voxel_buffer()->get_buffer_shared(), to_vec3f(aabb.position),
-				to_vec3f(aabb.position + aabb.size));
-	}
+zylann::voxel::VoxelModifierMesh *get_mesh_modifier(VoxelLodTerrain &volume, uint32_t id) {
+	return get_modifier<zylann::voxel::VoxelModifierMesh>(volume, id, zylann::voxel::VoxelModifier::TYPE_MESH);
 }
 
 void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
@@ -244,11 +234,11 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 	if (_volume == nullptr) {
 		return;
 	}
-	zylann::voxel::VoxelModifierBuffer *bmod = get_buffer_modifier(*_volume, _modifier_id);
-	ZN_ASSERT_RETURN(bmod != nullptr);
-	const AABB prev_aabb = bmod->get_aabb();
-	set_buffer(*bmod, _mesh_sdf);
-	const AABB new_aabb = bmod->get_aabb();
+	zylann::voxel::VoxelModifierMesh *modifier = get_mesh_modifier(*_volume, _modifier_id);
+	ZN_ASSERT_RETURN(modifier != nullptr);
+	const AABB prev_aabb = modifier->get_aabb();
+	modifier->set_mesh_sdf(_mesh_sdf);
+	const AABB new_aabb = modifier->get_aabb();
 	post_edit_modifier(*_volume, prev_aabb);
 	post_edit_modifier(*_volume, new_aabb);
 }
@@ -265,10 +255,10 @@ void VoxelModifierMesh::set_isolevel(float isolevel) {
 	if (_volume == nullptr) {
 		return;
 	}
-	zylann::voxel::VoxelModifierBuffer *bmod = get_buffer_modifier(*_volume, _modifier_id);
-	ZN_ASSERT_RETURN(bmod != nullptr);
-	bmod->set_isolevel(_isolevel);
-	post_edit_modifier(*_volume, bmod->get_aabb());
+	zylann::voxel::VoxelModifierMesh *modifier = get_mesh_modifier(*_volume, _modifier_id);
+	ZN_ASSERT_RETURN(modifier != nullptr);
+	modifier->set_isolevel(_isolevel);
+	post_edit_modifier(*_volume, modifier->get_aabb());
 }
 
 float VoxelModifierMesh::get_isolevel() const {
@@ -276,21 +266,21 @@ float VoxelModifierMesh::get_isolevel() const {
 }
 
 zylann::voxel::VoxelModifier *VoxelModifierMesh::create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id) {
-	zylann::voxel::VoxelModifierBuffer *bmod = modifiers.add_modifier<zylann::voxel::VoxelModifierBuffer>(id);
-	set_buffer(*bmod, _mesh_sdf);
-	bmod->set_isolevel(_isolevel);
-	return bmod;
+	zylann::voxel::VoxelModifierMesh *modifier = modifiers.add_modifier<zylann::voxel::VoxelModifierMesh>(id);
+	modifier->set_mesh_sdf(_mesh_sdf);
+	modifier->set_isolevel(_isolevel);
+	return modifier;
 }
 
 void VoxelModifierMesh::_on_mesh_sdf_baked() {
 	if (_volume == nullptr) {
 		return;
 	}
-	zylann::voxel::VoxelModifierBuffer *bmod = get_buffer_modifier(*_volume, _modifier_id);
-	ZN_ASSERT_RETURN(bmod != nullptr);
-	const AABB prev_aabb = bmod->get_aabb();
-	set_buffer(*bmod, _mesh_sdf);
-	const AABB new_aabb = bmod->get_aabb();
+	zylann::voxel::VoxelModifierMesh *modifier = get_mesh_modifier(*_volume, _modifier_id);
+	ZN_ASSERT_RETURN(modifier != nullptr);
+	const AABB prev_aabb = modifier->get_aabb();
+	modifier->set_mesh_sdf(_mesh_sdf);
+	const AABB new_aabb = modifier->get_aabb();
 	post_edit_modifier(*_volume, prev_aabb);
 	post_edit_modifier(*_volume, new_aabb);
 }

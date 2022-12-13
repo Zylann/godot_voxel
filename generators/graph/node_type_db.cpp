@@ -1121,7 +1121,7 @@ NodeTypeDB::NodeTypeDB() {
 				return;
 			}
 			ComputeShaderResource res;
-			res.create_texture(**curve);
+			res.create_texture_2d(**curve);
 			const std::string uniform_texture = ctx.add_uniform(std::move(res));
 			ctx.add_format("{} = texture({}, vec2({}, 0.0)).r;\n", ctx.get_output_name(0), uniform_texture,
 					ctx.get_input_name(0));

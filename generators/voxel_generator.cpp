@@ -2,6 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../engine/compute_shader.h"
 #include "../engine/compute_shader_parameters.h"
+#include "../engine/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 
 namespace zylann::voxel {
@@ -69,8 +70,6 @@ std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_virtual_rendering_s
 	}
 }
 
-#include "../engine/detail_modifier_shader_template.h"
-
 std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
 	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
@@ -83,26 +82,29 @@ std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
 
 	String source_text;
 	// We are only sure here what binding it's going to be, we can't do it earlier
-	const unsigned int generator_uniform_binding_start = 4;
+	const unsigned int generator_uniform_binding_start = 3;
 	{
-		source_text += g_detail_modifier_shader_template_0;
+		source_text += g_detail_generator_shader_template_0;
 
 		for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 			VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
 			const unsigned int binding = generator_uniform_binding_start + i;
+			ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE_2D);
 			source_text +=
 					String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
-			out_params.params.push_back(ComputeShaderParameters::Param{ binding, std::move(p.resource) });
+			std::shared_ptr<ComputeShaderResource> res = make_unique_instance<ComputeShaderResource>();
+			*res = std::move(p.resource);
+			out_params.params.push_back(ComputeShaderParameter{ binding, res });
 		}
 		source_text += "\n";
 
 		source_text += shader_data.glsl;
-		source_text += g_detail_modifier_shader_template_1;
+		source_text += g_detail_generator_shader_template_1;
 	}
 
 	// TODO Pick different name somehow for different generators
 	std::shared_ptr<ComputeShader> shader =
-			ComputeShader::create_from_glsl(source_text, "zylann.voxel.render_normalmap.gen");
+			ComputeShader::create_from_glsl(source_text, "zylann.voxel.detail_generator.gen");
 
 	return shader;
 }

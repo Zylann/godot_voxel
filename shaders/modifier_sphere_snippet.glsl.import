@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://flmrjme2tbar"
+path="res://.godot/imported/modifier_sphere_snippet.glsl-72e2f12821df8e5267b75fa506666977.res"
+
+[deps]
+
+source_file="res://modifier_sphere_snippet.glsl"
+dest_files=["res://.godot/imported/modifier_sphere_snippet.glsl-72e2f12821df8e5267b75fa506666977.res"]
+
+[params]
+

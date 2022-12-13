@@ -9,12 +9,9 @@
 #include "load_block_data_task.h"
 #include "mesh_block_task.h"
 #include "save_block_data_task.h"
+#include "shaders.h"
 
 namespace zylann::voxel {
-
-#include "detail_gather_hits_shader.h"
-#include "detail_normalmap_shader.h"
-#include "dilate_normalmap_shader.h"
 
 VoxelEngine *g_voxel_engine = nullptr;
 
@@ -89,10 +86,22 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 }
 
 void VoxelEngine::load_shaders() {
+	ZN_PROFILE_SCOPE();
+
 	if (_rendering_device != nullptr) {
+		ZN_PRINT_VERBOSE("Loading VoxelEngine shaders");
+
 		_dilate_normalmap_shader.load_from_glsl(g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
 		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
 		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
+
+		_detail_modifier_sphere_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
+						String(g_modifier_sphere_shader_snippet) + String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_sphere_shader");
+
+		_detail_modifier_mesh_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
+						String(g_modifier_mesh_shader_snippet) + String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_mesh_shader");
 	}
 }
 
@@ -111,6 +120,8 @@ VoxelEngine::~VoxelEngine() {
 		_dilate_normalmap_shader.clear();
 		_detail_gather_hits_shader.clear();
 		_detail_normalmap_shader.clear();
+		_detail_modifier_sphere_shader.clear();
+		_detail_modifier_mesh_shader.clear();
 
 		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
 		_filtering_sampler_rid = RID();
@@ -341,18 +352,6 @@ VoxelEngine::Stats VoxelEngine::get_stats() const {
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();
 	return s;
-}
-
-const ComputeShader &VoxelEngine::get_dilate_normalmap_compute_shader() const {
-	return _dilate_normalmap_shader;
-}
-
-const ComputeShader &VoxelEngine::get_detail_gather_hits_compute_shader() const {
-	return _detail_gather_hits_shader;
-}
-
-const ComputeShader &VoxelEngine::get_detail_normalmap_compute_shader() const {
-	return _detail_normalmap_shader;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

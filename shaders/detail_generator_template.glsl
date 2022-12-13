@@ -3,9 +3,8 @@
 
 // Takes a list of positions and evaluates a signed distance field in 4 locations around them.
 // The 4 locations are picked such that the result can be used to compute a gradient.
-// The result is then applied on top of previous values using a specified operation.
-
-// This shader may be dispatched multiple times for each source of voxel data that we may combine for a given chunk.
+// This is similar to a modifier except there is no operation applied.
+// Values are generated as a base, so the shader is simpler.
 
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
@@ -18,15 +17,9 @@ layout (set = 0, binding = 0, std430) restrict buffer PositionBuffer {
 layout (set = 0, binding = 1, std430) restrict buffer Params {
 	int tile_size_pixels;
 	float pixel_world_step;
-	int operation;
 } u_params;
 
-layout (set = 0, binding = 2, std430) restrict buffer InSDBuffer {
-	// 4 values per index
-	float values[];
-} u_in_sd;
-
-layout (set = 0, binding = 3, std430) restrict buffer OutSDBuffer {
+layout (set = 0, binding = 2, std430) restrict buffer OutSDBuffer {
 	// 4 values per index
 	float values[];
 } u_out_sd;
@@ -55,39 +48,8 @@ void main() {
 
 	const int sdi = index * 4;
 
-	float sd0 = u_in_sd.values[sdi];
-	float sd1 = u_in_sd.values[sdi + 1];
-	float sd2 = u_in_sd.values[sdi + 2];
-	float sd3 = u_in_sd.values[sdi + 3];
-
-	const float msd0 = get_sd(pos0);
-	const float msd1 = get_sd(pos1);
-	const float msd2 = get_sd(pos2);
-	const float msd3 = get_sd(pos3);
-
-	if (u_params.operation == 0) {
-		// Union
-		sd0 = min(msd0, sd0);
-		sd1 = min(msd1, sd1);
-		sd2 = min(msd2, sd2);
-		sd3 = min(msd3, sd3);
-
-	} else if (u_params.operation == 1) {
-		// Subtract
-		sd0 = max(msd0, -sd0);
-		sd1 = max(msd1, -sd1);
-		sd2 = max(msd2, -sd2);
-		sd3 = max(msd3, -sd3);
-
-	} else {
-		sd0 = msd0;
-		sd1 = msd1;
-		sd2 = msd2;
-		sd3 = msd3;
-	}
-
-	u_out_sd.values[sdi] = sd0;
-	u_out_sd.values[sdi + 1] = sd1;
-	u_out_sd.values[sdi + 2] = sd2;
-	u_out_sd.values[sdi + 3] = sd3;
+	u_out_sd.values[sdi] = get_sd(pos0);
+	u_out_sd.values[sdi + 1] = get_sd(pos1);
+	u_out_sd.values[sdi + 2] = get_sd(pos2);
+	u_out_sd.values[sdi + 3] = get_sd(pos3);
 }

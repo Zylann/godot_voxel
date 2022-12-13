@@ -214,9 +214,25 @@ public:
 		return *_rendering_device;
 	}
 
-	const ComputeShader &get_dilate_normalmap_compute_shader() const;
-	const ComputeShader &get_detail_gather_hits_compute_shader() const;
-	const ComputeShader &get_detail_normalmap_compute_shader() const;
+	const ComputeShader &get_dilate_normalmap_compute_shader() const {
+		return _dilate_normalmap_shader;
+	}
+
+	const ComputeShader &get_detail_gather_hits_compute_shader() const {
+		return _detail_gather_hits_shader;
+	}
+
+	const ComputeShader &get_detail_normalmap_compute_shader() const {
+		return _detail_normalmap_shader;
+	}
+
+	const ComputeShader &get_detail_modifier_sphere_shader() const {
+		return _detail_modifier_sphere_shader;
+	}
+
+	const ComputeShader &get_detail_modifier_mesh_shader() const {
+		return _detail_modifier_mesh_shader;
+	}
 
 	RID get_filtering_sampler() const {
 		return _filtering_sampler_rid;
@@ -279,6 +295,8 @@ private:
 	ComputeShader _dilate_normalmap_shader;
 	ComputeShader _detail_gather_hits_shader;
 	ComputeShader _detail_normalmap_shader;
+	ComputeShader _detail_modifier_sphere_shader;
+	ComputeShader _detail_modifier_mesh_shader;
 };
 
 struct VoxelFileLockerRead {

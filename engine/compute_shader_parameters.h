@@ -7,13 +7,14 @@
 
 namespace zylann::voxel {
 
+struct ComputeShaderParameter {
+	unsigned int binding = 0;
+	std::shared_ptr<ComputeShaderResource> resource;
+};
+
 // Equivalent of "materials" for compute shaders we use in the voxel engine
 struct ComputeShaderParameters {
-	struct Param {
-		unsigned int binding = 0;
-		ComputeShaderResource resource;
-	};
-	std::vector<Param> params;
+	std::vector<ComputeShaderParameter> params;
 };
 
 } // namespace zylann::voxel

@@ -49,8 +49,15 @@ public:
 
 	Params params;
 
+	// Base modifier (generator)
 	std::shared_ptr<ComputeShader> shader;
 	std::shared_ptr<ComputeShaderParameters> shader_params;
+
+	struct ModifierData {
+		RID shader_rid;
+		std::shared_ptr<ComputeShaderParameters> params;
+	};
+	std::vector<ModifierData> modifiers;
 
 	// Stuff to carry over for the second CPU pass
 	std::shared_ptr<VirtualTextureOutput> output;
@@ -70,7 +77,7 @@ private:
 	RID _normalmap_texture0_rid;
 	RID _normalmap_texture1_rid;
 	RID _gather_hits_pipeline_rid;
-	RID _detail_modifier_pipeline_rid;
+	RID _detail_generator_pipeline_rid;
 	RID _detail_normalmap_pipeline_rid;
 	RID _normalmap_dilation_pipeline_rid;
 	RID _mesh_vertices_rid;
@@ -80,10 +87,11 @@ private:
 	RID _gather_hits_params_rid;
 	RID _dilation_params_rid;
 	RID _hit_positions_buffer_rid;
-	RID _modifier_params_rid;
+	RID _generator_params_rid;
 	RID _sd_buffer0_rid;
 	RID _sd_buffer1_rid;
 	RID _normalmap_params_rid;
+	std::vector<RID> _detail_modifier_pipelines;
 };
 
 } // namespace zylann::voxel

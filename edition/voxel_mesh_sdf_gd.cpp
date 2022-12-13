@@ -345,6 +345,23 @@ AABB VoxelMeshSDF::get_aabb() const {
 	return AABB(to_godot(_min_pos), to_godot(_max_pos - _min_pos));
 }
 
+std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
+	MutexLock mlock(_gpu_resource_mutex);
+
+	if (_gpu_resource == nullptr && _voxel_buffer.is_valid()) {
+		const VoxelBufferInternal &buffer = _voxel_buffer->get_buffer();
+
+		Span<const float> sdf_grid;
+		ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, sdf_grid), _gpu_resource);
+
+		std::shared_ptr<ComputeShaderResource> resource = make_shared_instance<ComputeShaderResource>();
+		resource->create_texture_3d_zxy(sdf_grid, buffer.get_size());
+		_gpu_resource = resource;
+	}
+
+	return _gpu_resource;
+}
+
 Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 	Array result;
 

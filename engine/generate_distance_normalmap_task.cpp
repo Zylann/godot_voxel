@@ -3,6 +3,8 @@
 #include "voxel_engine.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../constants/voxel_constants.h"
+#include "../storage/modifiers.h"
+#include "../storage/voxel_data.h"
 #include "../util/math/conv.h"
 #include "generate_distance_normalmap_gpu_task.h"
 
@@ -227,6 +229,17 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	dst_vertices.reserve(mesh_vertices.size());
 	for (const Vector3f v : mesh_vertices) {
 		dst_vertices.push_back(Vector4f(v.x, v.y, v.z, 0.f));
+	}
+
+	if (voxel_data != nullptr) {
+		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(mesh_block_size << lod_index));
+		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+		const VoxelModifierStack &modifiers = voxel_data->get_modifiers();
+		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
+		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
+			gpu_task->modifiers.push_back(
+					GenerateDistanceNormalMapGPUTask::ModifierData{ d.detail_rendering_shader_rid, d.params });
+		}
 	}
 
 	gpu_task->cell_triangles = std::move(cell_triangles);
