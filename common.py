@@ -49,6 +49,7 @@ def get_sources(env, is_editor_build):
 
         "engine/*.cpp",
         "edition/*.cpp",
+        "shaders/*.cpp",
 
         "register_types.cpp",
 

@@ -2,7 +2,7 @@
 #include "../constants/voxel_string_names.h"
 #include "../engine/compute_shader.h"
 #include "../engine/compute_shader_parameters.h"
-#include "../engine/shaders.h"
+#include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 
 namespace zylann::voxel {

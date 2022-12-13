@@ -1,5 +1,6 @@
 #include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
+#include "../shaders/shaders.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -9,7 +10,6 @@
 #include "load_block_data_task.h"
 #include "mesh_block_task.h"
 #include "save_block_data_task.h"
-#include "shaders.h"
 
 namespace zylann::voxel {
 
