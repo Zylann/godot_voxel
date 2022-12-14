@@ -133,7 +133,7 @@ void ComputeShaderResource::create_texture_2d(const Curve &curve) {
 			const float t = i / static_cast<float>(width);
 			// TODO Thread-safety: `sample_baked` can actually be a WRITING method! The baked cache is lazily created
 			wd[i] = curve.sample_baked(t);
-			print_line(String("X: {0}, Y: {1}").format(varray(t, wd[i])));
+			// print_line(String("X: {0}, Y: {1}").format(varray(t, wd[i])));
 		}
 	}
 
