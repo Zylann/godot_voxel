@@ -7,26 +7,26 @@
 
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-layout (set = 0, binding = 0, std430) restrict buffer SDBuffer {
+layout (set = 0, binding = 0, std430) restrict readonly buffer SDBuffer {
 	// 4 values per index
 	float values[];
 } u_in_sd;
 
-layout (set = 0, binding = 1, std430) restrict buffer MeshVertices {
+layout (set = 0, binding = 1, std430) restrict readonly buffer MeshVertices {
 	vec3 data[];
 } u_vertices;
 
-layout (set = 0, binding = 2, std430) restrict buffer MeshIndices {
+layout (set = 0, binding = 2, std430) restrict readonly buffer MeshIndices {
 	int data[];
 } u_indices;
 
-layout (set = 0, binding = 3, std430) restrict buffer HitBuffer {
+layout (set = 0, binding = 3, std430) restrict readonly buffer HitBuffer {
 	// X, Y, Z is hit position (UNUSED)
 	// W is integer triangle index
 	vec4 positions[];
 } u_hits;
 
-layout (set = 0, binding = 4, std430) restrict buffer Params {
+layout (set = 0, binding = 4, std430) restrict readonly buffer Params {
 	int tile_size_pixels;
 	int tiles_x;
 	// cos(max_deviation_angle)

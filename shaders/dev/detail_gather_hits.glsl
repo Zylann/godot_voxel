@@ -10,22 +10,22 @@
 
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-layout (set = 0, binding = 0, std430) restrict buffer MeshVertices {
+layout (set = 0, binding = 0, std430) restrict readonly buffer MeshVertices {
 	vec3 data[];
 } u_vertices;
 
-layout (set = 0, binding = 1, std430) restrict buffer MeshIndices {
+layout (set = 0, binding = 1, std430) restrict readonly buffer MeshIndices {
 	int data[];
 } u_indices;
 
-layout (set = 0, binding = 2, std430) restrict buffer CellTris {
+layout (set = 0, binding = 2, std430) restrict readonly buffer CellTris {
 	// List of triangle indices.
 	// Grouped in chunks corresponding to triangles within a tile.
 	// Each chunk can have up to 5 triangle indices.
 	int data[];
 } u_cell_tris;
 
-layout (set = 0, binding = 3, std430) restrict buffer AtlasInfo {
+layout (set = 0, binding = 3, std430) restrict readonly buffer AtlasInfo {
 	// [tile index] => cell info
 	// X:
 	// Packed 8-bit coordinates of the cell.
@@ -38,14 +38,14 @@ layout (set = 0, binding = 3, std430) restrict buffer AtlasInfo {
 	ivec2 data[];
 } u_tile_data;
 
-layout (set = 0, binding = 4, std430) restrict buffer Params {
+layout (set = 0, binding = 4, std430) restrict readonly buffer Params {
 	vec3 block_origin_world;
 	// How big is a pixel of the atlas in world space
 	float pixel_world_step;
 	int tile_size_pixels;
 } u_params;
 
-layout (set = 0, binding = 5, std430) restrict buffer HitBuffer {
+layout (set = 0, binding = 5, std430) restrict writeonly buffer HitBuffer {
 	// X, Y, Z is hit position
 	// W is integer triangle index
 	// Index is `pixel_pos_in_tile.x + pixel_pos_in_tile.y * tile_resolution + tile_index * (tile_resolution ^ 2)`

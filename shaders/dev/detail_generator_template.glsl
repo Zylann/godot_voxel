@@ -8,18 +8,18 @@
 
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
-layout (set = 0, binding = 0, std430) restrict buffer PositionBuffer {
+layout (set = 0, binding = 0, std430) restrict readonly buffer PositionBuffer {
 	// X, Y, Z is hit position
 	// W is integer triangle index
 	vec4 values[];
 } u_positions;
 
-layout (set = 0, binding = 1, std430) restrict buffer Params {
+layout (set = 0, binding = 1, std430) restrict readonly buffer Params {
 	int tile_size_pixels;
 	float pixel_world_step;
 } u_params;
 
-layout (set = 0, binding = 2, std430) restrict buffer OutSDBuffer {
+layout (set = 0, binding = 2, std430) restrict writeonly buffer OutSDBuffer {
 	// 4 values per index
 	float values[];
 } u_out_sd;

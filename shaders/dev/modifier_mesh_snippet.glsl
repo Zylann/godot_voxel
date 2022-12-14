@@ -3,7 +3,7 @@
 
 // <SNIPPET>
 
-layout (set = 0, binding = 5) restrict buffer ShapeParams {
+layout (set = 0, binding = 5) restrict readonly buffer ShapeParams {
 	vec3 model_to_buffer_translation;
 	vec3 model_to_buffer_scale;
 	float isolevel;

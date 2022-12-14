@@ -3,7 +3,7 @@
 // clang-format off
 const char *g_modifier_sphere_shader_snippet = 
 "\n"
-"layout (set = 0, binding = 5) restrict buffer ShapeParams {\n"
+"layout (set = 0, binding = 5) restrict readonly buffer ShapeParams {\n"
 "	// Center not necessary, transform is applied in common shader code\n"
 "	//vec3 center;\n"
 "	float radius;\n"

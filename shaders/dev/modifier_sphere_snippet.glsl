@@ -3,7 +3,7 @@
 
 // <SNIPPET>
 
-layout (set = 0, binding = 5) restrict buffer ShapeParams {
+layout (set = 0, binding = 5) restrict readonly buffer ShapeParams {
 	// Center not necessary, transform is applied in common shader code
 	//vec3 center;
 	float radius;
