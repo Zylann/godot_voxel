@@ -39,7 +39,7 @@ Info::Info() {
 void Info::to_string(FwdMutableStdString s) const {
 	for (unsigned int i = 0; i < _frames.size(); ++i) {
 		const Frame &frame = _frames[i];
-		s.s += format("{}: {} in {}\n", frame.function, frame.line, frame.file);
+		s.s += format("{} ({}:{})\n", frame.function, frame.file, frame.line);
 	}
 }
 

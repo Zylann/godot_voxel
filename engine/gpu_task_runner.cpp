@@ -1,4 +1,5 @@
 #include "gpu_task_runner.h"
+#include "../util/dstack.h"
 #include "../util/errors.h"
 #include "../util/godot/rendering_device.h"
 #include "../util/math/funcs.h"
@@ -17,10 +18,12 @@ GPUTaskRunner::~GPUTaskRunner() {
 	}
 }
 
-void GPUTaskRunner::start(RenderingDevice *rd) {
+void GPUTaskRunner::start(RenderingDevice *rd, GPUStorageBufferPool *pool) {
 	ZN_ASSERT(rd != nullptr);
+	ZN_ASSERT(pool != nullptr);
 	ZN_ASSERT(!_running);
 	_rendering_device = rd;
+	_storage_buffer_pool = pool;
 	_running = true;
 	_thread.start(
 			[](void *p_userdata) {
@@ -48,6 +51,7 @@ void GPUTaskRunner::push(IGPUTask *task) {
 
 void GPUTaskRunner::thread_func() {
 	ZN_PROFILE_SET_THREAD_NAME("Voxel GPU tasks");
+	ZN_DSTACK();
 
 	std::vector<IGPUTask *> tasks;
 	unsigned int begin_index = 0;
@@ -69,7 +73,7 @@ void GPUTaskRunner::thread_func() {
 		}
 
 		ZN_ASSERT(_rendering_device != nullptr);
-		GPUTaskContext ctx{ *_rendering_device };
+		GPUTaskContext ctx{ *_rendering_device, *_storage_buffer_pool };
 
 		for (size_t begin_index = 0; begin_index < tasks.size(); begin_index += batch_count) {
 			const size_t end_index = math::min(begin_index + batch_count, tasks.size());

@@ -11,6 +11,7 @@
 #include "../util/tasks/time_spread_task_runner.h"
 #include "compute_shader.h"
 #include "distance_normalmaps.h"
+#include "gpu_storage_buffer_pool.h"
 #include "gpu_task_runner.h"
 #include "priority_dependency.h"
 
@@ -290,6 +291,7 @@ private:
 	// So I'll assume I can't...
 	Mutex _rendering_device_mutex;
 	GPUTaskRunner _gpu_task_runner;
+	GPUStorageBufferPool _gpu_storage_buffer_pool;
 
 	// TODO I don't know yet where to store these resource, at some point we may find a more dedicated place
 	ComputeShader _dilate_normalmap_shader;

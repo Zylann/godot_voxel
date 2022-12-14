@@ -11,8 +11,11 @@ ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
 
 namespace zylann::voxel {
 
+class GPUStorageBufferPool;
+
 struct GPUTaskContext {
 	RenderingDevice &rendering_device;
+	GPUStorageBufferPool &storage_buffer_pool;
 };
 
 class IGPUTask {
@@ -28,7 +31,7 @@ public:
 	GPUTaskRunner();
 	~GPUTaskRunner();
 
-	void start(RenderingDevice *rd);
+	void start(RenderingDevice *rd, GPUStorageBufferPool *pool);
 	void stop();
 	void push(IGPUTask *task);
 
@@ -36,6 +39,7 @@ private:
 	void thread_func();
 
 	RenderingDevice *_rendering_device = nullptr;
+	GPUStorageBufferPool *_storage_buffer_pool = nullptr;
 	std::vector<IGPUTask *> _shared_tasks;
 	Mutex _mutex;
 	Semaphore _semaphore;

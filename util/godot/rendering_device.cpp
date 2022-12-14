@@ -1,8 +1,10 @@
 #include "rendering_device.h"
+#include "../dstack.h"
 
 namespace zylann {
 
 void free_rendering_device_rid(RenderingDevice &rd, RID rid) {
+	ZN_DSTACK();
 #if defined(ZN_GODOT)
 	rd.free(rid);
 #elif defined(ZN_GODOT_EXTENSION)

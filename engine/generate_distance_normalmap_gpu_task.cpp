@@ -1,4 +1,5 @@
 #include "generate_distance_normalmap_gpu_task.h"
+#include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/profiling.h"
 #include "compute_shader.h"
@@ -51,6 +52,7 @@ void add_uniform_params(const std::vector<ComputeShaderParameter> &params, Array
 
 void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
+	ZN_DSTACK();
 
 	ERR_FAIL_COND(mesh_vertices.size() == 0);
 	ERR_FAIL_COND(mesh_indices.size() == 0);
@@ -60,6 +62,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	ERR_FAIL_COND(!shader->is_valid());
 
 	RenderingDevice &rd = ctx.rendering_device;
+	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
 
 	// Size can vary each time so we have to recreate the format...
 	Ref<RDTextureFormat> texture_format;
@@ -73,7 +76,10 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_2D);
 
 	// TODO Which optimizations can I do?
-	// - It seems I could pool storage buffers and call `buffer_update`?
+	// - Some storage buffers could be uniform buffers instead, maybe that's faster for small structs? They could be
+	// pooled as well
+	// - Creating/Updating buffers prior to running the shaders maybe doesn't require all barriers? This is the default
+	// argument
 	// - Creating a texture (image...) also requires a pool, but perhaps a more specialized one? I can't create a
 	// max-sized texture to fit all cases, since it has to be downloaded after, and download speed directly depends on
 	// the size of the data. Also, why should I use an image anyways?
@@ -118,52 +124,52 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	PackedByteArray mesh_vertices_pba;
 	copy_bytes_to<Vector4f>(mesh_vertices_pba, to_span(mesh_vertices));
 
-	_mesh_vertices_rid = rd.storage_buffer_create(mesh_vertices_pba.size(), mesh_vertices_pba);
-	ERR_FAIL_COND(_mesh_vertices_rid.is_null());
+	_mesh_vertices_sb = storage_buffer_pool.allocate(mesh_vertices_pba);
+	ERR_FAIL_COND(_mesh_vertices_sb.is_null());
 
 	Ref<RDUniform> mesh_vertices_uniform;
 	mesh_vertices_uniform.instantiate();
 	mesh_vertices_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	mesh_vertices_uniform->add_id(_mesh_vertices_rid);
+	mesh_vertices_uniform->add_id(_mesh_vertices_sb.rid);
 
 	// Mesh indices
 
 	PackedByteArray mesh_indices_pba;
 	copy_bytes_to<int32_t>(mesh_indices_pba, to_span(mesh_indices));
 
-	_mesh_indices_rid = rd.storage_buffer_create(mesh_indices_pba.size(), mesh_indices_pba);
-	ERR_FAIL_COND(_mesh_indices_rid.is_null());
+	_mesh_indices_sb = storage_buffer_pool.allocate(mesh_indices_pba);
+	ERR_FAIL_COND(_mesh_indices_sb.is_null());
 
 	Ref<RDUniform> mesh_indices_uniform;
 	mesh_indices_uniform.instantiate();
 	mesh_indices_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	mesh_indices_uniform->add_id(_mesh_indices_rid);
+	mesh_indices_uniform->add_id(_mesh_indices_sb.rid);
 
 	// Cell tris
 
 	PackedByteArray cell_triangles_pba;
 	copy_bytes_to<int32_t>(cell_triangles_pba, to_span(cell_triangles));
 
-	_cell_triangles_rid = rd.storage_buffer_create(cell_triangles_pba.size(), cell_triangles_pba);
-	ERR_FAIL_COND(_cell_triangles_rid.is_null());
+	_cell_triangles_sb = storage_buffer_pool.allocate(cell_triangles_pba);
+	ERR_FAIL_COND(_cell_triangles_sb.is_null());
 
 	Ref<RDUniform> cell_triangles_uniform;
 	cell_triangles_uniform.instantiate();
 	cell_triangles_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	cell_triangles_uniform->add_id(_cell_triangles_rid);
+	cell_triangles_uniform->add_id(_cell_triangles_sb.rid);
 
 	// Tiles data
 
 	PackedByteArray tile_data_pba;
 	copy_bytes_to<TileData>(tile_data_pba, to_span(tile_data));
 
-	_tile_data_rid = rd.storage_buffer_create(tile_data_pba.size(), tile_data_pba);
-	ERR_FAIL_COND(_tile_data_rid.is_null());
+	_tile_data_sb = storage_buffer_pool.allocate(tile_data_pba);
+	ERR_FAIL_COND(_tile_data_sb.is_null());
 
 	Ref<RDUniform> tile_data_uniform;
 	tile_data_uniform.instantiate();
 	tile_data_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	tile_data_uniform->add_id(_tile_data_rid);
+	tile_data_uniform->add_id(_tile_data_sb.rid);
 
 	// Gather hits params
 
@@ -179,24 +185,24 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// TODO Might be better to use a Uniform Buffer for this. They might be faster for small amounts of data, but need
 	// to care more about alignment
-	_gather_hits_params_rid = rd.storage_buffer_create(gather_hits_params_pba.size(), gather_hits_params_pba);
-	ERR_FAIL_COND(_gather_hits_params_rid.is_null());
+	_gather_hits_params_sb = storage_buffer_pool.allocate(gather_hits_params_pba);
+	ERR_FAIL_COND(_gather_hits_params_sb.is_null());
 
 	Ref<RDUniform> gather_hits_params_uniform;
 	gather_hits_params_uniform.instantiate();
 	gather_hits_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	gather_hits_params_uniform->add_id(_gather_hits_params_rid);
+	gather_hits_params_uniform->add_id(_gather_hits_params_sb.rid);
 
 	// Hit buffer
 
 	const unsigned int hit_positions_buffer_size_bytes =
 			tile_data.size() * math::squared(params.tile_size_pixels) * sizeof(float) * 4;
-	_hit_positions_buffer_rid = rd.storage_buffer_create(hit_positions_buffer_size_bytes);
+	_hit_positions_buffer_sb = storage_buffer_pool.allocate(hit_positions_buffer_size_bytes);
 
 	Ref<RDUniform> hit_positions_uniform;
 	hit_positions_uniform.instantiate();
 	hit_positions_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	hit_positions_uniform->add_id(_hit_positions_buffer_rid);
+	hit_positions_uniform->add_id(_hit_positions_buffer_sb.rid);
 
 	// Generator params
 
@@ -208,12 +214,12 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	PackedByteArray generator_params_pba;
 	copy_bytes_to(generator_params_pba, GeneratorParams{ params.tile_size_pixels, params.pixel_world_step });
 
-	_generator_params_rid = rd.storage_buffer_create(generator_params_pba.size(), generator_params_pba);
+	_generator_params_sb = storage_buffer_pool.allocate(generator_params_pba);
 
 	Ref<RDUniform> generator_params_uniform;
 	generator_params_uniform.instantiate();
 	generator_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	generator_params_uniform->add_id(_generator_params_rid);
+	generator_params_uniform->add_id(_generator_params_sb.rid);
 
 	// SD buffers
 
@@ -221,20 +227,20 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	const unsigned int sd_buffer_size_bytes =
 			tile_data.size() * math::squared(params.tile_size_pixels) * 4 * sizeof(float);
 
-	_sd_buffer0_rid = rd.storage_buffer_create(sd_buffer_size_bytes);
+	_sd_buffer0_sb = storage_buffer_pool.allocate(sd_buffer_size_bytes);
 
 	Ref<RDUniform> sd_buffer0_uniform;
 	sd_buffer0_uniform.instantiate();
 	sd_buffer0_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	sd_buffer0_uniform->add_id(_sd_buffer0_rid);
+	sd_buffer0_uniform->add_id(_sd_buffer0_sb.rid);
 
 	Ref<RDUniform> sd_buffer1_uniform;
 	if (modifiers.size() > 0) {
-		_sd_buffer1_rid = rd.storage_buffer_create(sd_buffer_size_bytes);
+		_sd_buffer1_sb = storage_buffer_pool.allocate(sd_buffer_size_bytes);
 
 		sd_buffer1_uniform.instantiate();
 		sd_buffer1_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-		sd_buffer1_uniform->add_id(_sd_buffer1_rid);
+		sd_buffer1_uniform->add_id(_sd_buffer1_sb.rid);
 	}
 
 	// Normalmap params
@@ -251,12 +257,12 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 			NormalmapParams{
 					params.tile_size_pixels, params.tiles_x, params.max_deviation_cosine, params.max_deviation_sine });
 
-	_normalmap_params_rid = rd.storage_buffer_create(normalmap_params_pba.size(), normalmap_params_pba);
+	_normalmap_params_sb = storage_buffer_pool.allocate(normalmap_params_pba);
 
 	Ref<RDUniform> normalmap_params_uniform;
 	normalmap_params_uniform.instantiate();
 	normalmap_params_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
-	normalmap_params_uniform->add_id(_normalmap_params_rid);
+	normalmap_params_uniform->add_id(_normalmap_params_sb.rid);
 
 	// Dilation params
 
@@ -518,7 +524,8 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	rd.compute_list_end();
 }
 
-PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(RenderingDevice &rd) {
+PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(
+		RenderingDevice &rd, GPUStorageBufferPool &storage_buffer_pool) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO This is incredibly slow and should not happen in the first place.
@@ -540,19 +547,23 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(Re
 			free_rendering_device_rid(rd, rid);
 		}
 
-		free_rendering_device_rid(rd, _mesh_vertices_rid);
-		free_rendering_device_rid(rd, _mesh_indices_rid);
-		free_rendering_device_rid(rd, _cell_triangles_rid);
-		free_rendering_device_rid(rd, _tile_data_rid);
-		free_rendering_device_rid(rd, _gather_hits_params_rid);
+		storage_buffer_pool.recycle(_mesh_vertices_sb);
+		storage_buffer_pool.recycle(_mesh_indices_sb);
+		storage_buffer_pool.recycle(_cell_triangles_sb);
+		storage_buffer_pool.recycle(_tile_data_sb);
+		storage_buffer_pool.recycle(_gather_hits_params_sb);
+
 		free_rendering_device_rid(rd, _dilation_params_rid);
-		free_rendering_device_rid(rd, _hit_positions_buffer_rid);
-		free_rendering_device_rid(rd, _generator_params_rid);
-		free_rendering_device_rid(rd, _sd_buffer0_rid);
-		if (_sd_buffer1_rid.is_valid()) {
-			free_rendering_device_rid(rd, _sd_buffer1_rid);
+
+		storage_buffer_pool.recycle(_hit_positions_buffer_sb);
+		storage_buffer_pool.recycle(_generator_params_sb);
+		storage_buffer_pool.recycle(_sd_buffer0_sb);
+
+		if (_sd_buffer1_sb.is_valid()) {
+			storage_buffer_pool.recycle(_sd_buffer1_sb);
 		}
-		free_rendering_device_rid(rd, _normalmap_params_rid);
+
+		storage_buffer_pool.recycle(_normalmap_params_sb);
 	}
 
 	// Uniform sets auto-free themselves once their contents are freed.
@@ -562,9 +573,9 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(Re
 
 void GenerateDistanceNormalMapGPUTask::collect(GPUTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
-	RenderingDevice &rd = ctx.rendering_device;
+	ZN_DSTACK();
 
-	PackedByteArray texture_data = collect_texture_and_cleanup(rd);
+	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
 	{
 		std::vector<NormalMapData::Tile> tile_data2;

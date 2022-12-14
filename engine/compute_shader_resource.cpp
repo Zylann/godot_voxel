@@ -1,4 +1,5 @@
 #include "compute_shader_resource.h"
+#include "../util/dstack.h"
 #include "../util/godot/curve.h"
 #include "../util/godot/image.h"
 #include "../util/profiling.h"
@@ -9,6 +10,7 @@ namespace zylann::voxel {
 ComputeShaderResource::ComputeShaderResource() {}
 
 ComputeShaderResource::~ComputeShaderResource() {
+	ZN_DSTACK();
 	clear();
 }
 
@@ -19,6 +21,7 @@ ComputeShaderResource::ComputeShaderResource(ComputeShaderResource &&other) {
 }
 
 void ComputeShaderResource::clear() {
+	ZN_DSTACK();
 	if (_rid.is_valid()) {
 		RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
 		free_rendering_device_rid(rd, _rid);

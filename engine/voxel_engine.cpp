@@ -78,7 +78,9 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
 		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
 
-		_gpu_task_runner.start(_rendering_device);
+		_gpu_storage_buffer_pool.set_rendering_device(_rendering_device);
+
+		_gpu_task_runner.start(_rendering_device, &_gpu_storage_buffer_pool);
 
 	} else {
 		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
@@ -125,6 +127,13 @@ VoxelEngine::~VoxelEngine() {
 
 		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
 		_filtering_sampler_rid = RID();
+
+		if (is_verbose_output_enabled()) {
+			_gpu_storage_buffer_pool.debug_print();
+		}
+
+		_gpu_storage_buffer_pool.clear();
+		_gpu_storage_buffer_pool.set_rendering_device(nullptr);
 
 		memdelete(_rendering_device);
 		_rendering_device = nullptr;

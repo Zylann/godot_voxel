@@ -1,6 +1,7 @@
 #ifndef VOXEL_GENERATE_DISTANCE_NORMALMAP_GPU_TASK_H
 #define VOXEL_GENERATE_DISTANCE_NORMALMAP_GPU_TASK_H
 
+#include "../engine/gpu_storage_buffer_pool.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector4f.h"
 #include "distance_normalmaps.h"
@@ -71,27 +72,29 @@ public:
 	void collect(GPUTaskContext &ctx) override;
 
 	// Exposed for testing
-	PackedByteArray collect_texture_and_cleanup(RenderingDevice &rd);
+	PackedByteArray collect_texture_and_cleanup(RenderingDevice &rd, GPUStorageBufferPool &storage_buffer_pool);
 
 private:
 	RID _normalmap_texture0_rid;
 	RID _normalmap_texture1_rid;
+
 	RID _gather_hits_pipeline_rid;
 	RID _detail_generator_pipeline_rid;
 	RID _detail_normalmap_pipeline_rid;
 	RID _normalmap_dilation_pipeline_rid;
-	RID _mesh_vertices_rid;
-	RID _mesh_indices_rid;
-	RID _cell_triangles_rid;
-	RID _tile_data_rid;
-	RID _gather_hits_params_rid;
-	RID _dilation_params_rid;
-	RID _hit_positions_buffer_rid;
-	RID _generator_params_rid;
-	RID _sd_buffer0_rid;
-	RID _sd_buffer1_rid;
-	RID _normalmap_params_rid;
 	std::vector<RID> _detail_modifier_pipelines;
+
+	GPUStorageBuffer _mesh_vertices_sb;
+	GPUStorageBuffer _mesh_indices_sb;
+	GPUStorageBuffer _cell_triangles_sb;
+	GPUStorageBuffer _tile_data_sb;
+	GPUStorageBuffer _gather_hits_params_sb;
+	RID _dilation_params_rid;
+	GPUStorageBuffer _hit_positions_buffer_sb;
+	GPUStorageBuffer _generator_params_sb;
+	GPUStorageBuffer _sd_buffer0_sb;
+	GPUStorageBuffer _sd_buffer1_sb;
+	GPUStorageBuffer _normalmap_params_sb;
 };
 
 } // namespace zylann::voxel

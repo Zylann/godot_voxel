@@ -107,14 +107,16 @@ void test_normalmap_render_gpu() {
 	GenerateDistanceNormalMapGPUTask *gpu_task = nm_task.make_gpu_task();
 
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
+	GPUStorageBufferPool storage_buffer_pool;
+	storage_buffer_pool.set_rendering_device(&rd);
 
-	GPUTaskContext gpu_task_context{ rd };
+	GPUTaskContext gpu_task_context{ rd, storage_buffer_pool };
 	gpu_task->prepare(gpu_task_context);
 
 	rd.submit();
 	rd.sync();
 
-	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd);
+	const PackedByteArray atlas_texture_data = gpu_task->collect_texture_and_cleanup(rd, storage_buffer_pool);
 
 	Ref<Image> gpu_atlas_image = Image::create_from_data(
 			gpu_task->texture_width, gpu_task->texture_height, false, Image::FORMAT_RGBA8, atlas_texture_data);
@@ -160,6 +162,8 @@ void test_normalmap_render_gpu() {
 			return dsum / float(counted_pixels);
 		}
 	};
+
+	storage_buffer_pool.clear();
 
 	// Debug dumps
 	// gpu_atlas_image->save_png("test_gpu_normalmap.png");
