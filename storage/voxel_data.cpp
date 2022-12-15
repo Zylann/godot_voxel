@@ -740,9 +740,10 @@ void VoxelData::get_blocks_with_voxel_data(
 }
 
 void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const {
+	ZN_PROFILE_SCOPE();
 	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
-	grid.reference_area(data_lod.map, box_in_voxels);
+	grid.reference_area(data_lod.map, lod_index == 0 ? box_in_voxels : box_in_voxels.downscaled(1 << lod_index));
 }
 
 void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
