@@ -461,6 +461,7 @@ static bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &stat
 
 		if (tls_missing.size() > 0) {
 			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+			MutexLock mlock(lod.loading_blocks_mutex);
 			for (const Vector3i &missing_bpos : tls_missing) {
 				if (!lod.has_loading_block(missing_bpos)) {
 					blocks_to_load.push_back({ missing_bpos, lod_index });
@@ -1086,10 +1087,13 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 			tls_missing.clear();
 			data.get_missing_blocks(block_box, lod_index, tls_missing);
 
-			for (const Vector3i &missing_bpos : tls_missing) {
-				if (!lod.has_loading_block(missing_bpos)) {
-					todo.push_back(TaskArguments{ missing_bpos, lod_index });
-					lod.loading_blocks.insert(missing_bpos);
+			if (tls_missing.size() > 0) {
+				MutexLock mlock(lod.loading_blocks_mutex);
+				for (const Vector3i &missing_bpos : tls_missing) {
+					if (!lod.has_loading_block(missing_bpos)) {
+						todo.push_back(TaskArguments{ missing_bpos, lod_index });
+						lod.loading_blocks.insert(missing_bpos);
+					}
 				}
 			}
 		}
