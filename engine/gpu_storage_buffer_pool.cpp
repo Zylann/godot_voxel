@@ -19,8 +19,13 @@ GPUStorageBufferPool::GPUStorageBufferPool() {
 }
 
 GPUStorageBufferPool::~GPUStorageBufferPool() {
-	ZN_ASSERT_RETURN(_rendering_device != nullptr);
-	clear();
+	if (_rendering_device != nullptr) {
+		clear();
+	} else {
+		for (unsigned int i = 0; i < _pool_sizes.size(); ++i) {
+			ZN_ASSERT_CONTINUE_MSG(_pools[i].buffers.size() == 0, "Possibly leaked buffers?");
+		}
+	}
 }
 
 void GPUStorageBufferPool::clear() {
@@ -42,7 +47,14 @@ void GPUStorageBufferPool::clear() {
 }
 
 void GPUStorageBufferPool::set_rendering_device(RenderingDevice *rd) {
-	clear();
+	if (_rendering_device != nullptr) {
+		// Clear data from the previous device
+		clear();
+	} else {
+		for (unsigned int i = 0; i < _pool_sizes.size(); ++i) {
+			ZN_ASSERT_CONTINUE_MSG(_pools[i].buffers.size() == 0, "Possibly leaked buffers?");
+		}
+	}
 	_rendering_device = rd;
 }
 
