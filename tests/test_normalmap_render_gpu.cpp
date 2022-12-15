@@ -132,7 +132,8 @@ void test_normalmap_render_gpu() {
 
 	compute_normalmap_data(*nm_task.cell_iterator, to_span(nm_task.mesh_vertices), to_span(nm_task.mesh_normals),
 			to_span(nm_task.mesh_indices), normalmap_data, virtual_texture_settings.tile_resolution_min, **generator,
-			nm_task.voxel_data.get(), origin_in_voxels, lod_index, virtual_texture_settings.octahedral_encoding_enabled,
+			nm_task.voxel_data.get(), origin_in_voxels, mesher_input.voxels.get_size(), lod_index,
+			virtual_texture_settings.octahedral_encoding_enabled,
 			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
 
 	NormalMapImages images =

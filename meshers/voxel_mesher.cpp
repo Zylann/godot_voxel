@@ -85,7 +85,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 
 			compute_normalmap_data(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
 					to_span(mesh_arrays.indices), nm_data, virtual_texture_settings.tile_resolution_min,
-					*input.generator, nullptr, input.origin_in_voxels, input.lod_index,
+					*input.generator, nullptr, input.origin_in_voxels, input.voxels.get_size(), input.lod_index,
 					virtual_texture_settings.octahedral_encoding_enabled,
 					math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
 

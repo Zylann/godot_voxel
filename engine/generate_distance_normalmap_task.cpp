@@ -63,10 +63,12 @@ void GenerateDistanceNormalmapTask::run_on_cpu() {
 	const unsigned int tile_resolution =
 			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
 
-	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
+	// LOD0 coordinates
+	const Vector3i size_in_voxels = mesh_block_size << lod_index;
+	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
 
 	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
+			normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, size_in_voxels, lod_index,
 			virtual_texture_settings.octahedral_encoding_enabled,
 			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
 
@@ -191,11 +193,12 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 
 	// Fallback on CPU for tiles containing edited voxels.
 	// TODO Figure out an efficient way to have sparse voxel data available on the GPU
-	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
+	const Vector3i size_in_voxels = mesh_block_size << lod_index;
+	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
 	NormalMapData edited_tiles_normalmap_data;
 	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, lod_index,
-			false, /*virtual_texture_settings.octahedral_encoding_enabled*/
+			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels,
+			size_in_voxels, lod_index, false, /*virtual_texture_settings.octahedral_encoding_enabled*/
 			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), true);
 
 	const unsigned int tile_count = cell_iterator->get_count();

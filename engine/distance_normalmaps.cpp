@@ -264,9 +264,10 @@ bool try_query_edited_blocks(VoxelDataGrid &grid, const VoxelData &voxel_data, V
 
 	{
 		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
+		const Vector3i block_box_size = voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2;
+		const int64_t block_volume = Vector3iUtil::get_volume(block_box_size);
 		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
-		if (Vector3iUtil::get_volume(voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2) >
-				math::cubed(MAX_EDITED_BLOCKS_ACROSS)) {
+		if (block_volume > math::cubed(MAX_EDITED_BLOCKS_ACROSS)) {
 			// Box too big for quick sparse readings, won't handle edits. Fallback on generator.
 			// One way to speed this up would be to have an octree storing where edited data is.
 			// Or we would have to use the slowest query model, going through data structures for every voxel.
@@ -274,7 +275,10 @@ bool try_query_edited_blocks(VoxelDataGrid &grid, const VoxelData &voxel_data, V
 			return false;
 		}
 
-		voxel_data.get_blocks_grid(grid, voxel_box, 0);
+		// In case there are lots of potential queries to make, do a broad check using LOD mips.
+		if (block_volume <= 8 || voxel_data.has_blocks_with_voxels_in_area_broad_mip_test(voxel_box)) {
+			voxel_data.get_blocks_grid(grid, voxel_box, 0);
+		}
 		// const VoxelDataLodMap::Lod &lod0 = voxel_data.lods[0];
 		// RWLockRead rlock(lod0.map_lock);
 		// tls_grid.reference_area(lod0.map, voxel_box);
@@ -328,7 +332,8 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_vox
 void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians, bool edited_tiles_only) {
+		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
+		bool edited_tiles_only) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
@@ -348,6 +353,15 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 		normal_map_data.normals.reserve(math::squared(tile_resolution) * cell_count * encoded_normal_size);
 	}
 
+	if (voxel_data != nullptr &&
+			!voxel_data->has_blocks_with_voxels_in_area_broad_mip_test(Box3i(origin_in_voxels, size_in_voxels))) {
+		// Ignore edits completely
+		voxel_data = nullptr;
+		if (edited_tiles_only) {
+			return;
+		}
+	}
+
 	uint32_t skipped_count_due_to_high_volume = 0;
 
 	CurrentCellInfo cell_info;
@@ -360,8 +374,6 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 		const Vector3f cell_origin_world = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
 
 		// In cases we only want tiles with edited voxels, check this early so we can skip the tile.
-		// TODO Optimize: if there are no edited voxels in the entire mesh, completely skip this function.
-		//                Doing this efficiently requires an acceleration structure to do fast "exists" queries.
 		const bool cell_has_edits = voxel_data != nullptr &&
 				try_query_edited_blocks(tls_voxel_data_grid, *voxel_data, cell_origin_world,
 						cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);

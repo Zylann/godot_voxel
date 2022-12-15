@@ -746,6 +746,40 @@ void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsign
 	grid.reference_area(data_lod.map, lod_index == 0 ? box_in_voxels : box_in_voxels.downscaled(1 << lod_index));
 }
 
+bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxels) const {
+	ZN_PROFILE_SCOPE();
+
+	// Find the highest LOD level to query first
+	const Vector3i box_size_in_blocks = box_in_voxels.size >> get_block_size_po2();
+	const int box_size_in_blocks_longest_axis =
+			math::max(box_size_in_blocks.x, math::max(box_size_in_blocks.y, box_size_in_blocks.z));
+	const int top_lod_index =
+			math::min(math::get_next_power_of_two_32_shift(box_size_in_blocks_longest_axis), get_lod_count());
+
+	// Find if edited mips exist
+	const Lod &mip_data_lod = _lods[top_lod_index];
+	{
+		// Ideally this box shouldn't intersect more than 8 blocks if the box is cubic.
+		const Box3i mip_blocks_box = box_in_voxels.downscaled(mip_data_lod.map.get_block_size() << top_lod_index);
+
+		RWLockRead rlock(mip_data_lod.map_lock);
+
+		const VoxelDataMap &map = mip_data_lod.map;
+		const bool no_blocks_found = mip_blocks_box.all_cells_match([&map](const Vector3i pos) {
+			const VoxelDataBlock *block = map.get_block(pos);
+			return block == nullptr || block->has_voxels() == false;
+		});
+
+		if (no_blocks_found) {
+			// No edits found at this mip, we may assume there are no edits in lower LODs.
+			return false;
+		}
+	}
+
+	// Assume there can be edits
+	return true;
+}
+
 void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
 		std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks) {
 	ZN_PROFILE_SCOPE();

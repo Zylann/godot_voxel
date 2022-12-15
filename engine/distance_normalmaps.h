@@ -100,7 +100,8 @@ public:
 void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians, bool edited_tiles_only);
+		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
+		bool edited_tiles_only);
 
 struct NormalMapImages {
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
