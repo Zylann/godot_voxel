@@ -1900,15 +1900,16 @@ NodeTypeDB::NodeTypeDB() {
 
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.require_lib_code("vg_normalize",
-					"void vg_normalize(vec3 v, out float x, out float y, out float z) {\n"
-					"	v = normalize(v);\n"
-					"	x = v.x;\n"
-					"	y = v.y;\n"
-					"	z = v.z;\n"
+					"void vg_normalize(vec3 v, out float x, out float y, out float z, out float mag) {\n"
+					"    mag = length(v);\n"
+					"    v /= mag;\n"
+					"    x = v.x;\n"
+					"    y = v.y;\n"
+					"    z = v.z;\n"
 					"}\n");
-			ctx.add_format("vg_normalize(vec3({}, {}, {}), {}, {}, {});\n", ctx.get_input_name(0),
-					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_output_name(0), ctx.get_output_name(2),
-					ctx.get_output_name(2));
+			ctx.add_format("vg_normalize(vec3({}, {}, {}), {}, {}, {}, {});\n", ctx.get_input_name(0),
+					ctx.get_input_name(1), ctx.get_input_name(2), ctx.get_output_name(0), ctx.get_output_name(1),
+					ctx.get_output_name(2), ctx.get_output_name(3));
 		};
 	}
 	{
