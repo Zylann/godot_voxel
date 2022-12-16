@@ -54,8 +54,6 @@ void GPUTaskRunner::thread_func() {
 	ZN_DSTACK();
 
 	std::vector<IGPUTask *> tasks;
-	unsigned int begin_index = 0;
-	unsigned int end_index = 0;
 
 	// Godot does not support async compute, so in order to get results from a compute shader, the only way is to sync
 	// with the device, waiting for everything to complete. So instead of running one shader at a time, we run a few of
