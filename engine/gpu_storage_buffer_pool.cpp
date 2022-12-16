@@ -126,7 +126,6 @@ void GPUStorageBufferPool::recycle(GPUStorageBuffer b) {
 	ZN_ASSERT_RETURN(b.size != 0);
 
 	ZN_ASSERT_RETURN(_rendering_device != nullptr);
-	RenderingDevice &rd = *_rendering_device;
 
 	const unsigned int pool_index = get_pool_index_from_size(b.size);
 	ZN_ASSERT_RETURN(pool_index < _pools.size());
