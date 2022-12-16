@@ -34,7 +34,7 @@ private:
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _request_instances = false;
-	//bool _request_voxels = false;
+	// bool _request_voxels = false;
 	bool _max_lod_hint = false;
 	bool _generate_cache_data = true;
 	bool _requested_generator_task = false;

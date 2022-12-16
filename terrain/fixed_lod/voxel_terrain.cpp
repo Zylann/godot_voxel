@@ -229,7 +229,7 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	// VoxelEngine::get_singleton().set_volume_render_block_size(_volume_id, mesh_block_size);
 
 	// No update on bounds because we can support a mismatch, as long as it is a multiple of data block size
-	//set_bounds(_bounds_in_voxels);
+	// set_bounds(_bounds_in_voxels);
 }
 
 void VoxelTerrain::restart_stream() {
@@ -880,7 +880,7 @@ void VoxelTerrain::consume_block_data_save_requests(
 		saving_tracker->set_count(task_scheduler.get_io_count());
 	}
 
-	//print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
+	// print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
 	_blocks_to_save.clear();
 }
 
@@ -892,8 +892,8 @@ void VoxelTerrain::emit_data_block_loaded(Vector3i bpos) {
 	// them). It isn't planned to expose VoxelBuffer locks because there are too many of them, it may likely shift
 	// to another system in the future, and might even be changed to no longer inherit Reference. So unless this is
 	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
-	//const Variant vbuffer = block->voxels;
-	//const Variant *args[2] = { &vpos, &vbuffer };
+	// const Variant vbuffer = block->voxels;
+	// const Variant *args[2] = { &vpos, &vbuffer };
 	emit_signal(VoxelStringNames::get_singleton().block_loaded, bpos);
 }
 
@@ -938,7 +938,7 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 void VoxelTerrain::process() {
 	ZN_PROFILE_SCOPE();
 	process_viewers();
-	//process_received_data_blocks();
+	// process_received_data_blocks();
 	process_meshing();
 }
 
@@ -1263,7 +1263,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
-	//print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
+	// print_line(String("Receiving {0} blocks").format(varray(output.emerged_blocks.size())));
 
 	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		if (ob.dropped) {
@@ -1420,7 +1420,7 @@ void VoxelTerrain::process_meshing() {
 	std::shared_ptr<PriorityDependency::ViewersData> shared_viewers_data =
 			VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world();
 
-	//const int used_channels_mask = get_used_channels_mask();
+	// const int used_channels_mask = get_used_channels_mask();
 	const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
 	for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
@@ -1445,7 +1445,7 @@ void VoxelTerrain::process_meshing() {
 		}
 #endif
 
-		//print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
+		// print_line(String("DDD request {0}").format(varray(mesh_request.render_block_position.to_vec3())));
 		// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
 		MeshBlockTask *task = ZN_NEW(MeshBlockTask);
 		task->volume_id = _volume_id;
@@ -1488,17 +1488,17 @@ void VoxelTerrain::process_meshing() {
 
 	_stats.time_request_blocks_to_update = profiling_clock.restart();
 
-	//print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") +
-	//String::num(_block_update_queue.size()));
+	// print_line(String("d:") + String::num(_dirty_blocks.size()) + String(", q:") +
+	// String::num(_block_update_queue.size()));
 }
 
 void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	ZN_PROFILE_SCOPE();
-	//print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
+	// print_line(String("DDD receive {0}").format(varray(ob.position.to_vec3())));
 
 	VoxelMeshBlockVT *block = _mesh_map.get_block(ob.position);
 	if (block == nullptr) {
-		//print_line("- no longer loaded");
+		// print_line("- no longer loaded");
 		// That block is no longer loaded, drop the result
 		++_stats.dropped_block_meshs;
 		return;

@@ -45,7 +45,7 @@ public:
 	inline unsigned int get_data_block_size() const {
 		return 1 << get_data_block_size_pow2();
 	}
-	//void set_data_block_size_po2(unsigned int p_block_size_po2);
+	// void set_data_block_size_po2(unsigned int p_block_size_po2);
 
 	unsigned int get_mesh_block_size_pow2() const;
 	inline unsigned int get_mesh_block_size() const {
@@ -158,14 +158,14 @@ private:
 	void process_viewers();
 	void process_viewer_data_box_change(
 			uint32_t viewer_id, Box3i prev_data_box, Box3i new_data_box, bool can_load_blocks);
-	//void process_received_data_blocks();
+	// void process_received_data_blocks();
 	void process_meshing();
 	void apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
 
 	void _on_stream_params_changed();
 	// void _set_block_size_po2(int p_block_size_po2);
-	//void make_all_view_dirty();
+	// void make_all_view_dirty();
 	void start_updater();
 	void stop_updater();
 	void start_streamer();
@@ -178,7 +178,7 @@ private:
 	void unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);
 	// void unload_data_block(Vector3i bpos);
 	void unload_mesh_block(Vector3i bpos);
-	//void make_data_block_dirty(Vector3i bpos);
+	// void make_data_block_dirty(Vector3i bpos);
 	void try_schedule_mesh_update(VoxelMeshBlockVT &block);
 	void try_schedule_mesh_update_from_data(const Box3i &box_in_voxels);
 
@@ -214,7 +214,7 @@ private:
 	// Bindings
 	Vector3i _b_voxel_to_data_block(Vector3 pos) const;
 	Vector3i _b_data_block_to_voxel(Vector3i pos) const;
-	//void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
+	// void _force_load_blocks_binding(Vector3 center, Vector3 extents) { force_load_blocks(center, extents); }
 	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_save_block(Vector3i p_block_pos);
 	void _b_set_bounds(AABB aabb);
@@ -284,7 +284,7 @@ private:
 	unsigned int _collision_mask = 1;
 	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	bool _run_stream_in_editor = true;
-	//bool _stream_enabled = false;
+	// bool _stream_enabled = false;
 	bool _block_enter_notification_enabled = false;
 	bool _area_edit_notification_enabled = false;
 	// If enabled, VoxelViewers will cause blocks to automatically load around them.
