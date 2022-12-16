@@ -846,7 +846,7 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 }
 
 // This is only if we want to cache voxel data
-static void request_block_generate(uint32_t volume_id, unsigned int data_block_size,
+static void request_block_generate(VolumeID volume_id, unsigned int data_block_size,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		Vector3i block_pos, int lod, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
 		const Transform3D &volume_transform, float lod_distance, std::shared_ptr<AsyncDependencyTracker> tracker,
@@ -875,7 +875,7 @@ static void request_block_generate(uint32_t volume_id, unsigned int data_block_s
 }
 
 // Used only when streaming block by block
-static void request_block_load(uint32_t volume_id, unsigned int data_block_size,
+static void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		Vector3i block_pos, int lod, bool request_instances,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
@@ -904,7 +904,7 @@ static void request_block_load(uint32_t volume_id, unsigned int data_block_size,
 	}
 }
 
-static void send_block_data_requests(uint32_t volume_id,
+static void send_block_data_requests(VolumeID volume_id,
 		Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
@@ -934,7 +934,7 @@ static void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateD
 	}
 }
 
-static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBufferInternal> &voxels,
+static void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBufferInternal> &voxels,
 		Vector3i block_pos, int lod, std::shared_ptr<StreamingDependency> &stream_dependency,
 		unsigned int data_block_size, BufferedTaskScheduler &task_scheduler) {
 	//
@@ -949,7 +949,7 @@ static void request_voxel_block_save(uint32_t volume_id, std::shared_ptr<VoxelBu
 	task_scheduler.push_io_task(task);
 }
 
-void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
+void VoxelLodTerrainUpdateTask::send_block_save_requests(VolumeID volume_id,
 		Span<VoxelData::BlockToSave> blocks_to_save, std::shared_ptr<StreamingDependency> &stream_dependency,
 		unsigned int data_block_size, BufferedTaskScheduler &task_scheduler) {
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
@@ -960,7 +960,7 @@ void VoxelLodTerrainUpdateTask::send_block_save_requests(uint32_t volume_id,
 	}
 }
 
-static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::State &state,
+static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> &data_ptr,
 		std::shared_ptr<MeshingDependency> meshing_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
@@ -1050,7 +1050,7 @@ static void send_mesh_requests(uint32_t volume_id, VoxelLodTerrainUpdateData::St
 // The returned tracker may be polled to detect when it is complete.
 static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> data_ptr,
-		Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks, uint32_t volume_id,
+		Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks, VolumeID volume_id,
 		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {
@@ -1134,7 +1134,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 }
 
 static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> &data, uint32_t volume_id,
+		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> &data, VolumeID volume_id,
 		std::shared_ptr<StreamingDependency> &stream_dependency,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		BufferedTaskScheduler &task_scheduler) {

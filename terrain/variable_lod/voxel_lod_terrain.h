@@ -224,7 +224,7 @@ public:
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
-	uint32_t get_volume_id() const override {
+	VolumeID get_volume_id() const override {
 		return _volume_id;
 	}
 	std::shared_ptr<StreamingDependency> get_streaming_dependency() const override {
@@ -307,7 +307,7 @@ private:
 private:
 	friend class BuildTransitionMeshTask;
 
-	uint32_t _volume_id = 0;
+	VolumeID _volume_id;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	Ref<Material> _material;
@@ -375,7 +375,7 @@ private:
 	struct ApplyMeshUpdateTask : public ITimeSpreadTask {
 		void run(TimeSpreadTaskContext &ctx) override;
 
-		uint32_t volume_id = 0;
+		VolumeID volume_id;
 		VoxelLodTerrain *self = nullptr;
 		VoxelEngine::BlockMeshOutput data;
 	};

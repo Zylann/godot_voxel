@@ -1419,7 +1419,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 		}
 	}
 
-	const int volume_id = _parent->get_volume_id();
+	const VolumeID volume_id = _parent->get_volume_id();
 
 	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
 	ZN_ASSERT(stream_dependency != nullptr);

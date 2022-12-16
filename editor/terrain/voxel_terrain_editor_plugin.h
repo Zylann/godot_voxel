@@ -1,6 +1,7 @@
 #ifndef VOXEL_TERRAIN_EDITOR_PLUGIN_H
 #define VOXEL_TERRAIN_EDITOR_PLUGIN_H
 
+#include "../../engine/ids.h"
 #include "../../util/godot/editor_plugin.h"
 #include "voxel_terrain_editor_inspector_plugin.h"
 
@@ -72,7 +73,7 @@ private:
 
 	VoxelNode *_node = nullptr;
 
-	uint32_t _editor_viewer_id = -1;
+	ViewerID _editor_viewer_id;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
 	bool _show_octree_nodes = false;

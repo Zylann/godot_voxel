@@ -1,6 +1,7 @@
 #ifndef VOXEL_NODE_H
 #define VOXEL_NODE_H
 
+#include "../engine/ids.h"
 #include "../engine/streaming_dependency.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
@@ -38,7 +39,7 @@ public:
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
-	virtual uint32_t get_volume_id() const;
+	virtual VolumeID get_volume_id() const;
 	virtual std::shared_ptr<StreamingDependency> get_streaming_dependency() const;
 
 	virtual Ref<VoxelTool> get_voxel_tool();

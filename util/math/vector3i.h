@@ -119,6 +119,16 @@ inline Vector3i max(const Vector3i a, const Vector3i b) {
 
 } // namespace math
 
+std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
+
+} // namespace zylann
+
+ZN_GODOT_NAMESPACE_BEGIN
+// To prevent unintuitive overload-resolution compiler errors, operators overloads should be
+// defined in the same namespace as the type they are dealing with... in which case, Godot's namespace.
+// The compiler only looks for overrides in the namespace of the arguments (Koenig lookup, is it?).
+// https://stackoverflow.com/questions/5195512/namespaces-and-operator-resolution
+
 inline Vector3i operator<<(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(b >= 0);
@@ -137,9 +147,7 @@ inline Vector3i operator&(const Vector3i &a, uint32_t b) {
 	return Vector3i(a.x & b, a.y & b, a.z & b);
 }
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
-
-} // namespace zylann
+ZN_GODOT_NAMESPACE_END
 
 // For Godot
 struct Vector3iHasher {

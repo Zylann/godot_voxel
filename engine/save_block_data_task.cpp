@@ -13,7 +13,7 @@ namespace {
 std::atomic_int g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
 		_voxels(p_voxels),
@@ -29,7 +29,7 @@ SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos,
 	++g_debug_save_block_tasks_count;
 }
 
-SaveBlockDataTask::SaveBlockDataTask(uint32_t p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
+SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
 		_instances(std::move(p_instances)),

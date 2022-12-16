@@ -6,6 +6,7 @@
 #include "../util/memory.h"
 #include "../util/tasks/threaded_task.h"
 #include "distance_normalmaps.h"
+#include "ids.h"
 #include "priority_dependency.h"
 
 namespace zylann::voxel {
@@ -37,7 +38,7 @@ public:
 
 	// Identification
 	Vector3i mesh_block_position;
-	uint32_t volume_id;
+	VolumeID volume_id;
 	PriorityDependency priority_dependency;
 
 	void run(ThreadedTaskContext ctx) override;
@@ -60,7 +61,7 @@ public:
 	NormalMapData edited_tiles_normalmap_data;
 	std::vector<NormalMapData::Tile> tile_data;
 	std::shared_ptr<VirtualTextureOutput> virtual_textures;
-	uint32_t volume_id;
+	VolumeID volume_id;
 	Vector3i mesh_block_position;
 	Vector3i mesh_block_size;
 	uint16_t atlas_width;

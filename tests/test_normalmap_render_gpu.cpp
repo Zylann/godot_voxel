@@ -99,7 +99,6 @@ void test_normalmap_render_gpu() {
 	nm_task.mesh_block_size = Vector3iUtil::create(block_size);
 	nm_task.lod_index = lod_index;
 	nm_task.mesh_block_position = Vector3i();
-	nm_task.volume_id = 0;
 	nm_task.virtual_textures = virtual_textures;
 	nm_task.virtual_texture_settings = virtual_texture_settings;
 	nm_task.priority_dependency;

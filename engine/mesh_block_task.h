@@ -6,6 +6,7 @@
 #include "../util/godot/array_mesh.h"
 #include "../util/tasks/threaded_task.h"
 #include "distance_normalmaps.h"
+#include "ids.h"
 #include "meshing_dependency.h"
 #include "priority_dependency.h"
 
@@ -31,7 +32,7 @@ public:
 	// TODO Need to provide format
 	// FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
 	Vector3i mesh_block_position; // In mesh blocks of the specified lod
-	uint32_t volume_id;
+	VolumeID volume_id;
 	uint8_t lod_index = 0;
 	uint8_t blocks_count = 0;
 	uint8_t data_block_size = 0;

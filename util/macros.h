@@ -32,6 +32,7 @@
 #define ZN_TTR(msg) String(msg)
 #endif
 
+// Must be used in global space.
 #if defined(ZN_GODOT)
 #define ZN_GODOT_FORWARD_DECLARE(m_class) m_class;
 #elif defined(ZN_GODOT_EXTENSION)
@@ -49,6 +50,15 @@
 #else
 #define ZN_LIKELY(x) x
 #define ZN_UNLIKELY(x) x
+#endif
+
+// Must be used in global space.
+#if defined(ZN_GODOT)
+#define ZN_GODOT_NAMESPACE_BEGIN
+#define ZN_GODOT_NAMESPACE_END
+#elif defined(ZN_GODOT_EXTENSION)
+#define ZN_GODOT_NAMESPACE_BEGIN namespace godot {
+#define ZN_GODOT_NAMESPACE_END }
 #endif
 
 #endif // ZYLANN_MACROS_H

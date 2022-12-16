@@ -6,6 +6,7 @@
 #include "../util/math/vector4f.h"
 #include "distance_normalmaps.h"
 #include "gpu_task_runner.h"
+#include "ids.h"
 
 namespace zylann::voxel {
 
@@ -65,7 +66,7 @@ public:
 	NormalMapData edited_tiles_normalmap_data;
 	Vector3i block_position;
 	Vector3i block_size;
-	uint32_t volume_id;
+	VolumeID volume_id;
 	uint8_t lod_index;
 
 	void prepare(GPUTaskContext &ctx) override;

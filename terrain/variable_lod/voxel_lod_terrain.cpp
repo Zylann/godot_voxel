@@ -996,7 +996,7 @@ Vector3 VoxelLodTerrain::get_local_viewer_pos() const {
 
 	// TODO Support for multiple viewers, this is a placeholder implementation
 	VoxelEngine::get_singleton().for_each_viewer( //
-			[&pos](const VoxelEngine::Viewer &viewer, uint32_t viewer_id) { //
+			[&pos](ViewerID id, const VoxelEngine::Viewer &viewer) { //
 				pos = viewer.world_position;
 			});
 
