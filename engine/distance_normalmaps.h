@@ -65,6 +65,9 @@ struct NormalMapData {
 		uint8_t axis;
 	};
 	std::vector<Tile> tiles;
+	// Optionally used in case of partial tiles data, when only getting edited tiles.
+	// If this is empty, it means indices are sequential so there is no need to store them here.
+	std::vector<uint32_t> tile_indices;
 
 	inline void clear() {
 		normals.clear();
@@ -86,16 +89,19 @@ public:
 	virtual ~ICellIterator() {}
 	virtual unsigned int get_count() const = 0;
 	virtual bool next(CurrentCellInfo &info) = 0;
+	virtual void rewind() = 0;
 };
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
 // If the angle between the triangle and the computed normal is larger tham `max_deviation_radians`,
 // the normal's direction will be clamped.
-void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
+// If `out_edited_tiles` is provided, only tiles containing edited voxels will be processed.
+void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians);
+		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
+		bool edited_tiles_only);
 
 struct NormalMapImages {
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
@@ -115,6 +121,8 @@ struct NormalMapTextures {
 	Ref<Texture2D> lookup;
 };
 
+Ref<Image> store_lookup_to_image(const std::vector<NormalMapData::Tile> &tiles, Vector3i block_size);
+
 NormalMapImages store_normalmap_data_to_images(
 		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding);
 
@@ -130,6 +138,35 @@ struct VirtualTextureOutput {
 	// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
 	std::atomic_bool valid;
 };
+
+// Given a number of items, tells which size a 2D square grid should be in order to contain them
+inline unsigned int get_square_grid_size_from_item_count(unsigned int item_count) {
+	return int(Math::ceil(Math::sqrt(double(item_count))));
+}
+
+// Copies data from a fully packed array into a sub-region of a 2D array (where each rows may be spaced apart).
+inline void copy_2d_region_from_packed_to_atlased(Span<uint8_t> dst, Vector2i dst_size, Span<const uint8_t> src,
+		Vector2i src_size, Vector2i dst_pos, unsigned int item_size_in_bytes) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);
+	ZN_ASSERT(dst_size.x >= 0 && dst_size.y >= 0);
+	ZN_ASSERT(dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
+			dst_pos.y + src_size.y <= dst_size.y);
+	ZN_ASSERT(src.size() == src_size.x * src_size.y * item_size_in_bytes);
+	ZN_ASSERT(dst.size() == dst_size.x * dst_size.y * item_size_in_bytes);
+	ZN_ASSERT(!src.overlaps(dst));
+#endif
+	const unsigned int dst_begin = (dst_pos.x + dst_pos.y * dst_size.x) * item_size_in_bytes;
+	const unsigned int src_row_size = src_size.x * item_size_in_bytes;
+	const unsigned int dst_row_size = dst_size.x * item_size_in_bytes;
+	uint8_t *dst_p = dst.data() + dst_begin;
+	const uint8_t *src_p = src.data();
+	for (unsigned int src_y = 0; src_y < (unsigned int)src_size.y; ++src_y) {
+		memcpy(dst_p, src_p, src_row_size);
+		dst_p += dst_row_size;
+		src_p += src_row_size;
+	}
+}
 
 } // namespace zylann::voxel
 

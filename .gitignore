@@ -13,3 +13,6 @@
 *.pdb
 *.dll
 *.ilk
+
+shaders/dev/.godot/
+*.gen.glsl

@@ -650,3 +650,13 @@ A classic method is used to obtain normals: on the desired position, we take 4 s
 
 Since every mesh will have its own textures, another technique that comes in handy is [Octahedral Compression](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/). These normals are world-space, and encoding them in a texture naively would require 3 bytes per pixel (for X, Y, Z). With octahedral compression, we trade off a bit of quality for a much smaller size of 2 bytes per pixels.
 
+
+#### Running normalmap generation on the GPU
+
+This feature is very expensive, so it is possible to run it on the graphics card if it supports Vulkan. This is enabled by checking `run on GPU` in the terrain's inspector.
+
+Limitations:
+
+- GPU normalmaps currently don't support edited voxels. Edited areas will fallback using the CPU.
+- The generator you're using must support a shader variant using GLSL. `VoxelGeneratorGraph` is the only one supporting it at the moment. Some of its nodes don't have support for it.
+- Modifiers aren't supported yet

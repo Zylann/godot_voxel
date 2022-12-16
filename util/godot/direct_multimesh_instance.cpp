@@ -89,18 +89,35 @@ void DirectMultiMeshInstance::set_cast_shadows_setting(RenderingServer::ShadowCa
 
 template <typename TTransform3>
 inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
+	// dst[0] = t.basis.rows[0].x;
+	// dst[1] = t.basis.rows[1].x;
+	// dst[2] = t.basis.rows[2].x;
+	// dst[3] = t.origin.x;
+
+	// dst[4] = t.basis.rows[0].y;
+	// dst[5] = t.basis.rows[1].y;
+	// dst[6] = t.basis.rows[2].y;
+	// dst[7] = t.origin.y;
+
+	// dst[8] = t.basis.rows[0].z;
+	// dst[9] = t.basis.rows[1].z;
+	// dst[10] = t.basis.rows[2].z;
+	// dst[11] = t.origin.z;
+
+	// I had to transpose this matrix multiple times over several years, I dont know what's going on...
+
 	dst[0] = t.basis.rows[0].x;
-	dst[1] = t.basis.rows[1].x;
-	dst[2] = t.basis.rows[2].x;
+	dst[1] = t.basis.rows[0].y;
+	dst[2] = t.basis.rows[0].z;
 	dst[3] = t.origin.x;
 
-	dst[4] = t.basis.rows[0].y;
+	dst[4] = t.basis.rows[1].x;
 	dst[5] = t.basis.rows[1].y;
-	dst[6] = t.basis.rows[2].y;
+	dst[6] = t.basis.rows[1].z;
 	dst[7] = t.origin.y;
 
-	dst[8] = t.basis.rows[0].z;
-	dst[9] = t.basis.rows[1].z;
+	dst[8] = t.basis.rows[2].x;
+	dst[9] = t.basis.rows[2].y;
 	dst[10] = t.basis.rows[2].z;
 	dst[11] = t.origin.z;
 }
@@ -118,7 +135,7 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
 	CRASH_COND(transforms.size() * sizeof(Transform3D) / sizeof(real_t) != static_cast<size_t>(bulk_array.size()));
 
-	//memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
+	// memcpy(w.ptr(), _transform_cache.data(), bulk_array.size() * sizeof(float));
 	// Nope, you can't memcpy that, nonono. It's said to be for performance, but doesnt specify why.
 
 	float *w = bulk_array.ptrw();

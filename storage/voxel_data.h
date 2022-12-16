@@ -234,7 +234,14 @@ public:
 	void get_blocks_with_voxel_data(
 			Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBufferInternal>> out_blocks) const;
 
+	// Gets blocks with voxels at the given LOD and indexes them in a grid. This will query every location
+	// intersecting the box at the specified LOD, so if the area is large, you may want to do a broad check first.
 	void get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const;
+
+	// Tests the presence of edited blocks in the given area by looking up LOD mips. It can report false positives due
+	// to the broad nature of the check, but runs a lot faster than a full test. This is only usable with volumes
+	// using LOD mips (edited blocks have half-resolution counterparts all the way up to maximum LOD).
+	bool has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxels) const;
 
 	std::shared_ptr<VoxelBufferInternal> try_get_block_voxels(Vector3i bpos);
 

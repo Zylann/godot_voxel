@@ -240,6 +240,17 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 	return 0;
 }
 
+// If `num` is a power of two, returns the exponent. Otherwise, returns the exponent of the next power of two.
+inline unsigned int get_next_power_of_two_32_shift(unsigned int num) {
+	for (unsigned int i = 0; i < 32; ++i) {
+		if ((num >> i) == 1) {
+			return i;
+		}
+	}
+	ZN_CRASH_MSG("Unreachable code");
+	return 0;
+}
+
 // If the provided address `a` is not aligned to the number of bytes specified in `align`,
 // returns the next aligned address. `align` must be a power of two.
 inline size_t alignup(size_t a, size_t align) {

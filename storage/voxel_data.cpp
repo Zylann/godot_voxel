@@ -36,7 +36,7 @@ struct ScheduleSaveAction {
 
 	void operator()(const Vector3i &bpos, VoxelDataBlock &block) {
 		if (block.is_modified()) {
-			//print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
+			// print_line(String("Scheduling save for block {0}").format(varray(block->position.to_vec3())));
 			VoxelData::BlockToSave b;
 			// If a modified block has no voxels, it is equivalent to removing the block from the stream
 			if (block.has_voxels()) {
@@ -55,7 +55,7 @@ struct ScheduleSaveAction {
 		}
 	}
 };
-} //namespace
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -306,7 +306,7 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,
 		unsigned int lod_count, Ref<VoxelGenerator> generator, VoxelModifierStack &modifiers) {
 	ZN_PROFILE_SCOPE();
-	//ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
+	// ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 
 	struct Task {
 		Vector3i block_pos;
@@ -324,7 +324,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
 
-		//ZN_PRINT_VERBOSE(format("Preloading box {} at lod {} synchronously", block_box, lod_index));
+		// ZN_PRINT_VERBOSE(format("Preloading box {} at lod {} synchronously", block_box, lod_index));
 
 		Lod &data_lod = lods[lod_index];
 		const unsigned int prev_size = todo.size();
@@ -432,7 +432,7 @@ void VoxelData::mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod
 		bbox.for_each_cell([this, &data_lod0, lod0_new_blocks_to_lod](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
 			// We can get null blocks due to the added padding...
-			//ERR_FAIL_COND(block == nullptr);
+			// ERR_FAIL_COND(block == nullptr);
 			if (block == nullptr) {
 				return;
 			}
@@ -441,7 +441,7 @@ void VoxelData::mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod
 				return;
 			}
 
-			//RWLockWrite wlock(block->get_voxels_shared()->get_lock());
+			// RWLockWrite wlock(block->get_voxels_shared()->get_lock());
 			block->set_modified(true);
 			block->set_edited(true);
 
@@ -545,7 +545,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 		std::vector<Vector3i> &src_lod_blocks_to_process = tls_blocks_to_process_per_lod[src_lod_index];
 		std::vector<Vector3i> &dst_lod_blocks_to_process = tls_blocks_to_process_per_lod[dst_lod_index];
 
-		//VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[dst_lod_index];
+		// VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[dst_lod_index];
 
 		Lod &src_data_lod = _lods[src_lod_index];
 		RWLockRead src_data_lod_map_rlock(src_data_lod.map_lock);
@@ -594,7 +594,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 			// The block and its lower LOD indices are expected to be available.
 			// Otherwise it means the function was called too late?
 			ZN_ASSERT(src_block != nullptr);
-			//ZN_ASSERT(dst_block != nullptr);
+			// ZN_ASSERT(dst_block != nullptr);
 			// The block should have voxels if it has been edited or mipped.
 			ZN_ASSERT(src_block->has_voxels());
 
@@ -731,7 +731,7 @@ void VoxelData::get_blocks_with_voxel_data(
 	p_blocks_box.for_each_cell_zxy([&index, &data_lod, &out_blocks](Vector3i data_block_pos) {
 		const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
 		// The block can actually be null on some occasions. Not sure yet if it's that bad
-		//CRASH_COND(nblock == nullptr);
+		// CRASH_COND(nblock == nullptr);
 		if (nblock != nullptr && nblock->has_voxels()) {
 			out_blocks[index] = nblock->get_voxels_shared();
 		}
@@ -740,9 +740,44 @@ void VoxelData::get_blocks_with_voxel_data(
 }
 
 void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const {
+	ZN_PROFILE_SCOPE();
 	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
-	grid.reference_area(data_lod.map, box_in_voxels);
+	grid.reference_area(data_lod.map, lod_index == 0 ? box_in_voxels : box_in_voxels.downscaled(1 << lod_index));
+}
+
+bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxels) const {
+	ZN_PROFILE_SCOPE();
+
+	// Find the highest LOD level to query first
+	const Vector3i box_size_in_blocks = box_in_voxels.size >> get_block_size_po2();
+	const int box_size_in_blocks_longest_axis =
+			math::max(box_size_in_blocks.x, math::max(box_size_in_blocks.y, box_size_in_blocks.z));
+	const int top_lod_index =
+			math::min(math::get_next_power_of_two_32_shift(box_size_in_blocks_longest_axis), get_lod_count());
+
+	// Find if edited mips exist
+	const Lod &mip_data_lod = _lods[top_lod_index];
+	{
+		// Ideally this box shouldn't intersect more than 8 blocks if the box is cubic.
+		const Box3i mip_blocks_box = box_in_voxels.downscaled(mip_data_lod.map.get_block_size() << top_lod_index);
+
+		RWLockRead rlock(mip_data_lod.map_lock);
+
+		const VoxelDataMap &map = mip_data_lod.map;
+		const bool no_blocks_found = mip_blocks_box.all_cells_match([&map](const Vector3i pos) {
+			const VoxelDataBlock *block = map.get_block(pos);
+			return block == nullptr || block->has_voxels() == false;
+		});
+
+		if (no_blocks_found) {
+			// No edits found at this mip, we may assume there are no edits in lower LODs.
+			return false;
+		}
+	}
+
+	// Assume there can be edits
+	return true;
 }
 
 void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,

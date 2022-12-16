@@ -72,7 +72,6 @@ public:
 
 	void bake_sphere_bumpmap(Ref<Image> im, float ref_radius, float min_height, float max_height);
 	void bake_sphere_normalmap(Ref<Image> im, float ref_radius, float strength);
-	String generate_shader();
 
 	// Internal
 
@@ -88,6 +87,15 @@ public:
 
 	bool try_get_output_port_address(ProgramGraph::PortLocation port, uint32_t &out_address) const;
 	int get_sdf_output_port_address() const;
+
+	// GPU support
+
+	bool supports_shaders() const override {
+		// To some extent. It might fail if the graph contains nodes that are not compatible.
+		return true;
+	}
+
+	bool get_shader_source(ShaderSourceData &out_data) const override;
 
 	// Debug
 

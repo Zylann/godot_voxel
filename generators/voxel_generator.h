@@ -1,14 +1,18 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
+#include "../engine/compute_shader_resource.h"
 #include "../util/godot/resource.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"
 #include "../util/span.h"
+#include <memory>
 
 namespace zylann::voxel {
 
 class VoxelBufferInternal;
+class ComputeShader;
+struct ComputeShaderParameters;
 
 namespace gd {
 class VoxelBuffer;
@@ -62,6 +66,35 @@ public:
 	// Declares the channels this generator will use
 	virtual int get_used_channels_mask() const;
 
+	// GPU support
+	// The way this support works is by providing a shader and parameters that can produce the same results as the CPU
+	// version of the generator.
+
+	virtual bool supports_shaders() const {
+		return false;
+	}
+
+	struct ShaderParameter {
+		String name;
+		ComputeShaderResource resource;
+	};
+
+	struct ShaderSourceData {
+		// Source code relevant to the generator only. Does not contain interface blocks (uniforms), because they may be
+		// generated depending on where the code is integrated.
+		String glsl;
+		std::vector<ShaderParameter> parameters;
+	};
+
+	virtual bool get_shader_source(ShaderSourceData &out_data) const;
+	std::shared_ptr<ComputeShader> get_virtual_rendering_shader();
+	std::shared_ptr<ComputeShaderParameters> get_virtual_rendering_shader_parameters();
+	void compile_shaders();
+	// Drops currently compiled shaders if any, so that they get recompiled when they are needed again
+	void invalidate_shaders();
+
+	// Editor
+
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const {}
 #endif
@@ -70,6 +103,10 @@ protected:
 	static void _bind_methods();
 
 	void _b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+
+	std::shared_ptr<ComputeShader> _virtual_rendering_shader;
+	std::shared_ptr<ComputeShaderParameters> _virtual_rendering_shader_parameters;
+	Mutex _shader_mutex;
 };
 
 } // namespace zylann::voxel

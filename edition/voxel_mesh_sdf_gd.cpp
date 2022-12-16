@@ -137,7 +137,7 @@ void VoxelMeshSDF::bake() {
 		case BAKE_MODE_APPROX_FLOODFILL: {
 			mesh_sdf::ChunkGrid chunk_grid;
 			mesh_sdf::partition_triangles(_partition_subdiv, to_span(triangles), box_min_pos, box_max_pos, chunk_grid);
-			//mesh_sdf::compute_near_chunks(chunk_grid);
+			// mesh_sdf::compute_near_chunks(chunk_grid);
 			mesh_sdf::generate_mesh_sdf_approx_floodfill(
 					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix);
 		} break;
@@ -163,7 +163,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	ZN_ASSERT_RETURN(scene_tree != nullptr);
 	VoxelEngineUpdater::ensure_existence(scene_tree);
 
-	//ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
+	// ZN_ASSERT_RETURN_MSG(!_is_baking, "Already baking");
 
 	struct L {
 		static void notify_on_complete(VoxelMeshSDF &obj, mesh_sdf::GenMeshSDFSubBoxTask::SharedData &shared_data) {
@@ -281,7 +281,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
 							shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
 
-					//mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
+					// mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 
 					mesh_sdf::generate_mesh_sdf_approx_floodfill(sdf_grid, res, to_span(shared_data->triangles),
 							shared_data->chunk_grid, box_min_pos, box_max_pos, boundary_sign_fix);
@@ -343,6 +343,23 @@ Ref<gd::VoxelBuffer> VoxelMeshSDF::get_voxel_buffer() const {
 
 AABB VoxelMeshSDF::get_aabb() const {
 	return AABB(to_godot(_min_pos), to_godot(_max_pos - _min_pos));
+}
+
+std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
+	MutexLock mlock(_gpu_resource_mutex);
+
+	if (_gpu_resource == nullptr && _voxel_buffer.is_valid()) {
+		const VoxelBufferInternal &buffer = _voxel_buffer->get_buffer();
+
+		Span<const float> sdf_grid;
+		ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, sdf_grid), _gpu_resource);
+
+		std::shared_ptr<ComputeShaderResource> resource = make_shared_instance<ComputeShaderResource>();
+		resource->create_texture_3d_zxy(sdf_grid, buffer.get_size());
+		_gpu_resource = resource;
+	}
+
+	return _gpu_resource;
 }
 
 Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {

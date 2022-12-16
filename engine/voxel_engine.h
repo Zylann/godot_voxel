@@ -9,8 +9,15 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
+#include "compute_shader.h"
 #include "distance_normalmaps.h"
+#include "gpu_storage_buffer_pool.h"
+#include "gpu_task_runner.h"
 #include "priority_dependency.h"
+
+#include "../util/godot/rendering_device.h"
+
+ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 
 namespace zylann::voxel {
 
@@ -167,6 +174,7 @@ public:
 	void push_async_io_task(IThreadedTask *task);
 	// Thread-safe.
 	void push_async_io_tasks(Span<IThreadedTask *> tasks);
+	void push_gpu_task(IGPUTask *task);
 
 	void process();
 	void wait_and_clear_all_tasks(bool warn);
@@ -198,11 +206,46 @@ public:
 
 	Stats get_stats() const;
 
+	bool has_rendering_device() const {
+		return _rendering_device != nullptr;
+	}
+
+	RenderingDevice &get_rendering_device() const {
+		ZN_ASSERT(_rendering_device != nullptr);
+		return *_rendering_device;
+	}
+
+	const ComputeShader &get_dilate_normalmap_compute_shader() const {
+		return _dilate_normalmap_shader;
+	}
+
+	const ComputeShader &get_detail_gather_hits_compute_shader() const {
+		return _detail_gather_hits_shader;
+	}
+
+	const ComputeShader &get_detail_normalmap_compute_shader() const {
+		return _detail_normalmap_shader;
+	}
+
+	const ComputeShader &get_detail_modifier_sphere_shader() const {
+		return _detail_modifier_sphere_shader;
+	}
+
+	const ComputeShader &get_detail_modifier_mesh_shader() const {
+		return _detail_modifier_mesh_shader;
+	}
+
+	RID get_filtering_sampler() const {
+		return _filtering_sampler_rid;
+	}
+
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
 
 private:
 	VoxelEngine(ThreadsConfig threads_config);
+
+	void load_shaders();
 
 	// Since we are going to send data to tasks running in multiple threads, a few strategies are in place:
 	//
@@ -240,6 +283,22 @@ private:
 	FileLocker _file_locker;
 
 	bool _threaded_graphics_resource_building_enabled = false;
+
+	// Rendering device used for compute shaders. May not be available depending on the chosen renderer.
+	RenderingDevice *_rendering_device = nullptr;
+	RID _filtering_sampler_rid;
+	// TODO Can `RenderingDevice` be used on multiple threads? There is no documentation.
+	// So I'll assume I can't...
+	Mutex _rendering_device_mutex;
+	GPUTaskRunner _gpu_task_runner;
+	GPUStorageBufferPool _gpu_storage_buffer_pool;
+
+	// TODO I don't know yet where to store these resource, at some point we may find a more dedicated place
+	ComputeShader _dilate_normalmap_shader;
+	ComputeShader _detail_gather_hits_shader;
+	ComputeShader _detail_normalmap_shader;
+	ComputeShader _detail_modifier_sphere_shader;
+	ComputeShader _detail_modifier_mesh_shader;
 };
 
 struct VoxelFileLockerRead {

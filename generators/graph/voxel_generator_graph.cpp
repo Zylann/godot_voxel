@@ -847,6 +847,10 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	const int64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(format("Voxel graph compiled in {} us", time_spent));
 
+	if (result.success) {
+		invalidate_shaders();
+	}
+
 	return result;
 }
 
@@ -1256,17 +1260,27 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	for_chunks_2d(im->get_width(), im->get_height(), 32, pc);
 }
 
-String VoxelGeneratorGraph::generate_shader() {
+bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_V(_main_function.is_null(), "");
+	ERR_FAIL_COND_V(_main_function.is_null(), false);
 	const ProgramGraph &graph = _main_function->get_graph();
 
 	std::string code_utf8;
-	pg::CompilationResult result = pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8);
+	std::vector<pg::ShaderParameter> params;
+	pg::CompilationResult result =
+			pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8, params);
 
 	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
 
-	return String(code_utf8.c_str());
+	if (params.size() > 0) {
+		out_data.parameters.reserve(params.size());
+		for (pg::ShaderParameter &p : params) {
+			out_data.parameters.push_back(ShaderParameter{ String::utf8(p.name.c_str()), std::move(p.resource) });
+		}
+	}
+
+	out_data.glsl = String(code_utf8.c_str());
+	return true;
 }
 
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
@@ -1605,7 +1619,6 @@ void VoxelGeneratorGraph::_bind_methods() {
 			&VoxelGeneratorGraph::bake_sphere_bumpmap);
 	ClassDB::bind_method(D_METHOD("bake_sphere_normalmap", "im", "ref_radius", "strength"),
 			&VoxelGeneratorGraph::bake_sphere_normalmap);
-	ClassDB::bind_method(D_METHOD("generate_shader"), &VoxelGeneratorGraph::generate_shader);
 
 	ClassDB::bind_method(D_METHOD("debug_load_waves_preset"), &VoxelGeneratorGraph::debug_load_waves_preset);
 	ClassDB::bind_method(D_METHOD("debug_measure_microseconds_per_voxel", "use_singular_queries"),

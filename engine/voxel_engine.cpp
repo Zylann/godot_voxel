@@ -1,5 +1,6 @@
 #include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
+#include "../shaders/shaders.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
@@ -22,6 +23,8 @@ VoxelEngine &VoxelEngine::get_singleton() {
 void VoxelEngine::create_singleton(ThreadsConfig threads_config) {
 	ZN_ASSERT_MSG(g_voxel_engine == nullptr, "Creating singleton twice");
 	g_voxel_engine = ZN_NEW(VoxelEngine(threads_config));
+	// Do separately because it involves accessing `g_voxel_engine`
+	g_voxel_engine->load_shaders();
 }
 
 void VoxelEngine::destroy_singleton() {
@@ -63,6 +66,45 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	ZN_PRINT_VERBOSE(format("Size of LoadBlockDataTask: {}", sizeof(LoadBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
+
+	_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
+
+	if (_rendering_device != nullptr) {
+		Ref<RDSamplerState> sampler_state;
+		sampler_state.instantiate();
+		// Using samplers for their interpolation features.
+		// Otherwise I dont feel like there is a point in using one IMO
+		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
+		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
+
+		_gpu_storage_buffer_pool.set_rendering_device(_rendering_device);
+
+		_gpu_task_runner.start(_rendering_device, &_gpu_storage_buffer_pool);
+
+	} else {
+		ZN_PRINT_VERBOSE("Could not create local RenderingDevice, GPU functionality won't be supported.");
+	}
+}
+
+void VoxelEngine::load_shaders() {
+	ZN_PROFILE_SCOPE();
+
+	if (_rendering_device != nullptr) {
+		ZN_PRINT_VERBOSE("Loading VoxelEngine shaders");
+
+		_dilate_normalmap_shader.load_from_glsl(g_dilate_normalmap_shader, "zylann.voxel.dilate_normalmap");
+		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
+		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
+
+		_detail_modifier_sphere_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
+						String(g_modifier_sphere_shader_snippet) + String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_sphere_shader");
+
+		_detail_modifier_mesh_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
+						String(g_modifier_mesh_shader_snippet) + String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_mesh_shader");
+	}
 }
 
 VoxelEngine::~VoxelEngine() {
@@ -72,6 +114,30 @@ VoxelEngine::~VoxelEngine() {
 	// but doing it anyways for correctness, it's how it should have been...
 	// See https://github.com/Zylann/godot_voxel/issues/189
 	wait_and_clear_all_tasks(true);
+
+	_gpu_task_runner.stop();
+
+	if (_rendering_device != nullptr) {
+		// Free these explicitely because we are going to free the RenderindDevice too
+		_dilate_normalmap_shader.clear();
+		_detail_gather_hits_shader.clear();
+		_detail_normalmap_shader.clear();
+		_detail_modifier_sphere_shader.clear();
+		_detail_modifier_mesh_shader.clear();
+
+		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
+		_filtering_sampler_rid = RID();
+
+		if (is_verbose_output_enabled()) {
+			_gpu_storage_buffer_pool.debug_print();
+		}
+
+		_gpu_storage_buffer_pool.clear();
+		_gpu_storage_buffer_pool.set_rendering_device(nullptr);
+
+		memdelete(_rendering_device);
+		_rendering_device = nullptr;
+	}
 }
 
 void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
@@ -220,6 +286,10 @@ void VoxelEngine::push_async_io_task(zylann::IThreadedTask *task) {
 
 void VoxelEngine::push_async_io_tasks(Span<zylann::IThreadedTask *> tasks) {
 	_general_thread_pool.enqueue(tasks, true);
+}
+
+void VoxelEngine::push_gpu_task(IGPUTask *task) {
+	_gpu_task_runner.push(task);
 }
 
 void VoxelEngine::process() {

@@ -1,6 +1,7 @@
 #ifndef VOXEL_MESH_SDF_GD_H
 #define VOXEL_MESH_SDF_GD_H
 
+#include "../engine/compute_shader_resource.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/mesh.h"
 #include "../util/godot/resource.h"
@@ -75,6 +76,15 @@ public:
 	// Gets the padded bounding box of the model. This is important to know for signed distances to be coherent.
 	AABB get_aabb() const;
 
+	inline Vector3f get_aabb_min_pos() const {
+		return _min_pos;
+	}
+	inline Vector3f get_aabb_max_pos() const {
+		return _max_pos;
+	}
+
+	std::shared_ptr<ComputeShaderResource> get_gpu_resource();
+
 	Array debug_check_sdf(Ref<Mesh> mesh);
 
 private:
@@ -89,6 +99,9 @@ private:
 	Ref<gd::VoxelBuffer> _voxel_buffer;
 	Vector3f _min_pos;
 	Vector3f _max_pos;
+	// Stored as a shared_ptr in case that resource is in use while being re-generated
+	std::shared_ptr<ComputeShaderResource> _gpu_resource;
+	Mutex _gpu_resource_mutex;
 
 	// States
 	bool _is_baking = false;

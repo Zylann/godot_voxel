@@ -59,22 +59,26 @@ static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 	}
 }
 
-NormalMapData::Tile compute_tile_info(const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals,
-		Span<const int> mesh_indices, unsigned int first_index) {
+NormalMapData::Tile compute_tile_info(
+		const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals, Span<const int> mesh_indices) {
 	Vector3f normal_sum;
-	unsigned int ii = first_index;
+
 	for (unsigned int triangle_index = 0; triangle_index < cell_info.triangle_count; ++triangle_index) {
-		const unsigned vi0 = mesh_indices[ii];
-		const unsigned vi1 = mesh_indices[ii + 1];
-		const unsigned vi2 = mesh_indices[ii + 2];
-		ii += 3;
+		const unsigned int ii0 = cell_info.triangle_begin_indices[triangle_index];
+
+		const unsigned vi0 = mesh_indices[ii0];
+		const unsigned vi1 = mesh_indices[ii0 + 1];
+		const unsigned vi2 = mesh_indices[ii0 + 2];
+
 		const Vector3f normal0 = mesh_normals[vi0];
 		const Vector3f normal1 = mesh_normals[vi1];
 		const Vector3f normal2 = mesh_normals[vi2];
+
 		normal_sum += normal0;
 		normal_sum += normal1;
 		normal_sum += normal2;
 	}
+
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(cell_info.position.x >= 0);
 	ZN_ASSERT(cell_info.position.y >= 0);
@@ -116,19 +120,19 @@ void get_axis_indices(Vector3f::Axis axis, unsigned int &ax, unsigned int &ay, u
 
 typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, CurrentCellInfo::MAX_TRIANGLES> CellTriangles;
 
-unsigned int prepare_triangles(unsigned int first_index, const CurrentCellInfo &cell_info, const Vector3f direction,
+unsigned int prepare_triangles(const CurrentCellInfo &cell_info, const Vector3f direction,
 		CellTriangles &baked_triangles, Span<const Vector3f> mesh_vertices, Span<const int> mesh_indices) {
 	unsigned int triangle_count = 0;
 
-	unsigned int ii = first_index;
 	for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
+		const unsigned int ii0 = cell_info.triangle_begin_indices[ti];
 #ifdef DEBUG_ENABLED
-		ZN_ASSERT(ii + 2 < mesh_indices.size());
+		ZN_ASSERT(ii0 + 2 < mesh_indices.size());
 #endif
-		const unsigned vi0 = mesh_indices[ii];
-		const unsigned vi1 = mesh_indices[ii + 1];
-		const unsigned vi2 = mesh_indices[ii + 2];
-		ii += 3;
+		const unsigned vi0 = mesh_indices[ii0];
+		const unsigned vi1 = mesh_indices[ii0 + 1];
+		const unsigned vi2 = mesh_indices[ii0 + 2];
+
 		const Vector3f a = mesh_vertices[vi0];
 		const Vector3f b = mesh_vertices[vi1];
 		const Vector3f c = mesh_vertices[vi2];
@@ -166,7 +170,7 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 	return Vector3f(0.5f) + 0.5f * n;
 }
 
-void query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data, const VoxelDataGrid &grid,
+void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &modifiers, const VoxelDataGrid &grid,
 		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
 		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
@@ -229,8 +233,8 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data
 			generator.generate_series(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
 					channel, to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
 
-			voxel_data.get_modifiers().apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count),
-					to_span(z_gen, gen_count), to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+			modifiers.apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
+					to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
 
 			for (unsigned int j = 0; j < gen_count; ++j) {
 				sd_samples[i_gen[j]] = gen_samples[j];
@@ -245,9 +249,12 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data
 	}
 }
 
-bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_data, Span<const float> query_x_buffer,
-		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
-		Vector3f query_min_pos, Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
+// Maximum grid size in which edited blocks can be fetched inside a tile.
+// Beyond this size, there are too many cells to query so the algorithm will fallback to generator.
+static const unsigned int MAX_EDITED_BLOCKS_ACROSS = 8;
+
+bool try_query_edited_blocks(VoxelDataGrid &grid, const VoxelData &voxel_data, Vector3f query_min_pos,
+		Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
 	ZN_PROFILE_SCOPE();
 
 	// Pad by 1 in case there are neighboring edited voxels. If not done, it creates a grid pattern following LOD0 block
@@ -255,22 +262,12 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_
 	const Vector3i query_min_pos_i = math::floor_to_int(query_min_pos) - Vector3iUtil::create(1);
 	const Vector3i query_max_pos_i = math::ceil_to_int(query_max_pos) + Vector3iUtil::create(1);
 
-	struct ClearOnExit {
-		VoxelDataGrid &grid;
-		inline ~ClearOnExit() {
-			grid.clear();
-		}
-	};
-
-	// Re-use memory because it will be used a lot
-	static thread_local VoxelDataGrid tls_grid;
-	// Ensure cleanup references to voxel buffers
-	ClearOnExit grid_clear_on_exit{ tls_grid };
-
 	{
 		const Box3i voxel_box = Box3i::from_min_max(query_min_pos_i, query_max_pos_i);
+		const Vector3i block_box_size = voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2;
+		const int64_t block_volume = Vector3iUtil::get_volume(block_box_size);
 		// TODO Don't hardcode block size (even though for now I have no plan to make it configurable)
-		if (Vector3iUtil::get_volume(voxel_box.size >> constants::DEFAULT_BLOCK_SIZE_PO2) > math::cubed(8)) {
+		if (block_volume > math::cubed(MAX_EDITED_BLOCKS_ACROSS)) {
 			// Box too big for quick sparse readings, won't handle edits. Fallback on generator.
 			// One way to speed this up would be to have an octree storing where edited data is.
 			// Or we would have to use the slowest query model, going through data structures for every voxel.
@@ -278,43 +275,47 @@ bool try_query_sdf_with_edits(VoxelGenerator &generator, const VoxelData &voxel_
 			return false;
 		}
 
-		voxel_data.get_blocks_grid(tls_grid, voxel_box, 0);
+		// In case there are lots of potential queries to make, do a broad check using LOD mips.
+		if (block_volume <= 8 || voxel_data.has_blocks_with_voxels_in_area_broad_mip_test(voxel_box)) {
+			voxel_data.get_blocks_grid(grid, voxel_box, 0);
+		}
 		// const VoxelDataLodMap::Lod &lod0 = voxel_data.lods[0];
 		// RWLockRead rlock(lod0.map_lock);
 		// tls_grid.reference_area(lod0.map, voxel_box);
 	}
 
-	if (!tls_grid.has_any_block()) {
-		// No edited voxels in the area, can use a faster path
-		return false;
-	}
-
-	query_sdf_with_edits(generator, voxel_data, tls_grid, query_x_buffer, query_y_buffer, query_z_buffer,
-			query_sdf_buffer, query_min_pos, query_max_pos);
-
-	return true;
+	return grid.has_any_block();
 }
 
-inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Span<const float> query_x_buffer,
-		Span<const float> query_y_buffer, Span<const float> query_z_buffer, Span<float> query_sdf_buffer,
-		Vector3f query_min_pos, Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
-	ZN_PROFILE_SCOPE();
-	bool generator_only = true;
-
-	if (voxel_data != nullptr) {
-		// TODO Optimize: if there are no edited voxels in the entire mesh, completely skip this function.
-		//                Doing this efficiently requires an acceleration structure to do fast "exists" queries.
-		generator_only = !try_query_sdf_with_edits(generator, *voxel_data, query_x_buffer, query_y_buffer,
-				query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos, skipped_count_due_to_high_volume);
+struct ClearVoxelDataGridOnExit {
+	VoxelDataGrid &grid;
+	inline ~ClearVoxelDataGridOnExit() {
+		grid.clear();
 	}
+};
 
-	if (generator_only) {
+inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_voxel_data,
+		const VoxelModifierStack *modifiers, Span<const float> query_x_buffer, Span<const float> query_y_buffer,
+		Span<const float> query_z_buffer, Span<float> query_sdf_buffer, Vector3f query_min_pos,
+		Vector3f query_max_pos) {
+	ZN_PROFILE_SCOPE();
+
+	if (edited_voxel_data != nullptr) {
+		// Usually if there are edits, it means there is a modifier stack too. Could be optional, but currently no
+		// reason not to be there either.
+		ZN_ASSERT(modifiers != nullptr);
+
+		query_sdf_with_edits(generator, *modifiers, *edited_voxel_data, query_x_buffer, query_y_buffer, query_z_buffer,
+				query_sdf_buffer, query_min_pos, query_max_pos);
+	} else {
+		// Generator only.
+
 		// Note, these samples are not scaled since we are working with floats instead of encoded buffer values.
 		generator.generate_series(query_x_buffer, query_y_buffer, query_z_buffer, VoxelBufferInternal::CHANNEL_SDF,
 				query_sdf_buffer, query_min_pos, query_max_pos);
 
-		if (voxel_data != nullptr) {
-			voxel_data->get_modifiers().apply(
+		if (modifiers != nullptr) {
+			modifiers->apply(
 					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
 		}
 	}
@@ -328,10 +329,11 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelData *voxel_data, Sp
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
+void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
 		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians) {
+		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
+		bool edited_tiles_only) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
@@ -340,26 +342,49 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 	const float max_deviation_cosine = Math::cos(max_deviation_radians);
 	const float max_deviation_sine = Math::sin(max_deviation_radians);
 
-	const unsigned int cell_count = cell_iterator.get_count();
 	const unsigned int encoded_normal_size = octahedral_encoding ? 2 : 3;
-	normal_map_data.normals.resize(math::squared(tile_resolution) * cell_count * encoded_normal_size);
 
 	const unsigned int cell_size = 1 << lod_index;
 	const float step = float(cell_size) / tile_resolution;
 
-	normal_map_data.tiles.reserve(cell_count);
+	if (!edited_tiles_only) {
+		const unsigned int cell_count = cell_iterator.get_count();
+		normal_map_data.tiles.reserve(cell_count);
+		normal_map_data.normals.reserve(math::squared(tile_resolution) * cell_count * encoded_normal_size);
+	}
 
-	unsigned int first_index = 0;
-	unsigned int cell_index = 0;
-	CurrentCellInfo cell_info;
+	if (voxel_data != nullptr &&
+			!voxel_data->has_blocks_with_voxels_in_area_broad_mip_test(Box3i(origin_in_voxels, size_in_voxels))) {
+		// Ignore edits completely
+		voxel_data = nullptr;
+		if (edited_tiles_only) {
+			return;
+		}
+	}
 
 	uint32_t skipped_count_due_to_high_volume = 0;
 
-	while (cell_iterator.next(cell_info)) {
-		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices, first_index);
-		normal_map_data.tiles.push_back(tile);
+	CurrentCellInfo cell_info;
+	for (unsigned int cell_index = 0; cell_iterator.next(cell_info); ++cell_index) {
+		// Re-use memory because it will be used a lot
+		static thread_local VoxelDataGrid tls_voxel_data_grid;
+		// Ensure cleanup references to voxel buffers
+		ClearVoxelDataGridOnExit grid_clear_on_exit{ tls_voxel_data_grid };
 
 		const Vector3f cell_origin_world = to_vec3f(origin_in_voxels + cell_info.position * cell_size);
+
+		// In cases we only want tiles with edited voxels, check this early so we can skip the tile.
+		const bool cell_has_edits = voxel_data != nullptr &&
+				try_query_edited_blocks(tls_voxel_data_grid, *voxel_data, cell_origin_world,
+						cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);
+		if (!cell_has_edits && edited_tiles_only) {
+			continue;
+		} else if (edited_tiles_only) {
+			normal_map_data.tile_indices.push_back(cell_index);
+		}
+
+		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices);
+		normal_map_data.tiles.push_back(tile);
 
 		unsigned int ax;
 		unsigned int ay;
@@ -403,7 +428,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 		// Optimize triangles
 		CellTriangles baked_triangles;
 		unsigned int triangle_count =
-				prepare_triangles(first_index, cell_info, direction, baked_triangles, mesh_vertices, mesh_indices);
+				prepare_triangles(cell_info, direction, baked_triangles, mesh_vertices, mesh_indices);
 
 		// Compute triangle normals
 		FixedArray<Vector3f, CurrentCellInfo::MAX_TRIANGLES> triangle_normals;
@@ -475,10 +500,15 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 
 		tls_sdf_buffer.resize(tls_x_buffer.size());
 
-		// Query voxel data
-		query_sdf(generator, voxel_data, to_span(tls_x_buffer), to_span(tls_y_buffer), to_span(tls_z_buffer),
-				to_span(tls_sdf_buffer), cell_origin_world, cell_origin_world + Vector3f(cell_size),
-				skipped_count_due_to_high_volume);
+		{
+			const VoxelDataGrid *edits_grid = cell_has_edits ? &tls_voxel_data_grid : nullptr;
+			const VoxelModifierStack *modifiers = voxel_data != nullptr ? &voxel_data->get_modifiers() : nullptr;
+
+			// Query voxel data
+			query_sdf(generator, edits_grid, modifiers, to_span(tls_x_buffer), to_span(tls_y_buffer),
+					to_span(tls_z_buffer), to_span(tls_sdf_buffer), cell_origin_world,
+					cell_origin_world + Vector3f(cell_size));
+		}
 
 		static thread_local std::vector<Vector3f> tls_tile_normals;
 		tls_tile_normals.clear();
@@ -530,7 +560,7 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 
 				const unsigned int normal_index = sample_position.x + sample_position.y * tile_resolution;
 #ifdef DEBUG_ENABLED
-				ZN_ASSERT(normal_index < normal_map_data.normals.size());
+				ZN_ASSERT(normal_index < tls_tile_normals.size());
 #endif
 				tls_tile_normals[normal_index] = normal;
 			}
@@ -541,8 +571,12 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 			dilate_normalmap(to_span(tls_tile_normals), Vector2i(tile_resolution, tile_resolution));
 		}
 
+		// Resizing as we go, because depending on settings we may have to skip some cells
+		const unsigned int tile_begin = normal_map_data.normals.size();
+		normal_map_data.normals.resize(
+				normal_map_data.normals.size() + math::squared(tile_resolution) * encoded_normal_size);
+
 		// Encode normals
-		const unsigned int tile_begin = cell_index * math::squared(tile_resolution) * encoded_normal_size;
 		if (octahedral_encoding) {
 			for (unsigned int i = 0; i < tls_tile_normals.size(); ++i) {
 				const unsigned int offset = tile_begin + i * encoded_normal_size;
@@ -561,9 +595,6 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 				normal_map_data.normals[offset + 2] = unorm_to_u8(n.z);
 			}
 		}
-
-		first_index += 3 * cell_info.triangle_count;
-		++cell_index;
 	}
 
 	if (skipped_count_due_to_high_volume > 0) {
@@ -574,27 +605,105 @@ void compute_normalmap(ICellIterator &cell_iterator, Span<const Vector3f> mesh_v
 	}
 }
 
-inline void copy_2d_region(Span<uint8_t> dst, Vector2i dst_size, Span<const uint8_t> src, Vector2i src_size,
-		Vector2i dst_pos, unsigned int item_size_in_bytes) {
+Ref<Image> store_lookup_to_image(const std::vector<NormalMapData::Tile> &tiles, Vector3i block_size) {
+	ZN_PROFILE_SCOPE();
+
+	const unsigned int sqri = get_square_grid_size_from_item_count(Vector3iUtil::get_volume(block_size));
+
+	PackedByteArray bytes;
+	{
+		const unsigned int pixel_size = 2;
+		bytes.resize(math::squared(sqri) * pixel_size);
+
+		uint8_t *bytes_w = bytes.ptrw();
+		memset(bytes_w, 0, bytes.size());
+
+		const unsigned int deck_size = block_size.x * block_size.y;
 #ifdef DEBUG_ENABLED
-	ZN_ASSERT(src_size.x >= 0 && src_size.y >= 0);
-	ZN_ASSERT(dst_size.x >= 0 && dst_size.y >= 0);
-	ZN_ASSERT(dst_pos.x >= 0 && dst_pos.y >= 0 && dst_pos.x + src_size.x <= dst_size.x &&
-			dst_pos.y + src_size.y <= dst_size.y);
-	ZN_ASSERT(src.size() == src_size.x * src_size.y * item_size_in_bytes);
-	ZN_ASSERT(dst.size() == dst_size.x * dst_size.y * item_size_in_bytes);
-	ZN_ASSERT(!src.overlaps(dst));
+		bool tile_index_overflow = false;
 #endif
-	const unsigned int dst_begin = (dst_pos.x + dst_pos.y * dst_size.x) * item_size_in_bytes;
-	const unsigned int src_row_size = src_size.x * item_size_in_bytes;
-	const unsigned int dst_row_size = dst_size.x * item_size_in_bytes;
-	uint8_t *dst_p = dst.data() + dst_begin;
-	const uint8_t *src_p = src.data();
-	for (unsigned int src_y = 0; src_y < (unsigned int)src_size.y; ++src_y) {
-		memcpy(dst_p, src_p, src_row_size);
-		dst_p += dst_row_size;
-		src_p += src_row_size;
+
+		for (unsigned int tile_index = 0; tile_index < tiles.size(); ++tile_index) {
+			const NormalMapData::Tile tile = tiles[tile_index];
+			// RG: tttttttt aatttttt
+			const uint8_t r = tile_index & 0xff;
+			const uint8_t g = ((tile_index >> 8) & 0x3f) | (tile.axis << 6);
+#ifdef DEBUG_ENABLED
+			if (tile_index > 0x3fff && !tile_index_overflow) {
+				tile_index_overflow = true;
+				ZN_PRINT_VERBOSE("Tile index overflow");
+			}
+#endif
+			const unsigned int pi = pixel_size * (tile.x + tile.y * block_size.x + tile.z * deck_size);
+			ZN_ASSERT(int(pi) < bytes.size());
+			bytes_w[pi] = r;
+			bytes_w[pi + 1] = g;
+		}
 	}
+
+	Ref<Image> image = Image::create_from_data(sqri, sqri, false, Image::FORMAT_RG8, bytes);
+	return image;
+}
+
+#ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
+
+Vector<Ref<Image>> store_atlas_to_image_array(const std::vector<uint8_t> normals, unsigned int tile_resolution,
+		unsigned int tile_count, bool octahedral_encoding) {
+	ZN_PROFILE_SCOPE();
+
+	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
+	const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+	const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
+	const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
+
+	Vector<Ref<Image>> tile_images;
+	tile_images.resize(tile_count);
+
+	for (unsigned int tile_index = 0; tile_index < tile_count; ++tile_index) {
+		PackedByteArray bytes;
+		{
+			bytes.resize(tile_size_in_bytes);
+			memcpy(bytes.ptrw(), normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
+		}
+
+		Ref<Image> image = Image::create_from_data(tile_resolution, tile_resolution, false, format, bytes);
+
+		tile_images.write[tile_index] = image;
+		// image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
+	}
+
+	return tile_images;
+}
+
+#endif
+
+Ref<Image> store_atlas_to_image(const std::vector<uint8_t> &normals, unsigned int tile_resolution,
+		unsigned int tile_count, bool octahedral_encoding) {
+	ZN_PROFILE_SCOPE();
+
+	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
+	const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
+	const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
+	const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
+
+	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
+	const unsigned int pixels_across = tiles_across * tile_resolution;
+
+	PackedByteArray bytes;
+	bytes.resize(math::squared(tiles_across) * tile_size_in_bytes);
+	Span<uint8_t> bytes_span(bytes.ptrw(), bytes.size());
+
+	for (unsigned int tile_index = 0; tile_index < tile_count; ++tile_index) {
+		const Vector2i tile_pos_pixels =
+				int(tile_resolution) * Vector2i(tile_index % tiles_across, tile_index / tiles_across);
+		Span<const uint8_t> tile =
+				to_span_from_position_and_size(normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
+		copy_2d_region_from_packed_to_atlased(bytes_span, Vector2i(pixels_across, pixels_across), tile,
+				Vector2i(tile_resolution, tile_resolution), tile_pos_pixels, pixel_size);
+	}
+
+	Ref<Image> atlas = Image::create_from_data(pixels_across, pixels_across, false, format, bytes);
+	return atlas;
 }
 
 NormalMapImages store_normalmap_data_to_images(
@@ -602,98 +711,12 @@ NormalMapImages store_normalmap_data_to_images(
 	ZN_PROFILE_SCOPE();
 
 	NormalMapImages images;
-
-	{
-		ZN_PROFILE_SCOPE_NAMED("Atlas images");
-
-		const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
-		const Image::Format format = octahedral_encoding ? Image::FORMAT_RG8 : Image::FORMAT_RGB8;
-		const unsigned int tile_size_in_pixels = math::squared(tile_resolution);
-		const unsigned int tile_size_in_bytes = tile_size_in_pixels * pixel_size;
-
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
-
-		Vector<Ref<Image>> tile_images;
-		tile_images.resize(data.tiles.size());
-
-		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
-			PackedByteArray bytes;
-			{
-				bytes.resize(tile_size_in_bytes);
-				memcpy(bytes.ptrw(), data.normals.data() + tile_index * tile_size_in_bytes, tile_size_in_bytes);
-			}
-
-			Ref<Image> image = Image::create_from_data(tile_resolution, tile_resolution, false, format, bytes);
-
-			tile_images.write[tile_index] = image;
-			//image->save_png(String("debug_atlas_{0}.png").format(varray(tile_index)));
-		}
-
-		images.atlas = tile_images;
-
+	images.atlas = store_atlas_to_image_array(data.normals, tile_resolution, data.tiles.size(), octahedral_encoding);
 #else
-		const unsigned int tiles_across = int(Math::ceil(Math::sqrt(float(data.tiles.size()))));
-		const unsigned int pixels_across = tiles_across * tile_resolution;
-
-		PackedByteArray bytes;
-		bytes.resize(math::squared(tiles_across) * tile_size_in_bytes);
-		Span<uint8_t> bytes_span(bytes.ptrw(), bytes.size());
-
-		for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
-			const Vector2i tile_pos_pixels =
-					int(tile_resolution) * Vector2i(tile_index % tiles_across, tile_index / tiles_across);
-			Span<const uint8_t> tile =
-					to_span_from_position_and_size(data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
-			copy_2d_region(bytes_span, Vector2i(pixels_across, pixels_across), tile,
-					Vector2i(tile_resolution, tile_resolution), tile_pos_pixels, pixel_size);
-		}
-
-		Ref<Image> atlas = Image::create_from_data(pixels_across, pixels_across, false, format, bytes);
-		images.atlas = atlas;
-
-#endif // VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
-	}
-
-	{
-		ZN_PROFILE_SCOPE_NAMED("Lookup image");
-
-		const unsigned int sqri = Math::ceil(Math::sqrt(double(Vector3iUtil::get_volume(block_size))));
-
-		PackedByteArray bytes;
-		{
-			const unsigned int pixel_size = 2;
-			bytes.resize(math::squared(sqri) * pixel_size);
-
-			uint8_t *bytes_w = bytes.ptrw();
-			memset(bytes_w, 0, bytes.size());
-
-			const unsigned int deck_size = block_size.x * block_size.y;
-#ifdef DEBUG_ENABLED
-			bool tile_index_overflow = false;
+	images.atlas = store_atlas_to_image(data.normals, tile_resolution, data.tiles.size(), octahedral_encoding);
 #endif
-
-			for (unsigned int tile_index = 0; tile_index < data.tiles.size(); ++tile_index) {
-				const NormalMapData::Tile tile = data.tiles[tile_index];
-				// RG: tttttttt aatttttt
-				const uint8_t r = tile_index & 0xff;
-				const uint8_t g = ((tile_index >> 8) & 0x3f) | (tile.axis << 6);
-#ifdef DEBUG_ENABLED
-				if (tile_index > 0x3fff && !tile_index_overflow) {
-					tile_index_overflow = true;
-					ZN_PRINT_VERBOSE("Tile index overflow");
-				}
-#endif
-				const unsigned int pi = pixel_size * (tile.x + tile.y * block_size.x + tile.z * deck_size);
-				ZN_ASSERT(int(pi) < bytes.size());
-				bytes_w[pi] = r;
-				bytes_w[pi + 1] = g;
-			}
-		}
-
-		Ref<Image> image = Image::create_from_data(sqri, sqri, false, Image::FORMAT_RG8, bytes);
-		images.lookup = image;
-	}
-
+	images.lookup = store_lookup_to_image(data.tiles, block_size);
 	return images;
 }
 

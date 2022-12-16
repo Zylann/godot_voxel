@@ -1,7 +1,10 @@
 #include "modifiers.h"
 #include "../edition/funcs.h"
+#include "../engine/voxel_engine.h"
 #include "../util/dstack.h"
+#include "../util/godot/funcs.h"
 #include "../util/math/conv.h"
+#include "../util/math/vector4f.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -107,7 +110,7 @@ Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	return sdf;
 }
 
-} //namespace
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -248,10 +251,97 @@ void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_b
 	}
 }
 
+void VoxelModifierStack::apply_for_detail_gpu_rendering(
+		std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb) const {
+	ZN_PROFILE_SCOPE();
+	RWLockRead lock(_stack_lock);
+
+	if (_stack.size() == 0) {
+		return;
+	}
+
+	for (unsigned int i = 0; i < _stack.size(); ++i) {
+		VoxelModifier *modifier = _stack[i];
+		ZN_ASSERT(modifier != nullptr);
+
+		if (modifier->get_aabb().intersects(aabb)) {
+			VoxelModifier::ShaderData sd;
+			modifier->get_shader_data(sd);
+			if (sd.detail_rendering_shader_rid.is_valid()) {
+				out_data.push_back(sd);
+			}
+		}
+	}
+}
+
 void VoxelModifierStack::clear() {
 	RWLockWrite lock(_stack_lock);
 	_stack.clear();
 	_modifiers.clear();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void VoxelModifier::set_transform(Transform3D t) {
+	RWLockWrite wlock(_rwlock);
+	if (t == _transform) {
+		return;
+	}
+	_transform = t;
+	_shader_data_need_update = true;
+	update_aabb();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void VoxelModifierSdf::set_operation(Operation op) {
+	RWLockWrite wlock(_rwlock);
+	_operation = op;
+	_shader_data_need_update = true;
+}
+
+void VoxelModifierSdf::set_smoothness(float p_smoothness) {
+	RWLockWrite wlock(_rwlock);
+	const float smoothness = math::max(p_smoothness, 0.f);
+	if (smoothness == _smoothness) {
+		return;
+	}
+	_smoothness = smoothness;
+	_shader_data_need_update = true;
+	update_aabb();
+}
+
+inline float get_largest_coord(Vector3 v) {
+	return math::max(math::max(v.x, v.y), v.z);
+}
+
+void VoxelModifierSdf::update_base_shader_data_no_lock() {
+	struct BaseModifierParams {
+		FixedArray<float, 16> world_to_model;
+		int32_t operation;
+		float smoothness;
+		float sd_scale;
+	};
+
+	BaseModifierParams base_params;
+	transform3d_to_mat4(get_transform().affine_inverse(), to_span(base_params.world_to_model));
+	base_params.operation = get_operation();
+	base_params.smoothness = get_smoothness();
+	base_params.sd_scale = get_largest_coord(get_transform().get_basis().get_scale());
+	PackedByteArray pba0;
+	copy_bytes_to(pba0, base_params);
+
+	if (_shader_data == nullptr) {
+		_shader_data = make_shared_instance<ComputeShaderParameters>();
+
+		std::shared_ptr<ComputeShaderResource> res0 = make_shared_instance<ComputeShaderResource>();
+		res0->create_storage_buffer(pba0);
+		_shader_data->params.push_back(ComputeShaderParameter{ 4, res0 });
+
+	} else {
+		ZN_ASSERT(_shader_data->params.size() >= 1);
+		_shader_data->params[0].resource->update_storage_buffer(pba0);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,6 +352,7 @@ void VoxelModifierSphere::set_radius(real_t radius) {
 		return;
 	}
 	_radius = radius;
+	_shader_data_need_update = true;
 	update_aabb();
 }
 
@@ -304,18 +395,50 @@ void VoxelModifierSphere::apply(VoxelModifierContext ctx) const {
 	}
 }
 
+void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
+	struct SphereParams {
+		float radius;
+	};
+
+	RWLockWrite wlock(_rwlock);
+
+	if (_shader_data_need_update || _shader_data == nullptr) {
+		update_base_shader_data_no_lock();
+
+		SphereParams sphere_params;
+		sphere_params.radius = _radius;
+		PackedByteArray pba;
+		copy_bytes_to(pba, sphere_params);
+
+		if (_shader_data->params.size() < 2) {
+			std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();
+			res->create_storage_buffer(pba);
+			_shader_data->params.push_back(ComputeShaderParameter{ 5, res });
+
+		} else if (_shader_data_need_update) {
+			ZN_ASSERT(_shader_data->params.size() == 2);
+			_shader_data->params[1].resource->update_storage_buffer(pba);
+		}
+
+		_shader_data_need_update = false;
+	}
+
+	out_shader_data.detail_rendering_shader_rid =
+			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
+	out_shader_data.params = _shader_data;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void VoxelModifierBuffer::set_buffer(std::shared_ptr<VoxelBufferInternal> buffer, Vector3f min_pos, Vector3f max_pos) {
-	//ZN_ASSERT_RETURN(buffer != nullptr);
+void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
+	// ZN_ASSERT_RETURN(buffer != nullptr);
 	RWLockWrite wlock(_rwlock);
-	_buffer = buffer;
-	_min_pos = min_pos;
-	_max_pos = max_pos;
+	_mesh_sdf = mesh_sdf;
+	_shader_data_need_update = true;
 	update_aabb();
 }
 
-void VoxelModifierBuffer::set_isolevel(float isolevel) {
+void VoxelModifierMesh::set_isolevel(float isolevel) {
 	RWLockWrite wlock(_rwlock);
 	if (isolevel == isolevel) {
 		return;
@@ -323,34 +446,38 @@ void VoxelModifierBuffer::set_isolevel(float isolevel) {
 	_isolevel = isolevel;
 }
 
-float get_largest_coord(Vector3 v) {
-	return math::max(math::max(v.x, v.y), v.z);
-}
-
-void VoxelModifierBuffer::apply(VoxelModifierContext ctx) const {
+void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	ZN_PROFILE_SCOPE();
 
 	RWLockRead rlock(_rwlock);
-	if (_buffer == nullptr) {
+	if (_mesh_sdf.is_null()) {
 		return;
 	}
+	Ref<gd::VoxelBuffer> voxel_buffer_gd = _mesh_sdf->get_voxel_buffer();
+	if (voxel_buffer_gd.is_null()) {
+		return;
+	}
+	const VoxelBufferInternal &buffer = voxel_buffer_gd->get_buffer();
 
 	// TODO VoxelMeshSDF isn't preventing scripts from writing into this buffer from a different thread.
 	// I can't think of a reason to manually modify the buffer of a VoxelMeshSDF at the moment.
-	RWLockRead buffer_rlock(_buffer->get_lock());
+	RWLockRead buffer_rlock(buffer.get_lock());
+
+	const Vector3f min_pos = _mesh_sdf->get_aabb_min_pos();
+	const Vector3f max_pos = _mesh_sdf->get_aabb_max_pos();
 
 	const Transform3D model_to_world = get_transform();
 	const Transform3D buffer_to_model =
-			Transform3D(Basis().scaled(to_vec3(_max_pos - _min_pos) / to_vec3(_buffer->get_size())), to_vec3(_min_pos));
+			Transform3D(Basis().scaled(to_vec3(max_pos - min_pos) / to_vec3(buffer.get_size())), to_vec3(min_pos));
 	const Transform3D buffer_to_world = model_to_world * buffer_to_model;
 
 	Span<const float> buffer_sdf;
-	ZN_ASSERT_RETURN(_buffer->get_channel_data(VoxelBufferInternal::CHANNEL_SDF, buffer_sdf));
+	ZN_ASSERT_RETURN(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, buffer_sdf));
 	const float smoothness = get_smoothness();
 
 	ops::SdfBufferShape shape;
 	shape.buffer = buffer_sdf;
-	shape.buffer_size = _buffer->get_size();
+	shape.buffer_size = buffer.get_size();
 	shape.isolevel = _isolevel;
 	shape.sdf_scale = get_largest_coord(model_to_world.get_basis().get_scale());
 	shape.world_to_buffer = buffer_to_world.affine_inverse();
@@ -375,9 +502,65 @@ void VoxelModifierBuffer::apply(VoxelModifierContext ctx) const {
 	}
 }
 
-void VoxelModifierBuffer::update_aabb() {
+void VoxelModifierMesh::update_aabb() {
+	// ZN_ASSERT_RETURN(_mesh_sdf.is_valid());
+	if (_mesh_sdf.is_null()) {
+		return;
+	}
 	const Transform3D &model_to_world = get_transform();
-	_aabb = model_to_world.xform(AABB(to_vec3(_min_pos), to_vec3(_max_pos - _min_pos)));
+	_aabb = model_to_world.xform(_mesh_sdf->get_aabb());
+}
+
+void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
+	struct MeshParams {
+		Vector3f model_to_buffer_translation;
+		Vector3f model_to_buffer_scale;
+		float isolevel;
+	};
+
+	if (_mesh_sdf.is_null()) {
+		return;
+	}
+
+	RWLockWrite wlock(_rwlock);
+
+	if (_shader_data_need_update || _shader_data == nullptr) {
+		update_base_shader_data_no_lock();
+
+		const Vector3f min_pos = _mesh_sdf->get_aabb_min_pos();
+		const Vector3f max_pos = _mesh_sdf->get_aabb_max_pos();
+
+		MeshParams mesh_params;
+		// The shader uses a sampler3D so coordinates are normalized
+		mesh_params.model_to_buffer_scale = Vector3f(1.f) / (max_pos - min_pos);
+		mesh_params.model_to_buffer_translation = min_pos;
+		mesh_params.isolevel = _isolevel;
+		PackedByteArray pba;
+		copy_bytes_to(pba, mesh_params);
+
+		if (_shader_data->params.size() < 3) {
+			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();
+			params_res->create_storage_buffer(pba);
+			_shader_data->params.push_back(ComputeShaderParameter{ 5, params_res });
+
+			std::shared_ptr<ComputeShaderResource> buffer_res = _mesh_sdf->get_gpu_resource();
+			_shader_data->params.push_back(ComputeShaderParameter{ 6, buffer_res });
+
+		} else if (_shader_data_need_update) {
+			_shader_data->params[1].resource->update_storage_buffer(pba);
+			_shader_data->params[2].resource = _mesh_sdf->get_gpu_resource();
+		}
+
+		_shader_data_need_update = false;
+	}
+
+	out_shader_data.detail_rendering_shader_rid =
+			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
+	out_shader_data.params = _shader_data;
+}
+
+void VoxelModifierMesh::request_shader_data_update() {
+	_shader_data_need_update = true;
 }
 
 } // namespace zylann::voxel

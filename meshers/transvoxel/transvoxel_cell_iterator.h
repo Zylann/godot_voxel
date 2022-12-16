@@ -42,6 +42,11 @@ public:
 		}
 	}
 
+	void rewind() {
+		_current_index = 0;
+		_triangle_begin_index = 0;
+	}
+
 private:
 	std::vector<transvoxel::CellInfo> _cell_infos;
 	unsigned int _current_index;

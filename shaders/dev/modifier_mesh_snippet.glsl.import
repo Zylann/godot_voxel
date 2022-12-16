@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://kvhdwrgxr20q"
+path="res://.godot/imported/modifier_mesh_snippet.glsl-10da932ed912c9cfaf499a7f1c19ede7.res"
+
+[deps]
+
+source_file="res://modifier_mesh_snippet.glsl"
+dest_files=["res://.godot/imported/modifier_mesh_snippet.glsl-10da932ed912c9cfaf499a7f1c19ede7.res"]
+
+[params]
+
