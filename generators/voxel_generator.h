@@ -6,6 +6,7 @@
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"
 #include "../util/span.h"
+#include "../util/thread/mutex.h"
 #include <memory>
 
 namespace zylann::voxel {
