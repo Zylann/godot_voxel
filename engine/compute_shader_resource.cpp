@@ -148,7 +148,7 @@ template <typename T>
 void zxy_grid_to_zyx(Span<const T> src, Span<T> dst, Vector3i size) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(Vector3iUtil::is_valid_size(size));
-	ZN_ASSERT(Vector3iUtil::get_volume(size) == src.size());
+	ZN_ASSERT(Vector3iUtil::get_volume(size) == int64_t(src.size()));
 	ZN_ASSERT(src.size() == dst.size());
 	Vector3i pos;
 	for (pos.z = 0; pos.z < size.z; ++pos.z) {
@@ -166,7 +166,7 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT(Vector3iUtil::is_valid_size(size));
-	ZN_ASSERT(Vector3iUtil::get_volume(size) == fdata_zxy.size());
+	ZN_ASSERT(Vector3iUtil::get_volume(size) == int64_t(fdata_zxy.size()));
 
 	clear();
 
