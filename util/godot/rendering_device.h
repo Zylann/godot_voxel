@@ -9,8 +9,9 @@ using namespace godot;
 #endif
 
 #include "rd_shader_spirv.h"
+#include "../macros.h"
 
-class RDShaderSource;
+ZN_GODOT_FORWARD_DECLARE(class RDShaderSource)
 
 namespace zylann {
 
