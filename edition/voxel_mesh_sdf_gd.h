@@ -6,6 +6,7 @@
 #include "../util/godot/mesh.h"
 #include "../util/godot/resource.h"
 #include "../util/math/vector3f.h"
+#include "../util/thread/mutex.h"
 
 ZN_GODOT_FORWARD_DECLARE(class SceneTree);
 
