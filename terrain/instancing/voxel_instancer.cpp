@@ -32,7 +32,7 @@ std::vector<Transform3f> &get_tls_transform_cache() {
 	static thread_local std::vector<Transform3f> tls_transform_cache;
 	return tls_transform_cache;
 }
-} //namespace
+} // namespace
 
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
@@ -164,7 +164,7 @@ void VoxelInstancer::_notification(int p_what) {
 
 			const Transform3D parent_transform = get_global_transform();
 			const int base_block_size_po2 = _parent_mesh_block_size_po2;
-			//print_line(String("IP: {0}").format(varray(parent_transform.origin)));
+			// print_line(String("IP: {0}").format(varray(parent_transform.origin)));
 
 			for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 				Block &block = **it;
@@ -1011,7 +1011,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
 			multimesh->set_instance_count(transforms.size());
 			// TODO Waiting for Godot to expose the method on the resource object
-			//multimesh->set_as_bulk_array(bulk_array);
+			// multimesh->set_as_bulk_array(bulk_array);
 			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
 			if (settings.mesh_lod_count > 0) {
@@ -1048,6 +1048,12 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 					body = block.bodies[instance_index];
 
 				} else {
+					// TODO Performance: removing nodes from the tree is slow. It causes framerate stalls.
+					// See https://github.com/godotengine/godot/issues/61929
+					// Instances with collisions can lead to the creation of thousands of nodes. While this works in
+					// practice, removal proved to be very slow. Not because of physics, but because of an issue in the
+					// node system itself. A possible workaround is to either use servers directly, or put nodes as
+					// children of more nodes acting as buckets.
 					body = memnew(VoxelInstancerRigidBody);
 					body->attach(this);
 					body->set_instance_index(instance_index);
