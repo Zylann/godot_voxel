@@ -54,7 +54,7 @@ Godot 4 is required from this version.
     - SDF data is now encoded with `inorm8` and `inorm16`, instead of an arbitrary version of `unorm8` and `unorm16`. Migration code is in place to load old save files, but *do a backup before running your project with the new version*.
     - `VoxelTool`: Added `set_sdf_strength()` to control brush strength when sculpting smooth voxels (previously acted as if it was 1.0)
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
-    - `VoxelLodTerrain`: Added optional calculation of distant normalmaps to improve LOD quality.
+    - `VoxelLodTerrain`: Added optional calculation of distant normalmaps to improve LOD quality. It can also run on the GPU for faster execution (`VoxelGeneratorGraph` only).
     - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
     - `VoxelLodTerrain`: Editor: added option to show octree grid in editor, now off by default
     - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
