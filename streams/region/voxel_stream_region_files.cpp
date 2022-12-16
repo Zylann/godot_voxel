@@ -327,9 +327,9 @@ static void migrate_region_meta_data(Dictionary &data) {
 		data["version"] = FORMAT_VERSION;
 	}
 
-	//if (data["version"] != Variant(real_t(FORMAT_VERSION))) {
-	// TODO Throw error?
-	//}
+	// if (data["version"] != Variant(real_t(FORMAT_VERSION))) {
+	//  TODO Throw error?
+	// }
 }
 
 FileResult VoxelStreamRegionFiles::load_meta() {
