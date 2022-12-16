@@ -1,8 +1,8 @@
 #ifndef VOXEL_COMPUTE_SHADER_PARAMETERS_H
 #define VOXEL_COMPUTE_SHADER_PARAMETERS_H
 
-//#include "../util/godot/string.h"
 #include "compute_shader_resource.h"
+#include <memory>
 #include <vector>
 
 namespace zylann::voxel {
