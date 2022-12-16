@@ -303,8 +303,6 @@ void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pi
 	const unsigned int tiles_x = atlas_size_pixels.x / tile_size_pixels;
 
 	for (unsigned int tile_index = 0; tile_index < edited_tiles_normalmap_data.tiles.size(); ++tile_index) {
-		const NormalMapData::Tile &tile = edited_tiles_normalmap_data.tiles[tile_index];
-
 		Span<const uint8_t> src_pixels = to_span_from_position_and_size(
 				edited_tiles_normalmap_data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
 
