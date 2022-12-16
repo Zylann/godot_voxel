@@ -13,7 +13,8 @@ struct GPUStorageBuffer {
 	size_t size = 0;
 
 	inline bool is_null() const {
-		return rid.is_null();
+		// Can't use `is_null()`, core has it but GDExtension doesn't have it
+		return !rid.is_valid();
 	}
 
 	inline bool is_valid() const {
