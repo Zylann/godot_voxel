@@ -10,7 +10,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 inline void print_line(const Variant &v) {
-	UtilityFunctions::print(s);
+	UtilityFunctions::print(v);
 }
 
 #endif
