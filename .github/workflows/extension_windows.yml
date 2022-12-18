@@ -83,7 +83,7 @@ jobs:
           cd misc
           dir
           cd ..
-          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}} custom_api_file="misc/extension_api_v4.0-beta8.json"
+          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}} custom_api_file="misc\\extension_api_v4.0-beta8.json"
           cd bin
           dir
 
