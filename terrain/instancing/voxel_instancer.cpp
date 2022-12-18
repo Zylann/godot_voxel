@@ -1010,13 +1010,17 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			PackedFloat32Array bulk_array;
 			DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
 			multimesh->set_instance_count(transforms.size());
-			// TODO Waiting for Godot to expose the method on the resource object
-			// multimesh->set_as_bulk_array(bulk_array);
-			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
+			// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
+			// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
+			// performance penalty
 			if (settings.mesh_lod_count > 0) {
 				multimesh->set_mesh(settings.mesh_lods[settings.mesh_lod_count - 1]);
 			}
+
+			// TODO Waiting for Godot to expose the method on the resource object
+			// multimesh->set_as_bulk_array(bulk_array);
+			RenderingServer::get_singleton()->multimesh_set_buffer(multimesh->get_rid(), bulk_array);
 
 			if (!block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.create();
