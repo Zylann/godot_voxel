@@ -389,7 +389,7 @@ void VoxelGraphFunction::set_node_name(uint32_t node_id, StringName name) {
 	if (name != StringName()) {
 		const uint32_t existing_node_id = _graph.find_node_by_name(name);
 		if (existing_node_id != ProgramGraph::NULL_ID && node_id == existing_node_id) {
-			ZN_PRINT_ERROR(format("More than one graph node has the name \"{}\"", GodotStringWrapper(String(name))));
+			ZN_PRINT_ERROR(format("More than one graph node has the name \"{}\"", String(name)));
 		}
 	}
 	node->name = name;

@@ -67,12 +67,14 @@ inline void operator+=(String &self, const char32_t b) {
 // Needed for `zylann::format()`.
 // I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
 // other overloads ambiguous...
-//std::stringstream &operator<<(std::stringstream &ss, const String &s);
+// std::stringstream &operator<<(std::stringstream &ss, const String &s);
+ZN_GODOT_NAMESPACE_BEGIN
 struct GodotStringWrapper {
 	GodotStringWrapper(const String &p_s) : s(p_s) {}
 	const String &s;
 };
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
+ZN_GODOT_NAMESPACE_END
 
 namespace std {
 

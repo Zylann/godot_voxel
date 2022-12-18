@@ -48,7 +48,7 @@ void VoxelStream::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
 }
 
 void VoxelStream::load_all_blocks(FullLoadingResult &result) {
-	ZN_PRINT_ERROR(format("{} does not support `load_all_blocks`", GodotStringWrapper(get_class())));
+	ZN_PRINT_ERROR(format("{} does not support `load_all_blocks`", get_class()));
 }
 
 int VoxelStream::get_used_channels_mask() const {

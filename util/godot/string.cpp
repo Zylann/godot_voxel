@@ -27,6 +27,8 @@ PackedStringArray to_godot(const std::vector<std::string> &sv) {
 
 } // namespace zylann
 
+ZN_GODOT_NAMESPACE_BEGIN
+
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s) {
 	const CharString cs = s.s.utf8();
 	// String has non-explicit constructors from various types making this ambiguous
@@ -34,3 +36,5 @@ std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s) {
 	ss << ca;
 	return ss;
 }
+
+ZN_GODOT_NAMESPACE_END

@@ -15,7 +15,7 @@ const uint8_t FORMAT_VERSION = 3;
 
 // Version 2 is like 3, but does not include any format information
 const uint8_t FORMAT_VERSION_LEGACY_2 = 2;
-//const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
+// const uint8_t FORMAT_VERSION_LEGACY_1 = 1;
 
 const char *FORMAT_REGION_MAGIC = "VXR_";
 const uint32_t MAGIC_AND_VERSION_SIZE = 4 + 1;
@@ -558,7 +558,7 @@ bool RegionFile::save_header(FileAccess &f) {
 }
 
 bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
-	ZN_PRINT_VERBOSE(zylann::format("Migrating region file {} from v2 to v3", GodotStringWrapper(_file_path)));
+	ZN_PRINT_VERBOSE(zylann::format("Migrating region file {} from v2 to v3", _file_path));
 
 	// We can migrate if we know in advance what format the file should contain.
 	ERR_FAIL_COND_V_MSG(format.block_size_po2 == 0, false, "Cannot migrate without knowing the correct format");

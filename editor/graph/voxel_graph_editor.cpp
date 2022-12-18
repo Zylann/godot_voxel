@@ -329,8 +329,7 @@ void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
 		ZN_PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
-		ZN_PRINT_VERBOSE(
-				format("Reference node for VoxelGraph gizmos: {}", GodotStringWrapper(String(node->get_path()))));
+		ZN_PRINT_VERBOSE(format("Reference node for VoxelGraph gizmos: {}", String(node->get_path())));
 		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
 	}
 }

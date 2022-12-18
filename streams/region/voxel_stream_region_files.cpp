@@ -362,8 +362,7 @@ FileResult VoxelStreamRegionFiles::load_meta() {
 	if (json_err != OK) {
 		const String json_err_msg = json->get_error_message();
 		const int json_err_line = json->get_error_line();
-		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", GodotStringWrapper(meta_path), json_err_line,
-				GodotStringWrapper(json_err_msg)));
+		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", meta_path, json_err_line, json_err_msg));
 		return FILE_INVALID_DATA;
 	}
 
@@ -600,7 +599,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		}
 
 		old_stream->set_directory(old_dir);
-		ZN_PRINT_VERBOSE(format("Data backed up as {}", GodotStringWrapper(old_dir)));
+		ZN_PRINT_VERBOSE(format("Data backed up as {}", old_dir));
 	}
 
 	struct PositionAndLod {
