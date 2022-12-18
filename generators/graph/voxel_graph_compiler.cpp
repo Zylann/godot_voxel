@@ -4,8 +4,10 @@
 #include "../../util/macros.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
-#include "voxel_graph_function.h"
+#include "../util/godot/array.h" // for `varray` in GDExtension builds
 #include "node_type_db.h"
+#include "voxel_graph_function.h"
+
 #include <limits>
 #include <unordered_set>
 
