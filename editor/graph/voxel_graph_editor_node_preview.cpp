@@ -60,7 +60,7 @@ void VoxelGraphEditorNodePreview::unload_resources() {
 }
 
 VoxelGraphEditorNodePreview::VoxelGraphEditorNodePreview() {
-	_image = Image::create_empty(RESOLUTION, RESOLUTION, false, Image::FORMAT_RF);
+	_image = create_empty_image(RESOLUTION, RESOLUTION, false, Image::FORMAT_RF);
 	_image->fill(Color(0.5, 0.5, 0.5));
 	_texture = ImageTexture::create_from_image(_image);
 	_texture->update(_image);

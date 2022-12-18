@@ -73,17 +73,12 @@ jobs:
           scons --version
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags.
-      # Also provide our own extension API file for now, because the file provided in the official repository is not
-      # kept up to date.
+      # Note: if we need to use `custom_api_file`, remember the path should be relative to where godot-cpp is
       - name: Compilation
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          dir
-          cd misc
-          dir
-          cd ..
-          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}} custom_api_file="../../misc/extension_api_v4.0-beta8.json"
+          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
           cd bin
           dir
 
