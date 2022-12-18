@@ -317,4 +317,4 @@ void run_noise_tests() {
 	test_noises();
 }
 
-} //namespace zylann::voxel::noise_tests
+} // namespace zylann::voxel::noise_tests

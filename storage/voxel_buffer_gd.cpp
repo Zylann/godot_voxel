@@ -160,7 +160,7 @@ void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 
 #elif defined(ZN_GODOT_EXTENSION)
 		// TODO Error reporting? GodotCpp doesn't expose anything
-		//callback.call(it->key, v);
+		// callback.call(it->key, v);
 		// TODO GodotCpp is missing the implementation of `Callable::call`.
 		ZN_PRINT_ERROR("Unable to call Callable, go moan at https://github.com/godotengine/godot-cpp/issues/802");
 #endif
@@ -345,4 +345,4 @@ void VoxelBuffer::_bind_methods() {
 	BIND_CONSTANT(MAX_SIZE);
 }
 
-} //namespace zylann::voxel::gd
+} // namespace zylann::voxel::gd
