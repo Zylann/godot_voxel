@@ -1,13 +1,8 @@
 #include "godot/funcs.h"
 #include "string_funcs.h"
 
-#if defined(ZN_GODOT)
-#include <core/os/os.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/classes/os.hpp>
-#include <godot_cpp/variant/utility_functions.hpp>
-using namespace godot;
-#endif
+#include "godot/os.h"
+#include "godot/print_string.h"
 
 namespace zylann {
 
