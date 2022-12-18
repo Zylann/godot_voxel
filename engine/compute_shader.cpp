@@ -75,7 +75,7 @@ void ComputeShader::load_from_glsl(String source_text, String name) {
 
 	// TODO What name should I give this shader? Seems it is used for caching
 	const RID shader_rid = shader_create_from_spirv(rd, **shader_spirv, name);
-	ERR_FAIL_COND(shader_rid.is_null());
+	ERR_FAIL_COND(!shader_rid.is_valid());
 
 	_rid = shader_rid;
 }
