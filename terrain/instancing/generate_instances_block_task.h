@@ -2,7 +2,9 @@
 #define ZN_VOXEL_GENERATE_INSTANCES_BLOCK_TASK_H
 
 #include "../../util/tasks/threaded_task.h"
+#include "../../util/thread/mutex.h"
 #include "voxel_instance_generator.h"
+
 #include <memory>
 
 namespace zylann::voxel {
