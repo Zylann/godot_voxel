@@ -1,4 +1,5 @@
 #include "compute_shader.h"
+#include "../util/godot/rd_shader_source.h"
 #include "../util/profiling.h"
 #include "voxel_engine.h"
 

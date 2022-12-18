@@ -8,7 +8,6 @@
 #include "voxel_engine.h"
 
 #include "../util/godot/rd_sampler_state.h"
-#include "../util/godot/rd_shader_source.h"
 #include "../util/godot/rd_shader_spirv.h"
 #include "../util/godot/rd_texture_format.h"
 #include "../util/godot/rd_texture_view.h"
