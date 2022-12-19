@@ -33,7 +33,17 @@ inline godot::Array varray(const godot::Variant &a0, const godot::Variant &a1, c
 	return a;
 }
 
-} //namespace zylann
+inline godot::Array varray(
+		const godot::Variant &a0, const godot::Variant &a1, const godot::Variant &a2, const godot::Variant &a3) {
+	godot::Array a;
+	a.append(a0);
+	a.append(a1);
+	a.append(a2);
+	a.append(a3);
+	return a;
+}
+
+} // namespace zylann
 
 #endif // ZN_GODOT_EXTENSION
 
