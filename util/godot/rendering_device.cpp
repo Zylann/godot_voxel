@@ -147,12 +147,12 @@ RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state) {
 #endif
 }
 
-void update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
+Error update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
 		const PackedByteArray &pba, unsigned int post_barrier) {
 #if defined(ZN_GODOT)
-	rd.buffer_update(rid, offset, size, pba.ptr(), post_barrier);
+	return rd.buffer_update(rid, offset, size, pba.ptr(), post_barrier);
 #elif defined(ZN_GODOT_EXTENSION)
-	rd.buffer_update(rid, offset, size, pba, post_barrier);
+	return rd.buffer_update(rid, offset, size, pba, post_barrier);
 #endif
 }
 

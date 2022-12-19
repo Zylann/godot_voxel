@@ -8,8 +8,8 @@
 using namespace godot;
 #endif
 
-#include "rd_shader_spirv.h"
 #include "../macros.h"
+#include "rd_shader_spirv.h"
 
 ZN_GODOT_FORWARD_DECLARE(class RDShaderSource)
 
@@ -26,7 +26,7 @@ RID texture_create(RenderingDevice &rd, RDTextureFormat &p_format, RDTextureView
 		const TypedArray<PackedByteArray> &p_data);
 RID uniform_set_create(RenderingDevice &rd, Array uniforms, RID shader, int shader_set);
 RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state);
-void update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
+Error update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
 		const PackedByteArray &pba, unsigned int post_barrier = RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
 
 } // namespace zylann

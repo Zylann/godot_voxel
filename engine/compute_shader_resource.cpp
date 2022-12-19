@@ -216,7 +216,7 @@ void ComputeShaderResource::update_storage_buffer(const PackedByteArray &data) {
 	ERR_FAIL_COND(!_rid.is_valid());
 	ERR_FAIL_COND(_type != TYPE_STORAGE_BUFFER);
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
-	const Error err = rd.buffer_update(_rid, 0, data.size(), data.ptr());
+	const Error err = zylann::update_storage_buffer(rd, _rid, 0, data.size(), data);
 	ERR_FAIL_COND_MSG(err != OK, String("Failed to update storage buffer (error {0})").format(varray(err)));
 }
 
