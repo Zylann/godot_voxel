@@ -1,5 +1,6 @@
 #include "compute_shader_resource.h"
 #include "../util/dstack.h"
+#include "../util/godot/array.h" // for `varray` in GDExtension builds
 #include "../util/godot/curve.h"
 #include "../util/godot/image.h"
 #include "../util/godot/rd_texture_format.h"
