@@ -327,7 +327,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 				Ref<StandardMaterial3D> material = materials[material_index]->duplicate();
 				if (atlas.is_valid()) {
 					// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
-					//Ref<Texture> texture = ResourceLoader::load(atlas_path);
+					// Ref<Texture> texture = ResourceLoader::load(atlas_path);
 					// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 					// See earlier code, I could not find any way to reference a separate StreamTexture.
 					Ref<ImageTexture> texture = ImageTexture::create_from_image(atlas);
@@ -387,7 +387,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		Ref<PackedScene> scene;
 		scene.instantiate();
 		scene->pack(root_node);
-		String scene_save_path = p_save_path + ".tscn";
+		String scene_save_path = p_save_path + String(".tscn");
 		const Error save_err = save_resource(scene, scene_save_path, ResourceSaver::FLAG_NONE);
 		memdelete(root_node);
 		ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
