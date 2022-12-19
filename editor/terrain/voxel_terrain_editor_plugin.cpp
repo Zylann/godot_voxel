@@ -162,6 +162,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 #else
 // TODO GDX: Callable::bind() isn't implemented, can't use this signal
+// See https://github.com/godotengine/godot-cpp/issues/802
 #endif
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
@@ -180,6 +181,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited).bind(_node));
 #else
 // TODO GDX: Callable::bind() isn't implemented, can't use this signal
+// See https://github.com/godotengine/godot-cpp/issues/802
 #endif
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);

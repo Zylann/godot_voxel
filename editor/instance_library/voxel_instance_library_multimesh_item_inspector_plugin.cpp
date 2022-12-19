@@ -41,6 +41,7 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_parse_group(Object *p_ob
 						.bind(item));
 #elif defined(ZN_GODOT_EXTENSION)
 		// TODO GDX: Need to use Callable::bind() but it has no implementation
+		// See https://github.com/godotengine/godot-cpp/issues/802
 		ZN_PRINT_ERROR("Unable to setup button to update `VoxelInstanceLibraryMultiMeshItem` from a scene with "
 					   "GDExtension! Callable::bind isn't working.");
 #endif
