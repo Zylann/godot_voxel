@@ -13,7 +13,7 @@ namespace zylann::voxel {
 
 using namespace pg;
 
-bool VoxelGraphFunctionInspectorPlugin::_zn_can_handle(Object *obj) {
+bool VoxelGraphFunctionInspectorPlugin::_zn_can_handle(const Object *obj) const {
 	return Object::cast_to<VoxelGraphFunction>(obj) != nullptr;
 }
 

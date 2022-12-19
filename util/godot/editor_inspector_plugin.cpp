@@ -21,7 +21,7 @@ bool ZN_EditorInspectorPlugin::_parse_property(Object *p_object, int64_t p_type,
 	return _zn_parse_property(p_object, p_type, p_path, p_hint, p_hint_text, p_usage, p_wide);
 }
 
-bool ZN_EditorInspectorPlugin::_zn_can_handle(Object *obj) {
+bool ZN_EditorInspectorPlugin::_zn_can_handle(const Object *obj) const {
 	return false;
 }
 
