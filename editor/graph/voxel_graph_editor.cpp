@@ -115,7 +115,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 				sub_menu->add_item("Reset location", MENU_PREVIEW_RESET_LOCATION);
 				sub_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_menu_id_pressed));
 				popup_menu->add_child(sub_menu);
-				popup_menu->add_submenu_item(TTR("Preview Axes"), sub_menu->get_name(), MENU_PREVIEW_AXES);
+				popup_menu->add_submenu_item(ZN_TTR("Preview Axes"), sub_menu->get_name(), MENU_PREVIEW_AXES);
 				_preview_axes_menu = sub_menu;
 				update_preview_axes_menu();
 			}
@@ -205,7 +205,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		PopupMenu *menu = category_menus[node_type.category];
 		ZN_ASSERT(menu != nullptr);
 		if (i == VoxelGraphFunction::NODE_FUNCTION) {
-			menu->add_item(TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
+			menu->add_item(ZN_TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
 #ifdef ZN_GODOT
 			menu->add_item(TTR("Quick Open..."), CONTEXT_MENU_FUNCTION_QUICK_OPEN);
 #endif
@@ -232,8 +232,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_function_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	// TODO Usability: there is no way to limit a file dialog to a specific TYPE of resource, only file extensions. So
 	// it's not useful because text resources are almost all using `.tres`...
-	_function_file_dialog->add_filter("*.tres", TTR("Text Resource"));
-	_function_file_dialog->add_filter("*.res", TTR("Binary Resource"));
+	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
+	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
 	_function_file_dialog->connect(
 			"file_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_file_dialog_file_selected));
 	add_child(_function_file_dialog);
@@ -817,7 +817,7 @@ void VoxelGraphEditor::_on_node_resize_request(Vector2 new_size, int node_id) {
 	ZN_ASSERT_RETURN(_graph.is_valid());
 
 	// TODO Not sure if EDSCALE has to be unapplied in this case?
-	_undo_redo->create_action(TTR("Resize Node"), UndoRedo::MERGE_ENDS);
+	_undo_redo->create_action(ZN_TTR("Resize Node"), UndoRedo::MERGE_ENDS);
 	_undo_redo->add_do_method(this, "set_node_size", node_id, new_size);
 	_undo_redo->add_do_method(_graph.ptr(), "set_node_gui_size", node_id, new_size);
 	_undo_redo->add_undo_method(this, "set_node_size", node_id, node_view->get_size());

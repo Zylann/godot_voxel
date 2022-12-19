@@ -19,23 +19,23 @@ namespace zylann::voxel {
 using namespace pg;
 
 VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
-	set_title(TTR("{0} inputs / outputs").format(varray(VoxelGraphFunction::get_class_static())));
+	set_title(ZN_TTR("{0} inputs / outputs").format(varray(VoxelGraphFunction::get_class_static())));
 	set_min_size(EDSCALE * Vector2i(600, 230));
 
 	VBoxContainer *vb = memnew(VBoxContainer);
 	vb->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT, Control::PRESET_MODE_MINSIZE, 4);
 
 	_auto_generate_button = memnew(Button);
-	_auto_generate_button->set_text(TTR("Auto-generate"));
+	_auto_generate_button->set_text(ZN_TTR("Auto-generate"));
 	_auto_generate_button->connect(
 			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_auto_generate_button_pressed));
 	vb->add_child(_auto_generate_button);
 
 	HBoxContainer *hb = memnew(HBoxContainer);
 	hb->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	hb->add_child(create_ui(_inputs_ui, TTR("Inputs"), true));
+	hb->add_child(create_ui(_inputs_ui, ZN_TTR("Inputs"), true));
 	hb->add_child(memnew(VSeparator));
-	hb->add_child(create_ui(_outputs_ui, TTR("Outputs"), false));
+	hb->add_child(create_ui(_outputs_ui, ZN_TTR("Outputs"), false));
 	vb->add_child(hb);
 
 	vb->add_child(memnew(HSeparator));
@@ -70,7 +70,7 @@ Control *VoxelGraphEditorIODialog::create_ui(PortsUI &ui, String title, bool is_
 	gc_settings->set_columns(2);
 	{
 		Label *label = memnew(Label);
-		label->set_text(TTR("Name: "));
+		label->set_text(ZN_TTR("Name: "));
 		gc_settings->add_child(label);
 
 		ui.name = memnew(LineEdit);
@@ -79,7 +79,7 @@ Control *VoxelGraphEditorIODialog::create_ui(PortsUI &ui, String title, bool is_
 	}
 	{
 		Label *label = memnew(Label);
-		label->set_text(TTR("Usage: "));
+		label->set_text(ZN_TTR("Usage: "));
 		gc_settings->add_child(label);
 
 		// TODO Don't allow choosing a non-custom input twice
@@ -96,7 +96,7 @@ Control *VoxelGraphEditorIODialog::create_ui(PortsUI &ui, String title, bool is_
 	}
 	if (is_input) {
 		Label *label = memnew(Label);
-		label->set_text(TTR("Default: "));
+		label->set_text(ZN_TTR("Default: "));
 		gc_settings->add_child(label);
 
 		ui.default_value = memnew(SpinBox);
