@@ -18,7 +18,8 @@ bool ZN_EditorInspectorPlugin::parse_property(Object *p_object, const Variant::T
 bool ZN_EditorInspectorPlugin::_parse_property(Object *p_object, int64_t p_type, const String &p_path,
 		const int64_t p_hint, const String &p_hint_text, const int64_t p_usage, const bool p_wide) {
 #endif
-	return _zn_parse_property(p_object, p_type, p_path, p_hint, p_hint_text, p_usage, p_wide);
+	return _zn_parse_property(
+			p_object, Variant::Type(p_type), p_path, PropertyHint(p_hint), p_hint_text, p_usage, p_wide);
 }
 
 bool ZN_EditorInspectorPlugin::_zn_can_handle(const Object *obj) const {
