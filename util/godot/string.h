@@ -50,6 +50,21 @@ inline Error parse_utf8(String &s, Span<const char> utf8) {
 #endif
 }
 
+} // namespace zylann
+
+// Needed for `zylann::format()`.
+// I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
+// other overloads ambiguous...
+// std::stringstream &operator<<(std::stringstream &ss, const String &s);
+ZN_GODOT_NAMESPACE_BEGIN
+
+struct GodotStringWrapper {
+	GodotStringWrapper(const String &p_s) : s(p_s) {}
+	const String &s;
+};
+
+std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
+
 #ifdef ZN_GODOT_EXTENSION
 // TODO GDX: `String` lacks an `operator+=`. It's also a performance issue.
 inline void operator+=(String &self, const String &b) {
@@ -62,18 +77,6 @@ inline void operator+=(String &self, const char32_t b) {
 }
 #endif
 
-} // namespace zylann
-
-// Needed for `zylann::format()`.
-// I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
-// other overloads ambiguous...
-// std::stringstream &operator<<(std::stringstream &ss, const String &s);
-ZN_GODOT_NAMESPACE_BEGIN
-struct GodotStringWrapper {
-	GodotStringWrapper(const String &p_s) : s(p_s) {}
-	const String &s;
-};
-std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
 ZN_GODOT_NAMESPACE_END
 
 namespace std {
