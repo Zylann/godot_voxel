@@ -17,6 +17,7 @@
 #include "../../util/godot/h_box_container.h"
 #include "../../util/godot/input_enums.h"
 #include "../../util/godot/input_event_mouse_button.h"
+#include "../../util/godot/input_event_mouse_motion.h"
 #include "../../util/godot/label.h"
 #include "../../util/godot/menu_button.h"
 #include "../../util/godot/node.h"
