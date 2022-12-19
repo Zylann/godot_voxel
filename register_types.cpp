@@ -385,7 +385,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 #ifdef ZN_GODOT_EXTENSION
 extern "C" {
 // Library entry point
-GDExtensionBool GDN_EXPORT voxel_library_init(const GDExtensionInterface *p_interface,
+GDExtensionBool GDE_EXPORT voxel_library_init(const GDExtensionInterface *p_interface,
 		const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
 	godot::GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
 
