@@ -20,6 +20,7 @@
 #include "../../util/godot/input_event_mouse_motion.h"
 #include "../../util/godot/label.h"
 #include "../../util/godot/menu_button.h"
+#include "../../util/godot/mouse_button.h"
 #include "../../util/godot/node.h"
 #include "../../util/godot/option_button.h"
 #include "../../util/godot/popup_menu.h"
@@ -843,7 +844,7 @@ void VoxelGraphEditor::_on_graph_node_preview_gui_input(Ref<InputEvent> event) {
 	if (mm.is_valid()) {
 		// Ctrl+Drag above any preview to pan around the area they render.
 		if (mm->is_command_or_control_pressed() &&
-				(mm->get_button_mask() & MouseButton::MASK_MIDDLE) != MouseButton::NONE) {
+				(mm->get_button_mask() & ZN_GODOT_MouseButton_MASK_MIDDLE) != ZN_GODOT_MouseButton_NONE) {
 			const Vector2 rel = mm->get_relative();
 			set_preview_transform(_preview_offset - Vector2f(rel.x, -rel.y) * _preview_scale, _preview_scale);
 
@@ -857,12 +858,12 @@ void VoxelGraphEditor::_on_graph_node_preview_gui_input(Ref<InputEvent> event) {
 		// Ctrl+Wheel above any preview to zoom in and out the area they render.
 		if (mb->is_command_or_control_pressed()) {
 			const float base_factor = 1.1f;
-			if (mb->get_button_index() == MouseButton::WHEEL_UP) {
+			if (mb->get_button_index() == ZN_GODOT_MouseButton_WHEEL_UP) {
 				set_preview_transform(_preview_offset, _preview_scale / base_factor);
 				// Prevent panning of GraphEdit
 				get_viewport()->set_input_as_handled();
 			}
-			if (mb->get_button_index() == MouseButton::WHEEL_DOWN) {
+			if (mb->get_button_index() == ZN_GODOT_MouseButton_WHEEL_DOWN) {
 				set_preview_transform(_preview_offset, _preview_scale * base_factor);
 				// Prevent panning of GraphEdit
 				get_viewport()->set_input_as_handled();
