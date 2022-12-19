@@ -2495,7 +2495,7 @@ VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, 
 			ZN_ASSERT(node.params.size() >= 1);
 			port.sub_index = node.params[0];
 			ZN_ASSERT(type.outputs.size() == 1);
-			port.name = type.outputs[0].name + "_" + String::num_int64(port.sub_index);
+			port.name = type.outputs[0].name + String("_") + String::num_int64(port.sub_index);
 			break;
 
 		default:
