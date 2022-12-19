@@ -239,6 +239,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			"file_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_file_dialog_file_selected));
 	add_child(_function_file_dialog);
 
+	// TODO GDX: EditorQuickOpen is not exposed to extensions
 #ifdef ZN_GODOT
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
@@ -1450,8 +1451,10 @@ void VoxelGraphEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_popout_button_pressed"), &VoxelGraphEditor::_on_popout_button_pressed);
 	ClassDB::bind_method(D_METHOD("_on_function_file_dialog_file_selected", "fpath"),
 			&VoxelGraphEditor::_on_function_file_dialog_file_selected);
+#if ZN_GODOT
 	ClassDB::bind_method(D_METHOD("_on_function_quick_open_dialog_quick_open"),
 			&VoxelGraphEditor::_on_function_quick_open_dialog_quick_open);
+#endif
 	ClassDB::bind_method(
 			D_METHOD("_on_node_resize_request", "new_size", "node_id"), &VoxelGraphEditor::_on_node_resize_request);
 	ClassDB::bind_method(
