@@ -34,8 +34,8 @@ Ref<RDShaderSPIRV> shader_compile_spirv_from_source(RenderingDevice &rd, RDShade
 	return bytecode;
 
 #elif defined(ZN_GODOT_EXTENSION)
-	Ref<RDShaderSource> source_ref(&source);
-	return rd.shader_compile_spirv_from_source(source_ref, allow_cache);
+	Ref<RDShaderSource> source_ref(&p_source);
+	return rd.shader_compile_spirv_from_source(source_ref, p_allow_cache);
 #endif
 }
 
@@ -60,7 +60,7 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 	return rd.shader_create_from_spirv(stage_data, name);
 
 #elif defined(ZN_GODOT_EXTENSION)
-	Ref<RDShaderSPIRV> spirv_data_ref(&p_spirv_data);
+	Ref<RDShaderSPIRV> spirv_data_ref(&p_spirv);
 	return rd.shader_create_from_spirv(spirv_data_ref, name);
 #endif
 }
@@ -102,7 +102,7 @@ RID texture_create(RenderingDevice &rd, RDTextureFormat &p_format, RDTextureView
 #elif defined(ZN_GODOT_EXTENSION)
 	Ref<RDTextureFormat> format_ref(&p_format);
 	Ref<RDTextureView> view_ref(&p_view);
-	return rd.texture_create(p_format, p_view, data);
+	return rd.texture_create(format_ref, view_ref, p_data);
 #endif
 }
 
