@@ -2,9 +2,11 @@
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/button.h"
 #include "../../util/godot/callable.h"
+#include "../../util/godot/h_box_container.h"
 #include "../../util/godot/h_separator.h"
 #include "../../util/godot/label.h"
 #include "../../util/godot/v_box_container.h"
+#include "../../util/godot/v_separator.h"
 #include "voxel_graph_editor_plugin.h"
 
 namespace zylann::voxel {
