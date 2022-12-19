@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_graph_runtime.h"
 #include "../../util/godot/image.h"
 #include "../../util/godot/image_texture.h"
+#include "../../util/godot/shader_material.h"
 #include "../../util/godot/v_box_container.h"
 #include "../../util/macros.h"
 
