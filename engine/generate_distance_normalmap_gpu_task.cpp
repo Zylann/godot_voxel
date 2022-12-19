@@ -98,7 +98,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 
 	// TODO Do I have to use a texture? Is it better than a storage buffer?
 	_normalmap_texture0_rid = texture_create(rd, **texture_format, **texture0_view, TypedArray<PackedByteArray>());
-	ERR_FAIL_COND(_normalmap_texture0_rid.is_null());
+	ERR_FAIL_COND(!_normalmap_texture0_rid.is_valid());
 
 	Ref<RDUniform> image0_uniform;
 	image0_uniform.instantiate();
@@ -111,7 +111,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	texture1_view.instantiate();
 
 	_normalmap_texture1_rid = texture_create(rd, **texture_format, **texture1_view, TypedArray<PackedByteArray>());
-	ERR_FAIL_COND(_normalmap_texture1_rid.is_null());
+	ERR_FAIL_COND(!_normalmap_texture1_rid.is_valid());
 
 	Ref<RDUniform> image1_uniform;
 	image1_uniform.instantiate();
@@ -271,7 +271,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	*reinterpret_cast<int32_t *>(dilation_params_pba.ptrw()) = params.tile_size_pixels;
 
 	_dilation_params_rid = rd.uniform_buffer_create(dilation_params_pba.size(), dilation_params_pba);
-	ERR_FAIL_COND(_dilation_params_rid.is_null());
+	ERR_FAIL_COND(!_dilation_params_rid.is_valid());
 
 	Ref<RDUniform> dilation_params_uniform;
 	dilation_params_uniform.instantiate();
@@ -282,34 +282,34 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	// Not sure what a pipeline is required for in compute shaders, it seems to be required "just because"
 
 	const RID gather_hits_shader_rid = VoxelEngine::get_singleton().get_detail_gather_hits_compute_shader().get_rid();
-	ERR_FAIL_COND(gather_hits_shader_rid.is_null());
+	ERR_FAIL_COND(!gather_hits_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_gather_hits_pipeline_rid = rd.compute_pipeline_create(gather_hits_shader_rid);
-	ERR_FAIL_COND(_gather_hits_pipeline_rid.is_null());
+	ERR_FAIL_COND(!_gather_hits_pipeline_rid.is_valid());
 
 	const RID shader_rid = shader->get_rid();
 	_detail_generator_pipeline_rid = rd.compute_pipeline_create(shader_rid);
-	ERR_FAIL_COND(_detail_generator_pipeline_rid.is_null());
+	ERR_FAIL_COND(!_detail_generator_pipeline_rid.is_valid());
 
 	for (const ModifierData &modifier : modifiers) {
-		ERR_FAIL_COND(modifier.shader_rid.is_null());
+		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
 		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
-		ERR_FAIL_COND(rid.is_null());
+		ERR_FAIL_COND(!rid.is_valid());
 		_detail_modifier_pipelines.push_back(rid);
 	}
 
 	const RID detail_normalmap_shader_rid =
 			VoxelEngine::get_singleton().get_detail_normalmap_compute_shader().get_rid();
-	ERR_FAIL_COND(detail_normalmap_shader_rid.is_null());
+	ERR_FAIL_COND(!detail_normalmap_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_detail_normalmap_pipeline_rid = rd.compute_pipeline_create(detail_normalmap_shader_rid);
-	ERR_FAIL_COND(_detail_normalmap_pipeline_rid.is_null());
+	ERR_FAIL_COND(!_detail_normalmap_pipeline_rid.is_valid());
 
 	const RID dilation_shader_rid = VoxelEngine::get_singleton().get_dilate_normalmap_compute_shader().get_rid();
-	ERR_FAIL_COND(dilation_shader_rid.is_null());
+	ERR_FAIL_COND(!dilation_shader_rid.is_valid());
 	// TODO Perhaps we could cache this pipeline?
 	_normalmap_dilation_pipeline_rid = rd.compute_pipeline_create(dilation_shader_rid);
-	ERR_FAIL_COND(_normalmap_dilation_pipeline_rid.is_null());
+	ERR_FAIL_COND(!_normalmap_dilation_pipeline_rid.is_valid());
 
 	// Make compute list
 
