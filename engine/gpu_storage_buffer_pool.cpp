@@ -1,5 +1,6 @@
 #include "gpu_storage_buffer_pool.h"
 #include "../util/dstack.h"
+#include "../util/godot/array.h" // for `varray` in GDExtension builds
 #include "../util/math/funcs.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
