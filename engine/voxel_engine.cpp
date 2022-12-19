@@ -1,6 +1,8 @@
 #include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
 #include "../shaders/shaders.h"
+#include "../util/godot/rd_sampler_state.h"
+#include "../util/godot/rendering_device.h"
 #include "../util/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
