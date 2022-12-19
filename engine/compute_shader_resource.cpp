@@ -2,6 +2,8 @@
 #include "../util/dstack.h"
 #include "../util/godot/curve.h"
 #include "../util/godot/image.h"
+#include "../util/godot/rd_texture_format.h"
+#include "../util/godot/rd_texture_view.h"
 #include "../util/profiling.h"
 #include "voxel_engine.h"
 
