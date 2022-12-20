@@ -10,6 +10,7 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/array.h"
+#include "../../util/godot/base_material_3d.h" // For property hint in release mode in GDExtension...
 #include "../../util/godot/camera_3d.h"
 #include "../../util/godot/concave_polygon_shape_3d.h"
 #include "../../util/godot/engine.h"
