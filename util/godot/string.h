@@ -66,15 +66,18 @@ struct GodotStringWrapper {
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
 
 #ifdef ZN_GODOT_EXTENSION
+
 // TODO GDX: `String` lacks an `operator+=`. It's also a performance issue.
 inline void operator+=(String &self, const String &b) {
 	self = self + b;
 }
+
 inline void operator+=(String &self, const char32_t b) {
 	// Slowest += operator I have ever seen
 	const char32_t c[2]{ b, '\0' };
 	self = self + String(c);
 }
+
 #endif
 
 ZN_GODOT_NAMESPACE_END
