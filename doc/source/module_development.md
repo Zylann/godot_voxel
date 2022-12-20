@@ -140,6 +140,9 @@ For the most part, use `clang-format` and follow Godot conventions.
 - If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 - If possible, use forward declarations in headers instead of including files
+- Don't do `using namespace` in headers (Except with `godot::`, but that's only to help supporting GDExtension using the same codebase, since Godot core does not have this namespace).
+- `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in multi-threaded context.
+- No use of exceptions
 
 ### Error handling
 
