@@ -41,18 +41,21 @@ The module is divided in several layers, each with different dependencies. Becau
 
 Directory      | Description
 -------------- | -------------------------------------------------------------------------------------------------------
+constants/     | Constants and lookup tables used throughout the engine.
+doc/           | Contains documentation
 edition/       | High-level utilities to access and modify voxels. May depend on voxel nodes.
 editor/        | Editor-specific code. May also depend on voxel nodes.
+engine/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
 generators/    | Procedural generators. They only depend on voxel storage and math.
 meshers/       | Only depends on voxel storage, math and some Godot graphics APIs.
-streams/       | Files handling code. Only depends on filesystem and storage.
-util/          | Generic utility functions and structures. They don't depend on voxel stuff.
-thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
-engine/        | Contains task management. Depends on meshers, streams, storage but not directly on nodes.
+misc/          | Various scripts and configuration files, stored here to avoid cluttering the main folder.
+shaders/       | Shaders used internally by the engine, both in text form and formatted C++ form.
 storage/       | Storage and memory data structures.
+streams/       | Files handling code. Only depends on filesystem and storage.
 terrain/       | Contains all the nodes. Depends on the rest of the module, except editor-only parts.
 tests/         | Contains tests. These run when Godot starts if enabled in the build script.
-doc/           | Contains documentation
+thirdparty/    | Third-party libraries, in source code form. They are compiled statically so Godot remains a single executable.
+util/          | Generic utility functions and structures. They don't depend on voxel stuff.
 
 <p></p>
 
