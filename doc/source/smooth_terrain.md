@@ -349,12 +349,12 @@ Parameter name                          | Type         | Description
 ----------------------------------------|--------------|------------------------------
 `u_lod_fade`                            | `vec2`       | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
 `u_block_local_transform`               | `mat4`       | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
-`u_voxel_cell_lookup`                   | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
-`u_voxel_normalmap_atlas`               | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using virtual texturing of [normalmaps](#distance-normals).
+`u_voxel_cell_lookup`                   | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using detail texturing of [normalmaps](#distance-normals).
+`u_voxel_normalmap_atlas`               | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using detail texturing of [normalmaps](#distance-normals).
 `u_voxel_virtual_texture_tile_size`     | `int`        | Resolution in pixels of each tile in `u_voxel_normalmap_atlas`.
 `u_voxel_cell_size`                     | `float`      | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
 `u_voxel_block_size`                    | `int`        | Size of the cubic block of voxels that the mesh represents, in voxels.
-`u_voxel_virtual_texture_fade`          | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in virtual textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no virtual textures.
+`u_voxel_virtual_texture_fade`          | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in detail textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no detail textures.
 `u_voxel_virtual_texture_offset_scale`  | `vec4`       | Used in LOD terrains where normalmaps are enabled. Contains a transformation to apply when sampling `u_voxel_cell_lookup` and `u_voxel_normalmap_atlas`. `x`, `y` and `z` contain an offset, and `w` contain a scale. This is relevant when textures for the current mesh aren't ready yet, so it falls back on a parent LOD: parent meshes are larger, so we need to sample a sub-region.
 `u_transition_mask`                     | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
 
@@ -479,7 +479,7 @@ This technique has some limitations:
 - Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
 
 
-### Virtual rendering of normalmaps
+### Detail rendering
 
 LOD decimates geometric details quite fast in the distance. It can be tuned up, but it quickly gets very expensive to generate and render a lot of polygons. An alternative is to generate normalmaps instead for medium/far meshes, to give the illusion of detail on otherwise flat polygons.
 
@@ -487,11 +487,11 @@ This engine contains an implementation of such a technique adapted to voxel mesh
 
 Here is a landscape without the feature:
 
-![Landscape without distance normals](images/distance_normals_off.webp)
+![Landscape without detailed normals](images/distance_normals_off.webp)
 
 With the feature:
 
-![Landscape with distance normals](images/distance_normals_on.webp)
+![Landscape with detailed normals](images/distance_normals_on.webp)
 
 The number of polygons is the same:
 
@@ -501,7 +501,7 @@ This can be turned on in the inspector when using `VoxelLodTerrain`. The cost is
 
 This feature is only available in `VoxelLodTerrain`. It also works best with data streaming turned off (`full_load_mode_enabled`), because being able to see all details from far away requires to not unload edited blocks. It will still use the generator if data streaming is on, but you won't see edited regions.
 
-Despite improving detail at lower cost than geometry, virtual rendering is significantly more expensive than generating regular blocks. Several ways to optimize it are:
+Despite improving detail at lower cost than geometry, detail rendering is significantly more expensive than generating regular blocks. Several ways to optimize it are:
 
 - Tweak tile sizes and LOD levels. The bigger tiles are, the higher the quality, but the more expensive it gets. Also the feature is usually not doing much if used at LODs 0 and 1, so usually a good default is to begin at LOD 2, with minimum tile size 4 and maximum 16.
 - Use a simplified version of the `VoxelGenerator`. It is possible to override the generator that will be used to compute normalmaps, with `VoxelLodTerrain.set_normalmap_generator_override`. A typical use case is when the generator can produce caves. Caves don't have enough impact on surface visuals, so they could be ignored beyond a certain LOD level.
@@ -525,7 +525,7 @@ uniform sampler2D u_voxel_normalmap_atlas;
 uniform int u_voxel_virtual_texture_tile_size;
 uniform float u_voxel_cell_size;
 uniform int u_voxel_block_size;
-// This is used when falling back on a virtual texture from a parent mesh.
+// This is used when falling back on a detail texture from a parent mesh.
 // The texture will cover a larger cube, so we use this information
 // to query only inside a sub-region.
 // (x, y, z) is offset, (w) is scale.
@@ -603,7 +603,7 @@ vec3 get_voxel_normal_model() {
 
 vec3 get_voxel_normal_view(vec3 geometry_normal_view, mat4 model_to_view) {
 	if (u_voxel_cell_size == 0.0) {
-		// Virtual texture not available in this mesh
+		// Detail texture not available in this mesh
 		return geometry_normal_view;
 	}
 	vec3 debug;
@@ -635,7 +635,7 @@ void fragment() {
 
 #### Details on the technique
 
-Normal-mapping usually requires texture coordinates (UVs). However, smooth voxel meshes aren't trivial to UV-map at runtime. Some methods exist to generate UV-maps on completely arbitrary meshes, but they are too expensive for realtime, or inappropriate for seamless chunked terrain. So instead, we can use a form of "virtual texturing".
+Normal-mapping usually requires texture coordinates (UVs). However, smooth voxel meshes aren't trivial to UV-map at runtime. Some methods exist to generate UV-maps on completely arbitrary meshes, but they are too expensive for realtime, or inappropriate for seamless chunked terrain. So instead, we can use something similar to "virtual texturing".
 
 The mesh is first subdivided into a grid of cells (we can use Transvoxel cells, which are ready to use). In each cell, we pick an axis-aligned projection working best with triangles of the cell using the average of their normals. A tile can then be generated by projecting its pixels on triangles, evaluating a normal from voxel data, and storing it in an atlas (a TextureArray could be used, but it has more limited number of layers). A shader can then read the atlas using a lookup texture to find the tile. The lookup texture is a 3D texture that tells for each "cell" where is the tile in the atlas (but it can be stored as a 2D texture).
 
@@ -651,7 +651,7 @@ A classic method is used to obtain normals: on the desired position, we take 4 s
 Since every mesh will have its own textures, another technique that comes in handy is [Octahedral Compression](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/). These normals are world-space, and encoding them in a texture naively would require 3 bytes per pixel (for X, Y, Z). With octahedral compression, we trade off a bit of quality for a much smaller size of 2 bytes per pixels.
 
 
-#### Running normalmap generation on the GPU
+#### Rendering on the GPU
 
 This feature is very expensive, so it is possible to run it on the graphics card if it supports Vulkan. This is enabled by checking `run on GPU` in the terrain's inspector.
 
