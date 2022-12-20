@@ -29,6 +29,7 @@ public:
 	virtual void collect(GPUTaskContext &ctx) = 0;
 };
 
+// Runs tasks that schedules compute shaders and collects their results.
 class GPUTaskRunner {
 public:
 	GPUTaskRunner();
