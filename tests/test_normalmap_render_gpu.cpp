@@ -1,6 +1,6 @@
-#include "../engine/generate_distance_normalmap_gpu_task.h"
-#include "../engine/generate_distance_normalmap_task.h"
 #include "../engine/mesh_block_task.h"
+#include "../engine/render_detail_texture_gpu_task.h"
+#include "../engine/render_detail_texture_task.h"
 #include "../engine/voxel_engine.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
@@ -89,7 +89,7 @@ void test_normalmap_render_gpu() {
 	virtual_texture_settings.tile_resolution_max = 16;
 	virtual_texture_settings.octahedral_encoding_enabled = false;
 
-	GenerateDistanceNormalmapTask nm_task;
+	RenderDetailTextureTask nm_task;
 	nm_task.cell_iterator = std::move(cell_iterator);
 	nm_task.mesh_vertices = mesh_arrays.vertices;
 	nm_task.mesh_normals = mesh_arrays.normals;
@@ -103,7 +103,7 @@ void test_normalmap_render_gpu() {
 	nm_task.virtual_texture_settings = virtual_texture_settings;
 	nm_task.priority_dependency;
 	nm_task.use_gpu = true;
-	GenerateDistanceNormalMapGPUTask *gpu_task = nm_task.make_gpu_task();
+	RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
 
 	RenderingDevice &rd = VoxelEngine::get_singleton().get_rendering_device();
 	GPUStorageBufferPool storage_buffer_pool;

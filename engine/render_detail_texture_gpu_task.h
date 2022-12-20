@@ -1,5 +1,5 @@
-#ifndef VOXEL_GENERATE_DISTANCE_NORMALMAP_GPU_TASK_H
-#define VOXEL_GENERATE_DISTANCE_NORMALMAP_GPU_TASK_H
+#ifndef VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
+#define VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
 
 #include "../engine/gpu_storage_buffer_pool.h"
 #include "../util/math/vector3f.h"
@@ -13,7 +13,7 @@ namespace zylann::voxel {
 class ComputeShader;
 struct ComputeShaderParameters;
 
-class GenerateDistanceNormalMapGPUTask : public IGPUTask {
+class RenderDetailTextureGPUTask : public IGPUTask {
 public:
 	uint16_t texture_width;
 	uint16_t texture_height;
@@ -100,4 +100,4 @@ private:
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_GENERATE_DISTANCE_NORMALMAP_GPU_TASK_H
+#endif // VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H

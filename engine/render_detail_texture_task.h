@@ -1,5 +1,5 @@
-#ifndef VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
-#define VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
+#ifndef VOXEL_RENDER_DETAIL_TEXTURE_TASK_H
+#define VOXEL_RENDER_DETAIL_TEXTURE_TASK_H
 
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
@@ -11,12 +11,12 @@
 
 namespace zylann::voxel {
 
-class GenerateDistanceNormalMapGPUTask;
+class RenderDetailTextureGPUTask;
 
 // Renders textures providing extra details to far away voxel meshes.
 // This is separate from the meshing task because it takes significantly longer to complete. It has different priority
 // so most of the time we can get the mesh earlier and affine later with the results.
-class GenerateDistanceNormalmapTask : public IThreadedTask {
+class RenderDetailTextureTask : public IThreadedTask {
 public:
 	// Input
 
@@ -47,7 +47,7 @@ public:
 	bool is_cancelled() override;
 
 	// This is exposed for testing
-	GenerateDistanceNormalMapGPUTask *make_gpu_task();
+	RenderDetailTextureGPUTask *make_gpu_task();
 
 private:
 	void run_on_cpu();
@@ -55,7 +55,7 @@ private:
 };
 
 // Performs final operations on the CPU after the GPU work is done
-class RenderVirtualTexturePass2Task : public IThreadedTask {
+class RenderDetailTexturePass2Task : public IThreadedTask {
 public:
 	PackedByteArray atlas_data;
 	NormalMapData edited_tiles_normalmap_data;
@@ -75,4 +75,4 @@ public:
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_GENERATE_DISTANCE_NORMALMAP_TASK_H
+#endif // VOXEL_RENDER_DETAIL_TEXTURE_TASK_H

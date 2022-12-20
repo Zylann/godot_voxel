@@ -1,4 +1,4 @@
-#include "generate_distance_normalmap_task.h"
+#include "render_detail_texture_task.h"
 #include "../util/profiling.h"
 #include "voxel_engine.h"
 //#include "../util/string_funcs.h" // Debug
@@ -6,7 +6,7 @@
 #include "../storage/modifiers.h"
 #include "../storage/voxel_data.h"
 #include "../util/math/conv.h"
-#include "generate_distance_normalmap_gpu_task.h"
+#include "render_detail_texture_gpu_task.h"
 
 namespace zylann::voxel {
 
@@ -42,7 +42,7 @@ NormalMapData &get_tls_normalmap_data() {
 	}
 }*/
 
-void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
+void RenderDetailTextureTask::run(ThreadedTaskContext ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(generator.is_valid());
 	ZN_ASSERT_RETURN(virtual_textures != nullptr);
@@ -56,7 +56,7 @@ void GenerateDistanceNormalmapTask::run(ThreadedTaskContext ctx) {
 	}
 }
 
-void GenerateDistanceNormalmapTask::run_on_cpu() {
+void RenderDetailTextureTask::run_on_cpu() {
 	NormalMapData &normalmap_data = get_tls_normalmap_data();
 	normalmap_data.clear();
 
@@ -101,7 +101,7 @@ void GenerateDistanceNormalmapTask::run_on_cpu() {
 	virtual_textures->valid = true;
 }
 
-void GenerateDistanceNormalmapTask::apply_result() {
+void RenderDetailTextureTask::apply_result() {
 	if (use_gpu) {
 		return;
 	}
@@ -125,19 +125,19 @@ void GenerateDistanceNormalmapTask::apply_result() {
 	callbacks.virtual_texture_output_callback(callbacks.data, o);
 }
 
-TaskPriority GenerateDistanceNormalmapTask::get_priority() {
+TaskPriority RenderDetailTextureTask::get_priority() {
 	// Priority by distance, but after meshes
 	TaskPriority p = priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2, nullptr);
 	return p;
 }
 
-bool GenerateDistanceNormalmapTask::is_cancelled() {
+bool RenderDetailTextureTask::is_cancelled() {
 	// TODO Cancel if too far?
 	return false;
 }
 
 static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count,
-		std::vector<int32_t> &cell_triangles, std::vector<GenerateDistanceNormalMapGPUTask::TileData> &tile_data,
+		std::vector<int32_t> &cell_triangles, std::vector<RenderDetailTextureGPUTask::TileData> &tile_data,
 		const std::vector<int> &mesh_indices, const std::vector<Vector3f> &mesh_normals) {
 	tile_data.reserve(tile_count);
 
@@ -166,7 +166,7 @@ static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile
 
 		const unsigned int projection = math::get_longest_axis(normal_sum);
 
-		GenerateDistanceNormalMapGPUTask::TileData td;
+		RenderDetailTextureGPUTask::TileData td;
 		td.cell_x = cell_info.position.x;
 		td.cell_y = cell_info.position.y;
 		td.cell_z = cell_info.position.z;
@@ -181,13 +181,13 @@ static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile
 	}
 }
 
-void GenerateDistanceNormalmapTask::run_on_gpu() {
+void RenderDetailTextureTask::run_on_gpu() {
 	ZN_PROFILE_SCOPE();
-	GenerateDistanceNormalMapGPUTask *gpu_task = make_gpu_task();
+	RenderDetailTextureGPUTask *gpu_task = make_gpu_task();
 	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
-GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task() {
+RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	const unsigned int tile_resolution =
 			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
 
@@ -205,13 +205,13 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
 	const unsigned int pixels_across = tiles_across * tile_resolution;
 
-	std::vector<GenerateDistanceNormalMapGPUTask::TileData> tile_data;
+	std::vector<RenderDetailTextureGPUTask::TileData> tile_data;
 	std::vector<int32_t> cell_triangles;
 	cell_iterator->rewind();
 	build_gpu_tiles_data(*cell_iterator, tile_count, cell_triangles, tile_data, mesh_indices, mesh_normals);
 	ZN_ASSERT(cell_triangles.size() > 0);
 
-	GenerateDistanceNormalMapGPUTask::Params params;
+	RenderDetailTextureGPUTask::Params params;
 	params.block_origin_world = to_vec3f(origin_in_voxels);
 	params.pixel_world_step = float(1 << lod_index) / float(tile_resolution);
 	params.max_deviation_cosine = Math::cos(math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
@@ -222,7 +222,7 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 
 	// Create GPU task
 
-	GenerateDistanceNormalMapGPUTask *gpu_task = ZN_NEW(GenerateDistanceNormalMapGPUTask);
+	RenderDetailTextureGPUTask *gpu_task = ZN_NEW(RenderDetailTextureGPUTask);
 	gpu_task->texture_width = pixels_across;
 	gpu_task->texture_height = pixels_across;
 	// TODO Mesh data need std::move or std::shared_ptr, we only read it
@@ -241,7 +241,7 @@ GenerateDistanceNormalMapGPUTask *GenerateDistanceNormalmapTask::make_gpu_task()
 		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
 		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
 			gpu_task->modifiers.push_back(
-					GenerateDistanceNormalMapGPUTask::ModifierData{ d.detail_rendering_shader_rid, d.params });
+					RenderDetailTextureGPUTask::ModifierData{ d.detail_rendering_shader_rid, d.params });
 		}
 	}
 
@@ -315,7 +315,7 @@ void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pi
 	}
 }
 
-void RenderVirtualTexturePass2Task::run(ThreadedTaskContext ctx) {
+void RenderDetailTexturePass2Task::run(ThreadedTaskContext ctx) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO Suggestion: given how fast GPU normalmaps are computed, maybe we could output them first,
@@ -350,7 +350,7 @@ void RenderVirtualTexturePass2Task::run(ThreadedTaskContext ctx) {
 	virtual_textures->valid = true;
 }
 
-void RenderVirtualTexturePass2Task::apply_result() {
+void RenderDetailTexturePass2Task::apply_result() {
 	if (!VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// This can happen if the user removes the volume while requests are still about to return
 		ZN_PRINT_VERBOSE("Normalmap task completed but volume wasn't found");

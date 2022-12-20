@@ -6,7 +6,7 @@
 #include "../util/godot/mesh.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
-#include "generate_distance_normalmap_task.h"
+#include "render_detail_texture_task.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "voxel_engine.h"
@@ -335,7 +335,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		// dequeued in the main thread, since it runs in a separate asynchronous task
 		_virtual_textures = virtual_textures;
 
-		GenerateDistanceNormalmapTask *nm_task = ZN_NEW(GenerateDistanceNormalmapTask);
+		RenderDetailTextureTask *nm_task = ZN_NEW(RenderDetailTextureTask);
 		nm_task->cell_iterator = std::move(cell_iterator);
 		nm_task->mesh_vertices = mesh_arrays.vertices;
 		nm_task->mesh_normals = mesh_arrays.normals;

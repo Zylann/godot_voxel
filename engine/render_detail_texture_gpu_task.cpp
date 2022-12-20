@@ -1,10 +1,10 @@
-#include "generate_distance_normalmap_gpu_task.h"
+#include "render_detail_texture_gpu_task.h"
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/profiling.h"
 #include "compute_shader.h"
 #include "compute_shader_parameters.h"
-#include "generate_distance_normalmap_task.h"
+#include "render_detail_texture_task.h"
 #include "voxel_engine.h"
 
 #include "../util/godot/rd_sampler_state.h"
@@ -49,7 +49,7 @@ void add_uniform_params(const std::vector<ComputeShaderParameter> &params, Array
 	}
 }
 
-void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
+void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();
 
@@ -523,7 +523,7 @@ void GenerateDistanceNormalMapGPUTask::prepare(GPUTaskContext &ctx) {
 	rd.compute_list_end();
 }
 
-PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(
+PackedByteArray RenderDetailTextureGPUTask::collect_texture_and_cleanup(
 		RenderingDevice &rd, GPUStorageBufferPool &storage_buffer_pool) {
 	ZN_PROFILE_SCOPE();
 
@@ -570,7 +570,7 @@ PackedByteArray GenerateDistanceNormalMapGPUTask::collect_texture_and_cleanup(
 	return texture_data;
 }
 
-void GenerateDistanceNormalMapGPUTask::collect(GPUTaskContext &ctx) {
+void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_DSTACK();
 
@@ -583,7 +583,7 @@ void GenerateDistanceNormalMapGPUTask::collect(GPUTaskContext &ctx) {
 			tile_data2.push_back(NormalMapData::Tile{ td.cell_x, td.cell_y, td.cell_z, uint8_t(td.data & 0x3) });
 		}
 
-		RenderVirtualTexturePass2Task *task = ZN_NEW(RenderVirtualTexturePass2Task);
+		RenderDetailTexturePass2Task *task = ZN_NEW(RenderDetailTexturePass2Task);
 		task->atlas_data = texture_data;
 		task->tile_data = std::move(tile_data2);
 		task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
