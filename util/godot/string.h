@@ -4,6 +4,7 @@
 #if defined(ZN_GODOT)
 #include <core/string/ustring.h>
 #elif defined(ZN_GODOT_EXTENSION)
+#include <godot_cpp/classes/global_constants.hpp> // For `Error`
 #include <godot_cpp/variant/string.hpp>
 using namespace godot;
 #endif
