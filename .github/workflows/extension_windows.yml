@@ -26,7 +26,12 @@ jobs:
             target: editor
             dev_build: no
             #cache_action: actions/cache@v2
-            executable_name: libvoxel.windows.tools.debug.x86_64.dll
+            executable_name: libvoxel.windows.editor.x86_64.dll
+          - name: Release build
+            target: template_release
+            dev_build: no
+            #cache_action: actions/cache@v2
+            executable_name: libvoxel.windows.template_release.x86_64.dll
 
     steps:
       # Clone our repo
@@ -83,8 +88,9 @@ jobs:
           dir
 
       # Make build available
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: ${{matrix.executable_name}}
-      #     path: bin/${{matrix.executable_name}}
+      - uses: actions/upload-artifact@v2
+        #if: ${{ matrix.target == 'Editor' }}
+        with:
+          name: ${{matrix.executable_name}}
+          path: bin/${{matrix.executable_name}}
 

@@ -116,3 +116,5 @@ In the future, it is hoped that none of this manual work is required. Rather tha
 GDExtension is what would make this possible. This module can already [compile with GodotCpp](module_development.md#gdextension) so it can be loaded as a GDExtension library.
 Unfortunately, there are still [too many problems](https://github.com/Zylann/godot_voxel/issues/442) for the module to work properly. For the time being, a custom engine build is more reliable.
 
+There are development builds available on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/extension_windows.yml), however they are completely untested and might crash. Use at your own risk.
+
