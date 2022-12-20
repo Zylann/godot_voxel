@@ -659,4 +659,3 @@ Limitations:
 
 - GPU normalmaps currently don't support edited voxels. Edited areas will fallback using the CPU.
 - The generator you're using must support a shader variant using GLSL. `VoxelGeneratorGraph` is the only one supporting it at the moment. Some of its nodes don't have support for it.
-- Modifiers aren't supported yet
