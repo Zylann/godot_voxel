@@ -2,6 +2,7 @@
 #define ZN_SLOT_MAP_H
 
 #include "errors.h"
+#include <cstdint>
 #include <limits>
 #include <vector>
 
