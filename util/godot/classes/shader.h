@@ -1,7 +1,7 @@
 #ifndef ZN_GODOT_SHADER_H
 #define ZN_GODOT_SHADER_H
 
-#include "../span.h"
+#include "../../span.h"
 
 #if defined(ZN_GODOT)
 #include <scene/resources/shader.h>

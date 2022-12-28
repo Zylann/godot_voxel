@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCER_RIGIDBODY_H
 #define VOXEL_INSTANCER_RIGIDBODY_H
 
-#include "../../util/godot/rigid_body_3d.h"
+#include "../../util/godot/classes/rigid_body_3d.h"
 #include "voxel_instancer.h"
 
 namespace zylann::voxel {

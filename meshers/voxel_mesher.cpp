@@ -4,10 +4,10 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/godot/array_mesh.h"
+#include "../util/godot/classes/array_mesh.h"
+#include "../util/godot/classes/mesh.h"
+#include "../util/godot/classes/shader_material.h"
 #include "../util/godot/funcs.h"
-#include "../util/godot/mesh.h"
-#include "../util/godot/shader_material.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {

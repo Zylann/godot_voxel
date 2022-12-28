@@ -1,11 +1,11 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
-#include "../../util/godot/base_material_3d.h"
+#include "../../util/godot/classes/base_material_3d.h"
+#include "../../util/godot/classes/geometry_2d.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/shader_material.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/geometry_2d.h"
-#include "../../util/godot/image.h"
-#include "../../util/godot/shader_material.h"
-#include "../../util/godot/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -934,7 +934,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				}
 			}
 
-			//surface.collision_enabled = (material_index == MATERIAL_OPAQUE);
+			// surface.collision_enabled = (material_index == MATERIAL_OPAQUE);
 
 			surface.material_index = material_index;
 			output.surfaces.push_back(surface);
@@ -951,7 +951,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	// 	// Don't compress UVs, they need to be precise. Not doing this causes noticeable offsets.
 	// 	output.compression_flags = Mesh::ARRAY_COMPRESS_FLAGS_BASE & ~Mesh::ARRAY_FORMAT_TEX_UV;
 	// }
-	//output.compression_flags = Mesh::ARRAY_COMPRESS_COLOR;
+	// output.compression_flags = Mesh::ARRAY_COMPRESS_COLOR;
 }
 
 void VoxelMesherCubes::set_greedy_meshing_enabled(bool enable) {

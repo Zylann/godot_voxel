@@ -1,9 +1,9 @@
 #include "editor_property_aabb_min_max.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/control.h"
-#include "../../util/godot/grid_container.h"
-#include "../../util/godot/label.h"
-#include "../../util/godot/node.h"
+#include "../../util/godot/classes/control.h"
+#include "../../util/godot/classes/grid_container.h"
+#include "../../util/godot/classes/label.h"
+#include "../../util/godot/classes/node.h"
+#include "../../util/godot/core/callable.h"
 
 namespace zylann {
 

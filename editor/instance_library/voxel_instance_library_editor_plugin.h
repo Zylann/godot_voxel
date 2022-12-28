@@ -2,7 +2,7 @@
 #define VOXEL_INSTANCE_LIBRARY_EDITOR_PLUGIN_H
 
 #include "../../terrain/instancing/voxel_instance_library.h"
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 #include "voxel_instance_library_inspector_plugin.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Control)

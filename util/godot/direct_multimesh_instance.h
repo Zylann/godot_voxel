@@ -5,8 +5,8 @@
 #include "../math/transform3f.h"
 #include "../non_copyable.h"
 #include "../span.h"
-#include "multimesh.h"
-#include "rendering_server.h"
+#include "classes/multimesh.h"
+#include "classes/rendering_server.h"
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 ZN_GODOT_FORWARD_DECLARE(class Material);

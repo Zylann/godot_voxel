@@ -1,7 +1,7 @@
 #ifndef ZYLANN_EDITOR_PROPERTY_TEXT_CHANGE_ON_SUBMIT_H
 #define ZYLANN_EDITOR_PROPERTY_TEXT_CHANGE_ON_SUBMIT_H
 
-#include "../../util/godot/editor_property.h"
+#include "../../util/godot/classes/editor_property.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class LineEdit)

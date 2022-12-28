@@ -2,7 +2,7 @@
 #define VOXEL_DATA_BLOCK_ENTER_INFO_H
 
 #include "../storage/voxel_data_block.h"
-#include "../util/godot/object.h"
+#include "../util/godot/classes/object.h"
 
 namespace zylann::voxel {
 
@@ -28,7 +28,7 @@ private:
 	Vector3i _b_get_position() const;
 	int _b_get_lod_index() const;
 	bool _b_are_voxels_edited() const;
-	//int _b_viewer_id() const;
+	// int _b_viewer_id() const;
 
 	static void _bind_methods();
 };

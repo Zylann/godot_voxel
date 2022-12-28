@@ -1,7 +1,7 @@
 #include "gpu_task_runner.h"
 #include "../util/dstack.h"
 #include "../util/errors.h"
-#include "../util/godot/rendering_device.h"
+#include "../util/godot/classes/rendering_device.h"
 #include "../util/math/funcs.h"
 #include "../util/memory.h"
 #include "../util/profiling.h"

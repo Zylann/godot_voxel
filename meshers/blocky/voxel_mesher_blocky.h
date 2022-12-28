@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_BLOCKY_H
 #define VOXEL_MESHER_BLOCKY_H
 
-#include "../../util/godot/mesh.h"
+#include "../../util/godot/classes/mesh.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "voxel_blocky_library.h"

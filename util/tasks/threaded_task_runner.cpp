@@ -1,5 +1,5 @@
 #include "threaded_task_runner.h"
-#include "../godot/time.h"
+#include "../godot/classes/time.h"
 #include "../profiling.h"
 #include "../string_funcs.h"
 
@@ -231,7 +231,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			cancelled_tasks.clear();
 		}
 
-		//print_line(String("Processing {0} tasks").format(varray(tasks.size())));
+		// print_line(String("Processing {0} tasks").format(varray(tasks.size())));
 
 		if (tasks.empty()) {
 			if (task_queue_was_empty) {

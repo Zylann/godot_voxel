@@ -1,14 +1,14 @@
 #include "voxel_terrain_editor_task_indicator.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_memory_pool.h"
-#include "../../util/godot/array.h"
-#include "../../util/godot/control.h"
+#include "../../util/godot/classes/control.h"
+#include "../../util/godot/classes/font.h"
+#include "../../util/godot/classes/label.h"
+#include "../../util/godot/classes/os.h"
+#include "../../util/godot/classes/v_separator.h"
+#include "../../util/godot/core/array.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/font.h"
-#include "../../util/godot/label.h"
-#include "../../util/godot/os.h"
-#include "../../util/godot/string.h"
-#include "../../util/godot/v_separator.h"
 
 namespace zylann::voxel {
 

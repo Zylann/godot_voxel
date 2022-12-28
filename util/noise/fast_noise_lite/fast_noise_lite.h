@@ -1,7 +1,7 @@
 #ifndef ZYLANN_FAST_NOISE_LITE_H
 #define ZYLANN_FAST_NOISE_LITE_H
 
-#include "../../godot/binder.h"
+#include "../../godot/core/binder.h"
 #include "fast_noise_lite_gradient.h"
 
 namespace zylann {

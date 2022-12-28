@@ -1,5 +1,5 @@
 #include "editor_import_plugin.h"
-#include "../errors.h"
+#include "../../errors.h"
 
 namespace zylann {
 

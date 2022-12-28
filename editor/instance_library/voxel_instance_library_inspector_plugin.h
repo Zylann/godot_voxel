@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_INSPECTOR_PLUGIN_H
 #define VOXEL_INSTANCE_LIBRARY_INSPECTOR_PLUGIN_H
 
-#include "../../util/godot/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_inspector_plugin.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Control)

@@ -5,10 +5,10 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/array.h"
-#include "../../util/godot/image_texture.h"
-#include "../../util/godot/resource_saver.h"
-#include "../../util/godot/standard_material_3d.h"
+#include "../../util/godot/classes/image_texture.h"
+#include "../../util/godot/classes/resource_saver.h"
+#include "../../util/godot/classes/standard_material_3d.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory.h"
@@ -54,7 +54,7 @@ double VoxelVoxMeshImporter::_zn_get_priority() const {
 
 void VoxelVoxMeshImporter::_zn_get_import_options(
 		std::vector<GodotImportOption> &out_options, const String &path, int preset_index) const {
-	//const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+	// const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 	out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
 	out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
 	out_options.push_back(GodotImportOption(
@@ -340,7 +340,7 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 			Ref<StandardMaterial3D> material = materials[material_index]->duplicate();
 			if (atlas.is_valid()) {
 				// TODO Do I absolutely HAVE to load this texture back to memory AND renderer just so import works??
-				//Ref<Texture> texture = ResourceLoader::load(atlas_path);
+				// Ref<Texture> texture = ResourceLoader::load(atlas_path);
 				// TODO THIS IS A WORKAROUND, it is not supposed to be an ImageTexture...
 				// See earlier code, I could not find any way to reference a separate StreamTexture.
 				Ref<ImageTexture> texture = ImageTexture::create_from_image(atlas);

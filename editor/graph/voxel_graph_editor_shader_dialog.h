@@ -1,7 +1,7 @@
 #ifndef VOXEL_GRAPH_EDITOR_SHADER_DIALOG_H
 #define VOXEL_GRAPH_EDITOR_SHADER_DIALOG_H
 
-#include "../../util/godot/accept_dialog.h"
+#include "../../util/godot/classes/accept_dialog.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class CodeEdit)

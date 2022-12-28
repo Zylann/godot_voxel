@@ -1,5 +1,5 @@
 #include "voxel_blocky_library.h"
-#include "../../util/godot/time.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/log.h"
 #include "../../util/math/triangle.h"
 #include "../../util/string_funcs.h"
@@ -211,7 +211,7 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 
 	struct Pattern {
 		std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
-		//std::vector<TypeAndSide> occurrences;
+		// std::vector<TypeAndSide> occurrences;
 	};
 
 	std::vector<Pattern> patterns;
@@ -319,7 +319,7 @@ void VoxelBlockyLibrary::generate_side_culling_matrix() {
 				model_data.contributes_to_ao = false;
 			}
 
-			//pattern->occurrences.push_back(TypeAndSide{ type_id, side });
+			// pattern->occurrences.push_back(TypeAndSide{ type_id, side });
 			model_data.model.side_pattern_indices[side] = pattern_index;
 
 		} // side

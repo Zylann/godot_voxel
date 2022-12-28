@@ -3,7 +3,7 @@
 
 #include "../constants/voxel_constants.h"
 #include "../storage/voxel_buffer_internal.h"
-#include "../util/godot/array_mesh.h"
+#include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/threaded_task.h"
 #include "distance_normalmaps.h"
 #include "ids.h"

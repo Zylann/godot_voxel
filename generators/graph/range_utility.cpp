@@ -1,6 +1,6 @@
 #include "range_utility.h"
-#include "../../util/godot/curve.h"
-#include "../../util/godot/image.h"
+#include "../../util/godot/classes/curve.h"
+#include "../../util/godot/classes/image.h"
 #include "../../util/string_funcs.h"
 
 namespace zylann {

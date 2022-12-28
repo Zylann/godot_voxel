@@ -1,7 +1,7 @@
 #include "voxel_graph_editor_node_preview.h"
 #include "../../generators/graph/voxel_graph_function.h"
-#include "../../util/godot/shader.h"
-#include "../../util/godot/texture_rect.h"
+#include "../../util/godot/classes/shader.h"
+#include "../../util/godot/classes/texture_rect.h"
 
 namespace zylann::voxel {
 

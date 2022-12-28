@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "../errors.h"
+#include "../../errors.h"
 
 namespace zylann {
 

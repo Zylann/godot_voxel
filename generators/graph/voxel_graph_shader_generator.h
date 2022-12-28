@@ -3,7 +3,7 @@
 
 #include "../../engine/compute_shader_resource.h"
 #include "../../util/errors.h"
-#include "../../util/godot/variant.h"
+#include "../../util/godot/core/variant.h"
 #include "../../util/span.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_function.h"

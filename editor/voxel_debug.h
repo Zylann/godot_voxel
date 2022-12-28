@@ -1,8 +1,8 @@
 #ifndef VOXEL_DEBUG_H
 #define VOXEL_DEBUG_H
 
+#include "../util/godot/classes/standard_material_3d.h"
 #include "../util/godot/direct_multimesh_instance.h"
-#include "../util/godot/standard_material_3d.h"
 #include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Mesh);
@@ -18,7 +18,7 @@ enum ColorID { //
 	ID_COUNT
 };
 
-} //namespace DebugColors
+} // namespace DebugColors
 
 Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id);
 void free_debug_resources();
@@ -77,6 +77,6 @@ private:
 	DebugMultiMeshRenderer _mm_renderer;
 };
 
-} //namespace zylann
+} // namespace zylann
 
 #endif // VOXEL_DEBUG_H

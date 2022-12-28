@@ -7,7 +7,7 @@
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/engine.h"
+#include "../../util/godot/classes/engine.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"

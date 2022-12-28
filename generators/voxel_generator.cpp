@@ -4,7 +4,7 @@
 #include "../engine/compute_shader_parameters.h"
 #include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/godot/array.h" // for `varray` in GDExtension builds
+#include "../util/godot/core/array.h" // for `varray` in GDExtension builds
 
 namespace zylann::voxel {
 

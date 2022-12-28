@@ -2,7 +2,7 @@
 #define VOXEL_GRAPH_NODE_TYPE_DB_H
 
 #include "../../util/expression_parser.h"
-#include "../../util/godot/string.h" // For String hash
+#include "../../util/godot/core/string.h" // For String hash
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"

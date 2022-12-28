@@ -2,8 +2,8 @@
 #define VOXEL_GRAPH_EDITOR_IO_DIALOG_H
 
 #include "../../generators/graph/voxel_graph_function.h"
-#include "../../util/godot/confirmation_dialog.h"
-#include "../../util/godot/editor_undo_redo_manager.h"
+#include "../../util/godot/classes/confirmation_dialog.h"
+#include "../../util/godot/classes/editor_undo_redo_manager.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ItemList)
 ZN_GODOT_FORWARD_DECLARE(class LineEdit)

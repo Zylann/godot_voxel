@@ -1,7 +1,7 @@
 #include "direct_mesh_instance.h"
 #include "../profiling.h"
-#include "material.h"
-#include "world_3d.h"
+#include "classes/material.h"
+#include "classes/world_3d.h"
 
 namespace zylann {
 

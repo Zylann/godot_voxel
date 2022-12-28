@@ -1,10 +1,10 @@
 #include "voxel_instance_library_multimesh_item_editor_plugin.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/control.h"
-#include "../../util/godot/editor_file_dialog.h"
-#include "../../util/godot/editor_interface.h"
-#include "../../util/godot/editor_undo_redo_manager.h"
-#include "../../util/godot/resource_loader.h"
+#include "../../util/godot/classes/control.h"
+#include "../../util/godot/classes/editor_file_dialog.h"
+#include "../../util/godot/classes/editor_interface.h"
+#include "../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../util/godot/classes/resource_loader.h"
+#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 

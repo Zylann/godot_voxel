@@ -1,6 +1,6 @@
 #include "voxel_instance_library_item.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/callable.h"
+#include "../../util/godot/core/callable.h"
 #include "voxel_instancer.h"
 
 #include <algorithm>

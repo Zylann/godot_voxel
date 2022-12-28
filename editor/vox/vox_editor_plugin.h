@@ -1,7 +1,7 @@
 #ifndef VOX_EDITOR_PLUGIN_H
 #define VOX_EDITOR_PLUGIN_H
 
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 #include "vox_mesh_importer.h"
 #include "vox_scene_importer.h"
 

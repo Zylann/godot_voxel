@@ -3,7 +3,7 @@
 #include "../engine/voxel_engine_updater.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/dstack.h"
-#include "../util/godot/array.h"
+#include "../util/godot/core/array.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/color.h"
 #include "../util/math/conv.h"
@@ -12,7 +12,7 @@
 #include "mesh_sdf.h"
 // Necessary when compiling with GodotCpp because it is used in a registered method argument, and the type must be
 // defined
-#include "../util/godot/scene_tree.h"
+#include "../util/godot/classes/scene_tree.h"
 
 namespace zylann::voxel {
 

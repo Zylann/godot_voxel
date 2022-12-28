@@ -1,8 +1,8 @@
 #ifndef VOXEL_MESH_SDF_EDITOR_PLUGIN_H
 #define VOXEL_MESH_SDF_EDITOR_PLUGIN_H
 
-#include "../../util/godot/editor_inspector_plugin.h"
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 
 namespace zylann::voxel {
 

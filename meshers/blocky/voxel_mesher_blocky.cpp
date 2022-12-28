@@ -1,13 +1,13 @@
 #include "voxel_mesher_blocky.h"
 #include "../../constants/cube_tables.h"
 #include "../../storage/voxel_buffer_internal.h"
-#include "../../util/godot/array.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/span.h"
 // TODO GDX: String has no `operator+=`
-#include "../../util/godot/string.h"
+#include "../../util/godot/core/string.h"
 
 namespace zylann::voxel {
 
@@ -135,8 +135,8 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 	corner_neighbor_lut[Cube::CORNER_TOP_FRONT_LEFT] = side_neighbor_lut[Cube::SIDE_TOP] +
 			side_neighbor_lut[Cube::SIDE_FRONT] + side_neighbor_lut[Cube::SIDE_LEFT];
 
-	//uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
-	//time_before = Time::get_singleton()->get_ticks_usec();
+	// uint64_t time_prep = Time::get_singleton()->get_ticks_usec() - time_before;
+	// time_before = Time::get_singleton()->get_ticks_usec();
 
 	for (unsigned int z = min.z; z < (unsigned int)max.z; ++z) {
 		for (unsigned int x = min.x; x < (unsigned int)max.x; ++x) {
@@ -275,7 +275,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 										if (shaded_corner[corner]) {
 											float s = baked_occlusion_darkness *
 													static_cast<float>(shaded_corner[corner]);
-											//float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
+											// float k = 1.f - Cube::g_corner_position[corner].distance_to(v);
 											float k = 1.f -
 													math::distance_squared(Cube::g_corner_position[corner], vertex_pos);
 											if (k < 0.0) {

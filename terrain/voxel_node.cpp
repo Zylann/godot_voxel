@@ -3,7 +3,7 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
-#include "../util/godot/script.h"
+#include "../util/godot/classes/script.h"
 
 namespace zylann::voxel {
 

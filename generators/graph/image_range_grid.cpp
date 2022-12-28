@@ -1,5 +1,5 @@
 #include "image_range_grid.h"
-#include "../../util/godot/image.h"
+#include "../../util/godot/classes/image.h"
 #include "../../util/string_funcs.h"
 #include "range_utility.h"
 

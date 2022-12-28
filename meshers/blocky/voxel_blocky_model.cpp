@@ -1,8 +1,8 @@
 #include "voxel_blocky_model.h"
-#include "../../util/godot/array.h"
-#include "../../util/godot/base_material_3d.h"
+#include "../../util/godot/classes/base_material_3d.h"
+#include "../../util/godot/classes/shader_material.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/shader_material.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"
@@ -460,7 +460,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 			FixedArray<float, 4> tangent;
 
 			if (tangents_empty && bake_tangents) {
-				//If tangents are empty then we calculate them
+				// If tangents are empty then we calculate them
 				const Vector2f delta_uv1 = to_vec2f(uvs[indices[i + 1]] - uvs[indices[i]]);
 				const Vector2f delta_uv2 = to_vec2f(uvs[indices[i + 2]] - uvs[indices[i]]);
 				const Vector3f delta_pos1 = tri_positions[1] - tri_positions[0];

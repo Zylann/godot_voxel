@@ -3,7 +3,7 @@
 #include "../storage/voxel_data.h"
 #include "../terrain/voxel_mesh_block.h"
 #include "../util/dstack.h"
-#include "../util/godot/mesh.h"
+#include "../util/godot/classes/mesh.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "render_detail_texture_task.h"

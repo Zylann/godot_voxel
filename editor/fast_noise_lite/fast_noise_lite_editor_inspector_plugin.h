@@ -1,7 +1,7 @@
 #ifndef ZN_FAST_NOISE_LITE_EDITOR_INSPECTOR_PLUGIN_H
 #define ZN_FAST_NOISE_LITE_EDITOR_INSPECTOR_PLUGIN_H
 
-#include "../../util/godot/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_inspector_plugin.h"
 #include "../../util/macros.h"
 #include "fast_noise_lite_viewer.h"
 

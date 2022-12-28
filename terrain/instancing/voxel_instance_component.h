@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_COMPONENT_H
 #define VOXEL_INSTANCE_COMPONENT_H
 
-#include "../../util/godot/node.h"
+#include "../../util/godot/classes/node.h"
 #include "voxel_instancer.h"
 
 namespace zylann::voxel {

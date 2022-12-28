@@ -6,8 +6,8 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
-#include "../util/godot/binder.h"
-#include "../util/godot/node_3d.h"
+#include "../util/godot/classes/node_3d.h"
+#include "../util/godot/core/binder.h"
 
 namespace zylann::voxel {
 

@@ -1,7 +1,7 @@
 #ifndef ZN_FAST_NOISE_LITE_EDITOR_PLUGIN_H
 #define ZN_FAST_NOISE_LITE_EDITOR_PLUGIN_H
 
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 
 namespace zylann {
 

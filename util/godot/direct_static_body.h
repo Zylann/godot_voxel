@@ -3,8 +3,8 @@
 
 #include "../macros.h"
 #include "../non_copyable.h"
+#include "classes/shape_3d.h"
 #include "direct_mesh_instance.h"
-#include "shape_3d.h"
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 

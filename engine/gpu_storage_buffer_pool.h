@@ -2,7 +2,7 @@
 #define VOXEL_GPU_STORAGE_BUFFER_H
 
 #include "../util/fixed_array.h"
-#include "../util/godot/rendering_device.h"
+#include "../util/godot/classes/rendering_device.h"
 #include <array>
 #include <vector>
 

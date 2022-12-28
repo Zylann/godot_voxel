@@ -1,5 +1,5 @@
 #include "vox_import_funcs.h"
-#include "../../util/godot/array_mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
 
 namespace zylann {
 
@@ -85,5 +85,5 @@ Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, VoxelMesher &mesher,
 	return mesh;
 }
 
-} //namespace voxel::magica
+} // namespace voxel::magica
 } // namespace zylann

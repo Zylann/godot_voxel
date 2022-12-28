@@ -1,6 +1,6 @@
 #include "voxel_stream.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/godot/string.h"
+#include "../util/godot/core/string.h"
 #include "../util/string_funcs.h"
 
 using namespace zylann::voxel;

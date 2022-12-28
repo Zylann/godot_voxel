@@ -1,8 +1,7 @@
 #include "voxel_generator_noise.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/fast_noise_lite.h"
-#include "../../util/godot/noise.h"
+#include "../../util/godot/classes/fast_noise_lite.h"
+#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 
@@ -174,7 +173,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 		const float iso_scale = 0.1f;
 		const Vector3i size = buffer.get_size();
 		const float height_range_inv = 1.f / params.height_range;
-		//const float one_minus_persistence = 1.f - noise.get_persistence();
+		// const float one_minus_persistence = 1.f - noise.get_persistence();
 
 		for (int z = 0; z < size.z; ++z) {
 			int lz = origin_in_voxels.z + (z << lod);
@@ -213,7 +212,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 					const float bias = 2.0 * t - 1.0;
 
 					// We are near the isosurface, need to calculate noise value
-					//float n = get_shaped_noise(noise, lx, ly, lz, one_minus_persistence, bias);
+					// float n = get_shaped_noise(noise, lx, ly, lz, one_minus_persistence, bias);
 					const float n = noise.get_noise_3d(lx, ly, lz);
 					const float d = (n + bias) * iso_scale;
 

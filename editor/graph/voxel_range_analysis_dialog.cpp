@@ -1,11 +1,11 @@
 #include "voxel_range_analysis_dialog.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/check_box.h"
+#include "../../util/godot/classes/check_box.h"
+#include "../../util/godot/classes/grid_container.h"
+#include "../../util/godot/classes/label.h"
+#include "../../util/godot/classes/spin_box.h"
+#include "../../util/godot/classes/v_box_container.h"
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/grid_container.h"
-#include "../../util/godot/label.h"
-#include "../../util/godot/spin_box.h"
-#include "../../util/godot/v_box_container.h"
 
 namespace zylann::voxel {
 
@@ -14,7 +14,7 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	set_min_size(EDSCALE * Vector2(300, 280));
 
 	VBoxContainer *vb = memnew(VBoxContainer);
-	//vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
+	// vb->set_anchors_preset(Control::PRESET_TOP_WIDE);
 
 	_enabled_checkbox = memnew(CheckBox);
 	_enabled_checkbox->set_text(ZN_TTR("Enabled"));
@@ -28,7 +28,7 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 	tip->set_text(ZN_TTR("When enabled, hover node output labels to\ninspect their "
 						 "estimated range within the\nconfigured area.\n"
 						 "Nodes that may be optimized out locally will be greyed out."));
-	//tip->set_autowrap(true);
+	// tip->set_autowrap(true);
 	tip->set_modulate(Color(1.f, 1.f, 1.f, 0.8f));
 	vb->add_child(tip);
 

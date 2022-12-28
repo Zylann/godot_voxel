@@ -1,6 +1,6 @@
 #include "voxel_mesher_dmc.h"
 #include "../../constants/cube_tables.h"
-#include "../../util/godot/time.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/math/conv.h"
 #include "marching_cubes_tables.h"
 #include "mesh_builder.h"
@@ -1336,7 +1336,7 @@ void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min,
 	}
 }
 
-} //namespace zylann::voxel::dmc
+} // namespace zylann::voxel::dmc
 
 namespace zylann::voxel {
 

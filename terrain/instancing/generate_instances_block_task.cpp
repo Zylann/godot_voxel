@@ -1,5 +1,5 @@
 #include "generate_instances_block_task.h"
-#include "../../util/godot/array_mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {
@@ -35,4 +35,4 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext ctx) {
 	}
 }
 
-} //namespace zylann::voxel
+} // namespace zylann::voxel

@@ -1,6 +1,6 @@
 #include "fast_noise_lite.h"
-#include "../../godot/array.h"
-#include "../../godot/callable.h"
+#include "../../godot/core/array.h"
+#include "../../godot/core/callable.h"
 #include "../../math/funcs.h"
 #include "../../string_funcs.h"
 

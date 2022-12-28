@@ -1,13 +1,13 @@
 #include "voxel_mesh_sdf_viewer.h"
-#include "../../util/godot/array.h"
-#include "../../util/godot/button.h"
-#include "../../util/godot/callable.h"
+#include "../../util/godot/classes/button.h"
+#include "../../util/godot/classes/image_texture.h"
+#include "../../util/godot/classes/label.h"
+#include "../../util/godot/classes/scene_tree.h"
+#include "../../util/godot/classes/spin_box.h"
+#include "../../util/godot/classes/texture_rect.h"
+#include "../../util/godot/core/array.h"
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/image_texture.h"
-#include "../../util/godot/label.h"
-#include "../../util/godot/scene_tree.h"
-#include "../../util/godot/spin_box.h"
-#include "../../util/godot/texture_rect.h"
 
 namespace zylann::voxel {
 

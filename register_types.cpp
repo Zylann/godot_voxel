@@ -57,9 +57,9 @@
 #include "util/noise/fast_noise_2.h"
 #endif
 
-#include "util/godot/class_db.h"
-#include "util/godot/engine.h"
-#include "util/godot/project_settings.h"
+#include "util/godot/classes/engine.h"
+#include "util/godot/classes/project_settings.h"
+#include "util/godot/core/class_db.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef TOOLS_ENABLED

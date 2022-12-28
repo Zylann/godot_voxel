@@ -1,6 +1,6 @@
 #include "editor_property_text_change_on_submit.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/line_edit.h"
+#include "../../util/godot/classes/line_edit.h"
+#include "../../util/godot/core/callable.h"
 
 namespace zylann {
 

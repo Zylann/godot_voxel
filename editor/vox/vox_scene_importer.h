@@ -1,7 +1,7 @@
 #ifndef VOX_IMPORTER_H
 #define VOX_IMPORTER_H
 
-#include "../../util/godot/editor_import_plugin.h"
+#include "../../util/godot/classes/editor_import_plugin.h"
 
 namespace zylann::voxel::magica {
 

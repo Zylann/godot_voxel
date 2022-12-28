@@ -3,9 +3,9 @@
 
 #include "../../constants/cube_tables.h"
 #include "../../util/fixed_array.h"
-#include "../../util/godot/binder.h"
-#include "../../util/godot/material.h"
-#include "../../util/godot/mesh.h"
+#include "../../util/godot/classes/material.h"
+#include "../../util/godot/classes/mesh.h"
+#include "../../util/godot/core/binder.h"
 #include "../../util/macros.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"

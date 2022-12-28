@@ -1,7 +1,7 @@
 #include "voxel_mesh_block_vlt.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/array_mesh.h"
-#include "../../util/godot/mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
+#include "../../util/godot/classes/mesh.h"
 #include "../../util/profiling.h"
 #include "../free_mesh_task.h"
 
@@ -157,7 +157,7 @@ void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 	}
 }
 
-//void VoxelMeshBlock::set_transition_bit(uint8_t side, bool value) {
+// void VoxelMeshBlock::set_transition_bit(uint8_t side, bool value) {
 //	CRASH_COND(side >= Cube::SIDE_COUNT);
 //	uint32_t m = _transition_mask;
 //	if (value) {
@@ -166,7 +166,7 @@ void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 //		m &= ~(1 << side);
 //	}
 //	set_transition_mask(m);
-//}
+// }
 
 void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
 	CRASH_COND(m >= (1 << Cube::SIDE_COUNT));

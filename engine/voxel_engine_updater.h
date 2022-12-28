@@ -1,7 +1,7 @@
 #ifndef VOXEL_SERVER_UPDATER_H
 #define VOXEL_SERVER_UPDATER_H
 
-#include "../util/godot/node.h"
+#include "../util/godot/classes/node.h"
 
 namespace zylann::voxel {
 

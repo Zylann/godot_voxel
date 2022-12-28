@@ -1,7 +1,7 @@
 #include "shader_material_pool.h"
 #include "../errors.h"
 #include "../profiling.h"
-#include "rendering_server.h"
+#include "classes/rendering_server.h"
 
 namespace zylann {
 

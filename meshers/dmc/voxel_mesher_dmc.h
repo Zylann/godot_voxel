@@ -1,8 +1,8 @@
 #ifndef VOXEL_MESHER_DMC_H
 #define VOXEL_MESHER_DMC_H
 
-#include "../../util/godot/binder.h"
-#include "../../util/godot/mesh.h"
+#include "../../util/godot/classes/mesh.h"
+#include "../../util/godot/core/binder.h"
 #include "../../util/object_pool.h"
 #include "../voxel_mesher.h"
 #include "hermite_value.h"

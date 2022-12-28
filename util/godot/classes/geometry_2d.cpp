@@ -1,6 +1,6 @@
 #include "geometry_2d.h"
-#include "../math/conv.h"
-#include "../profiling.h"
+#include "../../math/conv.h"
+#include "../../profiling.h"
 
 namespace zylann {
 

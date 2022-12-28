@@ -1,16 +1,16 @@
 #include "about_window.h"
-#include "../util/godot/array.h"
-#include "../util/godot/button.h"
-#include "../util/godot/callable.h"
+#include "../util/godot/classes/button.h"
+#include "../util/godot/classes/h_box_container.h"
+#include "../util/godot/classes/h_split_container.h"
+#include "../util/godot/classes/item_list.h"
+#include "../util/godot/classes/os.h"
+#include "../util/godot/classes/rich_text_label.h"
+#include "../util/godot/classes/tab_container.h"
+#include "../util/godot/classes/texture_rect.h"
+#include "../util/godot/classes/v_box_container.h"
+#include "../util/godot/core/array.h"
+#include "../util/godot/core/callable.h"
 #include "../util/godot/editor_scale.h"
-#include "../util/godot/h_box_container.h"
-#include "../util/godot/h_split_container.h"
-#include "../util/godot/item_list.h"
-#include "../util/godot/os.h"
-#include "../util/godot/rich_text_label.h"
-#include "../util/godot/tab_container.h"
-#include "../util/godot/texture_rect.h"
-#include "../util/godot/v_box_container.h"
 #include "../util/macros.h"
 
 namespace zylann::voxel {
@@ -154,7 +154,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter
 
 	set_title(ZN_TTR("About Voxel Tools"));
-	//set_resizable(true); // TODO How to set if a Window is resizable or not?
+	// set_resizable(true); // TODO How to set if a Window is resizable or not?
 	set_min_size(Vector2(600, 300) * EDSCALE);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);
@@ -171,7 +171,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 
 	TextureRect *texture_rect = memnew(TextureRect);
 	// TODO Can't access ANY icon from here because they all return the default empty icon at this stage...
-	//texture_rect->set_texture(get_icon("VoxelTerrainLarge", "EditorIcons"));
+	// texture_rect->set_texture(get_icon("VoxelTerrainLarge", "EditorIcons"));
 	texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_CENTERED);
 	_icon_texture_rect = texture_rect;
 	h_box_container->add_child(texture_rect);

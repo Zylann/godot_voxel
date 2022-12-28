@@ -1,10 +1,10 @@
 #include "voxel_graph_function.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/container_funcs.h"
-#include "../../util/godot/array.h" // for `varray` in GDExtension builds
-#include "../../util/godot/callable.h"
+#include "../../util/godot/classes/object.h"
+#include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/object.h"
 #include "../../util/string_funcs.h"
 #include "node_type_db.h"
 

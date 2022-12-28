@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCER_STAT_VIEW_H
 #define VOXEL_INSTANCER_STAT_VIEW_H
 
-#include "../../util/godot/v_box_container.h"
+#include "../../util/godot/classes/v_box_container.h"
 #include "../../util/macros.h"
 #include <unordered_map>
 

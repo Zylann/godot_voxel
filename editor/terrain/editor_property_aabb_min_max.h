@@ -2,8 +2,8 @@
 #define ZYLANN_EDITOR_PROPERTY_AABB_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/godot/editor_property.h"
-#include "../../util/godot/editor_spin_slider.h"
+#include "../../util/godot/classes/editor_property.h"
+#include "../../util/godot/classes/editor_spin_slider.h"
 #include "../../util/macros.h"
 
 namespace zylann {

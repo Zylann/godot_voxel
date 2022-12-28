@@ -1,7 +1,7 @@
 #ifndef HEADER_VOXEL_GENERATOR_IMAGE
 #define HEADER_VOXEL_GENERATOR_IMAGE
 
-#include "../../util/godot/image.h"
+#include "../../util/godot/classes/image.h"
 #include "voxel_generator_heightmap.h"
 
 namespace zylann::voxel {

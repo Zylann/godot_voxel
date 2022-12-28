@@ -1,7 +1,7 @@
 #include "voxel_terrain_editor_inspector_plugin.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
-#include "../../util/godot/object.h"
+#include "../../util/godot/classes/object.h"
 #include "editor_property_aabb_min_max.h"
 
 namespace zylann::voxel {

@@ -1,11 +1,11 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 
-#include "../../util/godot/material.h"
-#include "../../util/godot/mesh.h"
-#include "../../util/godot/packed_scene.h"
-#include "../../util/godot/rendering_server.h"
-#include "../../util/godot/shape_3d.h"
+#include "../../util/godot/classes/material.h"
+#include "../../util/godot/classes/mesh.h"
+#include "../../util/godot/classes/packed_scene.h"
+#include "../../util/godot/classes/rendering_server.h"
+#include "../../util/godot/classes/shape_3d.h"
 #include "../../util/span.h"
 #include "voxel_instance_library_item.h"
 

@@ -2,8 +2,8 @@
 #define VOXEL_GRAPH_EDITOR_H
 
 #include "../../generators/graph/voxel_generator_graph.h"
-#include "../../util/godot/control.h"
-#include "../../util/godot/editor_undo_redo_manager.h"
+#include "../../util/godot/classes/control.h"
+#include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/math/vector2f.h"
 #include "../voxel_debug.h"
 

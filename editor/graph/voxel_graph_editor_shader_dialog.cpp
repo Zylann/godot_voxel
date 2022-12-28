@@ -1,17 +1,17 @@
 #include "voxel_graph_editor_shader_dialog.h"
-#include "../../util/godot/button.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/code_edit.h"
-#include "../../util/godot/display_server.h"
+#include "../../util/godot/classes/button.h"
+#include "../../util/godot/classes/code_edit.h"
+#include "../../util/godot/classes/display_server.h"
+#include "../../util/godot/classes/h_box_container.h"
+#include "../../util/godot/classes/v_box_container.h"
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/h_box_container.h"
-#include "../../util/godot/v_box_container.h"
 
 namespace zylann::voxel {
 
 VoxelGraphEditorShaderDialog::VoxelGraphEditorShaderDialog() {
 	set_title(ZN_TTR("Generated shader"));
-	//set_resizable(true); // TODO How to set if a Window is resizable or not?
+	// set_resizable(true); // TODO How to set if a Window is resizable or not?
 	set_min_size(Vector2(600, 300) * EDSCALE);
 
 	VBoxContainer *v_box_container = memnew(VBoxContainer);

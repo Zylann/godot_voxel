@@ -2,7 +2,7 @@
 #define VOXEL_MESH_SDF_VIEWER_H
 
 #include "../../edition/voxel_mesh_sdf_gd.h"
-#include "../../util/godot/v_box_container.h"
+#include "../../util/godot/classes/v_box_container.h"
 
 ZN_GODOT_FORWARD_DECLARE(class TextureRect)
 ZN_GODOT_FORWARD_DECLARE(class Button)

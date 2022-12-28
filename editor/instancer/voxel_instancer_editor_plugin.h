@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCER_EDITOR_PLUGIN_H
 #define VOXEL_INSTANCER_EDITOR_PLUGIN_H
 
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)

@@ -1,7 +1,7 @@
 #ifndef VOXEL_RANGE_ANALYSIS_DIALOG_H
 #define VOXEL_RANGE_ANALYSIS_DIALOG_H
 
-#include "../../util/godot/accept_dialog.h"
+#include "../../util/godot/classes/accept_dialog.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class CheckBox)

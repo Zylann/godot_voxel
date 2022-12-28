@@ -63,24 +63,26 @@ def get_sources(env, is_editor_build):
         "util/tasks/*.cpp",
         "util/tasks/godot/*.cpp",
 
-        "util/godot/concave_polygon_shape_3d.cpp",
+        "util/godot/classes/concave_polygon_shape_3d.cpp",
+        "util/godot/classes/geometry_2d.cpp",
+        "util/godot/classes/mesh.cpp",
+        "util/godot/classes/multimesh.cpp",
+        "util/godot/classes/node.cpp",
+        "util/godot/classes/object.cpp",
+        "util/godot/classes/project_settings.cpp",
+        "util/godot/classes/rendering_device.cpp",
+        "util/godot/classes/rendering_server.cpp",
+        "util/godot/classes/resource_loader.cpp",
+        "util/godot/classes/shader.cpp",
+
+        "util/godot/core/string.cpp",
+        "util/godot/core/variant.cpp",
+
         "util/godot/direct_mesh_instance.cpp",
         "util/godot/direct_multimesh_instance.cpp",
         "util/godot/direct_static_body.cpp",
-        "util/godot/funcs.cpp",
-        "util/godot/geometry_2d.cpp",
-        "util/godot/mesh.cpp",
-        "util/godot/multimesh.cpp",
-        "util/godot/node.cpp",
-        "util/godot/object.cpp",
-        "util/godot/project_settings.cpp",
-        "util/godot/rendering_device.cpp",
-        "util/godot/rendering_server.cpp",
-        "util/godot/resource_loader.cpp",
         "util/godot/shader_material_pool.cpp",
-        "util/godot/shader.cpp",
-        "util/godot/string.cpp",
-        "util/godot/variant.cpp",
+        "util/godot/funcs.cpp",
 
         # Thirdparty
 
@@ -100,10 +102,10 @@ def get_sources(env, is_editor_build):
             "editor/mesh_sdf/*.cpp",
             "editor/graph/*.cpp",
 
-            "util/godot/editor_import_plugin.cpp",
-            "util/godot/editor_inspector_plugin.cpp",
-            "util/godot/editor_property.cpp",
-            "util/godot/graph_edit.cpp", # Not editor-only, but only used in editor for now
+            "util/godot/classes/editor_import_plugin.cpp",
+            "util/godot/classes/editor_inspector_plugin.cpp",
+            "util/godot/classes/editor_property.cpp",
+            "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
         ]
 
     def process_glob_paths(p_sources):

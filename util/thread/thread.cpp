@@ -1,5 +1,5 @@
 #include "thread.h"
-#include "../godot/os.h"
+#include "../godot/classes/os.h"
 #include "../memory.h"
 
 #if defined(ZN_GODOT)
@@ -7,7 +7,7 @@
 #elif defined(ZN_GODOT_EXTENSION)
 #include "godot_thread_helper.h"
 #include <godot_cpp/classes/thread.hpp>
-//using namespace godot;
+// using namespace godot;
 #endif
 
 #include <thread>

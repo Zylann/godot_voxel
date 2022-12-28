@@ -2,7 +2,7 @@
 #define VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/godot/h_box_container.h"
+#include "../../util/godot/classes/h_box_container.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Label)

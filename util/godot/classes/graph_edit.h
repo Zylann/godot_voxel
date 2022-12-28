@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "string_name.h"
+#include "../core/string_name.h"
 #include <vector>
 
 namespace zylann {
@@ -18,7 +18,7 @@ struct GodotGraphEditConnection {
 	StringName to;
 	int from_port = 0;
 	int to_port = 0;
-	//float activity = 0.0;
+	// float activity = 0.0;
 };
 
 void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEditConnection> &out_connections);

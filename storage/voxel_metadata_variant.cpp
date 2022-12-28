@@ -1,5 +1,4 @@
 #include "voxel_metadata_variant.h"
-#include "../util/godot/variant.h"
 
 namespace zylann::voxel::gd {
 

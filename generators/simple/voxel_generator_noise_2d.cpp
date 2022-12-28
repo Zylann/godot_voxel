@@ -1,8 +1,8 @@
 #include "voxel_generator_noise_2d.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/curve.h"
-#include "../../util/godot/fast_noise_lite.h"
+#include "../../util/godot/classes/curve.h"
+#include "../../util/godot/classes/fast_noise_lite.h"
+#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 

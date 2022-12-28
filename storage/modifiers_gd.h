@@ -2,7 +2,7 @@
 #define VOXEL_MODIFIERS_GD_H
 
 #include "../edition/voxel_mesh_sdf_gd.h"
-#include "../util/godot/node_3d.h"
+#include "../util/godot/classes/node_3d.h"
 
 namespace zylann::voxel {
 

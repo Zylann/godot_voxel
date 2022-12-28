@@ -2,7 +2,7 @@
 #define VOXEL_GENERATOR_NOISE_H
 
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../util/godot/noise.h"
+#include "../../util/godot/classes/noise.h"
 #include "../voxel_generator.h"
 
 namespace zylann::voxel {

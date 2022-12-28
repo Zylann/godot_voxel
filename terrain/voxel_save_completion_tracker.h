@@ -1,7 +1,7 @@
 #ifndef VOXEL_SAVE_COMPLETION_TRACKER_H
 #define VOXEL_SAVE_COMPLETION_TRACKER_H
 
-#include "../util/godot/ref_counted.h"
+#include "../util/godot/classes/ref_counted.h"
 #include "../util/tasks/async_dependency_tracker.h"
 #include <memory>
 

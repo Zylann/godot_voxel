@@ -1,8 +1,8 @@
 #include "direct_static_body.h"
 #include "../profiling.h"
-#include "array_mesh.h"
-#include "physics_server_3d.h"
-#include "world_3d.h"
+#include "classes/array_mesh.h"
+#include "classes/physics_server_3d.h"
+#include "classes/world_3d.h"
 
 namespace zylann {
 

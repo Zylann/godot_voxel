@@ -1,10 +1,10 @@
 #include "fast_noise_lite_viewer.h"
-#include "../../util/godot/callable.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/image_texture.h"
+#include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/texture_rect.h"
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/image.h"
-#include "../../util/godot/image_texture.h"
-#include "../../util/godot/node.h"
-#include "../../util/godot/texture_rect.h"
 
 namespace zylann {
 

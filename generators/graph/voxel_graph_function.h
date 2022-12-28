@@ -1,8 +1,8 @@
 #ifndef VOXEL_GRAPH_FUNCTION_H
 #define VOXEL_GRAPH_FUNCTION_H
 
-#include "../../util/godot/binder.h"
-#include "../../util/godot/resource.h"
+#include "../../util/godot/classes/resource.h"
+#include "../../util/godot/core/binder.h"
 #include "program_graph.h"
 
 namespace zylann::voxel::pg {

@@ -2,7 +2,7 @@
 #define VOXEL_GRAPH_NODE_INSPECTOR_WRAPPER_H
 
 #include "../../generators/graph/voxel_generator_graph.h"
-#include "../../util/godot/ref_counted.h"
+#include "../../util/godot/classes/ref_counted.h"
 
 namespace zylann::voxel {
 

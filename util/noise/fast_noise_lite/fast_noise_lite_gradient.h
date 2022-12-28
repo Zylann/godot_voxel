@@ -2,8 +2,8 @@
 #define ZYLANN_FAST_NOISE_LITE_GRADIENT_H
 
 #include "../../../thirdparty/fast_noise/FastNoiseLite.h"
-#include "../../godot/binder.h"
-#include "../../godot/resource.h"
+#include "../../godot/classes/resource.h"
+#include "../../godot/core/binder.h"
 
 namespace zylann {
 

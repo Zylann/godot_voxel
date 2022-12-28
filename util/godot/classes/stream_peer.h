@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "funcs.h"
+#include "../funcs.h"
 
 namespace zylann {
 

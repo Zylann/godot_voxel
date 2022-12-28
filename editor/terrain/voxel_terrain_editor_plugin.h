@@ -2,12 +2,12 @@
 #define VOXEL_TERRAIN_EDITOR_PLUGIN_H
 
 #include "../../engine/ids.h"
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 #include "voxel_terrain_editor_inspector_plugin.h"
 
 // When compiling with GodotCpp, it isn't possible to forward-declare these, due to how virtual methods are implemented.
-#include "../../util/godot/camera_3d.h"
-#include "../../util/godot/input_event.h"
+#include "../../util/godot/classes/camera_3d.h"
+#include "../../util/godot/classes/input_event.h"
 
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)
 

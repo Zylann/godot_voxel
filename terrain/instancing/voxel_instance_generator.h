@@ -2,8 +2,8 @@
 #define VOXEL_INSTANCE_GENERATOR_H
 
 //#include "../../storage/voxel_buffer.h"
-#include "../../util/godot/binder.h"
-#include "../../util/godot/noise.h"
+#include "../../util/godot/classes/noise.h"
+#include "../../util/godot/core/binder.h"
 #include "../../util/math/transform3f.h"
 #include "../../util/math/vector3i.h"
 

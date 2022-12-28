@@ -1,7 +1,7 @@
 #ifndef VOXEL_BOX_MOVER_H
 #define VOXEL_BOX_MOVER_H
 
-#include "../../util/godot/ref_counted.h"
+#include "../../util/godot/classes/ref_counted.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Node);

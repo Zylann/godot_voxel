@@ -1,7 +1,7 @@
 #ifndef VOXEL_GRAPH_EDITOR_INSPECTOR_PLUGIN_H
 #define VOXEL_GRAPH_EDITOR_INSPECTOR_PLUGIN_H
 
-#include "../../util/godot/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_inspector_plugin.h"
 
 namespace zylann::voxel {
 

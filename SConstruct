@@ -59,8 +59,8 @@ sources += [
 	"util/thread/godot_thread_helper.cpp",
 
 	# GodotCpp doesn't come with RandomPCG
-	"util/godot/pcg.cpp",
-	"util/godot/random_pcg.cpp"
+	"util/godot/core/pcg.cpp",
+	"util/godot/core/random_pcg.cpp"
 ]
 
 if is_editor_build:

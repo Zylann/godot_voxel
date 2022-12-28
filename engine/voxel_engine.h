@@ -16,7 +16,7 @@
 #include "ids.h"
 #include "priority_dependency.h"
 
-#include "../util/godot/rendering_device.h"
+#include "../util/godot/classes/rendering_device.h"
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 #ifdef ZN_GODOT_EXTENSION

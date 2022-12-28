@@ -1,8 +1,8 @@
 #ifndef VOXEL_COMPUTE_SHADER_RESOURCE_H
 #define VOXEL_COMPUTE_SHADER_RESOURCE_H
 
-#include "../util/godot/packed_byte_array.h"
-#include "../util/godot/rid.h"
+#include "../util/godot/core/packed_byte_array.h"
+#include "../util/godot/core/rid.h"
 #include "../util/macros.h"
 #include "../util/math/transform_3d.h"
 #include "../util/math/vector3i.h"

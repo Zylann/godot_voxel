@@ -1,9 +1,9 @@
 #include "program_graph.h"
 #include "../../util/container_funcs.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/resource.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/resource.h"
-#include "../../util/godot/string.h"
 #include "../../util/memory.h"
 #include "../../util/string_funcs.h"
 
@@ -428,8 +428,8 @@ uint32_t ProgramGraph::find_node_by_type(uint32_t type_id) const {
 	return NULL_ID;
 }
 
-//void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id)
-//const { 	const Node *node = get_node(node_id); 	ERR_FAIL_COND(node == nullptr);
+// void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id)
+// const { 	const Node *node = get_node(node_id); 	ERR_FAIL_COND(node == nullptr);
 
 //	for (size_t i = 0; i < node->outputs.size(); ++i) {
 //		const Port &port = node->outputs[i];

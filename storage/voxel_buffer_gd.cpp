@@ -1,7 +1,7 @@
 #include "voxel_buffer_gd.h"
 #include "../edition/voxel_tool_buffer.h"
 #include "../util/dstack.h"
-#include "../util/godot/image.h"
+#include "../util/godot/classes/image.h"
 #include "../util/math/color.h"
 #include "../util/memory.h"
 #include "voxel_metadata_variant.h"

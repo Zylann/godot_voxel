@@ -2,7 +2,7 @@
 #define VOXEL_BLOCKY_LIBRARY_H
 
 #include "../../util/dynamic_bitset.h"
-#include "../../util/godot/ref_counted.h"
+#include "../../util/godot/classes/ref_counted.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
 

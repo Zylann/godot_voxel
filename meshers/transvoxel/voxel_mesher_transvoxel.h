@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_TRANSVOXEL_H
 #define VOXEL_MESHER_TRANSVOXEL_H
 
-#include "../../util/godot/binder.h"
+#include "../../util/godot/core/binder.h"
 #include "../../util/macros.h"
 #include "../voxel_mesher.h"
 #include "transvoxel.h"

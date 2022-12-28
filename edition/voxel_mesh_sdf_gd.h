@@ -3,8 +3,8 @@
 
 #include "../engine/compute_shader_resource.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/godot/mesh.h"
-#include "../util/godot/resource.h"
+#include "../util/godot/classes/mesh.h"
+#include "../util/godot/classes/resource.h"
 #include "../util/math/vector3f.h"
 #include "../util/thread/mutex.h"
 

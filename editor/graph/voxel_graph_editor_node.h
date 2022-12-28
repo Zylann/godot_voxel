@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "../../generators/graph/voxel_graph_runtime.h"
-#include "../../util/godot/graph_node.h"
+#include "../../util/godot/classes/graph_node.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ColorRect)
 ZN_GODOT_FORWARD_DECLARE(class Label)

@@ -4,9 +4,9 @@
 #include "../constants/cube_tables.h"
 #include "../meshers/voxel_mesher.h"
 #include "../util/fixed_array.h"
+#include "../util/godot/classes/world_3d.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
-#include "../util/godot/world_3d.h"
 #include "../util/ref_count.h"
 #include "../util/span.h"
 

@@ -1,7 +1,7 @@
 #include "voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "../../terrain/instancing/voxel_instance_library_multimesh_item.h"
-#include "../../util/godot/button.h"
-#include "../../util/godot/label.h"
+#include "../../util/godot/classes/button.h"
+#include "../../util/godot/classes/label.h"
 #include "voxel_instance_library_editor_plugin.h"
 #include "voxel_instance_library_multimesh_item_editor_plugin.h"
 

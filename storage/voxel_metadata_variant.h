@@ -1,7 +1,7 @@
 #ifndef VOXEL_METADATA_VARIANT_H
 #define VOXEL_METADATA_VARIANT_H
 
-#include "../util/godot/variant.h"
+#include "../util/godot/core/variant.h"
 #include "voxel_metadata.h"
 
 namespace zylann::voxel::gd {

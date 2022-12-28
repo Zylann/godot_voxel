@@ -1,7 +1,7 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/errors.h"
-#include "../../util/godot/array.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/log.h"
 #include "../../util/math/conv.h"
@@ -388,7 +388,7 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 		rc = sqlite3_step(get_block_statement);
 		if (rc == SQLITE_ROW) {
 			const void *blob = sqlite3_column_blob(get_block_statement, 0);
-			//const uint8_t *b = reinterpret_cast<const uint8_t *>(blob);
+			// const uint8_t *b = reinterpret_cast<const uint8_t *>(blob);
 			const size_t blob_size = sqlite3_column_bytes(get_block_statement, 0);
 			if (blob_size != 0) {
 				result = VoxelStream::RESULT_BLOCK_FOUND;
@@ -795,7 +795,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	ZN_PROFILE_SCOPE();
 
 	// TODO Get block size from database
-	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	// const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// Check the cache first
 	std::vector<unsigned int> blocks_to_load;
@@ -862,7 +862,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
 	// TODO Get block size from database
-	//const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	// const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// First put in cache
 	for (size_t i = 0; i < p_blocks.size(); ++i) {

@@ -1,10 +1,10 @@
 #include "voxel_instance_library_inspector_plugin.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/button.h"
-#include "../../util/godot/callable.h"
-#include "../../util/godot/h_box_container.h"
-#include "../../util/godot/menu_button.h"
-#include "../../util/godot/popup_menu.h"
+#include "../../util/godot/classes/button.h"
+#include "../../util/godot/classes/h_box_container.h"
+#include "../../util/godot/classes/menu_button.h"
+#include "../../util/godot/classes/popup_menu.h"
+#include "../../util/godot/core/callable.h"
 #include "voxel_instance_library_editor_plugin.h"
 
 namespace zylann::voxel {

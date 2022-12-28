@@ -2,6 +2,7 @@
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_memory_pool.h"
 #include "../util/dstack.h"
+#include "../util/godot/classes/file.h"
 #include "../util/macros.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
@@ -217,7 +218,7 @@ bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBufferInternal &buffer
 		ZN_ASSERT_CONTINUE_MSG(buffer.is_position_valid(pos),
 				format("Invalid voxel metadata position {} for buffer of size {}", pos, buffer.get_size()));
 
-		//VoxelMetadata &vmeta = buffer.get_or_create_voxel_metadata(pos);
+		// VoxelMetadata &vmeta = buffer.get_or_create_voxel_metadata(pos);
 		tls_pairs.resize(tls_pairs.size() + 1);
 		Pair &p = tls_pairs.back();
 		p.key = pos;

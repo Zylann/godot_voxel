@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "../span.h"
+#include "../../span.h"
 
 namespace zylann {
 

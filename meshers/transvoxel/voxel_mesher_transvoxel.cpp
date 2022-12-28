@@ -4,11 +4,11 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
-#include "../../util/godot/array_mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
+#include "../../util/godot/classes/rendering_server.h"
+#include "../../util/godot/classes/shader.h"
+#include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/rendering_server.h"
-#include "../../util/godot/shader.h"
-#include "../../util/godot/shader_material.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_shader_minimal.h"
@@ -18,7 +18,7 @@ namespace zylann::voxel {
 
 namespace {
 Ref<ShaderMaterial> g_minimal_shader_material;
-} //namespace
+} // namespace
 
 namespace transvoxel {
 // Wrapping thread-locals in functions so they initialize the first time they are needed, instead of when the
@@ -34,7 +34,7 @@ std::vector<CellInfo> &get_tls_cell_infos() {
 	thread_local std::vector<CellInfo> tls_cell_infos;
 	return tls_cell_infos;
 }
-} //namespace transvoxel
+} // namespace transvoxel
 
 const transvoxel::MeshArrays &VoxelMesherTransvoxel::get_mesh_cache_from_current_thread() {
 	return transvoxel::get_tls_mesh_arrays();
@@ -84,7 +84,7 @@ static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src
 
 	copy_to(vertices, src.vertices);
 
-	//raw_copy_to(lod_data, src.lod_data);
+	// raw_copy_to(lod_data, src.lod_data);
 	lod_data.resize(src.lod_data.size() * 4);
 	// Based on the layout, position is first 3 floats, and 4th float is actually a bitmask
 	static_assert(sizeof(transvoxel::LodAttrib) == 16);
@@ -99,7 +99,7 @@ static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	if (src.texturing_data.size() != 0) {
-		//raw_copy_to(texturing_data, src.texturing_data);
+		// raw_copy_to(texturing_data, src.texturing_data);
 		texturing_data.resize(src.texturing_data.size() * 2);
 		memcpy(texturing_data.ptrw(), src.texturing_data.data(), texturing_data.size() * sizeof(float));
 		arrays[Mesh::ARRAY_CUSTOM1] = texturing_data;

@@ -7,12 +7,12 @@
 #include "render_detail_texture_task.h"
 #include "voxel_engine.h"
 
-#include "../util/godot/rd_sampler_state.h"
-#include "../util/godot/rd_shader_spirv.h"
-#include "../util/godot/rd_texture_format.h"
-#include "../util/godot/rd_texture_view.h"
-#include "../util/godot/rd_uniform.h"
-#include "../util/godot/rendering_device.h"
+#include "../util/godot/classes/rd_sampler_state.h"
+#include "../util/godot/classes/rd_shader_spirv.h"
+#include "../util/godot/classes/rd_texture_format.h"
+#include "../util/godot/classes/rd_texture_view.h"
+#include "../util/godot/classes/rd_uniform.h"
+#include "../util/godot/classes/rendering_device.h"
 
 namespace zylann::voxel {
 

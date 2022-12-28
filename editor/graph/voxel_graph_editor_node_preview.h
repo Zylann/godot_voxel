@@ -2,10 +2,10 @@
 #define VOXEL_GRAPH_EDITOR_NODE_PREVIEW_H
 
 #include "../../generators/graph/voxel_graph_runtime.h"
-#include "../../util/godot/image.h"
-#include "../../util/godot/image_texture.h"
-#include "../../util/godot/shader_material.h"
-#include "../../util/godot/v_box_container.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/image_texture.h"
+#include "../../util/godot/classes/shader_material.h"
+#include "../../util/godot/classes/v_box_container.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class TextureRect)

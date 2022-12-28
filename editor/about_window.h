@@ -1,7 +1,7 @@
 #ifndef VOXEL_ABOUT_WINDOW_H
 #define VOXEL_ABOUT_WINDOW_H
 
-#include "../util/godot/accept_dialog.h"
+#include "../util/godot/classes/accept_dialog.h"
 #include "../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class TextureRect);

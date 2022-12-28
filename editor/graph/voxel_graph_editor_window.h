@@ -1,8 +1,8 @@
 #ifndef VOXEL_GRAPH_EDITOR_WINDOW_H
 #define VOXEL_GRAPH_EDITOR_WINDOW_H
 
-#include "../../util/godot/accept_dialog.h"
-#include "../../util/godot/button.h"
+#include "../../util/godot/classes/accept_dialog.h"
+#include "../../util/godot/classes/button.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {

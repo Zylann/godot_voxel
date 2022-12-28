@@ -2,15 +2,15 @@
 #include "../../engine/save_block_data_task.h"
 #include "../../util/container_funcs.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/array.h"
-#include "../../util/godot/camera_3d.h"
-#include "../../util/godot/collision_shape_3d.h"
-#include "../../util/godot/mesh_instance_3d.h"
-#include "../../util/godot/multimesh.h"
-#include "../../util/godot/node.h"
-#include "../../util/godot/ref_counted.h"
-#include "../../util/godot/resource_saver.h"
-#include "../../util/godot/viewport.h"
+#include "../../util/godot/classes/camera_3d.h"
+#include "../../util/godot/classes/collision_shape_3d.h"
+#include "../../util/godot/classes/mesh_instance_3d.h"
+#include "../../util/godot/classes/multimesh.h"
+#include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/ref_counted.h"
+#include "../../util/godot/classes/resource_saver.h"
+#include "../../util/godot/classes/viewport.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -20,8 +20,8 @@
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_rigidbody.h"
 
-// Only needed or debug purposes, otherwise RenderingServer is used directly
-#include "../../util/godot/multimesh_instance_3d.h"
+// Only needed for debug purposes, otherwise RenderingServer is used directly
+#include "../../util/godot/classes/multimesh_instance_3d.h"
 
 #include <algorithm>
 

@@ -3,8 +3,8 @@
 
 #include "../constants/cube_tables.h"
 #include "../util/fixed_array.h"
-#include "../util/godot/image.h"
-#include "../util/godot/mesh.h"
+#include "../util/godot/classes/image.h"
+#include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
 #include "../util/span.h"
 #include <vector>

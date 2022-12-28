@@ -1,6 +1,6 @@
 #include "mesh_builder.h"
+#include "../../util/godot/classes/mesh.h"
 #include "../../util/godot/funcs.h"
-#include "../../util/godot/mesh.h"
 
 namespace zylann::voxel::dmc {
 

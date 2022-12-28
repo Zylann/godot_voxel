@@ -1,8 +1,8 @@
 #include "modifiers_gd.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../util/errors.h"
-#include "../util/godot/callable.h"
-#include "../util/godot/node.h"
+#include "../util/godot/classes/node.h"
+#include "../util/godot/core/callable.h"
 #include "../util/math/conv.h"
 
 namespace zylann::voxel::gd {

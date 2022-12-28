@@ -5,8 +5,8 @@
 #include "../storage/voxel_data.h"
 #include "../storage/voxel_metadata_variant.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
-#include "../util/godot/array.h"
-#include "../util/godot/ref_counted.h"
+#include "../util/godot/classes/ref_counted.h"
+#include "../util/godot/core/array.h"
 #include "../util/math/conv.h"
 #include "../util/voxel_raycast.h"
 
@@ -279,7 +279,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 	const Box3i block_box = voxel_box.downscaled(block_size);
 
 	const int block_count = voxel_count / batch_count;
-	//const int bs_mask = map.get_block_size_mask();
+	// const int bs_mask = map.get_block_size_mask();
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_TYPE;
 
 	struct Pick {

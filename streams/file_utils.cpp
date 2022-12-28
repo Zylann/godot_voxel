@@ -1,6 +1,6 @@
 #include "file_utils.h"
 #include "../engine/voxel_engine.h"
-#include "../util/godot/directory.h"
+#include "../util/godot/classes/directory.h"
 
 namespace zylann {
 

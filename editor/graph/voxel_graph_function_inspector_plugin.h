@@ -2,7 +2,7 @@
 #define VOXEL_GRAPH_FUNCTION_INSPECTOR_PLUGIN_H
 
 #include "../../generators/graph/voxel_graph_function.h"
-#include "../../util/godot/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_inspector_plugin.h"
 
 namespace zylann::voxel {
 

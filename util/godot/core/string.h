@@ -18,7 +18,7 @@ using namespace godot;
 #include <vector>
 #endif
 
-#include "../span.h"
+#include "../../span.h"
 
 namespace zylann {
 

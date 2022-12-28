@@ -1,6 +1,6 @@
 #include "voxel_graph_runtime.h"
 #include "../../util/container_funcs.h"
-#include "../../util/godot/string.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/log.h"
 #include "../../util/macros.h"
 #include "../../util/profiling.h"

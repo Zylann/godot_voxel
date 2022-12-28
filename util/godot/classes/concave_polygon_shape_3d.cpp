@@ -1,6 +1,6 @@
 #include "concave_polygon_shape_3d.h"
-#include "../math/conv.h"
-#include "../profiling.h"
+#include "../../math/conv.h"
+#include "../../profiling.h"
 #include "collision_shape_3d.h"
 #include "mesh.h"
 
@@ -15,7 +15,7 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfac
 	PackedVector3Array face_points;
 	int face_points_size = 0;
 
-	//find the correct size for face_points
+	// find the correct size for face_points
 	for (unsigned int i = 0; i < surfaces.size(); i++) {
 		const Array &surface_arrays = surfaces[i];
 		if (surface_arrays.size() == 0) {

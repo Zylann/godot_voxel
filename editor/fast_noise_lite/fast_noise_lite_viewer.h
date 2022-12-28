@@ -1,7 +1,7 @@
 #ifndef ZN_FAST_NOISE_LITE_VIEWER_H
 #define ZN_FAST_NOISE_LITE_VIEWER_H
 
-#include "../../util/godot/control.h"
+#include "../../util/godot/classes/control.h"
 #include "../../util/macros.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 

@@ -2,7 +2,6 @@
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_data.h"
-#include "../../util/godot/ref_counted.h"
 #include "voxel_terrain.h"
 
 namespace zylann::voxel {
@@ -98,7 +97,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment
 		return motion;
 	}
 
-	//print("Colliding: ", colliding_boxes.size())
+	// print("Colliding: ", colliding_boxes.size())
 
 	Vector3 new_motion = motion;
 

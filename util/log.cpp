@@ -1,8 +1,8 @@
 #include "godot/funcs.h"
 #include "string_funcs.h"
 
-#include "godot/os.h"
-#include "godot/print_string.h"
+#include "godot/classes/os.h"
+#include "godot/core/print_string.h"
 
 namespace zylann {
 

@@ -1,7 +1,7 @@
 #ifndef ZN_PROGRAM_GRAPH_H
 #define ZN_PROGRAM_GRAPH_H
 
-#include "../../util/godot/variant.h"
+#include "../../util/godot/core/variant.h"
 #include "../../util/hash_funcs.h"
 #include "../../util/math/vector2.h"
 #include "../../util/non_copyable.h"
@@ -20,7 +20,7 @@ public:
 	static const uint32_t NULL_INDEX = -1;
 
 	// TODO Use typedef to make things explicit
-	//typedef uint32_t NodeID;
+	// typedef uint32_t NodeID;
 
 	struct PortLocation {
 		uint32_t node_id;
@@ -133,7 +133,7 @@ public:
 
 	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
 	void get_node_ids(std::vector<uint32_t> &node_ids) const;
-	//void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
+	// void get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id) const;
 
 	// Finds first node having the given name and returns its ID. Returns NULL_ID if not found.
 	uint32_t find_node_by_name(StringName name) const;

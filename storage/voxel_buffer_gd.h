@@ -1,8 +1,8 @@
 #ifndef VOXEL_BUFFER_GD_H
 #define VOXEL_BUFFER_GD_H
 
-#include "../util/godot/binder.h"
-#include "../util/godot/ref_counted.h"
+#include "../util/godot/classes/ref_counted.h"
+#include "../util/godot/core/binder.h"
 #include "../util/macros.h"
 #include "voxel_buffer_internal.h"
 #include <memory>
@@ -40,7 +40,7 @@ public:
 	enum Compression {
 		COMPRESSION_NONE = VoxelBufferInternal::COMPRESSION_NONE,
 		COMPRESSION_UNIFORM = VoxelBufferInternal::COMPRESSION_UNIFORM,
-		//COMPRESSION_RLE,
+		// COMPRESSION_RLE,
 		COMPRESSION_COUNT = VoxelBufferInternal::COMPRESSION_COUNT
 	};
 
@@ -86,7 +86,7 @@ public:
 		return _buffer;
 	}
 
-	//inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
+	// inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
 
 	Vector3i get_size() const {
 		return _buffer->get_size();

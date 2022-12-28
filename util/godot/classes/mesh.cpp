@@ -1,7 +1,7 @@
 #include <map>
 #include <unordered_map>
 
-#include "funcs.h"
+#include "../funcs.h"
 #include "mesh.h"
 
 namespace zylann {
@@ -74,8 +74,8 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 	std::unordered_map<int, int> src_index_to_dst_index;
 	std::vector<Vector3> dst_positions;
 	{
-		//const Vector3 *src_positions_read = src_positions.ptr();
-		//const Vector3 *src_normals_read = src_normals.ptr();
+		// const Vector3 *src_positions_read = src_positions.ptr();
+		// const Vector3 *src_normals_read = src_normals.ptr();
 		for (int i = 0; i < src_positions.size(); ++i) {
 			const Vector3 pos = src_positions[i];
 			auto dupe_it = vertex_to_dupe.find(pos);
@@ -95,7 +95,7 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 
 	std::vector<int32_t> dst_indices;
 	{
-		//PoolIntArray::Read r = src_indices.read();
+		// PoolIntArray::Read r = src_indices.read();
 		for (int i = 0; i < src_indices.size(); i += 3) {
 			const int vi0 = src_indices[i];
 			const int vi1 = src_indices[i + 1];

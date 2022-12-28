@@ -1,6 +1,6 @@
 #include "transvoxel.h"
 #include "../../constants/cube_tables.h"
-#include "../../util/godot/sort_array.h"
+#include "../../util/godot/core/sort_array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
@@ -112,7 +112,7 @@ inline Vector3f normalized_not_null(Vector3f n) {
 }
 
 inline Vector3i dir_to_prev_vec(uint8_t dir) {
-	//return g_corner_dirs[mask] - Vector3f(1,1,1);
+	// return g_corner_dirs[mask] - Vector3f(1,1,1);
 	return Vector3i(-(dir & 1), -((dir >> 1) & 1), -((dir >> 2) & 1));
 }
 
@@ -145,7 +145,7 @@ inline Vector3f get_corner_gradient(unsigned int data_index, Span<const Sdf_T> s
 	const float nz = sdf_as_float(sdf_data[data_index - n001]);
 	const float pz = sdf_as_float(sdf_data[data_index + n001]);
 
-	//get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
+	// get_gradient_normal(nx, px, ny, py, nz, pz, cell_samples[i]);
 	return Vector3f(nx - px, ny - py, nz - pz);
 }
 
@@ -162,7 +162,7 @@ void add_texture_data(
 	static_assert(sizeof(IntUV) == sizeof(Vector2f), "Expected same binary size");
 	uv.push_back(Vector2f());
 	IntUV &iuv = *(reinterpret_cast<IntUV *>(&uv.back()));
-	//print_line(String("{0}, {1}, {2}, {3}").format(varray(weights[0], weights[1], weights[2], weights[3])));
+	// print_line(String("{0}, {1}, {2}, {3}").format(varray(weights[0], weights[1], weights[2], weights[3])));
 	iuv.x = packed_indices;
 	iuv.y = pack_bytes(weights);
 }
@@ -193,7 +193,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 		indexed_weight_sums[i] = IndexAndWeight{ i, 0 };
 	}
 	for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
-		//ZN_PROFILE_SCOPE();
+		// ZN_PROFILE_SCOPE();
 
 		const unsigned int data_index = voxel_indices[ci];
 		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
@@ -232,7 +232,7 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 
 	// Remap weights to follow the indices we selected
 	for (unsigned int ci = 0; ci < cell_texture_weights_temp.size(); ++ci) {
-		//ZN_PROFILE_SCOPE();
+		// ZN_PROFILE_SCOPE();
 		const FixedArray<uint8_t, MAX_TEXTURES> &src_weights = cell_texture_weights_temp[ci];
 		FixedArray<uint8_t, 4> &dst_weights = cell_textures.weights[ci];
 
@@ -375,7 +375,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 					}
 				}
 
-				//ZN_PROFILE_SCOPE();
+				// ZN_PROFILE_SCOPE();
 
 				//    6-------7
 				//   /|      /|
@@ -496,7 +496,7 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 					// Get interpolation position
 					// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 					// positions  along  the  edge  when  both  endpoints  are included.
-					//const int t = (sample1 << 8) / (sample1 - sample0);
+					// const int t = (sample1 << 8) / (sample1 - sample0);
 					const float t = sample1 / (sample1 - sample0);
 
 					const Vector3i p0 = corner_positions[v0];
@@ -533,11 +533,11 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 						if (!present || cell_vertex_indices[vertex_index] == -1) {
 							// Create new vertex
 
-							const float t0 = t; //static_cast<float>(t) / 256.f;
-							const float t1 = 1.f - t; //static_cast<float>(0x100 - t) / 256.f;
-							//const int ti0 = t;
-							//const int ti1 = 0x100 - t;
-							//const Vector3i primary = p0 * ti0 + p1 * ti1;
+							const float t0 = t; // static_cast<float>(t) / 256.f;
+							const float t1 = 1.f - t; // static_cast<float>(0x100 - t) / 256.f;
+							// const int ti0 = t;
+							// const int ti1 = 0x100 - t;
+							// const Vector3i primary = p0 * ti0 + p1 * ti1;
 
 							Vector3f primaryf;
 							if (deep_sdf_sampler != nullptr) {
@@ -1036,11 +1036,11 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 				// Get interpolation position
 				// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 				// positions  along  the  edge  when  both  endpoints  are included.
-				//const int t = (sample_b << 8) / (sample_b - sample_a);
+				// const int t = (sample_b << 8) / (sample_b - sample_a);
 				const float t = sample_b / (sample_b - sample_a);
 
-				const float t0 = t; //static_cast<float>(t) / 256.f;
-				const float t1 = 1.f - t; //static_cast<float>(0x100 - t) / 256.f;
+				const float t0 = t; // static_cast<float>(t) / 256.f;
+				const float t1 = 1.f - t; // static_cast<float>(0x100 - t) / 256.f;
 				// const int ti0 = t;
 				// const int ti1 = 0x100 - t;
 
@@ -1084,7 +1084,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 						const Vector3f n0 = cell_gradients[index_vertex_a];
 						const Vector3f n1 = cell_gradients[index_vertex_b];
 
-						//Vector3i primary = p0 * ti0 + p1 * ti1;
+						// Vector3i primary = p0 * ti0 + p1 * ti1;
 						const Vector3f primaryf = to_vec3f(p0) * t0 + to_vec3f(p1) * t1;
 						const Vector3f normal = normalized_not_null(n0 * t0 + n1 * t1);
 

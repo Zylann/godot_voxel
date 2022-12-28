@@ -1,11 +1,11 @@
 #include "voxel_instancer_editor_plugin.h"
 #include "../../terrain/instancing/voxel_instancer.h"
-#include "../../util/godot/callable.h"
+#include "../../util/godot/classes/menu_button.h"
+#include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/object.h"
+#include "../../util/godot/classes/popup_menu.h"
+#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/menu_button.h"
-#include "../../util/godot/node.h"
-#include "../../util/godot/object.h"
-#include "../../util/godot/popup_menu.h"
 #include "voxel_instancer_stat_view.h"
 
 namespace zylann::voxel {

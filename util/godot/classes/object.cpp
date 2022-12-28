@@ -1,6 +1,6 @@
 #include "object.h"
-#include "../hash_funcs.h"
-#include "../profiling.h"
+#include "../../hash_funcs.h"
+#include "../../profiling.h"
 
 namespace zylann {
 
@@ -68,4 +68,4 @@ uint64_t get_deep_hash(const Object &obj, uint32_t property_usage, uint64_t hash
 
 #endif
 
-} //namespace zylann
+} // namespace zylann

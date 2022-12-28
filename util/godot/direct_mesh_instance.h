@@ -3,8 +3,8 @@
 
 #include "../macros.h"
 #include "../non_copyable.h"
-#include "mesh.h"
-#include "rendering_server.h"
+#include "classes/mesh.h"
+#include "classes/rendering_server.h"
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 

@@ -15,7 +15,7 @@
 #include "../streams/voxel_block_serializer_gd.h"
 #include "../util/container_funcs.h"
 #include "../util/flat_map.h"
-#include "../util/godot/box_shape_3d.h"
+#include "../util/godot/classes/box_shape_3d.h"
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"

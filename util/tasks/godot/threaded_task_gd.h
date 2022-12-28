@@ -1,7 +1,7 @@
 #ifndef ZN_THREADED_TASK_GD
 #define ZN_THREADED_TASK_GD
 
-#include "../../godot/ref_counted.h"
+#include "../../godot/classes/ref_counted.h"
 #include "../threaded_task.h"
 #ifdef ZN_GODOT
 #include <core/object/script_language.h> // needed for GDVIRTUAL macro

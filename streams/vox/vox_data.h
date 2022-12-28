@@ -2,7 +2,7 @@
 #define VOX_DATA_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/godot/string.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/math/basis.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"

@@ -2,7 +2,7 @@
 #define VOXEL_GRAPH_EDITOR_PLUGIN_H
 
 #include "../../generators/graph/voxel_graph_function.h"
-#include "../../util/godot/editor_plugin.h"
+#include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/macros.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 

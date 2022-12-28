@@ -2,7 +2,7 @@
 #define VOXEL_COLOR_PALETTE_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/godot/resource.h"
+#include "../../util/godot/classes/resource.h"
 #include "../../util/math/color8.h"
 
 namespace zylann::voxel {

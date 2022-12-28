@@ -1,8 +1,8 @@
 #include "gpu_storage_buffer_pool.h"
 #include "../util/dstack.h"
-#include "../util/godot/array.h" // for `varray` in GDExtension builds
-#include "../util/godot/print_string.h"
-#include "../util/godot/string.h" // for `+=` operator missing from String in GDExtension builds
+#include "../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../util/godot/core/print_string.h"
+#include "../util/godot/core/string.h" // for `+=` operator missing from String in GDExtension builds
 #include "../util/math/funcs.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"

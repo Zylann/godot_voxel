@@ -1,7 +1,7 @@
 #ifndef PROFILING_CLOCK_H
 #define PROFILING_CLOCK_H
 
-#include "godot/time.h"
+#include "godot/classes/time.h"
 
 namespace zylann {
 

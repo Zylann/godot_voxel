@@ -1,7 +1,7 @@
 #ifndef VOX_LOADER_H
 #define VOX_LOADER_H
 
-#include "../../util/godot/ref_counted.h"
+#include "../../util/godot/classes/ref_counted.h"
 
 namespace zylann::voxel {
 
