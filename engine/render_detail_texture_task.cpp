@@ -3,7 +3,7 @@
 #include "voxel_engine.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../constants/voxel_constants.h"
-#include "../storage/modifiers.h"
+#include "../modifiers/voxel_modifier_stack.h"
 #include "../storage/voxel_data.h"
 #include "../util/math/conv.h"
 #include "render_detail_texture_gpu_task.h"

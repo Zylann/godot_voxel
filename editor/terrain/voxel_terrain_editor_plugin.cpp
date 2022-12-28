@@ -1,7 +1,7 @@
 #include "voxel_terrain_editor_plugin.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../generators/voxel_generator.h"
-#include "../../storage/modifiers_gd.h"
+#include "../../modifiers/godot/voxel_modifier_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/camera_3d.h"

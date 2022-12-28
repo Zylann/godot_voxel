@@ -49,6 +49,7 @@ engine/        | Contains task management. Depends on meshers, streams, storage 
 generators/    | Procedural generators. They only depend on voxel storage and math.
 meshers/       | Only depends on voxel storage, math and some Godot graphics APIs.
 misc/          | Various scripts and configuration files, stored here to avoid cluttering the main folder.
+modifiers/     | Files related to the modifiers feature.
 shaders/       | Shaders used internally by the engine, both in text form and formatted C++ form.
 storage/       | Storage and memory data structures.
 streams/       | Files handling code. Only depends on filesystem and storage.

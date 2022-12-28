@@ -2,9 +2,9 @@
 #define VOXEL_DATA_H
 
 #include "../generators/voxel_generator.h"
+#include "../modifiers/voxel_modifier_stack.h"
 #include "../streams/voxel_stream.h"
 #include "../util/thread/mutex.h"
-#include "modifiers.h"
 #include "voxel_data_map.h"
 
 namespace zylann::voxel {

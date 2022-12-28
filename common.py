@@ -42,6 +42,9 @@ def get_sources(env, is_editor_build):
         "generators/graph/*.cpp",
         "generators/simple/*.cpp",
 
+        "modifiers/*.cpp",
+        "modifiers/godot/*.cpp",
+
         "terrain/*.cpp",
         "terrain/instancing/*.cpp",
         "terrain/fixed_lod/*.cpp",

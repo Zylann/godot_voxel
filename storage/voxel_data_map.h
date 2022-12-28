@@ -3,7 +3,6 @@
 
 #include "../util/fixed_array.h"
 #include "../util/profiling.h"
-#include "modifiers.h"
 #include "voxel_data_block.h"
 
 #include <unordered_map>
@@ -182,11 +181,11 @@ public:
 	}
 
 private:
-	//void set_block(Vector3i bpos, VoxelDataBlock *block);
+	// void set_block(Vector3i bpos, VoxelDataBlock *block);
 	VoxelDataBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 	VoxelDataBlock *create_default_block(Vector3i bpos);
 
-	//void set_block_size_pow2(unsigned int p);
+	// void set_block_size_pow2(unsigned int p);
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
@@ -202,7 +201,7 @@ private:
 	//
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.
-	//mutable VoxelDataBlock *_last_accessed_block = nullptr;
+	// mutable VoxelDataBlock *_last_accessed_block = nullptr;
 
 	unsigned int _lod_index = 0;
 };
