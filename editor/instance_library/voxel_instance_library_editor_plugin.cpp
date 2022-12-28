@@ -12,6 +12,7 @@
 #include "../../util/godot/classes/resource_loader.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/callable.h"
+#include "../../util/godot/core/string.h"
 
 namespace zylann::voxel {
 

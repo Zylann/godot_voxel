@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/callable.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {

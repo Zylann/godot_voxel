@@ -7,6 +7,7 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
 #include "../../util/godot/core/callable.h"
+#include "../../util/godot/core/string.h"
 #include "voxel_graph_editor_plugin.h"
 
 namespace zylann::voxel {

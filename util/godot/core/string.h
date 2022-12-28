@@ -53,17 +53,26 @@ inline Error parse_utf8(String &s, Span<const char> utf8) {
 
 } // namespace zylann
 
+// `TTR` means "tools translate", which is for editor-only localized messages.
+// Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor
+// code that can produce errors in this module, and we still want them to compile properly.
+// TODO GDX: `TTR` is missing from `GodotCpp`.
+#if defined(ZN_GODOT) && defined(TOOLS_ENABLED)
+#define ZN_TTR(msg) TTR(msg)
+#else
+#define ZN_TTR(msg) String(msg)
+#endif
+
+ZN_GODOT_NAMESPACE_BEGIN
+
 // Needed for `zylann::format()`.
 // I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
 // other overloads ambiguous...
 // std::stringstream &operator<<(std::stringstream &ss, const String &s);
-ZN_GODOT_NAMESPACE_BEGIN
-
 struct GodotStringWrapper {
 	GodotStringWrapper(const String &p_s) : s(p_s) {}
 	const String &s;
 };
-
 std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
 
 #ifdef ZN_GODOT_EXTENSION
