@@ -195,6 +195,10 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 		Array surface;
 		Ref<VoxelMeshSDF> obj_to_notify;
 
+		const char *get_debug_name() const override {
+			return "GenMeshSDFFirstPass";
+		}
+
 		void run(ThreadedTaskContext ctx) override {
 			ZN_DSTACK();
 			ZN_PROFILE_SCOPE();

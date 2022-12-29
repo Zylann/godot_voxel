@@ -78,6 +78,7 @@ public:
 	void wait_for_all_tasks();
 
 	State get_thread_debug_state(uint32_t i) const;
+	const char *get_thread_debug_task_name(unsigned int thread_index) const;
 	unsigned int get_debug_remaining_tasks() const;
 
 private:
@@ -96,6 +97,7 @@ private:
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
 		std::string name;
+		std::atomic<const char *> debug_running_task_name;
 
 		void wait_to_finish_and_reset() {
 			thread.wait_to_finish();

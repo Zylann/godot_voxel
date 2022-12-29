@@ -41,6 +41,10 @@ public:
 	VolumeID volume_id;
 	PriorityDependency priority_dependency;
 
+	const char *get_debug_name() const override {
+		return "RenderDetailTexture";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 	void apply_result() override;
 	TaskPriority get_priority() override;
@@ -68,6 +72,10 @@ public:
 	uint16_t atlas_height;
 	uint8_t lod_index;
 	uint8_t tile_size_pixels;
+
+	const char *get_debug_name() const override {
+		return "RenderDetailTexturePass2";
+	}
 
 	void run(ThreadedTaskContext ctx) override;
 	void apply_result() override;

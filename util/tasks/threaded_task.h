@@ -35,6 +35,12 @@ public:
 	virtual bool is_cancelled() {
 		return false;
 	}
+
+	// Gets the name of the task for debug purposes. The returned name's lifetime must span the execution of the engine
+	// (usually a string literal).
+	virtual const char *get_debug_name() const {
+		return "<unnamed>";
+	}
 };
 
 } // namespace zylann

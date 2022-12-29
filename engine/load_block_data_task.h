@@ -17,6 +17,10 @@ public:
 
 	~LoadBlockDataTask();
 
+	const char *get_debug_name() const override {
+		return "LoadBlockData";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;

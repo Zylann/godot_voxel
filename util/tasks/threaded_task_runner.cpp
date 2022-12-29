@@ -262,7 +262,9 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				if (!item.task->is_cancelled()) {
 					ThreadedTaskContext ctx;
 					ctx.thread_index = data.index;
+					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
+					data.debug_running_task_name = nullptr;
 				}
 			}
 
@@ -344,6 +346,10 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 
 ThreadedTaskRunner::State ThreadedTaskRunner::get_thread_debug_state(uint32_t i) const {
 	return _threads[i].debug_state;
+}
+
+const char *ThreadedTaskRunner::get_thread_debug_task_name(unsigned int thread_index) const {
+	return _threads[thread_index].debug_running_task_name;
 }
 
 unsigned int ThreadedTaskRunner::get_debug_remaining_tasks() const {

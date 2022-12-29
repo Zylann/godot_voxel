@@ -38,6 +38,10 @@ public:
 			_volume_id(p_volume_id),
 			_volume_transform(p_volume_transform) {}
 
+	const char *get_debug_name() const override {
+		return "VoxelLodTerrainUpdate";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 
 	// Functions also used outside of this task

@@ -10,6 +10,10 @@ namespace zylann::voxel {
 
 class LoadAllBlocksDataTask : public IThreadedTask {
 public:
+	const char *get_debug_name() const override {
+		return "LoadAllBlocksData";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;

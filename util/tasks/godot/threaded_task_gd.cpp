@@ -7,6 +7,10 @@ class ZN_ThreadedTaskInternal : public IThreadedTask {
 public:
 	Ref<ZN_ThreadedTask> ref;
 
+	const char *get_debug_name() const override {
+		return "ZN_ThreadedTaskInternal";
+	}
+
 	void run(ThreadedTaskContext ctx) override {
 		ref->run(ctx.thread_index);
 	}

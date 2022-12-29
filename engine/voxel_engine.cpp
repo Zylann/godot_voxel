@@ -353,6 +353,12 @@ static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
 	d.thread_count = pool.get_thread_count();
+
+	fill(d.active_task_names, (const char *)nullptr);
+	for (unsigned int i = 0; i < d.thread_count; ++i) {
+		d.active_task_names[i] = pool.get_thread_debug_task_name(i);
+	}
+
 	return d;
 }
 

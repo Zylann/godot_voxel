@@ -199,6 +199,7 @@ public:
 			unsigned int thread_count;
 			unsigned int active_threads;
 			unsigned int tasks;
+			FixedArray<const char *, ThreadedTaskRunner::MAX_THREADS> active_task_names;
 		};
 
 		ThreadPoolStats general;

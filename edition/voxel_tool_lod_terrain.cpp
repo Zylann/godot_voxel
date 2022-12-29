@@ -226,6 +226,10 @@ public:
 		_tracker = make_shared_instance<AsyncDependencyTracker>(1);
 	}
 
+	const char *get_debug_name() const override {
+		return "VoxelToolAsyncEdit";
+	}
+
 	void run(ThreadedTaskContext ctx) override {
 		ZN_PROFILE_SCOPE();
 		ZN_ASSERT(_data != nullptr);

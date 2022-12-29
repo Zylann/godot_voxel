@@ -71,6 +71,18 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats::ThreadPoolStats &sta
 	d["tasks"] = stats.tasks;
 	d["active_threads"] = stats.active_threads;
 	d["thread_count"] = stats.thread_count;
+
+	Array task_names;
+	task_names.resize(stats.thread_count);
+	for (unsigned int i = 0; i < stats.active_task_names.size(); ++i) {
+		const char *name = stats.active_task_names[i];
+		if (name != nullptr) {
+			task_names[i] = name;
+		}
+	}
+
+	d["task_names"] = task_names;
+
 	return d;
 }
 
@@ -98,6 +110,7 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats &stats) {
 }
 
 Dictionary VoxelEngine::get_stats() const {
+	ZN_PROFILE_SCOPE();
 	return to_dict(zylann::voxel::VoxelEngine::get_singleton().get_stats());
 }
 

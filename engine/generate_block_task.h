@@ -19,6 +19,10 @@ public:
 	GenerateBlockTask();
 	~GenerateBlockTask();
 
+	const char *get_debug_name() const override {
+		return "GenerateBlock";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;

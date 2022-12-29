@@ -35,6 +35,10 @@ public:
 	std::vector<Transform3f> transforms;
 	std::shared_ptr<VoxelInstancerGeneratorTaskOutputQueue> output_queue;
 
+	const char *get_debug_name() const override {
+		return "GenerateInstancesBlock";
+	}
+
 	void run(ThreadedTaskContext ctx) override;
 };
 
