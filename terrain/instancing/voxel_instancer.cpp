@@ -1781,13 +1781,12 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	std::unordered_map<Ref<Mesh>, Ref<Mesh>> mesh_copies;
 
 	// For each layer
-	const int *layer_key = nullptr;
 	for (auto layer_it = _layers.begin(); layer_it != _layers.end(); ++layer_it) {
 		const Layer &layer = layer_it->second;
 		const int lod_block_size = mesh_block_size << layer.lod_index;
 
 		Node3D *layer_node = memnew(Node3D);
-		layer_node->set_name(String("Layer{0}").format(varray(*layer_key)));
+		layer_node->set_name(String("Layer{0}").format(varray(layer_it->first)));
 		root->add_child(layer_node);
 
 		// For each block in layer
