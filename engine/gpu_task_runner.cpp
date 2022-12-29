@@ -35,7 +35,7 @@ void GPUTaskRunner::start(RenderingDevice *rd, GPUStorageBufferPool *pool) {
 
 void GPUTaskRunner::stop() {
 	if (!_running) {
-		ZN_PRINT_VERBOSE("GPUTaskRunner::stop() was called by it wasn't running.");
+		ZN_PRINT_VERBOSE("GPUTaskRunner::stop() was called but it wasn't running.");
 		return;
 	}
 	_running = false;
