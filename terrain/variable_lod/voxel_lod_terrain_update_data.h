@@ -2,7 +2,7 @@
 #define VOXEL_LOD_TERRAIN_UPDATE_DATA_H
 
 #include "../../constants/voxel_constants.h"
-#include "../../engine/distance_normalmaps.h"
+#include "../../engine/detail_rendering.h"
 #include "../../generators/voxel_generator.h"
 #include "../../storage/voxel_data.h"
 #include "../../streams/voxel_stream.h"

@@ -4,7 +4,7 @@
 #include "../engine/gpu_storage_buffer_pool.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector4f.h"
-#include "distance_normalmaps.h"
+#include "detail_rendering.h"
 #include "gpu_task_runner.h"
 #include "ids.h"
 

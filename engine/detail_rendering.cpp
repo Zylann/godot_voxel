@@ -1,4 +1,4 @@
-#include "distance_normalmaps.h"
+#include "detail_rendering.h"
 #include "../edition/funcs.h"
 #include "../generators/voxel_generator.h"
 #include "../storage/voxel_data.h"

@@ -5,7 +5,7 @@
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/threaded_task.h"
-#include "distance_normalmaps.h"
+#include "detail_rendering.h"
 #include "ids.h"
 #include "meshing_dependency.h"
 #include "priority_dependency.h"

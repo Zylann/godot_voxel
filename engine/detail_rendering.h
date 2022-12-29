@@ -1,5 +1,5 @@
-#ifndef VOXEL_DISTANCE_NORMALMAPS_H
-#define VOXEL_DISTANCE_NORMALMAPS_H
+#ifndef VOXEL_DETAIL_RENDERING_H
+#define VOXEL_DETAIL_RENDERING_H
 
 #include "../util/fixed_array.h"
 #include "../util/godot/classes/ref_counted.h"
@@ -171,4 +171,4 @@ inline void copy_2d_region_from_packed_to_atlased(Span<uint8_t> dst, Vector2i ds
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_DISTANCE_NORMALMAPS_H
+#endif // VOXEL_DETAIL_RENDERING_H

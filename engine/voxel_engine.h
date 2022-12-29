@@ -10,7 +10,7 @@
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
 #include "compute_shader.h"
-#include "distance_normalmaps.h"
+#include "detail_rendering.h"
 #include "gpu_storage_buffer_pool.h"
 #include "gpu_task_runner.h"
 #include "ids.h"

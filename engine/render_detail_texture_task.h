@@ -5,7 +5,7 @@
 #include "../meshers/voxel_mesher.h"
 #include "../util/memory.h"
 #include "../util/tasks/threaded_task.h"
-#include "distance_normalmaps.h"
+#include "detail_rendering.h"
 #include "ids.h"
 #include "priority_dependency.h"
 
