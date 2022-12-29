@@ -16,7 +16,7 @@ namespace zylann {
 // Generic thread pool that performs batches of tasks based on dynamic priority
 class ThreadedTaskRunner {
 public:
-	static const uint32_t MAX_THREADS = 8;
+	static const uint32_t MAX_THREADS = 16;
 
 	enum State { //
 		STATE_RUNNING = 0,
