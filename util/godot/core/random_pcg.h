@@ -39,8 +39,8 @@
 
 #else
 
-#include "../macros.h"
-#include "../math/constants.h"
+#include "../../macros.h"
+#include "../../math/constants.h"
 #include "pcg.h"
 #include <math.h>
 
