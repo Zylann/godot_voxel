@@ -105,6 +105,7 @@ inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
 	// dst[11] = t.origin.z;
 
 	// I had to transpose this matrix multiple times over several years, I dont know what's going on...
+	// I guess it should be like in Godot's source code `MeshStorage::multimesh_instance_set_transform`?
 
 	dst[0] = t.basis.rows[0].x;
 	dst[1] = t.basis.rows[0].y;

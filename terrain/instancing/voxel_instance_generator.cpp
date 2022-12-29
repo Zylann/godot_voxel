@@ -402,8 +402,10 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		const Vector3f axis_x = math::normalized(math::cross(axis_y, dir));
 		const Vector3f axis_z = math::cross(axis_x, axis_y);
 
-		t.basis = Basis3f(Vector3f(axis_x.x, axis_y.x, axis_z.x), Vector3f(axis_x.y, axis_y.y, axis_z.y),
-				Vector3f(axis_x.z, axis_y.z, axis_z.z));
+		// In Godot 3, the Basis constructor expected 3 rows, but in Godot 4 it was changed to take 3 columns...
+		// t.basis = Basis3f(Vector3f(axis_x.x, axis_y.x, axis_z.x), Vector3f(axis_x.y, axis_y.y, axis_z.y),
+		// 		Vector3f(axis_x.z, axis_y.z, axis_z.z));
+		t.basis = Basis3f(axis_x, axis_y, axis_z);
 
 		if (scale_range > 0.f) {
 			float r = pcg1.randf();
