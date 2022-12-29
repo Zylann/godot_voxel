@@ -9,6 +9,9 @@
 
 ZN_GODOT_FORWARD_DECLARE(class StreamPeer)
 ZN_GODOT_FORWARD_DECLARE(class FileAccess)
+#ifdef ZN_GODOT_EXTENSION
+using namespace godot;
+#endif
 
 namespace zylann::voxel {
 
