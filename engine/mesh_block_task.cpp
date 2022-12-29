@@ -319,8 +319,8 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	// terrain.
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 
-	if (transvoxel_mesher.is_valid() && virtual_texture_settings.enabled && !mesh_is_empty &&
-			lod_index >= virtual_texture_settings.begin_lod_index && require_virtual_texture) {
+	if (transvoxel_mesher.is_valid() && detail_texture_settings.enabled && !mesh_is_empty &&
+			lod_index >= detail_texture_settings.begin_lod_index && require_virtual_texture) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
 
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
@@ -329,20 +329,20 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 
 		UniquePtr<TransvoxelCellIterator> cell_iterator = make_unique_instance<TransvoxelCellIterator>(cell_infos);
 
-		std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
-		virtual_textures->valid = false;
-		// This is stored here in case virtual texture rendering completes before the output of the current task gets
+		std::shared_ptr<DetailTextureOutput> detail_textures = make_shared_instance<DetailTextureOutput>();
+		detail_textures->valid = false;
+		// This is stored here in case detail texture rendering completes before the output of the current task gets
 		// dequeued in the main thread, since it runs in a separate asynchronous task
-		_virtual_textures = virtual_textures;
+		_detail_textures = detail_textures;
 
 		RenderDetailTextureTask *nm_task = ZN_NEW(RenderDetailTextureTask);
 		nm_task->cell_iterator = std::move(cell_iterator);
 		nm_task->mesh_vertices = mesh_arrays.vertices;
 		nm_task->mesh_normals = mesh_arrays.normals;
 		nm_task->mesh_indices = mesh_arrays.indices;
-		if (virtual_texture_generator_override.is_valid()) {
+		if (detail_texture_generator_override.is_valid()) {
 			nm_task->generator = lod_index >= virtual_texture_generator_override_begin_lod_index
-					? virtual_texture_generator_override
+					? detail_texture_generator_override
 					: meshing_dependency->generator;
 		} else {
 			nm_task->generator = meshing_dependency->generator;
@@ -352,8 +352,8 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 		nm_task->lod_index = lod_index;
 		nm_task->mesh_block_position = mesh_block_position;
 		nm_task->volume_id = volume_id;
-		nm_task->virtual_textures = virtual_textures;
-		nm_task->virtual_texture_settings = virtual_texture_settings;
+		nm_task->output_textures = detail_textures;
+		nm_task->detail_texture_settings = detail_texture_settings;
 		nm_task->priority_dependency = priority_dependency;
 		nm_task->use_gpu = virtual_texture_use_gpu;
 
@@ -406,7 +406,7 @@ void MeshBlockTask::apply_result() {
 			o.mesh = _mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
-			o.virtual_textures = _virtual_textures;
+			o.detail_textures = _detail_textures;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.mesh_output_callback == nullptr);

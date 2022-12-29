@@ -78,16 +78,16 @@ void test_normalmap_render_gpu() {
 
 	UniquePtr<TransvoxelCellIterator> cell_iterator = make_unique_instance<TransvoxelCellIterator>(cell_infos);
 
-	std::shared_ptr<VirtualTextureOutput> virtual_textures = make_shared_instance<VirtualTextureOutput>();
-	virtual_textures->valid = false;
+	std::shared_ptr<DetailTextureOutput> detail_textures = make_shared_instance<DetailTextureOutput>();
+	detail_textures->valid = false;
 
-	NormalMapSettings virtual_texture_settings;
-	virtual_texture_settings.enabled = true;
-	virtual_texture_settings.begin_lod_index = 0;
-	virtual_texture_settings.max_deviation_degrees = 60;
-	virtual_texture_settings.tile_resolution_min = 16;
-	virtual_texture_settings.tile_resolution_max = 16;
-	virtual_texture_settings.octahedral_encoding_enabled = false;
+	DetailRenderingSettings detail_texture_settings;
+	detail_texture_settings.enabled = true;
+	detail_texture_settings.begin_lod_index = 0;
+	detail_texture_settings.max_deviation_degrees = 60;
+	detail_texture_settings.tile_resolution_min = 16;
+	detail_texture_settings.tile_resolution_max = 16;
+	detail_texture_settings.octahedral_encoding_enabled = false;
 
 	RenderDetailTextureTask nm_task;
 	nm_task.cell_iterator = std::move(cell_iterator);
@@ -99,8 +99,8 @@ void test_normalmap_render_gpu() {
 	nm_task.mesh_block_size = Vector3iUtil::create(block_size);
 	nm_task.lod_index = lod_index;
 	nm_task.mesh_block_position = Vector3i();
-	nm_task.virtual_textures = virtual_textures;
-	nm_task.virtual_texture_settings = virtual_texture_settings;
+	nm_task.output_textures = detail_textures;
+	nm_task.detail_texture_settings = detail_texture_settings;
 	nm_task.priority_dependency;
 	nm_task.use_gpu = true;
 	RenderDetailTextureGPUTask *gpu_task = nm_task.make_gpu_task();
@@ -127,17 +127,17 @@ void test_normalmap_render_gpu() {
 	// Make a comparison with the CPU version
 
 	nm_task.cell_iterator->rewind();
-	NormalMapData normalmap_data;
+	DetailTextureData detail_textures_data;
 
-	compute_normalmap_data(*nm_task.cell_iterator, to_span(nm_task.mesh_vertices), to_span(nm_task.mesh_normals),
-			to_span(nm_task.mesh_indices), normalmap_data, virtual_texture_settings.tile_resolution_min, **generator,
-			nm_task.voxel_data.get(), origin_in_voxels, mesher_input.voxels.get_size(), lod_index,
-			virtual_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
+	compute_detail_texture_data(*nm_task.cell_iterator, to_span(nm_task.mesh_vertices), to_span(nm_task.mesh_normals),
+			to_span(nm_task.mesh_indices), detail_textures_data, detail_texture_settings.tile_resolution_min,
+			**generator, nm_task.voxel_data.get(), origin_in_voxels, mesher_input.voxels.get_size(), lod_index,
+			detail_texture_settings.octahedral_encoding_enabled,
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
 
-	NormalMapImages images =
-			store_normalmap_data_to_images(normalmap_data, virtual_texture_settings.tile_resolution_min,
-					nm_task.mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);
+	DetailImages images =
+			store_normalmap_data_to_images(detail_textures_data, detail_texture_settings.tile_resolution_min,
+					nm_task.mesh_block_size, detail_texture_settings.octahedral_encoding_enabled);
 	ZN_ASSERT(images.atlas.is_valid());
 	Ref<Image> cpu_atlas_image = images.atlas;
 

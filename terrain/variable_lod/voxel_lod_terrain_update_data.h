@@ -63,8 +63,8 @@ struct VoxelLodTerrainUpdateData {
 		bool virtual_textures_use_gpu = false;
 		uint8_t virtual_texture_generator_override_begin_lod_index = 0;
 		unsigned int mesh_block_size_po2 = 4;
-		NormalMapSettings virtual_texture_settings;
-		Ref<VoxelGenerator> virtual_texture_generator_override;
+		DetailRenderingSettings detail_texture_settings;
+		Ref<VoxelGenerator> detail_texture_generator_override;
 	};
 
 	enum MeshState {

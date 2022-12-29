@@ -1006,15 +1006,15 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 			task->data_block_size = data_block_size;
 			task->data = data_ptr;
 			task->collision_hint = settings.collision_enabled;
-			task->virtual_texture_settings = settings.virtual_texture_settings;
-			task->virtual_texture_generator_override = settings.virtual_texture_generator_override;
+			task->detail_texture_settings = settings.detail_texture_settings;
+			task->detail_texture_generator_override = settings.detail_texture_generator_override;
 			task->virtual_texture_generator_override_begin_lod_index =
 					settings.virtual_texture_generator_override_begin_lod_index;
 			task->virtual_texture_use_gpu = settings.virtual_textures_use_gpu;
 
 			// Don't update a virtual texture if one update is already processing
-			if (settings.virtual_texture_settings.enabled &&
-					lod_index >= settings.virtual_texture_settings.begin_lod_index &&
+			if (settings.detail_texture_settings.enabled &&
+					lod_index >= settings.detail_texture_settings.begin_lod_index &&
 					mesh_block.virtual_texture_state != VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING) {
 				mesh_block.virtual_texture_state = VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
 				task->require_virtual_texture = true;

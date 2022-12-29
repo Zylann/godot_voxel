@@ -53,7 +53,7 @@ public:
 		bool has_mesh_resource;
 		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
 		// starting from the mesh task, and it might complete earlier or later than the mesh.
-		std::shared_ptr<VirtualTextureOutput> virtual_textures;
+		std::shared_ptr<DetailTextureOutput> detail_textures;
 	};
 
 	struct BlockDataOutput {
@@ -78,8 +78,8 @@ public:
 		bool initial_load;
 	};
 
-	struct BlockVirtualTextureOutput {
-		std::shared_ptr<VirtualTextureOutput> virtual_textures;
+	struct BlockDetailTextureOutput {
+		std::shared_ptr<DetailTextureOutput> detail_textures;
 		Vector3i position;
 		uint32_t lod_index;
 	};
@@ -87,7 +87,7 @@ public:
 	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
-		void (*virtual_texture_output_callback)(void *, BlockVirtualTextureOutput &) = nullptr;
+		void (*virtual_texture_output_callback)(void *, BlockDetailTextureOutput &) = nullptr;
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {

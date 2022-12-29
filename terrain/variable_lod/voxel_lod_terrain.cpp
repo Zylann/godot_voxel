@@ -150,9 +150,9 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
-	callbacks.virtual_texture_output_callback = [](void *cb_data, VoxelEngine::BlockVirtualTextureOutput &ob) {
+	callbacks.virtual_texture_output_callback = [](void *cb_data, VoxelEngine::BlockDetailTextureOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
-		self->apply_virtual_texture_update(ob);
+		self->apply_detail_texture_update(ob);
 	};
 
 	_volume_id = VoxelEngine::get_singleton().add_volume(callbacks);
@@ -1528,16 +1528,16 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	block->set_parent_transform(get_global_transform());
 
-	if (ob.virtual_textures != nullptr) {
-		if (ob.virtual_textures->valid) {
-			apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod);
+	if (ob.detail_textures != nullptr) {
+		if (ob.detail_textures->valid) {
+			apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod);
 		} else {
 			// Textures aren't ready.
 			// To avoid a jarring transitions from "sharp" to "blurry", keep using parent texture if available.
 			// We could do this on many other levels (like propagating to children when a normalmap is assigned),
 			// but if we have to, it means the calculation is too expensive anyways,
 			// so it's usually better to tune it in the first place.
-			try_apply_parent_virtual_texture_to_block(*block, ob.position);
+			try_apply_parent_detail_texture_to_block(*block, ob.position);
 		}
 	}
 
@@ -1548,7 +1548,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 #endif
 }
 
-void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob) {
+void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob) {
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod_index];
 	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
@@ -1562,15 +1562,15 @@ void VoxelLodTerrain::apply_virtual_texture_update(VoxelEngine::BlockVirtualText
 		return;
 	}
 
-	ZN_ASSERT_RETURN(ob.virtual_textures != nullptr);
-	ZN_ASSERT_RETURN(ob.virtual_textures->valid);
+	ZN_ASSERT_RETURN(ob.detail_textures != nullptr);
+	ZN_ASSERT_RETURN(ob.detail_textures->valid);
 
-	apply_virtual_texture_update_to_block(*block, *ob.virtual_textures, ob.lod_index);
+	apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod_index);
 }
 
 static void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, ShaderMaterial &material,
 		unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block, Vector3i parent_bpos,
-		const NormalMapSettings &virtual_texture_settings) {
+		const DetailRenderingSettings &detail_texture_settings) {
 	//
 	Ref<ShaderMaterial> parent_material = parent_block.get_shader_material();
 	ZN_ASSERT_RETURN(parent_material.is_valid());
@@ -1604,13 +1604,13 @@ static void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, 
 
 	const unsigned int parent_lod_index = block.lod_index + 1;
 	const unsigned int tile_size =
-			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, parent_lod_index);
+			get_detail_texture_tile_resolution_for_lod(detail_texture_settings, parent_lod_index);
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 
 	block.virtual_texture_fallback_level = fallback_level;
 }
 
-void VoxelLodTerrain::try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
+void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
 	ZN_PROFILE_SCOPE();
 
 	Ref<ShaderMaterial> material = block.get_shader_material();
@@ -1631,20 +1631,20 @@ void VoxelLodTerrain::try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVL
 	}
 
 	zylann::voxel::try_apply_parent_virtual_texture_to_block(block, bpos, **material, get_mesh_block_size(),
-			*parent_block, parent_bpos, _update_data->settings.virtual_texture_settings);
+			*parent_block, parent_bpos, _update_data->settings.detail_texture_settings);
 }
 
-void VoxelLodTerrain::apply_virtual_texture_update_to_block(
-		VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index) {
+void VoxelLodTerrain::apply_detail_texture_update_to_block(
+		VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(ob.valid);
 
-	NormalMapTextures normalmap_textures = ob.normalmap_textures;
+	DetailTextures normalmap_textures = ob.textures;
 
 	if (normalmap_textures.lookup.is_null()) {
 		// Textures couldn't be created in VRAM so far, do it now. (OpenGL/low-end?)
 		// TODO When this code path is required, use a time-spread task to reduce stalls
-		NormalMapImages normalmap_images = ob.normalmap_images;
+		DetailImages normalmap_images = ob.images;
 		normalmap_textures = store_normalmap_data_to_textures(normalmap_images);
 	}
 
@@ -1663,7 +1663,7 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 		if (!had_texture) {
 			if (_lod_fade_duration > 0.f) {
 				// Fade-in to reduce "popping" details
-				_fading_virtual_textures.push_back(FadingVirtualTexture{ block.position, lod_index, 0.f });
+				_fading_detail_textures.push_back(FadingDetailTexture{ block.position, lod_index, 0.f });
 				material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 0.f);
 			} else {
 				material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
@@ -1672,7 +1672,7 @@ void VoxelLodTerrain::apply_virtual_texture_update_to_block(
 
 		// We may set this again in case the material was using textures from the parent LOD as a temporary fallback
 		const unsigned int tile_size =
-				get_virtual_texture_tile_resolution_for_lod(_update_data->settings.virtual_texture_settings, lod_index);
+				get_detail_texture_tile_resolution_for_lod(_update_data->settings.detail_texture_settings, lod_index);
 		material->set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 	}
 	// If the material is not valid... well it means the user hasn't set up one, so all the hardwork of making these
@@ -1821,8 +1821,8 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 		ZN_PROFILE_SCOPE();
 		const unsigned int lod_count = get_lod_count();
 
-		for (unsigned int i = 0; i < _fading_virtual_textures.size();) {
-			FadingVirtualTexture &item = _fading_virtual_textures[i];
+		for (unsigned int i = 0; i < _fading_detail_textures.size();) {
+			FadingDetailTexture &item = _fading_detail_textures[i];
 			bool remove = true;
 
 			if (item.lod_index < lod_count) {
@@ -1841,8 +1841,8 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			}
 
 			if (remove) {
-				_fading_virtual_textures[i] = _fading_virtual_textures.back();
-				_fading_virtual_textures.pop_back();
+				_fading_detail_textures[i] = _fading_detail_textures.back();
+				_fading_detail_textures.pop_back();
 			} else {
 				++i;
 			}
@@ -2054,62 +2054,62 @@ float VoxelLodTerrain::get_lod_fade_duration() const {
 }
 
 void VoxelLodTerrain::set_normalmap_enabled(bool enable) {
-	_update_data->settings.virtual_texture_settings.enabled = enable;
+	_update_data->settings.detail_texture_settings.enabled = enable;
 }
 
 bool VoxelLodTerrain::is_normalmap_enabled() const {
-	return _update_data->settings.virtual_texture_settings.enabled;
+	return _update_data->settings.detail_texture_settings.enabled;
 }
 
 void VoxelLodTerrain::set_normalmap_tile_resolution_min(int resolution) {
-	_update_data->settings.virtual_texture_settings.tile_resolution_min = math::clamp(resolution, 1, 128);
+	_update_data->settings.detail_texture_settings.tile_resolution_min = math::clamp(resolution, 1, 128);
 }
 
 int VoxelLodTerrain::get_normalmap_tile_resolution_min() const {
-	return _update_data->settings.virtual_texture_settings.tile_resolution_min;
+	return _update_data->settings.detail_texture_settings.tile_resolution_min;
 }
 
 void VoxelLodTerrain::set_normalmap_tile_resolution_max(int resolution) {
-	_update_data->settings.virtual_texture_settings.tile_resolution_max = math::clamp(resolution, 1, 128);
+	_update_data->settings.detail_texture_settings.tile_resolution_max = math::clamp(resolution, 1, 128);
 }
 
 int VoxelLodTerrain::get_normalmap_tile_resolution_max() const {
-	return _update_data->settings.virtual_texture_settings.tile_resolution_max;
+	return _update_data->settings.detail_texture_settings.tile_resolution_max;
 }
 
 void VoxelLodTerrain::set_normalmap_begin_lod_index(int lod_index) {
 	ERR_FAIL_INDEX(lod_index, int(constants::MAX_LOD));
-	_update_data->settings.virtual_texture_settings.begin_lod_index = lod_index;
+	_update_data->settings.detail_texture_settings.begin_lod_index = lod_index;
 }
 
 int VoxelLodTerrain::get_normalmap_begin_lod_index() const {
-	return _update_data->settings.virtual_texture_settings.begin_lod_index;
+	return _update_data->settings.detail_texture_settings.begin_lod_index;
 }
 
 void VoxelLodTerrain::set_normalmap_max_deviation_degrees(int angle) {
-	_update_data->settings.virtual_texture_settings.max_deviation_degrees = math::clamp(
-			angle, int(NormalMapSettings::MIN_DEVIATION_DEGREES), int(NormalMapSettings::MAX_DEVIATION_DEGREES));
+	_update_data->settings.detail_texture_settings.max_deviation_degrees = math::clamp(angle,
+			int(DetailRenderingSettings::MIN_DEVIATION_DEGREES), int(DetailRenderingSettings::MAX_DEVIATION_DEGREES));
 }
 
 int VoxelLodTerrain::get_normalmap_max_deviation_degrees() const {
-	return _update_data->settings.virtual_texture_settings.max_deviation_degrees;
+	return _update_data->settings.detail_texture_settings.max_deviation_degrees;
 }
 
 void VoxelLodTerrain::set_octahedral_normal_encoding(bool enable) {
-	_update_data->settings.virtual_texture_settings.octahedral_encoding_enabled = enable;
+	_update_data->settings.detail_texture_settings.octahedral_encoding_enabled = enable;
 }
 
 bool VoxelLodTerrain::get_octahedral_normal_encoding() const {
-	return _update_data->settings.virtual_texture_settings.octahedral_encoding_enabled;
+	return _update_data->settings.detail_texture_settings.octahedral_encoding_enabled;
 }
 
 void VoxelLodTerrain::set_normalmap_generator_override(Ref<VoxelGenerator> generator_override) {
 	_update_data->wait_for_end_of_task();
-	_update_data->settings.virtual_texture_generator_override = generator_override;
+	_update_data->settings.detail_texture_generator_override = generator_override;
 }
 
 Ref<VoxelGenerator> VoxelLodTerrain::get_normalmap_generator_override() const {
-	return _update_data->settings.virtual_texture_generator_override;
+	return _update_data->settings.detail_texture_generator_override;
 }
 
 void VoxelLodTerrain::set_normalmap_generator_override_begin_lod_index(int lod_index) {

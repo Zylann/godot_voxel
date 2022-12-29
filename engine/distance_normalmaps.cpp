@@ -59,7 +59,7 @@ static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 	}
 }
 
-NormalMapData::Tile compute_tile_info(
+DetailTextureData::Tile compute_tile_info(
 		const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals, Span<const int> mesh_indices) {
 	Vector3f normal_sum;
 
@@ -87,7 +87,7 @@ NormalMapData::Tile compute_tile_info(
 	ZN_ASSERT(cell_info.position.y < 256);
 	ZN_ASSERT(cell_info.position.z < 256);
 #endif
-	const NormalMapData::Tile tile{ //
+	const DetailTextureData::Tile tile{ //
 		uint8_t(cell_info.position.x), //
 		uint8_t(cell_info.position.y), //
 		uint8_t(cell_info.position.z), //
@@ -329,8 +329,8 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_vox
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
-		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, NormalMapData &normal_map_data,
+void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
+		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, DetailTextureData &normal_map_data,
 		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
 		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
 		bool edited_tiles_only) {
@@ -383,7 +383,7 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 			normal_map_data.tile_indices.push_back(cell_index);
 		}
 
-		const NormalMapData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices);
+		const DetailTextureData::Tile tile = compute_tile_info(cell_info, mesh_normals, mesh_indices);
 		normal_map_data.tiles.push_back(tile);
 
 		unsigned int ax;
@@ -605,7 +605,7 @@ void compute_normalmap_data(ICellIterator &cell_iterator, Span<const Vector3f> m
 	}
 }
 
-Ref<Image> store_lookup_to_image(const std::vector<NormalMapData::Tile> &tiles, Vector3i block_size) {
+Ref<Image> store_lookup_to_image(const std::vector<DetailTextureData::Tile> &tiles, Vector3i block_size) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int sqri = get_square_grid_size_from_item_count(Vector3iUtil::get_volume(block_size));
@@ -624,7 +624,7 @@ Ref<Image> store_lookup_to_image(const std::vector<NormalMapData::Tile> &tiles, 
 #endif
 
 		for (unsigned int tile_index = 0; tile_index < tiles.size(); ++tile_index) {
-			const NormalMapData::Tile tile = tiles[tile_index];
+			const DetailTextureData::Tile tile = tiles[tile_index];
 			// RG: tttttttt aatttttt
 			const uint8_t r = tile_index & 0xff;
 			const uint8_t g = ((tile_index >> 8) & 0x3f) | (tile.axis << 6);
@@ -706,11 +706,11 @@ Ref<Image> store_atlas_to_image(const std::vector<uint8_t> &normals, unsigned in
 	return atlas;
 }
 
-NormalMapImages store_normalmap_data_to_images(
-		const NormalMapData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding) {
+DetailImages store_normalmap_data_to_images(
+		const DetailTextureData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
-	NormalMapImages images;
+	DetailImages images;
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 	images.atlas = store_atlas_to_image_array(data.normals, tile_resolution, data.tiles.size(), octahedral_encoding);
 #else
@@ -721,10 +721,10 @@ NormalMapImages store_normalmap_data_to_images(
 }
 
 // Converts normalmap data into textures. They can be used in a shader to apply normals and obtain extra visual details.
-NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) {
+DetailTextures store_normalmap_data_to_textures(const DetailImages &data) {
 	ZN_PROFILE_SCOPE();
 
-	NormalMapTextures textures;
+	DetailTextures textures;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Atlas texture");
@@ -748,7 +748,8 @@ NormalMapTextures store_normalmap_data_to_textures(const NormalMapImages &data) 
 	return textures;
 }
 
-unsigned int get_virtual_texture_tile_resolution_for_lod(const NormalMapSettings &settings, unsigned int lod_index) {
+unsigned int get_detail_texture_tile_resolution_for_lod(
+		const DetailRenderingSettings &settings, unsigned int lod_index) {
 	const unsigned int relative_lod_index = lod_index - settings.begin_lod_index;
 	const unsigned int tile_resolution = math::clamp(int(settings.tile_resolution_min << relative_lod_index),
 			int(settings.tile_resolution_min), int(settings.tile_resolution_max));

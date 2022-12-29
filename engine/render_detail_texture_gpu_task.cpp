@@ -577,17 +577,17 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
 	{
-		std::vector<NormalMapData::Tile> tile_data2;
+		std::vector<DetailTextureData::Tile> tile_data2;
 		tile_data2.reserve(tile_data.size());
 		for (const TileData &td : tile_data) {
-			tile_data2.push_back(NormalMapData::Tile{ td.cell_x, td.cell_y, td.cell_z, uint8_t(td.data & 0x3) });
+			tile_data2.push_back(DetailTextureData::Tile{ td.cell_x, td.cell_y, td.cell_z, uint8_t(td.data & 0x3) });
 		}
 
 		RenderDetailTexturePass2Task *task = ZN_NEW(RenderDetailTexturePass2Task);
 		task->atlas_data = texture_data;
 		task->tile_data = std::move(tile_data2);
-		task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
-		task->virtual_textures = output;
+		task->edited_tiles_texture_data = std::move(edited_tiles_texture_data);
+		task->output_textures = output;
 		task->volume_id = volume_id;
 		task->mesh_block_position = block_position;
 		task->mesh_block_size = block_size;

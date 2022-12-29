@@ -11,8 +11,8 @@
 namespace zylann::voxel {
 
 namespace {
-NormalMapData &get_tls_normalmap_data() {
-	static thread_local NormalMapData tls_normalmap_data;
+DetailTextureData &get_tls_normalmap_data() {
+	static thread_local DetailTextureData tls_normalmap_data;
 	return tls_normalmap_data;
 }
 } // namespace
@@ -45,8 +45,8 @@ NormalMapData &get_tls_normalmap_data() {
 void RenderDetailTextureTask::run(ThreadedTaskContext ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(generator.is_valid());
-	ZN_ASSERT_RETURN(virtual_textures != nullptr);
-	ZN_ASSERT_RETURN(virtual_textures->valid == false);
+	ZN_ASSERT_RETURN(output_textures != nullptr);
+	ZN_ASSERT_RETURN(output_textures->valid == false);
 	ZN_ASSERT_RETURN(cell_iterator != nullptr);
 
 	if (use_gpu) {
@@ -57,23 +57,22 @@ void RenderDetailTextureTask::run(ThreadedTaskContext ctx) {
 }
 
 void RenderDetailTextureTask::run_on_cpu() {
-	NormalMapData &normalmap_data = get_tls_normalmap_data();
+	DetailTextureData &normalmap_data = get_tls_normalmap_data();
 	normalmap_data.clear();
 
-	const unsigned int tile_resolution =
-			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
+	const unsigned int tile_resolution = get_detail_texture_tile_resolution_for_lod(detail_texture_settings, lod_index);
 
 	// LOD0 coordinates
 	const Vector3i size_in_voxels = mesh_block_size << lod_index;
 	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
 
-	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
+	compute_detail_texture_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
 			normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, size_in_voxels, lod_index,
-			virtual_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
+			detail_texture_settings.octahedral_encoding_enabled,
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
 
-	NormalMapImages images = store_normalmap_data_to_images(
-			normalmap_data, tile_resolution, mesh_block_size, virtual_texture_settings.octahedral_encoding_enabled);
+	DetailImages images = store_normalmap_data_to_images(
+			normalmap_data, tile_resolution, mesh_block_size, detail_texture_settings.octahedral_encoding_enabled);
 
 	// Debug
 	// debug_dump_atlas(images.atlas,
@@ -92,13 +91,13 @@ void RenderDetailTextureTask::run_on_cpu() {
 	// }
 
 	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
-		NormalMapTextures textures = store_normalmap_data_to_textures(images);
-		virtual_textures->normalmap_textures = textures;
+		DetailTextures textures = store_normalmap_data_to_textures(images);
+		output_textures->textures = textures;
 	} else {
-		virtual_textures->normalmap_images = images;
+		output_textures->images = images;
 	}
 
-	virtual_textures->valid = true;
+	output_textures->valid = true;
 }
 
 void RenderDetailTextureTask::apply_result() {
@@ -112,12 +111,12 @@ void RenderDetailTextureTask::apply_result() {
 		return;
 	}
 
-	VoxelEngine::BlockVirtualTextureOutput o;
+	VoxelEngine::BlockDetailTextureOutput o;
 	// TODO Check for invalidation due to property changes
 
 	o.position = mesh_block_position;
 	o.lod_index = lod_index;
-	o.virtual_textures = virtual_textures;
+	o.detail_textures = output_textures;
 
 	VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 	ZN_ASSERT_RETURN(callbacks.mesh_output_callback != nullptr);
@@ -188,18 +187,17 @@ void RenderDetailTextureTask::run_on_gpu() {
 }
 
 RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
-	const unsigned int tile_resolution =
-			get_virtual_texture_tile_resolution_for_lod(virtual_texture_settings, lod_index);
+	const unsigned int tile_resolution = get_detail_texture_tile_resolution_for_lod(detail_texture_settings, lod_index);
 
 	// Fallback on CPU for tiles containing edited voxels.
 	// TODO Figure out an efficient way to have sparse voxel data available on the GPU
 	const Vector3i size_in_voxels = mesh_block_size << lod_index;
 	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
-	NormalMapData edited_tiles_normalmap_data;
-	compute_normalmap_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
+	DetailTextureData edited_tiles_normalmap_data;
+	compute_detail_texture_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
 			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels,
 			size_in_voxels, lod_index, false, /*virtual_texture_settings.octahedral_encoding_enabled*/
-			math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), true);
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), true);
 
 	const unsigned int tile_count = cell_iterator->get_count();
 	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
@@ -214,8 +212,8 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	RenderDetailTextureGPUTask::Params params;
 	params.block_origin_world = to_vec3f(origin_in_voxels);
 	params.pixel_world_step = float(1 << lod_index) / float(tile_resolution);
-	params.max_deviation_cosine = Math::cos(math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
-	params.max_deviation_sine = Math::sin(math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)));
+	params.max_deviation_cosine = Math::cos(math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)));
+	params.max_deviation_sine = Math::sin(math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)));
 	params.tiles_x = tiles_across;
 	params.tiles_y = tiles_across;
 	params.tile_size_pixels = tile_resolution;
@@ -250,8 +248,8 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	gpu_task->params = params;
 	gpu_task->shader = generator->get_virtual_rendering_shader();
 	gpu_task->shader_params = generator->get_virtual_rendering_shader_parameters();
-	gpu_task->output = virtual_textures;
-	gpu_task->edited_tiles_normalmap_data = std::move(edited_tiles_normalmap_data);
+	gpu_task->output = output_textures;
+	gpu_task->edited_tiles_texture_data = std::move(edited_tiles_normalmap_data);
 	gpu_task->block_position = mesh_block_position;
 	gpu_task->block_size = mesh_block_size;
 	gpu_task->lod_index = lod_index;
@@ -293,7 +291,7 @@ void convert_pixels_from_rgba8_to_rgb8_in_place(PackedByteArray &pba) {
 }
 
 void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pixels, Vector2i atlas_size_pixels,
-		const NormalMapData &edited_tiles_normalmap_data) {
+		const DetailTextureData &edited_tiles_normalmap_data) {
 	ZN_PROFILE_SCOPE();
 
 	uint8_t *dst_w = atlas_data.ptrw();
@@ -326,12 +324,12 @@ void RenderDetailTexturePass2Task::run(ThreadedTaskContext ctx) {
 
 	// TODO Optimization: currently, the GPU task still generates tiles that would otherwise be replaced with edited
 	// tiles. Maybe we should find a way to tell the GPU task to exclude these tiles efficiently?
-	if (edited_tiles_normalmap_data.tiles.size() > 0) {
+	if (edited_tiles_texture_data.tiles.size() > 0) {
 		combine_edited_tiles(
-				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_normalmap_data);
+				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_texture_data);
 	}
 
-	NormalMapImages images;
+	DetailImages images;
 
 	// TODO Octahedral compression
 	images.atlas = Image::create_from_data(atlas_width, atlas_height, false, Image::FORMAT_RGB8, atlas_data);
@@ -341,13 +339,13 @@ void RenderDetailTexturePass2Task::run(ThreadedTaskContext ctx) {
 	images.lookup = store_lookup_to_image(tile_data, mesh_block_size);
 
 	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
-		NormalMapTextures textures = store_normalmap_data_to_textures(images);
-		virtual_textures->normalmap_textures = textures;
+		DetailTextures textures = store_normalmap_data_to_textures(images);
+		output_textures->textures = textures;
 	} else {
-		virtual_textures->normalmap_images = images;
+		output_textures->images = images;
 	}
 
-	virtual_textures->valid = true;
+	output_textures->valid = true;
 }
 
 void RenderDetailTexturePass2Task::apply_result() {
@@ -357,12 +355,12 @@ void RenderDetailTexturePass2Task::apply_result() {
 		return;
 	}
 
-	VoxelEngine::BlockVirtualTextureOutput o;
+	VoxelEngine::BlockDetailTextureOutput o;
 	// TODO Check for invalidation due to property changes
 
 	o.position = mesh_block_position;
 	o.lod_index = lod_index;
-	o.virtual_textures = virtual_textures;
+	o.detail_textures = output_textures;
 
 	VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 	ZN_ASSERT_RETURN(callbacks.mesh_output_callback != nullptr);

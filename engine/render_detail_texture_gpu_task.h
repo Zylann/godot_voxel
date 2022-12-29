@@ -62,8 +62,8 @@ public:
 	std::vector<ModifierData> modifiers;
 
 	// Stuff to carry over for the second CPU pass
-	std::shared_ptr<VirtualTextureOutput> output;
-	NormalMapData edited_tiles_normalmap_data;
+	std::shared_ptr<DetailTextureOutput> output;
+	DetailTextureData edited_tiles_texture_data;
 	Vector3i block_position;
 	Vector3i block_size;
 	VolumeID volume_id;

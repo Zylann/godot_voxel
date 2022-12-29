@@ -254,10 +254,10 @@ private:
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
-	void apply_virtual_texture_update(VoxelEngine::BlockVirtualTextureOutput &ob);
-	void apply_virtual_texture_update_to_block(
-			VoxelMeshBlockVLT &block, VirtualTextureOutput &ob, unsigned int lod_index);
-	void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos);
+	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
+	void apply_detail_texture_update_to_block(
+			VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index);
+	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos);
 
 	void start_updater();
 	void stop_updater();
@@ -353,13 +353,13 @@ private:
 	// TODO Optimization: use FlatMap? Need to check how many blocks get in there, probably not many
 	FixedArray<std::map<Vector3i, VoxelMeshBlockVLT *>, constants::MAX_LOD> _fading_blocks_per_lod;
 
-	struct FadingVirtualTexture {
+	struct FadingDetailTexture {
 		Vector3i block_position;
 		uint32_t lod_index;
 		float progress;
 	};
 
-	std::vector<FadingVirtualTexture> _fading_virtual_textures;
+	std::vector<FadingDetailTexture> _fading_detail_textures;
 
 	VoxelInstancer *_instancer = nullptr;
 

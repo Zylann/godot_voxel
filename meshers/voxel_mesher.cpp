@@ -19,23 +19,24 @@ Ref<Mesh> VoxelMesher::build_mesh(
 	Output output;
 	Input input = { voxels->get_buffer(), nullptr, nullptr, Vector3i(), 0, false, false, false };
 
-	NormalMapSettings virtual_texture_settings;
-	virtual_texture_settings.begin_lod_index = 0;
+	DetailRenderingSettings detail_texture_settings;
+	detail_texture_settings.begin_lod_index = 0;
 
 	if (additional_data.size() > 0) {
 		// This is mainly for testing purposes, or small-scale meshing.
 		Ref<VoxelGenerator> generator = additional_data.get("generator", Variant());
 		input.generator = generator.ptr();
 		input.origin_in_voxels = additional_data.get("origin_in_voxels", Vector3i());
-		virtual_texture_settings.enabled = additional_data.get("normalmap_enabled", false);
-		virtual_texture_settings.octahedral_encoding_enabled =
+		detail_texture_settings.enabled = additional_data.get("normalmap_enabled", false);
+		detail_texture_settings.octahedral_encoding_enabled =
 				additional_data.get("octahedral_normal_encoding_enabled", false);
-		virtual_texture_settings.tile_resolution_min = int(additional_data.get("normalmap_tile_resolution", 16));
-		virtual_texture_settings.tile_resolution_max = virtual_texture_settings.tile_resolution_min;
-		virtual_texture_settings.max_deviation_degrees =
+		detail_texture_settings.tile_resolution_min = int(additional_data.get("normalmap_tile_resolution", 16));
+		detail_texture_settings.tile_resolution_max = detail_texture_settings.tile_resolution_min;
+		detail_texture_settings.max_deviation_degrees =
 				math::clamp(int(additional_data.get("normalmap_max_deviation_degrees", 0)),
-						int(NormalMapSettings::MIN_DEVIATION_DEGREES), int(NormalMapSettings::MAX_DEVIATION_DEGREES));
-		input.virtual_texture_hint = virtual_texture_settings.enabled;
+						int(DetailRenderingSettings::MIN_DEVIATION_DEGREES),
+						int(DetailRenderingSettings::MAX_DEVIATION_DEGREES));
+		input.virtual_texture_hint = detail_texture_settings.enabled;
 	}
 
 	build(output, input);
@@ -74,29 +75,28 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		++gd_surface_index;
 	}
 
-	if (virtual_texture_settings.enabled && input.generator != nullptr) {
+	if (detail_texture_settings.enabled && input.generator != nullptr) {
 		VoxelMesherTransvoxel *transvoxel_mesher = Object::cast_to<VoxelMesherTransvoxel>(this);
 
 		if (transvoxel_mesher != nullptr) {
 			const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
 			Span<const transvoxel::CellInfo> cell_infos = VoxelMesherTransvoxel::get_cell_info_from_current_thread();
 			TransvoxelCellIterator cell_iterator(cell_infos);
-			NormalMapData nm_data;
+			DetailTextureData nm_data;
 
-			compute_normalmap_data(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
-					to_span(mesh_arrays.indices), nm_data, virtual_texture_settings.tile_resolution_min,
+			compute_detail_texture_data(cell_iterator, to_span(mesh_arrays.vertices), to_span(mesh_arrays.normals),
+					to_span(mesh_arrays.indices), nm_data, detail_texture_settings.tile_resolution_min,
 					*input.generator, nullptr, input.origin_in_voxels, input.voxels.get_size(), input.lod_index,
-					virtual_texture_settings.octahedral_encoding_enabled,
-					math::deg_to_rad(float(virtual_texture_settings.max_deviation_degrees)), false);
+					detail_texture_settings.octahedral_encoding_enabled,
+					math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
 
 			const Vector3i block_size =
 					input.voxels.get_size() - Vector3iUtil::create(get_minimum_padding() + get_maximum_padding());
 
-			NormalMapImages images =
-					store_normalmap_data_to_images(nm_data, virtual_texture_settings.tile_resolution_min, block_size,
-							virtual_texture_settings.octahedral_encoding_enabled);
+			DetailImages images = store_normalmap_data_to_images(nm_data, detail_texture_settings.tile_resolution_min,
+					block_size, detail_texture_settings.octahedral_encoding_enabled);
 
-			const NormalMapTextures textures = store_normalmap_data_to_textures(images);
+			const DetailTextures textures = store_normalmap_data_to_textures(images);
 			// That should be in return value, but for now I just want this for testing with GDScript, so it gotta go
 			// somewhere
 			mesh->set_meta(VoxelStringNames::get_singleton().voxel_normalmap_atlas, textures.atlas);

@@ -50,8 +50,8 @@ public:
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelData> data;
-	NormalMapSettings virtual_texture_settings;
-	Ref<VoxelGenerator> virtual_texture_generator_override;
+	DetailRenderingSettings detail_texture_settings;
+	Ref<VoxelGenerator> detail_texture_generator_override;
 
 private:
 	bool _has_run = false;
@@ -60,7 +60,7 @@ private:
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
 	std::vector<uint8_t> _mesh_material_indices; // Indexed by mesh surface
-	std::shared_ptr<VirtualTextureOutput> _virtual_textures;
+	std::shared_ptr<DetailTextureOutput> _detail_textures;
 };
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,

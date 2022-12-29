@@ -31,10 +31,10 @@ public:
 	Vector3i mesh_block_size;
 	uint8_t lod_index;
 	bool use_gpu = false;
-	NormalMapSettings virtual_texture_settings;
+	DetailRenderingSettings detail_texture_settings;
 
 	// Output (to be assigned so it can be populated)
-	std::shared_ptr<VirtualTextureOutput> virtual_textures;
+	std::shared_ptr<DetailTextureOutput> output_textures;
 
 	// Identification
 	Vector3i mesh_block_position;
@@ -62,9 +62,9 @@ private:
 class RenderDetailTexturePass2Task : public IThreadedTask {
 public:
 	PackedByteArray atlas_data;
-	NormalMapData edited_tiles_normalmap_data;
-	std::vector<NormalMapData::Tile> tile_data;
-	std::shared_ptr<VirtualTextureOutput> virtual_textures;
+	DetailTextureData edited_tiles_texture_data;
+	std::vector<DetailTextureData::Tile> tile_data;
+	std::shared_ptr<DetailTextureOutput> output_textures;
 	VolumeID volume_id;
 	Vector3i mesh_block_position;
 	Vector3i mesh_block_size;
