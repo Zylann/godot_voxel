@@ -8,6 +8,7 @@
 #include "../thread/thread.h"
 #include "threaded_task.h"
 
+#include <atomic>
 #include <queue>
 #include <string>
 
