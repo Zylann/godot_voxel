@@ -1,9 +1,7 @@
-#include "transvoxel_shader_minimal.h"
-
-namespace zylann::voxel::transvoxel_shader_minimal {
+// Generated file
 
 // clang-format off
-const char *GDSHADER_SOURCE =
+const char *g_transvoxel_minimal_shader = 
 "shader_type spatial;\n"
 "\n"
 "// From Voxel Tools API\n"
@@ -53,5 +51,4 @@ const char *GDSHADER_SOURCE =
 "	VERTEX = get_transvoxel_position(VERTEX, CUSTOM0);\n"
 "}\n"
 "\n";
-
-} // namespace zylann::voxel::transvoxel_shader_minimal
+// clang-format on

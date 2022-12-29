@@ -68,3 +68,9 @@ func _export_to_cpp():
 		root + "modifier_mesh_shader_snippet.h", 
 		"g_modifier_mesh_shader_snippet"
 	)
+
+	TextToCpp.export_to_cpp(
+		"transvoxel_minimal.gdshader",
+		root + "transvoxel_minimal_shader.h", 
+		"g_transvoxel_minimal_shader"
+	)

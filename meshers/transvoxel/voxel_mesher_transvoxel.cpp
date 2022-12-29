@@ -1,6 +1,7 @@
 #include "voxel_mesher_transvoxel.h"
 #include "../../engine/voxel_engine.h"
 #include "../../generators/voxel_generator.h"
+#include "../../shaders/transvoxel_minimal_shader.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
 #include "../../thirdparty/meshoptimizer/meshoptimizer.h"
@@ -11,7 +12,6 @@
 #include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "transvoxel_shader_minimal.h"
 #include "transvoxel_tables.cpp"
 
 namespace zylann::voxel {
@@ -47,7 +47,7 @@ Span<const transvoxel::CellInfo> VoxelMesherTransvoxel::get_cell_info_from_curre
 void VoxelMesherTransvoxel::load_static_resources() {
 	Ref<Shader> shader;
 	shader.instantiate();
-	shader->set_code(transvoxel_shader_minimal::GDSHADER_SOURCE);
+	shader->set_code(g_transvoxel_minimal_shader);
 	g_minimal_shader_material.instantiate();
 	g_minimal_shader_material->set_shader(shader);
 }
