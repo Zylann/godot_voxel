@@ -199,6 +199,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Phyronnaz\n"
 						"NoFr1ends (Lynx)\n"
 						"Kluskey (Jared McCluskey)\n"
+						"Trey2k (Trey Moller)\n"
+						"marcinn (Marcin Nowak)\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"

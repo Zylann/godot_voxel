@@ -73,6 +73,8 @@ RonanZe
 Phyronnaz
 NoFr1ends (Lynx)
 Kluskey (Jared McCluskey)
+Trey2k (Trey Moller)
+marcinn (Marcin Nowak)
 ```
 
 ### Supporters
