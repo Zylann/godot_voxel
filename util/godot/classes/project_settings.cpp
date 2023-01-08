@@ -10,7 +10,7 @@ void add_custom_godot_project_setting(Variant::Type type, const char *name, Prop
 	} else {
 		GLOBAL_DEF(name, default_value);
 	}
-	ProjectSettings::get_singleton()->set_custom_property_info(name, PropertyInfo(type, name, hint, hint_string));
+	ProjectSettings::get_singleton()->set_custom_property_info(PropertyInfo(type, name, hint, hint_string));
 
 #elif defined(ZN_GODOT_EXTENSION)
 	ProjectSettings &ps = *ProjectSettings::get_singleton();
