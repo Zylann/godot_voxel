@@ -68,7 +68,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 			SaveBlockDataTask *save_task = memnew(
 					SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency, nullptr));
 
-			VoxelEngine::get_singleton().push_async_task(save_task);
+			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
 	}
 
