@@ -15,6 +15,7 @@ struct Color8 {
 			uint8_t a;
 		};
 		uint8_t components[4];
+		uint32_t packed_value;
 	};
 
 	Color8() : r(0), g(0), b(0), a(0) {}
@@ -80,6 +81,14 @@ struct Color8 {
 
 	operator Color() const {
 		return Color(r / 255.f, g / 255.f, b / 255.f, a / 255.f);
+	}
+
+	inline bool operator==(const Color8 &p_v) const {
+		return packed_value == p_v.packed_value;
+	}
+
+	inline bool operator!=(const Color8 &p_v) const {
+		return packed_value != p_v.packed_value;
 	}
 };
 
