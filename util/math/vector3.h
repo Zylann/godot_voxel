@@ -45,6 +45,18 @@ inline Vector3 wrapf(const Vector3 v, real_t d) {
 	return Math::is_zero_approx(d) ? Vector3() : (v - (d * floor(v / d)));
 }
 
+inline Vector3 min(const Vector3 a, const Vector3 b) {
+	return Vector3(min(a.x, b.x), min(a.y, b.y), min(a.z, b.z));
+}
+
+inline Vector3 max(const Vector3 a, const Vector3 b) {
+	return Vector3(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
+}
+
+inline Vector3 clamp(const Vector3 a, const Vector3 minv, const Vector3 maxv) {
+	return Vector3(clamp(a.x, minv.x, maxv.x), clamp(a.y, minv.y, maxv.y), clamp(a.z, minv.z, maxv.z));
+}
+
 } // namespace zylann::math
 
 namespace zylann {
