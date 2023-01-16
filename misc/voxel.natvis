@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Span&lt;*&gt;">
+  <Type Name="zylann::Span&lt;*&gt;">
     <Expand>
         <Item Name="[size]">_size</Item>
         <ArrayItems>
