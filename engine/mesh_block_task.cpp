@@ -236,7 +236,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-std::atomic_int g_debug_mesh_tasks_count;
+std::atomic_int g_debug_mesh_tasks_count = { 0 };
 } // namespace
 
 MeshBlockTask::MeshBlockTask() {

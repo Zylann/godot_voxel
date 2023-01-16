@@ -1560,9 +1560,9 @@ void test_threaded_task_runner_misc() {
 	static const uint32_t task_duration_usec = 100'000;
 
 	struct TaskCounter {
-		std::atomic_uint32_t max_count;
-		std::atomic_uint32_t current_count;
-		std::atomic_uint32_t completed_count;
+		std::atomic_uint32_t max_count = { 0 };
+		std::atomic_uint32_t current_count = { 0 };
+		std::atomic_uint32_t completed_count = { 0 };
 
 		void reset() {
 			max_count = 0;

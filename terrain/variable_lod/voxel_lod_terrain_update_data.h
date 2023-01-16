@@ -188,7 +188,7 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	// Set to true when the update task is finished
-	std::atomic_bool task_is_complete;
+	std::atomic_bool task_is_complete = { true };
 	// Will be locked as long as the update task is running.
 	BinaryMutex completion_mutex;
 

@@ -137,7 +137,7 @@ struct DetailTextureOutput {
 	DetailImages images;
 	DetailTextures textures;
 	// Can be false if textures are computed asynchronously. Will become true when it's done (and not change after).
-	std::atomic_bool valid;
+	std::atomic_bool valid = { false };
 };
 
 // Given a number of items, tells which size a 2D square grid should be in order to contain them

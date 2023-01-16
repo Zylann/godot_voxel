@@ -52,7 +52,7 @@ class GenMeshSDFSubBoxTask : public IThreadedTask {
 public:
 	struct SharedData {
 		std::vector<Triangle> triangles;
-		std::atomic_int pending_jobs;
+		std::atomic_int pending_jobs = { 0 };
 		VoxelBufferInternal buffer;
 		Vector3f min_pos;
 		Vector3f max_pos;

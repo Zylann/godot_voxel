@@ -10,7 +10,7 @@
 namespace zylann::voxel {
 
 namespace {
-std::atomic_int g_debug_load_block_tasks_count;
+std::atomic_int g_debug_load_block_tasks_count = { 0 };
 }
 
 LoadBlockDataTask::LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,

@@ -98,7 +98,7 @@ private:
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
 		std::string name;
-		std::atomic<const char *> debug_running_task_name;
+		std::atomic<const char *> debug_running_task_name = { nullptr };
 
 		void wait_to_finish_and_reset() {
 			thread.wait_to_finish();

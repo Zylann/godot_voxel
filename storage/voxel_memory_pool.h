@@ -102,7 +102,7 @@ private:
 	DebugUsedBlocks _debug_nonpooled_used_blocks;
 #endif
 
-	std::atomic_uint32_t _used_blocks = 0;
+	std::atomic_uint32_t _used_blocks = { 0 };
 	size_t _used_memory = 0;
 	size_t _total_memory = 0;
 };

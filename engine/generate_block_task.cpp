@@ -12,7 +12,7 @@
 namespace zylann::voxel {
 
 namespace {
-std::atomic_int g_debug_generate_tasks_count;
+std::atomic_int g_debug_generate_tasks_count = { 0 };
 }
 
 GenerateBlockTask::GenerateBlockTask() {
