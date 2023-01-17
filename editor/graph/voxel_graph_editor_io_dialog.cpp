@@ -1,9 +1,6 @@
 #include "voxel_graph_editor_io_dialog.h"
 #include "../../generators/graph/node_type_db.h"
-#include "../../util/godot/core/array.h"
 #include "../../util/godot/classes/button.h"
-#include "../../util/godot/core/callable.h"
-#include "../../util/godot/editor_scale.h"
 #include "../../util/godot/classes/grid_container.h"
 #include "../../util/godot/classes/h_box_container.h"
 #include "../../util/godot/classes/h_separator.h"
@@ -14,6 +11,9 @@
 #include "../../util/godot/classes/spin_box.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
+#include "../../util/godot/core/array.h"
+#include "../../util/godot/core/callable.h"
+#include "../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {
 
@@ -161,7 +161,7 @@ void VoxelGraphEditorIODialog::set_graph(Ref<VoxelGraphFunction> graph) {
 	set_enabled(graph.is_valid());
 }
 
-void VoxelGraphEditorIODialog::set_undo_redo(Ref<EditorUndoRedoManager> undo_redo) {
+void VoxelGraphEditorIODialog::set_undo_redo(EditorUndoRedoManager *undo_redo) {
 	_undo_redo = undo_redo;
 }
 
@@ -287,7 +287,7 @@ void VoxelGraphEditorIODialog::_on_auto_generate_button_pressed() {
 
 void VoxelGraphEditorIODialog::_on_ok_pressed() {
 	ERR_FAIL_COND(_graph.is_null());
-	ERR_FAIL_COND(_undo_redo.is_null());
+	ERR_FAIL_COND(_undo_redo == nullptr);
 
 	Array previous_inputs = serialize_io_definitions(_graph->get_input_definitions());
 	Array previous_outputs = serialize_io_definitions(_graph->get_output_definitions());

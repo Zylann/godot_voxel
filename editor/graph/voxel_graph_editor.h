@@ -47,8 +47,8 @@ public:
 	void set_graph(Ref<pg::VoxelGraphFunction> graph);
 	Ref<pg::VoxelGraphFunction> get_graph() const;
 
-	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
-	Ref<EditorUndoRedoManager> get_undo_redo() const;
+	void set_undo_redo(EditorUndoRedoManager *undo_redo);
+	EditorUndoRedoManager *get_undo_redo() const;
 
 	void set_voxel_node(VoxelNode *node);
 
@@ -138,10 +138,11 @@ private:
 	// TODO GDX: EditorQuickOpen is not exposed!
 	EditorQuickOpen *_function_quick_open_dialog = nullptr;
 #endif
+	// Not owned.
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
 	// VisualShader did it that way when this manager got introduced in place of the old global UndoRedo...
 	// there doesn't seem to be any documentation yet for this class
-	Ref<EditorUndoRedoManager> _undo_redo = nullptr;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;

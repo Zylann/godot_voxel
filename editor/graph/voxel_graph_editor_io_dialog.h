@@ -20,7 +20,7 @@ public:
 	VoxelGraphEditorIODialog();
 
 	void set_graph(Ref<pg::VoxelGraphFunction> graph);
-	void set_undo_redo(Ref<EditorUndoRedoManager> undo_redo);
+	void set_undo_redo(EditorUndoRedoManager *undo_redo);
 
 private:
 	void set_enabled(bool enabled);
@@ -62,7 +62,7 @@ private:
 	PortsUI _inputs_ui;
 	PortsUI _outputs_ui;
 	Button *_auto_generate_button = nullptr;
-	Ref<EditorUndoRedoManager> _undo_redo;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 };
 
 } // namespace zylann::voxel

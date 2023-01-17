@@ -318,11 +318,11 @@ Ref<VoxelGraphFunction> VoxelGraphEditor::get_graph() const {
 	return _graph;
 }
 
-void VoxelGraphEditor::set_undo_redo(Ref<EditorUndoRedoManager> undo_redo) {
+void VoxelGraphEditor::set_undo_redo(EditorUndoRedoManager *undo_redo) {
 	_undo_redo = undo_redo;
 }
 
-Ref<EditorUndoRedoManager> VoxelGraphEditor::get_undo_redo() const {
+EditorUndoRedoManager *VoxelGraphEditor::get_undo_redo() const {
 	return _undo_redo;
 }
 
@@ -843,8 +843,7 @@ void VoxelGraphEditor::_on_graph_node_preview_gui_input(Ref<InputEvent> event) {
 	Ref<InputEventMouseMotion> mm = event;
 	if (mm.is_valid()) {
 		// Ctrl+Drag above any preview to pan around the area they render.
-		if (mm->is_command_or_control_pressed() &&
-				mm->get_button_mask().has_flag(ZN_GODOT_MouseButtonMask_MIDDLE)) {
+		if (mm->is_command_or_control_pressed() && mm->get_button_mask().has_flag(ZN_GODOT_MouseButtonMask_MIDDLE)) {
 			const Vector2 rel = mm->get_relative();
 			set_preview_transform(_preview_offset - Vector2f(rel.x, -rel.y) * _preview_scale, _preview_scale);
 

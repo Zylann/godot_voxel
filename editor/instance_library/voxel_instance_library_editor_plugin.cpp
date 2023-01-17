@@ -102,7 +102,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 
 			const int item_id = _library->get_next_available_id();
 
-			EditorUndoRedoManager &ur = **get_undo_redo();
+			EditorUndoRedoManager &ur = *get_undo_redo();
 			ur.create_action("Add multimesh item");
 			ur.add_do_method(*_library, "add_item", item_id, item);
 			ur.add_undo_method(*_library, "remove_item", item_id);
@@ -158,7 +158,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed() {
 
 	Ref<VoxelInstanceLibraryItem> item = _library->get_item(_item_id_to_remove);
 
-	EditorUndoRedoManager &ur = **get_undo_redo();
+	EditorUndoRedoManager &ur = *get_undo_redo();
 	ur.create_action("Remove item");
 	ur.add_do_method(*_library, "remove_item", _item_id_to_remove);
 	ur.add_undo_method(*_library, "add_item", _item_id_to_remove, item);
@@ -197,7 +197,7 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 
 	const int item_id = _library->get_next_available_id();
 
-	EditorUndoRedoManager &ur = **get_undo_redo();
+	EditorUndoRedoManager &ur = *get_undo_redo();
 	ur.create_action("Add scene item");
 	ur.add_do_method(_library.ptr(), "add_item", item_id, item);
 	ur.add_undo_method(_library.ptr(), "remove_item", item_id);

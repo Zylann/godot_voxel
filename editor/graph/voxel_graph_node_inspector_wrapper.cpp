@@ -205,9 +205,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	ERR_FAIL_COND_V(_graph_editor == nullptr, false);
 	// We cannot keep a reference to UndoRedo in our object because our object can be referenced by UndoRedo, which
 	// would cause a cyclic reference. So we access it from a weak reference to the editor.
-	Ref<EditorUndoRedoManager> undo_redo = _graph_editor->get_undo_redo();
-	ERR_FAIL_COND_V(undo_redo.is_null(), false);
-	EditorUndoRedoManager &ur = **undo_redo;
+	EditorUndoRedoManager *undo_redo = _graph_editor->get_undo_redo();
+	ERR_FAIL_COND_V(undo_redo == nullptr, false);
+	EditorUndoRedoManager &ur = *undo_redo;
 
 	const String name = p_name;
 

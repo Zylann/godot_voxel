@@ -101,7 +101,7 @@ static void update_multimesh_item_from_scene(
 
 void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_selected(String fpath) {
 	ERR_FAIL_COND(_item.is_null());
-	update_multimesh_item_from_scene(**_item, fpath, **get_undo_redo());
+	update_multimesh_item_from_scene(**_item, fpath, *get_undo_redo());
 	// We are done with this item
 	_item.unref();
 }
