@@ -57,6 +57,10 @@ inline Vector3 clamp(const Vector3 a, const Vector3 minv, const Vector3 maxv) {
 	return Vector3(clamp(a.x, minv.x, maxv.x), clamp(a.y, minv.y, maxv.y), clamp(a.z, minv.z, maxv.z));
 }
 
+inline Vector3 abs(const Vector3 &v) {
+	return Vector3(Math::abs(v.x), Math::abs(v.y), Math::abs(v.z));
+}
+
 } // namespace zylann::math
 
 namespace zylann {
