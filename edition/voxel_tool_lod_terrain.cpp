@@ -551,6 +551,43 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		}
 	}
 
+	// Find out which materials contain parameters that require instancing.
+	//
+	// Since 7dbc458bb4f3e0cc94e5070bd33bde41d214c98d it's no longer possible to quickly check if a
+	// shader has a uniform by name using Shader's parameter cache. Now it seems the only way is to get the whole list
+	// of parameters and find into it, which is slow, tedious to write and different between modules and GDExtension.
+
+	uint32_t materials_to_instance_mask = 0;
+	{
+		std::vector<GodotShaderParameterInfo> params;
+		const String u_block_local_transform = VoxelStringNames::get_singleton().u_block_local_transform;
+
+		ZN_ASSERT_RETURN_V_MSG(materials.size() < 32, Array(),
+				"Too many materials. If you need more, make a request or change the code.");
+
+		for (int material_index = 0; material_index < materials.size(); ++material_index) {
+			Ref<ShaderMaterial> sm = materials[material_index];
+			if (sm.is_null()) {
+				continue;
+			}
+
+			Ref<Shader> shader = sm->get_shader();
+			if (shader.is_null()) {
+				continue;
+			}
+
+			params.clear();
+			get_shader_parameter_list(shader->get_rid(), params);
+
+			for (const GodotShaderParameterInfo &param_info : params) {
+				if (param_info.name == u_block_local_transform) {
+					materials_to_instance_mask |= (1 << material_index);
+					break;
+				}
+			}
+		}
+	}
+
 	// Create instances
 
 	Array nodes;
@@ -590,13 +627,14 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Transform3D local_transform(Basis(), info.world_pos);
 
 			for (int i = 0; i < materials.size(); ++i) {
-				Ref<ShaderMaterial> sm = materials[i];
-				if (sm.is_valid() && sm->get_shader().is_valid() &&
-						sm->get_shader()->has_parameter(VoxelStringNames::get_singleton().u_block_local_transform)) {
+				if ((materials_to_instance_mask & (1 << i)) != 0) {
+					Ref<ShaderMaterial> sm = materials[i];
+					ZN_ASSERT_CONTINUE(sm.is_valid());
+					sm = sm->duplicate(false);
 					// That parameter should have a valid default value matching the local transform relative to the
 					// volume, which is usually per-instance, but in Godot 3 we have no such feature, so we have to
 					// duplicate.
-					sm = sm->duplicate(false);
+					// TODO Try using per-instance parameters for scalar uniforms (Godot 4 doesn't support textures)
 					sm->set_shader_parameter(
 							VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
 					materials[i] = sm;
