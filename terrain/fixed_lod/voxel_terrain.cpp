@@ -958,11 +958,17 @@ void VoxelTerrain::process_viewers() {
 		for (size_t i = 0; i < _paired_viewers.size(); ++i) {
 			PairedViewer &p = _paired_viewers[i];
 			if (!VoxelEngine::get_singleton().viewer_exists(p.id)) {
-				ZN_PRINT_VERBOSE("Detected destroyed viewer in VoxelTerrain");
+				ZN_PRINT_VERBOSE(format("Detected destroyed viewer {} in VoxelTerrain", p.id));
 				// Interpret removal as nullified view distance so the same code handling loading of blocks
 				// will be used to unload those viewed by this viewer.
 				// We'll actually remove unpaired viewers in a second pass.
 				p.state.view_distance_voxels = 0;
+				// Also update boxes, they won't be updated since the viewer has been removed.
+				// Assign prev state, otherwise in some cases resetting boxes would make them equal to prev state,
+				// therefore causing no unload
+				p.prev_state = p.state;
+				p.state.data_box = Box3i();
+				p.state.mesh_box = Box3i();
 				unpaired_viewer_indexes.push_back(i);
 			}
 		}
@@ -989,10 +995,12 @@ void VoxelTerrain::process_viewers() {
 			inline void operator()(ViewerID viewer_id, const VoxelEngine::Viewer &viewer) {
 				size_t paired_viewer_index;
 				if (!self.try_get_paired_viewer_index(viewer_id, paired_viewer_index)) {
+					// New viewer
 					PairedViewer p;
 					p.id = viewer_id;
 					paired_viewer_index = self._paired_viewers.size();
 					self._paired_viewers.push_back(p);
+					ZN_PRINT_VERBOSE(format("Pairing viewer {} to VoxelTerrain", viewer_id));
 				}
 
 				PairedViewer &paired_viewer = self._paired_viewers[paired_viewer_index];
@@ -1043,7 +1051,7 @@ void VoxelTerrain::process_viewers() {
 			}
 		};
 
-		// New viewers and updates
+		// New viewers and updates. Removed viewers won't be iterated but are still paired until later.
 		UpdatePairedViewer u{ *this, bounds_in_data_blocks, bounds_in_mesh_blocks, world_to_local_transform,
 			view_distance_scale };
 		VoxelEngine::get_singleton().for_each_viewer(u);
@@ -1075,6 +1083,10 @@ void VoxelTerrain::process_viewers() {
 
 				if (prev_mesh_box != new_mesh_box) {
 					ZN_PROFILE_SCOPE();
+
+					// TODO Any reason to unview old blocks before viewing new blocks?
+					// Because if a viewer is removed and another is added, it will reload the whole area even if their
+					// box is the same.
 
 					// Unview blocks that just fell out of range
 					prev_mesh_box.difference(new_mesh_box, [this, &viewer](Box3i out_of_range_box) {
@@ -1131,9 +1143,9 @@ void VoxelTerrain::process_viewers() {
 
 	// We no longer need unpaired viewers.
 	for (size_t i = 0; i < unpaired_viewer_indexes.size(); ++i) {
-		ZN_PRINT_VERBOSE("Unpairing viewer from VoxelTerrain");
 		// Iterating backward so indexes of paired viewers will not change because of the removal
 		const size_t vi = unpaired_viewer_indexes[unpaired_viewer_indexes.size() - i - 1];
+		ZN_PRINT_VERBOSE(format("Unpairing viewer {} from VoxelTerrain", _paired_viewers[vi].id));
 		_paired_viewers[vi] = _paired_viewers.back();
 		_paired_viewers.pop_back();
 	}
@@ -1152,11 +1164,15 @@ void VoxelTerrain::process_viewers() {
 void VoxelTerrain::process_viewer_data_box_change(
 		ViewerID viewer_id, Box3i prev_data_box, Box3i new_data_box, bool can_load_blocks) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(prev_data_box != new_data_box);
 
 	static thread_local std::vector<Vector3i> tls_missing_blocks;
 	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
 
 	// Unview blocks that just fell out of range
+	//
+	// TODO Any reason to unview old blocks before viewing new blocks?
+	// Because if a viewer is removed and another is added, it will reload the whole area even if their box is the same.
 	{
 		const bool may_save =
 				get_stream().is_valid() && (!Engine::get_singleton()->is_editor_hint() || _run_stream_in_editor);
@@ -1166,6 +1182,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
+			// ZN_PRINT_VERBOSE(format("Unview data box {}", out_of_range_box));
 			_data->unview_area(out_of_range_box, tls_missing_blocks, tls_found_blocks_positions,
 					may_save ? &_blocks_to_save : nullptr);
 		});
@@ -1216,6 +1233,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 		tls_found_blocks_positions.clear();
 
 		new_data_box.difference(prev_data_box, [this](Box3i box_to_load) {
+			// ZN_PRINT_VERBOSE(format("View data box {}", box_to_load));
 			_data->view_area(box_to_load, tls_missing_blocks, tls_found_blocks_positions, tls_found_blocks);
 		});
 

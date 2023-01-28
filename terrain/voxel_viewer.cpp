@@ -2,6 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/classes/engine.h"
 #include "../util/godot/classes/node.h"
+#include "../util/string_funcs.h"
 
 namespace zylann::voxel {
 
@@ -82,6 +83,10 @@ void VoxelViewer::_notification(int p_what) {
 
 		case NOTIFICATION_EXIT_TREE:
 			if (!Engine::get_singleton()->is_editor_hint()) {
+				// TODO When users reparent nodes, adding/removing viewers causes some suboptimal situations.
+				// We could mitigate this use case by putting viewers into an inactive group, so they keep their ID, so
+				// when reparenting happens, they will flip on and off. From the perspective of terrain's viewer pairing
+				// logic, it will be as if nothing special happened and it won't cause unnecessary reload/re-refcount.
 				VoxelEngine::get_singleton().remove_viewer(_viewer_id);
 			}
 			break;
