@@ -35,9 +35,17 @@ python build.py -a
 Layers
 -------
 
+### Main layers
+
+This module has 3 main layers:
+
+- Voxel: the voxel engine. Wrapped into `zylann::voxel::` namespace.
+- Util: library of functions, helpers and data structures, which does not depend on Voxel. Wrapped into `zylann::` namespace.
+- Thirdparty: third-party libraries.
+
 ### Folders
 
-The module is divided in several layers, each with different dependencies. Because of this, it is possible to use `VoxelMesher`, `VoxelGenerator` or `VoxelStream` standalone, without needing to use a `VoxelTerrain` node for example.
+The module is divided in several folders, each with different dependencies. Because of this, it is possible to use `VoxelMesher`, `VoxelGenerator` or `VoxelStream` standalone, without needing to use a `VoxelTerrain` node for example.
 
 Directory      | Description
 -------------- | -------------------------------------------------------------------------------------------------------
