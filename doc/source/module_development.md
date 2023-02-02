@@ -363,8 +363,8 @@ Once you are done profiling, don't forget to remove these lines, otherwise profi
 This way of integrating Tracy was based on this [commit by vblanco](https://github.com/vblanco20-1/godot/commit/2c5613abb8c9fdb5c4bfe3b52fdb665a91b43579)
 
 
-Compilation flags
-------------------
+Preprocessor macros
+---------------------
 
 The module has a few preprocessor macros that can be defined in order to turn off parts of the code getting compiled.
 Some can be specified through SCons command line parameters.
