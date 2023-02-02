@@ -1,7 +1,6 @@
 #ifndef VOXEL_GENERATOR_GRAPH_H
 #define VOXEL_GENERATOR_GRAPH_H
 
-#include "../../util/godot/core/binder.h"
 #include "../../util/macros.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"

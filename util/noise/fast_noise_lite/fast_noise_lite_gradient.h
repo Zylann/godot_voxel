@@ -3,7 +3,6 @@
 
 #include "../../../thirdparty/fast_noise/FastNoiseLite.h"
 #include "../../godot/classes/resource.h"
-#include "../../godot/core/binder.h"
 
 namespace zylann {
 
@@ -121,8 +120,8 @@ private:
 
 } // namespace zylann
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, NoiseType);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, FractalType);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient, RotationType3D);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::NoiseType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::FractalType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLiteGradient::RotationType3D);
 
 #endif // ZYLANN_FAST_NOISE_LITE_GRADIENT_H

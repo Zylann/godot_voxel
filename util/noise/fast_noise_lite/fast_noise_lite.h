@@ -1,7 +1,6 @@
 #ifndef ZYLANN_FAST_NOISE_LITE_H
 #define ZYLANN_FAST_NOISE_LITE_H
 
-#include "../../godot/core/binder.h"
 #include "fast_noise_lite_gradient.h"
 
 namespace zylann {
@@ -195,10 +194,10 @@ private:
 
 } // namespace zylann
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, NoiseType);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, FractalType);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, RotationType3D);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, CellularDistanceFunction);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite, CellularReturnType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::NoiseType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::FractalType);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::RotationType3D);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularDistanceFunction);
+VARIANT_ENUM_CAST(zylann::ZN_FastNoiseLite::CellularReturnType);
 
 #endif // ZYLANN_FAST_NOISE_LITE_H

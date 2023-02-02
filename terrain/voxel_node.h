@@ -7,7 +7,6 @@
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/node_3d.h"
-#include "../util/godot/core/binder.h"
 
 namespace zylann::voxel {
 
@@ -87,6 +86,6 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelNode, GIMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelNode::GIMode);
 
 #endif // VOXEL_NODE_H

@@ -412,7 +412,7 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain, ProcessCallback)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain, DebugDrawFlag)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::DebugDrawFlag)
 
 #endif // VOXEL_LOD_TERRAIN_HPP

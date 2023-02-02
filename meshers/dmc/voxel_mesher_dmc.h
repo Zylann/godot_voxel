@@ -2,7 +2,6 @@
 #define VOXEL_MESHER_DMC_H
 
 #include "../../util/godot/classes/mesh.h"
-#include "../../util/godot/core/binder.h"
 #include "../../util/object_pool.h"
 #include "../voxel_mesher.h"
 #include "hermite_value.h"
@@ -147,8 +146,8 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, SimplifyMode)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, MeshMode)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC, SeamMode)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SimplifyMode)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::MeshMode)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherDMC::SeamMode)
 
 #endif // VOXEL_MESHER_DMC_H

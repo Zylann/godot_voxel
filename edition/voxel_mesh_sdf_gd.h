@@ -121,6 +121,6 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMeshSDF, BakeMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMeshSDF::BakeMode);
 
 #endif // VOXEL_MESH_SDF_GD_H

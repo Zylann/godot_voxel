@@ -2,7 +2,6 @@
 #define VOXEL_GRAPH_FUNCTION_H
 
 #include "../../util/godot/classes/resource.h"
-#include "../../util/godot/core/binder.h"
 #include "program_graph.h"
 
 namespace zylann::voxel::pg {
@@ -263,6 +262,6 @@ inline String get_port_display_name(const VoxelGraphFunction::Port &port) {
 
 } // namespace zylann::voxel::pg
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::pg::VoxelGraphFunction, NodeTypeID)
+VARIANT_ENUM_CAST(zylann::voxel::pg::VoxelGraphFunction::NodeTypeID)
 
 #endif // VOXEL_GRAPH_FUNCTION_H

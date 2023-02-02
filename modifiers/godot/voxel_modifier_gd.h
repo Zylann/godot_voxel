@@ -4,7 +4,6 @@
 #include "../../storage/voxel_data.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/node_3d.h"
-#include "../../util/godot/core/binder.h"
 #include "../voxel_modifier.h"
 
 namespace zylann::voxel {
@@ -59,6 +58,6 @@ T *get_modifier(VoxelLodTerrain &volume, uint32_t id, zylann::voxel::VoxelModifi
 } // namespace gd
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier, Operation);
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier::Operation);
 
 #endif // VOXEL_MODIFIER_GD_H

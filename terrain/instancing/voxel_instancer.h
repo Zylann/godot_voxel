@@ -267,7 +267,7 @@ private:
 } // namespace voxel
 } // namespace zylann
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, UpMode);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer, DebugDrawFlag);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H

@@ -5,7 +5,6 @@
 #include "../../util/fixed_array.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
-#include "../../util/godot/core/binder.h"
 #include "../../util/macros.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
@@ -254,7 +253,7 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel, GeometryType)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel, Side)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::GeometryType)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::Side)
 
 #endif // VOXEL_BLOCKY_MODEL_H

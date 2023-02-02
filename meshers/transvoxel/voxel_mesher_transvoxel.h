@@ -1,7 +1,6 @@
 #ifndef VOXEL_MESHER_TRANSVOXEL_H
 #define VOXEL_MESHER_TRANSVOXEL_H
 
-#include "../../util/godot/core/binder.h"
 #include "../../util/macros.h"
 #include "../voxel_mesher.h"
 #include "transvoxel.h"
@@ -99,6 +98,6 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherTransvoxel, TexturingMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherTransvoxel::TexturingMode);
 
 #endif // VOXEL_MESHER_TRANSVOXEL_H

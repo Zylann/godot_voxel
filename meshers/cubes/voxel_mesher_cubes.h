@@ -1,7 +1,6 @@
 #ifndef VOXEL_MESHER_CUBES_H
 #define VOXEL_MESHER_CUBES_H
 
-#include "../../util/godot/core/binder.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/thread/rw_lock.h"
@@ -136,7 +135,7 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes, ColorMode);
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes, Materials);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::ColorMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelMesherCubes::Materials);
 
 #endif // VOXEL_MESHER_CUBES_H

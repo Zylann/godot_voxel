@@ -2,7 +2,6 @@
 #define VOXEL_BUFFER_GD_H
 
 #include "../util/godot/classes/ref_counted.h"
-#include "../util/godot/core/binder.h"
 #include "../util/macros.h"
 #include "voxel_buffer_internal.h"
 #include <memory>
@@ -178,8 +177,8 @@ private:
 } // namespace gd
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, ChannelId)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, Depth)
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer, Compression)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Depth)
+VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Compression)
 
 #endif // VOXEL_BUFFER_GD_H

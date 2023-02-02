@@ -2,7 +2,6 @@
 #define VOXEL_STREAM_H
 
 #include "../util/godot/classes/resource.h"
-#include "../util/godot/core/binder.h"
 #include "../util/memory.h"
 #include "../util/thread/rw_lock.h"
 #include "instance_data.h"
@@ -136,6 +135,6 @@ private:
 
 } // namespace zylann::voxel
 
-ZN_GODOT_VARIANT_ENUM_CAST(zylann::voxel::VoxelStream, ResultCode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelStream::ResultCode);
 
 #endif // VOXEL_STREAM_H
