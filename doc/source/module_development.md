@@ -287,6 +287,8 @@ Profile with Tracy
 
 This module contains macros to profile specific code sections. By default, these macros expand to [Tracy Profiler](https://github.com/wolfpld/tracy) zones. It allows to check how long code takes to run, and displays it in a timeline.
 
+It was tested with Tracy 0.7.8.
+
 ![Tracy screenshot](images/tracy.webp)
 
 ### How to use profiler scopes
