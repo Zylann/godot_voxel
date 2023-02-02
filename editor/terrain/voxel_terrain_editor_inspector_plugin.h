@@ -17,7 +17,7 @@ public:
 #if defined ZN_GODOT
 	bool can_handle(Object *p_object) override;
 	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
-			const String &p_hint_text, const uint32_t p_usage, const bool p_wide = false) override;
+			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
 #elif defined(ZN_GODOT_EXTENSION)
 	bool _can_handle(const Variant &p_object_v) const override;
 	bool _parse_property(Object *p_object, int64_t p_type, const String &p_path, int64_t p_hint,
