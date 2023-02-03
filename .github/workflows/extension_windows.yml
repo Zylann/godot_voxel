@@ -1,7 +1,7 @@
 name: 🚪 Windows Extension Builds
 on:
   push:
-    branches: [ master ]
+    branches: [ master, github_actions ]
   pull_request:
     branches: [ master ]
 
