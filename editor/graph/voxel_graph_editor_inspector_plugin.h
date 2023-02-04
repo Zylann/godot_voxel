@@ -19,7 +19,7 @@ public:
 #elif defined(ZN_GODOT_EXTENSION)
 	bool _can_handle(const Variant &obj_v) const override;
 	bool _parse_property(Object *p_object, int64_t p_type, const String &p_path, int64_t p_hint,
-			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
+			const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
 #endif
 
 private:

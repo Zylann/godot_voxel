@@ -19,8 +19,7 @@ bool VoxelGraphEditorInspectorPlugin::parse_property(Object *p_object, const Var
 		const bool p_wide) {
 #elif defined(ZN_GODOT_EXTENSION)
 bool VoxelGraphEditorInspectorPlugin::_parse_property(Object *p_object, int64_t p_type, const String &p_path,
-		const int64_t p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,
-		const bool p_wide) {
+		const int64_t p_hint, const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
 #endif
 	if (p_type == Variant::STRING && p_hint != PROPERTY_HINT_MULTILINE_TEXT) {
 		add_property_editor(p_path, memnew(ZN_EditorPropertyTextChangeOnSubmit));

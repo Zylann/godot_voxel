@@ -21,7 +21,7 @@ public:
 	bool _can_handle(const Variant &p_object_v) const override;
 	void _parse_group(Object *p_object, const String &p_group) override;
 	bool _parse_property(Object *p_object, int64_t p_type, const String &p_path, int64_t p_hint,
-			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide) override;
+			const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) override;
 #endif
 
 private:
