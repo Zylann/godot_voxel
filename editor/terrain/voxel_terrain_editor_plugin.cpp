@@ -221,7 +221,7 @@ void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visi
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 #elif defined(ZN_GODOT_EXTENSION)
-int64_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+int32_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 #endif
 	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;

@@ -38,7 +38,7 @@ public:
 #if defined(ZN_GODOT)
 	EditorPlugin::AfterGUIInput forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 #elif defined(ZN_GODOT_EXTENSION)
-	int64_t _forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
+	int32_t _forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
 #endif
 
 protected:

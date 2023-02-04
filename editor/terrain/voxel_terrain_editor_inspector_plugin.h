@@ -12,8 +12,6 @@ public:
 	// In the Godot API, virtual methods all take an `_` by convention, making their name different from modules.
 	// TODO GDX: In Godot 4, some virtual methods that took an `Object*` now takes a `Variant`.
 	// This looks like a regression from Godot 3.
-	// TODO GDX: The Godot API doesn't seem capable of typing enum arguments coming from other classes. Instead they
-	// are typed as `int`, making signatures needlessly different and lacking information.
 #if defined ZN_GODOT
 	bool can_handle(Object *p_object) override;
 	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
