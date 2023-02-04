@@ -13,7 +13,8 @@ class VoxelGraphFunctionInspectorPlugin : public ZN_EditorInspectorPlugin {
 public:
 	bool _zn_can_handle(const Object *obj) const override;
 	bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,
-			const PropertyHint p_hint, const String &p_hint_text, const uint32_t p_usage, const bool p_wide) override;
+			const PropertyHint p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,
+			const bool p_wide) override;
 
 	void set_listener(VoxelGraphEditorPlugin *plugin);
 

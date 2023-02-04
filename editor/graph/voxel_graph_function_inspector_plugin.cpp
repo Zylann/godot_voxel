@@ -38,8 +38,8 @@ static VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> 
 }
 
 bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, const Variant::Type p_type,
-		const String &p_path, const PropertyHint p_hint, const String &p_hint_text, const uint32_t p_usage,
-		const bool p_wide) {
+		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,
+		const BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
 	if (p_path == "input_definitions") {
 		VoxelGraphFunction *graph = Object::cast_to<VoxelGraphFunction>(p_object);
 
