@@ -6,6 +6,9 @@
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/editor_inspector_plugin.hpp>
 using namespace godot;
+// TODO GDX: GodotCpp doesn't seem to define casts for global bitfield enums, so implementing virtuals or registering
+// methods with such bitfields in them does not compile.
+VARIANT_BITFIELD_CAST(PropertyUsageFlags)
 #endif
 
 namespace zylann {
