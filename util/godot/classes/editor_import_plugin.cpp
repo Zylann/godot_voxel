@@ -80,11 +80,11 @@ PackedStringArray ZN_EditorImportPlugin::_get_recognized_extensions() const {
 	return _zn_get_recognized_extensions();
 }
 
-String ZN_EditorImportPlugin::_get_preset_name(int64_t p_idx) const {
+String ZN_EditorImportPlugin::_get_preset_name(int32_t p_idx) const {
 	return _zn_get_preset_name(p_idx);
 }
 
-int64_t ZN_EditorImportPlugin::_get_preset_count() const {
+int32_t ZN_EditorImportPlugin::_get_preset_count() const {
 	return _zn_get_preset_count();
 }
 
@@ -100,7 +100,7 @@ double ZN_EditorImportPlugin::_get_priority() const {
 	return _zn_get_priority();
 }
 
-TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int64_t preset_index) const {
+TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int32_t preset_index) const {
 	std::vector<GodotImportOption> options;
 	_zn_get_import_options(options, path, preset_index);
 
@@ -129,7 +129,7 @@ bool ZN_EditorImportPlugin::_get_option_visibility(
 	return _zn_get_option_visibility(path, option_name, GodotKeyValueWrapper{ options });
 }
 
-int64_t ZN_EditorImportPlugin::_import(const String &source_file, const String &save_path, const Dictionary &options,
+Error ZN_EditorImportPlugin::_import(const String &source_file, const String &save_path, const Dictionary &options,
 		const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const {
 	// TODO GDX: `EditorImportPlugin::_import` is passing constant arrays for parameters that should be writable
 	TypedArray<String> &platform_variants_writable = const_cast<TypedArray<String> &>(platform_variants);

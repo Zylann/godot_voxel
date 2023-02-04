@@ -91,7 +91,7 @@ public:
 	String get_save_extension() const override;
 	String get_resource_type() const override;
 	float get_priority() const override;
-	//int get_import_order() const override;
+	// int get_import_order() const override;
 	void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
 	bool get_option_visibility(
 			const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override;
@@ -103,16 +103,16 @@ public:
 	String _get_importer_name() const override;
 	String _get_visible_name() const override;
 	PackedStringArray _get_recognized_extensions() const override;
-	String _get_preset_name(int64_t p_idx) const override;
-	int64_t _get_preset_count() const override;
+	String _get_preset_name(int32_t p_idx) const override;
+	int32_t _get_preset_count() const override;
 	String _get_save_extension() const override;
 	String _get_resource_type() const override;
 	double _get_priority() const override;
-	TypedArray<Dictionary> _get_import_options(const String &path, int64_t preset_index) const override;
+	TypedArray<Dictionary> _get_import_options(const String &path, int32_t preset_index) const override;
 	bool _get_option_visibility(
 			const String &path, const StringName &option_name, const Dictionary &options) const override;
 
-	int64_t _import(const String &source_file, const String &save_path, const Dictionary &options,
+	Error _import(const String &source_file, const String &save_path, const Dictionary &options,
 			const TypedArray<String> &platform_variants, const TypedArray<String> &gen_files) const override;
 
 #endif
