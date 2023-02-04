@@ -28,8 +28,8 @@ bool VoxelTerrainEditorInspectorPlugin::parse_property(Object *p_object, const V
 		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,
 		const BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
 #elif defined(ZN_GODOT_EXTENSION)
-bool VoxelTerrainEditorInspectorPlugin::_parse_property(Object *p_object, int64_t p_type, const String &p_path,
-		int64_t p_hint, const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
+bool VoxelTerrainEditorInspectorPlugin::_parse_property(Object *p_object, Variant::Type p_type, const String &p_path,
+		PropertyHint p_hint, const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
 #endif
 	if (p_type != Variant::AABB) {
 		return false;
