@@ -25,6 +25,10 @@ inline Vector3 floor(const Vector3 &p) {
 	return p.floor();
 }
 
+inline Vector3 round(const Vector3 &p) {
+	return p.round();
+}
+
 inline bool is_valid_size(const Vector3 &s) {
 	return s.x >= 0 && s.y >= 0 && s.z >= 0;
 }
