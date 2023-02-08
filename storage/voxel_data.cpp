@@ -141,11 +141,12 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 	Vector3i block_pos = pos >> get_block_size_po2();
 	bool generate = false;
 
-	if (_streaming_enabled) {
+	if (!_streaming_enabled) {
 		const Lod &data_lod0 = _lods[0];
 		std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, generate);
 
 		if (voxels == nullptr) {
+			// No voxel data. We know everything is loaded when data streaming is not used, so try to generate directly.
 			// TODO We should be able to get a value if modifiers are used but not a base generator
 			Ref<VoxelGenerator> generator = get_generator();
 			if (generator.is_valid()) {
@@ -164,11 +165,13 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 		return defval;
 
 	} else {
-		// We might hit places where data isn't loaded, in this case we try to fallback on higher LOD indices
+		// When data streaming is used, we try to find voxel data. If we don't and the location is also not loaded, we
+		// have to return the default value.
 		Vector3i voxel_pos = pos;
 		Ref<VoxelGenerator> generator = get_generator();
 		const unsigned int lod_count = get_lod_count();
 
+		// Check all LODs until we find a loaded location
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const Lod &data_lod = _lods[lod_index];
 
