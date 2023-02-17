@@ -73,6 +73,12 @@ bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_parse_property(Object *p
 		const String &p_path, PropertyHint p_hint, const String &p_hint_text, BitField<PropertyUsageFlags> p_usage,
 		const bool p_wide) {
 #endif
+	// TODO Godot invokes `parse_property` on ALL editor plugins when inspecting items of an Array!
+	// See https://github.com/godotengine/godot/issues/71236
+	if (p_object == nullptr) {
+		// We don't care about non-object properties
+		return false;
+	}
 	// Hide manual properties if a scene is assigned, because it will override them
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(p_object);
 	ERR_FAIL_COND_V(item == nullptr, false);
