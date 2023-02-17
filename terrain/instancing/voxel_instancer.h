@@ -164,7 +164,7 @@ private:
 
 	void update_block_from_transforms(int block_index, Span<const Transform3f> transforms, Vector3i grid_position,
 			Layer &layer, const VoxelInstanceLibraryItem &item_base, uint16_t layer_id, World3D &world,
-			const Transform3D &block_transform);
+			const Transform3D &block_transform, Vector3 block_local_position);
 
 	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
 
