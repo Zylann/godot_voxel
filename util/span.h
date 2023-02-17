@@ -2,6 +2,7 @@
 #define ZN_SPAN_H
 
 #include "fixed_array.h"
+#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -233,6 +234,17 @@ template <typename T, unsigned int N>
 Span<T> to_span(FixedArray<T, N> &a, unsigned int count) {
 	ZN_ASSERT(count <= a.size());
 	return Span<T>(a.data(), count);
+}
+
+template <typename T, unsigned int N>
+Span<T> to_span(std::array<T, N> &a, unsigned int count) {
+	ZN_ASSERT(count <= a.size());
+	return Span<T>(a.data(), count);
+}
+
+template <typename T, unsigned int N>
+Span<T> to_span(std::array<T, N> &a) {
+	return Span<T>(a.data(), a.size());
 }
 
 // TODO Deprecate, now Span has a conversion constructor that can allow doing that
