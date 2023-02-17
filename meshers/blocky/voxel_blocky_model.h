@@ -213,8 +213,8 @@ private:
 
 	static void _bind_methods();
 
-	Array _b_get_collision_aabbs() const;
-	void _b_set_collision_aabbs(Array array);
+	TypedArray<AABB> _b_get_collision_aabbs() const;
+	void _b_set_collision_aabbs(TypedArray<AABB> array);
 
 private:
 	void set_surface_count(unsigned int new_count);

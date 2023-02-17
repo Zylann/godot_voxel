@@ -624,8 +624,8 @@ void VoxelBlockyModel::bake(BakedData &baked_data, int p_atlas_size, bool bake_t
 	_empty = baked_data.empty;
 }
 
-Array VoxelBlockyModel::_b_get_collision_aabbs() const {
-	Array array;
+TypedArray<AABB> VoxelBlockyModel::_b_get_collision_aabbs() const {
+	TypedArray<AABB> array;
 	array.resize(_collision_aabbs.size());
 	for (size_t i = 0; i < _collision_aabbs.size(); ++i) {
 		array[i] = _collision_aabbs[i];
@@ -633,7 +633,7 @@ Array VoxelBlockyModel::_b_get_collision_aabbs() const {
 	return array;
 }
 
-void VoxelBlockyModel::_b_set_collision_aabbs(Array array) {
+void VoxelBlockyModel::_b_set_collision_aabbs(TypedArray<AABB> array) {
 	for (int i = 0; i < array.size(); ++i) {
 		const Variant v = array[i];
 		ERR_FAIL_COND(v.get_type() != Variant::AABB);
