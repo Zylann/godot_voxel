@@ -38,6 +38,7 @@ private:
 	void undock_graph_editor();
 	void dock_graph_editor();
 	void update_graph_editor_window_title();
+	void inspect_graph_or_generator(const VoxelGraphEditor &graph_editor);
 
 	void _on_graph_editor_node_selected(uint32_t node_id);
 	void _on_graph_editor_nothing_selected();
@@ -56,6 +57,15 @@ private:
 	bool _deferred_visibility_scheduled = false;
 	VoxelNode *_voxel_node = nullptr;
 	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
+	// Workaround for a new Godot 4 behavior:
+	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first.
+	// But this plugin handles both the graph resource, and nodes in it. When a node is selected, it tells Godot to
+	// inspect an associated object, so the inspector can be used to edit properties of the node.
+	// But with the new `edit(nullptr)` behavior, the plugin cleans up its UI, which destroys the UI GraphNode you
+	// selected, leading to nasty crashes and errors...
+	// Since this boils down to the plugin triggering a change in inspected object, we set a boolean to IGNORE
+	// `edit(nullptr)` calls.
+	bool _ignore_edit_null = false;
 };
 
 } // namespace zylann::voxel

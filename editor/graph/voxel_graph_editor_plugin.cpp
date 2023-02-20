@@ -79,6 +79,11 @@ void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
 	Object *p_object = p_object_v;
 #endif
 
+	// Workaround...
+	if (p_object == nullptr && _ignore_edit_null) {
+		return;
+	}
+
 	Ref<VoxelGeneratorGraph> generator;
 	Ref<VoxelGraphFunction> graph;
 	{
@@ -184,8 +189,14 @@ void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
 	wrapper->setup(node_id, _graph_editor);
-	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object
+	// Workaround the new behavior that Godot will call `edit(nullptr)` first when editing another object, even if that
+	// object is also handled by the plugin. `edit(nullptr)` would cause the UI to be cleaned up when a GraphNode is
+	// emitting its `selected` signal, causing destruction of that GraphNode.
+	_ignore_edit_null = true;
+	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object.
+	// Specifying `inspector_only=true` because that's what other plugins do when they can edit "sub-objects"
 	get_editor_interface()->inspect_object(*wrapper);
+	_ignore_edit_null = false;
 	_node_wrappers.push_back(wrapper);
 	// TODO Absurd situation here...
 	// `inspect_object()` gets to a point where Godot hides ALL plugins for some reason...
@@ -193,15 +204,19 @@ void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
 	// -_- https://github.com/godotengine/godot/issues/40166
 }
 
-void inspect_graph_or_generator(const VoxelGraphEditor &graph_editor, EditorPlugin &ed) {
+void VoxelGraphEditorPlugin::inspect_graph_or_generator(const VoxelGraphEditor &graph_editor) {
 	Ref<VoxelGeneratorGraph> generator = graph_editor.get_generator();
 	if (generator.is_valid()) {
-		ed.get_editor_interface()->inspect_object(*generator);
+		_ignore_edit_null = true;
+		get_editor_interface()->inspect_object(*generator);
+		_ignore_edit_null = false;
 		return;
 	}
 	Ref<VoxelGraphFunction> graph = graph_editor.get_graph();
 	if (graph.is_valid()) {
-		ed.get_editor_interface()->inspect_object(*graph);
+		_ignore_edit_null = true;
+		get_editor_interface()->inspect_object(*graph);
+		_ignore_edit_null = false;
 		return;
 	}
 }
@@ -211,13 +226,13 @@ void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
 	// from accessing the graph resource itself, to save it for example.
 	// I'd like to embed properties inside the nodes themselves, but it's a bit more work (and a waste of space),
 	// so for now I make it so deselecting all nodes in the graph (like clicking in the background) selects the graph.
-	inspect_graph_or_generator(*_graph_editor, *this);
+	inspect_graph_or_generator(*_graph_editor);
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted() {
 	// When deleting nodes, the selected one can be in them, but the inspector wrapper will still point at it.
 	// Clean it up and inspect the graph itself.
-	inspect_graph_or_generator(*_graph_editor, *this);
+	inspect_graph_or_generator(*_graph_editor);
 }
 
 template <typename F>
