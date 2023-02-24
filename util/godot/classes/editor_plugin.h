@@ -5,7 +5,8 @@
 #include <editor/editor_plugin.h>
 
 #elif defined(ZN_GODOT_EXTENSION)
-// Header include required due to implementation being required inside the `GDCLASS` macro for virtual methods
+// Header includes required due to implementation being required inside the `GDCLASS` macro for virtual methods...
+#include "camera_3d.h"
 #include "input_event.h"
 
 #include <godot_cpp/classes/editor_plugin.hpp>
