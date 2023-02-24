@@ -11,20 +11,15 @@ namespace zylann::voxel {
 class VoxelInstancer;
 class VoxelInstancerStatView;
 
-class VoxelInstancerEditorPlugin : public EditorPlugin {
-	GDCLASS(VoxelInstancerEditorPlugin, EditorPlugin)
+class VoxelInstancerEditorPlugin : public ZN_EditorPlugin {
+	GDCLASS(VoxelInstancerEditorPlugin, ZN_EditorPlugin)
 public:
 	VoxelInstancerEditorPlugin();
 
-#if defined(ZN_GODOT)
-	bool handles(Object *p_object) const override;
-	void edit(Object *p_object) override;
-	void make_visible(bool visible) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _handles(const Variant &p_object_v) const override;
-	void _edit(const Variant &p_object_v) override;
-	void _make_visible(bool visible) override;
-#endif
+protected:
+	bool _zn_handles(const Object *p_object) const override;
+	void _zn_edit(Object *p_object) override;
+	void _zn_make_visible(bool visible) override;
 
 private:
 	bool toggle_stat_view();

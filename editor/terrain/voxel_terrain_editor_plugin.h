@@ -17,31 +17,17 @@ class VoxelAboutWindow;
 class VoxelNode;
 class VoxelTerrainEditorTaskIndicator;
 
-class VoxelTerrainEditorPlugin : public EditorPlugin {
-	GDCLASS(VoxelTerrainEditorPlugin, EditorPlugin)
+class VoxelTerrainEditorPlugin : public ZN_EditorPlugin {
+	GDCLASS(VoxelTerrainEditorPlugin, ZN_EditorPlugin)
 public:
 	VoxelTerrainEditorPlugin();
 
-	// TODO GDX: In Godot 4 `EditorPlugin._handles` and `_edit` take `Variant` instead of `Object*`.
-	// This looks like a regression from Godot 3. They still take `Object` internally, there is no reason to use
-	// `Variant`.
-#if defined(ZN_GODOT)
-	bool handles(Object *p_object) const override;
-	void edit(Object *p_object) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _handles(const Variant &p_object_v) const override;
-	void _edit(const Variant &p_object_v) override;
-#endif
-
-	void ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visible)(bool visible) override;
-
-#if defined(ZN_GODOT)
-	EditorPlugin::AfterGUIInput forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	int32_t _forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
-#endif
-
 protected:
+	bool _zn_handles(const Object *p_object) const override;
+	void _zn_edit(Object *p_object) override;
+	void _zn_make_visible(bool visible) override;
+	EditorPlugin::AfterGUIInput _zn_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override;
+
 	void _notification(int p_what);
 
 private:

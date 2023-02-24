@@ -4,20 +4,11 @@
 
 namespace zylann::voxel {
 
-#if defined(ZN_GODOT)
-bool VoxelMeshSDFInspectorPlugin::can_handle(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelMeshSDFInspectorPlugin::_can_handle(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelMeshSDFInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 	return Object::cast_to<VoxelMeshSDF>(p_object) != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelMeshSDFInspectorPlugin::parse_begin(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelMeshSDFInspectorPlugin::_parse_begin(Object *p_object) {
-#endif
+void VoxelMeshSDFInspectorPlugin::_zn_parse_begin(Object *p_object) {
 	VoxelMeshSDFViewer *viewer = memnew(VoxelMeshSDFViewer);
 	add_custom_control(viewer);
 	VoxelMeshSDF *mesh_sdf = Object::cast_to<VoxelMeshSDF>(p_object);
@@ -29,30 +20,16 @@ void VoxelMeshSDFInspectorPlugin::_parse_begin(Object *p_object) {
 
 VoxelMeshSDFEditorPlugin::VoxelMeshSDFEditorPlugin() {}
 
-#if defined(ZN_GODOT)
-bool VoxelMeshSDFEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelMeshSDFEditorPlugin::_handles(const Variant &p_object_v) const {
-	Object *p_object = p_object_v;
-#endif
+bool VoxelMeshSDFEditorPlugin::_zn_handles(const Object *p_object) const {
 	ERR_FAIL_COND_V(p_object == nullptr, false);
 	return Object::cast_to<VoxelMeshSDF>(p_object) != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelMeshSDFEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelMeshSDFEditorPlugin::_edit(const Variant &p_object) {
-	//Object *p_object = p_object_v;
-#endif
+void VoxelMeshSDFEditorPlugin::_zn_edit(Object *p_object) {
 	//_mesh_sdf = p_object;
 }
 
-#if defined(ZN_GODOT)
-void VoxelMeshSDFEditorPlugin::make_visible(bool visible) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelMeshSDFEditorPlugin::_make_visible(bool visible) {
-#endif
+void VoxelMeshSDFEditorPlugin::_zn_make_visible(bool visible) {
 	//_mesh_sdf.unref();
 }
 

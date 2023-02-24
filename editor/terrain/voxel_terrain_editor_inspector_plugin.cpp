@@ -6,12 +6,7 @@
 
 namespace zylann::voxel {
 
-#if defined(ZN_GODOT)
-bool VoxelTerrainEditorInspectorPlugin::can_handle(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelTerrainEditorInspectorPlugin::_can_handle(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelTerrainEditorInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 	const VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(p_object);
 	if (vt != nullptr) {
 		return true;
@@ -23,14 +18,9 @@ bool VoxelTerrainEditorInspectorPlugin::_can_handle(const Variant &p_object_v) c
 	return false;
 }
 
-#if defined(ZN_GODOT)
-bool VoxelTerrainEditorInspectorPlugin::parse_property(Object *p_object, const Variant::Type p_type,
+bool VoxelTerrainEditorInspectorPlugin::_zn_parse_property(Object *p_object, const Variant::Type p_type,
 		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,
 		const BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelTerrainEditorInspectorPlugin::_parse_property(Object *p_object, Variant::Type p_type, const String &p_path,
-		PropertyHint p_hint, const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) {
-#endif
 	if (p_type != Variant::AABB) {
 		return false;
 	}

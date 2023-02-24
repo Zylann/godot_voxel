@@ -13,8 +13,8 @@ ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 
-class VoxelInstanceLibraryEditorPlugin : public EditorPlugin {
-	GDCLASS(VoxelInstanceLibraryEditorPlugin, EditorPlugin)
+class VoxelInstanceLibraryEditorPlugin : public ZN_EditorPlugin {
+	GDCLASS(VoxelInstanceLibraryEditorPlugin, ZN_EditorPlugin)
 public:
 #ifdef ZN_GODOT
 	virtual String get_name() const override {
@@ -24,16 +24,12 @@ public:
 
 	VoxelInstanceLibraryEditorPlugin();
 
-#if defined(ZN_GODOT)
-	bool handles(Object *p_object) const override;
-	void edit(Object *p_object) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _handles(const Variant &p_object_v) const override;
-	void _edit(const Variant &p_object) override;
-#endif
-
 	void _on_add_item_button_pressed(int id);
 	void _on_remove_item_button_pressed();
+
+protected:
+	bool _zn_handles(const Object *p_object) const override;
+	void _zn_edit(Object *p_object) override;
 
 private:
 	void _notification(int p_what);

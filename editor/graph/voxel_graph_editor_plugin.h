@@ -15,24 +15,18 @@ class VoxelNode;
 class VoxelGraphEditorWindow;
 class VoxelGraphEditorIODialog;
 
-class VoxelGraphEditorPlugin : public EditorPlugin {
-	GDCLASS(VoxelGraphEditorPlugin, EditorPlugin)
+class VoxelGraphEditorPlugin : public ZN_EditorPlugin {
+	GDCLASS(VoxelGraphEditorPlugin, ZN_EditorPlugin)
 public:
 	VoxelGraphEditorPlugin();
-
-#if defined(ZN_GODOT)
-	bool handles(Object *p_object) const override;
-	void edit(Object *p_object) override;
-	void make_visible(bool visible) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _handles(const Variant &p_object_v) const override;
-	void _edit(const Variant &p_object_v) override;
-	void _make_visible(bool visible) override;
-#endif
 
 	void edit_ios(Ref<pg::VoxelGraphFunction> graph);
 
 private:
+	bool _zn_handles(const Object *p_object) const override;
+	void _zn_edit(Object *p_object) override;
+	void _zn_make_visible(bool visible) override;
+
 	void _notification(int p_what);
 
 	void undock_graph_editor();

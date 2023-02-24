@@ -118,12 +118,7 @@ static bool is_side_handled(const Object *p_object) {
 	return false;
 }
 
-#if defined(ZN_GODOT)
-bool VoxelTerrainEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelTerrainEditorPlugin::_handles(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelTerrainEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
 		return true;
 	}
@@ -133,12 +128,7 @@ bool VoxelTerrainEditorPlugin::_handles(const Variant &p_object_v) const {
 	return false;
 }
 
-#if defined(ZN_GODOT)
-void VoxelTerrainEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelTerrainEditorPlugin::_edit(const Variant &p_object_v) {
-	Object *p_object = p_object_v;
-#endif
+void VoxelTerrainEditorPlugin::_zn_edit(Object *p_object) {
 	VoxelNode *node = Object::cast_to<VoxelNode>(p_object);
 
 	if (node != nullptr) {
@@ -198,7 +188,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	}
 }
 
-void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visible)(bool visible) {
+void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 	_menu_button->set_visible(visible);
 	_task_indicator->set_visible(visible);
 	set_process(visible);
@@ -217,12 +207,8 @@ void VoxelTerrainEditorPlugin::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(make_visi
 	// So we'll need to check if _node is null all over the place
 }
 
-#if defined(ZN_GODOT)
-EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::forward_3d_gui_input(
+EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-#elif defined(ZN_GODOT_EXTENSION)
-int32_t VoxelTerrainEditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-#endif
 	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 

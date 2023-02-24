@@ -9,20 +9,11 @@
 
 namespace zylann::voxel {
 
-#if defined(ZN_GODOT)
-bool VoxelInstanceLibraryInspectorPlugin::can_handle(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelInstanceLibraryInspectorPlugin::_can_handle(const Variant &p_object_v) const {
-	Object *p_object = p_object_v;
-#endif
+bool VoxelInstanceLibraryInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 	return Object::cast_to<VoxelInstanceLibrary>(p_object) != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstanceLibraryInspectorPlugin::parse_begin(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstanceLibraryInspectorPlugin::_parse_begin(Object *p_object) {
-#endif
+void VoxelInstanceLibraryInspectorPlugin::_zn_parse_begin(Object *p_object) {
 	// TODO How can I make sure the buttons will be at the beginning of the "VoxelInstanceLibrary" category?
 	// This is a better place than the Spatial editor toolbar (which would get hidden if you are not in the 3D tab
 	// of the editor), but it will appear at the very top of the inspector, even above the "VoxelInstanceLibrary"

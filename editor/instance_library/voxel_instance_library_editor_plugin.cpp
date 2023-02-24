@@ -38,22 +38,12 @@ VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin() {
 			ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryEditorPlugin, _on_open_scene_dialog_file_selected));
 }
 
-#if defined(ZN_GODOT)
-bool VoxelInstanceLibraryEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelInstanceLibraryEditorPlugin::_handles(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelInstanceLibraryEditorPlugin::_zn_handles(const Object *p_object) const {
 	const VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
 	return lib != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstanceLibraryEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstanceLibraryEditorPlugin::_edit(const Variant &p_object_v) {
-	Object *p_object = p_object_v;
-#endif
+void VoxelInstanceLibraryEditorPlugin::_zn_edit(Object *p_object) {
 	VoxelInstanceLibrary *lib = Object::cast_to<VoxelInstanceLibrary>(p_object);
 	_library.reference_ptr(lib);
 }

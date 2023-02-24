@@ -48,12 +48,7 @@ VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
 	add_inspector_plugin(vgf_inspector_plugin);
 }
 
-#if defined(ZN_GODOT)
-bool VoxelGraphEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelGraphEditorPlugin::_handles(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (p_object == nullptr) {
 		return false;
 	}
@@ -72,13 +67,7 @@ bool VoxelGraphEditorPlugin::_handles(const Variant &p_object_v) const {
 	return false;
 }
 
-#if defined(ZN_GODOT)
-void VoxelGraphEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
-	Object *p_object = p_object_v;
-#endif
-
+void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 	// Workaround...
 	if (p_object == nullptr && _ignore_edit_null) {
 		return;
@@ -136,11 +125,7 @@ void VoxelGraphEditorPlugin::_edit(const Variant &p_object_v) {
 	}
 }
 
-#if defined(ZN_GODOT)
-void VoxelGraphEditorPlugin::make_visible(bool visible) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelGraphEditorPlugin::_make_visible(bool visible) {
-#endif
+void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 	if (_graph_editor_window != nullptr) {
 		return;
 	}
@@ -174,11 +159,8 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 	}
 	// The point is when the plugin's UI closed (for real, not closed and re-opened simultaneously!),
 	// it should cleanup its UI to not waste RAM (as it references stuff).
-#if defined(ZN_GODOT)
-	edit(nullptr);
-#elif defined(ZN_GODOT_EXTENSION)
-	_edit(nullptr);
-#endif
+	_zn_edit(nullptr);
+
 	if (_graph_editor->is_visible_in_tree()) {
 		hide_bottom_panel();
 	}

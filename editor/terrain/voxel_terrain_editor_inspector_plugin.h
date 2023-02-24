@@ -6,27 +6,13 @@
 
 namespace zylann::voxel {
 
-class VoxelTerrainEditorInspectorPlugin : public EditorInspectorPlugin {
-	GDCLASS(VoxelTerrainEditorInspectorPlugin, EditorInspectorPlugin)
-public:
-	// In the Godot API, virtual methods all take an `_` by convention, making their name different from modules.
-	// TODO GDX: In Godot 4, some virtual methods that took an `Object*` now takes a `Variant`.
-	// This looks like a regression from Godot 3.
-#if defined ZN_GODOT
-	bool can_handle(Object *p_object) override;
-	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
-			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _can_handle(const Variant &p_object_v) const override;
-	bool _parse_property(Object *p_object, Variant::Type p_type, const String &p_path, PropertyHint p_hint,
-			const String &p_hint_text, BitField<PropertyUsageFlags> p_usage, const bool p_wide) override;
-#endif
-
-	// In GodotCpp, `_bind_methods` is not optional.
-#ifdef ZN_GODOT_EXTENSION
-private:
-	static void _bind_methods() {}
-#endif
+class VoxelTerrainEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelTerrainEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+protected:
+	bool _zn_can_handle(const Object *p_object) const override;
+	bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,
+			const PropertyHint p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,
+			const bool p_wide = false) override;
 };
 
 } // namespace zylann::voxel

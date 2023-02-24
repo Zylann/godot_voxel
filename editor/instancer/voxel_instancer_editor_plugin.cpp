@@ -32,22 +32,12 @@ VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin() {
 	_menu_button = menu_button;
 }
 
-#if defined(ZN_GODOT)
-bool VoxelInstancerEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelInstancerEditorPlugin::_handles(const Variant &p_object_v) const {
-	const Object *p_object = p_object_v;
-#endif
+bool VoxelInstancerEditorPlugin::_zn_handles(const Object *p_object) const {
 	ERR_FAIL_COND_V(p_object == nullptr, false);
 	return Object::cast_to<VoxelInstancer>(p_object) != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstancerEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstancerEditorPlugin::_edit(const Variant &p_object_v) {
-	Object *p_object = p_object_v;
-#endif
+void VoxelInstancerEditorPlugin::_zn_edit(Object *p_object) {
 	VoxelInstancer *instancer = Object::cast_to<VoxelInstancer>(p_object);
 	ERR_FAIL_COND(instancer == nullptr);
 	instancer->debug_set_draw_enabled(true);
@@ -58,11 +48,7 @@ void VoxelInstancerEditorPlugin::_edit(const Variant &p_object_v) {
 	}
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstancerEditorPlugin::make_visible(bool visible) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstancerEditorPlugin::_make_visible(bool visible) {
-#endif
+void VoxelInstancerEditorPlugin::_zn_make_visible(bool visible) {
 	_menu_button->set_visible(visible);
 
 	if (visible == false) {

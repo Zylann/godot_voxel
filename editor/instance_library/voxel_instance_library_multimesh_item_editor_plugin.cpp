@@ -23,11 +23,7 @@ VoxelInstanceLibraryMultiMeshItemEditorPlugin::VoxelInstanceLibraryMultiMeshItem
 					this, VoxelInstanceLibraryMultiMeshItemEditorPlugin, _on_open_scene_dialog_file_selected));
 }
 
-#if defined(ZN_GODOT)
-bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::handles(Object *p_object) const {
-#elif defined(ZN_GODOT_EXTENSION)
-bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::_handles(const Variant &p_object_v) const {
-#endif
+bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_handles(const Object *p_object) const {
 	// TODO Making a plugin handling sub-resources of `VoxelInstanceLibrary` breaks the inspector.
 	// There are also some caveats when using multiple sub-inspectors. To keep supporting multiple sub-inspectors open
 	// inside a library, we cannot rely on `edit` giving us edited resources.
@@ -37,20 +33,12 @@ bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::_handles(const Variant &p_ob
 	// return item != nullptr;
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstanceLibraryMultiMeshItemEditorPlugin::edit(Object *p_object) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_edit(const Variant &p_object_v) {
-#endif
+void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_edit(Object *p_object) {
 	// VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(p_object);
 	// _item.reference_ptr(item);
 }
 
-#if defined(ZN_GODOT)
-void VoxelInstanceLibraryMultiMeshItemEditorPlugin::make_visible(bool visible) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_make_visible(bool visible) {
-#endif
+void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_make_visible(bool visible) {
 	// if (!visible) {
 	// 	_item.unref();
 	// }

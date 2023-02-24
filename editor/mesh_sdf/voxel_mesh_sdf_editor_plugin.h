@@ -6,36 +6,26 @@
 
 namespace zylann::voxel {
 
-class VoxelMeshSDFInspectorPlugin : public EditorInspectorPlugin {
-	GDCLASS(VoxelMeshSDFInspectorPlugin, EditorInspectorPlugin)
-public:
-#if defined(ZN_GODOT)
-	bool can_handle(Object *p_object) override;
-	void parse_begin(Object *p_object) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _can_handle(const Variant &p_object_v) const override;
-	void _parse_begin(Object *p_object) override;
-#endif
+class VoxelMeshSDFInspectorPlugin : public ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelMeshSDFInspectorPlugin, ZN_EditorInspectorPlugin)
+protected:
+	bool _zn_can_handle(const Object *p_object) const override;
+	void _zn_parse_begin(Object *p_object) override;
 
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional.
 	static void _bind_methods() {}
 };
 
-class VoxelMeshSDFEditorPlugin : public EditorPlugin {
-	GDCLASS(VoxelMeshSDFEditorPlugin, EditorPlugin)
+class VoxelMeshSDFEditorPlugin : public ZN_EditorPlugin {
+	GDCLASS(VoxelMeshSDFEditorPlugin, ZN_EditorPlugin)
 public:
 	VoxelMeshSDFEditorPlugin();
 
-#if defined(ZN_GODOT)
-	bool handles(Object *p_object) const override;
-	void edit(Object *p_object) override;
-	void make_visible(bool visible) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _handles(const Variant &p_object_v) const override;
-	void _edit(const Variant &p_object_v) override;
-	void _make_visible(bool visible) override;
-#endif
+protected:
+	bool _zn_handles(const Object *p_object) const override;
+	void _zn_edit(Object *p_object) override;
+	void _zn_make_visible(bool visible) override;
 
 private:
 	void _notification(int p_what);

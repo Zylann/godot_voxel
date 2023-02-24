@@ -317,6 +317,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
 		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
 
+		ClassDB::register_class<ZN_EditorPlugin>();
 		ClassDB::register_class<ZN_EditorImportPlugin>();
 		ClassDB::register_class<ZN_EditorInspectorPlugin>();
 

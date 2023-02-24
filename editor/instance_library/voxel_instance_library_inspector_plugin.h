@@ -10,8 +10,8 @@ namespace zylann::voxel {
 
 class VoxelInstanceLibraryEditorPlugin;
 
-class VoxelInstanceLibraryInspectorPlugin : public EditorInspectorPlugin {
-	GDCLASS(VoxelInstanceLibraryInspectorPlugin, EditorInspectorPlugin)
+class VoxelInstanceLibraryInspectorPlugin : public ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelInstanceLibraryInspectorPlugin, ZN_EditorInspectorPlugin)
 public:
 	enum Buttons { //
 		BUTTON_ADD_MULTIMESH_ITEM,
@@ -22,13 +22,9 @@ public:
 	Control *icon_provider = nullptr;
 	VoxelInstanceLibraryEditorPlugin *button_listener = nullptr;
 
-#if defined(ZN_GODOT)
-	bool can_handle(Object *p_object) override;
-	void parse_begin(Object *p_object) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	bool _can_handle(const Variant &p_object_v) const override;
-	void _parse_begin(Object *p_object) override;
-#endif
+protected:
+	bool _zn_can_handle(const Object *p_object) const override;
+	void _zn_parse_begin(Object *p_object) override;
 
 private:
 	void add_buttons();
