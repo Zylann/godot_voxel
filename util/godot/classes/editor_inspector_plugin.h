@@ -14,13 +14,13 @@ class ZN_EditorInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(ZN_EditorInspectorPlugin, EditorInspectorPlugin)
 public:
 #if defined(ZN_GODOT)
-	bool can_handle(Object *obj) override;
+	bool can_handle(Object *p_object) override;
 	void parse_begin(Object *p_object) override;
 	void parse_group(Object *p_object, const String &p_group) override;
 	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
 			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
 #elif defined(ZN_GODOT_EXTENSION)
-	bool _can_handle(const Object &obj) const override;
+	bool _can_handle(Object *p_object) const override;
 	void _parse_begin(Object *p_object) override;
 	void _parse_group(Object *p_object, const String &p_group) override;
 	bool _parse_property(Object *p_object, Variant::Type p_type, const String &p_path, PropertyHint p_hint,
@@ -28,8 +28,8 @@ public:
 #endif
 
 protected:
-	virtual bool _zn_can_handle(const Object *obj) const;
-	virtual void _zn_parse_begin(Object *obj);
+	virtual bool _zn_can_handle(const Object *p_object) const;
+	virtual void _zn_parse_begin(Object *p_object);
 	virtual void _zn_parse_group(Object *p_object, const String &p_group);
 	virtual bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,
 			const PropertyHint p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,
