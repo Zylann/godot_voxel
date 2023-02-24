@@ -160,7 +160,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_indices =
 						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
 				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
+						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
@@ -183,7 +183,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_indices =
 						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
 				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
+						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
@@ -228,7 +228,7 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 				const uint16_t encoded_indices =
 						encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
 				const uint16_t encoded_weights =
-						encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
+						encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
 				// TODO Flatten this further?
 				out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
 				out_voxel_buffer.set_voxel(encoded_weights, rx, ry, rz, VoxelBufferInternal::CHANNEL_WEIGHTS);
@@ -248,7 +248,7 @@ void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_i
 	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
 
 	// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
-	const uint16_t encoded_weights = encode_weights_to_packed_u16(255, 0, 0, 0);
+	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
 	out_voxel_buffer.clear_channel(VoxelBufferInternal::CHANNEL_WEIGHTS, encoded_weights);
 
 	unsigned int value_index = 0;

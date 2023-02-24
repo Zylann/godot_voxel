@@ -124,7 +124,7 @@ uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
 	uint16_t(snorm_to_s16(1.f)), // SDF
 
 	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
-	encode_weights_to_packed_u16(15, 0, 0, 0), // WEIGHTS
+	encode_weights_to_packed_u16_lossy(255, 0, 0, 0), // WEIGHTS
 	0, 0, 0, 0 //
 };
 }
@@ -141,13 +141,13 @@ VoxelBufferInternal::VoxelBufferInternal() {
 
 	// 16-bit is better on average to handle large worlds
 	_channels[CHANNEL_SDF].depth = DEFAULT_SDF_CHANNEL_DEPTH;
-	_channels[CHANNEL_SDF].defval = uint16_t(snorm_to_s16(1.f));
+	_channels[CHANNEL_SDF].defval = g_default_values[CHANNEL_SDF];
 
 	_channels[CHANNEL_INDICES].depth = DEPTH_16_BIT;
-	_channels[CHANNEL_INDICES].defval = encode_indices_to_packed_u16(0, 1, 2, 3);
+	_channels[CHANNEL_INDICES].defval = g_default_values[CHANNEL_INDICES];
 
 	_channels[CHANNEL_WEIGHTS].depth = DEPTH_16_BIT;
-	_channels[CHANNEL_WEIGHTS].defval = encode_weights_to_packed_u16(15, 0, 0, 0);
+	_channels[CHANNEL_WEIGHTS].defval = g_default_values[CHANNEL_WEIGHTS];
 }
 
 VoxelBufferInternal::VoxelBufferInternal(VoxelBufferInternal &&src) {

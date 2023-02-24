@@ -109,7 +109,7 @@ inline void blend_texture_packed_u16(
 		}
 
 		encoded_indices = encode_indices_to_packed_u16(indices[0], indices[1], indices[2], indices[3]);
-		encoded_weights = encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
+		encoded_weights = encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
 	}
 }
 

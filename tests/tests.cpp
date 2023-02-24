@@ -254,7 +254,7 @@ void test_encode_weights_packed_u16() {
 	weights[1] = 5 << 4;
 	weights[2] = 10 << 4;
 	weights[3] = 15 << 4;
-	const uint16_t encoded_weights = encode_weights_to_packed_u16(weights[0], weights[1], weights[2], weights[3]);
+	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(weights[0], weights[1], weights[2], weights[3]);
 	FixedArray<uint8_t, 4> decoded_weights = decode_weights_from_packed_u16(encoded_weights);
 	ZN_TEST_ASSERT(weights == decoded_weights);
 }
