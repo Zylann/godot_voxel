@@ -485,6 +485,6 @@ inline Interval pow(Interval x, Interval p) {
 
 std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v);
 
-} //namespace zylann
+} // namespace zylann
 
 #endif // ZN_INTERVAL_H

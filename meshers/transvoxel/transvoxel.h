@@ -166,6 +166,6 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 
-} //namespace zylann::voxel::transvoxel
+} // namespace zylann::voxel::transvoxel
 
 #endif // TRANSVOXEL_H
