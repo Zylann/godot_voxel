@@ -160,7 +160,7 @@ It is also possible to choose a different texture for the 3 axes.
 
 Here's a shader that supports two materials, such as grass on the top and rock on the sides, each with triplanar mapped albedo, normal and AO maps, then blended together based on if their normal faces the upward direction or the sides.
 
-You can find a working example in the [fps demo](https://github.com/tinmanjuggernaut/voxelgame), or see the [shader](https://github.com/tinmanjuggernaut/voxelgame/blob/master/project/fps_demo/materials/triplanar.shader) itself. 
+You can find a working example in the [demo](https://github.com/Zylann/voxelgame), or see the [shader](https://github.com/Zylann/voxelgame/blob/godot4/project/smooth_terrain/transvoxel_terrain.gdshader) itself (triplanar functions defined here https://github.com/Zylann/voxelgame/blob/godot4/project/smooth_terrain/shaders/triplanar.gdshaderinc). 
 
 In the shader parameters, add your two albedo maps, and optionally normal, and AO maps. Then play with the `AB Mix 1` and `AB Mix 2` sliders to adjust how the top and sides blend together. The other settings should be self explanatory. The screenshot below also has a little bit of fog and far DOF added.
 
