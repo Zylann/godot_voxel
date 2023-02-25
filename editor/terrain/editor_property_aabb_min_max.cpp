@@ -45,7 +45,7 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 	set_bottom_editor(grid);
 }
 
-void EditorPropertyAABBMinMax::_set_read_only(bool p_read_only) {
+void EditorPropertyAABBMinMax::_zn_set_read_only(bool p_read_only) {
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		_spinboxes[i]->set_read_only(p_read_only);
 	}
@@ -67,7 +67,7 @@ void EditorPropertyAABBMinMax::_on_value_changed(double val) {
 	emit_changed(get_edited_property(), p, "");
 }
 
-void EditorPropertyAABBMinMax::ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(update_property)() {
+void EditorPropertyAABBMinMax::_zn_update_property() {
 	const AABB val = get_edited_object()->get(get_edited_property());
 
 	_ignore_value_change = true;

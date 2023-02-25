@@ -18,11 +18,7 @@ ZN_EditorPropertyTextChangeOnSubmit::ZN_EditorPropertyTextChangeOnSubmit() {
 			ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyTextChangeOnSubmit, _on_line_edit_focus_entered));
 }
 
-#if defined(ZN_GODOT)
-void ZN_EditorPropertyTextChangeOnSubmit::update_property() {
-#elif defined(ZN_GODOT_EXTENSION)
-void ZN_EditorPropertyTextChangeOnSubmit::_update_property() {
-#endif
+void ZN_EditorPropertyTextChangeOnSubmit::_zn_update_property() {
 	Object *obj = get_edited_object();
 	ERR_FAIL_COND(obj == nullptr);
 	_ignore_changes = true;

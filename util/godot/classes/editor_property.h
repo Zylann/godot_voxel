@@ -16,6 +16,26 @@ namespace zylann {
 // In modules, this is `_get_property_colors`, but it is not exposed in GDExtension.
 Span<const Color> editor_property_get_colors(EditorProperty &self);
 
+class ZN_EditorProperty : public EditorProperty {
+	GDCLASS(ZN_EditorProperty, EditorProperty)
+public:
+#if defined(ZN_GODOT)
+	void update_property() override;
+#elif defined(ZN_GODOT_EXTENSION)
+	void _update_property() override;
+#endif
+
+#ifdef ZN_GODOT
+protected:
+#endif
+	// This method is protected in core, but public in GDExtension...
+	void _set_read_only(bool p_read_only) override;
+
+protected:
+	virtual void _zn_update_property();
+	virtual void _zn_set_read_only(bool p_read_only);
+};
+
 } // namespace zylann
 
 #endif // ZN_GODOT_EDITOR_PROPERTY_H

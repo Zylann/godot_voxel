@@ -12,16 +12,13 @@ namespace zylann {
 // This is not always desired. Instead, this editor should emit a change only when enter is pressed, or when the
 // editor looses focus.
 // Note: Godot's default string editor for LineEdit is `EditorPropertyText`
-class ZN_EditorPropertyTextChangeOnSubmit : public EditorProperty {
-	GDCLASS(ZN_EditorPropertyTextChangeOnSubmit, EditorProperty)
+class ZN_EditorPropertyTextChangeOnSubmit : public ZN_EditorProperty {
+	GDCLASS(ZN_EditorPropertyTextChangeOnSubmit, ZN_EditorProperty)
 public:
 	ZN_EditorPropertyTextChangeOnSubmit();
 
-#if defined(ZN_GODOT)
-	void update_property() override;
-#elif defined(ZN_GODOT_EXTENSION)
-	void _update_property() override;
-#endif
+protected:
+	void _zn_update_property() override;
 
 private:
 	void _on_line_edit_focus_entered();

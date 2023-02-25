@@ -13,11 +13,8 @@
 // TODO GDX: Resource::duplicate() cannot be overriden (while it can in modules). This will lead to performance
 // degradation and maybe unexpected behavior!
 #define ZN_OVERRIDE_UNLESS_GODOT_EXTENSION
-// In GDExtension, virtual methods take an `_` while in modules they don't.
-#define ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(m_name) _##m_name
 #else
 #define ZN_OVERRIDE_UNLESS_GODOT_EXTENSION override
-#define ZN_GODOT_UNDERSCORE_PREFIX_IF_EXTENSION(m_name) m_name
 #endif
 
 // Must be used in global space.
