@@ -128,6 +128,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Private wrapper functions can be used to adapt to the script API and are prefixed with `_b_`.
 - Use Clang-format to automate most of these rules (there should be a file included at the root of the C++ project)
 - Prefer comments with `//` only
+- Some virtual functions from wrapper classes are prefixed with `_zn_` to encapsulate signature differences when compiling as a module or as a GDExtension.
 
 ### File structure
 
