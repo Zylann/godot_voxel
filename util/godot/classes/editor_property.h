@@ -34,6 +34,10 @@ protected:
 protected:
 	virtual void _zn_update_property();
 	virtual void _zn_set_read_only(bool p_read_only);
+
+private:
+	// When compiling with GodotCpp, `_bind_methods` is not optional
+	static void _bind_methods() {}
 };
 
 } // namespace zylann
