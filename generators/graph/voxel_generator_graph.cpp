@@ -74,7 +74,10 @@ int VoxelGeneratorGraph::get_used_channels_mask() const {
 		RWLockRead rlock(_runtime_lock);
 		runtime_ptr = _runtime;
 	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, 0);
+	if (runtime_ptr == nullptr) {
+		// The graph hasn't been compiled yet, we can't tell which channels it produces.
+		return 0;
+	}
 	int mask = 0;
 	if (runtime_ptr->sdf_output_index != -1) {
 		mask |= (1 << VoxelBufferInternal::CHANNEL_SDF);
