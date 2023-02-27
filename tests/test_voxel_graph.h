@@ -26,6 +26,7 @@ void test_voxel_graph_hash();
 #endif
 #endif
 void test_voxel_graph_issue471();
+void test_voxel_graph_unused_single_texture_output();
 
 } // namespace zylann::voxel::tests
 

@@ -484,6 +484,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				}
 
 				bool sdf_is_air = true;
+				bool sdf_is_uniform = true;
 				if (sdf_output_buffer_index != -1) {
 					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
 					bool sdf_is_matter = false;
@@ -507,6 +508,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 						required_outputs[required_outputs_count] = runtime_ptr->sdf_output_index;
 						++required_outputs_count;
 						sdf_is_air = false;
+						sdf_is_uniform = false;
 					}
 
 					all_sdf_is_air = all_sdf_is_air && sdf_is_air;
@@ -591,7 +593,11 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 								_use_optimized_execution_map ? &cache.optimized_execution_map : nullptr);
 					}
 
-					if (sdf_output_buffer_index != -1) {
+					if (sdf_output_buffer_index != -1
+							// If SDF was found uniform, we already filled the results. But a texture output exists, a
+							// query might still run (so we end up at this `if`), and we should not gather SDF results.
+							// Otherwise it would overwrite the slice with garbage since SDF was skipped.
+							&& !sdf_is_uniform) {
 						const pg::Runtime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
 						fill_zx_sdf_slice(
 								sdf_buffer, out_buffer, sdf_channel, sdf_channel_depth, sdf_scale, rmin, rmax, ry);

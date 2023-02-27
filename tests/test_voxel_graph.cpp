@@ -3,6 +3,7 @@
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/container_funcs.h"
+#include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../util/string_funcs.h"
@@ -620,7 +621,7 @@ void test_voxel_graph_equivalence_merging() {
 	}
 }
 
-/*void print_sdf_as_ascii(const VoxelBufferInternal &vb) {
+void print_sdf_as_ascii(const VoxelBufferInternal &vb) {
 	Vector3i pos;
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
@@ -656,7 +657,7 @@ void test_voxel_graph_equivalence_merging() {
 			println(s);
 		}
 	}
-}*/
+}
 
 /*bool find_different_voxel(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2, Vector3i *out_pos,
 		unsigned int *out_channel_index) {
@@ -1384,6 +1385,115 @@ void test_voxel_graph_issue471() {
 	// Was crashing because input definition wasn't fulfilled (the graph is empty). It should fail with an error.
 	VoxelGenerator::ShaderSourceData ssd;
 	generator->get_shader_source(ssd);
+}
+
+// There was a bug where generating a usual height-based terrain with also a texture output, random blocks fully or
+// partially filled with air would occur underground where such blocks should have been filled with matter. It only
+// happened if the texture output node was present. The cause was that the generator detected and filled the SDF early
+// with matter, for blocks far enough from the surface. But because there was also a texture output, the generator
+// proceeded to still run the graph to just get volumetric texture data (which is expected) but then overwrote SDF with
+// results it did not calculate, effectively filling SDF with garbage.
+void test_voxel_graph_unused_single_texture_output() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+
+	{
+		//               Plane
+		//                    \
+		// Noise2D --- Mul --- Sub --- OutSDF
+		//
+		//                             OutSingleTexture
+
+		// Slightly bumpy ground around Y=0, not going higher than 10 or lower than -10 voxels.
+
+		Ref<VoxelGraphFunction> func = generator->get_main_function();
+		ZN_ASSERT(func.is_valid());
+
+		const uint32_t n_out_sdf = func->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+		const uint32_t n_plane = func->create_node(VoxelGraphFunction::NODE_SDF_PLANE, Vector2());
+
+		const uint32_t n_noise = func->create_node(VoxelGraphFunction::NODE_FAST_NOISE_2D, Vector2());
+		Ref<ZN_FastNoiseLite> fnl;
+		fnl.instantiate();
+		fnl->set_period(1024);
+		fnl->set_fractal_type(ZN_FastNoiseLite::FRACTAL_RIDGED);
+		fnl->set_fractal_octaves(5);
+		func->set_node_param(n_noise, 0, fnl);
+
+		const uint32_t n_mul = func->create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2());
+		func->set_node_default_input(n_mul, 1, 10.0);
+
+		const uint32_t n_sub = func->create_node(VoxelGraphFunction::NODE_SUBTRACT, Vector2());
+
+		const uint32_t n_out_single_texture =
+				func->create_node(VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE, Vector2());
+
+		func->add_connection(n_plane, 0, n_sub, 0);
+		func->add_connection(n_noise, 0, n_mul, 0);
+		func->add_connection(n_mul, 0, n_sub, 1);
+		func->add_connection(n_sub, 0, n_out_sdf, 0);
+	}
+
+	CompilationResult result = generator->compile(false);
+	ZN_TEST_ASSERT(result.success);
+
+	std::vector<Vector3i> block_positions;
+	{
+		Vector3i bpos;
+		for (bpos.z = -4; bpos.z < 4; ++bpos.z) {
+			for (bpos.x = -4; bpos.x < 4; ++bpos.x) {
+				for (bpos.y = -4; bpos.y < 4; ++bpos.y) {
+					block_positions.push_back(bpos);
+				}
+			}
+		}
+
+		struct Comparer {
+			inline bool operator()(const Vector3i a, const Vector3i b) const {
+				return math::length(to_vec3f(a)) < math::length(to_vec3f(b));
+			}
+		};
+		SortArray<Vector3i, Comparer> sorter;
+		sorter.sort(block_positions.data(), block_positions.size());
+	}
+
+	VoxelBufferInternal voxels;
+	const int BLOCK_SIZE = 16;
+	const int MIN_MARGIN = 1;
+	const int MAX_MARGIN = 2;
+	voxels.create(Vector3iUtil::create(BLOCK_SIZE + MIN_MARGIN + MAX_MARGIN));
+
+	for (const Vector3i bpos : block_positions) {
+		const Vector3i origin_in_voxels = bpos * BLOCK_SIZE - Vector3iUtil::create(MIN_MARGIN);
+		generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels, origin_in_voxels, 0 });
+
+		if (bpos.y <= -2) {
+			// We expect only ground below this height (in block coordinates)
+			for (int z = 0; z < voxels.get_size().z; ++z) {
+				for (int x = 0; x < voxels.get_size().x; ++x) {
+					for (int y = 0; y < voxels.get_size().y; ++y) {
+						const float sd = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+
+						if (sd >= 0.f) {
+							print_sdf_as_ascii(voxels);
+						}
+
+						ZN_TEST_ASSERT(sd < 0.f);
+					}
+				}
+			}
+		} else if (bpos.y >= 1) {
+			// We expect only air above this height (in block coordinates)
+			for (int z = 0; z < voxels.get_size().z; ++z) {
+				for (int x = 0; x < voxels.get_size().x; ++x) {
+					for (int y = 0; y < voxels.get_size().y; ++y) {
+						const float sd = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+						ZN_TEST_ASSERT(sd > 0.f);
+					}
+				}
+			}
+		}
+	}
 }
 
 } // namespace zylann::voxel::tests
