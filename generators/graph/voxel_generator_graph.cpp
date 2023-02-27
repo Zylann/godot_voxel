@@ -594,9 +594,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 
 					if (sdf_output_buffer_index != -1
-							// If SDF was found uniform, we already filled the results. But a texture output exists, a
-							// query might still run (so we end up at this `if`), and we should not gather SDF results.
-							// Otherwise it would overwrite the slice with garbage since SDF was skipped.
+							// If SDF was found uniform, we already filled the results. But if a texture output exists,
+							// a query might still run (so we end up at this `if`), and we should not gather SDF
+							// results. Otherwise it would overwrite the slice with garbage since SDF was skipped.
 							&& !sdf_is_uniform) {
 						const pg::Runtime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
 						fill_zx_sdf_slice(
