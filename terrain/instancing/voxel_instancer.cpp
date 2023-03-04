@@ -866,6 +866,8 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 	BufferedTaskScheduler &tasks = BufferedTaskScheduler::get_for_current_thread();
 
+	const bool can_save = _parent == nullptr || _parent->get_stream().is_valid();
+
 	// Remove data blocks
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_data_block_size_po2);
 	ERR_FAIL_COND(render_to_data_factor <= 0 || render_to_data_factor > 2);
@@ -881,11 +883,13 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
 				if (modified_block_it != lod.modified_blocks.end()) {
-					SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr);
-					lod.modified_blocks.erase(modified_block_it);
-					if (task != nullptr) {
-						tasks.push_io_task(task);
+					if (can_save) {
+						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr);
+						if (task != nullptr) {
+							tasks.push_io_task(task);
+						}
 					}
+					lod.modified_blocks.erase(modified_block_it);
 				}
 			}
 		}
@@ -909,6 +913,13 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 void VoxelInstancer::save_all_modified_blocks(
 		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_DSTACK();
+
+	ZN_ASSERT_RETURN(_parent != nullptr);
+	const bool can_save = _parent->get_stream().is_valid();
+	ZN_ASSERT_RETURN_MSG(can_save,
+			format("Cannot save instances, the parent {} has no {} assigned.", _parent->get_class(),
+					VoxelStream::get_class_static()));
+
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {

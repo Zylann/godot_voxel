@@ -58,7 +58,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 
 	CRASH_COND(_stream_dependency == nullptr);
 	Ref<VoxelStream> stream = _stream_dependency->stream;
-	CRASH_COND(stream.is_null());
+	ZN_ASSERT_RETURN_MSG(stream.is_null(), "Save task was triggered without a stream, this is a bug");
 
 	if (_save_voxels) {
 		if (_voxels == nullptr) {
