@@ -58,7 +58,7 @@
 	</methods>
 	<members>
 		<member name="atlas_size" type="int" setter="set_atlas_size" getter="get_atlas_size" default="16">
-			Sets a reference size of texture atlas. This is only used on models which have a geometry mode set to [code]GEOMETRY_CUBE[/code].
+			Sets a reference size of texture atlas, in tiles. The atlas is assumed to be square (same number of tiles horizontally and vertically). This is only used on models which have a geometry mode set to [code]GEOMETRY_CUBE[/code].
 			This property is old and might be removed or changed in the future, as it only works in specific setups.
 		</member>
 		<member name="bake_tangents" type="bool" setter="set_bake_tangents" getter="get_bake_tangents" default="true">
