@@ -918,7 +918,7 @@ void VoxelInstancer::save_all_modified_blocks(
 	const bool can_save = _parent->get_stream().is_valid();
 	ZN_ASSERT_RETURN_MSG(can_save,
 			format("Cannot save instances, the parent {} has no {} assigned.", _parent->get_class(),
-					VoxelStream::get_class_static()));
+					String(VoxelStream::get_class_static())));
 
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
