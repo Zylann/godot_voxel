@@ -10,6 +10,7 @@
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
 #include "../../util/noise/gd_noise_range.h"
+#include "../../util/noise/spot_noise.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "fast_noise_lite_gdshader.h"
@@ -2352,6 +2353,177 @@ NodeTypeDB::NodeTypeDB() {
 		t.shader_gen_func = [](ShaderGenContext &ctx) {
 			ctx.add_format("{} = pow({}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0), ctx.get_input_name(1));
 		};
+	}
+	{
+		struct Params {
+			int32_t seed;
+			float cell_size;
+			float jitter;
+		};
+
+		NodeType &t = types[VoxelGraphFunction::NODE_SPOTS_2D];
+		t.name = "Spots2D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(NodeType::Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
+		t.inputs.push_back(NodeType::Port("spot_radius", 5.f));
+		t.outputs.push_back(NodeType::Port("out"));
+		t.params.push_back(NodeType::Param("seed", Variant::INT, 42));
+		{
+			NodeType::Param p("cell_size", Variant::FLOAT, 32.0);
+			p.min_value = 0.01;
+			p.max_value = 1000000.0;
+			p.has_range = true;
+			t.params.push_back(p);
+		}
+		{
+			NodeType::Param p("jitter", Variant::FLOAT, 0.9);
+			p.min_value = 0.f;
+			p.max_value = 1.f;
+			p.has_range = true;
+			t.params.push_back(p);
+		}
+
+		t.compile_func = [](CompileContext &ctx) {
+			Params params;
+			params.seed = ctx.get_param(0).operator int();
+			params.cell_size = ctx.get_param(1);
+			params.jitter = ctx.get_param(2);
+
+			if (params.jitter < 0.f) {
+				ctx.make_error(ZN_TTR("Jitter cannot be negative"));
+				return;
+			}
+			if (params.jitter > 1.f) {
+				ctx.make_error(ZN_TTR("Jitter must be between 0 and 1"));
+				return;
+			}
+
+			if (params.cell_size < 0) {
+				ctx.make_error(ZN_TTR("Cell size cannot be negative"));
+				return;
+			}
+			if (params.cell_size < 0.01) {
+				// To avoid division by zero
+				ctx.make_error(ZN_TTR("Cell size is too small"));
+				return;
+			}
+
+			ctx.set_params(params);
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const Runtime::Buffer &x = ctx.get_input(0);
+			const Runtime::Buffer &y = ctx.get_input(1);
+			const Runtime::Buffer &spot_size = ctx.get_input(2);
+			Runtime::Buffer &out = ctx.get_output(0);
+			const Params params = ctx.get_params<Params>();
+			for (unsigned int i = 0; i < out.size; ++i) {
+				out.data[i] = SpotNoise::spot_noise_2d(Vector2f(x.data[i], y.data[i]), params.cell_size,
+						spot_size.data[i], params.jitter, params.seed);
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			const Interval spot_size = ctx.get_input(2);
+			const Params params = ctx.get_params<Params>();
+			ctx.set_output(0,
+					SpotNoise::spot_noise_2d_range(
+							Interval2{ x, y }, params.cell_size, spot_size, params.jitter, params.seed));
+		};
+
+		// TODO Support shader code for the Spots2D node
+		// t.shader_gen_func = [](ShaderGenContext &ctx) {
+		// };
+	}
+	{
+		struct Params {
+			int32_t seed;
+			float cell_size;
+			float jitter;
+		};
+
+		NodeType &t = types[VoxelGraphFunction::NODE_SPOTS_3D];
+		t.name = "Spots3D";
+		t.category = CATEGORY_GENERATE;
+		t.inputs.push_back(NodeType::Port("x", 0.f, VoxelGraphFunction::AUTO_CONNECT_X));
+		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Y));
+		t.inputs.push_back(NodeType::Port("z", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
+		t.inputs.push_back(NodeType::Port("spot_radius", 5.f));
+		t.outputs.push_back(NodeType::Port("out"));
+		t.params.push_back(NodeType::Param("seed", Variant::INT, 42));
+		{
+			NodeType::Param p("cell_size", Variant::FLOAT, 32.0);
+			p.min_value = 0.01;
+			p.max_value = 1000000.0;
+			p.has_range = true;
+			t.params.push_back(p);
+		}
+		{
+			NodeType::Param p("jitter", Variant::FLOAT, 0.9);
+			p.min_value = 0.f;
+			p.max_value = 1.f;
+			p.has_range = true;
+			t.params.push_back(p);
+		}
+
+		t.compile_func = [](CompileContext &ctx) {
+			Params params;
+			params.seed = ctx.get_param(0).operator int();
+			params.cell_size = ctx.get_param(1);
+			params.jitter = ctx.get_param(2);
+
+			if (params.jitter < 0.f) {
+				ctx.make_error(ZN_TTR("Jitter cannot be negative"));
+				return;
+			}
+			if (params.jitter > 1.f) {
+				ctx.make_error(ZN_TTR("Jitter must be between 0 and 1"));
+				return;
+			}
+
+			if (params.cell_size < 0) {
+				ctx.make_error(ZN_TTR("Cell size cannot be negative"));
+				return;
+			}
+			if (params.cell_size < 0.01) {
+				// To avoid division by zero
+				ctx.make_error(ZN_TTR("Cell size is too small"));
+				return;
+			}
+
+			ctx.set_params(params);
+		};
+
+		t.process_buffer_func = [](ProcessBufferContext &ctx) {
+			const Runtime::Buffer &x = ctx.get_input(0);
+			const Runtime::Buffer &y = ctx.get_input(1);
+			const Runtime::Buffer &z = ctx.get_input(2);
+			const Runtime::Buffer &spot_size = ctx.get_input(3);
+			Runtime::Buffer &out = ctx.get_output(0);
+			const Params params = ctx.get_params<Params>();
+			for (unsigned int i = 0; i < out.size; ++i) {
+				out.data[i] = SpotNoise::spot_noise_3d(Vector3f(x.data[i], y.data[i], z.data[i]), params.cell_size,
+						spot_size.data[i], params.jitter, params.seed);
+			}
+		};
+
+		t.range_analysis_func = [](RangeAnalysisContext &ctx) {
+			const Interval x = ctx.get_input(0);
+			const Interval y = ctx.get_input(1);
+			const Interval z = ctx.get_input(2);
+			const Interval spot_size = ctx.get_input(3);
+			const Params params = ctx.get_params<Params>();
+			ctx.set_output(0,
+					SpotNoise::spot_noise_3d_range(
+							Interval3{ x, y, z }, params.cell_size, spot_size, params.jitter, params.seed));
+		};
+
+		// TODO Support shader code for the Spots3D node
+		// t.shader_gen_func = [](ShaderGenContext &ctx) {
+		// };
 	}
 
 	CRASH_COND(_expression_functions.size() > 0);

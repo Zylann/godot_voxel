@@ -484,6 +484,8 @@ FastNoiseGradient2D   | Warps 2D coordinates `(x, y)` using a noise gradient fro
 FastNoiseGradient3D   | Warps 3D coordinates `(x, y, z)` using a noise gradient from the FastNoiseLite library. The `noise` parameter is specified with an instance of the `FastNoiseLiteGradient` resource.
 Noise2D               | Returns coherent fractal noise at 2D coordinates `(x, y)` using the open simplex algorithm. `noise` uses an instance of Godot's `OpenSimplexNoise` resource. 
 Noise3D               | Returns coherent fractal noise at 3D coordinates `(x, y, z)` using the open simplex algorithm. `noise` uses an instance of Godot's `OpenSimplexNoise` resource.
+Spots2D               | Cellular noise optimized for "ore patch" generation: divides space into a 2D grid where each cell contains a circular "spot". Returns 1 when the position is inside the spot, 0 otherwise. `jitter` more or less randomizes the position of the spot inside each cell. Limitation: high jitter can make spots clip with cell borders. This is intentional. If you need more generic cellular noise, use another node.
+Spots3D               | Cellular noise optimized for "ore patch" generation: divides space into a 3D grid where each cell contains a circular "spot". Returns 1 when the position is inside the spot, 0 otherwise. `jitter` more or less randomizes the position of the spot inside each cell. Limitation: high jitter can make spots clip with cell borders. This is intentional. If you need more generic cellular noise, use another node.
 
 
 ### SDF

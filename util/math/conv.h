@@ -69,7 +69,12 @@ inline Vector2f to_vec2f(Vector2i v) {
 }
 
 template <typename T>
-inline Vector3i to_vec3i(Vector3T<T> v) {
+inline Vector2i to_vec2i(const Vector2T<T> v) {
+	return Vector2i(v.x, v.y);
+}
+
+template <typename T>
+inline Vector3i to_vec3i(const Vector3T<T> v) {
 	return Vector3i(v.x, v.y, v.z);
 }
 

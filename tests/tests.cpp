@@ -1916,6 +1916,7 @@ void run_voxel_tests() {
 #endif
 	VOXEL_TEST(test_voxel_graph_issue471);
 	VOXEL_TEST(test_voxel_graph_unused_single_texture_output);
+	VOXEL_TEST(test_voxel_graph_spots2d_optimized_execution_map);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

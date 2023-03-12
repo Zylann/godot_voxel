@@ -69,6 +69,10 @@ struct Vector2T {
 		return Vector2T(x * p_scalar, y * p_scalar);
 	}
 
+	inline Vector2T operator/(const T p_scalar) const {
+		return Vector2T(x / p_scalar, y / p_scalar);
+	}
+
 	inline bool operator==(const Vector2T &p_v) const {
 		return x == p_v.x && y == p_v.y;
 	}
@@ -98,6 +102,21 @@ inline Vector2T<T> abs(const Vector2T<T> v) {
 template <typename T>
 inline Vector2T<T> sign_nonzero(Vector2T<T> v) {
 	return Vector2T<T>(sign_nonzero(v.x), sign_nonzero(v.y));
+}
+
+template <typename T>
+inline T dot(const Vector2T<T> &a, const Vector2T<T> &b) {
+	return a.x * b.x + a.y * b.y;
+}
+
+template <typename T>
+inline T length_squared(const Vector2T<T> v) {
+	return v.x * v.x + v.y * v.y;
+}
+
+template <typename T>
+inline T distance_squared(const Vector2T<T> &a, const Vector2T<T> &b) {
+	return length_squared(b - a);
 }
 
 } // namespace math

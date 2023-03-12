@@ -8,6 +8,14 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
 
+1.x - ongoing development - `master`
+--------------------------------------
+
+- General
+    - `VoxelGeneratorGraph`:
+        - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
+
+
 1.0 - 12/03/2023 - `godot4.0`
 ------------------------------
 
