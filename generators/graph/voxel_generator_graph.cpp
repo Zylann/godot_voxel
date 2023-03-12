@@ -518,10 +518,12 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					all_sdf_is_matter = all_sdf_is_matter && sdf_is_matter;
 				}
 
+				bool type_is_uniform = false;
 				if (type_output_buffer_index != -1) {
 					const math::Interval type_range = cache.state.get_range(type_output_buffer_index);
 					if (type_range.is_single_value()) {
 						out_buffer.fill_area(int(type_range.min), rmin, rmax, type_channel);
+						type_is_uniform = true;
 					} else {
 						// Types are not uniform, we'll need to compute them per voxel
 						required_outputs[required_outputs_count] = runtime_ptr->type_output_index;
@@ -538,10 +540,24 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 				}
 
+				// TODO Instead of filling this ourselves, can we leave this to the graph runtime?
+				// Because currently our logic seems redundant and more complicated, since we also have to not request
+				// those outputs later if any other output isn't uniform. Instead, the graph runtime can figure out
+				// that stuff is constant.
+				bool single_texture_is_uniform = false;
 				if (runtime_ptr->single_texture_output_index != -1 && !sdf_is_air) {
-					const math::Interval index_range = cache.state.get_range(runtime_ptr->single_texture_output_index);
+					const math::Interval index_range =
+							cache.state.get_range(runtime_ptr->single_texture_output_buffer_index);
 					if (index_range.is_single_value()) {
-						out_buffer.fill_area(int(index_range.min), rmin, rmax, type_channel);
+						// Make sure other indices are different so the weights associated with them don't override the
+						// first index's weight
+						const int index = int(index_range.min);
+						const uint8_t other_index = (index == 0 ? 1 : 0);
+						const uint16_t encoded_indices =
+								encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+						out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBufferInternal::CHANNEL_INDICES);
+						out_buffer.fill_area(0x000f, rmin, rmax, VoxelBufferInternal::CHANNEL_WEIGHTS);
+						single_texture_is_uniform = true;
 					} else {
 						required_outputs[required_outputs_count] = runtime_ptr->single_texture_output_index;
 						++required_outputs_count;
@@ -597,22 +613,25 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					}
 
 					if (sdf_output_buffer_index != -1
-							// If SDF was found uniform, we already filled the results. But if a texture output exists,
-							// a query might still run (so we end up at this `if`), and we should not gather SDF
-							// results. Otherwise it would overwrite the slice with garbage since SDF was skipped.
+							// If SDF was found uniform, we already filled the results, and we did not require it in the
+							// query. But if another output exists, a query might still run (so we end up at this
+							// `if`), and we should not gather SDF results. Otherwise it would overwrite the slice with
+							// garbage since SDF was skipped.
+							// The same logic goes for other outputs: if they aren't in the query, we must not fill
+							// them.
 							&& !sdf_is_uniform) {
 						const pg::Runtime::Buffer &sdf_buffer = cache.state.get_buffer(sdf_output_buffer_index);
 						fill_zx_sdf_slice(
 								sdf_buffer, out_buffer, sdf_channel, sdf_channel_depth, sdf_scale, rmin, rmax, ry);
 					}
 
-					if (type_output_buffer_index != -1) {
+					if (type_output_buffer_index != -1 && !type_is_uniform) {
 						const pg::Runtime::Buffer &type_buffer = cache.state.get_buffer(type_output_buffer_index);
 						fill_zx_integer_slice(
 								type_buffer, out_buffer, type_channel, type_channel_depth, rmin, rmax, ry);
 					}
 
-					if (runtime_ptr->single_texture_output_index != -1) {
+					if (runtime_ptr->single_texture_output_index != -1 && !single_texture_is_uniform) {
 						gather_indices_and_weights_from_single_texture(runtime_ptr->single_texture_output_buffer_index,
 								cache.state, rmin, rmax, ry, out_buffer);
 					}
