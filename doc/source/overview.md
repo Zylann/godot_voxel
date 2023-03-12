@@ -9,7 +9,7 @@ What voxels are
 
 ![Cubes and marching cubes](images/cubes_and_marching_cubes.webp)
 
-"Voxel" is short for "volumetric picture element", similar to "pixel" which means "picture element". They compose volumes, as opposed to simple 2D images, which allows to make 3D terrains or models that 3 dimensions. Instead of representing solely the surface of objects like classic polygon-based models do, they also represent the insides as well, in every point of space.
+"Voxel" is short for "volumetric picture element", similar to "pixel" which means "picture element". They compose volumes, as opposed to simple 2D images, which allows to make 3D terrains or models in 3 dimensions. Instead of representing solely the surface of objects like classic polygon-based models do, they also represent the insides as well, in every point of space.
 
 In this engine, a voxel is a specific point in space holding some values. Those values can be:
 

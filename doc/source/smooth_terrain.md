@@ -18,7 +18,7 @@ SDF is commonly used in raymarching shaders as a way to define volumes. It is al
 
 ### Technical explanation
 
-Voxels use SDF in 3D, but to help visualizing it, so we'll have a look at 2D examples.
+Voxels use SDF in 3D, so to help visualizing it, we'll have a look at 2D examples.
 If we were to represent a sphere with blocky voxels, we would apply the following pseudo-code to every voxel:
 
 ```
