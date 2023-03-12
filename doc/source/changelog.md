@@ -15,6 +15,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
 
+- Fixes
+    - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
+
 
 1.0 - 12/03/2023 - `godot4.0`
 ------------------------------

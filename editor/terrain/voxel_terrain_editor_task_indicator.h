@@ -2,15 +2,16 @@
 #define VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/godot/classes/h_box_container.h"
+#include "../../util/godot/classes/scroll_container.h"
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Label)
+ZN_GODOT_FORWARD_DECLARE(class HBoxContainer)
 
 namespace zylann::voxel {
 
-class VoxelTerrainEditorTaskIndicator : public HBoxContainer {
-	GDCLASS(VoxelTerrainEditorTaskIndicator, HBoxContainer)
+class VoxelTerrainEditorTaskIndicator : public ScrollContainer {
+	GDCLASS(VoxelTerrainEditorTaskIndicator, ScrollContainer)
 public:
 	VoxelTerrainEditorTaskIndicator();
 
@@ -44,6 +45,7 @@ private:
 	};
 
 	FixedArray<Stat, STAT_COUNT> _stats;
+	HBoxContainer *_box_container = nullptr;
 };
 
 } // namespace zylann::voxel

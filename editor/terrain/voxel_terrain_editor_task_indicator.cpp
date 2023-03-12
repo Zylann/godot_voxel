@@ -3,6 +3,7 @@
 #include "../../storage/voxel_memory_pool.h"
 #include "../../util/godot/classes/control.h"
 #include "../../util/godot/classes/font.h"
+#include "../../util/godot/classes/h_box_container.h"
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/v_separator.h"
@@ -13,6 +14,15 @@
 namespace zylann::voxel {
 
 VoxelTerrainEditorTaskIndicator::VoxelTerrainEditorTaskIndicator() {
+	// We use a scroll container so it doesn't prevent Godot from shrinking horizontally on small screens
+
+	// We only want horizontal scrolling
+	set_horizontal_scroll_mode(ScrollContainer::SCROLL_MODE_AUTO);
+	set_vertical_scroll_mode(ScrollContainer::SCROLL_MODE_DISABLED);
+
+	_box_container = memnew(HBoxContainer);
+	add_child(_box_container);
+
 	create_stat(STAT_STREAM_TASKS, ZN_TTR("I/O"), ZN_TTR("I/O tasks"));
 	create_stat(STAT_GENERATE_TASKS, ZN_TTR("Gen"), ZN_TTR("Generation tasks"));
 	create_stat(STAT_MESH_TASKS, ZN_TTR("Mesh"), ZN_TTR("Meshing tasks"));
@@ -47,18 +57,18 @@ void VoxelTerrainEditorTaskIndicator::update_stats() {
 }
 
 void VoxelTerrainEditorTaskIndicator::create_stat(StatID id, String short_name, String long_name) {
-	add_child(memnew(VSeparator));
+	_box_container->add_child(memnew(VSeparator));
 	Stat &stat = _stats[id];
 	CRASH_COND(stat.label != nullptr);
 	Label *name_label = memnew(Label);
 	name_label->set_text(short_name);
 	name_label->set_tooltip_text(long_name);
 	name_label->set_mouse_filter(Control::MOUSE_FILTER_PASS); // Necessary for tooltip to work
-	add_child(name_label);
+	_box_container->add_child(name_label);
 	stat.label = memnew(Label);
 	stat.label->set_custom_minimum_size(Vector2(45 * EDSCALE, 0));
 	stat.label->set_text("---");
-	add_child(stat.label);
+	_box_container->add_child(stat.label);
 }
 
 // TODO Optimize: these String formatting functions are extremely slow in GDExtension, due to indirection costs,
