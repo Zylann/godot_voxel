@@ -30,8 +30,18 @@ VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, uns
 }
 
 VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
+	// Make sure no material override is set, because it's possible the material will get destroyed before the mesh
+	// instance, which would cause errors in RenderingServer. Our thin wrapper does not take ownership of the material.
+	// TODO Eventually it would be better if we could just unref the material after having destroyed the mesh...
+	// VoxelMeshBlock inheritance isn't helping us here
+	_mesh_instance.set_material_override(Ref<Material>());
+
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		FreeMeshTask::try_add_and_destroy(_transition_mesh_instances[i]);
+		DirectMeshInstance &tmi = _transition_mesh_instances[i];
+		if (tmi.is_valid()) {
+			tmi.set_material_override(Ref<Material>());
+			FreeMeshTask::try_add_and_destroy(tmi);
+		}
 	}
 }
 
