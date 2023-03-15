@@ -8,10 +8,9 @@ Precompiled builds
 
 ### Release builds
 
-There are no release builds yet. We need to setup Github Releases for this. For now you may either use development builds or compile yourself.
+Currently there are no builds done "per milestone", we only do development builds of latest versions.
 
-Release builds correspond to a development milestone. Each has a branch (for example `godot3.4`, `godot3.3`...). They are feature freezes and may only receive bug fixes later on. Usually, they are made at the same time a new version of Godot comes out.
-Because the plugin is a module at the moment, and we don't have the same pipeline as the Godot devs, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
+Because the plugin is primarily developped as a module, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
 
 The engine is massive and targets a lot of platforms, while our module is small in comparison and we don't have dedicated build containers, so not all export templates are available. You can develop your game and test it with the editor on main desktop platforms, but if you want to export it, you may need to compile the templates yourself.
 
@@ -34,9 +33,6 @@ In case there are multiple downloadable artifacts, the editor build will be the 
 
 !!! note
 	You will need a Github account to be able to download development builds. Otherwise, links will not work.
-
-!!! warning
-	Godot 4 has no stable version yet. It has the very latest new features but will be full of bugs. It is possible to work with it, but be aware many features may not work correctly and errors will often show up. If your build errors out, check the github actions for the latest godot git commit working with the latest Zylann/godot_voxel commit: https://github.com/Zylann/godot_voxel/actions
 
 #### For Godot 3 (legacy builds)
 
@@ -116,5 +112,5 @@ In the future, it is hoped that none of this manual work is required. Rather tha
 GDExtension is what would make this possible. This module can already [compile with GodotCpp](module_development.md#gdextension) so it can be loaded as a GDExtension library.
 Unfortunately, there are still [too many problems](https://github.com/Zylann/godot_voxel/issues/442) for the module to work properly. For the time being, a custom engine build is more reliable.
 
-There are development builds available on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/extension_windows.yml), however they are completely untested and might crash. Use at your own risk.
+There are development builds available on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/extension_windows.yml) as we try to keep the module compiling with GodotCpp, however they are completely untested and might crash. Use at your own risk.
 
