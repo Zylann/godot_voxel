@@ -28,8 +28,7 @@ jobs:
         with:
           path: modules/voxel
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
+      - name: Install dependencies
         run: |
           sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
@@ -106,8 +105,7 @@ jobs:
         with:
           path: modules/voxel
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
+      - name: Install dependencies
         run: |
           sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
