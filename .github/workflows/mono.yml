@@ -31,8 +31,7 @@ jobs:
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       - name: Make apt sources.list use the default Ubuntu repositories
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
 
       # Install all packages (except scons)
@@ -110,8 +109,7 @@ jobs:
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       - name: Make apt sources.list use the default Ubuntu repositories
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
 
       # Install all packages (except scons)
