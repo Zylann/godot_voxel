@@ -28,11 +28,9 @@ jobs:
         with:
           path: modules/voxel
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
+      - name: Install dependencies
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
 
       # Install all packages (except scons)
@@ -79,7 +77,7 @@ jobs:
 
       - name: Generate Mono Glue
         run: |
-          xvfb-run ./bin/godot.linuxbsd.editor.x86_64.mono --generate-mono-glue modules/mono/glue || true
+          xvfb-run ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue modules/mono/glue || true
 
       # Make glue available as artifact for dependent jobs
       - uses: actions/upload-artifact@v2
@@ -107,11 +105,9 @@ jobs:
         with:
           path: modules/voxel
 
-      # Azure repositories are not reliable, we need to prevent azure giving us packages.
-      - name: Make apt sources.list use the default Ubuntu repositories
+      - name: Install dependencies
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
-          sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+          sudo add-apt-repository ppa:kisak/kisak-mesa
           sudo apt-get update
 
       # Install all packages (except scons)
@@ -156,6 +152,10 @@ jobs:
           name: mono-glue
           path: modules/mono/glue
 
+      - name: Build the managed libraries
+        run: |
+          ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
+
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
@@ -190,11 +190,6 @@ jobs:
       # Move nuget.config from voxel repo to root of checkout, so msbuild can find it
       - name: Move nuget.config
         run: mv modules/voxel/nuget.config ./nuget.config
-
-      # Install mono
-      - name: Configure dependencies
-        run: |
-          choco install -y mono
 
       # Upload cache on completion and check it out now
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
@@ -232,6 +227,10 @@ jobs:
         with:
           name: mono-glue
           path: modules/mono/glue
+
+      - name: Build the managed libraries
+        run: |
+          python ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin
 
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
