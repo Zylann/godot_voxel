@@ -13,9 +13,9 @@ A few different types are available, each with slightly different features.
 
 `VoxelStreamRegionFiles` is an older one, which works similarly to Minecraft's region system. It saves under multiple files in a folder. It only supports voxel data.
 
-`VoxelStreamBlockFiles` is a legacy one which saves one block per file. It is simple, but also very slow. It might be removed in the future.
+`VoxelStreamScript` is a custom stream that may be implemented using a script. See [Scripting](scripting.md#custom-stream).
 
-There is currently no stream implementation using an existing file format (like `.vox` for example), mainly because the current API expects the ability to load data in chunks.
+There is currently no stream implementation using an existing file format (like `.vox` for example), mainly because the current API expects the ability to load data in chunks compatible with the engine's format.
 
 
 Using streams for savegames
