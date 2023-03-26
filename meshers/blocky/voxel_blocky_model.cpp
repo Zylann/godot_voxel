@@ -461,6 +461,9 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 			if (tangents_empty && bake_tangents) {
 				// If tangents are empty then we calculate them
+
+				// TODO Don't compute tangents intertwined in the middle of the side separation algorithm, it's messy.
+
 				const Vector2f delta_uv1 = to_vec2f(uvs[indices[i + 1]] - uvs[indices[i]]);
 				const Vector2f delta_uv2 = to_vec2f(uvs[indices[i + 2]] - uvs[indices[i]]);
 				const Vector3f delta_pos1 = tri_positions[1] - tri_positions[0];
@@ -480,9 +483,9 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 				int next_side_index = surface.side_positions[side].size();
 
 				for (int j = 0; j < 3; ++j) {
-					int src_index = indices[i + j];
+					const int src_index = indices[i + j];
 					std::unordered_map<int, int> &added_indices = added_side_indices[side];
-					auto existing_dst_index_it = added_indices.find(src_index);
+					const auto existing_dst_index_it = added_indices.find(src_index);
 
 					if (existing_dst_index_it == added_indices.end()) {
 						// Add new vertex
@@ -501,7 +504,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							} else {
 								// i is the first vertex of each triangle which increments by steps of 3.
 								// There are 4 floats per tangent.
-								int ti = (i / 3) * 4;
+								int ti = indices[i + j] * 4;
 								surface.side_tangents[side].push_back(tangents[ti]);
 								surface.side_tangents[side].push_back(tangents[ti + 1]);
 								surface.side_tangents[side].push_back(tangents[ti + 2]);
@@ -524,8 +527,8 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 				int next_regular_index = surface.positions.size();
 
 				for (int j = 0; j < 3; ++j) {
-					int src_index = indices[i + j];
-					auto existing_dst_index_it = added_regular_indices.find(src_index);
+					const int src_index = indices[i + j];
+					const auto existing_dst_index_it = added_regular_indices.find(src_index);
 
 					if (existing_dst_index_it == added_regular_indices.end()) {
 						surface.indices.push_back(next_regular_index);
@@ -543,7 +546,7 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 							} else {
 								// i is the first vertex of each triangle which increments by steps of 3.
 								// There are 4 floats per tangent.
-								int ti = (i / 3) * 4;
+								int ti = indices[i + j] * 4;
 								surface.tangents.push_back(tangents[ti]);
 								surface.tangents.push_back(tangents[ti + 1]);
 								surface.tangents.push_back(tangents[ti + 2]);
