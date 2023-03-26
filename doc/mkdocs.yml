@@ -31,6 +31,7 @@ nav:
   - '___.md'
   - 'Scripting API':
     # <generated_class_list>
+    - api/FastNoise2.md
     - api/VoxelBlockSerializer.md
     - api/VoxelBlockyLibrary.md
     - api/VoxelBlockyModel.md
@@ -48,6 +49,7 @@ nav:
     - api/VoxelGeneratorNoise2D.md
     - api/VoxelGeneratorScript.md
     - api/VoxelGeneratorWaves.md
+    - api/VoxelGraphFunction.md
     - api/VoxelInstanceComponent.md
     - api/VoxelInstanceGenerator.md
     - api/VoxelInstanceLibrary.md
