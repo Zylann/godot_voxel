@@ -14,12 +14,14 @@
 			<return type="int" />
 			<param index="0" name="color" type="Color" />
 			<description>
+				Encodes normalized 4-float color into 16-bit integer data. It is used with the COLOR channel, in cases where the channel represents direct colors (without using a palette).
 			</description>
 		</method>
 		<method name="color_to_u16_weights" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="_unnamed_arg0" type="Color" />
 			<description>
+				Encodes normalized 4-float color into 16-bit integer data, for use with the WEIGHTS channel.
 			</description>
 		</method>
 		<method name="copy">
@@ -28,6 +30,9 @@
 			<param index="1" name="dst_buffer" type="VoxelBuffer" />
 			<param index="2" name="channels_mask" type="int" />
 			<description>
+				Copies voxels in a box and stores them in the passed buffer.
+				[code]src_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]dst_buffer[/code].
+				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be copied. Example: [code]1 << VoxelBuffer.CHANNEL_SDF[/code] to get only SDF data. Use [code]0xff[/code] if you want them all.
 			</description>
 		</method>
 		<method name="do_box">
@@ -88,6 +93,10 @@
 			<param index="2" name="channels_mask" type="int" />
 			<param index="3" name="src_mask_value" type="int" />
 			<description>
+				Paste voxels in a box from the given buffer at a specific location.
+				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
+				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 << VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
+				[code]src_mask_value[/code] For every pasted channel, if voxel data has this value, it will not be pasted. This is mostly useful when using blocky voxel types. Pass [code]0xffffffff[/code] to disable masking.
 			</description>
 		</method>
 		<method name="raycast">
@@ -97,6 +106,9 @@
 			<param index="2" name="max_distance" type="float" default="10.0" />
 			<param index="3" name="collision_mask" type="int" default="4294967295" />
 			<description>
+				Runs a voxel-based raycast to find the first hit from an origin and a direction.
+				This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
+				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
 			</description>
 		</method>
 		<method name="set_voxel">
@@ -104,6 +116,7 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="v" type="int" />
 			<description>
+				Sets the raw integer value of a specific voxel on the current channel.
 			</description>
 		</method>
 		<method name="set_voxel_f">
@@ -111,6 +124,7 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="v" type="float" />
 			<description>
+				Sets the normalized decimal value of a specific voxel. This should preferably be used when modifying voxels on the SDF channel.
 			</description>
 		</method>
 		<method name="set_voxel_metadata">
@@ -124,18 +138,21 @@
 			<return type="Vector4i" />
 			<param index="0" name="_unnamed_arg0" type="int" />
 			<description>
+				Decodes raw voxel integer data from the INDICES channel into a 4-integer vector.
 			</description>
 		</method>
 		<method name="u16_weights_to_color" qualifiers="static">
 			<return type="Color" />
 			<param index="0" name="_unnamed_arg0" type="int" />
 			<description>
+				Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-float color.
 			</description>
 		</method>
 		<method name="vec4i_to_u16_indices" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="_unnamed_arg0" type="Vector4i" />
 			<description>
+				Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 			</description>
 		</method>
 	</methods>
