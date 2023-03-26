@@ -137,7 +137,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Constructors and destructors go on top
 - Public API goes on top, private stuff goes below
 - Bindings go at the bottom.
-- Avoid long lines. Preferred ruler is 120 characters. Don't fit too many operations on the same line, use locals.
+- Avoid long lines. Preferred maximum line length is 120 characters. Don't fit too many operations on the same line, use locals.
 - Defining types or functions in `.cpp` may be better for compilation times than in header if they are internal.
 
 ### C++ features
