@@ -465,7 +465,8 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 				ZN_PRINT_ERROR(format("Voxel model {} with ID {} is missing tangents and UVs. The model won't be "
 									  "baked. You should consider providing a mesh with tangents, or at least UVs and "
 									  "normals, or turn off tangents baking in {}.",
-						config.get_voxel_name(), config.get_id(), String(VoxelBlockyLibrary::get_class_static())));
+						String(config.get_voxel_name()), config.get_id(),
+						String(VoxelBlockyLibrary::get_class_static())));
 				continue;
 			}
 			WARN_PRINT(String("Voxel model '{0}' with ID {1} does not have tangents. They will be generated."
