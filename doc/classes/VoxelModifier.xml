@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelModifier" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelModifier" inherits="Node3D" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -12,4 +12,10 @@
 		<member name="smoothness" type="float" setter="set_smoothness" getter="get_smoothness" default="0.0">
 		</member>
 	</members>
+	<constants>
+		<constant name="OPERATION_ADD" value="0" enum="Operation">
+		</constant>
+		<constant name="OPERATION_REMOVE" value="1" enum="Operation">
+		</constant>
+	</constants>
 </class>

@@ -52,4 +52,4 @@ Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [StreamPeer](https://do
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

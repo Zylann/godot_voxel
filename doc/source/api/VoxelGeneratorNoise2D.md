@@ -25,10 +25,9 @@ By default, a linear curve from 0 to 1 is used.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_height_range"></span> **height_range** = 200.0
 
-Range of altitudes where ground height variations will be generated.
 
 - [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)<span id="i_noise"></span> **noise**
 
 Noise used to produce the heightmap. It is required for the generator to work.
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

@@ -44,7 +44,7 @@ Return                                                                          
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_atlas_size"></span> **atlas_size** = 16
 
-Sets a reference size of texture atlas. This is only used on models which have a geometry mode set to `GEOMETRY_CUBE`.
+Sets a reference size of texture atlas, in tiles. The atlas is assumed to be square (same number of tiles horizontally and vertically). This is only used on models which have a geometry mode set to `GEOMETRY_CUBE`.
 
 This property is old and might be removed or changed in the future, as it only works in specific setups.
 
@@ -88,4 +88,4 @@ Finds the first model having the specified name. If not found, returns `null`.
 
 Finds the ID of the first model having the specified name. If not found, returns `null`.
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

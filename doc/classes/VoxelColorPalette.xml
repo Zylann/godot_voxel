@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelColorPalette" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelColorPalette" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Limited list of colors that can be indexed quickly.
 	</brief_description>
@@ -12,14 +12,14 @@
 	<methods>
 		<method name="get_color" qualifiers="const">
 			<return type="Color" />
-			<param index="0" name="_unnamed_arg0" type="int" />
+			<param index="0" name="index" type="int" />
 			<description>
 			</description>
 		</method>
 		<method name="set_color">
 			<return type="void" />
-			<param index="0" name="color" type="int" />
-			<param index="1" name="_unnamed_arg1" type="Color" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="color" type="Color" />
 			<description>
 			</description>
 		</method>

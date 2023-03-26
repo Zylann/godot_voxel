@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelGeneratorGraph" inherits="VoxelGenerator" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Graph-based voxel generator.
 	</brief_description>
@@ -12,16 +12,6 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="add_connection">
-			<return type="void" />
-			<param index="0" name="src_node_id" type="int" />
-			<param index="1" name="src_port_index" type="int" />
-			<param index="2" name="dst_node_id" type="int" />
-			<param index="3" name="dst_port_index" type="int" />
-			<description>
-				Connects the outputs of a node to the input of another node. Connecting a node to itself, or in a way that can lead it back to itself, is not supported.
-			</description>
-		</method>
 		<method name="bake_sphere_bumpmap">
 			<return type="void" />
 			<param index="0" name="im" type="Image" />
@@ -44,16 +34,6 @@
 				[code]ref_radius[/code]: radius of the sphere on which normals will be sampled.
 				[code]strength[/code]: strength of produced normals, may default to 1.0.
 				Note: an alternative is to use distance normals feature with [VoxelLodTerrain].
-			</description>
-		</method>
-		<method name="can_connect" qualifiers="const">
-			<return type="bool" />
-			<param index="0" name="src_node_id" type="int" />
-			<param index="1" name="src_port_index" type="int" />
-			<param index="2" name="dst_node_id" type="int" />
-			<param index="3" name="dst_port_index" type="int" />
-			<description>
-				Tests if two ports can be connected together.
 			</description>
 		</method>
 		<method name="clear">
@@ -83,17 +63,6 @@
 				The node ID will be -1 if the error is not about a particular node.
 			</description>
 		</method>
-		<method name="create_node">
-			<return type="int" />
-			<param index="0" name="type_id" type="int" enum="VoxelGeneratorGraph.NodeTypeID" />
-			<param index="1" name="position" type="Vector2" />
-			<param index="2" name="id" type="int" default="0" />
-			<description>
-				Creates a graph node of a given type at a specific visual position. That position does not affect how the graph will perform, however it helps organizing nodes.
-				An optional ID can be specified. If left to 0, the ID will be generated.
-				This function then returns the ID of the node, which may be useful to modify other properties of the node later.
-			</description>
-		</method>
 		<method name="debug_analyze_range" qualifiers="const">
 			<return type="Vector2" />
 			<param index="0" name="min_pos" type="Vector3" />
@@ -112,149 +81,8 @@
 			<description>
 			</description>
 		</method>
-		<method name="find_node_by_name" qualifiers="const">
-			<return type="int" />
-			<param index="0" name="name" type="StringName" />
-			<description>
-			</description>
-		</method>
-		<method name="generate_shader">
-			<return type="String" />
-			<description>
-			</description>
-		</method>
-		<method name="get_connections" qualifiers="const">
-			<return type="Array" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_default_input" qualifiers="const">
-			<return type="Variant" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="input_index" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_default_inputs_autoconnect" qualifiers="const">
-			<return type="bool" />
-			<param index="0" name="node_id" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_gui_position" qualifiers="const">
-			<return type="Vector2" />
-			<param index="0" name="node_id" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_ids" qualifiers="const">
-			<return type="PackedInt32Array" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_name" qualifiers="const">
-			<return type="StringName" />
-			<param index="0" name="node_id" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_param" qualifiers="const">
-			<return type="Variant" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="param_index" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_type_count" qualifiers="const">
-			<return type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_type_id" qualifiers="const">
-			<return type="int" enum="VoxelGeneratorGraph.NodeTypeID" />
-			<param index="0" name="node_id" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="get_node_type_info" qualifiers="const">
-			<return type="Dictionary" />
-			<param index="0" name="type_id" type="int" />
-			<description>
-			</description>
-		</method>
-		<method name="remove_connection">
-			<return type="void" />
-			<param index="0" name="src_node_id" type="int" />
-			<param index="1" name="src_port_index" type="int" />
-			<param index="2" name="dst_node_id" type="int" />
-			<param index="3" name="dst_port_index" type="int" />
-			<description>
-				Removes an existing connection between two nodes of the graph.
-			</description>
-		</method>
-		<method name="remove_node">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<description>
-				Removes a node from the graph.
-			</description>
-		</method>
-		<method name="set_expression_node_inputs">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="names" type="PackedStringArray" />
-			<description>
-				Configures inputs for an Expression node. [code]names[/code] is the list of input names used in the expression.
-				If you create an Expression node from code, you may want to use this function, as inputs will not be setup automatically.
-			</description>
-		</method>
-		<method name="set_node_default_input">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="input_index" type="int" />
-			<param index="2" name="value" type="Variant" />
-			<description>
-				Sets the value that will be used on an input of a node that has no inbound connection.
-				[code]value[/code] may be a [code]float[/code] for now.
-			</description>
-		</method>
-		<method name="set_node_default_inputs_autoconnect">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="enabled" type="bool" />
-			<description>
-				Sets wether a node input with no inbound connection will automatically create a default connection when the graph is compiled.
-				This is only available on specific nodes. On other nodes, it has no effect.
-			</description>
-		</method>
-		<method name="set_node_gui_position">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="position" type="Vector2" />
-			<description>
-				Sets the visual position of a node of the graph, as it will appear in the editor.
-			</description>
-		</method>
-		<method name="set_node_name">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="name" type="StringName" />
-			<description>
-				Sets a custom name for a node.
-			</description>
-		</method>
-		<method name="set_node_param">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="param_index" type="int" />
-			<param index="2" name="value" type="Variant" />
-			<description>
-			</description>
-		</method>
-		<method name="set_node_param_null">
-			<return type="void" />
-			<param index="0" name="node_id" type="int" />
-			<param index="1" name="param_index" type="int" />
+		<method name="get_main_function" qualifiers="const">
+			<return type="VoxelGraphFunction" />
 			<description>
 			</description>
 		</method>
@@ -286,104 +114,4 @@
 			</description>
 		</signal>
 	</signals>
-	<constants>
-		<constant name="NODE_CONSTANT" value="0" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_INPUT_X" value="1" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_INPUT_Y" value="2" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_INPUT_Z" value="3" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_OUTPUT_SDF" value="4" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_ADD" value="5" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SUBTRACT" value="6" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_MULTIPLY" value="7" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_DIVIDE" value="8" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SIN" value="9" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FLOOR" value="10" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_ABS" value="11" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SQRT" value="12" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FRACT" value="13" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_STEPIFY" value="14" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_WRAP" value="15" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_MIN" value="16" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_MAX" value="17" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_DISTANCE_2D" value="18" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_DISTANCE_3D" value="19" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_CLAMP" value="20" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_MIX" value="22" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_REMAP" value="23" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SMOOTHSTEP" value="24" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_CURVE" value="25" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SELECT" value="26" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_NOISE_2D" value="27" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_NOISE_3D" value="28" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_IMAGE_2D" value="29" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_PLANE" value="30" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_BOX" value="31" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_SPHERE" value="32" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_TORUS" value="33" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_PREVIEW" value="34" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_SPHERE_HEIGHTMAP" value="35" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_SMOOTH_UNION" value="36" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SDF_SMOOTH_SUBTRACT" value="37" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_NORMALIZE_3D" value="38" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FAST_NOISE_2D" value="39" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FAST_NOISE_3D" value="40" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_2D" value="41" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_FAST_NOISE_GRADIENT_3D" value="42" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_OUTPUT_WEIGHT" value="43" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="45" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_EXPRESSION" value="46" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_POWI" value="47" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_POW" value="48" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_INPUT_SDF" value="49" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_TYPE_COUNT" value="50" enum="NodeTypeID">
-		</constant>
-	</constants>
 </class>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyModel" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyModel" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Model stored in [VoxelBlockyLibrary] and used by [VoxelMesherBlocky].
 	</brief_description>
@@ -31,7 +31,7 @@
 		</method>
 		<method name="is_mesh_collision_enabled" qualifiers="const">
 			<return type="bool" />
-			<param index="0" name="_unnamed_arg0" type="int" />
+			<param index="0" name="surface_index" type="int" />
 			<description>
 				Tells if a specific surface produces mesh-based collisions.
 			</description>
@@ -62,7 +62,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="collision_aabbs" type="Array" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
+		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" default="[]">
 			List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover]. They are not used with mesh-based collision.
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">

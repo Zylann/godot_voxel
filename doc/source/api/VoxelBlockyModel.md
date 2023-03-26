@@ -16,7 +16,7 @@ Some other various properties also exist to make it easier to implement games ba
 
 Type          | Name                                         | Default           
 ------------- | -------------------------------------------- | ------------------
-`Array`       | [collision_aabbs](#i_collision_aabbs)        | []                
+`AABB[]`      | [collision_aabbs](#i_collision_aabbs)        | []                
 `int`         | [collision_mask](#i_collision_mask)          | 1                 
 `Color`       | [color](#i_color)                            | Color(1, 1, 1, 1) 
 `Mesh`        | [custom_mesh](#i_custom_mesh)                |                   
@@ -35,7 +35,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_id](#i_get_id) ( ) const                                                                                                                                                                                                       
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [get_material_override](#i_get_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) const                                                                                              
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_empty](#i_is_empty) ( ) const                                                                                                                                                                                                   
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_mesh_collision_enabled](#i_is_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) const                                                                              
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_mesh_collision_enabled](#i_is_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) const                                                                              
 [void](#)                                                                       | [set_id](#i_set_id) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id )                                                                                                                                     
 [void](#)                                                                       | [set_material_override](#i_set_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )           
 [void](#)                                                                       | [set_mesh_collision_enabled](#i_set_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
@@ -63,7 +63,7 @@ enum **Side**:
 
 ## Property Descriptions
 
-- [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
+- [AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
 
 List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover](VoxelBoxMover.md). They are not used with mesh-based collision.
 
@@ -117,7 +117,7 @@ Gets the material override for a specific surface of the model.
 
 Tells if the model contains any geometry.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_mesh_collision_enabled"></span> **is_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_mesh_collision_enabled"></span> **is_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) 
 
 Tells if a specific surface produces mesh-based collisions.
 
@@ -135,4 +135,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

@@ -14,6 +14,14 @@ Type     | Name                         | Default
 `float`  | [smoothness](#i_smoothness)  | 0.0     
 <p></p>
 
+## Enumerations: 
+
+enum **Operation**: 
+
+- **OPERATION_ADD** = **0**
+- **OPERATION_REMOVE** = **1**
+
+
 ## Property Descriptions
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_operation"></span> **operation** = 0
@@ -22,4 +30,4 @@ Type     | Name                         | Default
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_smoothness"></span> **smoothness** = 0.0
 
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

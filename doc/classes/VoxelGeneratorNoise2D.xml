@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelGeneratorNoise2D" inherits="VoxelGeneratorHeightmap" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel generator producing noise-based heightmap terrain.
 	</brief_description>
@@ -12,9 +12,7 @@
 			When assigned, this curve will alter the distribution of height variations, allowing to give some kind of "profile" to the generated shapes.
 			By default, a linear curve from 0 to 1 is used.
 		</member>
-		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" overrides="VoxelGeneratorHeightmap" default="200.0">
-			Range of altitudes where ground height variations will be generated.
-		</member>
+		<member name="height_range" type="float" setter="set_height_range" getter="get_height_range" overrides="VoxelGeneratorHeightmap" default="200.0" />
 		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
 			Noise used to produce the heightmap. It is required for the generator to work.
 		</member>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FastNoise2" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="generate_image" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="tileable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_2d_single" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_3d_single" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_simd_level_name">
+			<return type="String" />
+			<param index="0" name="level" type="int" enum="FastNoise2.SIMDLevel" />
+			<description>
+			</description>
+		</method>
+		<method name="update_generator">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cellular_distance_function" type="int" setter="set_cellular_distance_function" getter="get_cellular_distance_function" enum="FastNoise2.CellularDistanceFunction" default="0">
+		</member>
+		<member name="cellular_jitter" type="float" setter="set_cellular_jitter" getter="get_cellular_jitter" default="1.0">
+		</member>
+		<member name="cellular_return_type" type="int" setter="set_cellular_return_type" getter="get_cellular_return_type" enum="FastNoise2.CellularReturnType" default="0">
+		</member>
+		<member name="encoded_node_tree" type="String" setter="set_encoded_node_tree" getter="get_encoded_node_tree" default="&quot;&quot;">
+		</member>
+		<member name="fractal_gain" type="float" setter="set_fractal_gain" getter="get_fractal_gain" default="0.5">
+		</member>
+		<member name="fractal_lacunarity" type="float" setter="set_fractal_lacunarity" getter="get_fractal_lacunarity" default="2.0">
+		</member>
+		<member name="fractal_octaves" type="int" setter="set_fractal_octaves" getter="get_fractal_octaves" default="3">
+		</member>
+		<member name="fractal_ping_pong_strength" type="float" setter="set_fractal_ping_pong_strength" getter="get_fractal_ping_pong_strength" default="2.0">
+		</member>
+		<member name="fractal_type" type="int" setter="set_fractal_type" getter="get_fractal_type" enum="FastNoise2.FractalType" default="0">
+		</member>
+		<member name="noise_type" type="int" setter="set_noise_type" getter="get_noise_type" enum="FastNoise2.NoiseType" default="0">
+		</member>
+		<member name="period" type="float" setter="set_period" getter="get_period" default="64.0">
+		</member>
+		<member name="remap_enabled" type="bool" setter="set_remap_enabled" getter="is_remap_enabled" default="false">
+		</member>
+		<member name="remap_input_max" type="float" setter="set_remap_input_max" getter="get_remap_input_max" default="1.0">
+		</member>
+		<member name="remap_input_min" type="float" setter="set_remap_input_min" getter="get_remap_input_min" default="-1.0">
+		</member>
+		<member name="remap_output_max" type="float" setter="set_remap_output_max" getter="get_remap_output_max" default="1.0">
+		</member>
+		<member name="remap_output_min" type="float" setter="set_remap_output_min" getter="get_remap_output_min" default="-1.0">
+		</member>
+		<member name="seed" type="int" setter="set_seed" getter="get_seed" default="1337">
+		</member>
+		<member name="terrace_enabled" type="bool" setter="set_terrace_enabled" getter="is_terrace_enabled" default="false">
+		</member>
+		<member name="terrace_multiplier" type="float" setter="set_terrace_multiplier" getter="get_terrace_multiplier" default="1.0">
+		</member>
+		<member name="terrace_smoothness" type="float" setter="set_terrace_smoothness" getter="get_terrace_smoothness" default="0.0">
+		</member>
+	</members>
+	<constants>
+		<constant name="TYPE_OPEN_SIMPLEX_2" value="0" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_SIMPLEX" value="1" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_PERLIN" value="2" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_VALUE" value="3" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_CELLULAR" value="4" enum="NoiseType">
+		</constant>
+		<constant name="TYPE_ENCODED_NODE_TREE" value="5" enum="NoiseType">
+		</constant>
+		<constant name="FRACTAL_NONE" value="0" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_FBM" value="1" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_RIDGED" value="2" enum="FractalType">
+		</constant>
+		<constant name="FRACTAL_PING_PONG" value="3" enum="FractalType">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_EUCLIDEAN" value="0" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_EUCLIDEAN_SQ" value="1" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_MANHATTAN" value="2" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_HYBRID" value="3" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_DISTANCE_MAX_AXIS" value="4" enum="CellularDistanceFunction">
+		</constant>
+		<constant name="CELLULAR_RETURN_INDEX_0" value="0" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_INDEX_0_ADD_1" value="1" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_INDEX_0_SUB_1" value="2" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_INDEX_0_MUL_1" value="3" enum="CellularReturnType">
+		</constant>
+		<constant name="CELLULAR_RETURN_INDEX_0_DIV_1" value="4" enum="CellularReturnType">
+		</constant>
+		<constant name="SIMD_NULL" value="0" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SCALAR" value="1" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSE" value="2" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSE2" value="4" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSE3" value="8" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSSE3" value="16" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSE41" value="32" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_SSE42" value="64" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_AVX" value="128" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_AVX2" value="256" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_AVX512" value="512" enum="SIMDLevel">
+		</constant>
+		<constant name="SIMD_NEON" value="65536" enum="SIMDLevel">
+		</constant>
+	</constants>
+</class>

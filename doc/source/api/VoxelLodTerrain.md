@@ -28,9 +28,11 @@ Type        | Name                                                              
 `int`       | [mesh_block_size](#i_mesh_block_size)                                              | 16                                                                                    
 `int`       | [normalmap_begin_lod_index](#i_normalmap_begin_lod_index)                          | 2                                                                                     
 `bool`      | [normalmap_enabled](#i_normalmap_enabled)                                          | false                                                                                 
+`int`       | [normalmap_max_deviation_degrees](#i_normalmap_max_deviation_degrees)              | 60                                                                                    
 `bool`      | [normalmap_octahedral_encoding_enabled](#i_normalmap_octahedral_encoding_enabled)  | false                                                                                 
 `int`       | [normalmap_tile_resolution_max](#i_normalmap_tile_resolution_max)                  | 8                                                                                     
 `int`       | [normalmap_tile_resolution_min](#i_normalmap_tile_resolution_min)                  | 4                                                                                     
+`bool`      | [normalmap_use_gpu](#i_normalmap_use_gpu)                                          | false                                                                                 
 `bool`      | [run_stream_in_editor](#i_run_stream_in_editor)                                    | true                                                                                  
 `bool`      | [threaded_update_enabled](#i_threaded_update_enabled)                              | false                                                                                 
 `int`       | [view_distance](#i_view_distance)                                                  | 512                                                                                   
@@ -40,29 +42,33 @@ Type        | Name                                                              
 ## Methods: 
 
 
-Return                                                                              | Signature                                                                                                                                                                                                                                            
------------------------------------------------------------------------------------ | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_dump_as_scene](#i_debug_dump_as_scene) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) path, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) include_instancer ) const                    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_data_block_count](#i_debug_get_data_block_count) ( ) const                                                                                                                                                                                
-[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_data_block_info](#i_debug_get_data_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) const                                                                                                              
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_mesh_block_count](#i_debug_get_mesh_block_count) ( ) const                                                                                                                                                                                
-[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_mesh_block_info](#i_debug_get_mesh_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                 
-[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_get_octrees_detailed](#i_debug_get_octrees_detailed) ( ) const                                                                                                                                                                                
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_is_draw_enabled](#i_debug_is_draw_enabled) ( ) const                                                                                                                                                                                          
-[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_print_sdf_top_down](#i_debug_print_sdf_top_down) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents )            
-[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_raycast_mesh_block](#i_debug_raycast_mesh_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) const              
-[void](#)                                                                           | [debug_set_draw_enabled](#i_debug_set_draw_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                                               
-[void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                    
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_region_extent](#i_get_data_block_region_extent) ( ) const                                                                                                                                                                            
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                              
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                            
-[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                        
-[VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                              
-[void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                  
-[void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode )                                                                                                                        
-[Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_data_block_position](#i_voxel_to_data_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg1 ) const 
-[Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_mesh_block_position](#i_voxel_to_mesh_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg1 ) const 
+Return                                                                              | Signature                                                                                                                                                                                                                                             
+----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_dump_as_scene](#i_debug_dump_as_scene) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) path, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) include_instancer ) const                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_data_block_count](#i_debug_get_data_block_count) ( ) const                                                                                                                                                                                 
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_data_block_info](#i_debug_get_data_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                  
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) const                                                                                                               
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_mesh_block_count](#i_debug_get_mesh_block_count) ( ) const                                                                                                                                                                                 
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_mesh_block_info](#i_debug_get_mesh_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                  
+[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_get_octrees_detailed](#i_debug_get_octrees_detailed) ( ) const                                                                                                                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_is_draw_enabled](#i_debug_is_draw_enabled) ( ) const                                                                                                                                                                                           
+[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_print_sdf_top_down](#i_debug_print_sdf_top_down) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents )             
+[Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_raycast_mesh_block](#i_debug_raycast_mesh_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) const               
+[void](#)                                                                           | [debug_set_draw_enabled](#i_debug_set_draw_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                                                
+[void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_region_extent](#i_get_data_block_region_extent) ( ) const                                                                                                                                                                             
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                               
+[VoxelGenerator](VoxelGenerator.md)                                                 | [get_normalmap_generator_override](#i_get_normalmap_generator_override) ( ) const                                                                                                                                                                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_normalmap_generator_override_begin_lod_index](#i_get_normalmap_generator_override_begin_lod_index) ( ) const                                                                                                                                     
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                             
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                         
+[VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
+[void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
+[void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](VoxelGenerator.md) generator_override )                                                                                                                    
+[void](#)                                                                           | [set_normalmap_generator_override_begin_lod_index](#i_set_normalmap_generator_override_begin_lod_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )                                                            
+[void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode )                                                                                                                         
+[Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_data_block_position](#i_voxel_to_data_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const 
+[Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_mesh_block_position](#i_voxel_to_mesh_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const 
 <p></p>
 
 ## Enumerations: 
@@ -146,6 +152,9 @@ Enables generation of distant normalmaps. This is a feature used with smooth ter
 
 This feature requires to use a specific shader, check the online documentation or examples for more information.
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_normalmap_max_deviation_degrees"></span> **normalmap_max_deviation_degrees** = 60
+
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_normalmap_octahedral_encoding_enabled"></span> **normalmap_octahedral_encoding_enabled** = false
 
 Enables octahedral compression of normalmaps, which reduces memory usage caused by distant normalmaps by about 33%, with some impact on visual quality. Your shader may be modified accordingly to decode them.
@@ -159,6 +168,9 @@ Maximum resolution of tiles in distant normalmaps.
 Minimum resolution of tiles in distant normalmaps.
 
 This is the resolution at which normalmaps will begin with, at the LOD level defined in member normalmap_begin_lod_index. Resolutions will double at each LOD level, until they reach member normalmap_tile_resolution_max.
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_normalmap_use_gpu"></span> **normalmap_use_gpu** = false
+
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_run_stream_in_editor"></span> **run_stream_in_editor** = true
 
@@ -223,6 +235,12 @@ Note, because this volume uses chunks with LOD, these bounds will snap to the cl
 
 Gets the size of one cunic data block in voxels.
 
+- [VoxelGenerator](VoxelGenerator.md)<span id="i_get_normalmap_generator_override"></span> **get_normalmap_generator_override**( ) 
+
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_normalmap_generator_override_begin_lod_index"></span> **get_normalmap_generator_override_begin_lod_index**( ) 
+
+
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_process_callback"></span> **get_process_callback**( ) 
 
 Gets which callback is used to run the main thread update of this node.
@@ -261,16 +279,22 @@ There is currently no reliable way to tell if saving has completed.
 
 Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 
+- [void](#)<span id="i_set_normalmap_generator_override"></span> **set_normalmap_generator_override**( [VoxelGenerator](VoxelGenerator.md) generator_override ) 
+
+
+- [void](#)<span id="i_set_normalmap_generator_override_begin_lod_index"></span> **set_normalmap_generator_override_begin_lod_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
+
+
 - [void](#)<span id="i_set_process_callback"></span> **set_process_callback**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode ) 
 
 Sets which process callback is used to run the main thread update of this node. By default, it uses `_process`.
 
-- [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block_position"></span> **voxel_to_data_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg1 ) 
+- [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block_position"></span> **voxel_to_data_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
 Converts a voxel position into a data block position for a specific LOD index.
 
-- [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_mesh_block_position"></span> **voxel_to_mesh_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) lod_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg1 ) 
+- [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_mesh_block_position"></span> **voxel_to_mesh_block_position**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Sep 10, 2022_
+_Generated on Mar 26, 2023_

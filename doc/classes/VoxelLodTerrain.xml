@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelLodTerrain" inherits="VoxelNode" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -10,7 +10,7 @@
 	</tutorials>
 	<methods>
 		<method name="debug_dump_as_scene" qualifiers="const">
-			<return type="int" enum="Error" />
+			<return type="int" />
 			<param index="0" name="path" type="String" />
 			<param index="1" name="include_instancer" type="bool" />
 			<description>
@@ -94,6 +94,16 @@
 				Gets the size of one cunic data block in voxels.
 			</description>
 		</method>
+		<method name="get_normalmap_generator_override" qualifiers="const">
+			<return type="VoxelGenerator" />
+			<description>
+			</description>
+		</method>
+		<method name="get_normalmap_generator_override_begin_lod_index" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="get_process_callback" qualifiers="const">
 			<return type="int" enum="VoxelLodTerrain.ProcessCallback" />
 			<description>
@@ -135,6 +145,18 @@
 				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
 		</method>
+		<method name="set_normalmap_generator_override">
+			<return type="void" />
+			<param index="0" name="generator_override" type="VoxelGenerator" />
+			<description>
+			</description>
+		</method>
+		<method name="set_normalmap_generator_override_begin_lod_index">
+			<return type="void" />
+			<param index="0" name="lod_index" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="set_process_callback">
 			<return type="void" />
 			<param index="0" name="mode" type="int" enum="VoxelLodTerrain.ProcessCallback" />
@@ -144,16 +166,16 @@
 		</method>
 		<method name="voxel_to_data_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<param index="0" name="lod_index" type="Vector3" />
-			<param index="1" name="_unnamed_arg1" type="int" />
+			<param index="0" name="voxel_position" type="Vector3" />
+			<param index="1" name="lod_index" type="int" />
 			<description>
 				Converts a voxel position into a data block position for a specific LOD index.
 			</description>
 		</method>
 		<method name="voxel_to_mesh_block_position" qualifiers="const">
 			<return type="Vector3i" />
-			<param index="0" name="lod_index" type="Vector3" />
-			<param index="1" name="_unnamed_arg1" type="int" />
+			<param index="0" name="voxel_position" type="Vector3" />
+			<param index="1" name="lod_index" type="int" />
 			<description>
 				Converts a voxel position into a mesh block position for a specific LOD index.
 			</description>
@@ -204,6 +226,8 @@
 			Enables generation of distant normalmaps. This is a feature used with smooth terrain only (SDF). It is an expensive feature but allows to bring a lot more detail to distant ground.
 			This feature requires to use a specific shader, check the online documentation or examples for more information.
 		</member>
+		<member name="normalmap_max_deviation_degrees" type="int" setter="set_normalmap_max_deviation_degrees" getter="get_normalmap_max_deviation_degrees" default="60">
+		</member>
 		<member name="normalmap_octahedral_encoding_enabled" type="bool" setter="set_octahedral_normal_encoding" getter="get_octahedral_normal_encoding" default="false">
 			Enables octahedral compression of normalmaps, which reduces memory usage caused by distant normalmaps by about 33%, with some impact on visual quality. Your shader may be modified accordingly to decode them.
 		</member>
@@ -213,6 +237,8 @@
 		<member name="normalmap_tile_resolution_min" type="int" setter="set_normalmap_tile_resolution_min" getter="get_normalmap_tile_resolution_min" default="4">
 			Minimum resolution of tiles in distant normalmaps.
 			This is the resolution at which normalmaps will begin with, at the LOD level defined in [member normalmap_begin_lod_index]. Resolutions will double at each LOD level, until they reach [member normalmap_tile_resolution_max].
+		</member>
+		<member name="normalmap_use_gpu" type="bool" setter="set_normalmap_use_gpu" getter="get_normalmap_use_gpu" default="false">
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Sets wether the [member generator] and the [member stream] will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
