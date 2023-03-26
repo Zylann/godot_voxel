@@ -328,7 +328,7 @@ void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_m
 
 void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
 	// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
-	paste(pos, voxels, channels_mask, mask_value > 0xffffffff, mask_value);
+	paste(pos, voxels, channels_mask, mask_value < 0xffffffff, mask_value);
 }
 
 Variant VoxelTool::_b_get_voxel_metadata(Vector3i pos) const {
