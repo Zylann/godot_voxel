@@ -55,15 +55,15 @@ def find_godot(bindir):
     # godot.linuxbsd.editor.dev.x86_64
     #regex = r"godot\.(windows|macos|linuxbsd)\.editor(\.dev)?\.(x86_32|x86_64|arm64|rv64)(\.exe)?"
     prefix = "godot"
-    os = ""
+    os_prefix = ""
     suffix = ""
     if sys.platform == "win32" or sys.platform == "cygwin":
-        os = ".windows"
+        os_prefix = ".windows"
         suffix = ".exe"
     elif sys.platform == "darwin":
-        os = ".macos"
+        os_prefix = ".macos"
     else:
-        os = ".linuxbsd"
+        os_prefix = ".linuxbsd"
 
     arch = ".x86_64"
     if platform.machine().lower() == "arm64":
@@ -73,8 +73,8 @@ def find_godot(bindir):
 
     # Names to try by priority
     names = [
-        prefix + os + ".editor.dev" + arch + suffix,
-        prefix + os + ".editor" + arch + suffix,
+        prefix + os_prefix + ".editor.dev" + arch + suffix,
+        prefix + os_prefix + ".editor" + arch + suffix,
     ]
 
     for name in names:
