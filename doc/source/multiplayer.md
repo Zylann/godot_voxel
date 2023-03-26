@@ -2,7 +2,7 @@ Multiplayer
 =============
 
 !!! warn
-    Multiplayer is currently in experimental phase. It is possible to some extent, but may have issues to be improved and might even change completely in the future. Features mentionned here are also only available in the `master` branch.
+    Multiplayer is currently in experimental phase. It is possible to some extent, but may have issues to be improved and might even change completely in the future. Features mentioned here are also only available in the `master` branch.
 
 !!! note
     This page assumes you already have knowledge in general multiplayer programming. It is strongly recommended you learn it beforehand. You can have a look at [Godot's documentation page about networking](https://docs.godotengine.org/en/stable/tutorials/networking/index.html).
