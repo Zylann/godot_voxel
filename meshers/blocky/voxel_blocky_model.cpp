@@ -2,6 +2,7 @@
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
@@ -346,6 +347,42 @@ static void bake_cube_geometry(
 	baked_data.empty = false;
 }
 
+// Generate tangents based on UVs (won't be as good as properly imported tangents)
+static PackedFloat32Array generate_tangents(const PackedVector3Array &positions, const PackedVector3Array &normals,
+		const PackedVector2Array &uvs, const PackedInt32Array &indices) {
+	PackedFloat32Array tangents;
+	tangents.resize(positions.size() * 4);
+
+	FixedArray<Vector3f, 3> tri_positions;
+
+	for (int i = 0; i < indices.size(); i += 3) {
+		tri_positions[0] = to_vec3f(positions[indices[i]]);
+		tri_positions[1] = to_vec3f(positions[indices[i + 1]]);
+		tri_positions[2] = to_vec3f(positions[indices[i + 2]]);
+
+		FixedArray<float, 4> tangent;
+
+		const Vector2f delta_uv1 = to_vec2f(uvs[indices[i + 1]] - uvs[indices[i]]);
+		const Vector2f delta_uv2 = to_vec2f(uvs[indices[i + 2]] - uvs[indices[i]]);
+		const Vector3f delta_pos1 = tri_positions[1] - tri_positions[0];
+		const Vector3f delta_pos2 = tri_positions[2] - tri_positions[0];
+		const float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
+		const Vector3f t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
+		const Vector3f bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
+		tangent[0] = t[0];
+		tangent[1] = t[1];
+		tangent[2] = t[2];
+		tangent[3] = (math::dot(bt, math::cross(to_vec3f(normals[indices[i]]), t))) < 0 ? -1.0f : 1.0f;
+
+		tangents.append(tangent[0]);
+		tangents.append(tangent[1]);
+		tangents.append(tangent[2]);
+		tangents.append(tangent[3]);
+	}
+
+	return tangents;
+}
+
 static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::BakedData &baked_data, bool bake_tangents,
 		VoxelBlockyModel::MaterialIndexer &materials) {
 	Ref<Mesh> mesh = config.get_custom_mesh();
@@ -382,7 +419,11 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 
 		baked_data.empty = positions.size() == 0;
 
-		ERR_CONTINUE(normals.size() == 0);
+		ZN_ASSERT_CONTINUE(normals.size() != 0);
+
+		ZN_ASSERT_CONTINUE(positions.size() == normals.size());
+		// ZN_ASSERT_CONTINUE(positions.size() == uvs.size());
+		// ZN_ASSERT_CONTINUE(positions.size() == tangents.size() * 4);
 
 		struct L {
 			static uint8_t get_sides(Vector3f pos) {
@@ -416,22 +457,32 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 			}
 		};
 
+		const bool tangents_empty = (tangents.size() == 0);
+
+#ifdef TOOLS_ENABLED
+		if (tangents_empty && bake_tangents) {
+			if (uvs.size() == 0) {
+				ZN_PRINT_ERROR(format("Voxel model {} with ID {} is missing tangents and UVs. The model won't be "
+									  "baked. You should consider providing a mesh with tangents, or at least UVs and "
+									  "normals, or turn off tangents baking in {}.",
+						config.get_voxel_name(), config.get_id(), String(VoxelBlockyLibrary::get_class_static())));
+				continue;
+			}
+			WARN_PRINT(String("Voxel model '{0}' with ID {1} does not have tangents. They will be generated."
+							  "You should consider providing a mesh with tangents, or at least UVs and normals, "
+							  "or turn off tangents baking in {2}.")
+							   .format(varray(config.get_voxel_name(), config.get_id(),
+									   VoxelBlockyLibrary::get_class_static())));
+
+			tangents = generate_tangents(positions, normals, uvs, indices);
+		}
+#endif
+
 		if (uvs.size() == 0) {
 			// TODO Properly generate UVs if there arent any
 			uvs = PackedVector2Array();
 			uvs.resize(positions.size());
 		}
-
-		const bool tangents_empty = (tangents.size() == 0);
-
-#ifdef TOOLS_ENABLED
-		if (tangents_empty && bake_tangents) {
-			WARN_PRINT(String("Voxel model '{0}' with ID {1} does not have tangents. They will be generated."
-							  "You should consider providing a mesh with tangents, or at least UVs and normals, "
-							  "or turn off tangents baking in VoxelLibrary.")
-							   .format(varray(config.get_voxel_name(), config.get_id())));
-		}
-#endif
 
 		// Separate triangles belonging to faces of the cube
 
@@ -440,43 +491,16 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 		// Note, an empty material counts as "The default material".
 		surface.material_id = materials.get_or_create_index(material);
 
-		// PackedInt32Array::Read indices_read = indices.read();
-		// PackedVector3Array::Read positions_read = positions.read();
-		// PackedVector3Array::Read normals_read = normals.read();
-		// PackedVector2Array::Read uvs_read = uvs.read();
-		// PackedFloat32Array::Read tangents_read = tangents.read();
-
 		FixedArray<std::unordered_map<int, int>, Cube::SIDE_COUNT> added_side_indices;
 		std::unordered_map<int, int> added_regular_indices;
 		FixedArray<Vector3f, 3> tri_positions;
 
 		for (int i = 0; i < indices.size(); i += 3) {
-			Cube::SideAxis side;
-
 			tri_positions[0] = to_vec3f(positions[indices[i]]);
 			tri_positions[1] = to_vec3f(positions[indices[i + 1]]);
 			tri_positions[2] = to_vec3f(positions[indices[i + 2]]);
 
-			FixedArray<float, 4> tangent;
-
-			if (tangents_empty && bake_tangents) {
-				// If tangents are empty then we calculate them
-
-				// TODO Don't compute tangents intertwined in the middle of the side separation algorithm, it's messy.
-
-				const Vector2f delta_uv1 = to_vec2f(uvs[indices[i + 1]] - uvs[indices[i]]);
-				const Vector2f delta_uv2 = to_vec2f(uvs[indices[i + 2]] - uvs[indices[i]]);
-				const Vector3f delta_pos1 = tri_positions[1] - tri_positions[0];
-				const Vector3f delta_pos2 = tri_positions[2] - tri_positions[0];
-				const float r = 1.0f / (delta_uv1[0] * delta_uv2[1] - delta_uv1[1] * delta_uv2[0]);
-				const Vector3f t = (delta_pos1 * delta_uv2[1] - delta_pos2 * delta_uv1[1]) * r;
-				const Vector3f bt = (delta_pos2 * delta_uv1[0] - delta_pos1 * delta_uv2[0]) * r;
-				tangent[0] = t[0];
-				tangent[1] = t[1];
-				tangent[2] = t[2];
-				tangent[3] = (math::dot(bt, math::cross(to_vec3f(normals[indices[i]]), t))) < 0 ? -1.0f : 1.0f;
-			}
-
+			Cube::SideAxis side;
 			if (L::get_triangle_side(tri_positions[0], tri_positions[1], tri_positions[2], side)) {
 				// That triangle is on the face
 
@@ -495,21 +519,13 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 						surface.side_uvs[side].push_back(to_vec2f(uvs[indices[i + j]]));
 
 						if (bake_tangents) {
-							if (tangents_empty) {
-								surface.side_tangents[side].push_back(tangent[0]);
-								surface.side_tangents[side].push_back(tangent[1]);
-								surface.side_tangents[side].push_back(tangent[2]);
-								surface.side_tangents[side].push_back(tangent[3]);
-
-							} else {
-								// i is the first vertex of each triangle which increments by steps of 3.
-								// There are 4 floats per tangent.
-								int ti = indices[i + j] * 4;
-								surface.side_tangents[side].push_back(tangents[ti]);
-								surface.side_tangents[side].push_back(tangents[ti + 1]);
-								surface.side_tangents[side].push_back(tangents[ti + 2]);
-								surface.side_tangents[side].push_back(tangents[ti + 3]);
-							}
+							// i is the first vertex of each triangle which increments by steps of 3.
+							// There are 4 floats per tangent.
+							int ti = indices[i + j] * 4;
+							surface.side_tangents[side].push_back(tangents[ti]);
+							surface.side_tangents[side].push_back(tangents[ti + 1]);
+							surface.side_tangents[side].push_back(tangents[ti + 2]);
+							surface.side_tangents[side].push_back(tangents[ti + 3]);
 						}
 
 						added_indices.insert({ src_index, next_side_index });
@@ -537,21 +553,13 @@ static void bake_mesh_geometry(VoxelBlockyModel &config, VoxelBlockyModel::Baked
 						surface.uvs.push_back(to_vec2f(uvs[indices[i + j]]));
 
 						if (bake_tangents) {
-							if (tangents_empty) {
-								surface.tangents.push_back(tangent[0]);
-								surface.tangents.push_back(tangent[1]);
-								surface.tangents.push_back(tangent[2]);
-								surface.tangents.push_back(tangent[3]);
-
-							} else {
-								// i is the first vertex of each triangle which increments by steps of 3.
-								// There are 4 floats per tangent.
-								int ti = indices[i + j] * 4;
-								surface.tangents.push_back(tangents[ti]);
-								surface.tangents.push_back(tangents[ti + 1]);
-								surface.tangents.push_back(tangents[ti + 2]);
-								surface.tangents.push_back(tangents[ti + 3]);
-							}
+							// i is the first vertex of each triangle which increments by steps of 3.
+							// There are 4 floats per tangent.
+							int ti = indices[i + j] * 4;
+							surface.tangents.push_back(tangents[ti]);
+							surface.tangents.push_back(tangents[ti + 1]);
+							surface.tangents.push_back(tangents[ti + 2]);
+							surface.tangents.push_back(tangents[ti + 3]);
 						}
 
 						added_regular_indices.insert({ src_index, next_regular_index });
@@ -639,7 +647,13 @@ TypedArray<AABB> VoxelBlockyModel::_b_get_collision_aabbs() const {
 void VoxelBlockyModel::_b_set_collision_aabbs(TypedArray<AABB> array) {
 	for (int i = 0; i < array.size(); ++i) {
 		const Variant v = array[i];
-		ERR_FAIL_COND(v.get_type() != Variant::AABB);
+		// ERR_FAIL_COND(v.get_type() != Variant::AABB);
+		// TODO "Add Element" in the Godot Array inspector always adds a null element even if the array is typed!
+		if (v.get_type() != Variant::AABB) {
+			ZN_PRINT_WARNING(format("Item {} of the array is not an AABB (found {}). It will be replaced.", i,
+					Variant::get_type_name(v.get_type())));
+			array[i] = AABB(Vector3(), Vector3(1, 1, 1));
+		}
 	}
 	_collision_aabbs.resize(array.size());
 	for (int i = 0; i < array.size(); ++i) {
