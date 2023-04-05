@@ -69,6 +69,10 @@ struct Vector2T {
 		return Vector2T(x * p_scalar, y * p_scalar);
 	}
 
+	inline Vector2T operator/(const Vector2T &p_v) const {
+		return Vector2T(x / p_v.x, y / p_v.y);
+	}
+
 	inline Vector2T operator/(const T p_scalar) const {
 		return Vector2T(x / p_scalar, y / p_scalar);
 	}
