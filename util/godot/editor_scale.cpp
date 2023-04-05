@@ -12,7 +12,7 @@ namespace zylann {
 // method, so that means it needs to be passed around by parameter to everything that needs it. This is annoying in
 // custom controls that cannot have constructors with parameters, and porting modules in general.
 // We can workaround this by creating a dummy instance of `EditorPlugin` once and access `EditorInterface` from it. It
-// should work because `EditorPlugin` is not abstract, does nothing it its constructor, and `EditorInterface` is
+// should work because `EditorPlugin` is not abstract, does nothing in its constructor, and `EditorInterface` is
 // internally a singleton, so we don't even need to add the plugin to the tree.
 float get_editor_scale() {
 	using namespace godot;
