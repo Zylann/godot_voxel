@@ -1717,12 +1717,12 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 	{
 		// There is a spot in the top-right corner of this area
 		generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels1, Vector3i(16, 0, 16), 0 });
-		L::print_indices_and_weights(voxels1, 8);
+		// L::print_indices_and_weights(voxels1, 8);
 		ZN_TEST_ASSERT(L::has_spot(voxels1));
 
 		// There is no spot here
 		generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels2, Vector3i(0, 0, 0), 0 });
-		L::print_indices_and_weights(voxels2, 8);
+		// L::print_indices_and_weights(voxels2, 8);
 		ZN_TEST_ASSERT(L::has_spot(voxels2) == false);
 	}
 
@@ -1735,12 +1735,12 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 	generator->set_use_optimized_execution_map(true);
 	{
 		generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels3, Vector3i(16, 0, 16), 0 });
-		L::print_indices_and_weights(voxels3, 8);
+		// L::print_indices_and_weights(voxels3, 8);
 		ZN_TEST_ASSERT(L::has_spot(voxels3));
 		ZN_TEST_ASSERT(voxels3.equals(voxels1));
 
 		generator->generate_block(VoxelGenerator::VoxelQueryData{ voxels4, Vector3i(0, 0, 0), 0 });
-		L::print_indices_and_weights(voxels4, 8);
+		// L::print_indices_and_weights(voxels4, 8);
 		ZN_TEST_ASSERT(L::has_spot(voxels4) == false);
 		ZN_TEST_ASSERT(voxels4.equals(voxels2));
 	}
