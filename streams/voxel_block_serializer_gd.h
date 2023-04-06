@@ -17,12 +17,13 @@ public:
 	static int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress);
 	static void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
 
-	int serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
-	void deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
-
 private:
-	int _b_serialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
-	void _b_deserialize(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
+	static int _b_serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
+	static void _b_deserialize_from_stream_peer(
+			Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
+
+	static PackedByteArray _b_serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
+	static void _b_deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);
 
 	static void _bind_methods();
 };
