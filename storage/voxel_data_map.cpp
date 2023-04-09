@@ -193,6 +193,7 @@ bool VoxelDataMap::is_block_surrounded(Vector3i pos) const {
 
 void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask,
 		void *callback_data, void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const {
+	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	const Vector3i max_pos = min_pos + dst_buffer.get_size();
 
 	const Vector3i min_block_pos = voxel_to_block(min_pos);

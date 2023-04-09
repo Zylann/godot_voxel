@@ -92,7 +92,12 @@ VoxelMemoryPool::~VoxelMemoryPool() {
 uint8_t *VoxelMemoryPool::allocate(size_t size) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(size != 0);
+
+	// In practice this is not supposed to happen, it might hide a mistake.
+	// We should be able to keep running with this only guarantee: the returned value should be able to be "freed"
+	// using the same pool.
+	ZN_ASSERT_RETURN_V(size != 0, nullptr);
+
 	uint8_t *block = nullptr;
 	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
 	// while `size_t` can be larger than that.
@@ -141,6 +146,10 @@ uint8_t *VoxelMemoryPool::allocate(size_t size) {
 }
 
 void VoxelMemoryPool::recycle(uint8_t *block, size_t size) {
+	// In case we have done empty allocations (we prefer not to do that, but it shouldn't warrant a crash)
+	if (block == nullptr && size == 0) {
+		return;
+	}
 	ZN_ASSERT(size != 0);
 	ZN_ASSERT(block != nullptr);
 	// Not calculating `pot` immediately because the function we use to calculate it uses 32 bits,
