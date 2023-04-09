@@ -14,13 +14,13 @@ bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_
 
 	dst.resize(decompressed_size);
 
-	const uint32_t actually_decompressed_size = LZ4_decompress_safe(
+	const int32_t actually_decompressed_size = LZ4_decompress_safe(
 			(const char *)src.data() + header_size, (char *)dst.data(), src.size() - header_size, dst.size());
 
 	ZN_ASSERT_RETURN_V_MSG(
 			actually_decompressed_size >= 0, false, format("LZ4 decompression error {}", actually_decompressed_size));
 
-	ZN_ASSERT_RETURN_V_MSG(actually_decompressed_size == decompressed_size, false,
+	ZN_ASSERT_RETURN_V_MSG(actually_decompressed_size == uint64_t(decompressed_size), false,
 			format("Expected {} bytes, obtained {}", decompressed_size, actually_decompressed_size));
 
 	return true;
