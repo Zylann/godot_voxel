@@ -49,7 +49,8 @@ public:
 
 	void set_parent_visible(bool parent_visible);
 
-	void set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode);
+	void set_mesh(
+			Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting);
 
 	void set_transition_mask(uint8_t m);
 	inline uint8_t get_transition_mask() const {
@@ -57,8 +58,10 @@ public:
 	}
 
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
+	void set_shadow_casting(RenderingServer::ShadowCastingSetting mode);
 
-	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode);
+	void set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_casting);
 
 	void set_shader_material(Ref<ShaderMaterial> material);
 	inline Ref<ShaderMaterial> get_shader_material() const {

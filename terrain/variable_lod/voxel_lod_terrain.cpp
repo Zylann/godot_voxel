@@ -293,6 +293,15 @@ void VoxelLodTerrain::_on_gi_mode_changed() {
 	}
 }
 
+void VoxelLodTerrain::_on_shadow_casting_changed() {
+	const RenderingServer::ShadowCastingSetting mode = RenderingServer::ShadowCastingSetting(get_shadow_casting());
+	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
+		_mesh_maps_per_lod[lod_index].for_each_block([mode](VoxelMeshBlockVLT &block) { //
+			block.set_shadow_casting(mode);
+		});
+	}
+}
+
 void VoxelLodTerrain::update_shader_material_pool_template() {
 	Ref<ShaderMaterial> shader_material = _material;
 	if (_material.is_null() && _mesher.is_valid()) {
@@ -1484,7 +1493,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->set_transition_mask(transition_mask);
 	}
 
-	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()));
+	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
+			RenderingServer::ShadowCastingSetting(get_shadow_casting()));
 
 	if (!ob.has_mesh_resource) {
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
@@ -1498,7 +1508,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
 					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
-			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()));
+			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()),
+					RenderingServer::ShadowCastingSetting(get_shadow_casting()));
 		}
 	}
 

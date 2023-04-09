@@ -6,6 +6,7 @@
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
 #include "../streams/voxel_stream.h"
+#include "../util/godot/classes/geometry_instance_3d.h"
 #include "../util/godot/classes/node_3d.h"
 
 namespace zylann::voxel {
@@ -35,6 +36,9 @@ public:
 	void set_gi_mode(GIMode mode);
 	GIMode get_gi_mode() const;
 
+	void set_shadow_casting(GeometryInstance3D::ShadowCastingSetting setting);
+	GeometryInstance3D::ShadowCastingSetting get_shadow_casting() const;
+
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
@@ -56,6 +60,7 @@ protected:
 	int get_used_channels_mask() const;
 
 	virtual void _on_gi_mode_changed() {}
+	virtual void _on_shadow_casting_changed() {}
 
 private:
 	Ref<VoxelMesher> _b_get_mesher() {
@@ -82,6 +87,7 @@ private:
 	static void _bind_methods();
 
 	GIMode _gi_mode = GI_MODE_DISABLED;
+	GeometryInstance3D::ShadowCastingSetting _shadow_casting = GeometryInstance3D::SHADOW_CASTING_SETTING_ON;
 };
 
 } // namespace zylann::voxel

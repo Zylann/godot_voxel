@@ -12,6 +12,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 --------------------------------------
 
 - General
+    - Added shadow casting setting to both terrain types
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
 

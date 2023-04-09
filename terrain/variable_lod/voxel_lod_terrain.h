@@ -247,6 +247,7 @@ protected:
 	void _notification(int p_what);
 
 	void _on_gi_mode_changed() override;
+	void _on_shadow_casting_changed() override;
 
 private:
 	void process(float delta);

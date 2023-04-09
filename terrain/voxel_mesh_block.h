@@ -35,7 +35,8 @@ public:
 
 	// Visuals
 
-	void set_mesh(Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode);
+	void set_mesh(
+			Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting);
 	Ref<Mesh> get_mesh() const;
 	bool has_mesh() const;
 	void drop_mesh();
@@ -43,6 +44,10 @@ public:
 	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
 	void set_gi_mode(DirectMeshInstance::GIMode mode);
+
+	// Note, ShadowCastingSetting is not stored per block, it is a shared option so we provide it in several functions.
+	// Call this function only if the mesh block already exists and has not changed mesh
+	void set_shadow_casting(RenderingServer::ShadowCastingSetting setting);
 
 	// Collisions
 
