@@ -108,7 +108,7 @@ template <typename Item_T>
 inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 	const Item_T v0 = p_data[0];
 
-	//typedef size_t Bucket_T;
+	// typedef size_t Bucket_T;
 	struct Bucket_T {
 		size_t a;
 		size_t b;

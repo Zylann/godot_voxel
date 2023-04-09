@@ -11,7 +11,7 @@ namespace zylann::voxel {
 
 VoxelDataMap::VoxelDataMap() {
 	// This is not planned to change at runtime at the moment.
-	//set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
+	// set_block_size_pow2(constants::DEFAULT_BLOCK_SIZE_PO2);
 }
 
 VoxelDataMap::~VoxelDataMap() {
@@ -21,7 +21,7 @@ VoxelDataMap::~VoxelDataMap() {
 void VoxelDataMap::create(unsigned int lod_index) {
 	ZN_ASSERT(lod_index < constants::MAX_LOD);
 	clear();
-	//set_block_size_pow2(block_size_po2);
+	// set_block_size_pow2(block_size_po2);
 	set_lod_index(lod_index);
 }
 
@@ -58,7 +58,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	std::shared_ptr<VoxelBufferInternal> buffer = make_shared_instance<VoxelBufferInternal>();
 	buffer->create(get_block_size(), get_block_size(), get_block_size());
-	//buffer->set_default_values(_default_voxel);
+	// buffer->set_default_values(_default_voxel);
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
 #endif

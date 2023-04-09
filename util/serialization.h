@@ -126,12 +126,12 @@ struct MemoryReader {
 	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
 
 	inline uint8_t get_8() {
-		//ERR_FAIL_COND_V(pos >= data.size(), 0);
+		// ERR_FAIL_COND_V(pos >= data.size(), 0);
 		return data[pos++];
 	}
 
 	inline uint16_t get_16() {
-		//ERR_FAIL_COND_V(pos + 1 >= data.size(), 0);
+		// ERR_FAIL_COND_V(pos + 1 >= data.size(), 0);
 		uint16_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
 			v = (static_cast<uint16_t>(data[pos]) << 8) | data[pos + 1];
@@ -143,7 +143,7 @@ struct MemoryReader {
 	}
 
 	inline uint32_t get_32() {
-		//ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
+		// ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint32_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
 			v = //
@@ -161,7 +161,7 @@ struct MemoryReader {
 	}
 
 	inline uint64_t get_64() {
-		//ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
+		// ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint64_t v;
 		if (endianess == ENDIANESS_BIG_ENDIAN) {
 			v = //
