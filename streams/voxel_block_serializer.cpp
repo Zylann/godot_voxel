@@ -1,6 +1,7 @@
 #include "voxel_block_serializer.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_memory_pool.h"
+#include "../util/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file.h"
 #include "../util/macros.h"
@@ -271,7 +272,6 @@ size_t get_size_in_bytes(const VoxelBufferInternal &buffer, size_t &metadata_siz
 }
 
 SerializeResult serialize(const VoxelBufferInternal &voxel_buffer) {
-	//
 	ZN_PROFILE_SCOPE();
 
 	std::vector<uint8_t> &dst_data = get_tls_data();
@@ -561,6 +561,11 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buff
 
 	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
+#if DEV_ENABLED
+	if (magic != BLOCK_TRAILING_MAGIC) {
+		print_data_hex(p_data);
+	}
+#endif
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
 
 	MemoryReader f(p_data, ENDIANESS_LITTLE_ENDIAN);

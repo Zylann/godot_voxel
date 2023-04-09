@@ -157,6 +157,8 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 	return true;
 }
 
+void print_data_hex(Span<const uint8_t> data);
+
 } // namespace zylann
 
 #endif // ZN_CONTAINER_FUNCS_H
