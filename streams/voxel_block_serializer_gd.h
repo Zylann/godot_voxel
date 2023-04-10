@@ -14,16 +14,12 @@ class VoxelBuffer;
 class VoxelBlockSerializer : public RefCounted {
 	GDCLASS(VoxelBlockSerializer, RefCounted)
 public:
-	static int serialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, bool compress);
-	static void deserialize(StreamPeer &peer, VoxelBufferInternal &voxel_buffer, int size, bool decompress);
-
-private:
-	static int _b_serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
-	static void _b_deserialize_from_stream_peer(
+	static int serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, bool compress);
+	static void deserialize_from_stream_peer(
 			Ref<StreamPeer> peer, Ref<VoxelBuffer> voxel_buffer, int size, bool decompress);
 
-	static PackedByteArray _b_serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
-	static void _b_deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);
+	static PackedByteArray serialize_to_byte_array(Ref<VoxelBuffer> voxel_buffer, bool compress);
+	static void deserialize_from_byte_array(PackedByteArray bytes, Ref<VoxelBuffer> voxel_buffer, bool decompress);
 
 	static void _bind_methods();
 };
