@@ -2,6 +2,7 @@
 #define ZN_CONTAINER_FUNCS_H
 
 #include "span.h"
+#include <cstdint>
 #include <vector>
 
 namespace zylann {
