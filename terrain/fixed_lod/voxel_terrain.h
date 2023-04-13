@@ -10,6 +10,7 @@
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
 #include "voxel_mesh_block_vt.h"
+#include "voxel_terrain_multiplayer_synchronizer.h"
 
 namespace zylann {
 
@@ -20,6 +21,7 @@ namespace voxel {
 class VoxelTool;
 class VoxelInstancer;
 class VoxelSaveCompletionTracker;
+class VoxelTerrainMultiplayerSynchronizer;
 
 // Infinite paged terrain made of voxel blocks all with the same level of detail.
 // Voxels are polygonized around the viewer by distance in a large cubic space.
@@ -148,6 +150,11 @@ public:
 		return _streaming_dependency;
 	}
 
+	void get_viewers_in_area(std::vector<ViewerID> &out_viewer_ids, Box3i voxel_box) const;
+
+	void set_multiplayer_synchronizer(VoxelTerrainMultiplayerSynchronizer *synchronizer);
+	const VoxelTerrainMultiplayerSynchronizer *get_multiplayer_synchronizer() const;
+
 protected:
 	void _notification(int p_what);
 
@@ -196,8 +203,6 @@ private:
 
 	void notify_data_block_enter(const VoxelDataBlock &block, Vector3i bpos, ViewerID viewer_id);
 
-	void get_viewers_in_area(std::vector<ViewerID> &out_viewer_ids, Box3i voxel_box) const;
-
 #ifdef ZN_GODOT
 	// Called each time a data block enters a viewer's area.
 	// This can be either when the block exists and the viewer gets close enough, or when it gets loaded.
@@ -223,6 +228,8 @@ private:
 	bool _b_try_set_block_data(Vector3i position, Ref<gd::VoxelBuffer> voxel_data);
 	Dictionary _b_get_statistics() const;
 	PackedInt32Array _b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const;
+	void _b_rpc_receive_block(PackedByteArray data);
+	void _b_rpc_receive_area(PackedByteArray data);
 
 	VolumeID _volume_id;
 
@@ -295,7 +302,9 @@ private:
 
 	GodotObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
+	// References to external nodes.
 	VoxelInstancer *_instancer = nullptr;
+	VoxelTerrainMultiplayerSynchronizer *_multiplayer_synchronizer = nullptr;
 
 	Stats _stats;
 };

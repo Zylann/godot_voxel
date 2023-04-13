@@ -54,6 +54,9 @@ static const uint8_t TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2 = 8; // After meshes
 
 static const uint8_t TASK_PRIORITY_BAND3_DEFAULT = 10;
 
+// Godot's convention
+static const int SERVER_PEER_ID = 1;
+
 } // namespace zylann::voxel::constants
 
 #endif // VOXEL_CONSTANTS_H

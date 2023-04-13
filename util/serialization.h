@@ -113,6 +113,19 @@ struct ByteSpanWithPosition {
 #endif
 		data[pos++] = v;
 	}
+
+	inline size_t size() const {
+		return pos;
+	}
+
+	inline void resize(size_t new_size) {
+		ZN_ASSERT(new_size <= data.size());
+		pos = new_size;
+	}
+
+	inline uint8_t &operator[](size_t i) {
+		return data[i];
+	}
 };
 
 typedef MemoryWriterTemplate<ByteSpanWithPosition> MemoryWriterExistingBuffer;

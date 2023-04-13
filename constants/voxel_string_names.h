@@ -59,6 +59,9 @@ public:
 	StringName Pin;
 	StringName ExternalLink;
 #endif
+
+	StringName _rpc_receive_blocks;
+	StringName _rpc_receive_area;
 };
 
 } // namespace zylann::voxel

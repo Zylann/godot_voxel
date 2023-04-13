@@ -1,24 +1,42 @@
 Multiplayer
 =============
 
-!!! warn
-    Multiplayer is currently in experimental phase. It is possible to some extent, but may have issues to be improved and might even change completely in the future. Features mentioned here are also only available in the `master` branch.
+Multiplayer in a voxel game can be implemented with lots of different details. Not all the features of the engine are supported, it is still a bit experimental and might change in the future. So how to setup multiplayer is explained in sections with a date. The most recent one will often relate to a new/better/simpler way, and old ones might eventually be removed.
 
 !!! note
     This page assumes you already have knowledge in general multiplayer programming. It is strongly recommended you learn it beforehand. You can have a look at [Godot's documentation page about networking](https://docs.godotengine.org/en/stable/tutorials/networking/index.html).
 
-In general, the plan is to expose APIs to implement a client/server architecture. There is no assumption of the networking library you use, so it could be Godot RPCs, Valve Networking Sockets or even TCP. There is however assumption that the server also runs a version of the game.
 
-Other points to explore:
+2023/04/.. - Server-side viewer with `VoxelTerrain` and `VoxelNetworkTerrain*` nodes
+-------------------------------------------------------------------------------------
 
-- Block caching and versionning: save blocks client-side so the server doesn't have to send them again next time if they didn't change
-- Client-requesting alternative model: having the client actively request blocks with custom code instead of passively receiving them from the server
+This is a new iteration over the previous method, based on the same principle, but integrating it to the engine with some speed improvements.
+
+The server will be authoritative, and the client just receives information from it. Client and server will need a 
+different setup.
+
+This will rely on Godot's high-level multiplayer API, using RPCs. It is important for a client or server to be setup before the terrain starts processing. This can be done before adding the game world to the tree, or initializing multiplayer in `_ready`.
+
+### On the server
+
+- Add `VoxelTerrain` to your scene.
+- Add a `VoxelTerrainMultiplayerSynchronizer` node as child of your `VoxelTerrain`.
+- When a player joins, make sure a `VoxelViewer` is created for it. Assign its `network_peer_id` and enable `requires_data_block_notifications`. You may also want to turn off `require_visuals` on viewers representing remote players, since it's normally not necessary to render their surroundings.
+
+### On the client
+
+- Add `VoxelTerrain` to your scene.
+- Add `VoxelTerrainMultiplayerSynchronizer` node as child of the `VoxelTerrain`. Make sure it has the same name as its server equivalent.
+- The client will still need a `VoxelViewer`, which will allow the terrain to detect when it can unload voxel data (the server does not send that information). To reduce the likelihood of "holes" in the terrain if blocks get unloaded too soon, you may give the `VoxelViewer` a slightly larger view distance than the server.
+- The client can have remote players synchronized so the player can see them, but you should not add a `VoxelViewer` to them (only the server does). The client should not have to stream terrain for remote players, it only has one for the local player.
 
 
-Server-side viewer with `VoxelTerrain`
---------------------------------------
+2022/01/31 - Server-side viewer with `VoxelTerrain` and some scripting
+--------------------------------------------------------------------
 
-There are some support functions you can use that can help putting together primitive multiplayer. The idea is for the server to be authoritative, and the client just receives information from it.
+This was the first iteration of support function allowing to implement multiplayer.
+
+The idea is for the server to be authoritative, and the client just receives information from it.
 
 `VoxelTerrain` has a `Networking` category in the inspector. These properties are not necessarily specific to multiplayer, but were actually added to experiment with it, so they are grouped together.
 
@@ -55,3 +73,10 @@ RPCs in Godot use UDP (reliable or unreliable), so sending large amounts of voxe
 
 Note: Minecraft's network protocol is entirely built on top of TCP.
 
+
+Other points to explore
+---------------------------
+
+- Block caching and versionning: save blocks client-side so the server doesn't have to send them again next time if they didn't change
+- Client-requesting alternative model: having the client actively request blocks with custom code instead of passively receiving them from the server
+- Block diffing: if it is acceptable for clients to know the world seed, instead of expecting clients to cache data (which requires the server to know what the client knows), store a diff map in voxel data server-side, 1-bit per voxel. Then if less than 30% of a block has changed, send only the difference and let the client fill the gaps.

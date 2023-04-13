@@ -65,6 +65,9 @@ VoxelStringNames::VoxelStringNames() {
 	Pin = StringName("Pin");
 	ExternalLink = StringName("ExternalLink");
 #endif
+
+	_rpc_receive_blocks = StringName("_rpc_receive_blocks");
+	_rpc_receive_area = StringName("_rpc_receive_area");
 }
 
 } // namespace zylann::voxel

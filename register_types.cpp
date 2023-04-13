@@ -37,6 +37,7 @@
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
+#include "terrain/fixed_lod/voxel_terrain_multiplayer_synchronizer.h"
 #include "terrain/instancing/voxel_instance_component.h"
 #include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
@@ -263,6 +264,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<FastNoise2>();
 #endif
 		ClassDB::register_class<VoxelMeshSDF>();
+		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
 
 		// Meshers
 		register_abstract_class<VoxelMesher>();
