@@ -34,7 +34,7 @@ Before each example, you may do the following:
 
 1) Add a `VoxelTerrain` node, and adjust the following settings in the inspector:
 	
-1.1) Under the `materials` section, create a new `SpatialMaterial` in the first slot. Then click on it and enable the `vertex_color_as_albedo` option. This will give the blocks better shading.
+1.1) Under the `materials` section, create a new `StandardMaterial3D` in the first slot. Click that material, and in the "Vertex Color" category, enable "Use as Albedo" (`vertex_color_as_albedo`). This will give the blocks better shading.
 
 1.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
 
@@ -42,7 +42,7 @@ Before each example, you may do the following:
 
 1.3) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
 
-2) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+2) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
 3) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
@@ -65,7 +65,7 @@ You can modify the shape of the terrain by changing noise parameters under the g
 
 2) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
 
-3) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+3) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
 4) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
