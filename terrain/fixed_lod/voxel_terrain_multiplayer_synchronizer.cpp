@@ -29,12 +29,8 @@ VoxelTerrainMultiplayerSynchronizer::VoxelTerrainMultiplayerSynchronizer() {
 bool VoxelTerrainMultiplayerSynchronizer::is_server() const {
 	ZN_ASSERT_RETURN_V(is_inside_tree(), false);
 	Ref<MultiplayerAPI> mp = get_tree()->get_multiplayer();
-
 	ZN_ASSERT_RETURN_V(mp.is_valid(), false);
-	Ref<MultiplayerPeer> peer = mp->get_multiplayer_peer();
-
-	ZN_ASSERT_RETURN_V(peer.is_valid(), false);
-	return peer->is_server();
+	return mp->is_server();
 }
 
 void VoxelTerrainMultiplayerSynchronizer::send_block(
