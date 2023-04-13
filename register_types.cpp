@@ -64,6 +64,7 @@
 #include "util/godot/classes/project_settings.h"
 #include "util/godot/core/class_db.h"
 // Just for size reminders
+#include "util/godot/classes/control.h"
 #include "util/godot/classes/mesh_instance_3d.h"
 #include "util/godot/classes/sprite_2d.h"
 
