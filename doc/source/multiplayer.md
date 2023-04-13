@@ -7,7 +7,7 @@ Multiplayer in a voxel game can be implemented with lots of different details. N
     This page assumes you already have knowledge in general multiplayer programming. It is strongly recommended you learn it beforehand. You can have a look at [Godot's documentation page about networking](https://docs.godotengine.org/en/stable/tutorials/networking/index.html).
 
 
-2023/04/.. - Server-side viewer with `VoxelTerrain` and `VoxelNetworkTerrain*` nodes
+2023/04/13 - Server-side viewer with `VoxelTerrain` and `VoxelNetworkTerrain*` nodes
 -------------------------------------------------------------------------------------
 
 This is a new iteration over the previous method, based on the same principle, but integrating it to the engine with some speed improvements.
