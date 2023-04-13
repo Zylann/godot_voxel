@@ -954,7 +954,7 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 #endif
 
 	if (_multiplayer_synchronizer != nullptr && !Engine::get_singleton()->is_editor_hint() &&
-			network_peer_id != constants::SERVER_PEER_ID && _multiplayer_synchronizer->is_server()) {
+			network_peer_id != MultiplayerPeer::TARGET_PEER_SERVER && _multiplayer_synchronizer->is_server()) {
 		_multiplayer_synchronizer->send_block(network_peer_id, block, bpos);
 	}
 }

@@ -97,7 +97,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	for (const ViewerID viewer_id : viewers) {
 		const int peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_id);
 		// TODO Don't bother copying and serializing if no networked viewers are around?
-		if (peer_id != -1 && peer_id != constants::SERVER_PEER_ID) {
+		if (peer_id != -1 && peer_id != MultiplayerPeer::TARGET_PEER_SERVER) {
 			rpc_id(peer_id, VoxelStringNames::get_singleton()._rpc_receive_area, pba);
 		}
 	}
