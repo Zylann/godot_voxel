@@ -300,6 +300,8 @@ It was tested with Tracy 0.7.8.
 
 ![Tracy screenshot](images/tracy.webp)
 
+Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/latest/contributing/development/debugging/using_cpp_profilers.html). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
+
 ### How to use profiler scopes
 
 A profiling scope bounds a section of code. It takes the time before, the time after, and records it into a timeline. In C++ we can use RAII to automatically close a section when we exit a function or block, so usually a single macro is needed at the beginning of the profiled zone.
