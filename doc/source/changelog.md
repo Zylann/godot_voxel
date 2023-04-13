@@ -15,6 +15,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Added shadow casting setting to both terrain types
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
+    - `VoxelTerrain`:
+        - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
