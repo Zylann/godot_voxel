@@ -906,7 +906,7 @@ void test_block_serializer_stream_peer() {
 	peer.instantiate();
 	// peer->clear();
 
-	const int size = gd::VoxelBlockSerializer::serialize(**peer, voxel_buffer->get_buffer(), true);
+	const int size = gd::VoxelBlockSerializer::serialize_to_stream_peer(peer, voxel_buffer, true);
 
 	PackedByteArray data_array = peer->get_data_array();
 
@@ -919,7 +919,7 @@ void test_block_serializer_stream_peer() {
 	peer2.instantiate();
 	peer2->set_data_array(data_array);
 
-	gd::VoxelBlockSerializer::deserialize(**peer2, voxel_buffer2->get_buffer(), size, true);
+	gd::VoxelBlockSerializer::deserialize_from_stream_peer(peer2, voxel_buffer2, size, true);
 
 	ZN_TEST_ASSERT(voxel_buffer2->get_buffer().equals(voxel_buffer->get_buffer()));
 }
