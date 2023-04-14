@@ -25,6 +25,7 @@ Available on Github Actions:
 - [Mono builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml) (likely not available, they broke in Godot 4, help is needed to fix them)
 
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
+They are built using Godot's latest stable version branch (for example, `4.0` at time of writing), instead of `master`.
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
 In case there are multiple downloadable artifacts, the editor build will be the one with `editor` in the name.
@@ -55,15 +56,15 @@ These steps will walk you through creating a custom build of Godot with the Voxe
 ### Build Godot
 
 1. Download and compile the [Godot source](https://github.com/godotengine/godot) by following [the official guide](https://docs.godotengine.org/en/latest/development/compiling/index.html). If you want to regularly update your build (recommended), clone the repository with Git instead of downloading a zip file.
-1. Make sure to select the appropriate branches. If you want the latest build compatible with Godot 4, use the `master` branch of the module. If you want Godot 3, use Godot's `3.x` branch, and the module's `godot3.x` branch. There are other branches for feature freezes of other versions of Godot. 
-1. Build Godot before adding this or any other modules and make sure it produces an executable.
-1. Run the newly built executable found in `godot/bin`. Look under Help/About and confirm that the version string indicates you are running a development version (e.g. `3.2dev.custom_build.ee5ba3e`).
+1. Make sure to select the appropriate branches. If you want the very latest development version, use the `master` branch of Godot. If you want a more stable build following the latest stable release, use the branch of that version (for example `4.0`) or a specific version tag (like `4.0.2-stable`). If you want Godot 3, use Godot's `3.x` branch, and the module's `godot3.x` branch (but is no longer maintained). 
+1. Build Godot before adding any other modules and make sure it produces an executable.
+1. Run the newly built executable found in `godot/bin`. Look under Help/About and confirm that the version string indicates you are running the version you want (e.g. `3.2dev.custom_build.ee5ba3e`).
 
 
 ### Add Voxel Tools
 
 1. Download or clone the repository for [Voxel Tools](https://github.com/Zylann/godot_voxel). Use Git to clone the repository if you want to make it easy to update your builds (recommended).
-1. Make sure to select the branch that corresponds with Godot's branch.
+1. By default, the `master` branch of the module should work with the latest stable branch of Godot. There are "snapshot" branches of the module, which were created at the time specific Godot versions were released (such as `godot4.0`), but they are not updated.
 1. Place the Voxel Tools directory inside your Godot source tree, in the `godot/modules` directory. 
 1. Rename the Voxel Tools folder to `voxel`. When correct, the files (e.g. README.md) will be located in `godot/modules/voxel`. **This is important!**
 1. Rebuild Godot and make sure it produces an executable.
@@ -83,7 +84,7 @@ If you cloned Godot and Voxel Tools, you can use git to update your local code.
 1. Rebuild Godot.
 
 !!! note
-	Since you are pulling from two development branches, it's probable that on occasion your build won't compile, your project won't open, or your Voxel Tools won't work properly or even crash Godot. To minimize downtime, save your successful builds. Move them out of the build folder and rename them with the version number (e.g. godot-3.2+ee5ba3e.exe). This way, you can continue to use previously working builds until the Godot or Voxel developers fix whatever is broken. It is generally desired by all that code published to repositories will at least build, but stuff happens.
+	Since you are pulling from two projects developped by different people, it's probable that on occasion your build won't compile, your project won't open, or your Voxel Tools won't work properly or even crash Godot. To minimize downtime, save your successful builds. Move them out of the build folder and rename them with the version number (e.g. godot-3.2+ee5ba3e.exe). This way, you can continue to use previously working builds until the Godot or Voxel developers fix whatever is broken. It is generally desired by all that code published to repositories will at least build, but stuff happens.
 
 
 Export templates

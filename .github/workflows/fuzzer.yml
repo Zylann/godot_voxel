@@ -7,7 +7,7 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: master
+  GODOT_BASE_BRANCH: "4.0"
   SCONS_CACHE_LIMIT: 4096
   GODOT_BINARY_NAME: godot.linuxbsd.editor.dev.x86_64.san
 
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: godotengine/godot
-          ref: master
+          ref: "4.0"
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v3
