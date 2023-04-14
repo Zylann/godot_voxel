@@ -3,6 +3,8 @@
 
 #include "../../storage/voxel_data_block.h"
 #include "../../util/godot/classes/node.h"
+#include <unordered_map>
+#include <vector>
 
 namespace zylann::voxel {
 
