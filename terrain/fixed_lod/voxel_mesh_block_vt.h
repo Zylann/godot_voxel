@@ -1,6 +1,7 @@
 #ifndef VOXEL_MESH_BLOCK_VT_H
 #define VOXEL_MESH_BLOCK_VT_H
 
+#include "../../util/godot/classes/material.h"
 #include "../voxel_mesh_block.h"
 
 namespace zylann::voxel {
