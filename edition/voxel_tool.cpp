@@ -5,6 +5,8 @@
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 
+#include "core/templates/ring_buffer.h"
+
 namespace zylann::voxel {
 
 VoxelTool::VoxelTool() {
@@ -261,6 +263,208 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
+void VoxelTool::do_blend_ball(Vector3i center, uint8_t radius, uint8_t strength) {
+	ZN_PROFILE_SCOPE();
+
+	Box3i box = Box3i::from_center_extents(center, Vector3iUtil::create(radius));
+
+	if (!is_area_editable(box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	if (radius == 0){
+		return;
+	}
+
+	// NOTE: Even though algorithm can handle 0 strength, it will produce
+	// blocky results due to cubic easing which may not be expected.
+	if (strength == 0){
+		return;
+	}
+
+	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+		// 3D box blur using sliding window optimisation.
+
+		Vector3i brush_pos(center.x, center.y, center.z);
+		int brush_size = static_cast<int>(radius);
+		int blend_range = static_cast<int>(strength);
+
+		int extended_brush_size = brush_size + blend_range;
+	
+		int brush_size_2n1 = brush_size * 2 + 1;
+		int blend_range_2n1 = blend_range * 2 + 1;
+		float blend_range_2n1_f = static_cast<float>(blend_range_2n1);
+		int extended_brush_size_2n1 = extended_brush_size * 2 + 1;
+
+		int brush_size_squared = brush_size * brush_size;
+		float brush_size_squared_f = static_cast<float>(brush_size_squared);
+
+		// Buffer for intermediary blur passes storing average values
+		std::vector<float> buffer;
+		buffer.resize(brush_size_2n1 * extended_brush_size_2n1 * extended_brush_size_2n1);
+
+		// Used to memorise sliding window overwritten average values.
+		int ring_buffer_power = floor(log2(blend_range_2n1 + 1)) + 1;
+		RingBuffer<float> ring_buffer(ring_buffer_power);
+
+		auto set_value = [&buffer, brush_size_2n1, extended_brush_size_2n1](int x, int y, int z, float value){
+			buffer[z * extended_brush_size_2n1 * brush_size_2n1 + y * brush_size_2n1 + x] = value;
+		};
+		auto get_value = [&buffer, brush_size_2n1, extended_brush_size_2n1](int x, int y, int z){
+			return buffer[z * extended_brush_size_2n1 * brush_size_2n1 + y * brush_size_2n1 + x];
+		};
+
+		// Takes in value in interval [-1; 1] and returns eased in-out value in interval [-1; 1]
+		auto ease_in_out_cubic = [](float _x) -> float {
+			if(_x < 0) {
+				return (_x + 1) * (_x + 1) * (_x + 1) - 1;
+			}
+			else {
+				return (_x - 1) * (_x - 1) * (_x - 1) + 1;
+			}
+		};
+
+		// x blur
+		for (int zi = 0; zi < extended_brush_size_2n1; ++zi) {
+			int z = zi - extended_brush_size;
+			int z0 = z + brush_pos.z;
+			for (int yi = 0; yi < extended_brush_size_2n1; ++yi) {
+				int y = yi - extended_brush_size;
+				int y0 = y + brush_pos.y;
+            
+				float sdf_sum = 0.0f;
+				
+				// clear buffer
+				ring_buffer.advance_read(ring_buffer.data_left());
+            
+				for (int xi = 0; xi < brush_size_2n1; ++xi) {
+					int x = xi - brush_size;
+					int x0 = x + brush_pos.x;
+                
+					if (xi == 0) {
+						for (int ox = -blend_range; ox <= blend_range; ++ox) {
+							Vector3i voxel_pos(x0 + ox, y0, z0);
+							float value = get_voxel_f(voxel_pos);
+							ring_buffer.write(value);
+                        
+							sdf_sum += value;
+						}
+					} else {
+						Vector3i voxel_pos(x0 + blend_range, y0, z0);
+						float value = get_voxel_f(voxel_pos);
+						ring_buffer.write(value);
+                    
+						sdf_sum += value;
+						sdf_sum -= ring_buffer.read();
+					}
+                
+					float average = sdf_sum / blend_range_2n1_f;
+					set_value(xi, yi, zi, average);
+				}
+			}
+		}
+
+		// y blur
+		for(int zi = 0; zi < extended_brush_size_2n1; ++zi) {
+			for(int xi = 0; xi < brush_size_2n1; ++xi) {
+				float sdf_sum = 0.0f;
+
+				// clear buffer
+				ring_buffer.advance_read(ring_buffer.data_left());
+
+				for(int yi = 0; yi < brush_size_2n1; ++yi) {
+					if(yi == 0) {
+						for(int oy = -blend_range; oy <= blend_range; ++oy) {
+							float value = get_value(xi, yi + blend_range + oy, zi);
+							ring_buffer.write(value);
+
+							sdf_sum += value;
+						}
+					}
+					else {
+						float value = get_value(xi, yi + blend_range + blend_range, zi);
+						ring_buffer.write(value);
+
+						sdf_sum += value;
+						sdf_sum -= ring_buffer.read();
+					}
+
+					float average = sdf_sum / blend_range_2n1_f;
+					set_value(xi, yi + blend_range, zi, average);
+				}
+			}
+		}
+
+		// z blur
+		for (int yi = 0; yi < brush_size_2n1; ++yi) {
+			for (int xi = 0; xi < brush_size_2n1; ++xi) {
+				float sdf_sum = 0.0;
+
+				// clear buffer
+				ring_buffer.advance_read(ring_buffer.data_left());
+
+				for (int zi = 0; zi < brush_size_2n1; ++zi) {
+					if (zi == 0) {
+						for (int oz = -blend_range; oz <= blend_range; ++oz) {
+							float value = get_value(xi, yi + blend_range, zi + blend_range + oz);
+							ring_buffer.write(value);
+
+							sdf_sum += value;
+						}
+					} else {
+						float value = get_value(xi, yi + blend_range, zi + blend_range + blend_range);
+						ring_buffer.write(value);
+
+						sdf_sum += value;
+						sdf_sum -= ring_buffer.read();
+					}
+
+					float average = sdf_sum / blend_range_2n1_f;
+					set_value(xi, yi + blend_range, zi + blend_range, average);
+				}
+			}
+		}
+
+		// process result and paste it
+		for (int zi = 0; zi < brush_size_2n1; ++zi) {
+			int z = zi - brush_size;
+			int z0 = z + brush_pos.z;
+			for (int yi = 0; yi < brush_size_2n1; ++yi) {
+				int y = yi - brush_size;
+				int y0 = y + brush_pos.y;
+				for (int xi = 0; xi < brush_size_2n1; ++xi) {
+					int x = xi - brush_size;
+					int x0 = x + brush_pos.x;
+
+					int distance = x * x + y * y + z * z;
+
+					if (distance >= brush_size_squared) {
+						continue;
+					}
+
+					float average = get_value(xi, yi + blend_range, zi + blend_range);
+					average = ease_in_out_cubic(average);
+
+					float distance_normalised = static_cast<float>(distance) / brush_size_squared_f;
+
+					Vector3i voxel_pos(x0, y0, z0);
+					float curr_sdf_value = get_voxel_f(voxel_pos);
+					float new_sdf_value = Math::lerp(average, curr_sdf_value, distance_normalised);
+
+					_set_voxel_f(Vector3i(x0, y0, z0), new_sdf_value);
+				}
+			}
+		}
+	} else {
+		// TODO: Blend ball could be implemented for "minecraft block" types,
+		// by setting block to the most frequent type around the area.
+		ERR_PRINT("Not implemented");
+	}
+
+	_post_edit(box);
+}
+
 void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 	ERR_PRINT("Not implemented");
@@ -320,6 +524,10 @@ void VoxelTool::_b_do_sphere(Vector3 pos, float radius) {
 
 void VoxelTool::_b_do_box(Vector3i begin, Vector3i end) {
 	do_box(begin, end);
+}
+
+void VoxelTool::_b_do_blend_ball(Vector3i center, uint8_t radius, uint8_t strength) {
+	do_blend_ball(center, radius, strength);
 }
 
 void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask) {
@@ -417,6 +625,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
+	ClassDB::bind_method(D_METHOD("do_blend_ball", "center", "radius", "strength"), &VoxelTool::_b_do_blend_ball);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);

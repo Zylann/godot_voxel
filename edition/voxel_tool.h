@@ -66,6 +66,7 @@ public:
 	virtual void do_point(Vector3i pos);
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
+	virtual void do_blend_ball(Vector3i center, uint8_t radius, uint8_t strength);
 
 	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
 
@@ -104,6 +105,7 @@ private:
 	void _b_do_point(Vector3i pos);
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
+	void _b_do_blend_ball(Vector3i center, uint8_t radius, uint8_t strength);
 	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
 	void _b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value);
 	Variant _b_get_voxel_metadata(Vector3i pos) const;

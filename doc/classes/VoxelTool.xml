@@ -56,6 +56,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="do_blend_ball">
+			<return type="void" />
+			<param index="0" name="center" type="Vector3i" />
+			<param index="1" name="radius" type="int" />
+			<param index="2" name="strength" type="int" />
+			<description>
+				Smoothens out terrain by performing box blur.
+				[code]center[/code] is position in the terrain that will be smoothed out.
+				[code]radius[/code] is 8-bit unsigned integer radius of a sphere from the [code]center[/code] where voxel values will be affected. Nothing is done with [code]radius[/code] of 0.
+				[code]strength[/code] is 8-bit unsigned integer of half the box blur length that will be sampled to calculate average voxel value. Higher [code]strength[/code] results in more aggressive smoothing. Nothing is done with [code]strength[/code] of 0.
+				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+				Note 2: Beware of using [code]radius[/code] and [code]strength[/code] values greater than 20 as the performance can drop quickly if this is called 60 times a second.
+			</description>
+		</method>
 		<method name="get_voxel">
 			<return type="int" />
 			<param index="0" name="pos" type="Vector3i" />
