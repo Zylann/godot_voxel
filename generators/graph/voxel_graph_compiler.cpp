@@ -1649,11 +1649,12 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 
 		DataHelper data_helper;
 
-		// In debug, there is no buffer data re-use optimization
 		if (debug) {
+			// In debug, there is no buffer data re-use optimization
 			for (BufferSpec &buffer_spec : program.buffer_specs) {
 				if (!buffer_spec.is_binding) {
-					buffer_spec.data_index = data_helper.allocate(buffer_spec.users_count, true);
+					// Hardcode all uses to 1 in DataHelper, we are not going to track them at all.
+					buffer_spec.data_index = data_helper.allocate(1, true);
 					buffer_spec.has_data = true;
 				}
 			}
@@ -1708,6 +1709,7 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 				}
 
 				if (has_throwaway_data) {
+					// Make this buffer available again once this node has run
 					data_helper.unref(throwaway_data_index);
 				}
 

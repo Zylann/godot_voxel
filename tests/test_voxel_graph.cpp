@@ -1776,4 +1776,46 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 	}*/
 }
 
+void test_voxel_graph_unused_inner_output() {
+	// When compiling a graph with an unused output in one if its inner nodes (not an Output* node), compiling in debug
+	// would crash because it tries to allocate an output buffer with 0 users, which should be allowed specifically in
+	// debug. To reproduce this, we need to have a node with more than one output, and one output being being used for a
+	// graph output. So the node will get compiled as part of the program, but will have an unused output. In non-debug
+	// this output will be allocated as a temporary throwaway buffer, but in debug all outputs are allocated regardless
+	// since buffer allocations are not optimized.
+
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	{
+		Ref<VoxelGraphFunction> g = generator->get_main_function();
+		ZN_ASSERT(g.is_valid());
+
+		//    X             OutSDF
+		//     \           /
+		// Y -- Normalize3D -- (unused `ny`)
+		//     /         \ \
+		//    Z           \ (unused `nz`)
+		//                 \
+		//                  (unused `len`)
+
+		const uint32_t n_x = g->create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_y = g->create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
+		const uint32_t n_z = g->create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
+		const uint32_t n_normalize = g->create_node(VoxelGraphFunction::NODE_NORMALIZE_3D, Vector2());
+		const uint32_t n_out = g->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+
+		g->add_connection(n_x, 0, n_normalize, 0);
+		g->add_connection(n_y, 0, n_normalize, 1);
+		g->add_connection(n_z, 0, n_normalize, 2);
+		g->add_connection(n_normalize, 0, n_out, 0);
+		// Leave outputs `ny`, `nz` and `len` unused
+	}
+
+	const CompilationResult result_debug = generator->compile(true);
+	ZN_TEST_ASSERT(result_debug.success);
+
+	const CompilationResult result_ndebug = generator->compile(true);
+	ZN_TEST_ASSERT(result_ndebug.success);
+}
+
 } // namespace zylann::voxel::tests
