@@ -1374,7 +1374,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	}
 
 	_data->try_set_block(
-			block_pos, block, [&block](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+			block_pos, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
 				existing_block.set_voxels(incoming_block.get_voxels_shared());
 				existing_block.set_edited(incoming_block.is_edited());
 			});
@@ -1445,7 +1445,7 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 
 	// Create or update block data
 	_data->try_set_block(
-			position, block, [&block](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+			position, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
 				existing_block.set_voxels(incoming_block.get_voxels_shared());
 				existing_block.set_edited(incoming_block.is_edited());
 			});
