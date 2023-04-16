@@ -259,7 +259,13 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 
 	Ref<VoxelGenerator> generator = get_generator();
 
-	if (is_streaming_enabled() && generator.is_valid()) {
+	if (is_streaming_enabled() || generator.is_null()) {
+		RWLockRead rlock(data_lod0.map_lock);
+		// Only gets blocks we have voxel data of. Other blocks will be air.
+		// TODO Maybe in the end we should just do the same in either case?
+		data_lod0.map.copy(min_pos, dst_buffer, channels_mask);
+
+	} else {
 		struct GenContext {
 			VoxelGenerator &generator;
 			const VoxelModifierStack &modifiers;
@@ -269,6 +275,7 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 
 		RWLockRead rlock(data_lod0.map_lock);
 		data_lod0.map.copy(min_pos, dst_buffer, channels_mask, &gctx,
+				// Generate on the fly in areas where blocks aren't edited
 				[](void *callback_data, VoxelBufferInternal &voxels, Vector3i pos) {
 					// Suffixed with `2` because GCC warns it shadows a previous local...
 					GenContext *gctx2 = reinterpret_cast<GenContext *>(callback_data);
@@ -276,10 +283,6 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 					gctx2->generator.generate_block(q);
 					gctx2->modifiers.apply(voxels, AABB(pos, voxels.get_size()));
 				});
-	} else {
-		RWLockRead rlock(data_lod0.map_lock);
-		// TODO Apply modifiers
-		data_lod0.map.copy(min_pos, dst_buffer, channels_mask);
 	}
 }
 
