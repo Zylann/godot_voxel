@@ -29,7 +29,12 @@ VoxelTerrainMultiplayerSynchronizer::VoxelTerrainMultiplayerSynchronizer() {
 // Helper function
 bool VoxelTerrainMultiplayerSynchronizer::is_server() const {
 	ZN_ASSERT_RETURN_V(is_inside_tree(), false);
-	Ref<MultiplayerAPI> mp = get_tree()->get_multiplayer();
+	// Note, when using multiple Multiplayer branches in the scene tree, `get_multiplayer` can be significantly slower,
+	// because it involves constructing a NodePath and then querying a HashMap<NodePah,V> to check which nodes have
+	// custom multiplayer. In cases Godot thought of, this is not a big issue, but in our case this can have a
+	// noticeable impact because `is_server()` can be called a thousand times in a frame when a viewer joins or
+	// teleports.
+	Ref<MultiplayerAPI> mp = get_multiplayer();
 	ZN_ASSERT_RETURN_V(mp.is_valid(), false);
 	return mp->is_server();
 }
