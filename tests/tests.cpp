@@ -1,4 +1,5 @@
 #include "tests.h"
+#include "../edition/funcs.h"
 #include "../edition/voxel_mesh_sdf_gd.h"
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
@@ -26,6 +27,7 @@
 #include "test_detail_rendering_gpu.h"
 #include "test_expression_parser.h"
 #include "test_octree.h"
+#include "test_util.h"
 #include "test_voxel_graph.h"
 #include "testing.h"
 
@@ -1869,6 +1871,46 @@ void test_slot_map() {
 	ZN_TEST_ASSERT(map.count() == 0);
 }
 
+void test_box_blur() {
+	VoxelBufferInternal voxels;
+	voxels.create(64, 64, 64);
+
+	Vector3i pos;
+	for (pos.z = 0; pos.z < voxels.get_size().z; ++pos.z) {
+		for (pos.x = 0; pos.x < voxels.get_size().x; ++pos.x) {
+			for (pos.y = 0; pos.y < voxels.get_size().y; ++pos.y) {
+				const float sd = Math::cos(0.53f * pos.x) + Math::sin(0.37f * pos.y) + Math::sin(0.71f * pos.z);
+				voxels.set_voxel_f(sd, pos, VoxelBufferInternal::CHANNEL_SDF);
+			}
+		}
+	}
+
+	const int blur_radius = 3;
+	const Vector3f sphere_pos = to_vec3f(voxels.get_size()) / 2.f;
+	const float sphere_radius = 64 - blur_radius;
+
+	struct L {
+		static void save_image(const VoxelBufferInternal &vb, int y, const char *name) {
+			Ref<Image> im = gd::VoxelBuffer::debug_print_sdf_z_slice(vb, 1.f, y);
+			ZN_ASSERT(im.is_valid());
+			im->resize(im->get_width() * 4, im->get_height() * 4, Image::INTERPOLATE_NEAREST);
+			im->save_png(name);
+		}
+	};
+
+	// L::save_image(voxels, 32, "test_box_blur_src.png");
+
+	VoxelBufferInternal voxels_blurred_1;
+	ops::box_blur_slow_ref(voxels, voxels_blurred_1, blur_radius, sphere_pos, sphere_radius);
+	// L::save_image(voxels_blurred_1, 32 - blur_radius, "test_box_blur_blurred_1.png");
+
+	VoxelBufferInternal voxels_blurred_2;
+	ops::box_blur(voxels, voxels_blurred_2, blur_radius, sphere_pos, sphere_radius);
+	// L::save_image(voxels_blurred_2, 32 - blur_radius, "test_box_blur_blurred_2.png");
+
+	ZN_TEST_ASSERT(sd_equals_approx(voxels_blurred_1, voxels_blurred_2));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
@@ -1941,6 +1983,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_issue463);
 	VOXEL_TEST(test_normalmap_render_gpu);
 	VOXEL_TEST(test_slot_map);
+	VOXEL_TEST(test_box_blur);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -455,6 +455,12 @@ struct DoShape {
 
 typedef DoShape<SdfHemisphere> DoHemisphere;
 
+void box_blur_slow_ref(
+		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
+
+void box_blur(
+		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
+
 }; // namespace zylann::voxel::ops
 
 #endif // VOXEL_EDITION_FUNCS_H

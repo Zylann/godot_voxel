@@ -18,6 +18,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelTerrain`:
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
     - `VoxelTool`:
+        - Added `smooth_sphere`, which smoothens terrain in a spherical area using box blur. Smooth/SDF terrain only. (Thanks to Piratux for the idea and initial implementation)
         - Separated `paste` into `paste` and `paste_masked` functions. The latter performs masking using a specific channel and value.
     - `VoxelToolLodTerrain`:
         - Added support for `paste`

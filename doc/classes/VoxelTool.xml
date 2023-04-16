@@ -56,6 +56,20 @@
 			<description>
 			</description>
 		</method>
+		<method name="smooth_sphere">
+			<return type="void" />
+			<param index="0" name="sphere_center" type="Vector3" />
+			<param index="1" name="sphere_radius" type="float" />
+			<param index="2" name="blur_radius" type="int" />
+			<description>
+				Smoothens out terrain by performing box blur in a spherical area. Strength will be maximal at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
+				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
+				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
+				[code]blur_radius[/code] half the box blur length that will be sampled to calculate average voxel values. Higher values results in more aggressive smoothing. Should be at least 1.
+				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
+			</description>
+		</method>
 		<method name="get_voxel">
 			<return type="int" />
 			<param index="0" name="pos" type="Vector3i" />

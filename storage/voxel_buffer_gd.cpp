@@ -233,8 +233,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInter
 	return im;
 }
 
-Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(float scale, int y) const {
-	const VoxelBufferInternal &buffer = *_buffer;
+Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const VoxelBufferInternal &buffer, float scale, int y) {
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(y < 0 || y >= res.y, Ref<Image>());
 
@@ -259,6 +258,35 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(float scale, int y) const {
 	return im;
 }
 
+Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const VoxelBufferInternal &buffer, float scale, int z) {
+	const Vector3i res = buffer.get_size();
+	ERR_FAIL_COND_V(z < 0 || z >= res.z, Ref<Image>());
+
+	Ref<Image> im = create_empty_image(res.x, res.y, false, Image::FORMAT_RGB8);
+
+	const Color nega_col(0.5f, 0.5f, 1.0f);
+	const Color posi_col(1.0f, 0.6f, 0.1f);
+	const Color black(0.f, 0.f, 0.f);
+
+	for (int x = 0; x < res.x; ++x) {
+		for (int y = 0; y < res.y; ++y) {
+			const float sd = scale * buffer.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+
+			const float nega = math::clamp(-sd, 0.0f, 1.0f);
+			const float posi = math::clamp(sd, 0.0f, 1.0f);
+			const Color col = math::lerp(black, nega_col, nega) + math::lerp(black, posi_col, posi);
+
+			im->set_pixel(x, y, col);
+		}
+	}
+
+	return im;
+}
+
+Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(float scale, int y) const {
+	return debug_print_sdf_y_slice(*_buffer, scale, y);
+}
+
 Array VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
 	Array images;
 
@@ -266,7 +294,7 @@ Array VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
 	const Vector3i res = buffer.get_size();
 
 	for (int y = 0; y < res.y; ++y) {
-		images.append(debug_print_sdf_y_slice(scale, y));
+		images.append(debug_print_sdf_y_slice(buffer, scale, y));
 	}
 
 	return images;

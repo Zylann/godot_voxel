@@ -160,6 +160,8 @@ public:
 	static Ref<Image> debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb);
 	Array debug_print_sdf_y_slices(float scale) const;
 	Ref<Image> debug_print_sdf_y_slice(float scale, int y) const;
+	static Ref<Image> debug_print_sdf_y_slice(const VoxelBufferInternal &buffer, float scale, int y);
+	static Ref<Image> debug_print_sdf_z_slice(const VoxelBufferInternal &buffer, float scale, int z);
 
 private:
 	void _b_deprecated_optimize();
