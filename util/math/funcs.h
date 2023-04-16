@@ -240,14 +240,20 @@ inline unsigned int get_shift_from_power_of_two_32(unsigned int pot) {
 	return 0;
 }
 
-// If `num` is a power of two, returns the exponent. Otherwise, returns the exponent of the next power of two.
+// If `num` == 2^N, returns N. Otherwise, returns the exponent of the next power of two.
+// 0 => 0
+// 1 => 0
+// 2 => 1
+// 3 => 2
+// 4 => 2
+// 5 => 3
 inline unsigned int get_next_power_of_two_32_shift(unsigned int num) {
 	for (unsigned int i = 0; i < 32; ++i) {
-		if ((num >> i) == 1) {
+		if (num <= (1u << i)) {
 			return i;
 		}
 	}
-	ZN_CRASH_MSG("Unreachable code");
+	ZN_CRASH_MSG("Number too big");
 	return 0;
 }
 
