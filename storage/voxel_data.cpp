@@ -283,11 +283,18 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 	}
 }
 
-void VoxelData::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
-		bool use_mask, uint64_t mask_value, bool create_new_blocks) {
+void VoxelData::paste(
+		Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool create_new_blocks) {
 	ZN_PROFILE_SCOPE();
 	Lod &data_lod0 = _lods[0];
-	data_lod0.map.paste(min_pos, src_buffer, channels_mask, use_mask, mask_value, create_new_blocks);
+	data_lod0.map.paste(min_pos, src_buffer, channels_mask, false, 0, 0, create_new_blocks);
+}
+
+void VoxelData::paste_masked(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
+		uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks) {
+	ZN_PROFILE_SCOPE();
+	Lod &data_lod0 = _lods[0];
+	data_lod0.map.paste(min_pos, src_buffer, channels_mask, true, mask_channel, mask_value, create_new_blocks);
 }
 
 bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {

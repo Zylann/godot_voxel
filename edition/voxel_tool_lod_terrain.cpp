@@ -918,7 +918,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	scale_and_store_sdf(buffer, in_sdf_full);
 
-	data.paste(box.pos, buffer, 1 << channel_index, false, 0, false);
+	data.paste(box.pos, buffer, 1 << channel_index, false);
 
 	_post_edit(box);
 }

@@ -266,8 +266,13 @@ void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mas
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(
-		Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
+void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
+	ERR_FAIL_COND(p_voxels.is_null());
+	ERR_PRINT("Not implemented");
+}
+
+void VoxelTool::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
+		uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -326,9 +331,13 @@ void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_m
 	copy(pos, voxels, channel_mask);
 }
 
-void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int64_t mask_value) {
-	// TODO May need two functions, one masked, one not masked, or add a parameter, but it breaks compat
-	paste(pos, voxels, channels_mask, mask_value < 0xffffffff, mask_value);
+void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask) {
+	paste(pos, voxels, channels_mask);
+}
+
+void VoxelTool::_b_paste_masked(
+		Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value) {
+	paste_masked(pos, voxels, channels_mask, mask_channel, mask_value);
 }
 
 Variant VoxelTool::_b_get_voxel_metadata(Vector3i pos) const {
@@ -422,8 +431,10 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
 
 	ClassDB::bind_method(D_METHOD("copy", "src_pos", "dst_buffer", "channels_mask"), &VoxelTool::_b_copy);
+	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"), &VoxelTool::_b_paste);
 	ClassDB::bind_method(
-			D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask", "src_mask_value"), &VoxelTool::_b_paste);
+			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
+			&VoxelTool::_b_paste_masked);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));

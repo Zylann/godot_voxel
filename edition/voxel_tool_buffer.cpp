@@ -73,13 +73,7 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	return _buffer->get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(
-		Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
-	// TODO Support `use_mask` properly
-	if (use_mask) {
-		mask_value = 0xffffffffffffffff;
-	}
-
+void VoxelToolBuffer::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 
@@ -113,7 +107,58 @@ void VoxelToolBuffer::paste(
 					const int by = y - min_noclamp.y;
 
 					const uint64_t v = src.get_voxel(bx, by, bz, channel_index);
-					if (v != mask_value) {
+
+					dst.set_voxel(v, x, y, z, channel_index);
+
+					// Overwrite previous metadata
+					dst.erase_voxel_metadata(Vector3i(x, y, z));
+				}
+			}
+		}
+	}
+
+	_buffer->get_buffer().copy_voxel_metadata_in_area(
+			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_buffer().get_size()), p_pos);
+}
+
+void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask,
+		uint8_t mask_channel, uint64_t mask_value) {
+	ERR_FAIL_COND(_buffer.is_null());
+	ERR_FAIL_COND(p_voxels.is_null());
+
+	VoxelBufferInternal &dst = _buffer->get_buffer();
+	const VoxelBufferInternal &src = p_voxels->get_buffer();
+
+	Box3i box(p_pos, p_voxels->get_buffer().get_size());
+	const Vector3i min_noclamp = box.pos;
+	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
+
+	if (channels_mask == 0) {
+		channels_mask = (1 << get_channel());
+	}
+
+	unsigned int channel_count;
+	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
+			VoxelBufferInternal::mask_to_channels_list(channels_mask, channel_count);
+
+	const Vector3i box_max = box.pos + box.size;
+
+	for (unsigned int ci = 0; ci < channel_count; ++ci) {
+		const unsigned int channel_index = channels[ci];
+
+		for (int z = box.pos.z; z < box_max.z; ++z) {
+			const int bz = z - min_noclamp.z;
+
+			for (int x = box.pos.x; x < box_max.x; ++x) {
+				const int bx = x - min_noclamp.x;
+
+				for (int y = box.pos.y; y < box_max.y; ++y) {
+					const int by = y - min_noclamp.y;
+
+					const uint64_t mv = src.get_voxel(bx, by, bz, mask_channel);
+					if (mv != mask_value) {
+						const uint64_t v =
+								mask_channel == channel_index ? mv : src.get_voxel(bx, by, bz, channel_index);
 						dst.set_voxel(v, x, y, z, channel_index);
 
 						// Overwrite previous metadata
@@ -124,8 +169,16 @@ void VoxelToolBuffer::paste(
 		}
 	}
 
-	_buffer->get_buffer().copy_voxel_metadata_in_area(
-			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_buffer().get_size()), p_pos);
+	_buffer->get_buffer().for_each_voxel_metadata_in_area(
+			box, [min_noclamp, &src, &dst, mask_channel, mask_value](Vector3i dst_pos, const VoxelMetadata &meta) {
+				const Vector3i src_pos = dst_pos - min_noclamp;
+				ZN_ASSERT(src.is_position_valid(src_pos));
+				if (src.get_voxel(src_pos, mask_channel) != mask_value) {
+					VoxelMetadata *dst_meta = dst.get_or_create_voxel_metadata(dst_pos);
+					ZN_ASSERT_RETURN(dst_meta != nullptr);
+					dst_meta->copy_from(meta);
+				}
+			});
 }
 
 } // namespace zylann::voxel

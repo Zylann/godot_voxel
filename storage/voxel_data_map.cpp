@@ -253,7 +253,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 }
 
 void VoxelDataMap::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
-		bool use_mask, uint64_t mask_value, bool create_new_blocks) {
+		bool use_mask, uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks) {
 	//
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
 
@@ -291,14 +291,27 @@ void VoxelDataMap::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer
 
 						const Vector3i src_offset = -dst_box.pos;
 
-						dst_buffer.read_write_action(dst_box, channel,
-								[&src_buffer, mask_value, src_offset, channel](const Vector3i pos, uint64_t dst_v) {
-									const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
-									if (src_v == mask_value) {
-										return dst_v;
-									}
-									return src_v;
-								});
+						if (channel == mask_channel) {
+							dst_buffer.read_write_action(dst_box, channel,
+									[&src_buffer, mask_value, src_offset, channel](const Vector3i pos, uint64_t dst_v) {
+										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
+										if (src_v == mask_value) {
+											return dst_v;
+										}
+										return src_v;
+									});
+						} else {
+							dst_buffer.read_write_action(dst_box, channel,
+									[&src_buffer, mask_value, src_offset, channel, mask_channel](
+											const Vector3i pos, uint64_t dst_v) {
+										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
+										const uint64_t mv = src_buffer.get_voxel(pos + src_offset, mask_channel);
+										if (src_v == mask_value) {
+											return dst_v;
+										}
+										return src_v;
+									});
+						}
 
 					} else {
 						dst_buffer.copy_from(

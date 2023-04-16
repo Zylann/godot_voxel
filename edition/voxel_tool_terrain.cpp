@@ -158,14 +158,24 @@ void VoxelToolTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t chan
 	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
 }
 
-void VoxelToolTerrain::paste(
-		Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, bool use_mask, uint64_t mask_value) {
+void VoxelToolTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().paste(pos, p_voxels->get_buffer(), channels_mask, use_mask, mask_value, false);
+	_terrain->get_storage().paste(pos, p_voxels->get_buffer(), channels_mask, false);
+	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
+}
+
+void VoxelToolTerrain::paste_masked(
+		Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel, uint64_t mask_value) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(p_voxels.is_null());
+	if (channels_mask == 0) {
+		channels_mask = (1 << _channel);
+	}
+	_terrain->get_storage().paste_masked(pos, p_voxels->get_buffer(), channels_mask, mask_channel, mask_value, false);
 	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
 }
 

@@ -219,7 +219,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray data) 
 	VoxelBufferInternal voxels;
 	ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
-	_terrain->get_storage().paste(pos, voxels, 0xff, false, 0, false);
+	_terrain->get_storage().paste(pos, voxels, 0xff, false);
 	_terrain->post_edit_area(Box3i(pos, voxels.get_size()));
 }
 
