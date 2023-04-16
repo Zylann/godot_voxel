@@ -304,11 +304,11 @@ void VoxelDataMap::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer
 							dst_buffer.read_write_action(dst_box, channel,
 									[&src_buffer, mask_value, src_offset, channel, mask_channel](
 											const Vector3i pos, uint64_t dst_v) {
-										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
 										const uint64_t mv = src_buffer.get_voxel(pos + src_offset, mask_channel);
-										if (src_v == mask_value) {
+										if (mv == mask_value) {
 											return dst_v;
 										}
+										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
 										return src_v;
 									});
 						}
