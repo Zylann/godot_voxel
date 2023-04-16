@@ -19,6 +19,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
     - `VoxelTool`:
         - Separated `paste` into `paste` and `paste_masked` functions. The latter performs masking using a specific channel and value.
+    - `VoxelToolLodTerrain`:
+        - Added support for `paste`
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
