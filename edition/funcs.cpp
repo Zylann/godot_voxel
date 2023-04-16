@@ -1,8 +1,5 @@
 #include "funcs.h"
 #include "../util/profiling.h"
-// DEBUG
-#include "../storage/voxel_buffer_gd.h"
-#include <core/io/image.h>
 
 namespace zylann::voxel::ops {
 
