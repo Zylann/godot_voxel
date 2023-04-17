@@ -787,6 +787,17 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
+				case VoxelBufferInternal::DEPTH_32_BIT:
+					if (params.greedy_meshing) {
+						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint32_t>(), block_size, cache.mask_memory_pool,
+								Color8::from_u32);
+					} else {
+						build_voxel_mesh_as_simple_cubes(cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint32_t>(), block_size, Color8::from_u32);
+					}
+					break;
+
 				default:
 					ERR_PRINT("Unsupported voxel depth");
 					return;
@@ -1041,6 +1052,75 @@ Ref<Material> VoxelMesherCubes::_b_get_transparent_material() const {
 	return get_material_by_index(MATERIAL_TRANSPARENT);
 }
 
+Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float voxel_size) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN_V(image.is_valid(), Ref<Mesh>());
+	ZN_ASSERT_RETURN_V(voxel_size > 0.001f, Ref<Mesh>());
+	ZN_ASSERT_RETURN_V_MSG(
+			!image->is_compressed(), Ref<Mesh>(), format("Image format not supported: {}", image->get_format()));
+
+	// Convert image
+	VoxelBufferInternal voxels;
+	voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_32_BIT);
+	const int im_size_x = image->get_width();
+	const int im_size_y = image->get_height();
+	// Currently all meshers require pre-padded voxel data...
+	voxels.create(im_size_x + VoxelMesherCubes::PADDING * 2, im_size_y + VoxelMesherCubes::PADDING * 2,
+			1 + VoxelMesherCubes::PADDING * 2);
+	for (int y = 0; y < im_size_y; ++y) {
+		for (int x = 0; x < im_size_x; ++x) {
+			const Color cf = image->get_pixel(x, y);
+			const Color8 c(cf);
+			voxels.set_voxel(c.to_u32(),
+					Vector3i(x + VoxelMesherCubes::PADDING,
+							// Flip Y axis, since Y goes up in world space, but Y goes down in Image space
+							(im_size_y - 1 - y) + VoxelMesherCubes::PADDING, VoxelMesherCubes::PADDING),
+					VoxelBufferInternal::CHANNEL_COLOR);
+		}
+	}
+
+	// Build mesh
+
+	Ref<VoxelMesherCubes> mesher;
+	mesher.instantiate();
+	VoxelMesher::Output output;
+	VoxelMesher::Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false };
+	mesher->build(output, input);
+
+	if (output.surfaces.size() == 0) {
+		return Ref<ArrayMesh>();
+	}
+
+	Ref<ArrayMesh> mesh;
+	mesh.instantiate();
+
+	const Vector3 centering_offset = -Vector3(im_size_x, im_size_y, 1) / 2.0;
+
+	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
+		VoxelMesher::Output::Surface &surface = output.surfaces[i];
+		Array arrays = surface.arrays;
+
+		if (arrays.is_empty()) {
+			continue;
+		}
+
+		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
+		if (!is_surface_triangulated(arrays)) {
+			continue;
+		}
+
+		offset_surface(arrays, centering_offset);
+
+		if (voxel_size != 1.f) {
+			scale_surface(arrays, voxel_size);
+		}
+
+		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);
+	}
+
+	return mesh;
+}
+
 void VoxelMesherCubes::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("set_greedy_meshing_enabled", "enable"), &VoxelMesherCubes::set_greedy_meshing_enabled);
@@ -1060,6 +1140,9 @@ void VoxelMesherCubes::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_get_transparent_material"), &VoxelMesherCubes::_b_get_transparent_material);
 	ClassDB::bind_method(
 			D_METHOD("_set_transparent_material", "material"), &VoxelMesherCubes::_b_set_transparent_material);
+
+	ClassDB::bind_static_method(VoxelMesherCubes::get_class_static(),
+			D_METHOD("generate_mesh_from_image", "image", "voxel_size"), &VoxelMesherCubes::generate_mesh_from_image);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "greedy_meshing_enabled"), "set_greedy_meshing_enabled",
 			"is_greedy_meshing_enabled");

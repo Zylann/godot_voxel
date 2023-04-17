@@ -149,4 +149,38 @@ Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_i
 	// return wire_mesh;
 }
 
+void scale_vec3_array(PackedVector3Array &array, float scale) {
+	// Getting raw pointer because between GDExtension and modules, syntax and performance of operator[] differs.
+	Vector3 *array_data = array.ptrw();
+	const int count = array.size();
+	for (int i = 0; i < count; ++i) {
+		array_data[i] *= scale;
+	}
+}
+
+void offset_vec3_array(PackedVector3Array &array, Vector3 offset) {
+	// Getting raw pointer because between GDExtension and modules, syntax and performance of operator[] differs.
+	Vector3 *array_data = array.ptrw();
+	const int count = array.size();
+	for (int i = 0; i < count; ++i) {
+		array_data[i] += offset;
+	}
+}
+
+void scale_surface(Array &surface, float scale) {
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
+	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
+	scale_vec3_array(positions, scale);
+	surface[Mesh::ARRAY_VERTEX] = positions;
+}
+
+void offset_surface(Array &surface, Vector3 offset) {
+	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
+	// Avoiding stupid CoW, assuming this array holds the only instance of this vector
+	surface[Mesh::ARRAY_VERTEX] = PackedVector3Array();
+	offset_vec3_array(positions, offset);
+	surface[Mesh::ARRAY_VERTEX] = positions;
+}
+
 } // namespace zylann

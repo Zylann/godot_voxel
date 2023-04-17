@@ -64,6 +64,8 @@ public:
 	void set_material_by_index(Materials id, Ref<Material> material);
 	Ref<Material> get_material_by_index(unsigned int i) const override;
 
+	static Ref<Mesh> generate_mesh_from_image(Ref<Image> image, float voxel_size);
+
 	// Structs
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.

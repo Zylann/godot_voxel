@@ -22,6 +22,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Separated `paste` into `paste` and `paste_masked` functions. The latter performs masking using a specific channel and value.
     - `VoxelToolLodTerrain`:
         - Added support for `paste`
+    - `VoxelMesherCubes`:
+        - Added helper function to convert an image into a 1-voxel thick "sprite mesh"
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
