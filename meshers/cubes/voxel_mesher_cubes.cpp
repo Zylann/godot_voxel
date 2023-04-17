@@ -1,5 +1,6 @@
 #include "voxel_mesher_cubes.h"
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/geometry_2d.h"
 #include "../../util/godot/classes/image.h"
