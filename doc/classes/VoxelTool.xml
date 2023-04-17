@@ -110,7 +110,21 @@
 				Paste voxels in a box from the given buffer at a specific location.
 				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
 				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
-				[code]src_mask_value[/code] For every pasted channel, if voxel data has this value, it will not be pasted. This is mostly useful when using blocky voxel types. Pass [code]0xffffffff[/code] to disable masking.
+			</description>
+		</method>
+		<method name="paste_masked">
+			<return type="void" />
+			<param index="0" name="dst_pos" type="Vector3i" />
+			<param index="1" name="src_buffer" type="VoxelBuffer" />
+			<param index="2" name="channels_mask" type="int" />
+			<param index="3" name="src_mask_channel" type="int" />
+			<param index="4" name="src_mask_value" type="int" />
+			<description>
+				Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel will not be pasted.
+				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
+				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
+				[code]src_mask_channel[/code] channel that will be used to lookup mask values.
+				[code]src_mask_value[/code] if voxels have this value in the channel specified for masking, then they won't be pasted.
 			</description>
 		</method>
 		<method name="raycast">
