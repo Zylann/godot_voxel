@@ -1,5 +1,6 @@
 #include "fast_noise_2_editor_plugin.h"
 #include "../../util/godot/classes/editor_inspector_plugin.h"
+#include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/noise/fast_noise_2.h"
