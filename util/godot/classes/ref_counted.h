@@ -1,6 +1,8 @@
 #ifndef ZN_GODOT_REF_COUNTED_H
 #define ZN_GODOT_REF_COUNTED_H
 
+#include <functional>
+
 #if defined(ZN_GODOT)
 #include <core/object/ref_counted.h>
 #elif defined(ZN_GODOT_EXTENSION)
