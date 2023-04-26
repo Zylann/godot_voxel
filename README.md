@@ -76,6 +76,7 @@ NoFr1ends (Lynx)
 Kluskey (Jared McCluskey)
 Trey2k (Trey Moller)
 marcinn (Marcin Nowak)
+bfoster68
 ```
 
 ### Supporters
@@ -88,6 +89,7 @@ stackdump (stackdump.eth)
 Treer
 MrGreaterThan
 lenis0012
+ilievmark (Iliev Mark)
 ```
 
 

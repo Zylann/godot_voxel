@@ -202,6 +202,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Kluskey (Jared McCluskey)\n"
 						"Trey2k (Trey Moller)\n"
 						"marcinn (Marcin Nowak)\n"
+						"bfoster68\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"
@@ -210,7 +211,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"stackdump (stackdump.eth)\n"
 						"Treer\n"
 						"MrGreaterThan\n"
-						"lenis0012\n";
+						"lenis0012\n"
+						"ilievmark (Iliev Mark)\n";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
