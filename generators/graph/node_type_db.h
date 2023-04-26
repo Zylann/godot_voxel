@@ -61,8 +61,8 @@ struct NodeType {
 		bool has_range = false;
 		bool multiline = false;
 		bool hidden = false;
-		int min_value;
-		int max_value;
+		Variant min_value;
+		Variant max_value;
 		std::vector<std::string> enum_items;
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
