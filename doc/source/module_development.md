@@ -98,7 +98,7 @@ There is one pool of threads. This pool can be given many tasks and distributes 
 
 Some tasks are scheduled in a "serial" group, which means only one of them will run at a time (although any thread can run them). This is to avoid clogging up all the threads with waiting tasks if they all lock a shared resource. This is used for I/O such as loading and saving to disk.
 
-Threads are managed in [VoxelServer](api/VoxelServer.md).
+Threads are managed in [VoxelEngine](api/VoxelEngine.md).
 
 Note: this task system does not account for "frames". Tasks can run at any time for less or more than one frame of the main thread.
 
@@ -361,7 +361,7 @@ Those lines might already be there, if so just uncomment them.
 Once you are done profiling, don't forget to remove these lines, otherwise profiling data will accumulate in memory without being retrieved.
 
 !!! note
-    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelServer` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
+    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
 
 This way of integrating Tracy was based on this [commit by vblanco](https://github.com/vblanco20-1/godot/commit/2c5613abb8c9fdb5c4bfe3b52fdb665a91b43579)
 
