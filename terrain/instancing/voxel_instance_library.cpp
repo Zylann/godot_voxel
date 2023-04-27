@@ -172,12 +172,24 @@ void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const 
 	}
 }
 
+PackedInt32Array VoxelInstanceLibrary::_b_get_all_item_ids() const {
+	PackedInt32Array ids;
+	ids.resize(_items.size());
+	int i = 0;
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		ids.write[i] = it->first;
+		++i;
+	}
+	return ids;
+}
+
 void VoxelInstanceLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_item", "id", "item"), &VoxelInstanceLibrary::add_item);
 	ClassDB::bind_method(D_METHOD("remove_item", "id"), &VoxelInstanceLibrary::remove_item);
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelInstanceLibrary::clear);
 	ClassDB::bind_method(D_METHOD("find_item_by_name", "name"), &VoxelInstanceLibrary::find_item_by_name);
 	ClassDB::bind_method(D_METHOD("get_item", "id"), &VoxelInstanceLibrary::_b_get_item);
+	ClassDB::bind_method(D_METHOD("get_all_item_ids"), &VoxelInstanceLibrary::_b_get_all_item_ids);
 
 	BIND_CONSTANT(MAX_ID);
 }

@@ -47,6 +47,7 @@ public:
 
 protected:
 	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;
+	PackedInt32Array _b_get_all_item_ids() const;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
