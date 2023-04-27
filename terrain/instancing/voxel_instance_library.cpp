@@ -175,9 +175,11 @@ void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const 
 PackedInt32Array VoxelInstanceLibrary::_b_get_all_item_ids() const {
 	PackedInt32Array ids;
 	ids.resize(_items.size());
+	// Doing this because in GDExtension builds assigning items has different syntax than modules... and it's faster
+	int *ids_w = ids.ptrw();
 	int i = 0;
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
-		ids.write[i] = it->first;
+		ids_w[i] = it->first;
 		++i;
 	}
 	return ids;
