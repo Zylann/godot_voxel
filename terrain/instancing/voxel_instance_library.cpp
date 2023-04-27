@@ -56,7 +56,7 @@ int VoxelInstanceLibrary::find_item_by_name(String name) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		const Ref<VoxelInstanceLibraryItem> &item = it->second;
 		ERR_FAIL_COND_V(item.is_null(), -1);
-		if (item->get_name() == name) {
+		if (item->get_item_name() == name) {
 			return it->first;
 		}
 	}
