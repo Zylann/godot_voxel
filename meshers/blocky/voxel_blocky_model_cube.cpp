@@ -186,11 +186,10 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 	baked_data.empty = false;
 }
 
-void VoxelBlockyModelCube::bake(
-		BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
 	baked_data.clear();
 	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, bake_tangents);
-	VoxelBlockyModel::bake(baked_data, p_atlas_size, bake_tangents, materials);
+	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
 }
 
 Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {

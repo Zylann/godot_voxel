@@ -49,12 +49,6 @@ public:
 		}
 	};
 
-	// TODO Deprecate. Tile size may instead be on models.
-	int get_atlas_size() const {
-		return _atlas_size;
-	}
-	void set_atlas_size(int s);
-
 	bool get_bake_tangents() const {
 		return _bake_tangents;
 	}
@@ -90,7 +84,7 @@ private:
 	static void _bind_methods();
 
 protected:
-	int _atlas_size = 16;
+	int _legacy_atlas_size = 16;
 	bool _needs_baking = true;
 	bool _bake_tangents = true;
 

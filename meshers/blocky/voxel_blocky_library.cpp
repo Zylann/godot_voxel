@@ -55,7 +55,7 @@ void VoxelBlockyLibrary::bake() {
 	for (size_t i = 0; i < _voxel_models.size(); ++i) {
 		Ref<VoxelBlockyModel> config = _voxel_models[i];
 		if (config.is_valid()) {
-			config->bake(_baked_data.models[i], _atlas_size, _bake_tangents, materials);
+			config->bake(_baked_data.models[i], _bake_tangents, materials);
 		} else {
 			_baked_data.models[i].clear();
 		}
@@ -116,7 +116,10 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 				for (unsigned int side = 0; side < VoxelBlockyModel::SIDE_COUNT; ++side) {
 					cube->set_tile(VoxelBlockyModel::Side(side), to_vec2i(legacy_properties.cube_tiles[side]));
 				}
-				cube->set_atlas_size_in_tiles(Vector2i(_atlas_size, _atlas_size));
+				// TODO Can't guarantee that this will work, because Godot could set that property later.
+				// It might actually work if Godot properly sorts properties in TSCN/TRES, because `voxels/*` starts
+				// with `v`, which comes after `atlas_size`.
+				cube->set_atlas_size_in_tiles(Vector2i(_legacy_atlas_size, _legacy_atlas_size));
 				new_model = cube;
 
 			} else if (legacy_properties.geometry_type == VoxelBlockyModel::LegacyProperties::GEOMETRY_MESH) {
@@ -141,6 +144,10 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 			}
 		}
 
+		return true;
+
+	} else if (name == "atlas_size") {
+		_legacy_atlas_size = p_value;
 		return true;
 	}
 

@@ -173,7 +173,7 @@ public:
 		}
 	};
 
-	virtual void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials);
+	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials);
 
 	Span<const AABB> get_collision_aabbs() const {
 		return to_span(_collision_aabbs);

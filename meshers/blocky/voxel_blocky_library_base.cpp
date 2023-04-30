@@ -20,12 +20,6 @@ void VoxelBlockyLibraryBase::bake() {
 	// Implemented in child classes
 }
 
-void VoxelBlockyLibraryBase::set_atlas_size(int s) {
-	ERR_FAIL_COND(s <= 0);
-	_atlas_size = s;
-	_needs_baking = true;
-}
-
 void VoxelBlockyLibraryBase::set_bake_tangents(bool bt) {
 	_bake_tangents = bt;
 	_needs_baking = true;
@@ -57,9 +51,6 @@ void VoxelBlockyLibraryBase::get_configuration_warnings(PackedStringArray &out_w
 
 void VoxelBlockyLibraryBase::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_materials"), &VoxelBlockyLibraryBase::_b_get_materials);
-
-	ClassDB::bind_method(D_METHOD("set_atlas_size", "square_size"), &VoxelBlockyLibraryBase::set_atlas_size);
-	ClassDB::bind_method(D_METHOD("get_atlas_size"), &VoxelBlockyLibraryBase::get_atlas_size);
 
 	ClassDB::bind_method(D_METHOD("get_bake_tangents"), &VoxelBlockyLibraryBase::get_bake_tangents);
 	ClassDB::bind_method(D_METHOD("set_bake_tangents", "bake_tangents"), &VoxelBlockyLibraryBase::set_bake_tangents);

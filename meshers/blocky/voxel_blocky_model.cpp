@@ -202,7 +202,7 @@ void VoxelBlockyModel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-void VoxelBlockyModel::bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
 	// TODO That's a bit iffy, design something better?
 	// The following logic must run after derived classes, should not be called directly
 
