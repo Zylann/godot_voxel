@@ -250,7 +250,7 @@ Vector3T<T> rotate_z_90_cw(Vector3T<T> v) {
 
 template <typename T>
 void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool clockwise) {
-	if (axis == Vector3::AXIS_X) {
+	if (axis == Vector3T<T>::AXIS_X) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_x_90_cw(v);
@@ -260,7 +260,7 @@ void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool 
 				v = math::rotate_x_90_ccw(v);
 			}
 		}
-	} else if (axis == Vector3::AXIS_Y) {
+	} else if (axis == Vector3T<T>::AXIS_Y) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_y_90_cw(v);
@@ -270,7 +270,7 @@ void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool 
 				v = math::rotate_y_90_ccw(v);
 			}
 		}
-	} else if (axis == Vector3::AXIS_Z) {
+	} else if (axis == Vector3T<T>::AXIS_Z) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_z_90_cw(v);
