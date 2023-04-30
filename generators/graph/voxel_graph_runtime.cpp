@@ -232,9 +232,17 @@ void Runtime::generate_optimized_execution_map(
 				execution_map.operations.push_back(
 						ExecutionMap::OperationInfo{ node.op_address, uint16_t(tls_constant_fills.size()) });
 
+				// TODO Only do constant fills that actually get used
+				// The following approach isn't optimal. If 50% of a graph gets skipped and the remaining nodes don't
+				// use constant outputs from the skipped part, they will end up being filled anyways...
+
+				// Make it so previously skipped nodes' locally constant outputs are filled, as if they had run.
+				// They won't necessarily be used by the current node, but according to buffer lifetime rules,
+				// they should remain valid until all users have read them.
 				for (const ExecutionMap::ConstantFill &cf : tls_constant_fills) {
 					execution_map.constant_fills.push_back(cf);
 				}
+				tls_constant_fills.clear();
 
 				break;
 
