@@ -1373,11 +1373,10 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		return;
 	}
 
-	_data->try_set_block(
-			block_pos, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
-				existing_block.set_voxels(incoming_block.get_voxels_shared());
-				existing_block.set_edited(incoming_block.is_edited());
-			});
+	_data->try_set_block(block_pos, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+		existing_block.set_voxels(incoming_block.get_voxels_shared());
+		existing_block.set_edited(incoming_block.is_edited());
+	});
 
 	emit_data_block_loaded(block_pos);
 
@@ -1444,11 +1443,10 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 	block.viewers = refcount;
 
 	// Create or update block data
-	_data->try_set_block(
-			position, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
-				existing_block.set_voxels(incoming_block.get_voxels_shared());
-				existing_block.set_edited(incoming_block.is_edited());
-			});
+	_data->try_set_block(position, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+		existing_block.set_voxels(incoming_block.get_voxels_shared());
+		existing_block.set_edited(incoming_block.is_edited());
+	});
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 	try_schedule_mesh_update_from_data(

@@ -11,7 +11,7 @@ bool ZN_FastNoiseLiteEditorInspectorPlugin::_zn_can_handle(const Object *p_objec
 
 void ZN_FastNoiseLiteEditorInspectorPlugin::_zn_parse_begin(Object *p_object) {
 	const ZN_FastNoiseLite *noise_ptr = Object::cast_to<ZN_FastNoiseLite>(p_object);
-	if (noise_ptr) {
+	if (noise_ptr != nullptr) {
 		Ref<ZN_FastNoiseLite> noise(noise_ptr);
 
 		ZN_FastNoiseLiteViewer *viewer = memnew(ZN_FastNoiseLiteViewer);
@@ -20,7 +20,7 @@ void ZN_FastNoiseLiteEditorInspectorPlugin::_zn_parse_begin(Object *p_object) {
 		return;
 	}
 	const ZN_FastNoiseLiteGradient *noise_gradient_ptr = Object::cast_to<ZN_FastNoiseLiteGradient>(p_object);
-	if (noise_gradient_ptr) {
+	if (noise_gradient_ptr != nullptr) {
 		Ref<ZN_FastNoiseLiteGradient> noise_gradient(noise_gradient_ptr);
 
 		ZN_FastNoiseLiteViewer *viewer = memnew(ZN_FastNoiseLiteViewer);
