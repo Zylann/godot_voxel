@@ -2,6 +2,7 @@
 #define ZYLANN_VECTOR3T_H
 
 #include "../errors.h"
+#include "../span.h"
 #include "funcs.h"
 
 namespace zylann {
@@ -212,6 +213,76 @@ inline typename Vector3T<T>::Axis get_longest_axis(Vector3T<T> v) {
 		return Vector3T<T>::AXIS_Y;
 	}
 	return Vector3T<T>::AXIS_Z;
+}
+
+// Rotations: CW (clockwise) and CCW (counter-clockwise) are such that the rotation axis is pointed at the viewer.
+// Same convention used by Godot Basis. CCW is positive angle, CW is negative angle.
+
+template <typename T>
+Vector3T<T> rotate_x_90_ccw(Vector3T<T> v) {
+	return Vector3T<T>(v.x, -v.z, v.y);
+}
+
+template <typename T>
+Vector3T<T> rotate_x_90_cw(Vector3T<T> v) {
+	return Vector3T<T>(v.x, v.z, -v.y);
+}
+
+template <typename T>
+Vector3T<T> rotate_y_90_ccw(Vector3T<T> v) {
+	return Vector3T<T>(v.z, v.y, -v.x);
+}
+
+template <typename T>
+Vector3T<T> rotate_y_90_cw(Vector3T<T> v) {
+	return Vector3T<T>(-v.z, v.y, v.x);
+}
+
+template <typename T>
+Vector3T<T> rotate_z_90_ccw(Vector3T<T> v) {
+	return Vector3T<T>(-v.y, v.x, v.z);
+}
+
+template <typename T>
+Vector3T<T> rotate_z_90_cw(Vector3T<T> v) {
+	return Vector3T<T>(v.y, -v.x, v.z);
+}
+
+template <typename T>
+void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool clockwise) {
+	if (axis == Vector3::AXIS_X) {
+		if (clockwise) {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_x_90_cw(v);
+			}
+		} else {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_x_90_ccw(v);
+			}
+		}
+	} else if (axis == Vector3::AXIS_Y) {
+		if (clockwise) {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_y_90_cw(v);
+			}
+		} else {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_y_90_ccw(v);
+			}
+		}
+	} else if (axis == Vector3::AXIS_Z) {
+		if (clockwise) {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_z_90_cw(v);
+			}
+		} else {
+			for (Vector3T<T> &v : vectors) {
+				v = math::rotate_z_90_ccw(v);
+			}
+		}
+	} else {
+		ZN_PRINT_ERROR("Invalid axis");
+	}
 }
 
 } // namespace math

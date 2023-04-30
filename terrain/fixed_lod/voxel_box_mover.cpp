@@ -200,12 +200,13 @@ static void collect_boxes(
 	Ref<VoxelMesherCubes> mesher_cubes;
 
 	if (try_get_as(p_terrain.get_mesher(), mesher_blocky)) {
-		Ref<VoxelBlockyLibrary> library_ref = mesher_blocky->get_library();
+		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
 		ERR_FAIL_COND_MSG(library_ref.is_null(), "VoxelMesherBlocky has no library assigned");
-		VoxelBlockyLibrary &library = **library_ref;
 		const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 		VoxelSingleValue defval;
 		defval.i = 0;
+
+		const VoxelBlockyLibraryBase::BakedData baked_data = library_ref->get_baked_data();
 
 		// TODO Optimization: read the whole box of voxels at once, querying individually is slower
 		for (i.z = min_z; i.z < max_z; ++i.z) {
@@ -213,17 +214,15 @@ static void collect_boxes(
 				for (i.x = min_x; i.x < max_x; ++i.x) {
 					const int type_id = voxels.get_voxel(i, channel, defval).i;
 
-					if (library.has_voxel(type_id)) {
-						const VoxelBlockyModel &voxel_type = library.get_voxel_const(type_id);
+					if (baked_data.has_model(type_id)) {
+						const VoxelBlockyModel::BakedData &model = baked_data.models[type_id];
 
-						if ((voxel_type.get_collision_mask() & collision_nask) == 0) {
+						if ((model.box_collision_mask & collision_nask) == 0) {
 							continue;
 						}
 
-						const std::vector<AABB> &local_boxes = voxel_type.get_collision_aabbs();
-
-						for (auto it = local_boxes.begin(); it != local_boxes.end(); ++it) {
-							AABB world_box = *it;
+						for (const AABB &aabb : model.box_collision_aabbs) {
+							AABB world_box = aabb;
 							world_box.position += i;
 							potential_boxes.push_back(world_box);
 						}

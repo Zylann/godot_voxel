@@ -13,9 +13,10 @@
 
 namespace zylann::voxel {
 
-// Definition of one type of voxel for use with `VoxelMesherBlocky`.
+// TODO Add preview in inspector showing collision boxes
+
+// Visuals and collisions corresponding to a specific voxel value/state, for use with `VoxelMesherBlocky`.
 // A voxel can be a simple coloured cube, or a more complex model.
-// Important: it is recommended that you create voxels from a library rather than using new().
 class VoxelBlockyModel : public Resource {
 	GDCLASS(VoxelBlockyModel, Resource)
 
@@ -27,6 +28,7 @@ public:
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
 	// while the configuration that produced the data can be changed by the user at any time.
+	// Also, it is lighter than Godot resources.
 	struct BakedData {
 		struct Surface {
 			// Inside part of the model.
@@ -88,6 +90,11 @@ public:
 		uint8_t transparency_index;
 		bool contributes_to_ao;
 		bool empty;
+		bool is_random_tickable;
+		bool is_transparent;
+
+		uint32_t box_collision_mask;
+		std::vector<AABB> box_collision_aabbs;
 
 		inline void clear() {
 			model.clear();
@@ -108,16 +115,6 @@ public:
 	};
 
 	// Properties
-
-	void set_voxel_name(String name);
-	_FORCE_INLINE_ StringName get_voxel_name() const {
-		return _name;
-	}
-
-	void set_id(int id);
-	_FORCE_INLINE_ int get_id() const {
-		return _id;
-	}
 
 	void set_color(Color color);
 	_FORCE_INLINE_ Color get_color() const {
@@ -141,43 +138,21 @@ public:
 		return _transparency_index;
 	}
 
-	void set_custom_mesh(Ref<Mesh> mesh);
-	Ref<Mesh> get_custom_mesh() const {
-		return _custom_mesh;
-	}
-
-	void set_random_tickable(bool rt);
-	inline bool is_random_tickable() const {
-		return _random_tickable;
-	}
-
 	void set_collision_mask(uint32_t mask);
 	inline uint32_t get_collision_mask() const {
 		return _collision_mask;
 	}
 
-	Vector2f get_cube_tile(int side) const {
-		return _cube_tiles[side];
-	}
-
-	//-------------------------------------------
-	// Built-in geometry generators
-
-	enum GeometryType { //
-		GEOMETRY_NONE = 0,
-		GEOMETRY_CUBE,
-		GEOMETRY_CUSTOM_MESH,
-		GEOMETRY_MAX
-	};
-
-	void set_geometry_type(GeometryType type);
-	GeometryType get_geometry_type() const;
-
 	inline bool is_empty() const {
 		return _empty;
 	}
 
-	Ref<Resource> duplicate(bool p_subresources) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
+	unsigned int get_collision_aabb_count() const;
+	void set_collision_aabb(unsigned int i, AABB aabb);
+	void set_collision_aabbs(Span<const AABB> aabbs);
+
+	void set_random_tickable(bool rt);
+	bool is_random_tickable() const;
 
 	//------------------------------------------
 	// Properties for internal usage only
@@ -198,31 +173,50 @@ public:
 		}
 	};
 
-	void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials);
+	virtual void bake(BakedData &baked_data, int p_atlas_size, bool bake_tangents, MaterialIndexer &materials);
 
-	const std::vector<AABB> &get_collision_aabbs() const {
-		return _collision_aabbs;
+	Span<const AABB> get_collision_aabbs() const {
+		return to_span(_collision_aabbs);
 	}
 
-private:
+	struct LegacyProperties {
+		enum GeometryType { GEOMETRY_NONE, GEOMETRY_CUBE, GEOMETRY_MESH };
+
+		bool found = false;
+		FixedArray<Vector2f, Cube::SIDE_COUNT> cube_tiles;
+		GeometryType geometry_type = GEOMETRY_NONE;
+		StringName name;
+		int id = -1;
+		Ref<Mesh> custom_mesh;
+	};
+
+	const LegacyProperties &get_legacy_properties() const {
+		return _legacy_properties;
+	}
+
+	void copy_base_properties_from(const VoxelBlockyModel &src);
+
+	virtual Ref<Mesh> get_preview_mesh() const;
+
+	virtual void rotate_90(Vector3i::Axis axis, bool clockwise);
+
+	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
+
+protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
-	void set_cube_uv_side(int side, Vector2f tile_pos);
+	void set_surface_count(unsigned int new_count);
 
+	void rotate_collision_boxes_90(Vector3i::Axis axis, bool clockwise);
+
+private:
 	static void _bind_methods();
 
 	TypedArray<AABB> _b_get_collision_aabbs() const;
 	void _b_set_collision_aabbs(TypedArray<AABB> array);
-
-private:
-	void set_surface_count(unsigned int new_count);
-
-	// Identifiers
-
-	int _id = -1;
-	StringName _name;
+	void _b_rotate_90(Vector3i::Axis axis, bool clockwise);
 
 	// Properties
 
@@ -234,26 +228,28 @@ private:
 	};
 
 	FixedArray<SurfaceParams, BakedData::Model::MAX_SURFACES> _surface_params;
+
+protected:
 	unsigned int _surface_count = 0;
-
-	// If two neighboring voxels are supposed to occlude their shared face,
-	// this index decides wether or not it should happen. Equal indexes culls the face, different indexes doesn't.
-	uint8_t _transparency_index = 0;
-
-	Color _color;
-	GeometryType _geometry_type = GEOMETRY_NONE;
-	FixedArray<Vector2f, Cube::SIDE_COUNT> _cube_tiles;
-	Ref<Mesh> _custom_mesh;
-	bool _random_tickable = false;
 	bool _empty = true;
+
 	// Used for AABB physics only, not classic physics
 	std::vector<AABB> _collision_aabbs;
 	uint32_t _collision_mask = 1;
+
+private:
+	// If two neighboring voxels are supposed to occlude their shared face,
+	// this index decides wether or not it should happen. Equal indexes culls the face, different indexes doesn't.
+	uint8_t _transparency_index = 0;
+	bool _random_tickable = false;
+
+	Color _color;
+
+	LegacyProperties _legacy_properties;
 };
 
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::GeometryType)
 VARIANT_ENUM_CAST(zylann::voxel::VoxelBlockyModel::Side)
 
 #endif // VOXEL_BLOCKY_MODEL_H

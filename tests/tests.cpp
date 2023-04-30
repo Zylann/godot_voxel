@@ -4,6 +4,8 @@
 #include "../edition/voxel_tool_terrain.h"
 #include "../generators/graph/range_utility.h"
 #include "../meshers/blocky/voxel_blocky_library.h"
+#include "../meshers/blocky/voxel_blocky_model_cube.h"
+#include "../meshers/blocky/voxel_blocky_model_mesh.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data.h"
@@ -1120,12 +1122,26 @@ void test_run_blocky_random_tick() {
 	// Create library with tickable voxels
 	Ref<VoxelBlockyLibrary> library;
 	library.instantiate();
-	library->set_voxel_count(3);
-	library->create_voxel(0, "air");
-	library->create_voxel(1, "non_tickable");
-	const int TICKABLE_ID = 2;
-	Ref<VoxelBlockyModel> tickable_voxel = library->create_voxel(TICKABLE_ID, "tickable");
-	tickable_voxel->set_random_tickable(true);
+
+	{
+		Ref<VoxelBlockyModelMesh> air;
+		air.instantiate();
+		library->add_model(air);
+	}
+
+	{
+		Ref<VoxelBlockyModelCube> non_tickable;
+		non_tickable.instantiate();
+		library->add_model(non_tickable);
+	}
+
+	int tickable_id = -1;
+	{
+		Ref<VoxelBlockyModel> tickable;
+		tickable.instantiate();
+		tickable->set_random_tickable(true);
+		tickable_id = library->add_model(tickable);
+	}
 
 	// Create test map
 	VoxelData data;
@@ -1159,8 +1175,9 @@ void test_run_blocky_random_tick() {
 		Box3i pick_box;
 		bool first_pick = true;
 		bool ok = true;
+		int tickable_id = -1;
 
-		Callback(Box3i p_voxel_box) : voxel_box(p_voxel_box) {}
+		Callback(Box3i p_voxel_box, int p_tickable_id) : voxel_box(p_voxel_box), tickable_id(p_tickable_id) {}
 
 		bool exec(Vector3i pos, int block_id) {
 			if (ok) {
@@ -1170,7 +1187,7 @@ void test_run_blocky_random_tick() {
 		}
 
 		inline bool _exec(Vector3i pos, int block_id) {
-			ZN_TEST_ASSERT_V(block_id == TICKABLE_ID, false);
+			ZN_TEST_ASSERT_V(block_id == tickable_id, false);
 			ZN_TEST_ASSERT_V(voxel_box.contains(pos), false);
 			if (first_pick) {
 				first_pick = false;
@@ -1182,7 +1199,7 @@ void test_run_blocky_random_tick() {
 		}
 	};
 
-	Callback cb(voxel_box);
+	Callback cb(voxel_box, tickable_id);
 
 	RandomPCG random;
 	random.seed(131183);

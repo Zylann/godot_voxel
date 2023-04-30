@@ -574,7 +574,7 @@ Dictionary VoxelTerrain::_b_get_statistics() const {
 void VoxelTerrain::start_updater() {
 	Ref<VoxelMesherBlocky> blocky_mesher = _mesher;
 	if (blocky_mesher.is_valid()) {
-		Ref<VoxelBlockyLibrary> library = blocky_mesher->get_library();
+		Ref<VoxelBlockyLibraryBase> library = blocky_mesher->get_library();
 		if (library.is_valid()) {
 			// TODO Any way to execute this function just after the TRES resource loader has finished to load?
 			// VoxelBlockyLibrary should be baked ahead of time, like MeshLibrary

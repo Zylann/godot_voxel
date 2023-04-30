@@ -87,6 +87,8 @@ const unsigned int MOORE_AREA_3D_COUNT = 27;
 const unsigned int MOORE_AREA_3D_CENTRAL_INDEX = 13;
 extern const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT];
 
+Cube::Side dir_to_side(Vector3i d);
+
 } // namespace zylann::voxel::Cube
 
 #endif // CUBE_TABLES_H

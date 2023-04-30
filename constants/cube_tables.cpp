@@ -209,4 +209,14 @@ const Vector3i g_ordered_moore_area_3d[MOORE_AREA_3D_COUNT] = { //
 	Vector3i(1, 1, 1)
 };
 
+Cube::Side dir_to_side(Vector3i d) {
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		if (Cube::g_side_normals[side] == d) {
+			return Cube::Side(side);
+		}
+	}
+	ZN_PRINT_ERROR("Side not found");
+	return Cube::SIDE_FRONT;
+}
+
 } // namespace zylann::voxel::Cube

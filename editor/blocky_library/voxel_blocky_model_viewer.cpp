@@ -1,0 +1,374 @@
+#include "voxel_blocky_model_viewer.h"
+#include "../../../constants/voxel_string_names.h"
+#include "../../../util/godot/classes/button.h"
+#include "../../../util/godot/classes/camera_3d.h"
+#include "../../../util/godot/classes/directional_light_3d.h"
+#include "../../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../../util/godot/classes/mesh_instance_3d.h"
+#include "../../../util/godot/classes/sub_viewport.h"
+#include "../../../util/godot/classes/sub_viewport_container.h"
+#include "../../../util/godot/core/callable.h"
+#include "../../../util/godot/core/mouse_button.h"
+#include "../../../util/godot/core/string.h"
+#include "../../../util/godot/editor_scale.h"
+#include "axes_3d_control.h"
+
+namespace zylann::voxel {
+
+static Ref<Mesh> make_axes_mesh() {
+	PackedVector3Array vertices;
+	vertices.resize(6);
+	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
+	vertices_w[0] = Vector3(0, 0, 0);
+	vertices_w[1] = Vector3(1, 0, 0);
+	vertices_w[2] = Vector3(0, 0, 0);
+	vertices_w[3] = Vector3(0, 1, 0);
+	vertices_w[4] = Vector3(0, 0, 0);
+	vertices_w[5] = Vector3(0, 0, 1);
+
+	PackedColorArray colors;
+	colors.resize(6);
+	Span<Color> colors_w(colors.ptrw(), colors.size());
+	const Color x_color(1, 0, 0);
+	const Color y_color(0, 1, 0);
+	const Color z_color(0, 0, 1);
+	colors_w[0] = x_color;
+	colors_w[1] = x_color;
+	colors_w[2] = y_color;
+	colors_w[3] = y_color;
+	colors_w[4] = z_color;
+	colors_w[5] = z_color;
+
+	PackedInt32Array indices;
+	indices.resize(6);
+	Span<int> indices_w(indices.ptrw(), indices.size());
+	for (int i = 0; i < indices.size(); ++i) {
+		indices_w[i] = i;
+	}
+
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = vertices;
+	arrays[Mesh::ARRAY_COLOR] = colors;
+	arrays[Mesh::ARRAY_INDEX] = indices;
+
+	Ref<ArrayMesh> mesh;
+	mesh.instantiate();
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, arrays);
+
+	return mesh;
+}
+
+// TODO Re-use this function in VoxelDebug?
+static Ref<Mesh> make_wireboxes_mesh(Span<const AABB> p_aabbs, Color p_color) {
+	if (p_aabbs.size() == 0) {
+		return Ref<Mesh>();
+	}
+
+	PackedVector3Array vertices;
+	PackedColorArray colors;
+	PackedInt32Array indices;
+
+	const unsigned int indices_per_box = 12 * 2;
+	const unsigned int vertex_count = p_aabbs.size() * 8;
+	const unsigned int index_count = p_aabbs.size() * indices_per_box;
+
+	vertices.resize(vertex_count);
+	colors.resize(vertex_count);
+	indices.resize(index_count);
+
+	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
+	Span<Color> colors_w(colors.ptrw(), colors.size());
+	Span<int> indices_w(indices.ptrw(), indices.size());
+
+	unsigned int vi = 0;
+	unsigned int ii = 0;
+
+	//    7----6
+	//   /|   /|
+	//  4----5 |
+	//  | 3--|-2
+	//  |/   |/
+	//  0----1
+
+	for (const AABB aabb : p_aabbs) {
+		vertices_w[vi + 0] = aabb.position;
+		vertices_w[vi + 1] = aabb.position + Vector3(aabb.size.x, 0, 0);
+		vertices_w[vi + 2] = aabb.position + Vector3(aabb.size.x, 0, aabb.size.z);
+		vertices_w[vi + 3] = aabb.position + Vector3(0, 0, aabb.size.z);
+
+		vertices_w[vi + 4] = aabb.position + Vector3(0, aabb.size.y, 0);
+		vertices_w[vi + 5] = aabb.position + Vector3(aabb.size.x, aabb.size.y, 0);
+		vertices_w[vi + 6] = aabb.position + Vector3(aabb.size.x, aabb.size.y, aabb.size.z);
+		vertices_w[vi + 7] = aabb.position + Vector3(0, aabb.size.y, aabb.size.z);
+
+		indices_w[ii + 0] = vi + 0;
+		indices_w[ii + 1] = vi + 1;
+
+		indices_w[ii + 2] = vi + 1;
+		indices_w[ii + 3] = vi + 2;
+
+		indices_w[ii + 4] = vi + 2;
+		indices_w[ii + 5] = vi + 3;
+
+		indices_w[ii + 6] = vi + 3;
+		indices_w[ii + 7] = vi + 0;
+
+		indices_w[ii + 8] = vi + 0;
+		indices_w[ii + 9] = vi + 4;
+
+		indices_w[ii + 10] = vi + 1;
+		indices_w[ii + 11] = vi + 5;
+
+		indices_w[ii + 12] = vi + 2;
+		indices_w[ii + 13] = vi + 6;
+
+		indices_w[ii + 14] = vi + 3;
+		indices_w[ii + 15] = vi + 7;
+
+		indices_w[ii + 16] = vi + 4;
+		indices_w[ii + 17] = vi + 5;
+
+		indices_w[ii + 18] = vi + 5;
+		indices_w[ii + 19] = vi + 6;
+
+		indices_w[ii + 20] = vi + 6;
+		indices_w[ii + 21] = vi + 7;
+
+		indices_w[ii + 22] = vi + 7;
+		indices_w[ii + 23] = vi + 4;
+
+		vi += 8;
+		ii += indices_per_box;
+	}
+
+	for (Color &color : colors_w) {
+		color = p_color;
+	}
+
+	Array arrays;
+	arrays.resize(Mesh::ARRAY_MAX);
+	arrays[Mesh::ARRAY_VERTEX] = vertices;
+	arrays[Mesh::ARRAY_COLOR] = colors;
+	arrays[Mesh::ARRAY_INDEX] = indices;
+
+	Ref<ArrayMesh> mesh;
+	mesh.instantiate();
+	mesh->add_surface_from_arrays(Mesh::PRIMITIVE_LINES, arrays);
+
+	return mesh;
+}
+
+VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
+	Ref<World3D> world;
+	world.instantiate();
+
+	Ref<StandardMaterial3D> line_material;
+	line_material.instantiate();
+	line_material->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
+	line_material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
+
+	SubViewport *viewport = memnew(SubViewport);
+	viewport->set_world_3d(world);
+	viewport->set_use_own_world_3d(true);
+
+	_camera = memnew(Camera3D);
+	_camera->set_fov(50.f);
+	viewport->add_child(_camera);
+
+	DirectionalLight3D *light = memnew(DirectionalLight3D);
+	light->set_transform(Transform3D(Basis::looking_at(Vector3(1, -1, -2)), Vector3()));
+	_camera->add_child(light);
+
+	_mesh_instance = memnew(MeshInstance3D);
+	viewport->add_child(_mesh_instance);
+
+	_collision_boxes_mesh_instance = memnew(MeshInstance3D);
+	_collision_boxes_mesh_instance->set_material_override(line_material);
+	_mesh_instance->add_child(_collision_boxes_mesh_instance);
+
+	MeshInstance3D *axes = memnew(MeshInstance3D);
+	axes->set_mesh(make_axes_mesh());
+	axes->set_position(Vector3(-0.002, -0.002, -0.002));
+	axes->set_material_override(line_material);
+	viewport->add_child(axes);
+
+	const float editor_scale = EDSCALE;
+
+	// SubViewportContainer inherits Container for some reason, so if I want a control laid out with margins and anchors
+	// as child of it, I need control wrapping it....
+	Control *viewport_control = memnew(Control);
+	viewport_control->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+	viewport_control->set_h_size_flags(Container::SIZE_EXPAND_FILL);
+	viewport_control->set_v_size_flags(Container::SIZE_EXPAND_FILL);
+	viewport_control->set_custom_minimum_size(Vector2(100, 150 * editor_scale));
+	add_child(viewport_control);
+
+	SubViewportContainer *viewport_container = memnew(SubViewportContainer);
+	viewport_container->add_child(viewport);
+	viewport_container->set_stretch(true);
+	viewport_container->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
+	viewport_control->add_child(viewport_container);
+
+	_axes_3d_control = memnew(ZN_Axes3DControl);
+	_axes_3d_control->set_anchors_preset(Control::PRESET_BOTTOM_LEFT);
+	//_axes_3d_control->set_size(editor_scale * Vector2(32, 32));
+	_axes_3d_control->set_offset(SIDE_LEFT, 0);
+	_axes_3d_control->set_offset(SIDE_RIGHT, 32);
+	_axes_3d_control->set_offset(SIDE_TOP, -32);
+	_axes_3d_control->set_offset(SIDE_BOTTOM, 0);
+	_axes_3d_control->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
+	viewport_control->add_child(_axes_3d_control);
+
+	VBoxContainer *side_toolbar = memnew(VBoxContainer);
+	Button *rotate_x_button = memnew(Button);
+	Button *rotate_y_button = memnew(Button);
+	Button *rotate_z_button = memnew(Button);
+	rotate_x_button->set_text("RX");
+	rotate_y_button->set_text("RY");
+	rotate_z_button->set_text("RZ");
+	rotate_x_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around X (clockwise)"));
+	rotate_y_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Y (clockwise)"));
+	rotate_z_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Z (clockwise)"));
+	rotate_x_button->connect(
+			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_x_button_pressed));
+	rotate_y_button->connect(
+			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_y_button_pressed));
+	rotate_z_button->connect(
+			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_z_button_pressed));
+	side_toolbar->add_child(rotate_x_button);
+	side_toolbar->add_child(rotate_y_button);
+	side_toolbar->add_child(rotate_z_button);
+	add_child(side_toolbar);
+
+	update_camera();
+	set_process(true);
+}
+
+void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
+	if (_model.is_valid()) {
+		_model->disconnect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_model_changed));
+	}
+
+	_model = model;
+
+	if (_model.is_valid()) {
+		_model->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_model_changed));
+	}
+
+	update_model();
+}
+
+#if defined(ZN_GODOT)
+void VoxelBlockyModelViewer::gui_input(const Ref<InputEvent> &p_event) {
+#elif defined(ZN_GODOT_EXTENSION)
+void VoxelBlockyModelViewer::_gui_input(const Ref<InputEvent> &p_event) {
+#endif
+	Ref<InputEventMouseMotion> mm = p_event;
+	if (mm.is_valid()) {
+		if (mm->get_button_mask().has_flag(ZN_GODOT_MouseButtonMask_MIDDLE)) {
+			const float sensitivity = 0.01f;
+			const Vector2 delta = mm->get_relative() * sensitivity;
+			_pitch -= delta.y;
+			_yaw -= delta.x;
+			_pitch = math::clamp(_pitch, -math::PI_32 / 2.f, math::PI_32 / 2.f);
+			_yaw = Math::wrapf(_yaw, -math::PI_32, math::PI_32);
+			update_camera();
+		}
+	}
+}
+
+void VoxelBlockyModelViewer::update_model() {
+	ZN_ASSERT_RETURN(_model.is_valid());
+	// Can be null
+	Ref<Mesh> mesh = _model->get_preview_mesh();
+	_mesh_instance->set_mesh(mesh);
+
+	Ref<Mesh> collision_boxes_mesh = make_wireboxes_mesh(_model->get_collision_aabbs(), Color(0.3, 0.4, 1.0));
+	_collision_boxes_mesh_instance->set_mesh(collision_boxes_mesh);
+}
+
+void VoxelBlockyModelViewer::update_camera() {
+	Basis basis;
+	basis.set_euler(Vector3(_pitch, _yaw, 0));
+	const Vector3 forward = -basis.get_column(Vector3::AXIS_Z);
+	_camera->set_transform(Transform3D(basis, Vector3(0.5, 0.5, 0.5) - _distance * forward));
+
+	_axes_3d_control->set_basis_3d(basis.inverse());
+}
+
+void VoxelBlockyModelViewer::rotate_model_90(Vector3i::Axis axis) {
+	ZN_ASSERT_RETURN(_model.is_valid());
+
+	EditorUndoRedoManager &urm = *EditorUndoRedoManager::get_singleton();
+
+	const bool clockwise = true;
+
+	Vector3 axis_vec;
+	axis_vec[axis] = 1.0;
+
+	urm.create_action(String("Rotate {0}").format(varray(_model->get_class())));
+	urm.add_do_method(_model.ptr(), "rotate_90", axis, clockwise);
+	urm.add_do_method(this, "add_rotation_anim", Basis().rotated(axis_vec, math::PI_32 / 2.0));
+	urm.add_undo_method(_model.ptr(), "rotate_90", axis, !clockwise);
+	urm.add_undo_method(this, "add_rotation_anim", Basis().rotated(axis_vec, -math::PI_32 / 2.0));
+	urm.commit_action();
+}
+
+void VoxelBlockyModelViewer::add_rotation_anim(Basis basis) {
+	_rotation_anim_basis = basis * _rotation_anim_basis;
+}
+
+void VoxelBlockyModelViewer::_notification(int p_what) {
+	if (p_what == NOTIFICATION_PROCESS) {
+		process(get_tree()->get_process_time());
+	}
+}
+
+void VoxelBlockyModelViewer::process(float delta) {
+	if (_rotation_anim_basis.is_equal_approx(Basis())) {
+		return;
+	}
+	// Fake counter-rotation to show the feedback of rotating by 90 degrees, because rotating cubes without animation
+	// isn't easy to distinguish
+	_rotation_anim_basis = _rotation_anim_basis.slerp(Basis(), 0.25);
+	if (_rotation_anim_basis.is_equal_approx(Basis())) {
+		_mesh_instance->set_transform(Transform3D());
+	} else {
+		Transform3D trans;
+		trans.origin -= Vector3(0.5, 0.5, 0.5);
+		trans = Transform3D(_rotation_anim_basis, Vector3()) * trans;
+		trans.origin += Vector3(0.5, 0.5, 0.5);
+		_mesh_instance->set_transform(trans);
+	}
+}
+
+void VoxelBlockyModelViewer::_on_model_changed() {
+	update_model();
+}
+
+void VoxelBlockyModelViewer::_on_rotate_x_button_pressed() {
+	rotate_model_90(Vector3i::AXIS_X);
+}
+
+void VoxelBlockyModelViewer::_on_rotate_y_button_pressed() {
+	rotate_model_90(Vector3i::AXIS_Y);
+}
+
+void VoxelBlockyModelViewer::_on_rotate_z_button_pressed() {
+	rotate_model_90(Vector3i::AXIS_Z);
+}
+
+void VoxelBlockyModelViewer::_bind_methods() {
+#ifdef ZN_GODOT_EXTENSION
+	ClassDB::bind_method(D_METHOD("_on_model_changed"), &VoxelBlockyModelViewer::_on_model_changed);
+	ClassDB::bind_method(D_METHOD("_on_rotate_x_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_x_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_rotate_y_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_y_button_pressed);
+	ClassDB::bind_method(D_METHOD("_on_rotate_z_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_z_button_pressed);
+#endif
+	ClassDB::bind_method(D_METHOD("add_rotation_anim"), &VoxelBlockyModelViewer::add_rotation_anim);
+}
+
+} // namespace zylann::voxel

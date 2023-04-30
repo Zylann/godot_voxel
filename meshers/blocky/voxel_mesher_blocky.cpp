@@ -22,7 +22,7 @@ const int g_opposite_side[6] = {
 	Cube::SIDE_NEGATIVE_Z //
 };
 
-inline bool is_face_visible(const VoxelBlockyLibrary::BakedData &lib, const VoxelBlockyModel::BakedData &vt,
+inline bool is_face_visible(const VoxelBlockyLibraryBase::BakedData &lib, const VoxelBlockyModel::BakedData &vt,
 		uint32_t other_voxel_id, int side) {
 	if (other_voxel_id < lib.models.size()) {
 		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
@@ -38,7 +38,7 @@ inline bool is_face_visible(const VoxelBlockyLibrary::BakedData &lib, const Voxe
 	return true;
 }
 
-inline bool contributes_to_ao(const VoxelBlockyLibrary::BakedData &lib, uint32_t voxel_id) {
+inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
 		const VoxelBlockyModel::BakedData &t = lib.models[voxel_id];
 		return t.contributes_to_ao;
@@ -56,7 +56,7 @@ std::vector<int> &get_tls_index_offsets() {
 template <typename Type_T>
 void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
 		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
-		const Vector3i block_size, const VoxelBlockyLibrary::BakedData &library, bool bake_occlusion,
+		const Vector3i block_size, const VoxelBlockyLibraryBase::BakedData &library, bool bake_occlusion,
 		float baked_occlusion_darkness) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
@@ -418,12 +418,12 @@ VoxelMesherBlocky::Cache &VoxelMesherBlocky::get_tls_cache() {
 	return cache;
 }
 
-void VoxelMesherBlocky::set_library(Ref<VoxelBlockyLibrary> library) {
+void VoxelMesherBlocky::set_library(Ref<VoxelBlockyLibraryBase> library) {
 	RWLockWrite wlock(_parameters_lock);
 	_parameters.library = library;
 }
 
-Ref<VoxelBlockyLibrary> VoxelMesherBlocky::get_library() const {
+Ref<VoxelBlockyLibraryBase> VoxelMesherBlocky::get_library() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.library;
 }
@@ -536,7 +536,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	{
 		// We can only access baked data. Only this data is made for multithreaded access.
 		RWLockRead lock(params.library->get_baked_data_rw_lock());
-		const VoxelBlockyLibrary::BakedData &library_baked_data = params.library->get_baked_data();
+		const VoxelBlockyLibraryBase::BakedData &library_baked_data = params.library->get_baked_data();
 
 		material_count = library_baked_data.indexed_materials_count;
 
@@ -633,7 +633,7 @@ int VoxelMesherBlocky::get_used_channels_mask() const {
 }
 
 Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const {
-	Ref<VoxelBlockyLibrary> lib = get_library();
+	Ref<VoxelBlockyLibraryBase> lib = get_library();
 	if (lib.is_null()) {
 		return Ref<Material>();
 	}
@@ -643,65 +643,25 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 #ifdef TOOLS_ENABLED
 
 void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnings) const {
-	Ref<VoxelBlockyLibrary> library = get_library();
+	Ref<VoxelBlockyLibraryBase> library = get_library();
 
 	if (library.is_null()) {
-		out_warnings.append(
-				String(ZN_TTR("{0} has no {1} assigned."))
-						.format(varray(VoxelMesherBlocky::get_class_static(), VoxelBlockyLibrary::get_class_static())));
+		out_warnings.append(String(ZN_TTR("{0} has no {1} assigned."))
+									.format(varray(VoxelMesherBlocky::get_class_static(),
+											VoxelBlockyLibraryBase::get_class_static())));
 		return;
 	}
 
-	if (library->get_voxel_count() == 0) {
-		out_warnings.append(
-				String(ZN_TTR("The {0} assigned to {1} has an empty list of {2}s."))
-						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
-								VoxelBlockyModel::get_class_static())));
+	const VoxelBlockyLibraryBase::BakedData &baked_data = library->get_baked_data();
+	RWLockRead rlock(library->get_baked_data_rw_lock());
+
+	if (baked_data.models.size() == 0) {
+		out_warnings.append(String(ZN_TTR("The {0} assigned to {1} has no baked models."))
+									.format(varray(library->get_class(), VoxelMesherBlocky::get_class_static())));
 		return;
 	}
 
-	std::vector<int> null_indices;
-
-	bool has_solid_model = false;
-	for (unsigned int i = 0; i < library->get_voxel_count() && !has_solid_model; ++i) {
-		if (!library->has_voxel(i)) {
-			null_indices.push_back(i);
-			continue;
-		}
-		const VoxelBlockyModel &model = library->get_voxel_const(i);
-		switch (model.get_geometry_type()) {
-			case VoxelBlockyModel::GEOMETRY_NONE:
-				break;
-			case VoxelBlockyModel::GEOMETRY_CUBE:
-				has_solid_model = true;
-				break;
-			case VoxelBlockyModel::GEOMETRY_CUSTOM_MESH:
-				has_solid_model = model.get_custom_mesh().is_valid();
-				break;
-			default:
-				ERR_PRINT("Unknown enum value");
-				break;
-		}
-	}
-	if (!has_solid_model) {
-		out_warnings.append(
-				String(ZN_TTR("The {0} assigned to {1} only has empty {2}s."))
-						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelMesherBlocky::get_class_static(),
-								VoxelBlockyModel::get_class_static())));
-	}
-
-	if (null_indices.size() > 0) {
-		String indices_str;
-		for (unsigned int i = 0; i < null_indices.size(); ++i) {
-			if (i > 0) {
-				indices_str += ", ";
-			}
-			indices_str += String::num_int64(null_indices[i]);
-		}
-		out_warnings.append(String(ZN_TTR("The {0} assigned to {1} has null model entries: {2}"))
-									.format(varray(VoxelBlockyLibrary::get_class_static(),
-											VoxelMesherBlocky::get_class_static(), indices_str)));
-	}
+	library->get_configuration_warnings(out_warnings);
 }
 
 #endif // TOOLS_ENABLED
@@ -717,7 +677,7 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
-						 VoxelBlockyLibrary::get_class_static(),
+						 VoxelBlockyLibraryBase::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_library", "get_library");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");

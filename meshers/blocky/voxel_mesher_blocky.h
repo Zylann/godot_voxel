@@ -4,7 +4,7 @@
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
-#include "voxel_blocky_library.h"
+#include "voxel_blocky_library_base.h"
 
 #include <vector>
 
@@ -21,8 +21,8 @@ public:
 	VoxelMesherBlocky();
 	~VoxelMesherBlocky();
 
-	void set_library(Ref<VoxelBlockyLibrary> library);
-	Ref<VoxelBlockyLibrary> get_library() const;
+	void set_library(Ref<VoxelBlockyLibraryBase> library);
+	Ref<VoxelBlockyLibraryBase> get_library() const;
 
 	void set_occlusion_darkness(float darkness);
 	float get_occlusion_darkness() const;
@@ -77,7 +77,7 @@ private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
 		bool bake_occlusion = true;
-		Ref<VoxelBlockyLibrary> library;
+		Ref<VoxelBlockyLibraryBase> library;
 	};
 
 	struct Cache {

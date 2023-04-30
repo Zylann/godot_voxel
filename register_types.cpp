@@ -20,6 +20,9 @@
 #include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator_script.h"
 #include "meshers/blocky/voxel_blocky_library.h"
+#include "meshers/blocky/voxel_blocky_model_cube.h"
+#include "meshers/blocky/voxel_blocky_model_empty.h"
+#include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
 #include "meshers/dmc/voxel_mesher_dmc.h"
@@ -74,6 +77,7 @@
 #ifdef ZN_GODOT
 #include "editor/editor_plugin.h"
 #endif
+#include "editor/blocky_library/voxel_blocky_library_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
@@ -203,7 +207,15 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<gd::VoxelEngine>();
 
 		// Misc
+
+		// Should be abstract, but isn't for compatibility with old versions that didn't have separate VoxelBlockyModel
+		// classes
 		ClassDB::register_class<VoxelBlockyModel>();
+
+		ClassDB::register_class<VoxelBlockyModelCube>();
+		ClassDB::register_class<VoxelBlockyModelMesh>();
+		ClassDB::register_class<VoxelBlockyModelEmpty>();
+		register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_class<VoxelColorPalette>();
 		ClassDB::register_class<VoxelInstanceLibrary>();
@@ -292,8 +304,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef ZN_GODOT
 		// Compatibility with older version
-		ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
-		ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
+		// ClassDB::add_compatibility_class("VoxelLibrary", "VoxelBlockyLibrary");
+		// ClassDB::add_compatibility_class("Voxel", "VoxelBlockyModel");
 		ClassDB::add_compatibility_class("VoxelInstanceLibraryItem", "VoxelInstanceLibraryMultiMeshItem");
 		// Not possible to add a compat class for this one because the new name is indistinguishable from an old one.
 		// However this is an abstract class so it should not be found in resources hopefully
@@ -318,6 +330,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif

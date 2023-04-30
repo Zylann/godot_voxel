@@ -117,6 +117,35 @@ inline Vector3i max(const Vector3i a, const Vector3i b) {
 	return Vector3i(max(a.x, b.x), max(a.y, b.y), max(a.z, b.z));
 }
 
+// Rotations: CW (clockwise) and CCW (counter-clockwise) are such that the rotation axis is pointed at the viewer.
+// Same convention used by Godot Basis. CCW is positive angle, CW is negative angle.
+
+inline Vector3i rotate_x_90_ccw(Vector3i v) {
+	return Vector3i(v.x, -v.z, v.y);
+}
+
+inline Vector3i rotate_x_90_cw(Vector3i v) {
+	return Vector3i(v.x, v.z, -v.y);
+}
+
+inline Vector3i rotate_y_90_ccw(Vector3i v) {
+	return Vector3i(v.z, v.y, -v.x);
+}
+
+inline Vector3i rotate_y_90_cw(Vector3i v) {
+	return Vector3i(-v.z, v.y, v.x);
+}
+
+inline Vector3i rotate_z_90_ccw(Vector3i v) {
+	return Vector3i(-v.y, v.x, v.z);
+}
+
+inline Vector3i rotate_z_90_cw(Vector3i v) {
+	return Vector3i(v.y, -v.x, v.z);
+}
+
+Vector3i rotate_90(Vector3i v, Vector3i::Axis axis, bool clockwise);
+
 } // namespace math
 
 std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
