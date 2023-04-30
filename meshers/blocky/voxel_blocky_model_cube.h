@@ -12,7 +12,7 @@ class VoxelBlockyModelCube : public VoxelBlockyModel {
 public:
 	VoxelBlockyModelCube();
 
-	static Cube::Side VoxelBlockyModelCube::name_to_side(const String &s);
+	static Cube::Side name_to_side(const String &s);
 
 	Vector2i get_tile(VoxelBlockyModel::Side side) const {
 		return _tiles[side];
