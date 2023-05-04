@@ -36,9 +36,9 @@ Before each example, you may do the following:
 	
 1.1) Under the `materials` section, create a new `StandardMaterial3D` in the first slot. Click that material, and in the "Vertex Color" category, enable "Use as Albedo" (`vertex_color_as_albedo`). This will give the blocks better shading.
 
-1.1) `Generator`: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
+1.1) Click on the `Generator` property: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
 
-1.2) `Mesher`: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
+1.2) Click on the `Mesher` property: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
 
 1.3) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
 
