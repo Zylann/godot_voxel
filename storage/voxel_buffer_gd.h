@@ -133,6 +133,8 @@ public:
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;
 
+	void remap_values(unsigned int channel_index, PackedInt32Array map);
+
 	// When using lower than 32-bit resolution for terrain signed distance fields,
 	// it should be scaled to better fit the range of represented values since the storage is normalized to -1..1.
 	// This returns that scale for a given depth configuration.

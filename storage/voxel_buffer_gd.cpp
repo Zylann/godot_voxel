@@ -113,6 +113,47 @@ VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) co
 	return VoxelBuffer::Depth(_buffer->get_channel_depth(channel_index));
 }
 
+void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map) {
+	Span<const int> map_r(map.ptr(), map.size());
+	const VoxelBufferInternal::Depth depth = _buffer->get_channel_depth(channel_index);
+
+	// TODO If `get_channel_data` could return a span of size 1 for this case, we wouldn't need this code
+	if (_buffer->get_channel_compression(channel_index) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+		int v = _buffer->get_voxel(Vector3i(), channel_index);
+		if (v < map_r.size()) {
+			v = map_r[v];
+		}
+		_buffer->fill(v, channel_index);
+		return;
+	}
+
+	switch (depth) {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
+			Span<uint8_t> values;
+			ZN_ASSERT_RETURN(_buffer->get_channel_raw(channel_index, values));
+			for (uint8_t &v : values) {
+				if (v < map_r.size()) {
+					v = map_r[v];
+				}
+			}
+		} break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT: {
+			Span<uint16_t> values;
+			ZN_ASSERT_RETURN(_buffer->get_channel_data(channel_index, values));
+			for (uint16_t &v : values) {
+				if (v < map_r.size()) {
+					v = map_r[v];
+				}
+			}
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Remapping channel values is not implemented for depths greater than 16 bits.");
+			break;
+	}
+}
+
 Variant VoxelBuffer::get_block_metadata() const {
 	return get_as_variant(_buffer->get_block_metadata());
 }
@@ -334,6 +375,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
+	ClassDB::bind_method(D_METHOD("remap_values", "channel"), &VoxelBuffer::remap_values);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);
 	ClassDB::bind_method(D_METHOD("set_block_metadata", "meta"), &VoxelBuffer::set_block_metadata);

@@ -656,6 +656,7 @@ bool VoxelBufferInternal::get_channel_raw(unsigned int channel_index, Span<uint8
 		slice = Span<uint8_t>(channel.data, 0, channel.size_in_bytes);
 		return true;
 	}
+	// TODO Could we just return `Span<uint8_t>(&channel.defval, 1)` ?
 	slice = Span<uint8_t>();
 	return false;
 }
