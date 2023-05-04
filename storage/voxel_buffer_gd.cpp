@@ -119,7 +119,7 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 
 	// TODO If `get_channel_data` could return a span of size 1 for this case, we wouldn't need this code
 	if (_buffer->get_channel_compression(channel_index) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
-		int v = _buffer->get_voxel(Vector3i(), channel_index);
+		uint64_t v = _buffer->get_voxel(Vector3i(), channel_index);
 		if (v < map_r.size()) {
 			v = map_r[v];
 		}
