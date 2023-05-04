@@ -26,6 +26,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added helper function to convert an image into a 1-voxel thick "sprite mesh"
     - `VoxelInstanceLibrary`:
         - Added `get_all_item_ids()` to allow iterating over all items of a library
+    - `VoxelVoxLoader`:
+        - Added parameter to allow loading data in a custom channel (instead of the color channel)
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
