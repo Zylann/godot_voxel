@@ -19,6 +19,7 @@
 #include "generators/simple/voxel_generator_noise_2d.h"
 #include "generators/simple/voxel_generator_waves.h"
 #include "generators/voxel_generator_script.h"
+#include "meshers/blocky/types/voxel_blocky_type_library.h"
 #include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_blocky_model_cube.h"
 #include "meshers/blocky/voxel_blocky_model_empty.h"
@@ -217,6 +218,13 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
 		register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
+		register_abstract_class<VoxelBlockyAttribute>();
+		ClassDB::register_class<VoxelBlockyAttributeAxis>();
+		ClassDB::register_class<VoxelBlockyAttributeDirection>();
+		ClassDB::register_class<VoxelBlockyAttributeRotation>();
+		ClassDB::register_class<VoxelBlockyType>();
+		ClassDB::register_class<VoxelBlockyTypeLibrary>();
+
 		ClassDB::register_class<VoxelColorPalette>();
 		ClassDB::register_class<VoxelInstanceLibrary>();
 		register_abstract_class<VoxelInstanceLibraryItem>();

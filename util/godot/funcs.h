@@ -4,15 +4,9 @@
 #include "../math/vector2f.h"
 #include "../math/vector3f.h"
 #include "../span.h"
+#include "core/variant.h"
 #include <cstdint>
 #include <vector>
-
-#if defined(ZN_GODOT)
-#include <core/variant/variant.h>
-#elif defined(ZN_GODOT_EXTENSION)
-#include <godot_cpp/variant/variant.hpp>
-using namespace godot;
-#endif
 
 namespace zylann {
 

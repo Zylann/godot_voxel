@@ -378,6 +378,16 @@ void VoxelBlockyModelMesh::rotate_90(Vector3i::Axis axis, bool clockwise) {
 	emit_changed();
 }
 
+void VoxelBlockyModelMesh::rotate_ortho(math::OrthoBasis p_ortho_basis) {
+	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
+	ortho_basis = p_ortho_basis * ortho_basis;
+	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
+
+	rotate_collision_boxes_ortho(p_ortho_basis);
+
+	emit_changed();
+}
+
 void VoxelBlockyModelMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &VoxelBlockyModelMesh::set_mesh);
 	ClassDB::bind_method(D_METHOD("get_mesh"), &VoxelBlockyModelMesh::get_mesh);

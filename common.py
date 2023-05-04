@@ -26,6 +26,7 @@ def get_sources(env, is_editor_build):
         "constants/*.cpp",
 
         "meshers/blocky/*.cpp",
+        "meshers/blocky/types/*.cpp",
         "meshers/transvoxel/*.cpp",
         "meshers/dmc/*.cpp",
         "meshers/cubes/*.cpp",

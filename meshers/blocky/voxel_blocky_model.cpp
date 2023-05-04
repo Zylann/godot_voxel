@@ -451,7 +451,30 @@ void VoxelBlockyModel::rotate_collision_boxes_90(Vector3i::Axis axis, bool clock
 	}
 }
 
+void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis) {
+	Basis basis(to_vec3(ortho_basis.x), to_vec3(ortho_basis.y), to_vec3(ortho_basis.z));
+
+	for (AABB &aabb : _collision_aabbs) {
+		// Make it centered, rotation axis is the center of the voxel
+		aabb.position -= Vector3(0.5, 0.5, 0.5);
+
+		const Vector3 p0 = basis.xform(aabb.position);
+		const Vector3 p1 = basis.xform(aabb.position + aabb.size);
+
+		const Vector3 min_pos = math::min(p0, p1);
+		const Vector3 max_pos = math::max(p0, p1);
+		aabb = AABB(to_vec3(min_pos), to_vec3(max_pos - min_pos));
+
+		aabb.position += Vector3(0.5, 0.5, 0.5);
+	}
+}
+
 void VoxelBlockyModel::rotate_90(Vector3i::Axis axis, bool clockwise) {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in child classes
+}
+
+void VoxelBlockyModel::rotate_ortho(math::OrthoBasis ortho_basis) {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in child classes
 }

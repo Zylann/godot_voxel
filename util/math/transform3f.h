@@ -9,7 +9,7 @@ struct Transform3f {
 	Basis3f basis;
 	Vector3f origin;
 
-    inline Transform3f(){}
+	inline Transform3f() {}
 
 	inline Transform3f(const Basis3f &p_basis, const Vector3f &p_origin) : basis(p_basis), origin(p_origin) {}
 

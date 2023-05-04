@@ -62,6 +62,23 @@ public:
 
 	StringName _rpc_receive_blocks;
 	StringName _rpc_receive_area;
+
+	StringName unnamed;
+	StringName air;
+	StringName cube;
+
+	StringName axis;
+	StringName direction;
+	StringName rotation;
+	StringName x;
+	StringName y;
+	StringName z;
+	StringName negative_x;
+	StringName negative_y;
+	StringName negative_z;
+	StringName positive_x;
+	StringName positive_y;
+	StringName positive_z;
 };
 
 } // namespace zylann::voxel

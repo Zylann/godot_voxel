@@ -230,6 +230,27 @@ void VoxelBlockyModelCube::rotate_90(Vector3i::Axis axis, bool clockwise) {
 	emit_changed();
 }
 
+void VoxelBlockyModelCube::rotate_ortho(math::OrthoBasis ortho_basis) {
+	FixedArray<Vector2i, Cube::SIDE_COUNT> rotated_tiles;
+
+	for (unsigned int src_side = 0; src_side < Cube::SIDE_COUNT; ++src_side) {
+		const Vector3i dir = ortho_basis.xform(Cube::g_side_normals[src_side]);
+		Cube::Side dst_side = Cube::dir_to_side(dir);
+		rotated_tiles[dst_side] = _tiles[src_side];
+	}
+
+	_tiles = rotated_tiles;
+
+	// Collision boxes don't change with this kind of model. Height is always vertical.
+	// VoxelBlockyModel::rotate_90(axis, clockwise);
+
+	// Can't do that, it causes the sub-inspector to be entirely rebuilt, which fucks up the state of custom editors in
+	// it...
+	// notify_property_list_changed();
+
+	emit_changed();
+}
+
 void VoxelBlockyModelCube::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height", "h"), &VoxelBlockyModelCube::set_height);
 	ClassDB::bind_method(D_METHOD("get_height"), &VoxelBlockyModelCube::get_height);

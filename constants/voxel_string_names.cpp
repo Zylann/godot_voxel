@@ -68,6 +68,23 @@ VoxelStringNames::VoxelStringNames() {
 
 	_rpc_receive_blocks = StringName("_rpc_receive_blocks");
 	_rpc_receive_area = StringName("_rpc_receive_area");
+
+	unnamed = StringName("unnamed");
+	air = StringName("air");
+	cube = StringName("cube");
+
+	axis = StringName("axis");
+	direction = StringName("direction");
+	rotation = StringName("rotation");
+	x = StringName("x");
+	y = StringName("y");
+	z = StringName("z");
+	negative_x = StringName("-x");
+	negative_y = StringName("-y");
+	negative_z = StringName("-z");
+	positive_x = StringName("+x");
+	positive_y = StringName("+y");
+	positive_z = StringName("+z");
 }
 
 } // namespace zylann::voxel

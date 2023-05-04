@@ -1,0 +1,611 @@
+#include "voxel_blocky_type.h"
+#include "../../../constants/voxel_string_names.h"
+#include "../../../util/container_funcs.h"
+#include "../../../util/godot/classes/ref_counted.h"
+#include "../../../util/godot/core/callable.h"
+#include "../../../util/godot/core/string.h"
+#include "../../../util/godot/core/typed_array.h"
+#include "../../../util/godot/funcs.h"
+#include "../../../util/math/ortho_basis.h"
+#include "../../../util/profiling.h"
+#include "../../../util/string_funcs.h"
+#include "../voxel_blocky_library_base.h"
+
+namespace zylann::voxel {
+
+// Making types can get quite complicated, config files sound like a better solution compared to messing around in the
+// inspector, see how Minecraft defines their models: https://minecraft.fandom.com/wiki/Tutorials/Models
+
+VoxelBlockyType::VoxelBlockyType() {
+	_name = VoxelStringNames::get_singleton().unnamed;
+}
+
+void VoxelBlockyType::set_unique_name(StringName name) {
+	if (name != _name) {
+		_name = name;
+		// Also set resource name, so Godot will use it in array inspector
+		set_name(name);
+		emit_changed();
+	}
+}
+
+StringName VoxelBlockyType::get_unique_name() const {
+	return _name;
+}
+
+void VoxelBlockyType::set_base_model(Ref<VoxelBlockyModel> model) {
+	_base_model = model;
+}
+
+Ref<VoxelBlockyModel> VoxelBlockyType::get_base_model() const {
+	return _base_model;
+}
+
+Span<const Ref<VoxelBlockyAttribute>> VoxelBlockyType::get_attributes() const {
+	return to_span(_attributes);
+}
+
+Ref<VoxelBlockyAttribute> VoxelBlockyType::get_attribute_by_name(const StringName &attrib_name) const {
+	for (const Ref<VoxelBlockyAttribute> &attrib : _attributes) {
+		if (attrib.is_valid() && attrib->get_attribute_name() == attrib_name) {
+			return attrib;
+		}
+	}
+	return Ref<VoxelBlockyAttribute>();
+}
+
+bool VoxelBlockyType::parse_variant_key_from_property_name(const String &property_name, VariantKey &out_key) {
+	Span<const char32_t> str(property_name.ptr(), property_name.length());
+
+	// `variants/attrib1_value1_attrib2_value2`
+
+	unsigned int i = 0;
+	for (const char32_t c : str) {
+		++i;
+		if (c == '/') {
+			break;
+		}
+	}
+
+	VariantKey key;
+	unsigned int attrib_index = 0;
+
+	while (i < str.size()) {
+		ZN_ASSERT_RETURN_V_MSG(
+				attrib_index < MAX_ATTRIBUTES, false, format("When parsing property name '{}'", property_name));
+
+		unsigned int attrib_start = i;
+
+		for (; i < str.size(); ++i) {
+			const char32_t c = str[i];
+			if (c == '_') {
+				break;
+			}
+		}
+
+		unsigned int attrib_end = i;
+
+		String attrib_name = property_name.substr(attrib_start, attrib_end - attrib_start);
+		key.attribute_names[attrib_index] = attrib_name;
+
+		++i;
+		ZN_ASSERT_RETURN_V_MSG(i < str.size(), false, format("When parsing property name '{}'", property_name));
+
+		unsigned int value = 0;
+		for (; i < str.size(); ++i) {
+			const char32_t c = str[i];
+			if (c >= '0' && c <= '9') {
+				value *= 10;
+				value += (c - '0');
+			} else if (c == '_') {
+				++i;
+				break;
+			} else {
+				ZN_PRINT_ERROR(format(
+						"Unexpected character at position {} when parsing variant property '{}'", i, property_name));
+				return false;
+			}
+		}
+
+		key.attribute_values[attrib_index] = value;
+		++attrib_index;
+	}
+
+	out_key = key;
+	return true;
+}
+
+void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> model) {
+	for (VariantData &vd : _variants) {
+		if (vd.key == key && vd.model != model) {
+			vd.model = model;
+			// emit_changed();
+			return;
+		}
+	}
+	VariantData new_vd;
+	new_vd.key = key;
+	new_vd.model = model;
+	_variants.push_back(new_vd);
+}
+
+Ref<VoxelBlockyModel> VoxelBlockyType::get_variant(const VariantKey &key) const {
+	for (const VariantData &vd : _variants) {
+		if (vd.key == key) {
+			return vd.model;
+		}
+	}
+	return Ref<VoxelBlockyModel>();
+}
+
+bool VoxelBlockyType::_set(const StringName &p_name, const Variant &p_value) {
+	ZN_PROFILE_SCOPE();
+	String name_str = p_name;
+
+	if (name_str.begins_with("variants/")) {
+		VariantKey key;
+		if (parse_variant_key_from_property_name(name_str, key)) {
+			set_variant(key, p_value);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VoxelBlockyType::_get(const StringName &p_name, Variant &r_ret) const {
+	ZN_PROFILE_SCOPE();
+	String name_str = p_name;
+
+	if (name_str.begins_with("variants/")) {
+		VariantKey key;
+		if (parse_variant_key_from_property_name(name_str, key)) {
+			r_ret = get_variant(key);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
+	ZN_PROFILE_SCOPE();
+
+	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	gather_and_sort_attributes(_attributes, attributes);
+
+	std::vector<VariantKey> keys;
+	generate_keys(attributes, keys, false);
+	// TODO Don't include rotation attributes in exposed properties (or pick identity), those should be automatic
+
+	// Only show variants if there are more than one. If there is only one, it's just the base model.
+	if (keys.size() > 1) {
+		for (const VariantKey &key : keys) {
+			String property_name = "variants/";
+			for (unsigned int i = 0; i < attributes.size(); ++i) {
+				if (i > 0) {
+					property_name += "_";
+				}
+				property_name += key.attribute_names[i];
+				property_name += "_";
+				property_name += String::num_int64(key.attribute_values[i]);
+			}
+			p_list->push_back(PropertyInfo(
+					Variant::OBJECT, property_name, PROPERTY_HINT_RESOURCE_TYPE, VoxelBlockyModel::get_class_static()));
+		}
+	}
+}
+
+// Get automatic rotation transform to apply to a model when baking.
+// It is based on the assumption the base model is pre-rotated according to the default value of the rotation attribute
+// (which could be identity, most of the time). So we essentially need to obtain the transformation that goes from the
+// default rotation to others.
+static math::OrthoBasis get_baking_rotation_ortho_basis(
+		Ref<VoxelBlockyAttribute> rotation_attribute, unsigned int rotation_attribute_value) {
+	math::OrthoBasis src_basis;
+	math::OrthoBasis dst_basis;
+
+	Ref<VoxelBlockyAttributeAxis> axis_attribute;
+	Ref<VoxelBlockyAttributeDirection> dir_attribute;
+	Ref<VoxelBlockyAttributeRotation> rot_attribute;
+
+	if (try_get_as(rotation_attribute, axis_attribute)) {
+		// TODO This is actually a subset of ortho bases, we should identify them and use a table
+		FixedArray<math::OrthoBasis, VoxelBlockyAttributeAxis::AXIS_COUNT> bases;
+		bases[VoxelBlockyAttributeAxis::AXIS_Y].rotate_x_90_ccw();
+		bases[VoxelBlockyAttributeAxis::AXIS_Z].rotate_y_90_ccw();
+
+		src_basis = bases[axis_attribute->get_default_value()];
+		dst_basis = bases[rotation_attribute_value];
+
+	} else if (try_get_as(rotation_attribute, dir_attribute)) {
+		// TODO This is actually a subset of ortho bases, we should identify them and use a table
+		FixedArray<math::OrthoBasis, VoxelBlockyAttributeDirection::DIR_COUNT> bases;
+
+		// bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_Z]; // Identity
+
+		bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_Z].rotate_y_90_ccw();
+		bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_Z].rotate_y_90_ccw();
+
+		bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_X].rotate_y_90_cw();
+
+		bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_X].rotate_y_90_ccw();
+
+		bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_Y].rotate_x_90_cw();
+
+		bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_Y].rotate_x_90_ccw();
+
+		src_basis = bases[axis_attribute->get_default_value()];
+		dst_basis = bases[rotation_attribute_value];
+
+	} else if (try_get_as(rotation_attribute, rot_attribute)) {
+		src_basis = math::get_ortho_basis_from_index(rot_attribute->get_default_value());
+		dst_basis = math::get_ortho_basis_from_index(rotation_attribute_value);
+	}
+
+	return src_basis.inverted() * dst_basis;
+}
+
+String variant_key_to_string(
+		const VoxelBlockyType::VariantKey &key, const std::vector<Ref<VoxelBlockyAttribute>> &attributes) {
+	String s;
+	unsigned int i = 0;
+	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
+		if (i > 0) {
+			s += "_";
+		}
+		if (attrib.is_null()) {
+			s += "<null>=";
+		}
+		s += String::num_int64(key.attribute_values[i]);
+		++i;
+	}
+	return s;
+}
+
+void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
+		VoxelBlockyModel::MaterialIndexer &material_indexer) {
+	ZN_PROFILE_SCOPE();
+
+	const bool bake_tangents = false;
+
+	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	gather_and_sort_attributes(_attributes, attributes);
+
+	// Find rotation attribute, if any
+	Ref<VoxelBlockyAttribute> rotation_attribute;
+	unsigned int rotation_attribute_index = 0;
+	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
+		if (attrib->is_rotation()) {
+			rotation_attribute = attrib;
+			break;
+		}
+		++rotation_attribute_index;
+	}
+
+	std::vector<VariantKey> keys;
+	unsigned int attrib_count = 0;
+	generate_keys(attributes, keys, true);
+
+	unsigned int first_model_index = out_models.size();
+	out_models.resize(out_models.size() + keys.size());
+	Span<VoxelBlockyModel::BakedData> baked_models(&out_models[first_model_index], keys.size());
+
+	for (unsigned int variant_index = 0; variant_index < baked_models.size(); ++variant_index) {
+		VoxelBlockyModel::BakedData &baked_model = baked_models[variant_index];
+		const VariantKey &key = keys[variant_index];
+
+		Ref<VoxelBlockyModel> model = get_variant(key);
+
+		if (model.is_valid()) {
+			// Variant specified explicitely, just use it
+			model->bake(baked_model, bake_tangents, material_indexer);
+
+		} else if (rotation_attribute.is_valid()) {
+			// Not specified, but the type has a rotation attribute.
+			// Assume rotation. Rotate from default.
+
+			ZN_ASSERT_CONTINUE_MSG(
+					key.attribute_names[rotation_attribute_index] == rotation_attribute->get_attribute_name(), "Bug?");
+
+			// Pick reference model:
+			// The model with default rotation must have been assigned.
+			VariantKey ref_key = key;
+			ref_key.attribute_values[rotation_attribute_index] = rotation_attribute->get_default_value();
+			Ref<VoxelBlockyModel> ref_model = get_variant(ref_key);
+			if (ref_model.is_valid()) {
+				// If not, use base model...
+				if (_base_model.is_null()) {
+					// If base model is null... variant will be empty. Should be a configuration warning. If empty is
+					// really desired, VoxelBlockyModelEmpty should be used.
+					WARN_PRINT(
+							String("No model found for rotation variant ({0}) when baking {1} with name {2}. The model "
+								   "will be empty.")
+									.format(varray(variant_key_to_string(ref_key, attributes), get_class(),
+											get_unique_name())));
+					continue;
+				}
+				ref_model = _base_model;
+			}
+
+			// Apply rotation
+			const math::OrthoBasis trans_basis =
+					get_baking_rotation_ortho_basis(rotation_attribute, key.attribute_values[rotation_attribute_index]);
+			Ref<VoxelBlockyModel> temp_model = ref_model->duplicate();
+			temp_model->rotate_ortho(trans_basis);
+			temp_model->bake(baked_model, bake_tangents, material_indexer);
+
+		} else {
+			// No variant specified, use base model.
+			if (_base_model.is_valid()) {
+				_base_model->bake(baked_model, bake_tangents, material_indexer);
+			} else {
+				WARN_PRINT(
+						String("No model found for variant {0} when baking {1} with name {2}. The model will be empty.")
+								.format(varray(
+										variant_key_to_string(key, attributes), get_class(), get_unique_name())));
+			}
+		}
+	}
+
+	if (_base_model.is_valid()) {
+		for (VoxelBlockyModel::BakedData &baked_model : baked_models) {
+			baked_model.color *= _base_model->get_color();
+			baked_model.transparency_index = _base_model->get_transparency_index();
+			baked_model.box_collision_mask |= _base_model->get_collision_mask();
+			baked_model.is_random_tickable |= _base_model->is_random_tickable();
+		}
+	}
+
+	out_keys = std::move(keys);
+}
+
+bool try_get_attribute_index_from_name(
+		const std::vector<Ref<VoxelBlockyAttribute>> &attributes, const StringName &name, unsigned int &out_index) {
+	for (unsigned int i = 0; i < attributes.size(); ++i) {
+		const Ref<VoxelBlockyAttribute> &attrib = attributes[i];
+		if (attrib.is_valid() && attrib->get_attribute_name() == name) {
+			out_index = i;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T>
+unsigned int get_non_null_count(const std::vector<T> &objects) {
+	unsigned int count = 0;
+	for (const T &obj : objects) {
+		if (obj != nullptr) {
+			++count;
+		}
+	}
+	return count;
+}
+
+void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	ZN_PROFILE_SCOPE();
+
+	for (const Ref<VoxelBlockyAttribute> &attrib : _attributes) {
+		if (attrib.is_null()) {
+			out_warnings.push_back(
+					String("{0} with name `{1}` has null attributes, consider removing them from the list")
+							.format(varray(get_class(), get_unique_name())));
+			break;
+		}
+	}
+
+	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	gather_and_sort_attributes(_attributes, attributes);
+
+	std::vector<VariantKey> keys;
+	generate_keys(attributes, keys, false);
+
+	unsigned int unspecified_keys_count = 0;
+	for (const VariantKey &key : keys) {
+		Ref<VoxelBlockyModel> model = get_variant(key);
+		if (model.is_null()) {
+			++unspecified_keys_count;
+		}
+	}
+
+	if (unspecified_keys_count > 0) {
+		out_warnings.push_back(String("{0} with name '{1}' has {2} unspecified variants.")
+									   .format(varray(get_class(), get_unique_name(), unspecified_keys_count)));
+	}
+}
+
+template <typename T, typename F>
+void unordered_remove_duplicates(std::vector<T> &container, F equality) {
+	for (unsigned int i = 0; i < container.size(); ++i) {
+		const T &item1 = container[i];
+		for (unsigned int j = i + 1; j < container.size();) {
+			const T &item2 = container[j];
+			if (equality(item1, item2)) {
+				container[j] = container[container.size() - 1];
+				container.pop_back();
+			} else {
+				++j;
+			}
+		}
+	}
+}
+
+void VoxelBlockyType::gather_and_sort_attributes(
+		const std::vector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
+		std::vector<Ref<VoxelBlockyAttribute>> &out_attributes) {
+	ZN_PROFILE_SCOPE();
+
+	// Gather non-null attributes
+	for (const Ref<VoxelBlockyAttribute> &attrib : attributes_with_maybe_nulls) {
+		if (attrib.is_valid()) {
+			out_attributes.push_back(attrib);
+			continue;
+		}
+	}
+
+	unordered_remove_duplicates(
+			out_attributes, [](const Ref<VoxelBlockyAttribute> &a, const Ref<VoxelBlockyAttribute> &b) {
+				return a->get_attribute_name() == b->get_attribute_name();
+			});
+
+	// Sort attributes by name for determinism
+	// TODO Should we just consider attribute slots rather than an unordered variable-length list of attributes? Or
+	// require that the order of attributes matters? Adding a new attribute can mess up existing keys
+	VoxelBlockyAttribute::sort_by_name(to_span(out_attributes));
+}
+
+void VoxelBlockyType::generate_keys(const std::vector<Ref<VoxelBlockyAttribute>> &attributes,
+		std::vector<VariantKey> &out_keys, bool include_rotations) {
+	ZN_PROFILE_SCOPE();
+
+	for (unsigned int i = 0; i < attributes.size(); ++i) {
+		ZN_ASSERT_RETURN(attributes[i].is_valid());
+	}
+
+	// When `include_rotations` is false, rotation attributes may be considered having a single value, their
+	// default value. So we cache used values for each attribute.
+	FixedArray<Span<const uint8_t>, MAX_ATTRIBUTES> attributes_used_values;
+	FixedArray<uint8_t, MAX_ATTRIBUTES> attributes_default_values;
+	for (unsigned int i = 0; i < attributes.size(); ++i) {
+		const VoxelBlockyAttribute &attrib = **attributes[i];
+		if (include_rotations == false && attrib.is_rotation()) {
+			attributes_default_values[i] = attrib.get_default_value();
+			attributes_used_values[i] = Span<uint8_t>(&attributes_default_values[i], 1);
+		} else {
+			attributes_used_values[i] = attrib.get_used_values();
+		}
+	}
+
+	// Get variant count
+	unsigned int variant_count = 1;
+	for (unsigned int i = 0; i < attributes.size(); ++i) {
+		variant_count *= attributes_used_values[i].size();
+	}
+
+	ZN_ASSERT_RETURN_MSG(variant_count < MAX_EDITING_VARIANTS, "Too many combinations");
+
+	std::vector<VariantKey> &keys = out_keys;
+	keys.resize(variant_count);
+
+	// Generate combinations
+
+	FixedArray<unsigned int, VoxelBlockyType::MAX_ATTRIBUTES> key_uv;
+	fill(key_uv, 0u);
+
+	// Initialize first key
+	VoxelBlockyType::VariantKey key;
+	for (unsigned int i = 0; i < attributes.size(); ++i) {
+		const Ref<VoxelBlockyAttribute> &attrib = attributes[i];
+		key.attribute_names[i] = attrib->get_attribute_name();
+		key.attribute_values[i] = attributes_used_values[i][0];
+	}
+
+	for (unsigned int i = 0; i < keys.size(); ++i) {
+		keys[i] = key;
+
+		// Increment key
+		for (unsigned int j = 0; j < attributes.size(); ++j) {
+			++key_uv[j];
+
+			Span<const uint8_t> used_values = attributes_used_values[j];
+
+			if (key_uv[j] < used_values.size()) {
+				key.attribute_values[j] = used_values[key_uv[j]];
+				break;
+			}
+
+			key_uv[j] = 0;
+			key.attribute_values[j] = used_values[key_uv[j]];
+		}
+	}
+}
+
+void VoxelBlockyType::_on_attribute_changed() {
+	// TODO
+
+	notify_property_list_changed();
+}
+
+TypedArray<VoxelBlockyAttribute> VoxelBlockyType::_b_get_attributes() const {
+	return to_typed_array(to_span(_attributes));
+}
+
+void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attributes) {
+	if (attributes.size() > MAX_ATTRIBUTES) {
+		return;
+	}
+
+	// Check differences. Note, we only check changes that could happen in the editor, so only attribute types and how
+	// many there are.
+	bool has_changes = false;
+	unsigned int found_attributes = 0;
+	for (int i = 0; i < attributes.size(); ++i) {
+		Ref<VoxelBlockyAttribute> attrib = attributes[i];
+		if (attrib.is_null()) {
+			// Null is allowed for the editor to work
+			continue;
+		}
+		unsigned int existing_index;
+		if (try_get_attribute_index_from_name(_attributes, attrib->get_attribute_name(), existing_index)) {
+			++found_attributes;
+			continue;
+		}
+		// New attribute
+		has_changes = true;
+	}
+	if (!has_changes && get_non_null_count(_attributes) != found_attributes) {
+		has_changes = true;
+	}
+
+#ifdef TOOLS_ENABLED
+	for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
+		if (attrib.is_valid()) {
+			attrib->disconnect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_attribute_changed));
+		}
+	}
+#endif
+
+	copy_to(_attributes, attributes);
+
+#ifdef TOOLS_ENABLED
+	for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
+		if (attrib.is_valid()) {
+			attrib->connect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_attribute_changed));
+		}
+	}
+#endif
+
+	if (has_changes) {
+		notify_property_list_changed();
+	}
+
+	emit_changed();
+}
+
+void VoxelBlockyType::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_unique_name", "name"), &VoxelBlockyType::set_unique_name);
+	ClassDB::bind_method(D_METHOD("get_unique_name"), &VoxelBlockyType::get_unique_name);
+
+	ClassDB::bind_method(D_METHOD("set_base_model", "model"), &VoxelBlockyType::set_base_model);
+	ClassDB::bind_method(D_METHOD("get_base_model"), &VoxelBlockyType::get_base_model);
+
+	ClassDB::bind_method(D_METHOD("set_attributes", "attributes"), &VoxelBlockyType::_b_set_attributes);
+	ClassDB::bind_method(D_METHOD("get_attributes"), &VoxelBlockyType::_b_get_attributes);
+
+	ClassDB::bind_method(D_METHOD("_on_attribute_changed"), &VoxelBlockyType::_on_attribute_changed);
+
+	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "unique_name"), "set_unique_name", "get_unique_name");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "base_model", PROPERTY_HINT_RESOURCE_TYPE,
+						 VoxelBlockyModel::get_class_static()),
+			"set_base_model", "get_base_model");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "attributes", PROPERTY_HINT_ARRAY_TYPE,
+						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyAttribute::get_class_static())),
+			"set_attributes", "get_attributes");
+
+	BIND_CONSTANT(MAX_ATTRIBUTES);
+}
+
+} // namespace zylann::voxel

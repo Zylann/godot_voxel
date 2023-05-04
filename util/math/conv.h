@@ -107,6 +107,11 @@ inline Vector3d to_vec3d(const Vector3T<T> v) {
 	return Vector3d(v.x, v.y, v.z);
 }
 
+template <typename T>
+inline Vector3f to_vec3f(const Vector3T<T> v) {
+	return Vector3f(v.x, v.y, v.z);
+}
+
 inline bool can_convert_to_i16(Vector3i p) {
 	return p.x >= std::numeric_limits<int16_t>::min() && p.x <= std::numeric_limits<int16_t>::max() &&
 			p.y >= std::numeric_limits<int16_t>::min() && p.y <= std::numeric_limits<int16_t>::max() &&
