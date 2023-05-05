@@ -114,6 +114,8 @@ VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) co
 }
 
 void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map) {
+	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
+
 	Span<const int> map_r(map.ptr(), map.size());
 	const VoxelBufferInternal::Depth depth = _buffer->get_channel_depth(channel_index);
 
