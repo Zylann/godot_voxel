@@ -6,7 +6,6 @@ namespace zylann::voxel {
 VoxelBlockyModelCube::VoxelBlockyModelCube() {
 	_atlas_size_in_tiles = Vector2i(16, 16);
 	_surface_count = 1;
-	_empty = false;
 	_collision_aabbs.push_back(AABB(Vector3(0, 0, 0), Vector3(1, 1, 1)));
 }
 
@@ -186,10 +185,14 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 	baked_data.empty = false;
 }
 
-void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();
 	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, bake_tangents);
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+}
+
+bool VoxelBlockyModelCube::is_empty() const {
+	return false;
 }
 
 Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {

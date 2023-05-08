@@ -6,7 +6,7 @@ VoxelBlockyModelEmpty::VoxelBlockyModelEmpty() {
 	set_collision_aabbs(Span<const AABB>());
 }
 
-void VoxelBlockyModelEmpty::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModelEmpty::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
 }

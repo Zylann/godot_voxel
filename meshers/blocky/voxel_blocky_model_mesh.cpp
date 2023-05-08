@@ -328,10 +328,17 @@ static void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyMo
 			config.get_mesh_ortho_rotation_index());
 }
 
-void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();
 	bake_mesh_geometry(*this, baked_data, bake_tangents, materials);
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+}
+
+bool VoxelBlockyModelMesh::is_empty() const {
+	if (_mesh.is_null()) {
+		return true;
+	}
+	return is_mesh_empty(**_mesh);
 }
 
 void VoxelBlockyModelMesh::set_mesh_ortho_rotation_index(int i) {

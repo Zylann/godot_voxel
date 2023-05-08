@@ -202,7 +202,7 @@ void VoxelBlockyModel::set_collision_mask(uint32_t mask) {
 	_collision_mask = mask;
 }
 
-void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) {
+void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	// TODO That's a bit iffy, design something better?
 	// The following logic must run after derived classes, should not be called directly
 
@@ -245,8 +245,6 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 			surface.collision_enabled = surface_params.collision_enabled;
 		}
 	}
-
-	_empty = baked_data.empty;
 }
 
 TypedArray<AABB> VoxelBlockyModel::_b_get_collision_aabbs() const {
@@ -301,10 +299,15 @@ bool VoxelBlockyModel::is_random_tickable() const {
 	return _random_tickable;
 }
 
+bool VoxelBlockyModel::is_empty() const {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in child classes
+	return true;
+}
+
 void VoxelBlockyModel::copy_base_properties_from(const VoxelBlockyModel &src) {
 	_surface_params = src._surface_params;
 	// _surface_count = src._surface_count;
-	_empty = src._empty;
 	_transparency_index = src._transparency_index;
 	_random_tickable = src._random_tickable;
 	_color = src._color;
@@ -516,8 +519,6 @@ void VoxelBlockyModel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelBlockyModel::set_collision_mask);
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBlockyModel::get_collision_mask);
-
-	ClassDB::bind_method(D_METHOD("is_empty"), &VoxelBlockyModel::is_empty);
 
 	// Bound for editor purposes
 	ClassDB::bind_method(D_METHOD("rotate_90"), &VoxelBlockyModel::_b_rotate_90);

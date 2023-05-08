@@ -26,7 +26,8 @@ public:
 	void set_atlas_size_in_tiles(Vector2i s);
 	Vector2i get_atlas_size_in_tiles() const;
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) override;
+	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	bool is_empty() const override;
 
 	Ref<Mesh> get_preview_mesh() const override;
 

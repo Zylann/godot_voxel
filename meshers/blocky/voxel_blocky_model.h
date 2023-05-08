@@ -144,10 +144,6 @@ public:
 		return _collision_mask;
 	}
 
-	inline bool is_empty() const {
-		return _empty;
-	}
-
 	unsigned int get_collision_aabb_count() const;
 	void set_collision_aabb(unsigned int i, AABB aabb);
 	void set_collision_aabbs(Span<const AABB> aabbs);
@@ -157,6 +153,8 @@ public:
 
 	//------------------------------------------
 	// Properties for internal usage only
+
+	virtual bool is_empty() const;
 
 	struct MaterialIndexer {
 		std::vector<Ref<Material>> &materials;
@@ -174,7 +172,7 @@ public:
 		}
 	};
 
-	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials);
+	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const;
 
 	Span<const AABB> get_collision_aabbs() const {
 		return to_span(_collision_aabbs);
@@ -234,7 +232,6 @@ private:
 
 protected:
 	unsigned int _surface_count = 0;
-	bool _empty = true;
 
 	// Used for AABB physics only, not classic physics
 	std::vector<AABB> _collision_aabbs;

@@ -14,7 +14,8 @@ public:
 		return _mesh;
 	}
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) override;
+	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	bool is_empty() const override;
 
 	void set_mesh_ortho_rotation_index(int i);
 	int get_mesh_ortho_rotation_index() const;
