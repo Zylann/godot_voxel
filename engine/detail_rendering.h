@@ -95,7 +95,7 @@ public:
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-// If the angle between the triangle and the computed normal is larger tham `max_deviation_radians`,
+// If the angle between the triangle and the computed normal is larger than `max_deviation_radians`,
 // the normal's direction will be clamped.
 // If `out_edited_tiles` is provided, only tiles containing edited voxels will be processed.
 void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
