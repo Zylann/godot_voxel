@@ -18,6 +18,14 @@ enum Side {
 
 	SIDE_COUNT
 };
+// TODO We should use this naming system, taken from Minecraft:
+// - West: -X
+// - East: +X
+// - North: -Z
+// - South: +Z
+// - Down: -Y
+// - Up: +Y
+
 // Alias to the above for clarity, fixing some interpretation problems regarding the side_normals table...
 // TODO Bug: I would like to fix the X axes, they are inverted compared to the others
 enum SideAxis {

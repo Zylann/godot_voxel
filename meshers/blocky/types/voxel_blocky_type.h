@@ -20,7 +20,6 @@ public:
 	// Technical limit is 65536, but reaching hundreds indicates a design problem, and can be overwhelming to edit. Such
 	// amount of variants is possible though, in which case we should implement conditionals.
 	static const int MAX_EDITING_VARIANTS = 256;
-	static const int MAX_VARIANTS = 4096;
 
 	VoxelBlockyType();
 
@@ -32,9 +31,15 @@ public:
 
 	Span<const Ref<VoxelBlockyAttribute>> get_attributes() const;
 	Ref<VoxelBlockyAttribute> get_attribute_by_name(const StringName &attrib_name) const;
+	Ref<VoxelBlockyAttribute> get_rotation_attribute() const;
 
+	void get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs);
+
+	// Identifies one model variant of a type, as the attributes and values it has.
 	struct VariantKey {
 		// Names must be sorted by string (not StringName pointer comparison).
+		// In the design, this is not really required, user and config files can specify attributes in any order,
+		// but we do this at runtime to improve performance when looking them up.
 		// Names and values must be packed at the beginning of arrays. Unused values must be defaulted.
 		FixedArray<StringName, MAX_ATTRIBUTES> attribute_names;
 		FixedArray<uint8_t, MAX_ATTRIBUTES> attribute_values;
@@ -49,18 +54,20 @@ public:
 	};
 
 	void bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
-			VoxelBlockyModel::MaterialIndexer &material_indexer);
+			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const;
 
 	void get_configuration_warnings(PackedStringArray &out_warnings) const;
 
-private:
-	static bool parse_variant_key_from_property_name(const String &property_name, VariantKey &out_key);
+	Ref<Mesh> get_preview_mesh(const VariantKey &key) const;
 
+	void generate_keys(std::vector<VariantKey> &out_keys) const;
+
+private:
 	// Filters null entries, removes duplicates and sorts attributes before they can be used in processing
 	static void gather_and_sort_attributes(const std::vector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
 			std::vector<Ref<VoxelBlockyAttribute>> &out_attributes);
 
-	// Generates all combinations from pre-sorted attributes
+	// Generates all combinations from pre-sorted attributes.
 	static void generate_keys(const std::vector<Ref<VoxelBlockyAttribute>> &attributes,
 			std::vector<VariantKey> &out_keys, bool include_rotations);
 
@@ -68,6 +75,7 @@ private:
 	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
 
 	void _on_attribute_changed();
+	void _on_base_model_changed();
 
 	TypedArray<VoxelBlockyAttribute> _b_get_attributes() const;
 	void _b_set_attributes(TypedArray<VoxelBlockyAttribute> attributes);
@@ -78,13 +86,21 @@ private:
 
 	static void _bind_methods();
 
+	// Name of the type, as used in development, config files, save files or commands. It must be unique, and maybe
+	// prefixed if your game supports modding. To display it in-game, it may be preferable to use a translation
+	// dictionary rather than using it directly.
 	StringName _name;
+
 	Ref<VoxelBlockyModel> _base_model;
 
 	// List of unchecked attributes, as specified in the editor. Can have nulls, duplicates, and is not sorted.
 	// They are stored this way to allow editing in the Godot editor...
 	// TODO Rename `_unchecked_attributes`?
 	std::vector<Ref<VoxelBlockyAttribute>> _attributes;
+
+	// If true, rotation attributes will not require the user to specify models for each rotation. They will be
+	// automatically generated, using the default rotation as reference.
+	bool _automatic_rotations = true;
 
 	struct VariantData {
 		VariantKey key;
@@ -93,9 +109,11 @@ private:
 
 	// This only contains variants explicitely defined by the user in the editor. Not all runtime variants are here.
 	// Can also contain variants that have no relation to any attribute, but these are not saved. They remain in memory
-	// to allow the user to go back and forth between configurations in the editor.
+	// to allow the user to go back and forth between configurations in the editor as they make changes.
 	// Saved variants are determined from the combination of current valid attributes.
 	std::vector<VariantData> _variants;
+
+	// TODO Conditional models
 };
 
 } // namespace zylann::voxel

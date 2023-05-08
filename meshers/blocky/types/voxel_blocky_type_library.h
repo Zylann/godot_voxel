@@ -22,9 +22,10 @@ public:
 	// Shortcut, doesn't require to specify attribute names.
 	int get_model_index_single_attribute(StringName type_name, Variant p_attrib_value) const;
 
-	// TODO For ease of use, this would have to accept attributes in the same format
-	// `get_type_and_attributes_from_model_index` returns them... which is a disaster for performance, so perhaps they
-	// should be seen as slow shortcuts, and a helper object could be used in other cases?
+	// Gets model index from a type name and the value of all its attributes. Values can be specified
+	// either as integers, booleans, or their name if they have one.
+	//
+	// Example of arguments:
 	//
 	// (&"mygame:button", {
 	//     "direction": VoxelBlockyAttributeDirection.DIR_POSITIVE_Z,
@@ -32,33 +33,35 @@ public:
 	//     "powered": false
 	// })
 	//
-	// Gets model index from a type name and an unordered list of attributes names and values. Values can be specified
-	// either as raw integers, or their name if they have one.
+	// Warning: this method is slow. Consider using it in non-intensive code (editing few voxels at a time?), or cache
+	// the result in a variable.
+	// It is slow because:
+	// - Dictionary keys can't be `StringName` by design (Godot converts them to `String`, but
+	//   internally the function has to convert them back to `StringName`)
+	// - The function has to iterate the dictionary, which is another thing dictionaries are slow for.
+	//   Dictionary is used for ease of use.
+	// - Attributes have to be sorted and looked up into internal data structures to obtain the actual voxel ID.
 	//
-	// Example of arguments:
-	//
-	// (&"mygame:button", [
-	//     &"direction", VoxelBlockyAttributeDirection.DIR_POSITIVE_Z,
-	//     &"active", &"on",
-	//     &"powered", false
-	// ])
-	//
-	int get_model_index_with_attributes(StringName type_name, Array attribs) const;
+	int get_model_index_with_attributes(StringName type_name, Dictionary attribs_dict) const;
 
 	Ref<VoxelBlockyType> get_type_from_name(StringName name) const;
-	// Ref<VoxelBlockyType> get_type_from_model_index(int i) const;
 
-	// TODO The script API is TERRIBLE at this. It will work, but really can't call that millions of times.
-	// Maybe there could be an alternative API using a "sampler" object, so a more efficient data structure could be
-	// used instead of allocating arrays and dictionaries on each call?
-	//
 	// Returned array has two elements:
-	// - The type
-	// - A dictionary where the key is attribute name (unfortunately a string because Godot devs decided to force
-	//   converting StringNames to String in Dictionaries) and value is the current value of that attribute.
-	// Array get_type_and_attributes_from_model_index(int i) const;
+	// - The type's name as StringName
+	// - A dictionary where the key is attribute name (unfortunately a String because Godot devs decided to force
+	//   converting StringNames to String in Dictionaries) and value is the current integer value of that attribute.
+	Array get_type_name_and_attributes_from_model_index(int i) const;
+
+	bool load_id_map_from_string_array(PackedStringArray array);
+	PackedStringArray serialize_id_map_to_string_array() const;
+
+	bool load_id_map_from_json(String array);
+	String serialize_id_map_to_json() const;
+
+	void get_id_map_preview(PackedStringArray &out_ids, std::vector<uint16_t> &used_ids) const;
 
 private:
+	// Fully qualified name identifying a specific model, as a type and the state of each attribute.
 	struct VoxelID {
 		StringName type_name;
 		VoxelBlockyType::VariantKey variant_key;
@@ -68,42 +71,31 @@ private:
 		}
 	};
 
+	void update_id_map();
+	void update_id_map(std::vector<VoxelID> &id_map, std::vector<uint16_t> *used_ids) const;
+	static PackedStringArray serialize_id_map_to_string_array(const std::vector<VoxelID> &id_map);
+
+	static bool parse_voxel_id(const String &str, VoxelID &out_id);
+	static String to_string(const VoxelID &id);
+
 	int get_model_index(const VoxelID queried_id) const;
+
+	PackedStringArray _b_get_id_map();
+	void _b_set_id_map(PackedStringArray sarray);
+	TypedArray<VoxelBlockyType> _b_get_types() const;
+	void _b_set_types(TypedArray<VoxelBlockyType> types);
+	PackedStringArray _b_serialize_id_map_to_string_array() const;
 
 	static void _bind_methods();
 
-	TypedArray<VoxelBlockyType> _b_get_types() const;
-	void _b_set_types(TypedArray<VoxelBlockyType> types);
-
-	// Unordered.
+	// Unordered. Can contain nulls.
 	std::vector<Ref<VoxelBlockyType>> _types;
 
-	// Maps voxel data indices to fully-qualified model names.
+	// Maps voxel data indices to fully-qualified model names. This is used to make sure model IDs remain the same, as
+	// long as their type has the same name and attribute values are the same.
 	// Can refer to types that no longer exist.
 	std::vector<VoxelID> _id_map;
 };
-
-// class VoxelBlockyTypeHelper : public RefCounted {
-// 	GDCLASS(VoxelBlockyTypeHelper, RefCounted)
-// public:
-// 	int get_model_index() const;
-// 	void set_model_index(int i);
-
-// 	void has_attribute(StringName name);
-
-// 	int get_attribute_value(StringName name);
-// 	StringName get_attribute_value_name(StringName name);
-// 	void set_attribute_value(StringName name, Variant value);
-
-// 	Dictionary get_attributes_dict();
-// 	void set_attributes_dict(Dictionary dict);
-
-// void rotate_90(Vector3i::Axis axis, bool clockwise);
-
-// private:
-// 	int _model_index;
-// 	Ref<VoxelBlockyTypeLibrary> _library;
-// };
 
 } // namespace zylann::voxel
 

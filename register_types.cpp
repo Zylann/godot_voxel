@@ -222,6 +222,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyAttributeAxis>();
 		ClassDB::register_class<VoxelBlockyAttributeDirection>();
 		ClassDB::register_class<VoxelBlockyAttributeRotation>();
+		ClassDB::register_class<VoxelBlockyAttributeCustom>();
 		ClassDB::register_class<VoxelBlockyType>();
 		ClassDB::register_class<VoxelBlockyTypeLibrary>();
 

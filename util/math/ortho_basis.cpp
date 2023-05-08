@@ -9,31 +9,14 @@ namespace zylann::math {
 // directions (we have to pick a convention for up and down), and then further rotate the basis 4 times around that
 // axis, which gives 4 * 6 = 24 bases.
 
-// With no particular convention, each rotation can be given a name from the 3 axes XYZ in the form:
-// `+x+y+z`
-// `-y+x+z`
-// `-x-y+z`
-// ...
-
-// If -Z is taken as forward, and up and down directions take reference from a rotation around X from identity, then
-// each rotation can be given a name as one axis and a counter-clockwise angle:
-// `-z+0`
-// `-z-90`
-// `-z+180`
-// ...
-// However more than one name can fit a given basis, for example `-z-180` is the same as `-z+180`.
-// So the axis notation may be used if a unique name is preferred, the angle would have to be forced positive,
-// or the up axis would have to be specified instead of an angle (the X axis always being on the right).
-
-// Values are taken from Godot's GridMap code. The bases don't seem to follow a particular order, but we can see the
-// third axis is used as pivot to obtain groups of 4 bases from each of the 6 directions.
+// Values are taken from Godot's GridMap code. Order is arbitrary, but must remain the same to match enum values.
 static const OrthoBasis g_ortho_bases[ORTHOGONAL_BASIS_COUNT] = {
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 1, 0), Vector3i8(0, 0, 1)), // -z+0
-	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(1, 0, 0), Vector3i8(0, 0, 1)), // -z+270
-	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, -1, 0), Vector3i8(0, 0, 1)), // -z+180
-	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(-1, 0, 0), Vector3i8(0, 0, 1)), // -z+90
+	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 1, 0), Vector3i8(0, 0, 1)), // identity
+	OrthoBasis(Vector3i8(0, -1, 0), Vector3i8(1, 0, 0), Vector3i8(0, 0, 1)), //
+	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, -1, 0), Vector3i8(0, 0, 1)), //
+	OrthoBasis(Vector3i8(0, 1, 0), Vector3i8(-1, 0, 0), Vector3i8(0, 0, 1)), //
 
-	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 0, -1), Vector3i8(0, 1, 0)), // -x+270
+	OrthoBasis(Vector3i8(1, 0, 0), Vector3i8(0, 0, -1), Vector3i8(0, 1, 0)), //
 	OrthoBasis(Vector3i8(0, 0, 1), Vector3i8(1, 0, 0), Vector3i8(0, 1, 0)), //
 	OrthoBasis(Vector3i8(-1, 0, 0), Vector3i8(0, 0, 1), Vector3i8(0, 1, 0)), //
 	OrthoBasis(Vector3i8(0, 0, -1), Vector3i8(-1, 0, 0), Vector3i8(0, 1, 0)), //
@@ -72,6 +55,38 @@ int get_index_from_ortho_basis(const OrthoBasis &b) {
 		}
 	}
 	return -1;
+}
+
+const char *s_rotation_names[ORTHO_ROTATION_COUNT] = {
+	"identity",
+	"z_270",
+	"z_180",
+	"z_90",
+	"x_270",
+	"x_270_y_270",
+	"x_270_y_180",
+	"x_270_y_90",
+	"z_180_y_180",
+	"z_90_y_180",
+	"y_180",
+	"z_270_y_180",
+	"x_90",
+	"x_90_y_90",
+	"x_90_y_180",
+	"x_90_y_270",
+	"y_270",
+	"z_270_y_270",
+	"z_180_y_270",
+	"z_90_y_270",
+	"z_180_y_90",
+	"z_90_y_90",
+	"y_90",
+	"z_270_y_90",
+};
+
+const char *ortho_rotation_to_string(int i) {
+	ZN_ASSERT_RETURN_V(i >= 0 && i < ORTHO_ROTATION_COUNT, "<error>");
+	return s_rotation_names[i];
 }
 
 } // namespace zylann::math

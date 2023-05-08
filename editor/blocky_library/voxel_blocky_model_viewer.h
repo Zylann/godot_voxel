@@ -9,8 +9,6 @@ ZN_GODOT_FORWARD_DECLARE(class MeshInstance3D);
 
 namespace zylann {
 
-class ZN_Axes3DControl;
-
 namespace voxel {
 
 class VoxelBlockyModelViewer : public HBoxContainer {
@@ -21,13 +19,7 @@ public:
 	void set_model(Ref<VoxelBlockyModel> model);
 
 private:
-#if defined(ZN_GODOT)
-	void gui_input(const Ref<InputEvent> &p_event) override;
-#elif defined(ZN_GODOT_EXTENSION)
-	void _gui_input(const Ref<InputEvent> &p_event) override;
-#endif
 	void update_model();
-	void update_camera();
 	void rotate_model_90(Vector3i::Axis axis);
 	void add_rotation_anim(Basis basis);
 
@@ -35,6 +27,7 @@ private:
 	void process(float delta);
 
 	void _on_model_changed();
+	// TODO Could use bind() for the axis, but in GodotCpp (GDExtension) bind() isn't implemented...
 	void _on_rotate_x_button_pressed();
 	void _on_rotate_y_button_pressed();
 	void _on_rotate_z_button_pressed();
@@ -49,7 +42,6 @@ private:
 	float _yaw = 0.f;
 	float _distance = 1.9f;
 	Basis _rotation_anim_basis;
-	ZN_Axes3DControl *_axes_3d_control = nullptr;
 };
 
 } // namespace voxel

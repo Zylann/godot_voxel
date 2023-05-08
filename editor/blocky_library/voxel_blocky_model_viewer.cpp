@@ -1,17 +1,13 @@
 #include "voxel_blocky_model_viewer.h"
 #include "../../../constants/voxel_string_names.h"
 #include "../../../util/godot/classes/button.h"
-#include "../../../util/godot/classes/camera_3d.h"
-#include "../../../util/godot/classes/directional_light_3d.h"
 #include "../../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../../util/godot/classes/mesh_instance_3d.h"
-#include "../../../util/godot/classes/sub_viewport.h"
-#include "../../../util/godot/classes/sub_viewport_container.h"
 #include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/mouse_button.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/editor_scale.h"
-#include "axes_3d_control.h"
+#include "model_viewer.h"
 
 namespace zylann::voxel {
 
@@ -160,28 +156,24 @@ static Ref<Mesh> make_wireboxes_mesh(Span<const AABB> p_aabbs, Color p_color) {
 }
 
 VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
-	Ref<World3D> world;
-	world.instantiate();
-
 	Ref<StandardMaterial3D> line_material;
 	line_material.instantiate();
 	line_material->set_shading_mode(StandardMaterial3D::SHADING_MODE_UNSHADED);
 	line_material->set_flag(StandardMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 
-	SubViewport *viewport = memnew(SubViewport);
-	viewport->set_world_3d(world);
-	viewport->set_use_own_world_3d(true);
+	const float editor_scale = EDSCALE;
 
-	_camera = memnew(Camera3D);
-	_camera->set_fov(50.f);
-	viewport->add_child(_camera);
+	ZN_ModelViewer *viewer = memnew(ZN_ModelViewer);
+	viewer->set_h_size_flags(Container::SIZE_EXPAND_FILL);
+	viewer->set_v_size_flags(Container::SIZE_EXPAND_FILL);
+	viewer->set_custom_minimum_size(Vector2(100, 150 * editor_scale));
+	viewer->set_camera_distance(1.9f);
+	add_child(viewer);
 
-	DirectionalLight3D *light = memnew(DirectionalLight3D);
-	light->set_transform(Transform3D(Basis::looking_at(Vector3(1, -1, -2)), Vector3()));
-	_camera->add_child(light);
+	Node *viewer_root = viewer->get_viewer_root_node();
 
 	_mesh_instance = memnew(MeshInstance3D);
-	viewport->add_child(_mesh_instance);
+	viewer_root->add_child(_mesh_instance);
 
 	_collision_boxes_mesh_instance = memnew(MeshInstance3D);
 	_collision_boxes_mesh_instance->set_material_override(line_material);
@@ -191,42 +183,15 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 	axes->set_mesh(make_axes_mesh());
 	axes->set_position(Vector3(-0.002, -0.002, -0.002));
 	axes->set_material_override(line_material);
-	viewport->add_child(axes);
-
-	const float editor_scale = EDSCALE;
-
-	// SubViewportContainer inherits Container for some reason, so if I want a control laid out with margins and anchors
-	// as child of it, I need control wrapping it....
-	Control *viewport_control = memnew(Control);
-	viewport_control->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-	viewport_control->set_h_size_flags(Container::SIZE_EXPAND_FILL);
-	viewport_control->set_v_size_flags(Container::SIZE_EXPAND_FILL);
-	viewport_control->set_custom_minimum_size(Vector2(100, 150 * editor_scale));
-	add_child(viewport_control);
-
-	SubViewportContainer *viewport_container = memnew(SubViewportContainer);
-	viewport_container->add_child(viewport);
-	viewport_container->set_stretch(true);
-	viewport_container->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT);
-	viewport_control->add_child(viewport_container);
-
-	_axes_3d_control = memnew(ZN_Axes3DControl);
-	_axes_3d_control->set_anchors_preset(Control::PRESET_BOTTOM_LEFT);
-	//_axes_3d_control->set_size(editor_scale * Vector2(32, 32));
-	_axes_3d_control->set_offset(SIDE_LEFT, 0);
-	_axes_3d_control->set_offset(SIDE_RIGHT, 32);
-	_axes_3d_control->set_offset(SIDE_TOP, -32);
-	_axes_3d_control->set_offset(SIDE_BOTTOM, 0);
-	_axes_3d_control->set_mouse_filter(Control::MOUSE_FILTER_IGNORE);
-	viewport_control->add_child(_axes_3d_control);
+	viewer_root->add_child(axes);
 
 	VBoxContainer *side_toolbar = memnew(VBoxContainer);
 	Button *rotate_x_button = memnew(Button);
 	Button *rotate_y_button = memnew(Button);
 	Button *rotate_z_button = memnew(Button);
-	rotate_x_button->set_text("RX");
-	rotate_y_button->set_text("RY");
-	rotate_z_button->set_text("RZ");
+	rotate_x_button->set_text(ZN_TTR("Rotate X"));
+	rotate_y_button->set_text(ZN_TTR("Rotate Y"));
+	rotate_z_button->set_text(ZN_TTR("Rotate Z"));
 	rotate_x_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around X (clockwise)"));
 	rotate_y_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Y (clockwise)"));
 	rotate_z_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Z (clockwise)"));
@@ -241,7 +206,6 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 	side_toolbar->add_child(rotate_z_button);
 	add_child(side_toolbar);
 
-	update_camera();
 	set_process(true);
 }
 
@@ -261,25 +225,6 @@ void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
 	update_model();
 }
 
-#if defined(ZN_GODOT)
-void VoxelBlockyModelViewer::gui_input(const Ref<InputEvent> &p_event) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelBlockyModelViewer::_gui_input(const Ref<InputEvent> &p_event) {
-#endif
-	Ref<InputEventMouseMotion> mm = p_event;
-	if (mm.is_valid()) {
-		if (mm->get_button_mask().has_flag(ZN_GODOT_MouseButtonMask_MIDDLE)) {
-			const float sensitivity = 0.01f;
-			const Vector2 delta = mm->get_relative() * sensitivity;
-			_pitch -= delta.y;
-			_yaw -= delta.x;
-			_pitch = math::clamp(_pitch, -math::PI_32 / 2.f, math::PI_32 / 2.f);
-			_yaw = Math::wrapf(_yaw, -math::PI_32, math::PI_32);
-			update_camera();
-		}
-	}
-}
-
 void VoxelBlockyModelViewer::update_model() {
 	ZN_ASSERT_RETURN(_model.is_valid());
 	// Can be null
@@ -288,15 +233,6 @@ void VoxelBlockyModelViewer::update_model() {
 
 	Ref<Mesh> collision_boxes_mesh = make_wireboxes_mesh(_model->get_collision_aabbs(), Color(0.3, 0.4, 1.0));
 	_collision_boxes_mesh_instance->set_mesh(collision_boxes_mesh);
-}
-
-void VoxelBlockyModelViewer::update_camera() {
-	Basis basis;
-	basis.set_euler(Vector3(_pitch, _yaw, 0));
-	const Vector3 forward = -basis.get_column(Vector3::AXIS_Z);
-	_camera->set_transform(Transform3D(basis, Vector3(0.5, 0.5, 0.5) - _distance * forward));
-
-	_axes_3d_control->set_basis_3d(basis.inverse());
 }
 
 void VoxelBlockyModelViewer::rotate_model_90(Vector3i::Axis axis) {

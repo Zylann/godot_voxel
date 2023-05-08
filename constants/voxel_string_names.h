@@ -2,6 +2,7 @@
 #define VOXEL_STRING_NAMES_H
 
 #include "../util/godot/core/string_name.h"
+#include "../util/math/ortho_basis.h"
 
 namespace zylann::voxel {
 
@@ -79,6 +80,9 @@ public:
 	StringName positive_x;
 	StringName positive_y;
 	StringName positive_z;
+
+	FixedArray<StringName, math::ORTHO_ROTATION_COUNT> ortho_rotation_names;
+	String ortho_rotation_enum_hint_string;
 };
 
 } // namespace zylann::voxel

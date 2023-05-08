@@ -16,6 +16,7 @@ public:
 #if defined(ZN_GODOT)
 	bool can_handle(Object *p_object) override;
 	void parse_begin(Object *p_object) override;
+	void parse_end(Object *p_object) override;
 	void parse_group(Object *p_object, const String &p_group) override;
 	bool parse_property(Object *p_object, const Variant::Type p_type, const String &p_path, const PropertyHint p_hint,
 			const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage, const bool p_wide = false) override;
@@ -30,6 +31,7 @@ public:
 protected:
 	virtual bool _zn_can_handle(const Object *p_object) const;
 	virtual void _zn_parse_begin(Object *p_object);
+	virtual void _zn_parse_end(Object *p_object);
 	virtual void _zn_parse_group(Object *p_object, const String &p_group);
 	virtual bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,
 			const PropertyHint p_hint, const String &p_hint_text, const BitField<PropertyUsageFlags> p_usage,

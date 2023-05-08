@@ -5,6 +5,8 @@
 
 namespace zylann::voxel {
 
+class VoxelBlockyTypeLibraryIDSDialog;
+
 class VoxelBlockyLibraryEditorPlugin : public EditorPlugin {
 	GDCLASS(VoxelBlockyLibraryEditorPlugin, EditorPlugin)
 public:
@@ -13,6 +15,8 @@ public:
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional
 	static void _bind_methods() {}
+
+	VoxelBlockyTypeLibraryIDSDialog *_type_library_ids_dialog = nullptr;
 };
 
 } // namespace zylann::voxel

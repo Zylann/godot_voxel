@@ -85,6 +85,17 @@ VoxelStringNames::VoxelStringNames() {
 	positive_x = StringName("+x");
 	positive_y = StringName("+y");
 	positive_z = StringName("+z");
+
+	for (unsigned int i = 0; i < ortho_rotation_names.size(); ++i) {
+		ortho_rotation_names[i] = StringName(math::ortho_rotation_to_string(i));
+	}
+
+	for (unsigned int i = 0; i < ortho_rotation_names.size(); ++i) {
+		if (i > 0) {
+			ortho_rotation_enum_hint_string += ",";
+		}
+		ortho_rotation_enum_hint_string += String(math::ortho_rotation_to_string(i));
+	}
 }
 
 } // namespace zylann::voxel

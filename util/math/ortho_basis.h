@@ -109,8 +109,84 @@ struct OrthoBasis {
 	}
 };
 
+// With no particular convention, each rotation can be given a name from the 3 axes XYZ in the form:
+// `+x+y+z`
+// `-y+x+z`
+// `-x-y+z`
+// ...
+//
+// A slightly more intuitive naming can be used, by considering -Z as forward, Y as up, X as right, and all
+// rotations counter-clockwise, preferring either of the following forms:
+//
+// identity
+// y+A             (Y rotation)
+// z+A             (roll around forward)
+// x+90|270        (up or down)
+// x+90|270, y+B   (up or down + Y rotation)
+// z+A, y+B        (roll around forward + Y rotation)
+//
+// Note: half of rotations are those with roll around Z. In a Minecraft game, they are never used.
+//
+enum OrthoRotationID {
+	ORTHO_ROTATION_IDENTITY = 0,
+
+	ORTHO_ROTATION_Z_270, // 1 (roll 270)
+	ORTHO_ROTATION_Z_180, // 2 (roll 180)
+	ORTHO_ROTATION_Z_90, // 3 (roll 90)
+	ORTHO_ROTATION_X_270, // 4 (look down)
+	ORTHO_ROTATION_X_270_Y_270, // 5 (look down, turn right)
+	ORTHO_ROTATION_X_270_Y_180, // 6 (look down, turn around Y 180)
+	ORTHO_ROTATION_X_270_Y_90, // 7 (look down, turn left)
+	ORTHO_ROTATION_Z_180_Y_180, // 8 (roll 180, turn around Y 180)
+	ORTHO_ROTATION_Z_90_Y_180, // 9 (roll 90, turn around Y 180)
+	ORTHO_ROTATION_Y_180, // 10  (turn around Y 180)
+	ORTHO_ROTATION_Z_270_Y_180, // 11  (roll 270, turn around Y 180)
+	ORTHO_ROTATION_X_90, // 12 (look up)
+	ORTHO_ROTATION_X_90_Y_90, // 13 (look up, turn left)
+	ORTHO_ROTATION_X_90_Y_180, // 14 (look up, turn around Y 180)
+	ORTHO_ROTATION_X_90_Y_270, // 15 (look up, turn right)
+	ORTHO_ROTATION_Y_270, // 16 (turn right)
+	ORTHO_ROTATION_Z_270_Y_270, // 17 (roll 270, turn right)
+	ORTHO_ROTATION_Z_180_Y_270, // 18 (roll 180, turn right)
+	ORTHO_ROTATION_Z_90_Y_270, // 19 (roll 90, turn right)
+	ORTHO_ROTATION_Z_180_Y_90, // 20 (roll 180, turn left)
+	ORTHO_ROTATION_Z_90_Y_90, // 21 (roll 90, turn left)
+	ORTHO_ROTATION_Y_90, // 22 (turn left)
+	ORTHO_ROTATION_Z_270_Y_90, // 23 (roll 270, turn left)
+
+	ORTHO_ROTATION_COUNT,
+
+	// Alternative
+	//
+	// IDENTITY (FORWARD)
+	// FORWARD_ROLL_270
+	// FORWARD_ROLL_180
+	// FORWARD_ROLL_90
+	// DOWN
+	// DOWN_ROLL_270
+	// DOWN_ROLL_180
+	// DOWN_ROLL_90
+	// BACK_ROLL_180
+	// BACK_ROLL_90
+	// BACK
+	// BACK_ROLL_270
+	// UP
+	// UP_ROLL_90
+	// UP_ROLL_180
+	// UP_ROLL_270
+	// RIGHT
+	// RIGHT_ROLL_270
+	// RIGHT_ROLL_180
+	// RIGHT_ROLL_90
+	// LEFT_ROLL_180
+	// LEFT_ROLL_90
+	// LEFT
+	// LEFT_ROLL_270
+};
+
 OrthoBasis get_ortho_basis_from_index(int i);
 int get_index_from_ortho_basis(const OrthoBasis &b);
+const char *ortho_rotation_to_string(int i);
 
 } // namespace zylann::math
 

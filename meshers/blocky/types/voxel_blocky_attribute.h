@@ -34,10 +34,12 @@ public:
 		return _is_rotation;
 	}
 
-	// virtual int get_order() const;
+	// If the attribute represents a rotation, gets the OrthoBasis index corresponding to that rotation.
+	unsigned int get_ortho_rotation_index_from_value(int value) const;
 
-	// TODO Modifying models from a function of attributes is actually not a good idea... not all cases work.
-	// virtual void apply(VoxelBlockyModel &model, int value);
+	bool is_equivalent(const VoxelBlockyAttribute &other) const;
+
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
 
 	static void sort_by_name(Span<Ref<VoxelBlockyAttribute>> attributes);
 	static void sort_by_name(Span<StringName> attributes);
@@ -51,6 +53,7 @@ protected:
 	uint8_t _default_value = 0;
 	bool _is_rotation = false;
 	std::vector<StringName> _value_names;
+	std::vector<uint8_t> _ortho_rotations;
 
 	// Attributes don't necessarily use all the values in their range, some can be unused. But they should not take part
 	// into the baking process (no "holes").
@@ -69,6 +72,8 @@ public:
 
 	void set_horizontal_only(bool h);
 	bool is_horizontal_only() const;
+
+	int from_vec3(Vector3 v) const;
 
 private:
 	void update_values();
@@ -100,6 +105,8 @@ public:
 	void set_horizontal_only(bool h);
 	bool is_horizontal_only() const;
 
+	int from_vec3(Vector3 v) const;
+
 private:
 	void update_values();
 
@@ -126,21 +133,38 @@ private:
 	static void _bind_methods();
 
 	bool _horizontal_roll_enabled = false;
-	// TODO Corresponding ortho rotations
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// class VoxelBlockyAttributeCustom : public VoxelBlockyAttribute {
-// 	GDCLASS(VoxelBlockyAttributeCustom, VoxelBlockyAttribute)
-// public:
-// 	void set_value_count(int count);
-// 	void set_value_name(int index, StringName name);
-// 	void set_default_value(int v);
+class VoxelBlockyAttributeCustom : public VoxelBlockyAttribute {
+	GDCLASS(VoxelBlockyAttributeCustom, VoxelBlockyAttribute)
+public:
+	VoxelBlockyAttributeCustom();
 
-// private:
-// 	static void _bind_methods();
-// };
+	void set_attribute_name(StringName name);
+	void set_value_count(int count);
+	void set_value_name(int index, StringName name);
+	void set_default_value(int v);
+
+	// Not exposing rotation like that, because we can't automate this properly at the moment (in the case of rails,
+	// there is rotation, but it is uneven as several values have the same rotation but different models). Users
+	// will have to rotate the model manually using editor tools, which gives more control.
+	// An easier approach is to separate rotation from rail shape as two attributes, but it will waste a few model IDs
+	// for straight shapes.
+	//
+	// void set_is_rotation(bool is_rotation);
+	// void set_value_ortho_rotation(int index, int ortho_rotation_index);
+
+private:
+	void update_values();
+
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
+	static void _bind_methods();
+};
 
 } // namespace zylann::voxel
 

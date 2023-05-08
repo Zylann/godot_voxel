@@ -160,6 +160,29 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 
 void print_data_hex(Span<const uint8_t> data);
 
+template <typename T>
+bool find(Span<const T> items, const T &v, size_t &out_index) {
+	unsigned int i = 0;
+	for (const T &item : items) {
+		if (item == v) {
+			out_index = i;
+			return true;
+		}
+		++i;
+	}
+	return false;
+}
+
+template <typename T>
+bool contains(Span<const T> items, const T &v) {
+	for (const T &item : items) {
+		if (item == v) {
+			return true;
+		}
+	}
+	return false;
+}
+
 } // namespace zylann
 
 #endif // ZN_CONTAINER_FUNCS_H

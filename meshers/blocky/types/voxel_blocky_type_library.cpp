@@ -1,5 +1,7 @@
 #include "voxel_blocky_type_library.h"
 #include "../../../constants/voxel_string_names.h"
+#include "../../../util/container_funcs.h"
+#include "../../../util/godot/classes/json.h"
 #include "../../../util/godot/classes/time.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
@@ -50,17 +52,39 @@ void VoxelBlockyTypeLibrary::bake() {
 	std::vector<VoxelBlockyType::VariantKey> keys;
 	VoxelBlockyModel::MaterialIndexer material_indexer{ _indexed_materials };
 
+	_baked_data.models.resize(_id_map.size());
+
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 		ZN_ASSERT_CONTINUE_MSG(
 				type.is_valid(), format("{} at index {} is null", VoxelBlockyType::get_class_static(), i));
 
-		type->bake(baked_models, keys, material_indexer);
+		type->bake(baked_models, keys, material_indexer, nullptr);
 
-		// TODO Allocate IDs taking an IDMap into account for determinism
+		VoxelID id;
+		id.type_name = type->get_unique_name();
+
+		unsigned int rel_key_index = 0;
 		for (VoxelBlockyModel::BakedData &baked_model : baked_models) {
-			_baked_data.models.push_back(std::move(baked_model));
+			// _baked_data.models.push_back(std::move(baked_model));
+			id.variant_key = keys[rel_key_index];
+
+			size_t model_index;
+			// TODO Optimize this (when needed)
+			// Find existing slot in the ID map. If found, use pre-allocated index.
+			if (!find(to_span_const(_id_map), id, model_index)) {
+				// If not found, pick an empty slot if any
+				if (!find(to_span_const(_id_map), VoxelID(), model_index)) {
+					// If not found, allocate a new index at the end
+					model_index = _baked_data.models.size();
+					_baked_data.models.push_back(VoxelBlockyModel::BakedData());
+					_id_map.push_back(id);
+				}
+			}
+
+			++rel_key_index;
 		}
+
 		baked_models.clear();
 		keys.clear();
 	}
@@ -72,6 +96,45 @@ void VoxelBlockyTypeLibrary::bake() {
 	const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(
 			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size()));
+}
+
+void VoxelBlockyTypeLibrary::update_id_map() {
+	update_id_map(_id_map, nullptr);
+}
+
+void VoxelBlockyTypeLibrary::update_id_map(std::vector<VoxelID> &id_map, std::vector<uint16_t> *used_ids) const {
+	std::vector<VoxelBlockyType::VariantKey> keys;
+
+	for (size_t i = 0; i < _types.size(); ++i) {
+		Ref<VoxelBlockyType> type = _types[i];
+
+		type->generate_keys(keys);
+
+		VoxelID id;
+		id.type_name = type->get_unique_name();
+
+		for (const VoxelBlockyType::VariantKey &key : keys) {
+			id.variant_key = key;
+
+			size_t model_index;
+			// TODO Optimize this (when needed)
+			// Find existing slot in the ID map. If found, use pre-allocated index.
+			if (!find(to_span_const(id_map), id, model_index)) {
+				// If not found, pick an empty slot if any
+				if (!find(to_span_const(id_map), VoxelID(), model_index)) {
+					// If not found, allocate a new index at the end
+					model_index = _baked_data.models.size();
+					id_map.push_back(id);
+				}
+			}
+
+			if (used_ids != nullptr) {
+				used_ids->push_back(model_index);
+			}
+		}
+
+		keys.clear();
+	}
 }
 
 void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_warnings) const {
@@ -197,7 +260,8 @@ static bool parse_attribute_value(
 		out_attrib_value = boolean_value ? 1 : 0;
 
 	} else {
-		ZN_PRINT_ERROR("Expected StringName or integer for attribute value");
+		ZN_PRINT_ERROR(format("Failed to parse attribute value. Expected StringName, integer or boolean. Got {}",
+				Variant::get_type_name(vv.get_type())));
 		return false;
 	}
 
@@ -232,7 +296,7 @@ int VoxelBlockyTypeLibrary::get_model_index_single_attribute(StringName type_nam
 	return get_model_index(id);
 }
 
-int VoxelBlockyTypeLibrary::get_model_index_with_attributes(StringName type_name, Array attribs_spec) const {
+int VoxelBlockyTypeLibrary::get_model_index_with_attributes(StringName type_name, Dictionary attribs_dict) const {
 	ZN_PROFILE_SCOPE();
 
 	VoxelID id;
@@ -243,33 +307,35 @@ int VoxelBlockyTypeLibrary::get_model_index_with_attributes(StringName type_name
 		return -1;
 	}
 
-	ZN_ASSERT_RETURN_V_MSG((attribs_spec.size() % 2) == 0, -1,
-			"Array of attributes must contain series of attribute names and values. The provided array has an uneven "
-			"size.");
-
-	const unsigned int attribute_count = attribs_spec.size() / 2;
+	const unsigned int attribute_count = attribs_dict.size();
+	const Array dict_keys = attribs_dict.keys();
 
 	FixedArray<std::pair<StringName, uint8_t>, VoxelBlockyType::MAX_ATTRIBUTES> unordered_key;
 
 	// Parse attributes
-	for (int attrib_spec_index = 0; attrib_spec_index < attribs_spec.size(); attrib_spec_index += 2) {
-		Variant kv = attribs_spec[attrib_spec_index];
-		Variant vv = attribs_spec[attrib_spec_index + 1];
+	for (unsigned int attrib_spec_index = 0; attrib_spec_index < attribute_count; ++attrib_spec_index) {
+		Variant dict_key = dict_keys[attrib_spec_index];
+		Variant vv = attribs_dict[dict_key];
 
 		std::pair<StringName, uint8_t> pair;
 
-		ZN_ASSERT_RETURN_V_MSG(kv.get_type() != Variant::STRING_NAME, -1, "Attribute name must be a StringName.");
-		StringName attrib_name = kv;
-		pair.first = attrib_name;
-
-		if (!parse_attribute_value(vv, **type, attrib_name, pair.second)) {
+		const Variant::Type dict_key_type = dict_key.get_type();
+		if (dict_key_type == Variant::STRING || dict_key_type == Variant::STRING_NAME) {
+			pair.first = dict_key;
+		} else {
+			ZN_PRINT_ERROR(
+					format("Attribute name must be a StringName. Got {}", Variant::get_type_name(dict_key_type)));
 			return -1;
 		}
 
-		unordered_key[attrib_spec_index / 2] = pair;
+		if (!parse_attribute_value(vv, **type, pair.first, pair.second)) {
+			return -1;
+		}
+
+		unordered_key[attrib_spec_index] = pair;
 	}
 
-	// Sort, because a set of attributes have a fixed order so they can be looked up more efficiently
+	// Sort, because sets of attributes have a fixed order so they can be looked up more efficiently
 	VoxelBlockyAttribute::sort_by_name(Span<std::pair<StringName, uint8_t>>(unordered_key.data(), attribute_count));
 
 	for (unsigned int i = 0; i < attribute_count; ++i) {
@@ -301,10 +367,361 @@ Ref<VoxelBlockyType> VoxelBlockyTypeLibrary::get_type_from_name(StringName name)
 	return Ref<VoxelBlockyType>();
 }
 
-// TODO
-// Ref<VoxelBlockyType> VoxelBlockyTypeLibrary::get_type_from_model_index(int i) const {
-// 	return Ref<VoxelBlockyType>();
-// }
+Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int i) const {
+	ZN_ASSERT_RETURN_V(i >= 0 && i < int(_id_map.size()), Array());
+	const VoxelID &id = _id_map[i];
+
+	Array ret;
+	ret.resize(2);
+
+	ret[0] = id.type_name;
+
+	Dictionary dict;
+	for (unsigned int i = 0; i < id.variant_key.attribute_names.size(); ++i) {
+		const StringName &attrib_name = id.variant_key.attribute_names[i];
+		if (attrib_name == StringName()) {
+			break;
+		}
+		dict[attrib_name] = id.variant_key.attribute_values[i];
+	}
+	ret[1] = dict;
+
+	return ret;
+}
+
+struct VoxelIDToken {
+	enum Type { //
+		INVALID,
+		NAME,
+		INTEGER,
+		BOOLEAN,
+		OPEN_BRACKET,
+		CLOSE_BRACKET,
+		COMMA,
+		EQUALS
+	};
+	Type type = INVALID;
+	union {
+		uint32_t integer_value;
+		bool boolean_value;
+	};
+	unsigned int position = 0;
+	unsigned int size = 0;
+};
+
+class VoxelIDTokenizer {
+public:
+	VoxelIDTokenizer(Span<const char32_t> str) : _position(0), _str(str) {}
+
+	enum Result { TOKEN, END, UNEXPECTED_TOKEN };
+
+	Result get(VoxelIDToken &out_token) {
+		struct CharToken {
+			const char32_t character;
+			VoxelIDToken::Type type;
+		};
+		static const CharToken s_char_tokens[] = {
+			{ '[', VoxelIDToken::OPEN_BRACKET }, //
+			{ ']', VoxelIDToken::CLOSE_BRACKET }, //
+			{ ',', VoxelIDToken::COMMA }, //
+			{ '=', VoxelIDToken::EQUALS }, //
+			{ 0, VoxelIDToken::INVALID } //
+		};
+
+		while (_position < _str.size()) {
+			const char32_t c = _str[_position];
+
+			{
+				const CharToken *ct = s_char_tokens;
+				while (ct->character != 0) {
+					if (ct->character == c) {
+						VoxelIDToken token;
+						token.type = ct->type;
+						token.position = _position;
+						token.size = 1;
+						++_position;
+						out_token = token;
+						return TOKEN;
+					}
+					++ct;
+				}
+			}
+
+			Span<const char32_t> substr = _str.sub(_position);
+			if (is_keyword(substr, "true")) {
+				out_token.type = VoxelIDToken::BOOLEAN;
+				out_token.position = _position;
+				out_token.size = 4;
+				out_token.boolean_value = true;
+				return TOKEN;
+			}
+			if (is_keyword(substr, "false")) {
+				out_token.type = VoxelIDToken::BOOLEAN;
+				out_token.position = _position;
+				out_token.size = 5;
+				out_token.boolean_value = false;
+				return TOKEN;
+			}
+
+			if (is_name_starter(c)) {
+				out_token = get_name();
+				return TOKEN;
+			}
+
+			if (is_digit(c)) {
+				out_token = get_integer();
+				return TOKEN;
+			}
+
+			return UNEXPECTED_TOKEN;
+		}
+
+		return END;
+	}
+
+private:
+	static inline bool is_name_starter(char c) {
+		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+	}
+
+	static inline bool is_digit(char c) {
+		return (c >= '0' && c <= '9');
+	}
+
+	static inline bool is_name_char(char c) {
+		return is_name_starter(c) ||
+				is_digit(c)
+				// Special addition so names can contain a namespace
+				|| c == ':';
+	}
+
+	static inline bool is_keyword(Span<const char32_t> str, const char *keyword) {
+		unsigned int i = 0;
+		while (keyword[i] != '\0') {
+			if (str[i] != keyword[i]) {
+				return false;
+			}
+		}
+		if (i == str.size()) {
+			return true;
+		}
+		++i;
+		return !is_name_char(str[i]);
+	}
+
+	VoxelIDToken get_name() {
+		const unsigned int begin_pos = _position;
+		while (_position < _str.size()) {
+			const char32_t c = _str[_position];
+			if (!is_name_char(c)) {
+				break;
+			}
+			++_position;
+		}
+		VoxelIDToken token;
+		token.type = VoxelIDToken::NAME;
+		token.position = begin_pos;
+		token.size = _position - begin_pos;
+		return token;
+	}
+
+	VoxelIDToken get_integer() {
+		uint32_t n = 0;
+		char32_t c = 0;
+		const unsigned int begin_pos = _position;
+		while (_position < _str.size()) {
+			c = _str[_position];
+			if (!is_digit(c)) {
+				break;
+			}
+			n = n * 10 + (c - '0');
+			++_position;
+		}
+		VoxelIDToken token;
+		token.type = VoxelIDToken::INTEGER;
+		token.position = begin_pos;
+		token.size = _position - begin_pos;
+		token.integer_value = n;
+		return token;
+	}
+
+	unsigned int _position;
+	Span<const char32_t> _str;
+};
+
+bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id) {
+	Span<const char32_t> str(p_str.ptr(), p_str.length());
+
+	VoxelIDTokenizer tokenizer(str);
+
+	VoxelIDToken token;
+	VoxelIDTokenizer::Result result = tokenizer.get(token);
+	ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+	ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::NAME, false);
+	out_id.type_name = p_str.substr(token.position, token.size);
+
+	result = tokenizer.get(token);
+	if (result == VoxelIDTokenizer::END) {
+		return true;
+	}
+	ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+	ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::OPEN_BRACKET, false);
+
+	for (unsigned int attribute_index = 0; attribute_index < VoxelBlockyType::MAX_ATTRIBUTES; ++attribute_index) {
+		result = tokenizer.get(token);
+		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+		if (token.type == VoxelIDToken::CLOSE_BRACKET) {
+			break;
+		}
+		ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::NAME, false);
+		out_id.variant_key.attribute_names[attribute_index] = p_str.substr(token.position, token.size);
+
+		result = tokenizer.get(token);
+		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+		if (token.type == VoxelIDToken::INTEGER) {
+			ZN_ASSERT_RETURN_V(token.integer_value >= VoxelBlockyAttribute::MAX_VALUES, false);
+			out_id.variant_key.attribute_values[attribute_index] = token.integer_value;
+
+		} else if (token.type == VoxelIDToken::BOOLEAN) {
+			out_id.variant_key.attribute_values[attribute_index] = token.boolean_value ? 1 : 0;
+
+		} else {
+			// TODO Can't parse named attribute values without recognizing their type!
+			// It may be possible to recognize built-in attributes, but not custom ones...
+			ZN_PRINT_ERROR("Unsupported value");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool VoxelBlockyTypeLibrary::load_id_map_from_string_array(PackedStringArray map_array) {
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN_V_MSG(_id_map.size() == 0, false,
+			"The current ID map isn't empty. Make sure you're not accidentally overwriting data, or clear the library "
+			"first.");
+
+	std::vector<VoxelID> id_map;
+	id_map.resize(map_array.size());
+
+	for (int model_index = 0; model_index < map_array.size(); ++model_index) {
+		String model_str = map_array[model_index];
+		if (model_str == "") {
+			continue;
+		}
+		ZN_ASSERT_RETURN_V(parse_voxel_id(model_str, id_map[model_index]), false);
+	}
+
+	_id_map = std::move(id_map);
+	return true;
+}
+
+bool VoxelBlockyTypeLibrary::load_id_map_from_json(String json_string) {
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN_V_MSG(_id_map.size() == 0, false,
+			"The current ID map isn't empty. Make sure you're not accidentally overwriting data, or clear the library "
+			"first.");
+
+	Ref<JSON> json;
+	json.instantiate();
+	const Error json_err = json->parse(json_string);
+	if (json_err != OK) {
+		const String json_err_msg = json->get_error_message();
+		const int json_err_line = json->get_error_line();
+		ZN_PRINT_ERROR(format("Error when parsing ID Map from JSON string: line {}: {}", json_err_line, json_err_msg));
+		return false;
+	}
+
+	Variant res = json->get_data();
+	ZN_ASSERT_RETURN_V(res.get_type() == Variant::DICTIONARY, false);
+	Dictionary root_dict = res;
+
+	ZN_ASSERT_RETURN_V(root_dict.has("map"), false);
+	Variant map_v = root_dict.get("map", Variant());
+
+	ZN_ASSERT_RETURN_V(map_v.get_type() == Variant::ARRAY, false);
+	Array map_varray = map_v;
+
+	PackedStringArray map_sarray;
+	map_sarray.resize(map_varray.size());
+	Span<String> map_sarray_w(map_sarray.ptrw(), map_sarray.size());
+	for (int i = 0; i < map_varray.size(); ++i) {
+		Variant v = map_varray[i];
+		if (v.get_type() == Variant::NIL) {
+			continue;
+		} else if (v.get_type() == Variant::STRING) {
+			map_sarray_w[i] = v;
+		} else {
+			ZN_PRINT_ERROR(format("Expected string or null in ID Map array at index {}", i));
+			continue;
+		}
+	}
+
+	return load_id_map_from_string_array(map_sarray);
+}
+
+String VoxelBlockyTypeLibrary::to_string(const VoxelID &id) {
+	String s = id.type_name;
+	if (id.variant_key.attribute_names[0] != StringName()) {
+		s += "[";
+		for (unsigned int attribute_index = 0; attribute_index < id.variant_key.attribute_names.size();
+				++attribute_index) {
+			const StringName &attrib_name = id.variant_key.attribute_names[attribute_index];
+			if (attrib_name == StringName()) {
+				break;
+			}
+			if (attribute_index > 0) {
+				s += ",";
+			}
+			s += String(attrib_name);
+			s += '=';
+			s += String::num_int64(id.variant_key.attribute_values[attribute_index]);
+		}
+		s += "]";
+	}
+	return s;
+}
+
+PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array(const std::vector<VoxelID> &id_map) {
+	ZN_PROFILE_SCOPE();
+
+	PackedStringArray array;
+	array.resize(id_map.size());
+	Span<String> array_w(array.ptrw(), array.size());
+	for (unsigned int model_index = 0; model_index < id_map.size(); ++model_index) {
+		const VoxelID &id = id_map[model_index];
+		if (id.type_name == StringName()) {
+			continue;
+		}
+		array_w[model_index] = to_string(id);
+	}
+
+	return array;
+}
+
+PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array() const {
+	return serialize_id_map_to_string_array(_id_map);
+}
+
+void VoxelBlockyTypeLibrary::get_id_map_preview(PackedStringArray &out_ids, std::vector<uint16_t> &used_ids) const {
+	std::vector<VoxelID> id_map = _id_map;
+	update_id_map(id_map, &used_ids);
+	out_ids = serialize_id_map_to_string_array(id_map);
+}
+
+String VoxelBlockyTypeLibrary::serialize_id_map_to_json() const {
+	ZN_PROFILE_SCOPE();
+
+	PackedStringArray array = serialize_id_map_to_string_array();
+
+	Dictionary root_dict;
+	root_dict["map"] = array;
+
+	return JSON::stringify(root_dict, "\t", true);
+}
 
 TypedArray<VoxelBlockyType> VoxelBlockyTypeLibrary::_b_get_types() const {
 	return to_typed_array(to_span(_types));
@@ -313,6 +730,20 @@ TypedArray<VoxelBlockyType> VoxelBlockyTypeLibrary::_b_get_types() const {
 void VoxelBlockyTypeLibrary::_b_set_types(TypedArray<VoxelBlockyType> types) {
 	copy_to(_types, types);
 	_needs_baking = true;
+}
+
+PackedStringArray VoxelBlockyTypeLibrary::_b_serialize_id_map_to_string_array() const {
+	return serialize_id_map_to_string_array();
+}
+
+PackedStringArray VoxelBlockyTypeLibrary::_b_get_id_map() {
+	// This is a hack so that when we save a library, its internal ID map is updated and saved.
+	update_id_map();
+	return serialize_id_map_to_string_array();
+}
+
+void VoxelBlockyTypeLibrary::_b_set_id_map(PackedStringArray sarray) {
+	load_id_map_from_string_array(sarray);
 }
 
 void VoxelBlockyTypeLibrary::_bind_methods() {
@@ -325,14 +756,30 @@ void VoxelBlockyTypeLibrary::_bind_methods() {
 			D_METHOD("get_model_index_default", "type_name"), &VoxelBlockyTypeLibrary::get_model_index_default);
 	ClassDB::bind_method(D_METHOD("get_model_index_single_attribute", "type_name", "attrib_value"),
 			&VoxelBlockyTypeLibrary::get_model_index_single_attribute);
-	ClassDB::bind_method(D_METHOD("get_model_index_with_attributes", "type_name", "attrib_specs"),
+	ClassDB::bind_method(D_METHOD("get_model_index_with_attributes", "type_name", "attribs_dict"),
 			&VoxelBlockyTypeLibrary::get_model_index_with_attributes);
+	ClassDB::bind_method(D_METHOD("get_type_name_and_attributes_from_model_index", "model_index"),
+			&VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index);
+	ClassDB::bind_method(D_METHOD("load_id_map_from_json", "json"), &VoxelBlockyTypeLibrary::load_id_map_from_json);
+	ClassDB::bind_method(D_METHOD("serialize_id_map_to_json"), &VoxelBlockyTypeLibrary::serialize_id_map_to_json);
+	ClassDB::bind_method(D_METHOD("load_id_map_from_string_array", "str_array"),
+			&VoxelBlockyTypeLibrary::load_id_map_from_string_array);
+	ClassDB::bind_method(
+			D_METHOD("serialize_id_map_to_string_array"), &VoxelBlockyTypeLibrary::_b_serialize_id_map_to_string_array);
 
 	ClassDB::bind_method(D_METHOD("get_type_from_name", "type_name"), &VoxelBlockyTypeLibrary::get_type_from_name);
+
+	ClassDB::bind_method(D_METHOD("_get_id_map_data"), &VoxelBlockyTypeLibrary::_b_get_id_map);
+	ClassDB::bind_method(D_METHOD("_set_id_map_data", "sarray"), &VoxelBlockyTypeLibrary::_b_set_id_map);
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "types", PROPERTY_HINT_ARRAY_TYPE,
 						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyType::get_class_static())),
 			"set_types", "get_types");
+
+	// Internal property
+	ADD_PROPERTY(
+			PropertyInfo(Variant::PACKED_STRING_ARRAY, "_id_map_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"_b_set_id_map_data", "_b_get_id_map_data");
 }
 
 } // namespace zylann::voxel

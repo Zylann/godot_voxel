@@ -19,6 +19,14 @@ void ZN_EditorInspectorPlugin::_parse_begin(Object *p_object) {
 }
 
 #if defined(ZN_GODOT)
+void ZN_EditorInspectorPlugin::parse_end(Object *p_object) {
+#elif defined(ZN_GODOT_EXTENSION)
+void ZN_EditorInspectorPlugin::_parse_end(Object *p_object) {
+#endif
+	_zn_parse_end(p_object);
+}
+
+#if defined(ZN_GODOT)
 void ZN_EditorInspectorPlugin::parse_group(Object *p_object, const String &p_group) {
 #elif defined(ZN_GODOT_EXTENSION)
 void ZN_EditorInspectorPlugin::_parse_group(Object *p_object, const String &p_group) {
@@ -42,6 +50,8 @@ bool ZN_EditorInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 }
 
 void ZN_EditorInspectorPlugin::_zn_parse_begin(Object *p_object) {}
+
+void ZN_EditorInspectorPlugin::_zn_parse_end(Object *p_object) {}
 
 void ZN_EditorInspectorPlugin::_zn_parse_group(Object *p_object, const String &p_group) {}
 
