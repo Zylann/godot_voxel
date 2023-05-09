@@ -10,7 +10,7 @@ namespace zylann::voxel {
 // simple, or if you want to organize your own system of voxel types.
 //
 // Should have been named `VoxelBlockyModelLibrary` or `VoxelBlockyLibrarySimple`, but the name was kept for
-// compatibility.
+// compatibility with previous versions.
 class VoxelBlockyLibrary : public VoxelBlockyLibraryBase {
 	GDCLASS(VoxelBlockyLibrary, VoxelBlockyLibraryBase)
 
