@@ -24,9 +24,9 @@ VoxelBlockyAttributeDirection::VoxelBlockyAttributeDirection() {
 	bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_Z].rotate_y_90_ccw();
 	bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_Z].rotate_y_90_ccw();
 
-	bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_X].rotate_y_90_cw();
+	bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_X].rotate_y_90_ccw();
 
-	bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_X].rotate_y_90_ccw();
+	bases[VoxelBlockyAttributeDirection::DIR_POSITIVE_X].rotate_y_90_cw();
 
 	bases[VoxelBlockyAttributeDirection::DIR_NEGATIVE_Y].rotate_x_90_cw();
 
