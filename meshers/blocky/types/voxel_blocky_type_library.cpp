@@ -123,7 +123,7 @@ void VoxelBlockyTypeLibrary::update_id_map(std::vector<VoxelID> &id_map, std::ve
 				// If not found, pick an empty slot if any
 				if (!find(to_span_const(id_map), VoxelID(), model_index)) {
 					// If not found, allocate a new index at the end
-					model_index = _baked_data.models.size();
+					model_index = id_map.size();
 					id_map.push_back(id);
 				}
 			}

@@ -36,10 +36,11 @@ public:
 	// Warning: this method is slow. Consider using it in non-intensive code (editing few voxels at a time?), or cache
 	// the result in a variable.
 	// It is slow because:
+	// - Dictionary and each of its keys have to be allocated on the heap
 	// - Dictionary keys can't be `StringName` by design (Godot converts them to `String`, but
 	//   internally the function has to convert them back to `StringName`)
 	// - The function has to iterate the dictionary, which is another thing dictionaries are slow for.
-	//   Dictionary is used for ease of use.
+	//   Dictionary is however used for ease of use, and to match the setter function.
 	// - Attributes have to be sorted and looked up into internal data structures to obtain the actual voxel ID.
 	//
 	int get_model_index_with_attributes(StringName type_name, Dictionary attribs_dict) const;
@@ -94,6 +95,7 @@ private:
 	// Maps voxel data indices to fully-qualified model names. This is used to make sure model IDs remain the same, as
 	// long as their type has the same name and attribute values are the same.
 	// Can refer to types that no longer exist.
+	// Indices and size match `_baked_data.models`.
 	std::vector<VoxelID> _id_map;
 };
 
