@@ -98,6 +98,10 @@ private:
 	// TODO Rename `_unchecked_attributes`?
 	std::vector<Ref<VoxelBlockyAttribute>> _attributes;
 
+	// TODO Automatic rotation isn't always possible.
+	// For example, if a 3-axis block is asymetric and needs to always point down in its Y axis configuration, there is
+	// no way to choose that (other than wasting a 6-dir attribute)
+
 	// If true, rotation attributes will not require the user to specify models for each rotation. They will be
 	// automatically generated, using the default rotation as reference.
 	bool _automatic_rotations = true;

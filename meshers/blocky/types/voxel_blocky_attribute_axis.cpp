@@ -7,6 +7,7 @@ namespace zylann::voxel {
 VoxelBlockyAttributeAxis::VoxelBlockyAttributeAxis() {
 	_name = VoxelStringNames::get_singleton().axis;
 	_is_rotation = true;
+	_default_value = AXIS_Z;
 
 	_value_names.resize(AXIS_COUNT);
 	_value_names[AXIS_X] = VoxelStringNames::get_singleton().x;
@@ -14,9 +15,9 @@ VoxelBlockyAttributeAxis::VoxelBlockyAttributeAxis() {
 	_value_names[AXIS_Z] = VoxelStringNames::get_singleton().z;
 
 	FixedArray<math::OrthoBasis, VoxelBlockyAttributeAxis::AXIS_COUNT> bases;
-	// AXIS_X is identity
+	bases[VoxelBlockyAttributeAxis::AXIS_X].rotate_y_90_ccw();
 	bases[VoxelBlockyAttributeAxis::AXIS_Y].rotate_x_90_ccw();
-	bases[VoxelBlockyAttributeAxis::AXIS_Z].rotate_y_90_ccw();
+	// AXIS_Z is identity
 
 	_ortho_rotations.resize(bases.size());
 	for (unsigned int axis_index = 0; axis_index < bases.size(); ++axis_index) {

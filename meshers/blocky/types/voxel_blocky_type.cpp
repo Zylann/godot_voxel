@@ -238,7 +238,8 @@ void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
 	std::vector<VariantKey> keys;
 	generate_keys(attributes, keys, !_automatic_rotations);
 
-	// Only show variants if there are more than one. If there is only one, it's just the base model.
+	// Only show variants if there are more than one. If there is only one, it's just the base model (or there is only
+	// one attribute and it's a rotation and automatic rotations are enabled).
 	if (keys.size() > 1) {
 		for (const VariantKey &key : keys) {
 			String property_name = "variants/";
