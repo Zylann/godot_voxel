@@ -24,8 +24,8 @@ public:
 	StringName block_loaded;
 	StringName block_unloaded;
 
-	StringName block_meshed;
-	StringName block_unmeshed;
+	StringName mesh_block_entered;
+	StringName mesh_block_exited;
 
 	StringName store_colors_in_texture;
 	StringName scale;

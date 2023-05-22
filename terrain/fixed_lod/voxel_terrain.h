@@ -199,8 +199,8 @@ private:
 	void emit_data_block_loaded(Vector3i bpos);
 	void emit_data_block_unloaded(Vector3i bpos);
 
-	void emit_data_block_meshed(Vector3i bpos);
-	void emit_data_block_unmeshed(Vector3i bpos);
+	void emit_data_mesh_block_entered(Vector3i bpos);
+	void emit_data_mesh_block_exited(Vector3i bpos);
 
 	bool try_get_paired_viewer_index(ViewerID id, size_t &out_i) const;
 
