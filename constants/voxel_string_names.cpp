@@ -31,6 +31,9 @@ VoxelStringNames::VoxelStringNames() {
 	block_loaded = StringName("block_loaded");
 	block_unloaded = StringName("block_unloaded");
 
+	block_meshed = StringName("block_meshed");
+	block_unmeshed = StringName("block_unmeshed");
+
 	store_colors_in_texture = StringName("store_colors_in_texture");
 	scale = StringName("scale");
 	enable_baked_lighting = StringName("enable_baked_lighting");

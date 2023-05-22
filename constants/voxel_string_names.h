@@ -24,6 +24,9 @@ public:
 	StringName block_loaded;
 	StringName block_unloaded;
 
+	StringName block_meshed;
+	StringName block_unmeshed;
+
 	StringName store_colors_in_texture;
 	StringName scale;
 	StringName enable_baked_lighting;

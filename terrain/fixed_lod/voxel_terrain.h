@@ -199,6 +199,9 @@ private:
 	void emit_data_block_loaded(Vector3i bpos);
 	void emit_data_block_unloaded(Vector3i bpos);
 
+	void emit_data_block_meshed(Vector3i bpos);
+	void emit_data_block_unmeshed(Vector3i bpos);
+
 	bool try_get_paired_viewer_index(ViewerID id, size_t &out_i) const;
 
 	void notify_data_block_enter(const VoxelDataBlock &block, Vector3i bpos, ViewerID viewer_id);
