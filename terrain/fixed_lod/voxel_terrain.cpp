@@ -211,14 +211,20 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	}
 
 	_mesh_block_size_po2 = po2;
+        
+
 
 	if (_instancer != nullptr) {
 		VoxelInstancer &instancer = *_instancer;
 		_mesh_map.for_each_block([&instancer, this](VoxelMeshBlockVT &block) { //
 			instancer.on_mesh_block_exit(block.position, 0);
-                        this->emit_data_mesh_block_exited(block.position);
+                        emit_data_mesh_block_exited(block.position);
 		});
-	}
+	} else {
+                _mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
+                        emit_data_mesh_block_exited(block.position);
+                });
+        }
 
 	// Unload all mesh blocks regardless of refcount
 	_mesh_map.clear();
@@ -494,8 +500,8 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 
 	if (_instancer != nullptr) {
 		_instancer->on_mesh_block_exit(bpos, 0);
-                emit_data_mesh_block_exited(bpos);
 	}
+        emit_data_mesh_block_exited(bpos);
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -1610,20 +1616,21 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	if (_instancer != nullptr) {
-		if (mesh.is_null() && block != nullptr) {
-			// No surface anymore in this block
-			_instancer->on_mesh_block_exit(ob.position, ob.lod);
-                        emit_data_mesh_block_exited(ob.position);
-		}
-		if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
-			// TODO The mesh could come from an edited region!
-			// We would have to know if specific voxels got edited, or different from the generator
-			// TODO Support multi-surfaces in VoxelInstancer
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
-                        emit_data_mesh_block_entered(ob.position);
-		}
-	}
+	
+        if (mesh.is_null() && block != nullptr) {
+                // No surface anymore in this block
+                if (_instancer != nullptr)
+                        _instancer->on_mesh_block_exit(ob.position, ob.lod);
+                emit_data_mesh_block_exited(ob.position);
+        }
+        if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
+                // TODO The mesh could come from an edited region!
+                // We would have to know if specific voxels got edited, or different from the generator
+                // TODO Support multi-surfaces in VoxelInstancer
+                if (_instancer != nullptr)
+                        _instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
+                emit_data_mesh_block_entered(ob.position);
+        }
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
 			RenderingServer::ShadowCastingSetting(get_shadow_casting()));
