@@ -150,6 +150,12 @@ static bool parse_variant_key_from_property_name(const String &property_name, Vo
 				++i;
 				break;
 			} else {
+				// TODO This happens when an attribute contains an underscore in its name (which is legit!).
+				// This demonstrates we can't keep hacking property names for this... it becomes REALLY annoying to
+				// parse this. It's also really annoying for the user to recognize the names.
+				// We should make a custom editor for this, but by doing that, we would loose sub-inspectors...
+				// so the only way to keep a good Godot integration is to make an entirely dedicated editor for types,
+				// so THE (glorious singleton) Godot inspector can be visible at the same time to edit sub-resources...
 				ZN_PRINT_ERROR(format(
 						"Unexpected character at position {} when parsing variant property '{}'", i, property_name));
 				return false;
