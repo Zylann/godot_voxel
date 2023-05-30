@@ -57,7 +57,7 @@ template <typename Type_T>
 void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
 		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
 		const Vector3i block_size, const VoxelBlockyLibrary::BakedData &library, bool bake_occlusion,
-		float baked_occlusion_darkness) {
+		float baked_occlusion_darkness, float side_centroid_scale) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
 	// changing makes no difference, we could use a function pointer or switch inside instead to reduce executable size.
@@ -228,8 +228,30 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 							const int append_index = arrays.positions.size();
 							arrays.positions.resize(arrays.positions.size() + vertex_count);
 							Vector3f *w = arrays.positions.data() + append_index;
+
 							for (unsigned int i = 0; i < vertex_count; ++i) {
-								w[i] = side_positions[i] + pos;
+								w[i] = side_positions[i];
+							}
+
+							if (side_centroid_scale != 1.f) {
+								// This is an attempt of workaround for geometry gaps when using MSAA.
+								// However it may introduce noticeable artifacts at close range.
+								// It only works on voxel edges, inner geometry may still need to be fixed manually.
+								// If texture atlasing is used, an additional workaround may be required for UVs.
+								Vector3f planar_scale(side_centroid_scale, side_centroid_scale, side_centroid_scale);
+								// Don't scale alongside the normal of the side
+								planar_scale[side >> 1] = 1.f;
+								Vector3f centering_offset(0.5f, 0.5f, 0.5f);
+								// Don't offset alongside the normal of the side
+								centering_offset[side >> 1] = 0.f;
+								const Vector3f combined_offset = -centering_offset * planar_scale + centering_offset;
+								for (unsigned int i = 0; i < vertex_count; ++i) {
+									w[i] = w[i] * planar_scale + combined_offset;
+								}
+							}
+
+							for (unsigned int i = 0; i < vertex_count; ++i) {
+								w[i] += pos;
 							}
 						}
 
@@ -448,6 +470,16 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 	return _parameters.bake_occlusion;
 }
 
+void VoxelMesherBlocky::set_side_centroid_scale(float s) {
+	RWLockWrite wlock(_parameters_lock);
+	_parameters.side_centroid_scaling = math::max(s, 0.f);
+}
+
+float VoxelMesherBlocky::get_side_centroid_scale() const {
+	RWLockRead rlock(_parameters_lock);
+	return _parameters.side_centroid_scaling;
+}
+
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	const int channel = VoxelBufferInternal::CHANNEL_TYPE;
 	Parameters params;
@@ -470,6 +502,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	if (params.bake_occlusion) {
 		baked_occlusion_darkness = params.baked_occlusion_darkness / 3.0f;
 	}
+
+	const float side_centroid_scale = 1.f + params.side_centroid_scaling;
 
 	// The technique is Culled faces.
 	// Could be improved with greedy meshing: https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
@@ -547,13 +581,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		switch (channel_depth) {
 			case VoxelBufferInternal::DEPTH_8_BIT:
 				generate_blocky_mesh(arrays_per_material, collision_surface, raw_channel, block_size,
-						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+						library_baked_data, params.bake_occlusion, baked_occlusion_darkness, side_centroid_scale);
 				break;
 
 			case VoxelBufferInternal::DEPTH_16_BIT:
 				generate_blocky_mesh(arrays_per_material, collision_surface,
 						raw_channel.reinterpret_cast_to<uint16_t>(), block_size, library_baked_data,
-						params.bake_occlusion, baked_occlusion_darkness);
+						params.bake_occlusion, baked_occlusion_darkness, side_centroid_scale);
 				break;
 
 			default:
@@ -716,6 +750,9 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
+	ClassDB::bind_method(D_METHOD("set_side_centroid_scale", "value"), &VoxelMesherBlocky::set_side_centroid_scale);
+	ClassDB::bind_method(D_METHOD("get_side_centroid_scale"), &VoxelMesherBlocky::get_side_centroid_scale);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
 						 VoxelBlockyLibrary::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
@@ -723,6 +760,8 @@ void VoxelMesherBlocky::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
 			"set_occlusion_darkness", "get_occlusion_darkness");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "side_centroid_scale", PROPERTY_HINT_RANGE, "0,0.01,0.00001"),
+			"set_side_centroid_scale", "get_side_centroid_scale");
 }
 
 } // namespace zylann::voxel

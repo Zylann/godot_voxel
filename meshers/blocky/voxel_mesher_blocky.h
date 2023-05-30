@@ -30,6 +30,9 @@ public:
 	void set_occlusion_enabled(bool enable);
 	bool get_occlusion_enabled() const;
 
+	void set_side_centroid_scale(float s);
+	float get_side_centroid_scale() const;
+
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
 
 	Ref<Resource> duplicate(bool p_subresources = false) const ZN_OVERRIDE_UNLESS_GODOT_EXTENSION;
@@ -76,6 +79,7 @@ protected:
 private:
 	struct Parameters {
 		float baked_occlusion_darkness = 0.8;
+		float side_centroid_scaling = 0.0f;
 		bool bake_occlusion = true;
 		Ref<VoxelBlockyLibrary> library;
 	};
