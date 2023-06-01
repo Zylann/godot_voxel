@@ -189,6 +189,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			_context_menu->add_item("Relay", VoxelGraphFunction::NODE_RELAY);
 			continue;
 		}
+		if (i == CATEGORY_CONSTANT) {
+			continue;
+		}
 		String name = get_category_name(Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
@@ -203,15 +206,28 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		if (i == VoxelGraphFunction::NODE_RELAY) {
 			continue;
 		}
+
 		const NodeType &node_type = NodeTypeDB::get_singleton().get_type(i);
-		PopupMenu *menu = category_menus[node_type.category];
-		ZN_ASSERT(menu != nullptr);
+
 		if (i == VoxelGraphFunction::NODE_FUNCTION) {
+			PopupMenu *menu = category_menus[node_type.category];
+			ZN_ASSERT(menu != nullptr);
 			menu->add_item(ZN_TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
 #ifdef ZN_GODOT
 			menu->add_item(TTR("Quick Open..."), CONTEXT_MENU_FUNCTION_QUICK_OPEN);
 #endif
+		} else if (i == VoxelGraphFunction::NODE_CONSTANT) {
+			// Exceptionally keep the constant node into the input category in the editor. Internally, "Input" means the
+			// node is an entry point of the graph, like a function parameter. Constants are not considered as such, and
+			// won't work as inputs in graph functions. They have their own category internally, but it still makes
+			// sense to have them in the "input" sub-menu in the editor.
+			PopupMenu *menu = category_menus[CATEGORY_INPUT];
+			ZN_ASSERT(menu != nullptr);
+			menu->add_item(node_type.name, i);
+
 		} else {
+			PopupMenu *menu = category_menus[node_type.category];
+			ZN_ASSERT(menu != nullptr);
 			menu->add_item(node_type.name, i);
 		}
 	}

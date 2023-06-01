@@ -272,6 +272,10 @@ const char *get_category_name(Category category) {
 			return "Debug";
 		case CATEGORY_FUNCTIONS:
 			return "Functions";
+		case CATEGORY_RELAY:
+			return "Relay";
+		case CATEGORY_CONSTANT:
+			return "Constant";
 		default:
 			CRASH_NOW_MSG("Unhandled category");
 	}
@@ -318,7 +322,7 @@ NodeTypeDB::NodeTypeDB() {
 	{
 		NodeType &t = types[VoxelGraphFunction::NODE_CONSTANT];
 		t.name = "Constant";
-		t.category = CATEGORY_INPUT;
+		t.category = CATEGORY_CONSTANT;
 		t.outputs.push_back(NodeType::Port("value"));
 		t.params.push_back(NodeType::Param("value", Variant::FLOAT));
 	}
