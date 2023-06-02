@@ -49,7 +49,7 @@ public:
 	void set_atlas_size(int s);
 
 	// Use this factory rather than creating voxels from scratch
-	Ref<VoxelBlockyModel> create_voxel(unsigned int id, String name);
+	Ref<VoxelBlockyModel> create_voxel(unsigned int id, String p_name);
 
 	unsigned int get_voxel_count() const;
 	void set_voxel_count(unsigned int type_count);
@@ -61,7 +61,7 @@ public:
 
 	void load_default();
 
-	int get_voxel_index_from_name(StringName name) const;
+	int get_voxel_index_from_name(StringName p_name) const;
 
 	void bake();
 
@@ -97,7 +97,7 @@ private:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 	Ref<VoxelBlockyModel> _b_get_voxel(unsigned int id);
-	Ref<VoxelBlockyModel> _b_get_voxel_by_name(StringName name);
+	Ref<VoxelBlockyModel> _b_get_voxel_by_name(StringName p_name);
 	// Convenience method to get all indexed materials after baking,
 	// which can be passed to VoxelMesher::build for testing
 	TypedArray<Material> _b_get_materials() const;

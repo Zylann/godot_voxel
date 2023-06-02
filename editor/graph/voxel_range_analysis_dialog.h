@@ -22,7 +22,7 @@ private:
 	void _on_enabled_checkbox_toggled(bool enabled);
 	void _on_area_spinbox_value_changed(float value);
 
-	void add_row(String text, SpinBox *&sb, GridContainer *parent, float defval);
+	void add_row(String text, SpinBox *&sb, GridContainer *container, float defval);
 
 	static void _bind_methods();
 

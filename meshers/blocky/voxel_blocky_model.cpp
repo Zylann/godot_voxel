@@ -41,11 +41,11 @@ static Cube::Side name_to_side(const String &s) {
 }
 
 bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
-	String name = p_name;
+	String property_name = p_name;
 
 	// TODO Eventualy these could be Rect2 for maximum flexibility?
-	if (name.begins_with("cube_tiles_")) {
-		String s = name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, name.length());
+	if (property_name.begins_with("cube_tiles_")) {
+		String s = property_name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
@@ -53,13 +53,13 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 			return true;
 		}
 
-	} else if (name.begins_with("material_override_")) {
-		const int index = name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
+	} else if (property_name.begins_with("material_override_")) {
+		const int index = property_name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
 		set_material_override(index, p_value);
 		return true;
 
-	} else if (name.begins_with("collision_enabled_")) {
-		const int index = name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+	} else if (property_name.begins_with("collision_enabled_")) {
+		const int index = property_name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
 		set_mesh_collision_enabled(index, p_value);
 		return true;
 	}
@@ -68,10 +68,10 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
-	String name = p_name;
+	String property_name = p_name;
 
-	if (name.begins_with("cube_tiles_")) {
-		String s = name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, name.length());
+	if (property_name.begins_with("cube_tiles_")) {
+		String s = property_name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			const Vector2f f = _cube_tiles[side];
@@ -79,13 +79,13 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 			return true;
 		}
 
-	} else if (name.begins_with("material_override_")) {
-		const int index = name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
+	} else if (property_name.begins_with("material_override_")) {
+		const int index = property_name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
 		r_ret = get_material_override(index);
 		return true;
 
-	} else if (name.begins_with("collision_enabled_")) {
-		const int index = name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+	} else if (property_name.begins_with("collision_enabled_")) {
+		const int index = property_name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
 		r_ret = is_mesh_collision_enabled(index);
 		return true;
 	}
@@ -130,8 +130,8 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 	}
 }
 
-void VoxelBlockyModel::set_voxel_name(String name) {
-	_name = name;
+void VoxelBlockyModel::set_voxel_name(String p_name) {
+	_name = p_name;
 }
 
 void VoxelBlockyModel::set_id(int id) {

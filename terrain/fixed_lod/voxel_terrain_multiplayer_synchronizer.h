@@ -35,8 +35,8 @@ private:
 
 	void process();
 
-	void _b_receive_blocks(PackedByteArray data);
-	void _b_receive_area(PackedByteArray data);
+	void _b_receive_blocks(PackedByteArray message_data);
+	void _b_receive_area(PackedByteArray message_data);
 
 	static void _bind_methods();
 

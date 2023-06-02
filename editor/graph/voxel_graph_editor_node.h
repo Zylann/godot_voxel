@@ -44,7 +44,7 @@ public:
 		return _preview;
 	}
 
-	void set_profiling_ratio_visible(bool visible);
+	void set_profiling_ratio_visible(bool p_visible);
 	void set_profiling_ratio(float ratio);
 
 private:

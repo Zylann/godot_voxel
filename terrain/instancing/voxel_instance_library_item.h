@@ -24,7 +24,7 @@ public:
 		virtual void on_library_item_changed(int id, ChangeType change) = 0;
 	};
 
-	void set_item_name(String name);
+	void set_item_name(String p_name);
 	String get_item_name() const;
 
 	void set_lod_index(int lod);

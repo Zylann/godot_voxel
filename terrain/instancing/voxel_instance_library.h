@@ -25,7 +25,7 @@ public:
 	void add_item(int id, Ref<VoxelInstanceLibraryItem> item);
 	void remove_item(int id);
 	void clear();
-	int find_item_by_name(String name) const;
+	int find_item_by_name(String p_name) const;
 	int get_item_count() const;
 
 	// Internal

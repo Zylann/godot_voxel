@@ -321,11 +321,11 @@ void VoxelGraphEditorNode::clear_range_analysis_tooltips() {
 	}
 }
 
-void VoxelGraphEditorNode::set_profiling_ratio_visible(bool visible) {
-	if (_profiling_ratio_enabled == visible) {
+void VoxelGraphEditorNode::set_profiling_ratio_visible(bool p_visible) {
+	if (_profiling_ratio_enabled == p_visible) {
 		return;
 	}
-	_profiling_ratio_enabled = visible;
+	_profiling_ratio_enabled = p_visible;
 	queue_redraw();
 }
 

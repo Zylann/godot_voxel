@@ -109,7 +109,7 @@ public:
 
 	// Properties
 
-	void set_voxel_name(String name);
+	void set_voxel_name(String p_name);
 	_FORCE_INLINE_ StringName get_voxel_name() const {
 		return _name;
 	}

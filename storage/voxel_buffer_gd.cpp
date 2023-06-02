@@ -186,9 +186,9 @@ void VoxelBuffer::for_each_voxel_metadata(const Callable &callback) const {
 	ERR_FAIL_COND(callback.is_null());
 	//_buffer->for_each_voxel_metadata(callback);
 
-	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &metadata = _buffer->get_voxel_metadata();
+	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &metadata_map = _buffer->get_voxel_metadata();
 
-	for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+	for (auto it = metadata_map.begin(); it != metadata_map.end(); ++it) {
 		Variant v = get_as_variant(it->value);
 
 #if defined(ZN_GODOT)

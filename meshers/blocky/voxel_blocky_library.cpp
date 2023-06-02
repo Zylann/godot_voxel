@@ -27,13 +27,13 @@ void VoxelBlockyLibrary::set_voxel_count(unsigned int type_count) {
 	_needs_baking = true;
 }
 
-int VoxelBlockyLibrary::get_voxel_index_from_name(StringName name) const {
+int VoxelBlockyLibrary::get_voxel_index_from_name(StringName p_name) const {
 	for (size_t i = 0; i < _voxel_types.size(); ++i) {
 		const Ref<VoxelBlockyModel> &v = _voxel_types[i];
 		if (v.is_null()) {
 			continue;
 		}
-		if (v->get_voxel_name() == name) {
+		if (v->get_voxel_name() == p_name) {
 			return i;
 		}
 	}
@@ -64,9 +64,11 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 	//		}
 
 	//	} else
-	String name(p_name);
-	if (name.begins_with("voxels/")) {
-		unsigned int idx = name.get_slicec('/', 1).to_int();
+	// Can't use `name` since Godot enabled all shadowing warnings in may 2023, which also considers inherited PRIVATE
+	// variables
+	String property_name(p_name);
+	if (property_name.begins_with("voxels/")) {
+		unsigned int idx = property_name.get_slicec('/', 1).to_int();
 		set_voxel(idx, p_value);
 		return true;
 	}
@@ -81,9 +83,9 @@ bool VoxelBlockyLibrary::_get(const StringName &p_name, Variant &r_ret) const {
 	//		return true;
 
 	//	} else
-	String name(p_name);
-	if (name.begins_with("voxels/")) {
-		const unsigned int idx = name.get_slicec('/', 1).to_int();
+	String property_name(p_name);
+	if (property_name.begins_with("voxels/")) {
+		const unsigned int idx = property_name.get_slicec('/', 1).to_int();
 		if (idx < _voxel_types.size()) {
 			r_ret = _voxel_types[idx];
 			return true;
@@ -111,11 +113,11 @@ void VoxelBlockyLibrary::set_bake_tangents(bool bt) {
 	_needs_baking = true;
 }
 
-Ref<VoxelBlockyModel> VoxelBlockyLibrary::create_voxel(unsigned int id, String name) {
+Ref<VoxelBlockyModel> VoxelBlockyLibrary::create_voxel(unsigned int id, String p_name) {
 	ERR_FAIL_COND_V(id >= _voxel_types.size(), Ref<VoxelBlockyModel>());
 	Ref<VoxelBlockyModel> voxel(memnew(VoxelBlockyModel));
 	voxel->set_id(id);
-	voxel->set_voxel_name(name);
+	voxel->set_voxel_name(p_name);
 	_voxel_types[id] = voxel;
 	return voxel;
 }
@@ -420,8 +422,8 @@ Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel(unsigned int id) {
 	return _voxel_types[id];
 }
 
-Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel_by_name(StringName name) {
-	int id = get_voxel_index_from_name(name);
+Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_voxel_by_name(StringName p_name) {
+	int id = get_voxel_index_from_name(p_name);
 	ERR_FAIL_COND_V(id == -1, Ref<VoxelBlockyModel>());
 	return _voxel_types[id];
 }

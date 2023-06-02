@@ -45,8 +45,11 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 
 	get_ok_button()->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_ok_pressed));
 
-	Button *ok_button = get_ok_button();
-	ok_button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
+	// Godot devs added more shadowing warnings around may 2023 but with MSVC it prevents us to use local variable names
+	// that are the same as PRIVATE variables from inherited classes (and Godot does not prefix members)... So sometimes
+	// have to come up with pointless name differences just to avoid it
+	Button *ok_button_ptr = get_ok_button();
+	ok_button_ptr->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
 
 	Button *cancel_button = get_cancel_button();
 	cancel_button->set_custom_minimum_size(Vector2(100 * EDSCALE, 0));
