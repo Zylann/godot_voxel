@@ -8,7 +8,8 @@ on:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.0"
+  # GDExtension is still experimental, so we target latest instead of a "stable" Godot version.
+  GODOT_BASE_BRANCH: "master"
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 4096
   GODOT_CPP_PATH: thirdparty/godot-cpp
