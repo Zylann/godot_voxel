@@ -65,10 +65,10 @@ else:
     # Example: Metadata.h NameDesc constructor, prevents from building because treated as error.
     # TODO This doesn't work because for some reason `-Wshadow` FOLLOWS this parameter in the command line, as if Godot
     # adds it AFTER parsing this SCons file...
-    env_fn2.Append(CXXFLAGS=["-Wno-shadow"])
-    print("DDD ", env_fn2['CXXFLAGS'])
-    if '-Wshadow' in env_fn2['CXXFLAGS']:
-        env_fn2['CXXFLAGS'].remove('-Wshadow')
+    # env_fn2.Append(CXXFLAGS=["-Wno-shadow"])
+    # if '-Wshadow' in env_fn2['CXXFLAGS']:
+    #     env_fn2['CXXFLAGS'].remove('-Wshadow')
+    env_fn2.disable_warnings()
 
 env_fn2_scalar = env_fn2.Clone()
 env_fn2_sse2 = env_fn2.Clone()
