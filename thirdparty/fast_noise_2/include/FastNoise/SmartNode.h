@@ -233,10 +233,13 @@ namespace FastNoise
         friend class SmartNode;
 
         explicit SmartNode( T* ptr ) :
-            mReferenceId( SmartNodeManager::GetReference( ptr ) ),
+            mReferenceId( ptr ? SmartNodeManager::GetReference( ptr ) : SmartNodeManager::kInvalidReferenceId ),
             mPtr( ptr )
         {
-            SmartNodeManager::IncReference( mReferenceId );
+            if( mReferenceId != SmartNodeManager::kInvalidReferenceId )
+            {
+                SmartNodeManager::IncReference( mReferenceId );
+            }
         }
 
         void Release()

@@ -3,11 +3,16 @@
 #include <algorithm>
 #include <cstdint>
 
+#if FASTSIMD_x86
+
 #ifdef __GNUG__
 #include <x86intrin.h>
 #else
 #include <intrin.h>
 #endif
+
+#endif
+
 
 #include "FastSIMD/SIMDTypeList.h"
 

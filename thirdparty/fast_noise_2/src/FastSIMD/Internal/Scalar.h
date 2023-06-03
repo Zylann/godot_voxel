@@ -311,7 +311,7 @@ namespace FastSIMD
 
         FS_INLINE static int32v Convertf32_i32( float32v a )
         {
-            return static_cast<int32_t>(nearbyint( a ));
+            return static_cast<int32_t>(rintf( a ));
         }
 
         // Select

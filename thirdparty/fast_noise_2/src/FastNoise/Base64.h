@@ -99,9 +99,10 @@ namespace FastNoise
             };
 
             size_t in_len = std::strlen( input );
-            if( in_len % 4 != 0 ) return {};
-
             size_t out_len = in_len / 4 * 3;
+
+            if( out_len == 0 || in_len % 4 != 0 ) return {};
+
             if( input[in_len - 1] == '=' ) out_len--;
             if( input[in_len - 2] == '=' ) out_len--;
 

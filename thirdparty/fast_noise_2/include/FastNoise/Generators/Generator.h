@@ -184,10 +184,11 @@ namespace FastNoise
     {
     protected:
         template<typename T, typename U, typename = std::enable_if_t<!std::is_enum_v<T>>>
-        void AddVariable( const char* name, T defaultV, U&& func, T minV = 0, T maxV = 0 )
+        void AddVariable( NameDesc nameDesc, T defaultV, U&& func, T minV = 0, T maxV = 0 )
         {
             MemberVariable member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
             member.valueDefault = defaultV;
             member.valueMin = minV;
             member.valueMax = maxV;
@@ -208,10 +209,11 @@ namespace FastNoise
         }
 
         template<typename T, typename U, typename = std::enable_if_t<!std::is_enum_v<T>>>
-        void AddVariable( const char* name, T defaultV, void(U::* func)(T), T minV = 0, T maxV = 0 )
+        void AddVariable( NameDesc nameDesc, T defaultV, void(U::* func)(T), T minV = 0, T maxV = 0 )
         {
             MemberVariable member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
             member.valueDefault = defaultV;
             member.valueMin = minV;
             member.valueMax = maxV;
@@ -232,10 +234,11 @@ namespace FastNoise
         }
 
         template<typename T, typename U, typename = std::enable_if_t<std::is_enum_v<T>>, typename... ENUM_NAMES>
-        void AddVariableEnum( const char* name, T defaultV, void(U::* func)(T), ENUM_NAMES... enumNames )
+        void AddVariableEnum( NameDesc nameDesc, T defaultV, void(U::* func)(T), ENUM_NAMES... enumNames )
         {
             MemberVariable member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
             member.type = MemberVariable::EEnum;
             member.valueDefault = (int)defaultV;
             member.enumNames = { enumNames... };
@@ -254,10 +257,11 @@ namespace FastNoise
         }
 
         template<typename T, typename U, size_t ENUM_NAMES, typename = std::enable_if_t<std::is_enum_v<T>>>
-        void AddVariableEnum( const char* name, T defaultV, void(U::* func)(T), const char* const (&enumNames)[ENUM_NAMES] )
+        void AddVariableEnum( NameDesc nameDesc, T defaultV, void(U::* func)(T), const char* const (&enumNames)[ENUM_NAMES] )
         {
             MemberVariable member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
             member.type = MemberVariable::EEnum;
             member.valueDefault = (int)defaultV;
             member.enumNames = { enumNames, enumNames + ENUM_NAMES };
@@ -276,12 +280,13 @@ namespace FastNoise
         }
 
         template<typename T, typename U, typename = std::enable_if_t<!std::is_enum_v<T>>>
-        void AddPerDimensionVariable( const char* name, T defaultV, U&& func, T minV = 0, T maxV = 0 )
+        void AddPerDimensionVariable( NameDesc nameDesc, T defaultV, U&& func, T minV = 0, T maxV = 0 )
         {
             for( int idx = 0; (size_t)idx < sizeof( PerDimensionVariable<T>::varArray ) / sizeof( *PerDimensionVariable<T>::varArray ); idx++ )
             {
                 MemberVariable member;
-                member.name = name;
+                member.name = nameDesc.name;
+                member.description = nameDesc.desc;
                 member.valueDefault = defaultV;
                 member.valueMin = minV;
                 member.valueMax = maxV;
@@ -304,10 +309,11 @@ namespace FastNoise
         }
 
         template<typename T, typename U>
-        void AddGeneratorSource( const char* name, void(U::* func)(SmartNodeArg<T>) )
+        void AddGeneratorSource( NameDesc nameDesc, void(U::* func)(SmartNodeArg<T>) )
         {
             MemberNodeLookup member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
 
             member.setFunc = [func]( Generator* g, SmartNodeArg<> s )
             {
@@ -327,7 +333,7 @@ namespace FastNoise
         }
 
         template<typename U>
-        void AddPerDimensionGeneratorSource( const char* name, U&& func )
+        void AddPerDimensionGeneratorSource( NameDesc nameDesc, U&& func )
         {
             using GeneratorSourceT = typename std::invoke_result_t<U, GetArg<U, 0>>::type::Type;
             using T = typename GeneratorSourceT::Type;
@@ -335,7 +341,8 @@ namespace FastNoise
             for( int idx = 0; (size_t)idx < sizeof( PerDimensionVariable<GeneratorSourceT>::varArray ) / sizeof( *PerDimensionVariable<GeneratorSourceT>::varArray ); idx++ )
             {
                 MemberNodeLookup member;
-                member.name = name;
+                member.name = nameDesc.name;
+                member.description = nameDesc.desc;
                 member.dimensionIdx = idx;
 
                 member.setFunc = [func, idx]( Generator* g, SmartNodeArg<> s )
@@ -358,10 +365,11 @@ namespace FastNoise
 
 
         template<typename T, typename U>
-        void AddHybridSource( const char* name, float defaultValue, void(U::* funcNode)(SmartNodeArg<T>), void(U::* funcValue)(float) )
+        void AddHybridSource( NameDesc nameDesc, float defaultValue, void(U::* funcNode)(SmartNodeArg<T>), void(U::* funcValue)(float) )
         {
             MemberHybrid member;
-            member.name = name;
+            member.name = nameDesc.name;
+            member.description = nameDesc.desc;
             member.valueDefault = defaultValue;
 
             member.setNodeFunc = [funcNode]( Generator* g, SmartNodeArg<> s )
@@ -392,7 +400,7 @@ namespace FastNoise
         }
 
         template<typename U>
-        void AddPerDimensionHybridSource( const char* name, float defaultV, U&& func )
+        void AddPerDimensionHybridSource( NameDesc nameDesc, float defaultV, U&& func )
         {
             using HybridSourceT = typename std::invoke_result_t<U, GetArg<U, 0>>::type::Type;
             using T = typename HybridSourceT::Type;
@@ -400,7 +408,8 @@ namespace FastNoise
             for( int idx = 0; (size_t)idx < sizeof( PerDimensionVariable<HybridSourceT>::varArray ) / sizeof( *PerDimensionVariable<HybridSourceT>::varArray ); idx++ )
             {
                 MemberHybrid member;
-                member.name = name;
+                member.name = nameDesc.name;
+                member.description = nameDesc.desc;
                 member.valueDefault = defaultV;
                 member.dimensionIdx = idx;
 

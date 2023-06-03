@@ -19,6 +19,9 @@ namespace FastNoise
         MetadataT()
         {
             groups.push_back( "Coherent Noise" );
+
+            description = 
+                "Smooth gradient noise from N dimensional grid";
         }
     };
 #endif

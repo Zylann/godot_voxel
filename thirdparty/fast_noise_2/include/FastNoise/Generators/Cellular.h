@@ -24,8 +24,9 @@ namespace FastNoise
         MetadataT()
         {
             groups.push_back( "Coherent Noise" );
-            this->AddHybridSource( "Jitter Modifier", 1.0f, &Cellular::SetJitterModifier, &Cellular::SetJitterModifier );
-            this->AddVariableEnum( "Distance Function", DistanceFunction::EuclideanSquared, &Cellular::SetDistanceFunction, kDistanceFunction_Strings );
+            this->AddHybridSource( { "Jitter Modifier", "Above 1.0 will cause grid artifacts" }, 1.0f, &Cellular::SetJitterModifier, &Cellular::SetJitterModifier );
+            this->AddVariableEnum( { "Distance Function", "How distance to closest cells is calculated\nHybrid is EuclideanSquared + Manhattan" },
+                DistanceFunction::EuclideanSquared, &Cellular::SetDistanceFunction, kDistanceFunction_Strings );
         }
     };
 #endif
@@ -52,7 +53,12 @@ namespace FastNoise
 
         MetadataT()
         {
-            this->AddVariable( "Value Index", 0, &CellularValue::SetValueIndex, 0, CellularValue::kMaxDistanceCount - 1 );
+            this->AddVariable( { "Value Index", "Nth closest cell" }, 0, &CellularValue::SetValueIndex, 0, CellularValue::kMaxDistanceCount - 1 );
+
+            description = 
+                "Returns value of Nth closest cell\n"
+                "Value is generated using white noise\n"
+                "Output is bounded -1 : 1";
         }
     };
 #endif
@@ -92,9 +98,14 @@ namespace FastNoise
 
         MetadataT()
         {
-            this->AddVariable( "Distance Index 0", 0, &CellularDistance::SetDistanceIndex0, 0, CellularDistance::kMaxDistanceCount - 1 );
-            this->AddVariable( "Distance Index 1", 1, &CellularDistance::SetDistanceIndex1, 0, CellularDistance::kMaxDistanceCount - 1 );
-            this->AddVariableEnum( "Return Type", CellularDistance::ReturnType::Index0, &CellularDistance::SetReturnType, "Index0", "Index0Add1", "Index0Sub1", "Index0Mul1", "Index0Div1" );
+            this->AddVariable( { "Distance Index 0", "Nth closest cell" }, 0, &CellularDistance::SetDistanceIndex0, 0, CellularDistance::kMaxDistanceCount - 1 );
+            this->AddVariable( { "Distance Index 1", "Nth closest cell" }, 1, &CellularDistance::SetDistanceIndex1, 0, CellularDistance::kMaxDistanceCount - 1 );
+            this->AddVariableEnum( { "Return Type", "How to combine Index 0 & Index 1" }, CellularDistance::ReturnType::Index0, &CellularDistance::SetReturnType, "Index0", "Index0Add1", "Index0Sub1", "Index0Mul1", "Index0Div1" );
+            
+            description = 
+                "Returns distance of Nth closest cell\n"
+                "Distance of Index0 and Index1 are combined according to return type\n"
+                "Returned value is always positive except when using Index0Sub1 and Index0 > Index1";
         }
     };
 #endif
@@ -121,8 +132,12 @@ namespace FastNoise
 
         MetadataT()
         {
-            this->AddGeneratorSource( "Lookup", &CellularLookup::SetLookup );
-            this->AddVariable( "Lookup Frequency", 0.1f, &CellularLookup::SetLookupFrequency );
+            this->AddGeneratorSource( { "Lookup", "Used to generate cell values" }, &CellularLookup::SetLookup );
+            this->AddVariable( { "Lookup Frequency", "Relative to the cellular frequency" }, 0.1f, &CellularLookup::SetLookupFrequency );
+            
+            description = 
+                "Returns value of closest cell\n"
+                "Value is generated at the cell center using the lookup source";
         }
     };
 #endif

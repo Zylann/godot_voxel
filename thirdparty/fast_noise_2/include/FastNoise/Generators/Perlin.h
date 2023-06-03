@@ -19,6 +19,10 @@ namespace FastNoise
         MetadataT()
         {
             groups.push_back( "Coherent Noise" );
+
+            description = 
+                "Smooth gradient noise from N dimensional grid\n"
+                "Developed by Ken Perlin in 1983";
         }
     };
 #endif
