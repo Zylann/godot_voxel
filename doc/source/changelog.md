@@ -13,6 +13,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 - General
     - Added shadow casting setting to both terrain types
+    - Added editor shortcut to re-generate the selected terrain
+    - Updated FastNoise2 to 0.10.0-alpha
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
     - `VoxelTerrain`:
