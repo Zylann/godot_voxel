@@ -34,7 +34,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
     - `VoxelLodTerrain`: fixed error spam when re-generating or destroying the terrain
-    - `VoxelGeneratorGraph`: fixed crash if a graph contains a node with both used and unused outputs, and gets compiled with `debug=false`
+    - `VoxelGeneratorGraph`:
+        - Fixed crash if a graph contains a node with both used and unused outputs, and gets compiled with `debug=false`
+        - Fixed error when adding Constant nodes
     - `VoxelInstanceLibrary`: fixed `find_item_by_name` was not finding items
 
 
