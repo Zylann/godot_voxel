@@ -6,9 +6,10 @@
 
 namespace zylann::voxel {
 
-int /*Error*/ VoxelVoxLoader::load_from_file(
-		String fpath, Ref<gd::VoxelBuffer> p_voxels, Ref<VoxelColorPalette> palette) {
+int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels,
+		Ref<VoxelColorPalette> palette, gd::VoxelBuffer::ChannelId dst_channel) {
 	ZN_DSTACK();
+	ERR_FAIL_INDEX_V(dst_channel, gd::VoxelBuffer::MAX_CHANNELS, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
 	VoxelBufferInternal &voxels = p_voxels->get_buffer();
 
@@ -18,14 +19,13 @@ int /*Error*/ VoxelVoxLoader::load_from_file(
 
 	const zylann::voxel::magica::Model &model = data.get_model(0);
 
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_COLOR;
 	Span<const Color8> src_palette = to_span_const(data.get_palette());
 	const VoxelBufferInternal::Depth depth = voxels.get_channel_depth(VoxelBufferInternal::CHANNEL_COLOR);
 
 	Span<uint8_t> dst_raw;
 	voxels.create(model.size);
-	voxels.decompress_channel(channel);
-	CRASH_COND(!voxels.get_channel_raw(channel, dst_raw));
+	voxels.decompress_channel(dst_channel);
+	CRASH_COND(!voxels.get_channel_raw(dst_channel, dst_raw));
 
 	if (palette.is_valid()) {
 		for (size_t i = 0; i < src_palette.size(); ++i) {
@@ -76,7 +76,8 @@ int /*Error*/ VoxelVoxLoader::load_from_file(
 }
 
 void VoxelVoxLoader::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels", "palette"), &VoxelVoxLoader::load_from_file);
+	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels", "palette", "dst_channel"),
+			&VoxelVoxLoader::load_from_file, DEFVAL(gd::VoxelBuffer::CHANNEL_COLOR));
 }
 
 } // namespace zylann::voxel

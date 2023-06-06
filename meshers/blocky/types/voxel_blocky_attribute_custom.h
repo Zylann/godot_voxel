@@ -10,9 +10,9 @@ class VoxelBlockyAttributeCustom : public VoxelBlockyAttribute {
 public:
 	VoxelBlockyAttributeCustom();
 
-	void set_attribute_name(StringName name);
+	void set_attribute_name(StringName p_name);
 	void set_value_count(int count);
-	void set_value_name(int index, StringName name);
+	void set_value_name(int index, StringName p_name);
 	void set_default_value(int v);
 
 	// Not exposing rotation like that, because we can't automate this properly at the moment (in the case of rails,

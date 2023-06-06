@@ -96,9 +96,9 @@ int VoxelBlockyLibrary::add_model(Ref<VoxelBlockyModel> model) {
 bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	// Legacy
 
-	String name(p_name);
-	if (name.begins_with("voxels/")) {
-		unsigned int idx = name.get_slicec('/', 1).to_int();
+	String property_name(p_name);
+	if (property_name.begins_with("voxels/")) {
+		unsigned int idx = property_name.get_slicec('/', 1).to_int();
 		Ref<VoxelBlockyModel> legacy_model = p_value;
 
 		if (legacy_model.is_valid()) {
@@ -146,7 +146,7 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 
 		return true;
 
-	} else if (name == "atlas_size") {
+	} else if (property_name == "atlas_size") {
 		_legacy_atlas_size = p_value;
 		return true;
 	}
@@ -206,9 +206,9 @@ void VoxelBlockyLibrary::_b_set_models(TypedArray<VoxelBlockyModel> models) {
 	_needs_baking = (_voxel_models.size() != prev_size);
 }
 
-int VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name(String name) const {
+int VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name(String p_name) const {
 	WARN_DEPRECATED_MSG("Use `get_model_index_from_resource_name` instead.");
-	return get_model_index_from_resource_name(name);
+	return get_model_index_from_resource_name(p_name);
 }
 
 void VoxelBlockyLibrary::_bind_methods() {

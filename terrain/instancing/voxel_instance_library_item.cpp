@@ -7,8 +7,8 @@
 
 namespace zylann::voxel {
 
-void VoxelInstanceLibraryItem::set_item_name(String name) {
-	_name = name;
+void VoxelInstanceLibraryItem::set_item_name(String p_name) {
+	_name = p_name;
 }
 
 String VoxelInstanceLibraryItem::get_item_name() const {

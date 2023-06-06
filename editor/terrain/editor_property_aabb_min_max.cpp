@@ -14,14 +14,14 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		if (i == 0) {
-			Label *label = memnew(Label);
-			label->set_text("Min");
-			grid->add_child(label);
+			Label *min_label = memnew(Label);
+			min_label->set_text("Min");
+			grid->add_child(min_label);
 
 		} else if (i == 3) {
-			Label *label = memnew(Label);
-			label->set_text("Max");
-			grid->add_child(label);
+			Label *max_label = memnew(Label);
+			max_label->set_text("Max");
+			grid->add_child(max_label);
 		}
 
 		EditorSpinSlider *sb = memnew(EditorSpinSlider);

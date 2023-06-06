@@ -25,9 +25,9 @@ void VoxelBlockyAttribute::set_default_value(int value) {
 	_default_value = math::max(value, 0);
 }
 
-int VoxelBlockyAttribute::get_value_from_name(StringName name) const {
+int VoxelBlockyAttribute::get_value_from_name(StringName p_name) const {
 	for (int i = 0; i < _value_names.size(); ++i) {
-		if (_value_names[i] == name) {
+		if (_value_names[i] == p_name) {
 			return i;
 		}
 	}

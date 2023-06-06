@@ -622,7 +622,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			Vector3 viewer_pos_octree_space;
 			uint32_t &lods_to_update_transitions;
 
-			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &data) {
+			void create_child(Vector3i node_pos, int lod_index, LodOctree::NodeData &node_data) {
 				VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 				const Vector3i bpos = node_pos + (block_offset_lod0 >> lod_index);
 				auto mesh_block_it = lod.mesh_map_state.map.find(bpos);

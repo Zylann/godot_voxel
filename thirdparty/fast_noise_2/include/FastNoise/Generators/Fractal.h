@@ -24,7 +24,7 @@ namespace FastNoise
         float mLacunarity = 2.0f;
         float mFractalBounding = 1.0f / 1.75f;
 
-        virtual void CalculateFractalBounding()
+        void CalculateFractalBounding()
         {
             float gain = std::abs( mGain.constant );
             float amp = gain;

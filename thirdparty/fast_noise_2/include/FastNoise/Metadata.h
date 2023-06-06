@@ -39,6 +39,11 @@ namespace FastNoise
         /// <returns>Metadata for given Metadata::id</returns>
         static const Metadata* GetFromId( uint16_t nodeId )
         {
+            // Metadata not loaded yet
+            // Don't try to create nodes from metadata during static initialisation
+            // Metadata is loaded using static variable and static variable init is done in a random order
+            assert( sAllMetadata.size() );
+
             if( nodeId < sAllMetadata.size() )
             {
                 return sAllMetadata[nodeId];
@@ -73,10 +78,19 @@ namespace FastNoise
         /// <returns>Root node</returns>
         static NodeData* DeserialiseNodeData( const char* serialisedBase64NodeData, std::vector<std::unique_ptr<NodeData>>& nodeDataOut );
 
+        struct NameDesc
+        {
+            const char* name;
+            const char* desc;
+            
+            NameDesc( const char* name, const char* desc = "" ) : name( name ), desc( desc ) {}
+        };
+
         // Base member struct
         struct Member
         {
-            const char* name;
+            const char* name = "";
+            const char* description = "";
             int dimensionIdx = -1;            
         };
 
@@ -170,7 +184,8 @@ namespace FastNoise
         };
 
         uint16_t id;
-        const char* name;
+        const char* name = "";
+        const char* description = "";
         std::vector<const char*> groups;
 
         std::vector<MemberVariable>   memberVariables;

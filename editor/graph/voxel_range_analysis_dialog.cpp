@@ -51,8 +51,8 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 
 AABB VoxelRangeAnalysisDialog::get_aabb() const {
 	const Vector3 center(_pos_x_spinbox->get_value(), _pos_y_spinbox->get_value(), _pos_z_spinbox->get_value());
-	const Vector3 size(_size_x_spinbox->get_value(), _size_y_spinbox->get_value(), _size_z_spinbox->get_value());
-	return AABB(center - 0.5f * size, size);
+	const Vector3 aabb_size(_size_x_spinbox->get_value(), _size_y_spinbox->get_value(), _size_z_spinbox->get_value());
+	return AABB(center - 0.5f * aabb_size, aabb_size);
 }
 
 bool VoxelRangeAnalysisDialog::is_analysis_enabled() const {
@@ -67,7 +67,7 @@ void VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed(float value) {
 	emit_signal("area_changed");
 }
 
-void VoxelRangeAnalysisDialog::add_row(String text, SpinBox *&sb, GridContainer *parent, float defval) {
+void VoxelRangeAnalysisDialog::add_row(String text, SpinBox *&sb, GridContainer *container, float defval) {
 	sb = memnew(SpinBox);
 	sb->set_min(-99999.f);
 	sb->set_max(99999.f);
@@ -75,8 +75,8 @@ void VoxelRangeAnalysisDialog::add_row(String text, SpinBox *&sb, GridContainer 
 	sb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	Label *label = memnew(Label);
 	label->set_text(text);
-	parent->add_child(label);
-	parent->add_child(sb);
+	container->add_child(label);
+	container->add_child(sb);
 	sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, VoxelRangeAnalysisDialog, _on_area_spinbox_value_changed));
 }
 

@@ -18,19 +18,26 @@ The engine is massive and targets a lot of platforms, while our module is small 
 
 #### For Godot 4
 
-Available on Github Actions:
+Available on Github Actions, pick your platform:
 
 - [Windows builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
 - [Linux builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
 - [Mono builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml) (likely not available, they broke in Godot 4, help is needed to fix them)
 
+Then click on the latest successful build, with a green checkmark:
+
+![Screenshot of a list of builds, with the latest successful one circled in green](images/ci_builds_latest_link.webp)
+
+Then scroll to the bottom, you should see download links:
+
+![Github actions screenshot](images/github_actions_windows_artifacts.webp)
+
+In case there are multiple downloadable artifacts, the editor build will be the one with `editor` in the name.
+
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
 They are built using Godot's latest stable version branch (for example, `4.0` at time of writing), instead of `master`.
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
-In case there are multiple downloadable artifacts, the editor build will be the one with `editor` in the name.
-
-![Github actions screenshot](images/github_actions_windows_artifacts.webp)
 
 !!! note
 	You will need a Github account to be able to download development builds. Otherwise, links will not work.

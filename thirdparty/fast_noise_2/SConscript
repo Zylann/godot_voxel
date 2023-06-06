@@ -52,16 +52,23 @@ fn2_sources_arm = [
 env_fn2 = env_voxel.Clone()
 # In case we need common options for FastNoise2 we can add them here
 
-if not env.msvc:
+if env.msvc:
+    # In some places, integral constants are multiplied but cause overflow (ex: Simplex.inl(432) in 0.10.0-alpha).
+    # This is usually expected by the devs though.
+    env_fn2.Append(CXXFLAGS=["/wd4307"])
+else:
     # We compile with `-Wall`, but FastNoise2 does not, so a lot of pedantic things show up treated as errors
     env_fn2.Append(CXXFLAGS=["-Wno-parentheses"])
     # This one might be legitimate in SmartNode.cpp but we assume the devs got the `memset` right
     env_fn2.Append(CXXFLAGS=["-Wno-class-memaccess"]) 
-    # When we compile with `-Wextra`, FastNoise2 produces warnings. Silencing these...
-    # TODO Silencing `enum-compare` GCC warning doesn't work for some reason?
-    # So instead I modified `FastSIMD.h`.
-    # See also https://github.com/Auburn/FastNoise2/pull/103
-    #env_fn2.Append(CXXFLAGS=["-Wno-enum-compare"])
+    # Since may 2023 Godot build scripts warn heavily against variable name shadowing.
+    # Example: Metadata.h NameDesc constructor, prevents from building because treated as error.
+    # TODO This doesn't work because for some reason `-Wshadow` FOLLOWS this parameter in the command line, as if Godot
+    # adds it AFTER parsing this SCons file...
+    # env_fn2.Append(CXXFLAGS=["-Wno-shadow"])
+    # if '-Wshadow' in env_fn2['CXXFLAGS']:
+    #     env_fn2['CXXFLAGS'].remove('-Wshadow')
+    env_fn2.disable_warnings()
 
 env_fn2_scalar = env_fn2.Clone()
 env_fn2_sse2 = env_fn2.Clone()

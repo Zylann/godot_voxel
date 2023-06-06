@@ -85,10 +85,10 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	}
 
 	if (stream.is_valid()) {
-		Ref<Script> script = stream->get_script();
+		Ref<Script> stream_script = stream->get_script();
 
-		if (script.is_valid()) {
-			if (script->is_tool()) {
+		if (stream_script.is_valid()) {
+			if (stream_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
 				warnings.append(ZN_TTR("Careful, don't edit your custom stream while it's running, "
@@ -111,11 +111,11 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	}
 
 	if (generator.is_valid()) {
-		Ref<Script> script = generator->get_script();
+		Ref<Script> generator_script = generator->get_script();
 		bool can_check_generator_channels = true;
 
-		if (script.is_valid()) {
-			if (script->is_tool()) {
+		if (generator_script.is_valid()) {
+			if (generator_script->is_tool()) {
 				// TODO This is very annoying. Probably needs an issue or proposal in Godot so we can handle this
 				// properly?
 				warnings.append(ZN_TTR("Careful, don't edit your custom generator while it's running, "

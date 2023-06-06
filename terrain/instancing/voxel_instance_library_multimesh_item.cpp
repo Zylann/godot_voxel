@@ -156,41 +156,41 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &r_ret) const {
 	if (_scene.is_valid()) {
 		// TODO GDX: GDExtension does not have `StringName::operator==(const char*)`
-		const String name = p_name;
+		const String property_name = p_name;
 
-		if (name == "scene_mesh") {
+		if (property_name == "scene_mesh") {
 			r_ret = _scene_settings.mesh_lods[0];
 			return true;
 		}
-		if (name == "scene_mesh_lod1") {
+		if (property_name == "scene_mesh_lod1") {
 			r_ret = _scene_settings.mesh_lods[1];
 			return true;
 		}
-		if (name == "scene_mesh_lod2") {
+		if (property_name == "scene_mesh_lod2") {
 			r_ret = _scene_settings.mesh_lods[2];
 			return true;
 		}
-		if (name == "scene_mesh_lod3") {
+		if (property_name == "scene_mesh_lod3") {
 			r_ret = _scene_settings.mesh_lods[3];
 			return true;
 		}
-		if (name == "scene_material_override") {
+		if (property_name == "scene_material_override") {
 			r_ret = _scene_settings.material_override;
 			return true;
 		}
-		if (name == "scene_cast_shadow") {
+		if (property_name == "scene_cast_shadow") {
 			r_ret = _scene_settings.shadow_casting_setting;
 			return true;
 		}
-		if (name == "scene_collision_layer") {
+		if (property_name == "scene_collision_layer") {
 			r_ret = _scene_settings.collision_layer;
 			return true;
 		}
-		if (name == "scene_collision_mask") {
+		if (property_name == "scene_collision_mask") {
 			r_ret = _scene_settings.collision_mask;
 			return true;
 		}
-		if (name == "scene_collision_shapes") {
+		if (property_name == "scene_collision_shapes") {
 			r_ret = serialize_collision_shape_infos(_scene_settings.collision_shapes);
 			return true;
 		}

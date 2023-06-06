@@ -232,6 +232,11 @@ SmartNode<> DeserialiseSmartNodeInternal( const std::vector<uint8_t>& serialised
 
     SmartNode<> generator = metadata->CreateNode( level );
 
+    if( !generator )
+    {
+        return nullptr;
+    }
+
     // Member variables
     for( const auto& var : metadata->memberVariables )
     {
