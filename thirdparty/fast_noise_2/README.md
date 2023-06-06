@@ -15,11 +15,13 @@ Uses FastSIMD to compile classes with multiple SIMD types and selects the fastes
 - SSE4.1
 - AVX2
 - AVX512
+- NEON
 
 Supports:
 - 32/64 bit
 - Windows
 - Linux
+- Android
 - MacOS
 - MSVC
 - Clang
@@ -27,6 +29,8 @@ Supports:
 
 Bindings:
 - [C#](https://github.com/Auburn/FastNoise2Bindings)
+- [Unreal Engine CMake](https://github.com/caseymcc/UE4_FastNoise2)
+- [Unreal Engine Blueprint](https://github.com/DoubleDeez/UnrealFastNoise2)
 
 Roadmap:
 - [Vague collection of ideas](https://github.com/users/Auburn/projects/1)

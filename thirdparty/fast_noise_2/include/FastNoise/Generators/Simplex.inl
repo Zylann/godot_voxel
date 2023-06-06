@@ -368,6 +368,154 @@ class FS_T<FastNoise::OpenSimplex2, FS> : public virtual FastNoise::OpenSimplex2
         }
 
         return float32v( 32.69428253173828125f ) * val;
-    } 
+    }
+};
+
+template<typename FS>
+class FS_T<FastNoise::OpenSimplex2S, FS> : public virtual FastNoise::OpenSimplex2S, public FS_T<FastNoise::Generator, FS>
+{
+    FASTSIMD_DECLARE_FS_TYPES;
+
+    float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y ) const final
+    {
+        const float SQRT3 = 1.7320508075688772935274463415059f;
+        const float F2 = 0.5f * ( SQRT3 - 1.0f );
+        const float G2 = ( SQRT3 - 3.0f ) / 6.0f;
+
+        float32v s = float32v( F2 ) * ( x + y );
+        float32v xs = x + s;
+        float32v ys = y + s;
+        float32v xsb = FS_Floor_f32( xs );
+        float32v ysb = FS_Floor_f32( ys );
+        float32v xsi = xs - xsb;
+        float32v ysi = ys - ysb;
+        int32v xsbp = FS_Convertf32_i32( xsb ) * int32v( FnPrimes::X );
+        int32v ysbp = FS_Convertf32_i32( ysb ) * int32v( FnPrimes::Y );
+
+        mask32v forwardXY = xsi + ysi > float32v( 1.0f );
+        float32v boundaryXY = FS_Mask_f32( float32v( -1.0f ), forwardXY );
+        mask32v forwardX = FS_FMulAdd_f32( xsi, float32v( -2.0f ), ysi ) < boundaryXY;
+        mask32v forwardY = FS_FMulAdd_f32( ysi, float32v( -2.0f ), xsi ) < boundaryXY;
+
+        float32v t = float32v( G2 ) * ( xsi + ysi );
+        float32v xi = xsi + t;
+        float32v yi = ysi + t;
+
+        int32v h0 = FnUtils::HashPrimes( seed, xsbp, ysbp );
+        float32v v0 = FnUtils::GetGradientDotFancy( h0, xi, yi );
+        float32v a = FS_FNMulAdd_f32( xi, xi, FS_FNMulAdd_f32( yi, yi, float32v( 2.0f / 3.0f ) ) );
+        float32v a0 = a; a0 *= a0; a0 *= a0;
+        float32v value = a0 * v0;
+
+        int32v h1 = FnUtils::HashPrimes( seed, xsbp + int32v( FnPrimes::X ), ysbp + int32v( FnPrimes::Y ) );
+        float32v v1 = FnUtils::GetGradientDotFancy( h1, xi - float32v( 2 * G2 + 1 ), yi - float32v( 2 * G2 + 1 ) );
+        float32v a1 = FS_FMulAdd_f32( float32v( 2 * ( 1 + 2 * G2 ) * ( 1 / G2 + 2 ) ), t, a + float32v( -2 * ( 1 + 2 * G2 ) * ( 1 + 2 * G2 ) ) );
+        a1 *= a1; a1 *= a1;
+        value = FS_FMulAdd_f32( a1, v1, value );
+
+        float32v xyDelta = FS_Select_f32( forwardXY, float32v( G2 + 1 ), float32v( -G2 ) );
+        xi -= xyDelta;
+        yi -= xyDelta;
+
+        int32v h2 = FnUtils::HashPrimes( seed,
+            FS_NMaskedSub_i32( FS_MaskedAdd_i32( xsbp, int32v( FnPrimes::X * 2 ), forwardX ), int32v( FnPrimes::X ), forwardXY ),
+            FS_MaskedAdd_i32( ysbp, int32v( FnPrimes::Y ), forwardXY ) );
+        float32v xi2 = xi - FS_Select_f32( forwardX, float32v( 1 + 2 * G2 ), float32v( -1 ) );
+        float32v yi2 = FS_MaskedSub_f32( yi, float32v( 2 * G2 ), forwardX );
+        float32v v2 = FnUtils::GetGradientDotFancy( h2, xi2, yi2 );
+        float32v a2 = FS_Max_f32( FS_FNMulAdd_f32( xi2, xi2, FS_FNMulAdd_f32( yi2, yi2, float32v( 2.0f / 3.0f ) ) ), float32v( 0 ) );
+        a2 *= a2; a2 *= a2;
+        value = FS_FMulAdd_f32( a2, v2, value );
+
+        int32v h3 = FnUtils::HashPrimes( seed,
+            FS_MaskedAdd_i32( xsbp, int32v( FnPrimes::X ), forwardXY ),
+            FS_NMaskedSub_i32( FS_MaskedAdd_i32( ysbp, int32v( FnPrimes::Y * 2 ), forwardY ), int32v( FnPrimes::Y ), forwardXY ) );
+        float32v xi3 = FS_MaskedSub_f32( xi, float32v( 2 * G2 ), forwardY );
+        float32v yi3 = yi - FS_Select_f32( forwardY, float32v( 1 + 2 * G2 ), float32v( -1 ) );
+        float32v v3 = FnUtils::GetGradientDotFancy( h3, xi3, yi3 );
+        float32v a3 = FS_Max_f32( FS_FNMulAdd_f32( xi3, xi3, FS_FNMulAdd_f32( yi3, yi3, float32v( 2.0f / 3.0f ) ) ), float32v( 0 ) );
+        a3 *= a3; a3 *= a3;
+        value = FS_FMulAdd_f32( a3, v3, value );
+
+        return float32v( 9.28993664146183f ) * value;
+    }
+
+    float32v FS_VECTORCALL Gen( int32v seed, float32v x, float32v y, float32v z ) const final
+    {
+        float32v f = float32v( 2.0f / 3.0f ) * ( x + y + z );
+        float32v xr = f - x;
+        float32v yr = f - y;
+        float32v zr = f - z;
+
+        float32v xrb = FS_Floor_f32( xr );
+        float32v yrb = FS_Floor_f32( yr );
+        float32v zrb = FS_Floor_f32( zr );
+        float32v xri = xr - xrb;
+        float32v yri = yr - yrb;
+        float32v zri = zr - zrb;
+        int32v xrbp = FS_Convertf32_i32( xrb ) * int32v( FnPrimes::X );
+        int32v yrbp = FS_Convertf32_i32( yrb ) * int32v( FnPrimes::Y );
+        int32v zrbp = FS_Convertf32_i32( zrb ) * int32v( FnPrimes::Z );
+
+        float32v value( 0 );
+        for( size_t i = 0; ; i++ )
+        {
+            float32v a = FS_FNMulAdd_f32( xri, xri, FS_FNMulAdd_f32( yri, yri, FS_FNMulAdd_f32( zri, zri, float32v( 0.75f ) ) ) ) * float32v( 0.5f );
+
+            float32v p0 = zri + yri + xri - float32v( 1.5f );
+            mask32v flip0 = p0 >= float32v( 0.0f );
+            float32v a0 = FS_Max_f32( FS_MaskedAdd_f32( a, p0, flip0 ), float32v( 0 ) );
+            a0 *= a0; a0 *= a0;
+            int32v h0 = FnUtils::HashPrimes( seed, FS_MaskedAdd_i32( xrbp, int32v( FnPrimes::X ), flip0 ), FS_MaskedAdd_i32( yrbp, int32v( FnPrimes::Y ), flip0 ), FS_MaskedAdd_i32( zrbp, int32v( FnPrimes::Z ), flip0 ) );
+            float32v v0 = FnUtils::GetGradientDot( h0, FS_MaskedSub_f32( xri, float32v( 1.0f ), flip0 ), FS_MaskedSub_f32( yri, float32v( 1.0f ), flip0 ), FS_MaskedSub_f32( zri, float32v( 1.0f ), flip0 ) );
+            value = FS_FMulAdd_f32( a0, v0, value );
+            a -= float32v( 0.5f );
+
+            float32v p1 = zri + yri - xri + float32v( -0.5f );
+            mask32v flip1 = p1 >= float32v( 0.0f );
+            float32v a1 = FS_Max_f32( FS_MaskedAdd_f32( a + xri, p1, flip1 ), float32v( 0 ) );
+            a1 *= a1; a1 *= a1;
+            int32v h1 = FnUtils::HashPrimes( seed, FS_NMaskedAdd_i32( xrbp, int32v( FnPrimes::X ), flip1 ), FS_MaskedAdd_i32( yrbp, int32v( FnPrimes::Y ), flip1 ), FS_MaskedAdd_i32( zrbp, int32v( FnPrimes::Z ), flip1 ) );
+            float32v v1 = FnUtils::GetGradientDot( h1, FS_NMaskedSub_f32( xri, float32v( 1.0f ), flip1 ), FS_MaskedSub_f32( yri, float32v( 1.0f ), flip1 ), FS_MaskedSub_f32( zri, float32v( 1.0f ), flip1 ) );
+            value = FS_FMulAdd_f32( a1, v1, value );
+
+            float32v p2 = xri + float32v( -0.5f ) + ( zri - yri );
+            mask32v flip2 = p2 >= float32v( 0.0f );
+            float32v a2 = FS_Max_f32( FS_MaskedAdd_f32( a + yri, p2, flip2 ), float32v( 0 ) );
+            a2 *= a2; a2 *= a2;
+            int32v h2 = FnUtils::HashPrimes( seed, FS_MaskedAdd_i32( xrbp, int32v( FnPrimes::X ), flip2 ), FS_NMaskedAdd_i32( yrbp, int32v( FnPrimes::Y ), flip2 ), FS_MaskedAdd_i32( zrbp, int32v( FnPrimes::Z ), flip2 ) );
+            float32v v2 = FnUtils::GetGradientDot( h2, FS_MaskedSub_f32( xri, float32v( 1.0f ), flip2 ), FS_NMaskedSub_f32( yri, float32v( 1.0f ), flip2 ), FS_MaskedSub_f32( zri, float32v( 1.0f ), flip2 ) );
+            value = FS_FMulAdd_f32( a2, v2, value );
+
+            float32v p3 = xri + float32v( -0.5f ) - ( zri - yri );
+            mask32v flip3 = p3 >= float32v( 0.0f );
+            float32v a3 = FS_Max_f32( FS_MaskedAdd_f32( a + zri, p3, flip3 ), float32v( 0 ) );
+            a3 *= a3; a3 *= a3;
+            int32v h3 = FnUtils::HashPrimes( seed, FS_MaskedAdd_i32( xrbp, int32v( FnPrimes::X ), flip3 ), FS_MaskedAdd_i32( yrbp, int32v( FnPrimes::Y ), flip3 ), FS_NMaskedAdd_i32( zrbp, int32v( FnPrimes::Z ), flip3 ) );
+            float32v v3 = FnUtils::GetGradientDot( h3, FS_MaskedSub_f32( xri, float32v( 1.0f ), flip3 ), FS_MaskedSub_f32( yri, float32v( 1.0f ), flip3 ), FS_NMaskedSub_f32( zri, float32v( 1.0f ), flip3 ) );
+            value = FS_FMulAdd_f32( a3, v3, value );
+
+            if( i == 1 )
+            {
+                break;
+            }
+
+            mask32v sideX = xri >= float32v( 0.5f );
+            mask32v sideY = yri >= float32v( 0.5f );
+            mask32v sideZ = zri >= float32v( 0.5f );
+
+            xrbp = FS_MaskedAdd_i32( xrbp, int32v( FnPrimes::X ), sideX );
+            yrbp = FS_MaskedAdd_i32( yrbp, int32v( FnPrimes::Y ), sideY );
+            zrbp = FS_MaskedAdd_i32( zrbp, int32v( FnPrimes::Z ), sideZ );
+
+            xri += FS_Select_f32( sideX, float32v( -0.5f ), float32v( 0.5f ) );
+            yri += FS_Select_f32( sideY, float32v( -0.5f ), float32v( 0.5f ) );
+            zri += FS_Select_f32( sideZ, float32v( -0.5f ), float32v( 0.5f ) );
+
+            seed = ~seed;
+        }
+
+        return float32v( 144.736422163332608f ) * value;
+    }
 };
 

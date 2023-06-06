@@ -1,0 +1,88 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "noisetool",
+      "displayName": "NoiseTool",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CPM_SOURCE_CACHE": {
+          "value": "${sourceDir}/out/cpm-cache",
+          "type": "PATH"
+        },
+        "BUILD_SHARED_LIBS": {
+          "value": "True",
+          "type": "BOOL"
+        }
+      }
+    },
+    {
+      "name": "minimal",
+      "displayName": "Minimal",
+      "inherits": "noisetool",
+      "cacheVariables": {
+        "FASTNOISE2_NOISETOOL": {
+          "value": "False",
+          "type": "BOOL"
+        },
+        "FASTNOISE2_TESTS": {
+          "value": "False",
+          "type": "BOOL"
+        }
+      }
+    },
+    {
+      "name": "all",
+      "displayName": "All",
+      "inherits": "noisetool",
+      "cacheVariables": {
+        "FASTNOISE2_NOISETOOL": {
+          "value": "True",
+          "type": "BOOL"
+        },
+        "FASTNOISE2_TESTS": {
+          "value": "True",
+          "type": "BOOL"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "noisetool-debug",
+      "displayName": "NoiseTool Debug",
+      "configurePreset": "noisetool"
+    },
+    {
+      "name": "noisetool-release",
+      "displayName": "NoiseTool Release",
+      "configurePreset": "noisetool",
+      "configuration": "Release"
+    },
+    {
+      "name": "minimal-debug",
+      "displayName": "Minimal Debug",
+      "configurePreset": "minimal"
+    },
+    {
+      "name": "minimal-release",
+      "displayName": "Minimal Release",
+      "configurePreset": "minimal",
+      "configuration": "Release"
+    },
+    {
+      "name": "all-debug",
+      "displayName": "All Debug",
+      "configurePreset": "all",
+      "configuration": "Debug"
+    },
+    {
+      "name": "all-release",
+      "displayName": "All Release",
+      "configurePreset": "all",
+      "configuration": "Release"
+    }
+  ]
+}

@@ -79,9 +79,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #ifdef TOOLS_ENABLED
 
-#ifdef ZN_GODOT
-#include "editor/editor_plugin.h"
-#endif
 #include "editor/blocky_library/voxel_blocky_library_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
@@ -334,21 +331,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
 		VoxelGraphEditorNodePreview::load_resources();
 
-#if defined(ZN_GODOT)
-		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
-		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
-		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
-		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
-#endif
-
-#elif defined(ZN_GODOT_EXTENSION)
+#if defined(ZN_GODOT_EXTENSION)
 		// TODO GDX: Can't add plugins.
 		// See https://github.com/godotengine/godot-cpp/issues/640
 		// and https://github.com/godotengine/godot/pull/65592
@@ -398,6 +381,19 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
 		ClassDB::register_class<VoxelRangeAnalysisDialog>();
 #endif
+
+		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
+		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
+#endif
 	}
 #endif // TOOLS_ENABLED
 }
@@ -429,7 +425,16 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		zylann::free_debug_resources();
 		VoxelGraphEditorNodePreview::unload_resources();
 
-		// TODO GDX: Can't remove plugins.
+#ifdef ZN_GODOT_EXTENSION
+		EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
+		EditorPlugins::remove_by_type<VoxelTerrainEditorPlugin>();
+		EditorPlugins::remove_by_type<VoxelInstanceLibraryEditorPlugin>();
+		EditorPlugins::remove_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		EditorPlugins::remove_by_type<ZN_FastNoiseLiteEditorPlugin>();
+		EditorPlugins::remove_by_type<magica::VoxelVoxEditorPlugin>();
+		EditorPlugins::remove_by_type<VoxelInstancerEditorPlugin>();
+		EditorPlugins::remove_by_type<VoxelMeshSDFEditorPlugin>();
+#endif
 	}
 #endif // TOOLS_ENABLED
 }
@@ -437,9 +442,9 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 #ifdef ZN_GODOT_EXTENSION
 extern "C" {
 // Library entry point
-GDExtensionBool GDE_EXPORT voxel_library_init(const GDExtensionInterface *p_interface,
-		const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
-	godot::GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
+GDExtensionBool GDE_EXPORT voxel_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address,
+		GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+	godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
 	init_obj.register_initializer(initialize_voxel_module);
 	init_obj.register_terminator(uninitialize_voxel_module);

@@ -6,10 +6,12 @@
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/camera_3d.h"
 #include "../../util/godot/classes/editor_interface.h"
+#include "../../util/godot/classes/editor_settings.h"
 #include "../../util/godot/classes/menu_button.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/core/callable.h"
+#include "../../util/godot/core/keyboard.h"
 #include "../../util/godot/funcs.h"
 #include "../about_window.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
@@ -40,7 +42,10 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
 
-	popup->add_item(ZN_TTR("Re-generate"), MENU_RESTART_STREAM);
+	popup->add_shortcut(get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
+								godot::KEY_MASK_CMD_OR_CTRL | godot::KEY_R),
+			MENU_RESTART_STREAM);
+
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
 	{

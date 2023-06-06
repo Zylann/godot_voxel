@@ -52,11 +52,11 @@ void VoxelInstanceLibrary::clear() {
 	notify_property_list_changed();
 }
 
-int VoxelInstanceLibrary::find_item_by_name(String name) const {
+int VoxelInstanceLibrary::find_item_by_name(String p_name) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		const Ref<VoxelInstanceLibraryItem> &item = it->second;
 		ERR_FAIL_COND_V(item.is_null(), -1);
-		if (item->get_item_name() == name) {
+		if (item->get_item_name() == p_name) {
 			return it->first;
 		}
 	}
@@ -119,10 +119,10 @@ void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 }
 
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {
-	const String name = p_name;
+	const String property_name = p_name;
 
-	if (name.begins_with("item_")) {
-		const int id = name.substr(5).to_int();
+	if (property_name.begins_with("item_")) {
+		const int id = property_name.substr(5).to_int();
 
 		Ref<VoxelInstanceLibraryItem> item = p_value;
 		ERR_FAIL_COND_V_MSG(item.is_null(), false, "Setting a null item is not allowed");
@@ -152,9 +152,9 @@ bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value
 }
 
 bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const {
-	const String name = p_name;
-	if (name.begins_with("item_")) {
-		const int id = name.substr(5).to_int();
+	const String property_name = p_name;
+	if (property_name.begins_with("item_")) {
+		const int id = property_name.substr(5).to_int();
 		auto it = _items.find(id);
 		if (it != _items.end()) {
 			r_ret = it->second;
@@ -166,9 +166,9 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
-		const String name = "item_" + itos(it->first);
-		p_list->push_back(PropertyInfo(
-				Variant::OBJECT, name, PROPERTY_HINT_RESOURCE_TYPE, VoxelInstanceLibraryItem::get_class_static()));
+		const String property_name = "item_" + itos(it->first);
+		p_list->push_back(PropertyInfo(Variant::OBJECT, property_name, PROPERTY_HINT_RESOURCE_TYPE,
+				VoxelInstanceLibraryItem::get_class_static()));
 	}
 }
 

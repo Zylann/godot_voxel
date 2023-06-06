@@ -235,8 +235,8 @@ void VoxelLodTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #ifdef TOOLS_ENABLED
 	if (p_stream.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			Ref<Script> script = p_stream->get_script();
-			if (script.is_valid()) {
+			Ref<Script> stream_script = p_stream->get_script();
+			if (stream_script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_update_data->settings.run_stream_in_editor = false;
@@ -266,8 +266,8 @@ void VoxelLodTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 #ifdef TOOLS_ENABLED
 	if (p_generator.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			Ref<Script> script = p_generator->get_script();
-			if (script.is_valid()) {
+			Ref<Script> generator_script = p_generator->get_script();
+			if (generator_script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_update_data->settings.run_stream_in_editor = false;
@@ -2562,7 +2562,7 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3i block_offset_lod0 = block_pos_maxlod << (lod_count - 1);
 
 			octree.for_each_leaf([&dr, block_offset_lod0, mesh_block_size, parent_transform, lod_count_f](
-										 Vector3i node_pos, int lod_index, const LodOctree::NodeData &data) {
+										 Vector3i node_pos, int lod_index, const LodOctree::NodeData &node_data) {
 				//
 				const int size = mesh_block_size << lod_index;
 				const Vector3i voxel_pos = mesh_block_size * ((node_pos << lod_index) + block_offset_lod0);
@@ -2646,7 +2646,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 
 	Array image_array;
 	const unsigned int lod_count = get_lod_count();
-	const VoxelData &data = *_data;
+	const VoxelData &voxel_data = *_data;
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const Box3i world_box = Box3i::from_center_extents(center >> lod_index, extents >> lod_index);
@@ -2658,11 +2658,11 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 		VoxelBufferInternal buffer;
 		buffer.create(world_box.size);
 
-		world_box.for_each_cell([world_box, &buffer, &data](const Vector3i &world_pos) {
+		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {
 			const Vector3i rpos = world_pos - world_box.pos;
 			VoxelSingleValue v;
 			v.f = 1.f;
-			v = data.get_voxel(world_pos, VoxelBufferInternal::CHANNEL_SDF, v);
+			v = voxel_data.get_voxel(world_pos, VoxelBufferInternal::CHANNEL_SDF, v);
 			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
 		});
 

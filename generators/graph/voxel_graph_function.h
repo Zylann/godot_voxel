@@ -132,7 +132,7 @@ public:
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void get_connections(std::vector<ProgramGraph::Connection> &connections) const;
+	void get_connections(std::vector<ProgramGraph::Connection> &p_connections) const;
 
 	// Finds which source port is connected to the given destination.
 	// Returns false if `dst` has no inbound connection.
@@ -140,16 +140,16 @@ public:
 
 	bool has_node(uint32_t node_id) const;
 
-	void set_node_name(uint32_t node_id, StringName name);
+	void set_node_name(uint32_t node_id, StringName p_name);
 	StringName get_node_name(uint32_t node_id) const;
-	uint32_t find_node_by_name(StringName name) const;
+	uint32_t find_node_by_name(StringName p_name) const;
 
 	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
 	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
 
 	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
-	void set_expression_node_inputs(uint32_t node_id, PackedStringArray names);
+	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
 	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
 	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
@@ -213,8 +213,8 @@ public:
 	bool contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
 
-	bool get_node_input_index_by_name(uint32_t node_id, String name, unsigned int &out_input_index) const;
-	bool get_node_param_index_by_name(uint32_t node_id, String name, unsigned int &out_param_index) const;
+	bool get_node_input_index_by_name(uint32_t node_id, String input_name, unsigned int &out_input_index) const;
+	bool get_node_param_index_by_name(uint32_t node_id, String param_name, unsigned int &out_param_index) const;
 
 	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
 
@@ -231,7 +231,7 @@ private:
 	// TODO Only exists because the UndoRedo API is confusing `null` with `absence of argument`...
 	// See https://github.com/godotengine/godot/issues/36895
 	void _b_set_node_param_null(int node_id, int param_index);
-	void _b_set_node_name(int node_id, String name);
+	void _b_set_node_name(int node_id, String node_name);
 
 	Array _b_get_input_definitions() const;
 	void _b_set_input_definitions(Array data);

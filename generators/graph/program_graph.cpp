@@ -49,10 +49,10 @@ uint32_t ProgramGraph::Node::find_output_connection(uint32_t output_port_index, 
 	return ProgramGraph::NULL_INDEX;
 }
 
-bool ProgramGraph::Node::find_input_port_by_name(std::string_view name, unsigned int &out_i) const {
+bool ProgramGraph::Node::find_input_port_by_name(std::string_view port_name, unsigned int &out_i) const {
 	for (unsigned int i = 0; i < inputs.size(); ++i) {
 		const ProgramGraph::Port &port = inputs[i];
-		if (port.dynamic_name == name) {
+		if (port.dynamic_name == port_name) {
 			out_i = i;
 			return true;
 		}

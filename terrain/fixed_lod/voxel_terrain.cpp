@@ -129,8 +129,8 @@ void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 #ifdef TOOLS_ENABLED
 	if (p_stream.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			Ref<Script> script = p_stream->get_script();
-			if (script.is_valid()) {
+			Ref<Script> stream_script = p_stream->get_script();
+			if (stream_script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;
@@ -160,8 +160,8 @@ void VoxelTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 #ifdef TOOLS_ENABLED
 	if (p_generator.is_valid()) {
 		if (Engine::get_singleton()->is_editor_hint()) {
-			Ref<Script> script = p_generator->get_script();
-			if (script.is_valid()) {
+			Ref<Script> generator_script = p_generator->get_script();
+			if (generator_script.is_valid()) {
 				// Safety check. It's too easy to break threads by making a script reload.
 				// You can turn it back on, but be careful.
 				_run_stream_in_editor = false;

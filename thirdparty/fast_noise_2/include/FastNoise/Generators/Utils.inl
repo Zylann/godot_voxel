@@ -71,6 +71,53 @@ namespace FastNoise
             // Bit-8 = Flip sign of a + b
             return ( a + b ) ^ FS_Casti32_f32( (index >> 3) << 31 );
         }
+        template<typename SIMD = FS, std::enable_if_t<SIMD::SIMD_Level == FastSIMD::Level_NEON>* = nullptr>
+        FS_INLINE static float32v GetGradientDotFancy( int32v hash, float32v fX, float32v fY )
+        {
+            int32v index = FS_Convertf32_i32( FS_Converti32_f32( hash & int32v( 0x3FFFFF ) ) * float32v( 1.3333333333333333f ) );
+
+            // Bit-4 = Choose X Y ordering
+            mask32v xy;
+
+//             if constexpr( FS::SIMD_Level == FastSIMD::Level_Scalar )
+//             {
+//                 xy = int32_t( index & int32v( 1 << 2 ) ) != 0;
+//             }
+//             else
+//             {
+                xy = index << 29;
+
+//                 if constexpr( FS::SIMD_Level < FastSIMD::Level_SSE41 )
+//                 {
+                    xy >>= 31;
+//                 }
+//             }
+
+            float32v a = FS_Select_f32( xy, fY, fX );
+            float32v b = FS_Select_f32( xy, fX, fY );
+
+            // Bit-1 = b flip sign
+            b ^= FS_Casti32_f32( index << 31 );
+
+            // Bit-2 = Mul a by 2 or Root3
+            mask32v aMul2;
+
+//             if constexpr( FS::SIMD_Level == FastSIMD::Level_Scalar )
+//             {
+//                 aMul2 = int32_t( index & int32v( 1 << 1 ) ) != 0;
+//             }
+//             else
+//             {
+                aMul2 = (index << 30) >> 31;
+//             }
+
+            a *= FS_Select_f32( aMul2, float32v( 2 ), float32v( ROOT3 ) );
+            // b zero value if a mul 2
+            b = FS_NMask_f32( b, aMul2 );
+
+            // Bit-8 = Flip sign of a + b
+            return ( a + b ) ^ FS_Casti32_f32( (index >> 3) << 31 );
+        }
 
         template<typename SIMD = FS, std::enable_if_t<SIMD::SIMD_Level == FastSIMD::Level_AVX2>* = nullptr>
         FS_INLINE static float32v GetGradientDotFancy( int32v hash, float32v fX, float32v fY )
@@ -119,6 +166,38 @@ namespace FastNoise
                     bit4 >>= 31;
                 }
             }
+
+            fX ^= FS_Casti32_f32( bit1 );
+            fY ^= FS_Casti32_f32( bit2 );
+            
+            float32v a = FS_Select_f32( bit4, fY, fX );
+            float32v b = FS_Select_f32( bit4, fX, fY );
+            
+            return FS_FMulAdd_f32( float32v( 1.0f + ROOT2 ), a, b );
+        }
+        template<typename SIMD = FS, std::enable_if_t<SIMD::SIMD_Level == FastSIMD::Level_NEON> * = nullptr>
+         FS_INLINE static float32v GetGradientDot( int32v hash, float32v fX, float32v fY )
+        {
+            // ( 1+R2, 1 ) ( -1-R2, 1 ) ( 1+R2, -1 ) ( -1-R2, -1 )
+            // ( 1, 1+R2 ) ( 1, -1-R2 ) ( -1, 1+R2 ) ( -1, -1-R2 )
+
+            int32v  bit1 = (hash << 31);
+            int32v  bit2 = (hash >> 1) << 31;
+            mask32v bit4;
+
+//             if constexpr( FS::SIMD_Level == FastSIMD::Level_Scalar )
+//             {
+//                 bit4 = int32_t( hash & int32v( 1 << 2 ) ) != 0;
+//             }
+//             else
+//             {
+                bit4 = hash << 29;
+// 
+//                 if constexpr( FS::SIMD_Level < FastSIMD::Level_SSE41 )
+//                 {
+                    bit4 >>= 31;
+//                 }
+//             }
 
             fX ^= FS_Casti32_f32( bit1 );
             fY ^= FS_Casti32_f32( bit2 );

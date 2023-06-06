@@ -1296,9 +1296,9 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 
 	const Lod &lod = _lods[lod_index];
 
-	UniquePtr<InstanceBlockData> data = make_unique_instance<InstanceBlockData>();
+	UniquePtr<InstanceBlockData> block_data = make_unique_instance<InstanceBlockData>();
 	const int data_block_size = (1 << _parent_data_block_size_po2) << lod_index;
-	data->position_range = data_block_size;
+	block_data->position_range = data_block_size;
 
 	const int render_to_data_factor = (1 << _parent_mesh_block_size_po2) / (1 << _parent_data_block_size_po2);
 	ERR_FAIL_COND_V_MSG(render_to_data_factor < 1 || render_to_data_factor > 2, nullptr, "Unsupported block size");
@@ -1335,8 +1335,8 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 #endif
 		Block &render_block = *_blocks[render_block_index];
 
-		data->layers.push_back(InstanceBlockData::LayerData());
-		InstanceBlockData::LayerData &layer_data = data->layers.back();
+		block_data->layers.push_back(InstanceBlockData::LayerData());
+		InstanceBlockData::LayerData &layer_data = block_data->layers.back();
 
 		layer_data.instances.clear();
 		layer_data.id = layer_id;
@@ -1441,7 +1441,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-			volume_id, data_grid_pos, lod_index, data_block_size, std::move(data), stream_dependency, tracker));
+			volume_id, data_grid_pos, lod_index, data_block_size, std::move(block_data), stream_dependency, tracker));
 
 	return task;
 }

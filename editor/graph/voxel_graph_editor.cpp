@@ -189,6 +189,9 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			_context_menu->add_item("Relay", VoxelGraphFunction::NODE_RELAY);
 			continue;
 		}
+		if (i == CATEGORY_CONSTANT) {
+			continue;
+		}
 		String name = get_category_name(Category(i));
 		PopupMenu *menu = memnew(PopupMenu);
 		menu->set_name(name);
@@ -203,15 +206,28 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		if (i == VoxelGraphFunction::NODE_RELAY) {
 			continue;
 		}
+
 		const NodeType &node_type = NodeTypeDB::get_singleton().get_type(i);
-		PopupMenu *menu = category_menus[node_type.category];
-		ZN_ASSERT(menu != nullptr);
+
 		if (i == VoxelGraphFunction::NODE_FUNCTION) {
+			PopupMenu *menu = category_menus[node_type.category];
+			ZN_ASSERT(menu != nullptr);
 			menu->add_item(ZN_TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
 #ifdef ZN_GODOT
 			menu->add_item(TTR("Quick Open..."), CONTEXT_MENU_FUNCTION_QUICK_OPEN);
 #endif
+		} else if (i == VoxelGraphFunction::NODE_CONSTANT) {
+			// Exceptionally keep the constant node into the input category in the editor. Internally, "Input" means the
+			// node is an entry point of the graph, like a function parameter. Constants are not considered as such, and
+			// won't work as inputs in graph functions. They have their own category internally, but it still makes
+			// sense to have them in the "input" sub-menu in the editor.
+			PopupMenu *menu = category_menus[CATEGORY_INPUT];
+			ZN_ASSERT(menu != nullptr);
+			menu->add_item(node_type.name, i);
+
 		} else {
+			PopupMenu *menu = category_menus[node_type.category];
+			ZN_ASSERT(menu != nullptr);
 			menu->add_item(node_type.name, i);
 		}
 	}
@@ -419,11 +435,11 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Connections
 
-	std::vector<ProgramGraph::Connection> connections;
-	graph.get_connections(connections);
+	std::vector<ProgramGraph::Connection> all_connections;
+	graph.get_connections(all_connections);
 
-	for (size_t i = 0; i < connections.size(); ++i) {
-		const ProgramGraph::Connection &con = connections[i];
+	for (size_t i = 0; i < all_connections.size(); ++i) {
+		const ProgramGraph::Connection &con = all_connections[i];
 		const String from_node_name = node_to_gui_name(con.src.node_id);
 		const String to_node_name = node_to_gui_name(con.dst.node_id);
 		VoxelGraphEditorNode *to_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, NodePath(to_node_name));
@@ -538,11 +554,11 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 	// Add connections back by reading the graph
 
 	// TODO Optimize: the graph stores an adjacency list, we could use that
-	std::vector<ProgramGraph::Connection> connections;
-	_graph->get_connections(connections);
+	std::vector<ProgramGraph::Connection> all_connections;
+	_graph->get_connections(all_connections);
 
-	for (size_t i = 0; i < connections.size(); ++i) {
-		const ProgramGraph::Connection &con = connections[i];
+	for (size_t i = 0; i < all_connections.size(); ++i) {
+		const ProgramGraph::Connection &con = all_connections[i];
 
 		if (con.dst.node_id == node_id) {
 			graph_edit.connect_node(node_to_gui_name(con.src.node_id), con.src.port_index,
@@ -687,8 +703,8 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 
 	_undo_redo->create_action(ZN_TTR("Delete Nodes"));
 
-	std::vector<ProgramGraph::Connection> connections;
-	_graph->get_connections(connections);
+	std::vector<ProgramGraph::Connection> all_connections;
+	_graph->get_connections(all_connections);
 
 	for (size_t i = 0; i < to_erase.size(); ++i) {
 		const VoxelGraphEditorNode *node_view = to_erase[i];
@@ -717,8 +733,8 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 		_undo_redo->add_undo_method(this, "create_node_gui", node_id);
 
 		// Connections undo
-		for (size_t j = 0; j < connections.size(); ++j) {
-			const ProgramGraph::Connection &con = connections[j];
+		for (size_t j = 0; j < all_connections.size(); ++j) {
+			const ProgramGraph::Connection &con = all_connections[j];
 
 			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
 				_undo_redo->add_undo_method(*_graph, "add_connection", con.src.node_id, con.src.port_index,

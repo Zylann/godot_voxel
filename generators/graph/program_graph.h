@@ -62,7 +62,7 @@ public:
 		uint32_t find_input_connection(PortLocation src, uint32_t input_port_index) const;
 		uint32_t find_output_connection(uint32_t output_port_index, PortLocation dst) const;
 
-		bool find_input_port_by_name(std::string_view name, unsigned int &out_i) const;
+		bool find_input_port_by_name(std::string_view port_name, unsigned int &out_i) const;
 	};
 
 	~ProgramGraph();

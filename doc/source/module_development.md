@@ -106,9 +106,9 @@ Note: this task system does not account for "frames". Tasks can run at any time 
 Code guidelines
 -----------------
 
-For the most part, use `clang-format` and follow Godot conventions.
-
 ### Syntax
+
+For the most part, use `clang-format` and follow Godot conventions.
 
 - Class and struct names `PascalCase`
 - Constants, enums and macros `CAPSLOCK_CASE`
@@ -186,6 +186,11 @@ In performance-critical areas which run a lot:
 - Don't leave random prints. For verbose mode you may also use `ZN_PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
 - If possible, keep Godot usage to a minimum, to make the code more portable, and sometimes faster for future GDExtension. Some areas use custom equivalents defined in `util/`.
+
+Compiling as a module or an extension is both supported, so it involves some restrictions:
+
+- Don't include Godot headers directly. Use headers from `util/godot`.
+- Only use APIs that are available to GDExtensions (or the script API). If they exist in both but are different, use wrappers defined in `util/godot`.
 
 ### Namespaces
 
