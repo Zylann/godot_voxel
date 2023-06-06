@@ -39,7 +39,7 @@ VoxelBlockyType::VariantKey VoxelBlockyTypeAttributeCombinationSelector::get_var
 	VoxelBlockyType::VariantKey key;
 	for (unsigned int i = 0; i < attributes.size(); ++i) {
 		const Ref<VoxelBlockyAttribute> attrib = attributes[i];
-		ZN_ASSERT_RETURN(attrib.is_valid());
+		ZN_ASSERT_RETURN_V(attrib.is_valid(), VoxelBlockyType::VariantKey());
 		const StringName attrib_name = attrib->get_attribute_name();
 		key.attribute_names[i] = attrib_name;
 		uint8_t value;

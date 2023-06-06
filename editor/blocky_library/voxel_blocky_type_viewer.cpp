@@ -55,15 +55,6 @@ void VoxelBlockyTypeViewer::update_model() {
 	_mesh_instance->set_mesh(mesh);
 }
 
-bool contains_attribute_with_name(const std::vector<Ref<VoxelBlockyAttribute>> &attribs, const StringName &name) {
-	for (const Ref<VoxelBlockyAttribute> &attrib : attribs) {
-		if (attrib->get_attribute_name() == name) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void VoxelBlockyTypeViewer::_on_type_changed() {
 	update_model();
 }

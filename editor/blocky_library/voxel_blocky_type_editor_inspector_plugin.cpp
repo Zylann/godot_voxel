@@ -43,7 +43,7 @@ bool VoxelBlockyTypeEditorInspectorPlugin::_zn_parse_property(Object *p_object, 
 	}
 
 	const VoxelBlockyType *type_ptr = Object::cast_to<VoxelBlockyType>(p_object);
-	ZN_ASSERT_RETURN(type_ptr != nullptr);
+	ZN_ASSERT_RETURN_V(type_ptr != nullptr, false);
 
 	Ref<VoxelBlockyType> type(type_ptr);
 	if (type.is_null()) {

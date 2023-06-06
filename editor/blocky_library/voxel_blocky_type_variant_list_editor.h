@@ -2,6 +2,7 @@
 #define VOXEL_BLOCKY_TYPE_VARIANT_LIST_EDITOR_H
 
 #include "../../../meshers/blocky/types/voxel_blocky_type.h"
+#include "../../../util/godot/classes/v_box_container.h"
 #include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Label);

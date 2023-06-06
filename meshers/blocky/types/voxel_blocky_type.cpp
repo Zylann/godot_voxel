@@ -799,11 +799,11 @@ bool VoxelBlockyType::VariantKey::parse_from_array(const Array &array) {
 Array VoxelBlockyType::VariantKey::to_array() const {
 	Array array;
 	for (unsigned int i = 0; i < attribute_names.size(); ++i) {
-		const StringName &name = attribute_names[i];
-		if (name == StringName()) {
+		const StringName &attribute_name = attribute_names[i];
+		if (attribute_name == StringName()) {
 			break;
 		}
-		array.append(name);
+		array.append(attribute_name);
 		array.append(attribute_values[i]);
 	}
 	return array;
