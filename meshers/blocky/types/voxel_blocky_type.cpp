@@ -98,11 +98,11 @@ Ref<VoxelBlockyAttribute> VoxelBlockyType::get_rotation_attribute() const {
 	return rotation_attribute;
 }
 
-void VoxelBlockyType::get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs) {
+void VoxelBlockyType::get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs) const {
 	gather_and_sort_attributes(_attributes, out_attribs);
 }
 
-static bool parse_variant_key_from_property_name(const String &property_name, VoxelBlockyType::VariantKey &out_key) {
+/*static bool parse_variant_key_from_property_name(const String &property_name, VoxelBlockyType::VariantKey &out_key) {
 	Span<const char32_t> str(property_name.ptr(), property_name.length());
 
 	// `variants/attrib1_value1_attrib2_value2`
@@ -168,7 +168,7 @@ static bool parse_variant_key_from_property_name(const String &property_name, Vo
 
 	out_key = key;
 	return true;
-}
+}*/
 
 void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> model) {
 #ifdef TOOLS_ENABLED
@@ -186,6 +186,7 @@ void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> m
 
 	for (VariantData &vd : _variants) {
 		if (vd.key == key && vd.model != model) {
+			// TODO If the model is null, remove it from the list
 			vd.model = model;
 			return;
 		}
@@ -205,7 +206,7 @@ Ref<VoxelBlockyModel> VoxelBlockyType::get_variant(const VariantKey &key) const 
 	return Ref<VoxelBlockyModel>();
 }
 
-bool VoxelBlockyType::_set(const StringName &p_name, const Variant &p_value) {
+/*bool VoxelBlockyType::_set(const StringName &p_name, const Variant &p_value) {
 	ZN_PROFILE_SCOPE();
 	String name_str = p_name;
 
@@ -218,9 +219,9 @@ bool VoxelBlockyType::_set(const StringName &p_name, const Variant &p_value) {
 	}
 
 	return false;
-}
+}*/
 
-bool VoxelBlockyType::_get(const StringName &p_name, Variant &r_ret) const {
+/*bool VoxelBlockyType::_get(const StringName &p_name, Variant &r_ret) const {
 	ZN_PROFILE_SCOPE();
 	String name_str = p_name;
 
@@ -233,9 +234,9 @@ bool VoxelBlockyType::_get(const StringName &p_name, Variant &r_ret) const {
 	}
 
 	return false;
-}
+}*/
 
-void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
+/*void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
 	ZN_PROFILE_SCOPE();
 
 	std::vector<Ref<VoxelBlockyAttribute>> attributes;
@@ -261,7 +262,7 @@ void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
 					Variant::OBJECT, property_name, PROPERTY_HINT_RESOURCE_TYPE, VoxelBlockyModel::get_class_static()));
 		}
 	}
-}
+}*/
 
 // Get automatic rotation transform to apply to a model when baking.
 // It is based on the assumption the base model is pre-rotated according to the default value of the rotation attribute
@@ -281,22 +282,22 @@ static math::OrthoBasis get_baking_rotation_ortho_basis(
 	return src_basis.inverted() * dst_basis;
 }
 
-String variant_key_to_string(
-		const VoxelBlockyType::VariantKey &key, const std::vector<Ref<VoxelBlockyAttribute>> &attributes) {
-	String s;
-	unsigned int i = 0;
-	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
-		if (i > 0) {
-			s += "_";
-		}
-		if (attrib.is_null()) {
-			s += "<null>=";
-		}
-		s += String::num_int64(key.attribute_values[i]);
-		++i;
-	}
-	return s;
-}
+// String variant_key_to_string(
+// 		const VoxelBlockyType::VariantKey &key, const std::vector<Ref<VoxelBlockyAttribute>> &attributes) {
+// 	String s;
+// 	unsigned int i = 0;
+// 	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
+// 		if (i > 0) {
+// 			s += "_";
+// 		}
+// 		if (attrib.is_null()) {
+// 			s += "<null>=";
+// 		}
+// 		s += String::num_int64(key.attribute_values[i]);
+// 		++i;
+// 	}
+// 	return s;
+// }
 
 void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
 		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const {
@@ -364,8 +365,7 @@ void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models,
 						WARN_PRINT(String(
 								"No model found for rotation variant ({0}) when baking {1} with name {2}. The model "
 								"will be empty.")
-										   .format(varray(variant_key_to_string(ref_key, attributes), get_class(),
-												   get_unique_name())));
+										   .format(varray(ref_key.to_string(), get_class(), get_unique_name())));
 					}
 					continue;
 				}
@@ -386,8 +386,7 @@ void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models,
 			} else if (print_warnings) {
 				WARN_PRINT(
 						String("No model found for variant {0} when baking {1} with name {2}. The model will be empty.")
-								.format(varray(
-										variant_key_to_string(key, attributes), get_class(), get_unique_name())));
+								.format(varray(key.to_string(), get_class(), get_unique_name())));
 			}
 		}
 	}
@@ -592,10 +591,10 @@ void VoxelBlockyType::generate_keys(const std::vector<Ref<VoxelBlockyAttribute>>
 	}
 }
 
-void VoxelBlockyType::generate_keys(std::vector<VariantKey> &out_keys) const {
+void VoxelBlockyType::generate_keys(std::vector<VariantKey> &out_keys, bool include_rotations) const {
 	std::vector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
-	generate_keys(attributes, out_keys, true);
+	generate_keys(attributes, out_keys, include_rotations);
 }
 
 void VoxelBlockyType::_on_attribute_changed() {
@@ -668,6 +667,61 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 	emit_changed();
 }
 
+void VoxelBlockyType::_b_set_variant_model(Array p_key, Ref<VoxelBlockyModel> model) {
+	VariantKey key;
+	ZN_ASSERT_RETURN(key.parse_from_array(p_key));
+	set_variant(key, model);
+}
+
+void VoxelBlockyType::_b_set_variant_models_data(Array data) {
+	_variants.clear();
+	for (int i = 0; i < data.size(); ++i) {
+		Variant pair_v = data[i];
+		ZN_ASSERT_CONTINUE(pair_v.get_type() == Variant::ARRAY);
+		Array pair = pair_v;
+		ZN_ASSERT_CONTINUE(pair.size() == 2);
+		Variant key_v = pair[0];
+		Variant model_v = pair[1];
+		ZN_ASSERT_CONTINUE(key_v.get_type() == Variant::ARRAY);
+		VariantKey key;
+		ZN_ASSERT_CONTINUE(key.parse_from_array(key_v));
+		Ref<VoxelBlockyModel> model = model_v;
+		if (model.is_null()) {
+			continue;
+		}
+		VariantData vd;
+		vd.key = key;
+		vd.model = model;
+		_variants.push_back(vd);
+	}
+}
+
+Array VoxelBlockyType::_b_get_variant_models_data() const {
+	ZN_PROFILE_SCOPE();
+	// Instead of just saving the constants of `_variants`, we only gather valid ones, and cleanup the others.
+
+	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	gather_and_sort_attributes(_attributes, attributes);
+
+	std::vector<VariantKey> keys;
+	generate_keys(attributes, keys, !_automatic_rotations);
+
+	Array data;
+	for (const VariantKey &key : keys) {
+		Ref<VoxelBlockyModel> model = get_variant(key);
+		if (model.is_null()) {
+			continue;
+		}
+		Array pair;
+		pair.resize(2);
+		pair[0] = key.to_array();
+		pair[1] = model;
+		data.append(pair);
+	}
+
+	return data;
+}
+
 void VoxelBlockyType::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_unique_name", "name"), &VoxelBlockyType::set_unique_name);
 	ClassDB::bind_method(D_METHOD("get_unique_name"), &VoxelBlockyType::get_unique_name);
@@ -679,6 +733,11 @@ void VoxelBlockyType::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_attributes"), &VoxelBlockyType::_b_get_attributes);
 
 	ClassDB::bind_method(D_METHOD("get_rotation_attribute"), &VoxelBlockyType::get_rotation_attribute);
+
+	ClassDB::bind_method(D_METHOD("set_variant_model"), &VoxelBlockyType::_b_set_variant_model);
+
+	ClassDB::bind_method(D_METHOD("_get_variant_models_data"), &VoxelBlockyType::_b_get_variant_models_data);
+	ClassDB::bind_method(D_METHOD("_set_variant_models_data", "data"), &VoxelBlockyType::_b_set_variant_models_data);
 
 #if defined(ZN_GODOT_EXTENSION)
 	ClassDB::bind_method(D_METHOD("_on_attribute_changed"), &VoxelBlockyType::_on_attribute_changed);
@@ -693,7 +752,61 @@ void VoxelBlockyType::_bind_methods() {
 						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyAttribute::get_class_static())),
 			"set_attributes", "get_attributes");
 
+	// This property is only for saving, not for direct use by scripts or inspector.
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "_variant_models_data", PROPERTY_HINT_NONE, "",
+						 PROPERTY_USAGE_STORAGE
+								 // But editor is required so we can insert a custom editor instead of the property
+								 | PROPERTY_USAGE_EDITOR),
+			"_set_variant_models_data", "_get_variant_models_data");
+
 	BIND_CONSTANT(MAX_ATTRIBUTES);
+}
+
+String VoxelBlockyType::VariantKey::to_string() const {
+	const VoxelBlockyType::VariantKey &key = *this;
+	String s;
+	for (unsigned int attribute_index = 0; attribute_index < key.attribute_names.size(); ++attribute_index) {
+		const StringName &attrib_name = key.attribute_names[attribute_index];
+		if (attrib_name == StringName()) {
+			break;
+		}
+		if (attribute_index > 0) {
+			s += ",";
+		}
+		s += String(attrib_name);
+		s += '=';
+		s += String::num_int64(key.attribute_values[attribute_index]);
+	}
+	return s;
+}
+
+bool VoxelBlockyType::VariantKey::parse_from_array(const Array &array) {
+	ZN_ASSERT_RETURN_V((array.size() % 2) == 0, false);
+	for (int i = 0; i < array.size(); i += 2) {
+		Variant name_v = array[i];
+		Variant value_v = array[i + 1];
+
+		ZN_ASSERT_RETURN_V(name_v.get_type() == Variant::STRING_NAME, false);
+		ZN_ASSERT_RETURN_V(name_v.get_type() == Variant::INT, false);
+
+		const int attrib_index = i / 2;
+		attribute_names[attrib_index] = name_v;
+		attribute_values[attrib_index] = value_v;
+	}
+	return true;
+}
+
+Array VoxelBlockyType::VariantKey::to_array() const {
+	Array array;
+	for (unsigned int i = 0; i < attribute_names.size(); ++i) {
+		const StringName &name = attribute_names[i];
+		if (name == StringName()) {
+			break;
+		}
+		array.append(name);
+		array.append(attribute_values[i]);
+	}
+	return array;
 }
 
 } // namespace zylann::voxel

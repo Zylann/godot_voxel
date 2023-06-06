@@ -108,7 +108,7 @@ void VoxelBlockyTypeLibrary::update_id_map(std::vector<VoxelID> &id_map, std::ve
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 
-		type->generate_keys(keys);
+		type->generate_keys(keys, true);
 
 		VoxelID id;
 		id.type_name = type->get_unique_name();
@@ -667,19 +667,7 @@ String VoxelBlockyTypeLibrary::to_string(const VoxelID &id) {
 	String s = id.type_name;
 	if (id.variant_key.attribute_names[0] != StringName()) {
 		s += "[";
-		for (unsigned int attribute_index = 0; attribute_index < id.variant_key.attribute_names.size();
-				++attribute_index) {
-			const StringName &attrib_name = id.variant_key.attribute_names[attribute_index];
-			if (attrib_name == StringName()) {
-				break;
-			}
-			if (attribute_index > 0) {
-				s += ",";
-			}
-			s += String(attrib_name);
-			s += '=';
-			s += String::num_int64(id.variant_key.attribute_values[attribute_index]);
-		}
+		s += id.variant_key.to_string();
 		s += "]";
 	}
 	return s;

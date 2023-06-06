@@ -33,7 +33,7 @@ public:
 	Ref<VoxelBlockyAttribute> get_attribute_by_name(const StringName &attrib_name) const;
 	Ref<VoxelBlockyAttribute> get_rotation_attribute() const;
 
-	void get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs);
+	void get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs) const;
 
 	// Identifies one model variant of a type, as the attributes and values it has.
 	struct VariantKey {
@@ -51,7 +51,15 @@ public:
 		bool operator==(const VariantKey &other) const {
 			return attribute_names == other.attribute_names && attribute_values == other.attribute_values;
 		}
+
+		String to_string() const;
+		bool parse_from_array(const Array &array);
+		Array to_array() const;
 	};
+
+	// Get or set models specifically associated to a particular variant (they are not necessarily the final result)
+	void set_variant(const VariantKey &key, Ref<VoxelBlockyModel> model);
+	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
 
 	void bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
 			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const;
@@ -60,7 +68,7 @@ public:
 
 	Ref<Mesh> get_preview_mesh(const VariantKey &key) const;
 
-	void generate_keys(std::vector<VariantKey> &out_keys) const;
+	void generate_keys(std::vector<VariantKey> &out_keys, bool include_rotations) const;
 
 private:
 	// Filters null entries, removes duplicates and sorts attributes before they can be used in processing
@@ -71,18 +79,19 @@ private:
 	static void generate_keys(const std::vector<Ref<VoxelBlockyAttribute>> &attributes,
 			std::vector<VariantKey> &out_keys, bool include_rotations);
 
-	void set_variant(const VariantKey &key, Ref<VoxelBlockyModel> model);
-	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
-
 	void _on_attribute_changed();
 	void _on_base_model_changed();
 
 	TypedArray<VoxelBlockyAttribute> _b_get_attributes() const;
 	void _b_set_attributes(TypedArray<VoxelBlockyAttribute> attributes);
 
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
+	// bool _set(const StringName &p_name, const Variant &p_value);
+	// bool _get(const StringName &p_name, Variant &r_ret) const;
+	// void _get_property_list(List<PropertyInfo> *p_list) const;
+
+	void _b_set_variant_model(Array p_key, Ref<VoxelBlockyModel> model);
+	void _b_set_variant_models_data(Array data);
+	Array _b_get_variant_models_data() const;
 
 	static void _bind_methods();
 
@@ -119,6 +128,8 @@ private:
 
 	// TODO Conditional models
 };
+
+String to_string(const VoxelBlockyType::VariantKey &key);
 
 } // namespace zylann::voxel
 
