@@ -19,10 +19,15 @@ struct Interval {
 	inline Interval() : min(0), max(0) {}
 
 	inline Interval(real_t p_min, real_t p_max) : min(p_min), max(p_max) {
-#if DEBUG_ENABLED
+#if DEV_ENABLED
 		ZN_ASSERT(p_min <= p_max);
+#elif DEBUG_ENABLED
+		// Don't crash but keep signaling
+		_check_range_once();
 #endif
 	}
+
+	void _check_range_once();
 
 	inline static Interval from_single_value(real_t p_val) {
 		return Interval(p_val, p_val);
