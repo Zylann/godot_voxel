@@ -357,10 +357,10 @@ int VoxelBlockyTypeLibrary::get_model_index(const VoxelID queried_id) const {
 	return -1;
 }
 
-Ref<VoxelBlockyType> VoxelBlockyTypeLibrary::get_type_from_name(StringName name) const {
+Ref<VoxelBlockyType> VoxelBlockyTypeLibrary::get_type_from_name(StringName p_name) const {
 	// Not optimized, we'll see if it needs to be a HashMap or other
 	for (const Ref<VoxelBlockyType> &type : _types) {
-		if (type.is_valid() && type->get_unique_name() == name) {
+		if (type.is_valid() && type->get_unique_name() == p_name) {
 			return type;
 		}
 	}

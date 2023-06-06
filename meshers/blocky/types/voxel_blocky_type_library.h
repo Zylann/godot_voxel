@@ -45,7 +45,7 @@ public:
 	//
 	int get_model_index_with_attributes(StringName type_name, Dictionary attribs_dict) const;
 
-	Ref<VoxelBlockyType> get_type_from_name(StringName name) const;
+	Ref<VoxelBlockyType> get_type_from_name(StringName p_name) const;
 
 	// Returned array has two elements:
 	// - The type's name as StringName

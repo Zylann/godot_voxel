@@ -10,9 +10,9 @@ VoxelBlockyAttributeCustom::VoxelBlockyAttributeCustom() {
 	update_values();
 }
 
-void VoxelBlockyAttributeCustom::set_attribute_name(StringName name) {
-	if (_name != name) {
-		_name = name;
+void VoxelBlockyAttributeCustom::set_attribute_name(StringName p_name) {
+	if (_name != p_name) {
+		_name = p_name;
 		emit_changed();
 	}
 }
@@ -28,8 +28,8 @@ void VoxelBlockyAttributeCustom::set_value_count(int count) {
 	}
 }
 
-void VoxelBlockyAttributeCustom::set_value_name(int index, StringName name) {
-	_value_names[index] = name;
+void VoxelBlockyAttributeCustom::set_value_name(int index, StringName p_name) {
+	_value_names[index] = p_name;
 }
 
 void VoxelBlockyAttributeCustom::set_default_value(int v) {

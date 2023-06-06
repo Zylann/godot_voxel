@@ -23,7 +23,7 @@ public:
 	void set_default_value(int value);
 
 	// TODO -1 means "not found", but I don't like it...
-	int get_value_from_name(StringName name) const;
+	int get_value_from_name(StringName p_name) const;
 
 	StringName get_name_from_value(int v) const;
 	Span<const uint8_t> get_used_values() const;

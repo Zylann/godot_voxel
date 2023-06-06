@@ -41,10 +41,10 @@ void VoxelBlockyModelCube::set_tile(VoxelBlockyModel::Side side, Vector2i pos) {
 }
 
 bool VoxelBlockyModelCube::_set(const StringName &p_name, const Variant &p_value) {
-	const String name = p_name;
+	const String property_name = p_name;
 
-	if (name.begins_with("tile_")) {
-		String s = name.substr(ZN_ARRAY_LENGTH("tile_") - 1, name.length());
+	if (property_name.begins_with("tile_")) {
+		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2i v = p_value;
@@ -57,10 +57,10 @@ bool VoxelBlockyModelCube::_set(const StringName &p_name, const Variant &p_value
 }
 
 bool VoxelBlockyModelCube::_get(const StringName &p_name, Variant &r_ret) const {
-	const String name = p_name;
+	const String property_name = p_name;
 
-	if (name.begins_with("tile_")) {
-		String s = name.substr(ZN_ARRAY_LENGTH("tile_") - 1, name.length());
+	if (property_name.begins_with("tile_")) {
+		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			r_ret = get_tile(VoxelBlockyModel::Side(side));

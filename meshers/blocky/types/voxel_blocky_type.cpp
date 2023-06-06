@@ -20,11 +20,11 @@ VoxelBlockyType::VoxelBlockyType() {
 	_name = VoxelStringNames::get_singleton().unnamed;
 }
 
-void VoxelBlockyType::set_unique_name(StringName name) {
-	if (name != _name) {
-		_name = name;
+void VoxelBlockyType::set_unique_name(StringName p_name) {
+	if (p_name != _name) {
+		_name = p_name;
 		// Also set resource name, so Godot will use it in array inspector
-		set_name(name);
+		set_name(p_name);
 		emit_changed();
 	}
 }

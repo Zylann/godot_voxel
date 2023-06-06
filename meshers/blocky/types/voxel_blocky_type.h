@@ -23,7 +23,7 @@ public:
 
 	VoxelBlockyType();
 
-	void set_unique_name(StringName name);
+	void set_unique_name(StringName p_name);
 	StringName get_unique_name() const;
 
 	void set_base_model(Ref<VoxelBlockyModel> model);
