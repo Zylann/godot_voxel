@@ -278,9 +278,9 @@ void VoxelGraphEditor::set_generator(Ref<VoxelGeneratorGraph> generator) {
 		Ref<VoxelGraphFunction> graph = generator->get_main_function();
 
 		// Load a default preset when creating new graphs.
-		// TODO Downside is, an empty graph cannot be seen.
-		// But Godot doesnt let us know if the resource has been created from the inspector or not
-		if (graph->get_nodes_count() == 0) {
+		// Downside is, an empty graph cannot be seen. But Godot doesnt let us know if the resource has been created
+		// from the inspector or not, so we had to introduce a special boolean...
+		if (graph->get_nodes_count() == 0 && graph->can_load_default_graph()) {
 			_generator->load_plane_preset();
 		}
 

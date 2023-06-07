@@ -218,6 +218,12 @@ public:
 
 	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
 
+#ifdef TOOLS_ENABLED
+	bool can_load_default_graph() const {
+		return _can_load_default_graph;
+	}
+#endif
+
 private:
 	void register_subresource(Resource &resource);
 	void unregister_subresource(Resource &resource);
@@ -244,6 +250,13 @@ private:
 	ProgramGraph _graph;
 	std::vector<Port> _inputs;
 	std::vector<Port> _outputs;
+#ifdef TOOLS_ENABLED
+	// Godot doesn't make a difference between a resource newly created in the inspector and an empty one or one created
+	// from script... It is necessary to know that in order to load a "hello world" graph in the editor when creating a
+	// new graph. True by default after being created, but will become false if cleared (which means it's not a brand
+	// new instance).
+	bool _can_load_default_graph = true;
+#endif
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
