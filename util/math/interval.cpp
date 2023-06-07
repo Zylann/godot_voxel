@@ -7,7 +7,7 @@ namespace math {
 
 void Interval::_check_range_once() {
 	static bool once = false;
-	if (min <= max && once == false) {
+	if (min > max && once == false) {
 		once = true;
 		ZN_PRINT_ERROR(format("Interval constructed with invalid range: min={}, max={}", min, max));
 	}
