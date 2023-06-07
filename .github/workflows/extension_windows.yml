@@ -26,20 +26,20 @@ jobs:
           - name: Editor build
             target: editor
             dev_build: no
-            #cache_action: actions/cache@v2
+            #cache_action: actions/cache@v3
             executable_name: libvoxel.windows.editor.x86_64.dll
           - name: Release build
             target: template_release
             dev_build: no
-            #cache_action: actions/cache@v2
+            #cache_action: actions/cache@v3
             executable_name: libvoxel.windows.template_release.x86_64.dll
 
     steps:
       # Clone our repo
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Clone GodotCpp
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: godotengine/godot-cpp
           ref: master
@@ -50,7 +50,7 @@ jobs:
       - name: Load .scons_cache directory
         id: windows-editor-cache
         #uses: ${{matrix.cache_action}}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: /.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -61,7 +61,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -87,7 +87,7 @@ jobs:
           dir
 
       # Make build available
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         #if: ${{ matrix.target == 'Editor' }}
         with:
           name: ${{matrix.executable_name}}
