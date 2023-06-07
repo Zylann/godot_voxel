@@ -341,14 +341,14 @@ float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 void VoxelToolLodTerrain::_set_voxel(Vector3i pos, uint64_t v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	_terrain->get_storage().try_set_voxel(v, pos, _channel);
-	// No post_update, the parent class does it, it's a generic slow implemntation
+	// No post_update, the parent class does it, it's a generic slow implementation.
 }
 
 void VoxelToolLodTerrain::_set_voxel_f(Vector3i pos, float v) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	// TODO Format should be accessible from terrain
 	_terrain->get_storage().try_set_voxel_f(v, pos, _channel);
-	// No post_update, the parent class does it, it's a generic slow implemntation
+	// No post_update, the parent class does it, it's a generic slow implementation.
 }
 
 void VoxelToolLodTerrain::_post_edit(const Box3i &box) {
@@ -760,7 +760,7 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 // `isolevel` alters the shape of the SDF: positive "puffs" it, negative "erodes" it. This is a applied after
 // `sdf_scale`.
 //
-// `sdf_scale` scales SDF values (it doesnt make the shape bigger or smaller). Usually defaults to 1 but may be lower if
+// `sdf_scale` scales SDF values (it doesn't make the shape bigger or smaller). Usually defaults to 1 but may be lower if
 // artifacts show up due to scaling used in terrain SDF.
 //
 void VoxelToolLodTerrain::stamp_sdf(
@@ -797,7 +797,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	data.pre_generate_box(voxel_box);
 
-	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesnt intersect
+	// TODO Maybe more efficient to "rasterize" the box? We're going to iterate voxels the box doesn't intersect.
 	// TODO Maybe we should scale SDF values based on the scale of the transform too
 
 	const Transform3D buffer_to_box =

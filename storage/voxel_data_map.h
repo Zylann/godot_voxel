@@ -29,7 +29,7 @@ public:
 	static const unsigned int BLOCK_SIZE = 1 << BLOCK_SIZE_PO2;
 	static const unsigned int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;
 
-	// Converts voxel coodinates into block coordinates.
+	// Converts voxel coordinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static inline Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
 		return pos >> block_size_pow2;
@@ -43,7 +43,7 @@ public:
 		return Vector3i(pos.x & BLOCK_SIZE_MASK, pos.y & BLOCK_SIZE_MASK, pos.z & BLOCK_SIZE_MASK);
 	}
 
-	// Converts block coodinates into voxel coordinates
+	// Converts block coordinates into voxel coordinates.
 	inline Vector3i block_to_voxel(Vector3i bpos) const {
 		return bpos * BLOCK_SIZE;
 	}

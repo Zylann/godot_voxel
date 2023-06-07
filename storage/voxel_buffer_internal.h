@@ -492,7 +492,7 @@ private:
 	static bool is_uniform(const Channel &channel);
 
 private:
-	// Each channel can store arbitary data.
+	// Each channel can store arbitrary data.
 	// For example, you can decide to store colors (R, G, B, A), gameplay types (type, state, light) or both.
 	FixedArray<Channel, MAX_CHANNELS> _channels;
 

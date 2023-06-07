@@ -46,7 +46,7 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 				ZN_ASSERT_RETURN(dst_ri < dst.size());
 				ZN_ASSERT_RETURN(dst.size() - dst_ri >= area_size.y * item_size);
 #endif
-				// TODO Cast src and dst to `restrict` so the optimizer can assume adresses don't overlap,
+				// TODO Cast src and dst to `restrict` so the optimizer can assume addresses don't overlap,
 				//      which might allow to write as a for loop (which may compile as a `memcpy`)?
 				memcpy(&dst[dst_ri], &src[src_ri], area_size.y * item_size);
 				src_ri += src_row_offset;
