@@ -1,5 +1,6 @@
 #include "voxel_blocky_type_variant_list_editor.h"
 #include "../../../constants/voxel_string_names.h"
+#include "../../../util/godot/classes/color_rect.h"
 #include "../../../util/godot/classes/editor_resource_picker.h"
 #include "../../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../../util/godot/classes/grid_container.h"
@@ -48,6 +49,14 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 	std::vector<VoxelBlockyType::VariantKey> keys;
 	_type->generate_keys(keys, false);
 
+	if (keys.size() <= 1) {
+		// TODO Indicate there are no variants
+		return;
+	}
+
+	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	_type->get_checked_attributes(attributes);
+
 	GridContainer &container = *_grid_container;
 
 	for (const VoxelBlockyType::VariantKey &key : keys) {
@@ -55,7 +64,7 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 		ed.key = key;
 
 		ed.key_label = memnew(Label);
-		ed.key_label->set_text(ed.key.to_string());
+		ed.key_label->set_text(ed.key.to_string(to_span(attributes)));
 
 		Ref<VoxelBlockyModel> model = _type->get_variant(key);
 
@@ -81,6 +90,8 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 
 		container.add_child(ed.key_label);
 		container.add_child(ed.resource_picker);
+
+		_variant_editors.push_back(ed);
 	}
 }
 

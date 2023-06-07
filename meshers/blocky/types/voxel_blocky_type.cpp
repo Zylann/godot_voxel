@@ -598,7 +598,11 @@ void VoxelBlockyType::generate_keys(std::vector<VariantKey> &out_keys, bool incl
 }
 
 void VoxelBlockyType::_on_attribute_changed() {
-	notify_property_list_changed();
+	// We used to do this when attributes influenced the list of properties, not anymore
+	// notify_property_list_changed();
+
+	// We do this solely as a mean to update custom controls...
+	emit_changed();
 }
 
 void VoxelBlockyType::_on_base_model_changed() {
@@ -780,6 +784,35 @@ String VoxelBlockyType::VariantKey::to_string() const {
 	return s;
 }
 
+String VoxelBlockyType::VariantKey::to_string(Span<const Ref<VoxelBlockyAttribute>> context_attributes) const {
+	const VoxelBlockyType::VariantKey &key = *this;
+	String s;
+	for (unsigned int attribute_index = 0; attribute_index < key.attribute_names.size(); ++attribute_index) {
+		const StringName &attrib_name = key.attribute_names[attribute_index];
+		if (attrib_name == StringName()) {
+			break;
+		}
+		if (attribute_index > 0) {
+			s += ",";
+		}
+		s += String(attrib_name);
+		s += '=';
+		String value_str;
+		if (attribute_index < context_attributes.size()) {
+			const Ref<VoxelBlockyAttribute> &attrib = context_attributes[attribute_index];
+			ZN_ASSERT_RETURN_V(attrib.is_valid(), "<error>");
+			if (attrib->get_attribute_name() == attrib_name) {
+				value_str = attrib->get_name_from_value(key.attribute_values[attribute_index]);
+			}
+		}
+		if (value_str.is_empty()) {
+			value_str = String::num_int64(key.attribute_values[attribute_index]);
+		}
+		s += value_str;
+	}
+	return s;
+}
+
 bool VoxelBlockyType::VariantKey::parse_from_array(const Array &array) {
 	ZN_ASSERT_RETURN_V((array.size() % 2) == 0, false);
 	for (int i = 0; i < array.size(); i += 2) {
@@ -787,7 +820,7 @@ bool VoxelBlockyType::VariantKey::parse_from_array(const Array &array) {
 		Variant value_v = array[i + 1];
 
 		ZN_ASSERT_RETURN_V(name_v.get_type() == Variant::STRING_NAME, false);
-		ZN_ASSERT_RETURN_V(name_v.get_type() == Variant::INT, false);
+		ZN_ASSERT_RETURN_V(value_v.get_type() == Variant::INT, false);
 
 		const int attrib_index = i / 2;
 		attribute_names[attrib_index] = name_v;
