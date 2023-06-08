@@ -122,12 +122,12 @@ struct CheckResult {
 };
 
 // Checks if SDF variations are legit. The difference between two neighboring cells cannot be higher than the distance
-// between those two cells. This is intented at proper SDF, not approximation or scaled ones.
+// between those two cells. This is intended at proper SDF, not approximation or scaled ones.
 CheckResult check_sdf(
 		Span<const float> sdf_grid, Vector3i res, Span<const Triangle> triangles, Vector3f min_pos, Vector3f max_pos);
 
 // The current method provides imperfect signs. Due to ambiguities, sometimes patches of cells get the wrong sign.
-// This function attemps to correct these.
+// This function attempts to correct these.
 // Assumes the sign on the edge of the box is positive and use a floodfill.
 // If we start from the rough SDF we had, we could do a floodfill that considers unexpected sign change as fillable,
 // while an expected sign change would properly stop the fill.

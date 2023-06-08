@@ -53,17 +53,17 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	if (stream_dependency->valid) {
 		Ref<VoxelStream> stream = stream_dependency->stream;
 
-		// TODO In some cases we dont want this to run all the time, do we?
+		// TODO In some cases we don't want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
 			ZN_PRINT_VERBOSE(format("Requesting save of generator output for block {} lod {}", position, int(lod)));
 
-			// TODO Optimization: `voxels` doesnt actually need to be shared
+			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
 			voxels->duplicate_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.
-			// No priority data, saving doesnt need sorting
+			// No priority data, saving doesn't need sorting.
 
 			SaveBlockDataTask *save_task = memnew(
 					SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency, nullptr));

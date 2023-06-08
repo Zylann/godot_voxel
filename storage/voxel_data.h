@@ -221,7 +221,7 @@ public:
 	// Gets missing blocks out of the given block positions.
 	// WARNING: positions outside bounds will be considered missing too.
 	// TODO Don't consider positions outside bounds to be missing? This is only a byproduct of migrating old
-	// code. It doesnt check this because the code using this function already does it (a bit more efficiently,
+	// code. It doesn't check this because the code using this function already does it (a bit more efficiently,
 	// but still).
 	void get_missing_blocks(
 			Span<const Vector3i> block_positions, unsigned int lod_index, std::vector<Vector3i> &out_missing) const;
@@ -311,8 +311,8 @@ private:
 	//
 	// TODO Optimize: (low priority) this takes more than 5Kb in the object, even when not using LODs.
 	// Each LOD contains an RWLock, which is 242 bytes, so *24 it adds up quickly.
-	// A solution would be to allocate LODs dynamically in the constructor (the potential presence of LODs doesnt
-	// need to change after being constructed, there is no use case for that so far)
+	// A solution would be to allocate LODs dynamically in the constructor (the potential presence of LODs doesn't
+	// need to change after being constructed, there is no use case for that so far).
 	FixedArray<Lod, constants::MAX_LOD> _lods;
 
 	// Area within which voxels can exist.

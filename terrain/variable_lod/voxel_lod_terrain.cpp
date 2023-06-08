@@ -361,7 +361,7 @@ void VoxelLodTerrain::_on_stream_params_changed() {
 
 	reset_maps();
 	// TODO Size other than 16 is not really supported though.
-	// also this code isn't right, it doesnt update the other lods
+	// also this code isn't right, it doesn't update the other lods
 	//_data->lods[0].map.create(p_block_size_po2, 0);
 
 	Ref<VoxelGenerator> generator = get_generator();
@@ -1207,7 +1207,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 					const Vector3 block_center = volume_transform.xform(
 							to_vec3(block->position * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
 
-					// Dont do fading for blocks behind the camera
+					// Don't do fading for blocks behind the camera.
 					if (camera.forward.dot(block_center - camera.position) > 0.f) {
 						FadingOutMesh item;
 
@@ -1286,7 +1286,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		// That's a save confirmation event.
 		// Note: in the future, if blocks don't get copied before being sent for saving,
-		// we will need to use block versionning to know when we can reset the `modified` flag properly
+		// we will need to use block versioning to know when we can reset the `modified` flag properly
 
 		// TODO Now that's the case. Use version? Or just keep copying?
 		return;
@@ -1895,7 +1895,7 @@ void VoxelLodTerrain::set_instancer(VoxelInstancer *instancer) {
 	_instancer = instancer;
 }
 
-// This function is primarily intented for editor use cases at the moment.
+// This function is primarily intended for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index) const {

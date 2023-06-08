@@ -542,7 +542,7 @@ void VoxelTerrain::get_meshed_block_positions(std::vector<Vector3i> &out_positio
 	});
 }
 
-// This function is primarily intented for editor use cases at the moment.
+// This function is primarily intended for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelTerrain::get_mesh_block_surface(Vector3i block_pos) const {
@@ -891,7 +891,7 @@ void VoxelTerrain::consume_block_data_save_requests(
 			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
 					_volume_id, b.position, 0, data_block_size, b.voxels, _streaming_dependency, saving_tracker));
 
-			// No priority data, saving doesnt need sorting
+			// No priority data, saving doesn't need sorting.
 			task_scheduler.push_io_task(task);
 		}
 	} else {
@@ -1654,7 +1654,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	block->set_visible(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
-	// TODO We dont set MESH_UP_TO_DATE anywhere, but it seems to work?
+	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
@@ -1740,7 +1740,7 @@ Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
 	return VoxelSaveCompletionTracker::create(tracker);
 }
 
-// Explicitely ask to save a block if it was modified
+// Explicitly ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 	VoxelData::BlockToSave to_save;
 	if (_data->consume_block_modifications(p_block_pos, to_save)) {

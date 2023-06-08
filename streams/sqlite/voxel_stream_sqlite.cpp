@@ -166,7 +166,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	sqlite3 *db = _db;
 	char *error_message = nullptr;
 
-	// Create tables if they dont exist
+	// Create tables if they don't exist.
 	const char *tables[3] = { "CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
 		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
 		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };

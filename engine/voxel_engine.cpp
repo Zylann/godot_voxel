@@ -76,7 +76,7 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 		Ref<RDSamplerState> sampler_state;
 		sampler_state.instantiate();
 		// Using samplers for their interpolation features.
-		// Otherwise I dont feel like there is a point in using one IMO
+		// Otherwise I don't feel like there is a point in using one IMO.
 		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
 		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
 		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
@@ -121,7 +121,7 @@ VoxelEngine::~VoxelEngine() {
 	_gpu_task_runner.stop();
 
 	if (_rendering_device != nullptr) {
-		// Free these explicitely because we are going to free the RenderindDevice too
+		// Free these explicitly because we are going to free the RenderindDevice, too.
 		_dilate_normalmap_shader.clear();
 		_detail_gather_hits_shader.clear();
 		_detail_normalmap_shader.clear();

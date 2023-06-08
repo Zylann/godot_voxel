@@ -478,9 +478,9 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 	const Error err = cached_region->region.open(fpath, create_if_not_found);
 
 	// Things we could do for optimization:
-	// - Cache the fact the file doesnt exist, so we won't need to do a system call to actually check it every time
+	// - Cache the fact the file doesn't exist, so we won't need to do a system call to actually check it every time.
 	// - No need to read the header again when it has been read once,
-	//   we assume no other process will modify region files
+	//   we assume no other process will modify region files.
 
 	if (err != OK) {
 		memdelete(cached_region);
