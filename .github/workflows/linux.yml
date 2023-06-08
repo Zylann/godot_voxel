@@ -44,13 +44,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: godotengine/godot
           ref: "4.0"
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: modules/voxel
 
@@ -91,7 +91,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: linux-editor-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -103,7 +103,7 @@ jobs:
       # [Already provided by the custom buildroot]
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       # - name: Set up Python 3.x
-      #   uses: actions/setup-python@v2
+      #   uses: actions/setup-python@v4
       #   with:
       #     # Semantic version range syntax or exact version of a Python version
       #     python-version: '3.x'
@@ -128,7 +128,7 @@ jobs:
           scons -j2 verbose=yes warnings=extra werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
 
       # Make build available
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: ${{ matrix.dev_build != 'yes' }}
         with:
           name: ${{matrix.executable_name}}
