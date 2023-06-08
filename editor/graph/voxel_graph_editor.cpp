@@ -1005,7 +1005,12 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 		if (result.node_id >= 0) {
 			String node_view_path = node_to_gui_name(result.node_id);
 			VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, node_view_path);
-			node_view->set_modulate(Color(1, 0.3, 0.1));
+			// If this happens then perhaps it got incorrectly remapped in case it's a node created by the compiler
+			if (node_view != nullptr) {
+				node_view->set_modulate(Color(1, 0.3, 0.1));
+			} else {
+				ZN_PRINT_ERROR("Could not get the node with the error");
+			}
 		}
 		return;
 
