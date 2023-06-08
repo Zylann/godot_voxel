@@ -668,12 +668,23 @@ void replace_simplifiable_nodes(ProgramGraph &graph, const NodeTypeDB &type_db, 
 	}
 }
 
+// Duplicates a node into the target graph (can be a different graph). Connections are not copied.
 ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node) {
 	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id);
 	ZN_ASSERT(dst_node != nullptr);
 	dst_node->name = src_node.name;
+
 	dst_node->inputs.resize(src_node.inputs.size());
+	for (unsigned int i = 0; i < src_node.inputs.size(); ++i) {
+		const ProgramGraph::Port &src_input = src_node.inputs[i];
+		ProgramGraph::Port &dst_input = dst_node->inputs[i];
+		dst_input.dynamic_name = src_input.dynamic_name;
+		// Should this be copied?
+		// dst_input.autoconnect_hint = src_input.autoconnect_hint;
+	}
+
 	dst_node->outputs.resize(src_node.outputs.size());
+
 	dst_node->default_inputs = src_node.default_inputs;
 	dst_node->params = src_node.params;
 	// dst_node->gui_position = src_node.gui_position;
