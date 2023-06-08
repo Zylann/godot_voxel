@@ -89,6 +89,15 @@ inline void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, Span<con
 	add_remap(remaps, old_node_id, new_node_ids, Span<const ProgramGraph::PortLocation>(&output_location, 1));
 }
 
+uint32_t get_original_node_id(const GraphRemappingInfo &remaps, uint32_t expanded_node_id) {
+	for (const ExpandedNodeRemap &enr : remaps.expanded_to_user_node_ids) {
+		if (enr.expanded_node_id == expanded_node_id) {
+			return enr.original_node_id;
+		}
+	}
+	return expanded_node_id;
+}
+
 struct ToConnect {
 	std::string_view var_name;
 	ProgramGraph::PortLocation dst;
@@ -1142,9 +1151,10 @@ CompilationResult Runtime::compile(const VoxelGraphFunction &function, bool debu
 	ProgramGraph expanded_graph;
 	std::vector<uint32_t> input_node_ids;
 	Span<const VoxelGraphFunction::Port> input_defs = function.get_input_definitions();
-	const CompilationResult expand_result =
+	CompilationResult expand_result =
 			expand_graph(function.get_graph(), expanded_graph, input_defs, &input_node_ids, type_db, &remap_info);
 	if (!expand_result.success) {
+		expand_result.node_id = get_original_node_id(remap_info, expand_result.node_id);
 		return expand_result;
 	}
 
