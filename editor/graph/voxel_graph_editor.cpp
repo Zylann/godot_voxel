@@ -408,6 +408,8 @@ void VoxelGraphEditor::clear() {
 			--i;
 		}
 	}
+	_profile_label->set_text("");
+	_compile_result_label->hide();
 }
 
 inline String node_to_gui_name(uint32_t node_id) {
