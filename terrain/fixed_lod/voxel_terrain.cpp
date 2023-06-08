@@ -218,11 +218,11 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		VoxelInstancer &instancer = *_instancer;
 		_mesh_map.for_each_block([&instancer, this](VoxelMeshBlockVT &block) { //
 			instancer.on_mesh_block_exit(block.position, 0);
-                        emit_data_mesh_block_exited(block.position);
+                        emit_mesh_block_exited(block.position);
 		});
 	} else {
                 _mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
-                        emit_data_mesh_block_exited(block.position);
+                        emit_mesh_block_exited(block.position);
                 });
         }
 
@@ -501,7 +501,7 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	if (_instancer != nullptr) {
 		_instancer->on_mesh_block_exit(bpos, 0);
 	}
-        emit_data_mesh_block_exited(bpos);
+        emit_mesh_block_exited(bpos);
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -926,7 +926,7 @@ void VoxelTerrain::emit_data_block_unloaded(Vector3i bpos) {
 	emit_signal(VoxelStringNames::get_singleton().block_unloaded, bpos);
 }
 
-void VoxelTerrain::emit_data_mesh_block_entered(Vector3i bpos) {
+void VoxelTerrain::emit_mesh_block_entered(Vector3i bpos) {
 	// Not sure about exposing buffers directly... some stuff on them is useful to obtain directly,
 	// but also it allows scripters to mess with voxels in a way they should not.
 	// Example: modifying voxels without locking them first, while another thread may be reading them at the same
@@ -939,7 +939,7 @@ void VoxelTerrain::emit_data_mesh_block_entered(Vector3i bpos) {
 	emit_signal(VoxelStringNames::get_singleton().mesh_block_entered, bpos);
 }
 
-void VoxelTerrain::emit_data_mesh_block_exited(Vector3i bpos) {
+void VoxelTerrain::emit_mesh_block_exited(Vector3i bpos) {
 	emit_signal(VoxelStringNames::get_singleton().mesh_block_exited, bpos);
 }
 
@@ -1619,17 +1619,19 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	
         if (mesh.is_null() && block != nullptr) {
                 // No surface anymore in this block
-                if (_instancer != nullptr)
+                if (_instancer != nullptr) {
                         _instancer->on_mesh_block_exit(ob.position, ob.lod);
-                emit_data_mesh_block_exited(ob.position);
+                }
+                emit_mesh_block_exited(ob.position);
         }
         if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
                 // TODO The mesh could come from an edited region!
                 // We would have to know if specific voxels got edited, or different from the generator
                 // TODO Support multi-surfaces in VoxelInstancer
-                if (_instancer != nullptr)
+                if (_instancer != nullptr) {
                         _instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
-                emit_data_mesh_block_entered(ob.position);
+                }
+                emit_mesh_block_entered(ob.position);
         }
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
@@ -1904,11 +1906,11 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
-	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3, "position")));
-	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3I, "position")));
+	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3I, "position")));
 
-	ADD_SIGNAL(MethodInfo("mesh_block_entered", PropertyInfo(Variant::VECTOR3, "position")));
-	ADD_SIGNAL(MethodInfo("mesh_block_exited", PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("mesh_block_entered", PropertyInfo(Variant::VECTOR3I, "position")));
+	ADD_SIGNAL(MethodInfo("mesh_block_exited", PropertyInfo(Variant::VECTOR3I, "position")));
 }
 
 } // namespace zylann::voxel
