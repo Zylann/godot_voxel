@@ -8,6 +8,7 @@
 ZN_GODOT_FORWARD_DECLARE(class Label);
 ZN_GODOT_FORWARD_DECLARE(class EditorResourcePicker);
 ZN_GODOT_FORWARD_DECLARE(class GridContainer);
+ZN_GODOT_FORWARD_DECLARE(class EditorInterface);
 
 namespace zylann::voxel {
 
@@ -19,13 +20,14 @@ public:
 	VoxelBlockyTypeVariantListEditor();
 
 	void set_type(Ref<VoxelBlockyType> type);
+	void set_editor_interface(EditorInterface *ed);
 
 private:
 	void update_list();
 
 	void _on_type_changed();
 	void _on_model_changed(Ref<VoxelBlockyModel> model, int editor_index);
-	void _on_model_picker_selected(Ref<VoxelBlockyModel> model, bool inspect, int editor_index);
+	void _on_model_picker_selected(Ref<VoxelBlockyModel> model, bool inspect);
 
 	static void _bind_methods();
 
@@ -40,6 +42,7 @@ private:
 
 	std::vector<VariantEditor> _variant_editors;
 	GridContainer *_grid_container = nullptr;
+	EditorInterface *_editor_interface = nullptr;
 };
 
 } // namespace zylann::voxel

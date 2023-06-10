@@ -1,11 +1,16 @@
 #include "voxel_blocky_type_editor_inspector_plugin.h"
 #include "../../meshers/blocky/types/voxel_blocky_type.h"
+#include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/h_box_container.h"
 #include "voxel_blocky_type_attribute_combination_selector.h"
 #include "voxel_blocky_type_variant_list_editor.h"
 #include "voxel_blocky_type_viewer.h"
 
 namespace zylann::voxel {
+
+void VoxelBlockyTypeEditorInspectorPlugin::set_editor_interface(EditorInterface *ed) {
+	_editor_interface = ed;
+}
 
 bool VoxelBlockyTypeEditorInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 	return Object::cast_to<VoxelBlockyType>(p_object) != nullptr;
@@ -52,6 +57,7 @@ bool VoxelBlockyTypeEditorInspectorPlugin::_zn_parse_property(Object *p_object, 
 
 	VoxelBlockyTypeVariantListEditor *variant_list_editor = memnew(VoxelBlockyTypeVariantListEditor);
 	variant_list_editor->set_type(type);
+	variant_list_editor->set_editor_interface(_editor_interface);
 	add_custom_control(variant_list_editor);
 
 	// Removes the property, the custom editor replaces it

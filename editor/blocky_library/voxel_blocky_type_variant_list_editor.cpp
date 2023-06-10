@@ -1,6 +1,8 @@
 #include "voxel_blocky_type_variant_list_editor.h"
 #include "../../../constants/voxel_string_names.h"
 #include "../../../util/godot/classes/color_rect.h"
+#include "../../../util/godot/classes/editor_inspector.h"
+#include "../../../util/godot/classes/editor_interface.h"
 #include "../../../util/godot/classes/editor_resource_picker.h"
 #include "../../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../../util/godot/classes/grid_container.h"
@@ -34,6 +36,10 @@ void VoxelBlockyTypeVariantListEditor::set_type(Ref<VoxelBlockyType> type) {
 	}
 
 	update_list();
+}
+
+void VoxelBlockyTypeVariantListEditor::set_editor_interface(EditorInterface *ed) {
+	_editor_interface = ed;
 }
 
 void VoxelBlockyTypeVariantListEditor::update_list() {
@@ -82,13 +88,12 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 #if defined(ZN_GODOT)
 		ed.resource_picker->connect("resource_changed",
 				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_changed).bind(editor_index));
-		ed.resource_picker->connect("resource_selected",
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_picker_selected)
-						.bind(editor_index));
 #elif defined(ZN_GODOT_EXTENSION)
 		// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
 		ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle selecting variant models");
 #endif
+		ed.resource_picker->connect("resource_selected",
+				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_picker_selected));
 
 		container.add_child(ed.key_label);
 		container.add_child(ed.resource_picker);
@@ -120,9 +125,19 @@ void VoxelBlockyTypeVariantListEditor::_on_model_changed(Ref<VoxelBlockyModel> m
 	urm->commit_action();
 }
 
-void VoxelBlockyTypeVariantListEditor::_on_model_picker_selected(
-		Ref<VoxelBlockyModel> model, bool inspect, int editor_index) {
-	// TODO Inspect?
+void VoxelBlockyTypeVariantListEditor::_on_model_picker_selected(Ref<VoxelBlockyModel> model, bool inspect) {
+	if (model.is_null()) {
+		return;
+	}
+	// TODO Can't unfold as a sub-inspector, Godot does not expose it to extensions and it seems to be a fairly
+	// complicated logic (it's far from just a "create inspector and unfold" inside the selected signal)... This is one
+	// reason why this sole feature would require an entirely separated editor, which is incredibly frustrating
+	ZN_ASSERT_RETURN(_editor_interface != nullptr);
+	// Can't call this directly because somehow it crashes Godot later in `_physics_process`???
+	// The current method isn't even in the call stack when this happens... so why would call_deferred even be proven to
+	// fix it? Nevertheless, it seems to workaround it...
+	//_editor_interface->inspect_object(model.ptr());
+	_editor_interface->call_deferred("inspect_object", model);
 }
 
 void VoxelBlockyTypeVariantListEditor::_bind_methods() {
@@ -130,7 +145,7 @@ void VoxelBlockyTypeVariantListEditor::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyTypeVariantListEditor::_on_type_changed);
 	ClassDB::bind_method(D_METHOD("_on_model_changed", "model", "editor_index"),
 			&VoxelBlockyTypeVariantListEditor::_on_model_changed);
-	ClassDB::bind_method(D_METHOD("_on_model_picker_selected", "model", "inspect", "editor_index"),
+	ClassDB::bind_method(D_METHOD("_on_model_picker_selected", "model", "inspect"),
 			&VoxelBlockyTypeVariantListEditor::_on_model_picker_selected);
 #endif
 }

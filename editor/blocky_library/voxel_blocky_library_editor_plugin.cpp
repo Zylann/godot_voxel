@@ -7,15 +7,18 @@
 namespace zylann::voxel {
 
 VoxelBlockyLibraryEditorPlugin::VoxelBlockyLibraryEditorPlugin() {
+	// Models
 	{
 		Ref<VoxelBlockyModelEditorInspectorPlugin> plugin;
 		plugin.instantiate();
 		add_inspector_plugin(plugin);
 	}
 
+	// Types
 	{
 		Ref<VoxelBlockyTypeEditorInspectorPlugin> plugin;
 		plugin.instantiate();
+		plugin->set_editor_interface(get_editor_interface());
 		add_inspector_plugin(plugin);
 	}
 
