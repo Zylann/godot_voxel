@@ -187,7 +187,11 @@ void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> m
 	for (VariantData &vd : _variants) {
 		if (vd.key == key && vd.model != model) {
 			// TODO If the model is null, remove it from the list
+			const bool changed = (vd.model != model);
 			vd.model = model;
+			if (changed) {
+				emit_changed();
+			}
 			return;
 		}
 	}
@@ -195,6 +199,7 @@ void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> m
 	new_vd.key = key;
 	new_vd.model = model;
 	_variants.push_back(new_vd);
+	emit_changed();
 }
 
 Ref<VoxelBlockyModel> VoxelBlockyType::get_variant(const VariantKey &key) const {
