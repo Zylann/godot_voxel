@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCKY_TYPE_EDITOR_INSPECTOR_PLUGIN_H
 #define VOXEL_BLOCKY_TYPE_EDITOR_INSPECTOR_PLUGIN_H
 
-#include "../../util/godot/classes/editor_inspector_plugin.h"
-#include "../../util/macros.h"
+#include "../../../util/godot/classes/editor_inspector_plugin.h"
+#include "../../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class EditorInterface);
 

@@ -1,7 +1,7 @@
 #include "voxel_blocky_type_library_editor_inspector_plugin.h"
-#include "../../util/godot/classes/button.h"
-#include "../../util/godot/core/callable.h"
-#include "../../util/godot/core/string.h"
+#include "../../../util/godot/classes/button.h"
+#include "../../../util/godot/core/callable.h"
+#include "../../../util/godot/core/string.h"
 #include "voxel_blocky_type_library_ids_dialog.h"
 
 namespace zylann::voxel {

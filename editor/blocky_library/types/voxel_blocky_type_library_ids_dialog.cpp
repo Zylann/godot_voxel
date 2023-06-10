@@ -1,9 +1,9 @@
 #include "voxel_blocky_type_library_ids_dialog.h"
-#include "../../util/container_funcs.h"
-#include "../../util/godot/classes/item_list.h"
-#include "../../util/godot/classes/v_box_container.h"
-#include "../../util/godot/core/string.h"
-#include "../../util/godot/editor_scale.h"
+#include "../../../util/container_funcs.h"
+#include "../../../util/godot/classes/item_list.h"
+#include "../../../util/godot/classes/v_box_container.h"
+#include "../../../util/godot/core/string.h"
+#include "../../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {
 

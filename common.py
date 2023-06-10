@@ -107,6 +107,7 @@ def get_sources(env, is_editor_build):
             "editor/mesh_sdf/*.cpp",
             "editor/graph/*.cpp",
             "editor/blocky_library/*.cpp",
+            "editor/blocky_library/types/*.cpp",
 
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_import_plugin.cpp",

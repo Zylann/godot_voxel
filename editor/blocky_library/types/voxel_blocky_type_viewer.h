@@ -1,9 +1,9 @@
 #ifndef VOXEL_BLOCKY_TYPE_VIEWER_H
 #define VOXEL_BLOCKY_TYPE_VIEWER_H
 
-#include "../../meshers/blocky/types/voxel_blocky_type.h"
-#include "../../util/godot/classes/h_box_container.h"
-#include "model_viewer.h"
+#include "../../../meshers/blocky/types/voxel_blocky_type.h"
+#include "../../../util/godot/classes/h_box_container.h"
+#include "../model_viewer.h"
 
 ZN_GODOT_FORWARD_DECLARE(class MeshInstance3D);
 

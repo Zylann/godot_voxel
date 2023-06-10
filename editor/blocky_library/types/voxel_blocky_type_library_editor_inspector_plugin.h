@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCKY_TYPE_LIBRARY_EDITOR_INSPECTOR_PLUGIN_H
 #define VOXEL_BLOCKY_TYPE_LIBRARY_EDITOR_INSPECTOR_PLUGIN_H
 
-#include "../../meshers/blocky/types/voxel_blocky_type_library.h"
-#include "../../util/godot/classes/editor_inspector_plugin.h"
+#include "../../../meshers/blocky/types/voxel_blocky_type_library.h"
+#include "../../../util/godot/classes/editor_inspector_plugin.h"
 
 namespace zylann::voxel {
 

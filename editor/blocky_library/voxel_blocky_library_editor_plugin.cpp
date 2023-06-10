@@ -1,8 +1,8 @@
 #include "voxel_blocky_library_editor_plugin.h"
+#include "types/voxel_blocky_type_editor_inspector_plugin.h"
+#include "types/voxel_blocky_type_library_editor_inspector_plugin.h"
+#include "types/voxel_blocky_type_library_ids_dialog.h"
 #include "voxel_blocky_model_editor_inspector_plugin.h"
-#include "voxel_blocky_type_editor_inspector_plugin.h"
-#include "voxel_blocky_type_library_editor_inspector_plugin.h"
-#include "voxel_blocky_type_library_ids_dialog.h"
 
 namespace zylann::voxel {
 

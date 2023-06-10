@@ -1,10 +1,10 @@
 #include "voxel_blocky_type_viewer.h"
+#include "../../../constants/voxel_string_names.h"
 #include "../../../util/godot/classes/label.h"
 #include "../../../util/godot/classes/mesh_instance_3d.h"
 #include "../../../util/godot/classes/option_button.h"
 #include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/editor_scale.h"
-#include "../../constants/voxel_string_names.h"
 #include "voxel_blocky_type_attribute_combination_selector.h"
 
 namespace zylann::voxel {
