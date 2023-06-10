@@ -30,6 +30,7 @@ private:
 	static void _bind_methods();
 
 	Ref<VoxelBlockyType> _type;
+	Label *_header_label = nullptr;
 
 	struct VariantEditor {
 		Label *key_label = nullptr;

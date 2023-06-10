@@ -11,9 +11,9 @@
 namespace zylann::voxel {
 
 VoxelBlockyTypeVariantListEditor::VoxelBlockyTypeVariantListEditor() {
-	Label *label = memnew(Label);
-	label->set_text(ZN_TTR("Variant models"));
-	add_child(label);
+	_header_label = memnew(Label);
+	_header_label->set_text(ZN_TTR("Variant models"));
+	add_child(_header_label);
 
 	_grid_container = memnew(GridContainer);
 	_grid_container->set_columns(2);
@@ -49,8 +49,10 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 	std::vector<VoxelBlockyType::VariantKey> keys;
 	_type->generate_keys(keys, false);
 
+	const int displayed_count = keys.size() <= 1 ? 0 : keys.size();
+	_header_label->set_text(ZN_TTR("Variant models ({0})").format(varray(displayed_count)));
+
 	if (keys.size() <= 1) {
-		// TODO Indicate there are no variants
 		return;
 	}
 
