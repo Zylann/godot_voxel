@@ -1071,7 +1071,7 @@ Vector3i auto_compute_grid_resolution(const Vector3f box_size, int cell_count) {
 }
 
 // Called from within the thread pool
-void GenMeshSDFSubBoxTask::run(ThreadedTaskContext ctx) {
+void GenMeshSDFSubBoxTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(shared_data != nullptr);
 

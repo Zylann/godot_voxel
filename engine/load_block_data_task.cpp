@@ -37,7 +37,7 @@ int LoadBlockDataTask::debug_get_running_count() {
 	return g_debug_load_block_tasks_count;
 }
 
-void LoadBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
+void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 

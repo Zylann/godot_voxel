@@ -2,11 +2,15 @@
 #include "../util/godot/classes/os.h"
 #include "../util/godot/classes/time.h"
 #include "../util/log.h"
+#include "../util/math/vector3i.h"
 #include "../util/memory.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "testing.h"
+
+#include <fstream>
+#include <unordered_map>
 
 namespace zylann::tests {
 
@@ -32,7 +36,7 @@ void test_threaded_task_runner_misc() {
 
 		TestTask(std::shared_ptr<TaskCounter> p_counter) : counter(p_counter) {}
 
-		void run(ThreadedTaskContext ctx) override {
+		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 			ZN_ASSERT(counter != nullptr);
 
@@ -137,7 +141,7 @@ void test_threaded_task_runner_debug_names() {
 
 		NamedTestTask1(int p_sleep_amount_usec) : sleep_amount_usec(p_sleep_amount_usec) {}
 
-		void run(ThreadedTaskContext ctx) override {
+		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 			Thread::sleep_usec(sleep_amount_usec);
 		}
@@ -153,7 +157,7 @@ void test_threaded_task_runner_debug_names() {
 
 		NamedTestTask2(int p_sleep_amount_usec) : sleep_amount_usec(p_sleep_amount_usec) {}
 
-		void run(ThreadedTaskContext ctx) override {
+		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 			Thread::sleep_usec(sleep_amount_usec);
 		}
@@ -262,6 +266,192 @@ void test_task_priority_values() {
 	ZN_TEST_ASSERT(TaskPriority(0, 0, 0, 0) < TaskPriority(0, 0, 0, 1));
 	ZN_TEST_ASSERT(TaskPriority(10, 0, 0, 0) < TaskPriority(0, 10, 0, 0));
 	ZN_TEST_ASSERT(TaskPriority(10, 10, 0, 0) < TaskPriority(10, 10, 10, 0));
+}
+
+// Simulates doing work in every chunk of a grid, where each task will want to access neighbors of each block. If any
+// neighbor fails to get locked, the task is postponed.
+void test_threaded_task_postponing() {
+	// There isn't really a test check in this function, for now we run it to detect if it crashes and that all tasks
+	// eventually run once.
+
+	//#define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+
+	struct Block {
+		std::atomic_bool is_locked;
+	};
+
+	struct Map {
+		// Doesn't have to be a map but I chose it anyways since that's how the actual voxel map is stored
+		std::unordered_map<Vector3i, Block> blocks;
+	};
+
+	struct Event {
+		enum Type { BLOCK_BEGIN, BLOCK_END };
+		Type type;
+		Vector3i bpos;
+		uint64_t time_us;
+	};
+
+	// To log what actually happened and visualize it
+	struct EventList {
+		std::vector<Event> events;
+		Mutex mutex;
+
+		inline void push(Event event) {
+			event.time_us = Time::get_singleton()->get_ticks_usec();
+			MutexLock lock(mutex);
+			events.push_back(event);
+		}
+	};
+
+	class Task1 : public IThreadedTask {
+	public:
+		unsigned int sleep_amount_usec;
+		Vector3i bpos0;
+		Map &map;
+		EventList &events;
+
+		Task1(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
+				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
+
+		bool try_lock_area(std::vector<Block *> &locked_blocks) {
+			Vector3i delta;
+			for (delta.z = -1; delta.z < 2; ++delta.z) {
+				for (delta.x = -1; delta.x < 2; ++delta.x) {
+					for (delta.y = -1; delta.y < 2; ++delta.y) {
+						const Vector3i bpos = bpos0 + delta;
+						auto it = map.blocks.find(bpos);
+						if (it == map.blocks.end()) {
+							continue;
+						}
+						Block &block = it->second;
+						bool expected = false;
+						if (block.is_locked.compare_exchange_strong(expected, true) == false) {
+							// Could not lock, will have to cancel
+							for (Block *b : locked_blocks) {
+								b->is_locked = false;
+							}
+							locked_blocks.clear();
+							return false;
+						} else {
+							// Successful lock
+							locked_blocks.push_back(&block);
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		void run(ThreadedTaskContext &ctx) override {
+			ZN_PROFILE_SCOPE();
+
+			static thread_local std::vector<Block *> locked_blocks;
+
+			if (!try_lock_area(locked_blocks)) {
+				ctx.postpone = true;
+				return;
+			}
+
+#ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+			events.push(Event{ Event::BLOCK_BEGIN, bpos0 });
+#endif
+
+			{
+				ZN_PROFILE_SCOPE_NAMED("Work");
+				Thread::sleep_usec(sleep_amount_usec);
+			}
+
+#ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+			events.push(Event{ Event::BLOCK_END, bpos0 });
+#endif
+
+			for (Block *block : locked_blocks) {
+				block->is_locked = false;
+			}
+			locked_blocks.clear();
+		}
+
+		const char *get_debug_name() const override {
+			return "Task1";
+		}
+	};
+
+	struct L {
+		static void dequeue_tasks(ThreadedTaskRunner &runner, unsigned int &r_in_flight_count) {
+			runner.dequeue_completed_tasks([&r_in_flight_count](IThreadedTask *task) {
+				ZN_ASSERT(task != nullptr);
+				zylann::println(format("Dequeue {}", task));
+				task->apply_result();
+				ZN_DELETE(task);
+				ZN_ASSERT(r_in_flight_count > 0);
+				--r_in_flight_count;
+			});
+		}
+	};
+
+	const unsigned int test_thread_count = 4;
+	const unsigned int hw_concurrency = Thread::get_hardware_concurrency();
+	if (hw_concurrency < test_thread_count) {
+		ZN_PRINT_WARNING(format(
+				"Hardware concurrency is {}, smaller than test requirement {}", test_thread_count, hw_concurrency));
+	}
+
+	ThreadedTaskRunner runner;
+	runner.set_thread_count(test_thread_count);
+	runner.set_batch_count(1);
+	runner.set_name("Test");
+
+	unsigned int in_flight_count = 0;
+
+	// Generate map
+	Map map;
+	const int map_size = 16;
+	Vector3i bpos;
+	for (bpos.z = 0; bpos.z < map_size; ++bpos.z) {
+		for (bpos.x = 0; bpos.x < map_size; ++bpos.x) {
+			for (bpos.y = 0; bpos.y < map_size; ++bpos.y) {
+				Block &block = map.blocks[bpos];
+				block.is_locked = false;
+			}
+		}
+	}
+
+	EventList events;
+	RandomPCG rng;
+
+	// Schedule tasks that will want to access overlapping blocks
+	for (bpos.z = 0; bpos.z < map_size; ++bpos.z) {
+		for (bpos.x = 0; bpos.x < map_size; ++bpos.x) {
+			for (bpos.y = 0; bpos.y < map_size; ++bpos.y) {
+				Task1 *task = ZN_NEW(Task1(1000 + rng.rand(2000), map, bpos, events));
+				runner.enqueue(task, false);
+				++in_flight_count;
+			}
+		}
+	}
+
+	runner.wait_for_all_tasks();
+	L::dequeue_tasks(runner, in_flight_count);
+
+#ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+	// Dump events
+	std::ofstream ofs("ddd_block_tasks_test.json", std::ios::binary);
+	if (ofs.good()) {
+		ofs << "{\n";
+		ofs << "\t\"events\": [\n";
+		unsigned int i = 0;
+		for (const Event &e : events.events) {
+			if (i > 0) {
+				ofs << ",\n";
+			}
+			ofs << "\t\t[" << e.type << ", " << e.time_us << ", " << e.bpos.x << ", " << e.bpos.y << ", " << e.bpos.z
+				<< "]";
+			++i;
+		}
+		ofs << "\n\t]\n}\n";
+	}
+#endif
 }
 
 } // namespace zylann::tests

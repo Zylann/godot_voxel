@@ -4,7 +4,7 @@
 
 namespace zylann::voxel {
 
-void GenerateInstancesBlockTask::run(ThreadedTaskContext ctx) {
+void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(generator.is_valid());
 	ZN_ASSERT(output_queue != nullptr);

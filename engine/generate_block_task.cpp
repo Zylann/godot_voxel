@@ -27,7 +27,7 @@ int GenerateBlockTask::debug_get_running_count() {
 	return g_debug_generate_tasks_count;
 }
 
-void GenerateBlockTask::run(zylann::ThreadedTaskContext ctx) {
+void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);

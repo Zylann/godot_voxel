@@ -42,7 +42,7 @@ public:
 		return "VoxelLodTerrainUpdate";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 
 	// Functions also used outside of this task
 

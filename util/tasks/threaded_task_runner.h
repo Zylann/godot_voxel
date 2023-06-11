@@ -87,6 +87,7 @@ private:
 		IThreadedTask *task = nullptr;
 		TaskPriority cached_priority;
 		bool is_serial = false;
+		bool postponed = false;
 		uint64_t last_priority_update_time_ms = 0;
 	};
 
@@ -124,6 +125,10 @@ private:
 	std::vector<TaskItem> _tasks;
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
+
+	// Ongoing tasks that may take more than one iteration
+	std::queue<TaskItem> _postponed_tasks;
+	Mutex _postponed_tasks_mutex;
 
 	std::vector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;

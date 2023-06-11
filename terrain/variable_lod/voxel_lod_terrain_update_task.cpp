@@ -1208,7 +1208,7 @@ static void process_changed_generated_areas(VoxelLodTerrainUpdateData::State &st
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext ctx) {
+void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	struct SetCompleteOnScopeExit {

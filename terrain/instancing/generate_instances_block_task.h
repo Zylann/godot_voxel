@@ -39,7 +39,7 @@ public:
 		return "GenerateInstancesBlock";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 };
 
 } // namespace zylann::voxel

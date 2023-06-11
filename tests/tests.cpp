@@ -1668,6 +1668,8 @@ void run_voxel_tests() {
 
 	using namespace zylann::tests;
 
+	VOXEL_TEST(test_threaded_task_postponing);
+
 	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);

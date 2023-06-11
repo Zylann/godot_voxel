@@ -199,7 +199,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			return "GenMeshSDFFirstPass";
 		}
 
-		void run(ThreadedTaskContext ctx) override {
+		void run(ThreadedTaskContext &ctx) override {
 			ZN_DSTACK();
 			ZN_PROFILE_SCOPE();
 			ZN_ASSERT(obj_to_notify.is_valid());

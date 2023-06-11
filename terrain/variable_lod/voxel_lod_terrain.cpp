@@ -1083,7 +1083,8 @@ void VoxelLodTerrain::process(float delta) {
 			VoxelEngine::get_singleton().push_async_task(task);
 
 		} else {
-			task->run(ThreadedTaskContext{ 0 });
+			ThreadedTaskContext ctx{ 0, false };
+			task->run(ctx);
 			memdelete(task);
 			apply_main_thread_update_tasks();
 		}

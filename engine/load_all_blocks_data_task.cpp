@@ -6,7 +6,7 @@
 
 namespace zylann::voxel {
 
-void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext ctx) {
+void LoadAllBlocksDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);

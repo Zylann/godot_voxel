@@ -53,7 +53,7 @@ int SaveBlockDataTask::debug_get_running_count() {
 	return g_debug_save_block_tasks_count;
 }
 
-void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
+void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(_stream_dependency == nullptr);

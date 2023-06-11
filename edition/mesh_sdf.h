@@ -64,7 +64,7 @@ public:
 	std::shared_ptr<SharedData> shared_data;
 	Box3i box;
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 
 	// Called when `pending_jobs` reaches zero.
 	virtual void on_complete() {}

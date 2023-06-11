@@ -11,7 +11,7 @@ public:
 		return "ZN_ThreadedTaskInternal";
 	}
 
-	void run(ThreadedTaskContext ctx) override {
+	void run(ThreadedTaskContext &ctx) override {
 		ref->run(ctx.thread_index);
 	}
 

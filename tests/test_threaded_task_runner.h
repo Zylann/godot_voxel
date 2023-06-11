@@ -6,6 +6,7 @@ namespace zylann::tests {
 void test_threaded_task_runner_misc();
 void test_threaded_task_runner_debug_names();
 void test_task_priority_values();
+void test_threaded_task_postponing();
 
 } // namespace zylann::tests
 

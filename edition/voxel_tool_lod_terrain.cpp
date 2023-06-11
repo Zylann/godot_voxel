@@ -230,7 +230,7 @@ public:
 		return "VoxelToolAsyncEdit";
 	}
 
-	void run(ThreadedTaskContext ctx) override {
+	void run(ThreadedTaskContext &ctx) override {
 		ZN_PROFILE_SCOPE();
 		ZN_ASSERT(_data != nullptr);
 		// TODO Thread-safety: not sure if this is entirely safe, VoxelDataBlock members aren't protected.

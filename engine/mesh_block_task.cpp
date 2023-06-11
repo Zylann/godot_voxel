@@ -251,7 +251,7 @@ int MeshBlockTask::debug_get_running_count() {
 	return g_debug_mesh_tasks_count;
 }
 
-void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
+void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(meshing_dependency != nullptr);

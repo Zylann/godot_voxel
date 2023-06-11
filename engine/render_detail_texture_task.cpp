@@ -42,7 +42,7 @@ DetailTextureData &get_tls_normalmap_data() {
 	}
 }*/
 
-void RenderDetailTextureTask::run(ThreadedTaskContext ctx) {
+void RenderDetailTextureTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(generator.is_valid());
 	ZN_ASSERT_RETURN(output_textures != nullptr);
@@ -313,7 +313,7 @@ void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pi
 	}
 }
 
-void RenderDetailTexturePass2Task::run(ThreadedTaskContext ctx) {
+void RenderDetailTexturePass2Task::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	// TODO Suggestion: given how fast GPU normalmaps are computed, maybe we could output them first,
