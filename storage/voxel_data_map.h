@@ -149,7 +149,6 @@ public:
 			const Vector3i block_origin = block_to_voxel(block_pos);
 			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 			local_box.clip(Box3i(Vector3i(), block_size));
-			RWLockWrite wlock(block->get_voxels().get_lock());
 			block->get_voxels().write_box(local_box, channel, action, block_origin);
 		});
 	}
@@ -174,7 +173,6 @@ public:
 					const Vector3i block_origin = block_to_voxel(block_pos);
 					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), block_size));
-					RWLockWrite wlock(block->get_voxels().get_lock());
 					block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
 							local_box, channel0, channel1, action, block_origin);
 				});
