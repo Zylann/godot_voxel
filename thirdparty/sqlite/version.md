@@ -1,4 +1,4 @@
-SQLite 2020-12-01 (3.34.0)
+SQLite 2023-05-16 (3.42.0)
 
 See https://sqlite.org/changes.html
 

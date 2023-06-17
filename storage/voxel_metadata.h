@@ -9,7 +9,7 @@
 namespace zylann::voxel {
 
 // Voxel metadata is arbitrary, sparse data that can be attached to particular voxels.
-// It is not intented at being an efficient or fast storage method, but rather a versatile one for special cases.
+// It is not intended at being an efficient or fast storage method, but rather a versatile one for special cases.
 // For example, it can be used to store text, tags, inventory contents, or other complex states attached to a voxel.
 // If you need to store smaller data much more frequently, you may rely on a data channel instead.
 

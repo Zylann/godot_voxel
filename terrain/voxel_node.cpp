@@ -80,7 +80,7 @@ void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {
 	Ref<VoxelGenerator> generator = get_generator();
 
 	if (mesher.is_null()) {
-		warnings.append(ZN_TTR("This node has no mesher assigned, it wont produce any mesh visuals. "
+		warnings.append(ZN_TTR("This node has no mesher assigned, it won't produce any mesh visuals. "
 							   "You can assign one on the `mesher` property."));
 	}
 

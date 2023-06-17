@@ -780,7 +780,7 @@ static void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	// We used to only update positions based on which blocks were added/removed in the octree update,
 	// which was faster than this. However it missed some spots, which caused annoying cracks to show up.
 	// So instead, when any block changes state in LOD N, we update all transitions in LODs N-1, N, and N+1.
-	// It is unclear yet why the old approach didnt work, maybe because it didn't properly made N-1 and N+1 update.
+	// It is unclear yet why the old approach didn't work, maybe because it didn't properly made N-1 and N+1 update.
 	// If you find a better approach, it has to comply with the validation check below.
 	if (lods_to_update_transitions != 0) {
 		ZN_PROFILE_SCOPE_NAMED("Transition masks");
@@ -944,7 +944,7 @@ static void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBu
 	SaveBlockDataTask *task =
 			memnew(SaveBlockDataTask(volume_id, block_pos, lod, data_block_size, voxels, stream_dependency, nullptr));
 
-	// No priority data, saving doesnt need sorting
+	// No priority data, saving doesn't need sorting.
 
 	task_scheduler.push_io_task(task);
 }
@@ -1024,7 +1024,7 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 							.padded(1);
 
 			// Iteration order matters for thread access.
-			// The array also implicitely encodes block position due to the convention being used,
+			// The array also implicitly encodes block position due to the convention being used,
 			// so there is no need to also include positions in the request
 			data.get_blocks_with_voxel_data(data_box, lod_index, to_span(task->blocks));
 			task->blocks_count = Vector3iUtil::get_volume(data_box.size);
@@ -1150,7 +1150,7 @@ static void process_async_edits(VoxelLodTerrainUpdateData::State &state,
 			VoxelLodTerrainUpdateData::AsyncEdit &edit = state.pending_async_edits[edit_index];
 			CRASH_COND(edit.task_tracker->has_next_tasks());
 
-			// Not sure if worth doing, I dont think tasks can be aborted before even being scheduled
+			// Not sure if worth doing, I don't think tasks can be aborted before even being scheduled.
 			if (edit.task_tracker->is_aborted()) {
 				ZN_PRINT_VERBOSE("Aborted async edit");
 				memdelete(edit.task);

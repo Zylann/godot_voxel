@@ -15,7 +15,7 @@ class VoxelBuffer;
 }
 
 // Provides access to a source of paged voxel data, which may load and save.
-// This is intented for files, so it may run in a single background thread and gets requests in batches.
+// This is intended for files, so it may run in a single background thread and gets requests in batches.
 // Must be implemented in a thread-safe way.
 //
 // Functions currently don't enforce querying blocks of the same size, however it is required for every stream to
