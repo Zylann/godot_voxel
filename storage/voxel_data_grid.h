@@ -12,7 +12,7 @@ namespace zylann::voxel {
 class VoxelDataGrid {
 public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
-	// Warning: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
+	// WARNING: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
 	// box if you expect LOD0 coordinates.
 	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
 		const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
