@@ -1503,8 +1503,8 @@ void VoxelTerrain::process_meshing() {
 		task->mesh_block_position = mesh_block_pos;
 		task->lod_index = 0;
 		task->meshing_dependency = _meshing_dependency;
-		task->data_block_size = get_data_block_size();
 		task->collision_hint = _generate_collisions;
+		task->data = _data;
 
 		// This iteration order is specifically chosen to match VoxelEngine and threaded access
 		_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));

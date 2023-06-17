@@ -320,12 +320,16 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
 
-		std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
+		picks.clear();
 
-		if (voxels_ptr != nullptr) {
-			// Doing ONLY reads here.
-			{
-				RWLockRead lock(voxels_ptr->get_lock());
+		{
+			VoxelSpatialLock &spatial_lock = data.get_spatial_lock(0);
+			VoxelSpatialLockRead srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
+
+			std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
+
+			if (voxels_ptr != nullptr) {
+				// Doing ONLY reads here.
 				const VoxelBufferInternal &voxels = *voxels_ptr;
 
 				if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
@@ -347,7 +351,6 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
-				picks.clear();
 				for (int vi = 0; vi < local_batch_count; ++vi) {
 					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(random, local_voxel_box.size);
 
@@ -355,19 +358,19 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 					picks.push_back(Pick{ v, rpos });
 				}
 			}
+		}
 
-			// The following may or may not read AND write voxels randomly due to its exposition to scripts.
-			// However, we don't send the buffer directly, so it will go through an API taking care of locking.
-			// So we don't (and shouldn't) lock anything here.
-			for (size_t i = 0; i < picks.size(); ++i) {
-				const Pick pick = picks[i];
+		// The following may or may not read AND write voxels randomly due to its exposition to scripts.
+		// However, we don't send the buffer directly, so it will go through an API taking care of locking.
+		// So we don't (and shouldn't) lock anything here.
+		for (size_t i = 0; i < picks.size(); ++i) {
+			const Pick pick = picks[i];
 
-				if (lib.has_voxel(pick.value)) {
-					const VoxelBlockyModel &vt = lib.get_voxel_const(pick.value);
+			if (lib.has_voxel(pick.value)) {
+				const VoxelBlockyModel &vt = lib.get_voxel_const(pick.value);
 
-					if (vt.is_random_tickable()) {
-						ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
-					}
+				if (vt.is_random_tickable()) {
+					ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
 				}
 			}
 		}

@@ -1003,7 +1003,6 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 			task->lod_index = lod_index;
 			task->lod_hint = true;
 			task->meshing_dependency = meshing_dependency;
-			task->data_block_size = data_block_size;
 			task->data = data_ptr;
 			task->collision_hint = settings.collision_enabled;
 			task->detail_texture_settings = settings.detail_texture_settings;

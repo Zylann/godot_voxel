@@ -180,6 +180,8 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 			VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
 	const float sdf_scale_inv = 1.f / sdf_scale;
 
+	VoxelDataGrid::LockRead rlock(grid);
+
 	for (unsigned int query_index = 0; query_index < query_sdf_buffer.size(); ++query_index) {
 		const Vector3 posf(query_x_buffer[query_index], query_y_buffer[query_index], query_z_buffer[query_index]);
 

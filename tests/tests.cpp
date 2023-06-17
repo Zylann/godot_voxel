@@ -21,11 +21,13 @@
 #include "../util/godot/funcs.h"
 #include "../util/island_finder.h"
 #include "../util/math/box3i.h"
+#include "../util/profiling.h"
 #include "../util/slot_map.h"
 #include "../util/string_funcs.h"
 #include "test_detail_rendering_gpu.h"
 #include "test_expression_parser.h"
 #include "test_octree.h"
+#include "test_spatial_lock.h"
 #include "test_threaded_task_runner.h"
 #include "test_util.h"
 #include "test_voxel_graph.h"
@@ -1660,15 +1662,16 @@ void test_box_blur() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define VOXEL_TEST(fname)                                                                                              \
-	print_line(String("Running {0}").format(varray(#fname)));                                                          \
-	fname()
+	{                                                                                                                  \
+		print_line(String("Running {0}").format(varray(#fname)));                                                      \
+		ZN_PROFILE_SCOPE_NAMED(#fname);                                                                                \
+		fname();                                                                                                       \
+	}
 
 void run_voxel_tests() {
 	print_line("------------ Voxel tests begin -------------");
 
 	using namespace zylann::tests;
-
-	VOXEL_TEST(test_threaded_task_postponing);
 
 	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
@@ -1732,6 +1735,10 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_normalmap_render_gpu);
 	VOXEL_TEST(test_slot_map);
 	VOXEL_TEST(test_box_blur);
+	VOXEL_TEST(test_threaded_task_postponing);
+	VOXEL_TEST(test_spatial_lock_misc);
+	VOXEL_TEST(test_spatial_lock_spam);
+	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
 
 	print_line("------------ Voxel tests end -------------");
 }

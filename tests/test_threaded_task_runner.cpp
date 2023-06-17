@@ -381,7 +381,7 @@ void test_threaded_task_postponing() {
 		static void dequeue_tasks(ThreadedTaskRunner &runner, unsigned int &r_in_flight_count) {
 			runner.dequeue_completed_tasks([&r_in_flight_count](IThreadedTask *task) {
 				ZN_ASSERT(task != nullptr);
-				zylann::println(format("Dequeue {}", task));
+				// zylann::println(format("Dequeue {}", task));
 				task->apply_result();
 				ZN_DELETE(task);
 				ZN_ASSERT(r_in_flight_count > 0);
@@ -433,6 +433,8 @@ void test_threaded_task_postponing() {
 
 	runner.wait_for_all_tasks();
 	L::dequeue_tasks(runner, in_flight_count);
+
+	ZN_TEST_ASSERT(in_flight_count == 0);
 
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 	// Dump events

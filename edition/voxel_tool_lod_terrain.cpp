@@ -233,9 +233,6 @@ public:
 	void run(ThreadedTaskContext &ctx) override {
 		ZN_PROFILE_SCOPE();
 		ZN_ASSERT(_data != nullptr);
-		// TODO Thread-safety: not sure if this is entirely safe, VoxelDataBlock members aren't protected.
-		// Only the map and VoxelBuffers are. To fix this we could migrate to a spatial lock.
-
 		// TODO May want to fail if not all blocks were found
 		// TODO Need to apply modifiers
 		_data->get_blocks_grid(_op.blocks, _op.box, 0);
