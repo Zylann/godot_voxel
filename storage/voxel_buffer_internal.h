@@ -42,7 +42,7 @@ public:
 	enum Compression {
 		COMPRESSION_NONE = 0,
 		COMPRESSION_UNIFORM,
-		//COMPRESSION_RLE,
+		// COMPRESSION_RLE,
 		COMPRESSION_COUNT
 	};
 
@@ -60,7 +60,7 @@ public:
 	}
 
 	static inline uint32_t get_depth_bit_count(Depth d) {
-		//CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
+		// CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
 		return get_depth_byte_count(d) << 3;
 	}
 
