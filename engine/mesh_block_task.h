@@ -24,7 +24,7 @@ public:
 		return "MeshBlock";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;
 	void apply_result() override;
@@ -39,7 +39,6 @@ public:
 	VolumeID volume_id;
 	uint8_t lod_index = 0;
 	uint8_t blocks_count = 0;
-	uint8_t data_block_size = 0;
 	bool collision_hint = false;
 	bool lod_hint = false;
 	// Virtual textures might be enabled, but we don't always want to update them in every mesh update.

@@ -17,6 +17,9 @@ const char *VoxelGraphFunction::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 void VoxelGraphFunction::clear() {
 	unregister_subresources();
 	_graph.clear();
+#ifdef TOOLS_ENABLED
+	_can_load_default_graph = false;
+#endif
 }
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
@@ -843,7 +846,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	return true;
 }
 
-static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
+static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, String resource_path) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -880,9 +883,14 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 			const String func_key = ntype.params[0].name;
 			Ref<VoxelGraphFunction> function = node_data[func_key];
 			if (function.is_null()) {
-				ERR_PRINT(String("Unable to load external function referenced in {0}")
-								  .format(varray(VoxelGraphFunction::get_class_static())));
-				continue;
+				ERR_PRINT(String("Unable to load external function referenced in {0} {}")
+								  .format(varray(VoxelGraphFunction::get_class_static(), resource_path)));
+				// continue;
+				// Cancel, connections to that node cause crashes if we carry on loading. Perhaps we could try using a
+				// placeholder in the future so the graph can still be opened?
+				// We should also report the missing dependencies in the editor somehow, because Godot doesn't do it for
+				// us if the resource is opened in some cases
+				return false;
 			}
 			setup_function(*node, function);
 			// TODO Create a placeholder node in case a function isn't found to avoid loss of data?
@@ -970,7 +978,7 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data) {
 bool VoxelGraphFunction::load_graph_from_variant_data(Dictionary data) {
 	clear();
 
-	if (zylann::voxel::pg::load_graph_from_variant_data(_graph, data)) {
+	if (zylann::voxel::pg::load_graph_from_variant_data(_graph, data, get_path())) {
 		register_subresources();
 		return true;
 

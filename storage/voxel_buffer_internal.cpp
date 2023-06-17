@@ -118,7 +118,7 @@ namespace {
 uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
 	0, // TYPE
 
-	// Casted explicitely to avoid warning about narrowing conversion, the intent is to store all bits of the value
+	// Casted explicitly to avoid warning about narrowing conversion, the intent is to store all bits of the value
 	// as-is in a type that can store them all. The interpretation of the type is meaningless (depends on its use). It
 	// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
 	uint16_t(snorm_to_s16(1.f)), // SDF

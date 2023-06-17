@@ -2,6 +2,7 @@
 #define VOXEL_DATA_GRID_H
 
 #include "voxel_data_map.h"
+#include "voxel_spatial_lock.h"
 
 namespace zylann::voxel {
 
@@ -11,13 +12,20 @@ namespace zylann::voxel {
 class VoxelDataGrid {
 public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
-	// Warning: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
+	// WARNING: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
 	// box if you expect LOD0 coordinates.
-	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box) {
-		ZN_PROFILE_SCOPE();
+	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
 		const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
+		reference_area_block_coords(map, blocks_box, sl);
+	}
+
+	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, VoxelSpatialLock *sl) {
+		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
+		if (sl != nullptr) {
+			sl->lock_read(blocks_box);
+		}
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,
@@ -28,6 +36,10 @@ public:
 				set_block(pos, nullptr);
 			}
 		});
+		if (sl != nullptr) {
+			sl->unlock_read(blocks_box);
+		}
+		_spatial_lock = sl;
 	}
 
 	inline bool has_any_block() const {
@@ -39,7 +51,60 @@ public:
 		return false;
 	}
 
+	// The grid must be locked before doing operations on it.
+
+	struct LockRead {
+		LockRead(const VoxelDataGrid &p_grid) : grid(p_grid) {
+			grid.lock_read();
+		}
+		~LockRead() {
+			grid.unlock_read();
+		}
+		const VoxelDataGrid &grid;
+	};
+
+	struct LockWrite {
+		LockWrite(VoxelDataGrid &p_grid) : grid(p_grid) {
+			grid.lock_write();
+		}
+		~LockWrite() {
+			grid.unlock_write();
+		}
+		VoxelDataGrid &grid;
+	};
+
+	inline void lock_read() const {
+		ZN_ASSERT(_spatial_lock != nullptr);
+		ZN_ASSERT(!_locked);
+		_spatial_lock->lock_read(BoxBounds3i::from_position_size(_offset_in_blocks, _size_in_blocks));
+		_locked = true;
+	}
+
+	inline void unlock_read() const {
+		ZN_ASSERT(_spatial_lock != nullptr);
+		ZN_ASSERT(_locked);
+		_spatial_lock->unlock_read(BoxBounds3i::from_position_size(_offset_in_blocks, _size_in_blocks));
+		_locked = false;
+	}
+
+	inline void lock_write() {
+		ZN_ASSERT(_spatial_lock != nullptr);
+		ZN_ASSERT(!_locked);
+		_spatial_lock->lock_write(BoxBounds3i::from_position_size(_offset_in_blocks, _size_in_blocks));
+		_locked = true;
+	}
+
+	inline void unlock_write() {
+		ZN_ASSERT(_spatial_lock != nullptr);
+		ZN_ASSERT(_locked);
+		_spatial_lock->unlock_write(BoxBounds3i::from_position_size(_offset_in_blocks, _size_in_blocks));
+		_locked = false;
+	}
+
 	inline bool try_get_voxel_f(Vector3i pos, float &out_value, VoxelBufferInternal::ChannelId channel) const {
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(_locked);
+#endif
 		const Vector3i bpos = (pos >> _block_size_po2) - _offset_in_blocks;
 		if (!is_valid_relative_block_position(bpos)) {
 			return false;
@@ -51,29 +116,38 @@ public:
 		}
 		const unsigned int mask = (1 << _block_size_po2) - 1;
 		const Vector3i rpos = pos & mask;
-		{
-			RWLockRead rlock(voxels->get_lock());
-			out_value = voxels->get_voxel_f(rpos, channel);
-		}
+		out_value = voxels->get_voxel_f(rpos, channel);
 		return true;
 	}
 
 	// D action(Vector3i pos, D value)
 	template <typename F>
 	void write_box(Box3i voxel_box, unsigned int channel, F action) {
+		if (_spatial_lock != nullptr) {
+			lock_write();
+		}
 		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
 			voxels.write_box(local_box, channel, action, voxel_offset);
 		});
+		if (_spatial_lock != nullptr) {
+			unlock_write();
+		}
 	}
 
 	// void action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
 	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
+		if (_spatial_lock != nullptr) {
+			lock_write();
+		}
 		_box_loop(voxel_box,
 				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
 					voxels.write_box_2_template<F, uint16_t, uint16_t>(
 							local_box, channel0, channel1, action, voxel_offset);
 				});
+		if (_spatial_lock != nullptr) {
+			unlock_write();
+		}
 	}
 
 	// inline const VoxelBufferInternal *get_block(Vector3i position) const {
@@ -85,8 +159,10 @@ public:
 	// }
 
 	inline void clear() {
+		ZN_ASSERT(!_locked);
 		_blocks.clear();
 		_size_in_blocks = Vector3i();
+		_spatial_lock = nullptr;
 	}
 
 private:
@@ -111,7 +187,6 @@ private:
 					const Vector3i block_origin = block_rpos * _block_size + area_origin_in_voxels;
 					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), Vector3iUtil::create(_block_size)));
-					RWLockWrite wlock(block->get_lock());
 					block_action(*block, local_box, block_origin);
 				}
 			}
@@ -166,6 +241,10 @@ private:
 	// Size of a block in voxels
 	unsigned int _block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
+	// For protecting voxel data against multithreaded accesses. Not owned. Lifetime must be guaranteed by the user, for
+	// example by having a std::shared_ptr<VoxelData> holding the spatial lock.
+	VoxelSpatialLock *_spatial_lock = nullptr;
+	mutable bool _locked = false;
 };
 
 } // namespace zylann::voxel

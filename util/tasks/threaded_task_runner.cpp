@@ -137,6 +137,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 	data.debug_state = STATE_RUNNING;
 
 	std::vector<TaskItem> tasks;
+	std::vector<TaskItem> postponed_tasks;
 	std::vector<IThreadedTask *> cancelled_tasks;
 
 	while (!data.stop) {
@@ -151,7 +152,21 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			{
 				MutexLock lock(_tasks_mutex);
 
-				// Pick best tasks
+				// Pick a postponed task if any.
+				// We will still run a task from the main prioritized queue as well so postponed tasks will not
+				// monopolize execution.
+				//
+				// TODO What if postponed tasks remain while one big task is locking what they need to access?
+				// Those postponed tasks will sort of spinlock with no sleeping. Is that a bad thing?
+				{
+					MutexLock lock2(_postponed_tasks_mutex);
+					if (_postponed_tasks.size() > 0) {
+						tasks.push_back(_postponed_tasks.front());
+						_postponed_tasks.pop();
+					}
+				}
+
+				// Pick best tasks from the prioritized queue
 				for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
 					size_t best_index = 0; // Take first by default, this is a valid index
 					TaskPriority highest_priority = TaskPriority::min();
@@ -260,10 +275,10 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			for (size_t i = 0; i < tasks.size(); ++i) {
 				TaskItem &item = tasks[i];
 				if (!item.task->is_cancelled()) {
-					ThreadedTaskContext ctx;
-					ctx.thread_index = data.index;
+					ThreadedTaskContext ctx{ uint8_t(data.index), false };
 					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
+					item.postponed = ctx.postpone;
 					data.debug_running_task_name = nullptr;
 				}
 			}
@@ -280,13 +295,26 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			{
 				MutexLock lock(_completed_tasks_mutex);
 				for (size_t i = 0; i < tasks.size(); ++i) {
-					TaskItem &item = tasks[i];
-					_completed_tasks.push_back(item.task);
-					++_debug_completed_tasks;
+					const TaskItem &item = tasks[i];
+					if (item.postponed) {
+						postponed_tasks.push_back(item);
+					} else {
+						_completed_tasks.push_back(item.task);
+						++_debug_completed_tasks;
+					}
 				}
 			}
 
 			tasks.clear();
+
+			{
+				MutexLock lock(_postponed_tasks_mutex);
+				for (const TaskItem &item : postponed_tasks) {
+					_postponed_tasks.push(item);
+				}
+			}
+
+			postponed_tasks.clear();
 		}
 	}
 
@@ -304,7 +332,10 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 		{
 			MutexLock lock(_tasks_mutex);
 			if (_tasks.size() == 0) {
-				break;
+				MutexLock lock2(_postponed_tasks_mutex);
+				if (_postponed_tasks.size() == 0) {
+					break;
+				}
 			}
 		}
 

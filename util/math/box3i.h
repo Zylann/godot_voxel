@@ -95,41 +95,44 @@ public:
 		inline void operator()(const Vector3i pos) {}
 	};
 
+	// Iteration is done in ZYX order.
 	template <typename A>
-	inline void for_each_cell(A a) const {
+	inline void for_each_cell(A action) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
 				for (p.x = pos.x; p.x < max.x; ++p.x) {
-					a(p);
+					action(p);
 				}
 			}
 		}
 	}
 
+	// Iteration is done in ZXY order.
 	template <typename A>
-	inline void for_each_cell_zxy(A a) const {
+	inline void for_each_cell_zxy(A action) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.x = pos.x; p.x < max.x; ++p.x) {
 				for (p.y = pos.y; p.y < max.y; ++p.y) {
-					a(p);
+					action(p);
 				}
 			}
 		}
 	}
 
 	// Returns true if all cells of the box comply with the given predicate on their position.
+	// Iteration is done in ZYX order.
 	template <typename A>
-	inline bool all_cells_match(A a) const {
+	inline bool all_cells_match(A predicate) const {
 		const Vector3i max = pos + size;
 		Vector3i p;
 		for (p.z = pos.z; p.z < max.z; ++p.z) {
 			for (p.y = pos.y; p.y < max.y; ++p.y) {
 				for (p.x = pos.x; p.x < max.x; ++p.x) {
-					if (!a(p)) {
+					if (!predicate(p)) {
 						return false;
 					}
 				}

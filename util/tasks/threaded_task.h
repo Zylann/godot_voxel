@@ -7,7 +7,11 @@
 namespace zylann {
 
 struct ThreadedTaskContext {
-	uint8_t thread_index;
+	// Index of the thread within the runner's pool. Can be used to index arrays as an alternative to thread_local
+	// storage.
+	const uint8_t thread_index;
+	// If set to `true` by a task, the runner will re-run the task later instead of considering it complete.
+	bool postpone;
 };
 
 // Interface for a task that will run in `ThreadedTaskRunner`.
@@ -17,7 +21,7 @@ public:
 	virtual ~IThreadedTask() {}
 
 	// Called from within the thread pool
-	virtual void run(ThreadedTaskContext ctx) = 0;
+	virtual void run(ThreadedTaskContext &ctx) = 0;
 
 	// Convenience method which can be called by the scheduler of the task (usually on the main thread)
 	// in order to apply results. It is not called from the thread pool.

@@ -51,7 +51,6 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 	if (block == nullptr || !block->has_voxels()) {
 		return VoxelBufferInternal::get_default_value_static(c);
 	}
-	RWLockRead lock(block->get_voxels_const().get_lock());
 	return block->get_voxels_const().get_voxel(to_local(pos), c);
 }
 
@@ -64,7 +63,7 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 #endif
 	VoxelDataBlock &map_block = _blocks_map[bpos];
 	// TODO Clang complains the `move` prevents copy elision.
-	// But I dont want `VoxelDataBlock` to have copy... so what, should I add [expensive] copy construction just so
+	// But I don't want `VoxelDataBlock` to have copy... so what, should I add [expensive] copy construction just so
 	// clang is able to elide it?
 	map_block = std::move(VoxelDataBlock(buffer, _lod_index));
 	return &map_block;
@@ -83,7 +82,6 @@ void VoxelDataMap::set_voxel(int value, Vector3i pos, unsigned int c) {
 	VoxelDataBlock *block = get_or_create_block_at_voxel_pos(pos);
 	// TODO If it turns out to be a problem, use CoW
 	VoxelBufferInternal &voxels = block->get_voxels();
-	RWLockWrite lock(voxels.get_lock());
 	voxels.set_voxel(value, to_local(pos), c);
 }
 
@@ -96,7 +94,6 @@ float VoxelDataMap::get_voxel_f(Vector3i pos, unsigned int c) const {
 		return VoxelBufferInternal::get_default_value_static(c);
 	}
 	Vector3i lpos = to_local(pos);
-	RWLockRead lock(block->get_voxels_const().get_lock());
 	return block->get_voxels_const().get_voxel_f(lpos.x, lpos.y, lpos.z, c);
 }
 
@@ -106,7 +103,6 @@ void VoxelDataMap::set_voxel_f(real_t value, Vector3i pos, unsigned int c) {
 	// TODO In this situation, the generator must be invoked to fill the block
 	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Block not cached");
 	VoxelBufferInternal &voxels = block->get_voxels();
-	RWLockWrite lock(voxels.get_lock());
 	voxels.set_voxel_f(value, lpos.x, lpos.y, lpos.z, c);
 }
 
@@ -215,8 +211,6 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsig
 				if (block != nullptr && block->has_voxels()) {
 					const VoxelBufferInternal &src_buffer = block->get_voxels_const();
 
-					RWLockRead rlock(src_buffer.get_lock());
-
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
 						const uint8_t channel = channels[ci];
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
@@ -284,7 +278,6 @@ void VoxelDataMap::paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer
 					const Vector3i dst_block_origin = block_to_voxel(bpos);
 
 					VoxelBufferInternal &dst_buffer = block->get_voxels();
-					RWLockWrite lock(dst_buffer.get_lock());
 
 					if (use_mask) {
 						const Box3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());

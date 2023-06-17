@@ -377,7 +377,7 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
-	ClassDB::bind_method(D_METHOD("remap_values", "channel"), &VoxelBuffer::remap_values);
+	ClassDB::bind_method(D_METHOD("remap_values", "channel", "map"), &VoxelBuffer::remap_values);
 
 	ClassDB::bind_method(D_METHOD("get_block_metadata"), &VoxelBuffer::get_block_metadata);
 	ClassDB::bind_method(D_METHOD("set_block_metadata", "meta"), &VoxelBuffer::set_block_metadata);

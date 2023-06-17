@@ -21,7 +21,7 @@ public:
 		return "LoadBlockData";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;
 	void apply_result() override;

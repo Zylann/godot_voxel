@@ -45,7 +45,7 @@ public:
 		return "RenderDetailTexture";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 	void apply_result() override;
 	TaskPriority get_priority() override;
 	bool is_cancelled() override;
@@ -77,7 +77,7 @@ public:
 		return "RenderDetailTexturePass2";
 	}
 
-	void run(ThreadedTaskContext ctx) override;
+	void run(ThreadedTaskContext &ctx) override;
 	void apply_result() override;
 };
 

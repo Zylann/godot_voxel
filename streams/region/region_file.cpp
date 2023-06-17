@@ -661,8 +661,8 @@ void RegionFile::debug_check() {
 		const unsigned int sector_index = block_info.get_sector_index();
 		const unsigned int block_begin = _blocks_begin_offset + sector_index * _header.format.sector_size;
 		if (block_begin >= file_len) {
-			ZN_PRINT_ERROR(format("ERROR: LUT {} ({}): offset {} is larger than file size {}", lut_index, position,
-					block_begin, file_len));
+			ZN_PRINT_ERROR(format(
+					"LUT {} {}: offset {} is larger than file size {}", lut_index, position, block_begin, file_len));
 			continue;
 		}
 		f.seek(block_begin);
@@ -670,8 +670,8 @@ void RegionFile::debug_check() {
 		const size_t pos = f.get_position();
 		const size_t remaining_size = file_len - pos;
 		if (block_data_size > remaining_size) {
-			ZN_PRINT_ERROR(format("ERROR: LUT {} ({}): block size {} at offset {} is larger than remaining size {}",
-					lut_index, position, block_data_size, block_begin, remaining_size));
+			ZN_PRINT_ERROR(format("LUT {} {}: block size {} at offset {} is larger than remaining size {}", lut_index,
+					position, block_data_size, block_begin, remaining_size));
 		}
 	}
 }

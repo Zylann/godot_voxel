@@ -123,13 +123,28 @@ This made things simple, however it causes several issues.
 
 ### Internal changes
 
-The old design starts to change in version `godot3.2.4`. Now, copies aren't made preemptively on the main thread anymore, and are done in the actual threaded task instead. This means accessing voxels now require to lock the data during each transaction, to make sure each thread gets consistent data.
+The old design starts to change in version `godot3.2.4`. Copies aren't made preemptively on the main thread anymore, and are done in the actual threaded task instead. This means accessing voxels now require to lock the data during each transaction, to make sure each thread gets consistent data.
 Locking is required **if you access voxels which are part of a multithreaded volume**, like a terrain present in the scene tree. You don't need to if you know the data is not used by any other thread, like inside generators, custom streams, known copies or other storage not owned by an active component of the voxel engine.
 
-The locking strategy is implemented on each `VoxelBuffer`, using `RWLock`. Such locks are read-write-locks, also known as shared mutexes. As described earlier, it is optional, so *none of VoxelBuffer methods actually use that lock*, it's up to you. If you only need to read voxels, lock for *read*. If you also need to modify voxels, lock for *write*. Multiple threads can then read the same block, but only one can modify it at once. If a thread wants to modify the block while it is already locked for *read*, the thread will be blocked until all other threads finished reading it. This can cause stutter if done too often on the main thread, so if it becomes a problem, a possible solution is to lock for *read*, copy the block and then modify it (Copy-on-Write).
+#### RWLocks per VoxelBuffer
 
-At time of writing, there are no threaded tasks needing a write access to voxels.
-It is possible that more changes happen in the future, in particular with nodes supporting LOD.
+The locking strategy was initially implemented by adding an `RWLock` on every `VoxelBuffer`. Such locks are read-write-locks, also known as shared mutexes.
+
+While simple, this method meant that if you had a 16x16x16 loaded terrain area containing voxels, you'd have to allocate 4,096 `RWLocks` from the system, and lock them all if a region needed to be accessed. For example, updating a mesh means accessing a block and its 26 neighbors, so 27 locks. They also had to be locked in a specific order, because two threads trying to lock multiple blocks in different order would lead to a dead-lock, freezing the game.
+`RWLock` is also quite heavy on Windows, taking 244 bytes (half of the base data structure for data blocks).
+Besides, certain platforms (such as consoles or mobile systems) might not allow creating that many locks.
+
+#### Spatial lock (17/06/2023)
+
+Later on, `RWLocks` were removed from `VoxelBuffer`. They were replaced with `VoxelSpatialLock`.
+
+A spatial lock is just a list of boxes protected by a mutex. If you want to read voxels in a specific area, try adding that box to the list, and remove it once you're done. If you want to also write voxels, tag that box as "write mode".
+The spatial lock will block locking attempts if an existing box in "write mode" is intersecting yours, while allowing multiple "read mode" boxes to overlap. It essentially acts the same as `RWLock`, except only one short-duration mutex is used to protect the list, and there is no need for thousands of them to exist.
+This approach requires the same amount of locks regardless of the size of the box.
+
+#### Read and write
+
+Multiple threads can read the same block, but only one can modify it at once. If a thread wants to modify the block while it is already locked for *read*, the thread will be blocked until all other threads finished reading it. This can cause stutter if done too often on the main thread, so if it becomes a problem, a possible solution is to lock for *read*, copy the block and then modify it (Copy-on-Write). Another solution is to run expensive modifications in a thread and use "try lock" instead of "lock", delaying the task instead of blocking the thread.
 
 
 ### Editing voxels efficiently
@@ -140,6 +155,28 @@ If you use `VoxelTool`, all locking mechanisms are handled for you automatically
 
 For example, *on a terrain node*, `VoxelTool.get_voxel` or `set_voxel` are the simplest, yet the slowest way to modify voxels. This is not only because of locking, but also because the engine has to go all the way through several data structures to access the voxel. This is perfectly fine for small isolated edits, like the player digging or building piece by piece. 
 
+This is what happen when you change a single voxel in a terrain (as of 17/06/2023. May also vary depending on the operation and terrain configuration):
+
+- Your voxel position is converted into block coordinates
+- The map containing blocks is locked (so we are sure nothing else modifies it as we access it)
+- The block is queried. If it isn't loaded, the edit will fail as "area not editable".
+- If the block is loaded but does not cache voxel data (in some configurations, non-edited blocks do not store data), the whole block will be generated on the spot using `VoxelGenerator` and modifiers and will be inserted in the map.
+- The map containing blocks is unlocked
+- The block itself gets locked in Write mode. Nothing else can access it. If something else is already using the block, the current thread will block until it unlocks.
+- Your voxel position is converted into block-relative voxel position and bound-checked
+- The voxel channel is accessed: if it contains no voxel data due to the whole block containing the same value (optimization), data will get allocated so that the voxel you are modifying can take a different value.
+- The channel's format is checked: coming from a script, the value you pass could be a 64-bit integer or a float, but channel data may be 8, 16, 32 or 64 bits with various encodings. By default, it is 16 bits, so the value may get clamped and encoded.
+- The value actually gets stored
+- The block is unlocked and marked as modified
+- The terrain is notified that a change occurred in the block you edited.
+- If the terrain has a mesher, a re-meshing task will be scheduled (if not already done so far) to update visuals and maybe collisions.
+- If the terrain has a network synchronizer, it will schedule an "area changed" RPC message.
+- If the terrain has a VoxelInstancer, it will check if instances lost contact with ground.
+
+As you can see, a lot is going on with a single voxel. Repeating this all over for many voxels is not efficient.
+That's why bulk edits may be preferred, because a lot of these operations will happen only once for the whole edit, an the only thing that will get executed many times is the actual voxel data changes.
+
 If you want to excavate whole chunks or generating structures, try to use specialized bulk functions instead, such as `do_sphere()`, `do_box()`, `raycast` or `paste()`. These will be more efficient because they can cache data structures on the way and perform locking in the best way they can.
 
-If your changes depend on a lot of pre-existing voxels, you can use `copy()` to extract a chunk of voxels into a `VoxelBuffer` so you can read them very fast without locking. You can even choose to do your changes on that same buffer, and finally use `paste()` when you're done.
+If your changes are very custom or depend on a lot of pre-existing voxels, you can use `copy()` to extract a chunk of voxels into a `VoxelBuffer` so you can read them very fast without locking. You can even choose to do your changes on that same buffer, and finally use `paste()` when you're done.
+

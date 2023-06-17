@@ -91,7 +91,7 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 	const Vector3f cposf = (ray_position - chunk_grid.min_pos) / chunk_grid.chunk_size;
 
 	// Compute a max distance for DDA
-	//const float max_distance_chunks = int(chunk_grid.size.length());
+	// const float max_distance_chunks = int(chunk_grid.size.length());
 	const float max_distance_chunks = (max_distance / chunk_grid.chunk_size) + 2.f * constants::SQRT3;
 
 	const Triangle *hit_triangle = nullptr;
@@ -170,7 +170,7 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 
 bool find_sdf_sign_with_raycast(
 		const ChunkGrid &chunk_grid, Vector3f ray_position, const Triangle &ref_triangle, int &out_sign) {
-	//ZN_PROFILE_SCOPE();
+	// ZN_PROFILE_SCOPE();
 
 	const Vector3f ref_center = (ref_triangle.v1 + ref_triangle.v2 + ref_triangle.v3) / 3.f;
 	const Vector3f ray_dir = math::normalized(ref_center - ray_position);
@@ -291,7 +291,7 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Span<uint8_t> flag_grid, V
 
 			flag_grid[nloc] = FLAG_VISITED;
 
-			//ZN_ASSERT(nloc < sdf_grid.size());
+			// ZN_ASSERT(nloc < sdf_grid.size());
 			const float nv = sdf_grid[nloc];
 
 			if ((nv > 0.f && nv < min_sd) || ((nv > 0.f) != (v > 0.f) && Math::abs(nv - v) < max_variation)) {
@@ -582,7 +582,7 @@ unsigned int get_closest_triangle_precalc(const Vector3f pos, Span<const Triangl
 
 	for (size_t i = 0; i < triangles.size(); ++i) {
 		const Triangle &t = triangles[i];
-		//const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
+		// const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
 		const float sqd = get_distance_to_triangle_squared_precalc(t, pos);
 
 		if (sqd < min_distance_squared) {
@@ -600,7 +600,7 @@ float get_mesh_signed_distance_at(const Vector3f pos, Span<const Triangle> trian
 
 	for (size_t i = 0; i < triangles.size(); ++i) {
 		const Triangle &t = triangles[i];
-		//const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
+		// const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
 		const float sqd = get_distance_to_triangle_squared_precalc(t, pos);
 
 		// TODO What if two triangles of opposite directions share the same point?
@@ -635,8 +635,8 @@ float get_mesh_signed_distance_at(const Vector3f pos, Span<const Triangle> trian
 	const Triangle &ct = triangles[closest_tri_index];
 	const float d = Math::sqrt(min_distance_squared);
 
-	//if (p_dir == CLOCKWISE) {
-	//const Vector3f plane_normal = (ct.v1 - ct.v3).cross(ct.v1 - ct.v2).normalized();
+	// if (p_dir == CLOCKWISE) {
+	// const Vector3f plane_normal = (ct.v1 - ct.v3).cross(ct.v1 - ct.v2).normalized();
 	const Vector3f plane_normal = get_normal(ct);
 	//} else {
 	//	normal = (p_point1 - p_point2).cross(p_point1 - p_point3);
@@ -670,7 +670,7 @@ float get_mesh_signed_distance_at(const Vector3f pos, const ChunkGrid &chunk_gri
 			// to figure out which one must be taken.
 			// For now this is worked around in a later pass with a floodfill.
 
-			//const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
+			// const float sqd = get_distance_to_triangle_squared(t.v1, t.v2, t.v3, pos);
 			const float sqd = get_distance_to_triangle_squared_precalc(t, pos);
 
 			if (sqd < min_distance_squared) {
@@ -683,8 +683,8 @@ float get_mesh_signed_distance_at(const Vector3f pos, const ChunkGrid &chunk_gri
 	const float d = Math::sqrt(min_distance_squared);
 	ZN_ASSERT(closest_tri != nullptr);
 
-	//if (p_dir == CLOCKWISE) {
-	//const Vector3f plane_normal = (ct.v1 - ct.v3).cross(ct.v1 - ct.v2).normalized();
+	// if (p_dir == CLOCKWISE) {
+	// const Vector3f plane_normal = (ct.v1 - ct.v3).cross(ct.v1 - ct.v2).normalized();
 	const Vector3f plane_normal = get_normal(*closest_tri);
 	//} else {
 	//	normal = (p_point1 - p_point2).cross(p_point1 - p_point3);
@@ -1071,13 +1071,13 @@ Vector3i auto_compute_grid_resolution(const Vector3f box_size, int cell_count) {
 }
 
 // Called from within the thread pool
-void GenMeshSDFSubBoxTask::run(ThreadedTaskContext ctx) {
+void GenMeshSDFSubBoxTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(shared_data != nullptr);
 
 	VoxelBufferInternal &buffer = shared_data->buffer;
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	//ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_NONE);
+	// ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_NONE);
 	Span<float> sdf_grid;
 	ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
@@ -1175,7 +1175,7 @@ void generate_mesh_sdf_hull(Span<float> sdf_grid, const Vector3i res, Span<const
 	}
 
 	const float mv = pad * get_max_sdf_variation(min_pos, max_pos, res);
-	//const Triangle &ref_triangle = triangles[0];
+	// const Triangle &ref_triangle = triangles[0];
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Sqrt + Raycast signs");

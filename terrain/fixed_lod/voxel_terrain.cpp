@@ -211,13 +211,20 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 	}
 
 	_mesh_block_size_po2 = po2;
+        
+
 
 	if (_instancer != nullptr) {
 		VoxelInstancer &instancer = *_instancer;
-		_mesh_map.for_each_block([&instancer](VoxelMeshBlockVT &block) { //
+		_mesh_map.for_each_block([&instancer, this](VoxelMeshBlockVT &block) { //
 			instancer.on_mesh_block_exit(block.position, 0);
+                        emit_mesh_block_exited(block.position);
 		});
-	}
+	} else {
+                _mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
+                        emit_mesh_block_exited(block.position);
+                });
+        }
 
 	// Unload all mesh blocks regardless of refcount
 	_mesh_map.clear();
@@ -494,6 +501,7 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	if (_instancer != nullptr) {
 		_instancer->on_mesh_block_exit(bpos, 0);
 	}
+        emit_mesh_block_exited(bpos);
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -534,7 +542,7 @@ void VoxelTerrain::get_meshed_block_positions(std::vector<Vector3i> &out_positio
 	});
 }
 
-// This function is primarily intented for editor use cases at the moment.
+// This function is primarily intended for editor use cases at the moment.
 // It will be slower than using the instancing generation events,
 // because it has to query VisualServer, which then allocates and decodes vertex buffers (assuming they are cached).
 Array VoxelTerrain::get_mesh_block_surface(Vector3i block_pos) const {
@@ -883,7 +891,7 @@ void VoxelTerrain::consume_block_data_save_requests(
 			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
 					_volume_id, b.position, 0, data_block_size, b.voxels, _streaming_dependency, saving_tracker));
 
-			// No priority data, saving doesnt need sorting
+			// No priority data, saving doesn't need sorting.
 			task_scheduler.push_io_task(task);
 		}
 	} else {
@@ -916,6 +924,23 @@ void VoxelTerrain::emit_data_block_loaded(Vector3i bpos) {
 
 void VoxelTerrain::emit_data_block_unloaded(Vector3i bpos) {
 	emit_signal(VoxelStringNames::get_singleton().block_unloaded, bpos);
+}
+
+void VoxelTerrain::emit_mesh_block_entered(Vector3i bpos) {
+	// Not sure about exposing buffers directly... some stuff on them is useful to obtain directly,
+	// but also it allows scripters to mess with voxels in a way they should not.
+	// Example: modifying voxels without locking them first, while another thread may be reading them at the same
+	// time. The same thing could happen the other way around (threaded task modifying voxels while you try to read
+	// them). It isn't planned to expose VoxelBuffer locks because there are too many of them, it may likely shift
+	// to another system in the future, and might even be changed to no longer inherit Reference. So unless this is
+	// absolutely necessary, buffers aren't exposed. Workaround: use VoxelTool
+	// const Variant vbuffer = block->voxels;
+	// const Variant *args[2] = { &vpos, &vbuffer };
+	emit_signal(VoxelStringNames::get_singleton().mesh_block_entered, bpos);
+}
+
+void VoxelTerrain::emit_mesh_block_exited(Vector3i bpos) {
+	emit_signal(VoxelStringNames::get_singleton().mesh_block_exited, bpos);
 }
 
 bool VoxelTerrain::try_get_paired_viewer_index(ViewerID id, size_t &out_i) const {
@@ -1503,8 +1528,8 @@ void VoxelTerrain::process_meshing() {
 		task->mesh_block_position = mesh_block_pos;
 		task->lod_index = 0;
 		task->meshing_dependency = _meshing_dependency;
-		task->data_block_size = get_data_block_size();
 		task->collision_hint = _generate_collisions;
+		task->data = _data;
 
 		// This iteration order is specifically chosen to match VoxelEngine and threaded access
 		_data->get_blocks_with_voxel_data(data_box, 0, to_span(task->blocks));
@@ -1591,18 +1616,23 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	if (_instancer != nullptr) {
-		if (mesh.is_null() && block != nullptr) {
-			// No surface anymore in this block
-			_instancer->on_mesh_block_exit(ob.position, ob.lod);
-		}
-		if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
-			// TODO The mesh could come from an edited region!
-			// We would have to know if specific voxels got edited, or different from the generator
-			// TODO Support multi-surfaces in VoxelInstancer
-			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
-		}
-	}
+	
+        if (mesh.is_null() && block != nullptr) {
+                // No surface anymore in this block
+                if (_instancer != nullptr) {
+                        _instancer->on_mesh_block_exit(ob.position, ob.lod);
+                }
+                emit_mesh_block_exited(ob.position);
+        }
+        if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
+                // TODO The mesh could come from an edited region!
+                // We would have to know if specific voxels got edited, or different from the generator
+                // TODO Support multi-surfaces in VoxelInstancer
+                if (_instancer != nullptr) {
+                        _instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
+                }
+                emit_mesh_block_entered(ob.position);
+        }
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
 			RenderingServer::ShadowCastingSetting(get_shadow_casting()));
@@ -1624,7 +1654,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	block->set_visible(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
-	// TODO We dont set MESH_UP_TO_DATE anywhere, but it seems to work?
+	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
@@ -1710,7 +1740,7 @@ Ref<VoxelSaveCompletionTracker> VoxelTerrain::_b_save_modified_blocks() {
 	return VoxelSaveCompletionTracker::create(tracker);
 }
 
-// Explicitely ask to save a block if it was modified
+// Explicitly ask to save a block if it was modified
 void VoxelTerrain::_b_save_block(Vector3i p_block_pos) {
 	VoxelData::BlockToSave to_save;
 	if (_data->consume_block_modifications(p_block_pos, to_save)) {
@@ -1876,8 +1906,11 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
-	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3, "position")));
-	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3, "position")));
+	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3I, "position")));
+	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3I, "position")));
+
+	ADD_SIGNAL(MethodInfo("mesh_block_entered", PropertyInfo(Variant::VECTOR3I, "position")));
+	ADD_SIGNAL(MethodInfo("mesh_block_exited", PropertyInfo(Variant::VECTOR3I, "position")));
 }
 
 } // namespace zylann::voxel

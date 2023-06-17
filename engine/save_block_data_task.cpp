@@ -53,7 +53,7 @@ int SaveBlockDataTask::debug_get_running_count() {
 	return g_debug_save_block_tasks_count;
 }
 
-void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
+void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(_stream_dependency == nullptr);
@@ -70,12 +70,11 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext ctx) {
 		}
 
 		VoxelBufferInternal voxels_copy;
-		{
-			RWLockRead lock(_voxels->get_lock());
-			// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
-			// request
-			_voxels->duplicate_to(voxels_copy, true);
-		}
+		// Note, we are not locking voxels here. This is supposed to be done at the time this task is scheduled.
+		// If this is not a copy, it means the map it came from is getting unloaded anyways.
+		// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
+		// request
+		_voxels->duplicate_to(voxels_copy, true);
 		_voxels = nullptr;
 		const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
 		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod, VoxelStream::RESULT_ERROR };

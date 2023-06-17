@@ -29,7 +29,7 @@ public:
 	static const unsigned int BLOCK_SIZE = 1 << BLOCK_SIZE_PO2;
 	static const unsigned int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;
 
-	// Converts voxel coodinates into block coordinates.
+	// Converts voxel coordinates into block coordinates.
 	// Don't use division because it introduces an offset in negative coordinates.
 	static inline Vector3i voxel_to_block_b(Vector3i pos, int block_size_pow2) {
 		return pos >> block_size_pow2;
@@ -43,7 +43,7 @@ public:
 		return Vector3i(pos.x & BLOCK_SIZE_MASK, pos.y & BLOCK_SIZE_MASK, pos.z & BLOCK_SIZE_MASK);
 	}
 
-	// Converts block coodinates into voxel coordinates
+	// Converts block coordinates into voxel coordinates.
 	inline Vector3i block_to_voxel(Vector3i bpos) const {
 		return bpos * BLOCK_SIZE;
 	}
@@ -149,7 +149,6 @@ public:
 			const Vector3i block_origin = block_to_voxel(block_pos);
 			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 			local_box.clip(Box3i(Vector3i(), block_size));
-			RWLockWrite wlock(block->get_voxels().get_lock());
 			block->get_voxels().write_box(local_box, channel, action, block_origin);
 		});
 	}
@@ -174,7 +173,6 @@ public:
 					const Vector3i block_origin = block_to_voxel(block_pos);
 					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), block_size));
-					RWLockWrite wlock(block->get_voxels().get_lock());
 					block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
 							local_box, channel0, channel1, action, block_origin);
 				});

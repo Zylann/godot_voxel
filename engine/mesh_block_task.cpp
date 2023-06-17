@@ -51,8 +51,8 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
-		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator,
-		const VoxelModifierStack *modifiers, int data_block_size, uint8_t lod_index, Vector3i mesh_block_pos) {
+		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
+		uint8_t lod_index, Vector3i mesh_block_pos) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
@@ -71,6 +71,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		ERR_FAIL_COND_MSG(
 				Vector3iUtil::all_members_equal(central_buffer->get_size()) == false, "Central buffer must be cubic");
 	}
+	const int data_block_size = voxel_data.get_block_size();
 	const int mesh_block_size = data_block_size * area_info.mesh_block_size_factor;
 	const int padded_mesh_block_size = mesh_block_size + min_padding + max_padding;
 
@@ -95,63 +96,70 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
-	const bool has_generator = generator.is_valid() || modifiers != nullptr;
-	if (has_generator) {
-		boxes_to_generate.push_back(mesh_data_box);
-	}
+	boxes_to_generate.push_back(mesh_data_box);
 
-	// Using ZXY as convention to reconstruct positions with thread locking consistency
-	unsigned int block_index = 0;
-	for (int z = -1; z < area_info.edge_size - 1; ++z) {
-		for (int x = -1; x < area_info.edge_size - 1; ++x) {
-			for (int y = -1; y < area_info.edge_size - 1; ++y) {
-				const Vector3i offset = data_block_size * Vector3i(x, y, z);
-				const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
-				++block_index;
+	{
+		// TODO The following logic might as well be simplified and moved to VoxelData.
+		// We are just sampling or generating data in a given area.
 
-				if (src == nullptr) {
-					continue;
-				}
+		const Vector3i data_block_pos0 = mesh_block_pos * area_info.mesh_block_size_factor;
+		VoxelSpatialLockRead srlock(voxel_data.get_spatial_lock(lod_index),
+				BoxBounds3i(data_block_pos0 - Vector3i(1, 1, 1),
+						data_block_pos0 + Vector3iUtil::create(area_info.edge_size)));
 
-				const Vector3i src_min = min_pos - offset;
-				const Vector3i src_max = max_pos - offset;
+		// Using ZXY as convention to reconstruct positions with thread locking consistency
+		unsigned int block_index = 0;
+		for (int z = -1; z < area_info.edge_size - 1; ++z) {
+			for (int x = -1; x < area_info.edge_size - 1; ++x) {
+				for (int y = -1; y < area_info.edge_size - 1; ++y) {
+					const Vector3i offset = data_block_size * Vector3i(x, y, z);
+					const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
+					++block_index;
 
-				{
-					RWLockRead read(src->get_lock());
+					if (src == nullptr) {
+						continue;
+					}
+
+					const Vector3i src_min = min_pos - offset;
+					const Vector3i src_max = max_pos - offset;
+
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
 						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
 					}
-				}
 
-				if (has_generator) {
-					// Subtract edited box from the area to generate
-					// TODO This approach allows to batch boxes if necessary,
-					// but is it just better to do it anyways for every clipped box?
-					ZN_PROFILE_SCOPE_NAMED("Box subtract");
-					const unsigned int input_count = boxes_to_generate.size();
-					const Box3i block_box = Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
+					{
+						// Subtract edited box from the area to generate
+						// TODO This approach allows to batch boxes if necessary,
+						// but is it just better to do it anyways for every clipped box?
+						ZN_PROFILE_SCOPE_NAMED("Box subtract");
+						const unsigned int input_count = boxes_to_generate.size();
+						const Box3i block_box =
+								Box3i(offset, Vector3iUtil::create(data_block_size)).clipped(mesh_data_box);
 
-					for (unsigned int box_index = 0; box_index < input_count; ++box_index) {
-						Box3i box = boxes_to_generate[box_index];
-						// Remainder boxes are added to the end of the list
-						box.difference_to_vec(block_box, boxes_to_generate);
+						for (unsigned int box_index = 0; box_index < input_count; ++box_index) {
+							Box3i box = boxes_to_generate[box_index];
+							// Remainder boxes are added to the end of the list
+							box.difference_to_vec(block_box, boxes_to_generate);
 #ifdef DEBUG_ENABLED
-						// Difference should add boxes to the vector, not remove any
-						CRASH_COND(box_index >= boxes_to_generate.size());
+							// Difference should add boxes to the vector, not remove any
+							CRASH_COND(box_index >= boxes_to_generate.size());
 #endif
-					}
+						}
 
-					// Remove input boxes
-					boxes_to_generate.erase(boxes_to_generate.begin(), boxes_to_generate.begin() + input_count);
+						// Remove input boxes
+						boxes_to_generate.erase(boxes_to_generate.begin(), boxes_to_generate.begin() + input_count);
+					}
 				}
 			}
 		}
 	}
 
-	if (has_generator) {
+	{
 		// Complete data with generated voxels
 		ZN_PROFILE_SCOPE_NAMED("Generate");
 		VoxelBufferInternal generated_voxels;
+
+		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
 		const Vector3i origin_in_voxels =
 				mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index);
@@ -167,9 +175,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			if (generator.is_valid()) {
 				generator->generate_block(q);
 			}
-			if (modifiers != nullptr) {
-				modifiers->apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
-			}
+			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
 			for (unsigned int ci = 0; ci < channels_count; ++ci) {
 				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),
@@ -251,10 +257,11 @@ int MeshBlockTask::debug_get_running_count() {
 	return g_debug_mesh_tasks_count;
 }
 
-void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
+void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(meshing_dependency != nullptr);
+	ZN_ASSERT(data != nullptr);
 
 	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
 	ZN_ASSERT_RETURN_MSG(
@@ -262,12 +269,9 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext ctx) {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	const VoxelModifierStack *modifiers = data != nullptr ? &data->get_modifiers() : nullptr;
-
 	VoxelBufferInternal voxels;
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
-			mesher->get_used_channels_mask(), meshing_dependency->generator, modifiers, data_block_size, lod_index,
-			mesh_block_position);
+			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position);
 
 	// Could cache generator data from here if it was safe to write into the map
 	/*if (data != nullptr && cache_generated_blocks) {

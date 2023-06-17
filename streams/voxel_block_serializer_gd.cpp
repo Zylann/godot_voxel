@@ -85,7 +85,7 @@ void VoxelBlockSerializer::_bind_methods() {
 	// Reasons for using methods with StreamPeer:
 	// - Convenience, if you do write to a peer already
 	// - Avoiding an allocation. When serializing to a PackedByteArray, the Godot API incurs allocating that
-	// temporary array everytime.
+	// temporary array every time.
 	ClassDB::bind_static_method(cname, D_METHOD("serialize_to_stream_peer", "peer", "voxel_buffer", "compress"),
 			&VoxelBlockSerializer::serialize_to_stream_peer);
 	ClassDB::bind_static_method(cname,

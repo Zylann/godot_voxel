@@ -26,7 +26,7 @@ using namespace godot;
 namespace zylann::voxel {
 
 // Singleton for common things, notably the task system and shared viewers list.
-// In Godot terminology this used to be called a "server", but I dont really agree with the term here, and it can be
+// In Godot terminology this used to be called a "server", but I don't really agree with the term here, and it can be
 // confused with networking features.
 class VoxelEngine {
 public:
