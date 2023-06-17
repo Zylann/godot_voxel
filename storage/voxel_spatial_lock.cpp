@@ -9,9 +9,18 @@ VoxelSpatialLock::VoxelSpatialLock() {
 }
 
 void VoxelSpatialLock::remove_box(const BoxBounds3i &box, Mode mode) {
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+	const Thread::ID thread_id = Thread::get_caller_id();
+#endif
+
 	for (unsigned int i = 0; i < _boxes.size(); ++i) {
 		const Box &existing_box = _boxes[i];
-		if (existing_box.bounds == box && existing_box.mode == mode) {
+
+		if (existing_box.bounds == box && existing_box.mode == mode
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+				&& existing_box.thread_id == thread_id
+#endif
+		) {
 			_boxes[i] = _boxes[_boxes.size() - 1];
 			_boxes.pop_back();
 			return;

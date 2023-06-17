@@ -9,6 +9,10 @@
 
 #include <vector>
 
+#ifdef TOOLS_ENABLED
+#define VOXEL_SPATIAL_LOCK_CHECKS
+#endif
+
 namespace zylann::voxel {
 
 // Locking on a large voxel data structure can be done with this, instead of putting RWLocks on every chunk or
@@ -31,7 +35,9 @@ public:
 	struct Box {
 		BoxBounds3i bounds;
 		Mode mode;
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
 		Thread::ID thread_id;
+#endif
 	};
 
 	VoxelSpatialLock();
@@ -43,7 +49,11 @@ public:
 	bool try_lock_read(const BoxBounds3i &box) {
 		_boxes_mutex.lock();
 		if (can_lock_for_read(box)) {
-			_boxes.push_back(Box{ box, MODE_READ });
+			_boxes.push_back(Box{ box, MODE_READ,
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+					Thread::get_caller_id()
+#endif
+			});
 			_boxes_mutex.unlock();
 			return true;
 		} else {
@@ -65,7 +75,11 @@ public:
 	bool try_lock_write(const BoxBounds3i &box) {
 		_boxes_mutex.lock();
 		if (can_lock_for_write(box)) {
-			_boxes.push_back(Box{ box, MODE_WRITE });
+			_boxes.push_back(Box{ box, MODE_WRITE,
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+					Thread::get_caller_id()
+#endif
+			});
 			_boxes_mutex.unlock();
 			return true;
 		} else {
@@ -91,10 +105,13 @@ public:
 
 private:
 	bool can_lock_for_read(const BoxBounds3i &box) {
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
+#endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
 			const Box &existing_box = _boxes[i];
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
 			// Each thread can lock only one box at a time, otherwise there can be deadlocks depending on the order of
 			// locks. For example:
 			// - Thread 1 locks A
@@ -106,7 +123,7 @@ private:
 			// Note: this is also not true if threads use `try_lock` instead!
 			ZN_ASSERT_RETURN_V_MSG(existing_box.thread_id != thread_id, false,
 					"Locking two areas from the same threads is not allowed");
-
+#endif
 			if (existing_box.bounds.intersects(box) && existing_box.mode == MODE_WRITE) {
 				return false;
 				break;
@@ -116,14 +133,17 @@ private:
 	}
 
 	bool can_lock_for_write(const BoxBounds3i &box) {
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
+#endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
 			const Box &existing_box = _boxes[i];
 
+#ifdef VOXEL_SPATIAL_LOCK_CHECKS
 			ZN_ASSERT_RETURN_V_MSG(existing_box.thread_id != thread_id, false,
 					"Locking two areas from the same threads is not allowed");
-
+#endif
 			if (existing_box.bounds.intersects(box)) {
 				return false;
 				break;
