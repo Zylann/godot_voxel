@@ -65,9 +65,6 @@ const char *get_category_name(Category category) {
 }
 
 NodeTypeDB::NodeTypeDB() {
-	typedef Runtime::ProcessBufferContext ProcessBufferContext;
-	typedef Runtime::RangeAnalysisContext RangeAnalysisContext;
-
 	Span<NodeType> types = to_span(_types);
 
 	// TODO Most operations need SIMD support
