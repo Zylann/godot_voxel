@@ -8,4 +8,7 @@
 using namespace godot;
 #endif
 
+// Also gave up trying to make an `operator<<(stringstream, StringName)` overload, the billion conversions it has (and
+// does not have in GDExtension) makes it impossible to compile without ambiguity...
+
 #endif // ZN_GODOT_STRING_NAME_H
