@@ -373,9 +373,9 @@ Ref<VoxelBlockyType> VoxelBlockyTypeLibrary::get_type_from_name(StringName p_nam
 	return Ref<VoxelBlockyType>();
 }
 
-Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int i) const {
-	ZN_ASSERT_RETURN_V(i >= 0 && i < int(_id_map.size()), Array());
-	const VoxelID &id = _id_map[i];
+Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int model_index) const {
+	ZN_ASSERT_RETURN_V(model_index >= 0 && model_index < int(_id_map.size()), Array());
+	const VoxelID &id = _id_map[model_index];
 
 	Array ret;
 	ret.resize(2);
@@ -383,12 +383,12 @@ Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int 
 	ret[0] = id.type_name;
 
 	Dictionary dict;
-	for (unsigned int i = 0; i < id.variant_key.attribute_names.size(); ++i) {
-		const StringName &attrib_name = id.variant_key.attribute_names[i];
+	for (unsigned int attribute_index = 0; attribute_index < id.variant_key.attribute_names.size(); ++attribute_index) {
+		const StringName &attrib_name = id.variant_key.attribute_names[attribute_index];
 		if (attrib_name == StringName()) {
 			break;
 		}
-		dict[attrib_name] = id.variant_key.attribute_values[i];
+		dict[attrib_name] = id.variant_key.attribute_values[attribute_index];
 	}
 	ret[1] = dict;
 
