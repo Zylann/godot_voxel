@@ -5,6 +5,7 @@
 #include "../../../util/godot/classes/grid_container.h"
 
 ZN_GODOT_FORWARD_DECLARE(class OptionButton);
+ZN_GODOT_FORWARD_DECLARE(class Label);
 
 namespace zylann::voxel {
 
