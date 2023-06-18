@@ -201,6 +201,11 @@ def process_xml(f_xml, f_out, module_class_names):
     # Header
     out = "# " + root.attrib['name'] + "\n\n"
     out += "Inherits: " + make_type(root.attrib['inherits'], module_class_names) + "\n\n"
+
+    if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
+        out += ("!!! warn\n    This class is marked as experimental. "
+            "It is subject to likely change or possible removal in future versions. Use at your own discretion.")
+
     out += "\n"
     out += make_text(root.find('brief_description').text, module_class_names) + "\n\n"
 

@@ -2,7 +2,8 @@
 
 Inherits: [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)
 
-
+!!! warn
+    This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
 
 ## Properties: 
