@@ -18,8 +18,9 @@ void VoxelBlockyAttributeCustom::set_attribute_name(StringName p_name) {
 }
 
 void VoxelBlockyAttributeCustom::set_value_count(int count) {
+	ERR_FAIL_COND(count < 0);
 	count = math::clamp(count, 2, MAX_VALUES);
-	if (count != _value_names.size()) {
+	if (count != int(_value_names.size())) {
 		_value_names.resize(count);
 		update_values();
 		notify_property_list_changed();
