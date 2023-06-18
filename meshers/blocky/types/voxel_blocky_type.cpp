@@ -2,6 +2,7 @@
 #include "../../../constants/voxel_string_names.h"
 #include "../../../util/container_funcs.h"
 #include "../../../util/godot/classes/ref_counted.h"
+#include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
