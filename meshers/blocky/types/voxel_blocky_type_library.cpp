@@ -738,8 +738,6 @@ void VoxelBlockyTypeLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_types"), &VoxelBlockyTypeLibrary::_b_get_types);
 	ClassDB::bind_method(D_METHOD("set_types"), &VoxelBlockyTypeLibrary::_b_set_types);
 
-	ClassDB::bind_method(D_METHOD("bake"), &VoxelBlockyTypeLibrary::bake);
-
 	ClassDB::bind_method(
 			D_METHOD("get_model_index_default", "type_name"), &VoxelBlockyTypeLibrary::get_model_index_default);
 	ClassDB::bind_method(D_METHOD("get_model_index_single_attribute", "type_name", "attrib_value"),
@@ -767,7 +765,7 @@ void VoxelBlockyTypeLibrary::_bind_methods() {
 	// Internal property
 	ADD_PROPERTY(
 			PropertyInfo(Variant::PACKED_STRING_ARRAY, "_id_map_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"_b_set_id_map_data", "_b_get_id_map_data");
+			"_set_id_map_data", "_get_id_map_data");
 }
 
 } // namespace zylann::voxel

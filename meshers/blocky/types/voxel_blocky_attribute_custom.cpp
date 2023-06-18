@@ -143,7 +143,7 @@ void VoxelBlockyAttributeCustom::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "attribute_name"), "set_attribute_name", "get_attribute_name");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value_count"), "set_value_count", "get_value_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "default_value"), "set_default_value", "get_default_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "is_rotation"), "set_is_rotation", "is_rotation");
+	// ADD_PROPERTY(PropertyInfo(Variant::INT, "is_rotation"), "set_is_rotation", "is_rotation");
 }
 
 } // namespace zylann::voxel

@@ -57,7 +57,6 @@ void VoxelBlockyLibraryBase::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("bake"), &VoxelBlockyLibraryBase::_b_bake);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "atlas_size"), "set_atlas_size", "get_atlas_size");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "bake_tangents"), "set_bake_tangents", "get_bake_tangents");
 
 	BIND_CONSTANT(MAX_MODELS);
