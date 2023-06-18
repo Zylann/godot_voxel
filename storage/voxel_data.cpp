@@ -509,6 +509,7 @@ bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
 }
 
 bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box) const {
+	ZN_PROFILE_SCOPE();
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	data_blocks_box = data_blocks_box.clipped(bounds_in_blocks);
 
@@ -765,6 +766,7 @@ void VoxelData::get_missing_blocks(
 
 void VoxelData::get_blocks_with_voxel_data(
 		Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBufferInternal>> out_blocks) const {
+	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(int64_t(out_blocks.size()) >= Vector3iUtil::get_volume(p_blocks_box.size));
 
 	const Lod &data_lod = _lods[lod_index];

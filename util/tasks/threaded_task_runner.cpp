@@ -81,6 +81,7 @@ void ThreadedTaskRunner::set_priority_update_period(uint32_t milliseconds) {
 }
 
 void ThreadedTaskRunner::enqueue(IThreadedTask *task, bool serial) {
+	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(task != nullptr);
 	TaskItem t;
 	t.task = task;
@@ -91,6 +92,7 @@ void ThreadedTaskRunner::enqueue(IThreadedTask *task, bool serial) {
 		++_debug_received_tasks;
 	}
 	// TODO Do I need to post a certain amount of times?
+	// I feel like this causes the semaphore to be passed too many times when tasks become empty
 	_tasks_semaphore.post();
 }
 
@@ -113,6 +115,7 @@ void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> new_tasks, bool serial) {
 		_debug_received_tasks += new_tasks.size();
 	}
 	// TODO Do I need to post a certain amount of times?
+	// Should it be the number of threads instead of number of tasks?
 	for (size_t i = 0; i < new_tasks.size(); ++i) {
 		_tasks_semaphore.post();
 	}

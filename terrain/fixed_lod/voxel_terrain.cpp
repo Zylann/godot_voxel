@@ -399,6 +399,7 @@ bool VoxelTerrain::is_automatic_loading_enabled() const {
 }
 
 void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
+	ZN_PROFILE_SCOPE();
 	if (mesh_block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
 		// Already in the list
 		return;
@@ -687,6 +688,7 @@ void VoxelTerrain::post_edit_voxel(Vector3i pos) {
 }
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels) {
+	ZN_PROFILE_SCOPE();
 	// We pad by 1 because neighbor blocks might be affected visually (for example, baked ambient occlusion)
 	const Box3i mesh_box = box_in_voxels.padded(1).downscaled(get_mesh_block_size());
 	mesh_box.for_each_cell([this](Vector3i pos) {
@@ -1409,13 +1411,10 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	}
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
-	{
-		ZN_PROFILE_SCOPE();
-		// TODO Optimize: initial loading can hang for a while here.
-		// Because lots of blocks are loaded at once, which leads to many block queries.
-		try_schedule_mesh_update_from_data(
-				Box3i(_data->block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size())));
-	}
+	// TODO Optimize: initial loading can hang for a while here.
+	// Because lots of blocks are loaded at once, which leads to many block queries.
+	try_schedule_mesh_update_from_data(
+			Box3i(_data->block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size())));
 
 	// We might have requested some blocks again (if we got a dropped one while we still need them)
 	// if (stream_enabled) {
@@ -1498,7 +1497,7 @@ void VoxelTerrain::process_meshing() {
 	const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
 	for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
-		ZN_PROFILE_SCOPE();
+		ZN_PROFILE_SCOPE_NAMED("Block");
 		const Vector3i mesh_block_pos = _blocks_pending_update[bi];
 
 		VoxelMeshBlockVT *mesh_block = _mesh_map.get_block(mesh_block_pos);
