@@ -24,12 +24,13 @@ public:
 	// Stuff to view can be instanced under this node
 	Node *get_viewer_root_node() const;
 
-private:
 #if defined(ZN_GODOT)
 	void gui_input(const Ref<InputEvent> &p_event) override;
 #elif defined(ZN_GODOT_EXTENSION)
 	void _gui_input(const Ref<InputEvent> &p_event) override;
 #endif
+
+private:
 	void update_camera();
 
 	// When compiling with GodotCpp, `_bind_methods` isn't optional.
