@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/ortho_basis.h"
