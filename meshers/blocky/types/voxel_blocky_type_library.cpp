@@ -7,7 +7,7 @@
 #include "../../../util/godot/core/typed_array.h"
 #ifdef ZN_GODOT_EXTENSION
 // For `MAKE_RESOURCE_TYPE_HINT`
-#include "../../util/godot/classes/object.h"
+#include "../../../util/godot/classes/object.h"
 #endif
 #include "../../../util/profiling.h"
 #include "../../../util/string_funcs.h"
