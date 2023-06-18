@@ -11,7 +11,7 @@ void VoxelBlockyModelEmpty::bake(BakedData &baked_data, bool bake_tangents, Mate
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
 }
 
-void VoxelBlockyModelEmpty::rotate_90(Vector3i::Axis axis, bool clockwise) {
+void VoxelBlockyModelEmpty::rotate_90(math::Axis axis, bool clockwise) {
 	rotate_collision_boxes_90(axis, clockwise);
 }
 

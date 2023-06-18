@@ -12,7 +12,7 @@ public:
 	VoxelBlockyModelEmpty();
 
 	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
-	void rotate_90(Vector3i::Axis axis, bool clockwise) override;
+	void rotate_90(math::Axis axis, bool clockwise) override;
 	Ref<Mesh> get_preview_mesh() const override;
 
 private:

@@ -375,9 +375,9 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	return mesh;
 }
 
-void VoxelBlockyModelMesh::rotate_90(Vector3i::Axis axis, bool clockwise) {
+void VoxelBlockyModelMesh::rotate_90(math::Axis axis, bool clockwise) {
 	math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(_mesh_ortho_rotation);
-	ortho_basis.rotate_90(math::Vector3i8::Axis(axis), clockwise);
+	ortho_basis.rotate_90(axis, clockwise);
 	_mesh_ortho_rotation = math::get_index_from_ortho_basis(ortho_basis);
 
 	rotate_collision_boxes_90(axis, clockwise);

@@ -12,12 +12,7 @@ namespace zylann {
 // shaders.
 template <typename T>
 struct Vector3T {
-	enum Axis { //
-		AXIS_X = 0,
-		AXIS_Y = 1,
-		AXIS_Z = 2,
-		AXIS_COUNT = 3
-	};
+	static const unsigned int AXIS_COUNT = 3;
 
 	union {
 		struct {
@@ -201,18 +196,18 @@ inline Vector3T<T> abs(const Vector3T<T> v) {
 }
 
 template <typename T>
-inline typename Vector3T<T>::Axis get_longest_axis(Vector3T<T> v) {
+inline typename Axis get_longest_axis(Vector3T<T> v) {
 	v = abs(v);
 	if (v.x > v.y) {
 		if (v.x > v.z) {
-			return Vector3T<T>::AXIS_X;
+			return AXIS_X;
 		} else {
-			return Vector3T<T>::AXIS_Z;
+			return AXIS_Z;
 		}
 	} else if (v.y > v.z) {
-		return Vector3T<T>::AXIS_Y;
+		return AXIS_Y;
 	}
-	return Vector3T<T>::AXIS_Z;
+	return AXIS_Z;
 }
 
 // Rotations: CW (clockwise) and CCW (counter-clockwise) are such that the rotation axis is pointed at the viewer.
@@ -249,8 +244,8 @@ Vector3T<T> rotate_z_90_cw(Vector3T<T> v) {
 }
 
 template <typename T>
-void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool clockwise) {
-	if (axis == Vector3T<T>::AXIS_X) {
+void rotate_90(Span<Vector3T<T>> vectors, Axis axis, bool clockwise) {
+	if (axis == AXIS_X) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_x_90_cw(v);
@@ -260,7 +255,7 @@ void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool 
 				v = math::rotate_x_90_ccw(v);
 			}
 		}
-	} else if (axis == Vector3T<T>::AXIS_Y) {
+	} else if (axis == AXIS_Y) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_y_90_cw(v);
@@ -270,7 +265,7 @@ void rotate_90(Span<Vector3T<T>> vectors, typename Vector3T<T>::Axis axis, bool 
 				v = math::rotate_y_90_ccw(v);
 			}
 		}
-	} else if (axis == Vector3T<T>::AXIS_Z) {
+	} else if (axis == AXIS_Z) {
 		if (clockwise) {
 			for (Vector3T<T> &v : vectors) {
 				v = math::rotate_z_90_cw(v);

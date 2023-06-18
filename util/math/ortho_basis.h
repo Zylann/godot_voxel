@@ -104,7 +104,7 @@ struct OrthoBasis {
 		z = math::rotate_z_90_ccw(z);
 	}
 
-	void rotate_90(Vector3i8::Axis axis, bool clockwise) {
+	void rotate_90(Axis axis, bool clockwise) {
 		zylann::math::rotate_90(Span<Vector3i8>(&x, 3), axis, clockwise);
 	}
 };

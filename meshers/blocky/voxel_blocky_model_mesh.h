@@ -22,7 +22,7 @@ public:
 
 	Ref<Mesh> get_preview_mesh() const override;
 
-	void rotate_90(Vector3i::Axis axis, bool clockwise) override;
+	void rotate_90(math::Axis axis, bool clockwise) override;
 	void rotate_ortho(math::OrthoBasis p_ortho_basis) override;
 
 private:

@@ -197,7 +197,7 @@ public:
 
 	virtual Ref<Mesh> get_preview_mesh() const;
 
-	virtual void rotate_90(Vector3i::Axis axis, bool clockwise);
+	virtual void rotate_90(math::Axis axis, bool clockwise);
 	virtual void rotate_ortho(math::OrthoBasis ortho_basis);
 
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
@@ -209,7 +209,7 @@ protected:
 
 	void set_surface_count(unsigned int new_count);
 
-	void rotate_collision_boxes_90(Vector3i::Axis axis, bool clockwise);
+	void rotate_collision_boxes_90(math::Axis axis, bool clockwise);
 	void rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis);
 
 private:

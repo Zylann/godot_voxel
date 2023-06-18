@@ -212,7 +212,7 @@ Ref<Mesh> VoxelBlockyModelCube::get_preview_mesh() const {
 	return mesh;
 }
 
-void VoxelBlockyModelCube::rotate_90(Vector3i::Axis axis, bool clockwise) {
+void VoxelBlockyModelCube::rotate_90(math::Axis axis, bool clockwise) {
 	FixedArray<Vector2i, Cube::SIDE_COUNT> rotated_tiles;
 
 	for (unsigned int src_side = 0; src_side < Cube::SIDE_COUNT; ++src_side) {

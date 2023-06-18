@@ -10,20 +10,20 @@ std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v) {
 
 namespace math {
 
-Vector3i rotate_90(Vector3i v, Vector3i::Axis axis, bool clockwise) {
-	if (axis == Vector3::AXIS_X) {
+Vector3i rotate_90(Vector3i v, Axis axis, bool clockwise) {
+	if (axis == AXIS_X) {
 		if (clockwise) {
 			return math::rotate_x_90_cw(v);
 		} else {
 			return math::rotate_x_90_ccw(v);
 		}
-	} else if (axis == Vector3::AXIS_Y) {
+	} else if (axis == AXIS_Y) {
 		if (clockwise) {
 			return math::rotate_y_90_cw(v);
 		} else {
 			return math::rotate_y_90_ccw(v);
 		}
-	} else if (axis == Vector3::AXIS_Z) {
+	} else if (axis == AXIS_Z) {
 		if (clockwise) {
 			return math::rotate_z_90_cw(v);
 		} else {

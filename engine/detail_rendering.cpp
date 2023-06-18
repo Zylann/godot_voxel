@@ -96,22 +96,22 @@ DetailTextureData::Tile compute_tile_info(
 	return tile;
 }
 
-void get_axis_indices(Vector3f::Axis axis, unsigned int &ax, unsigned int &ay, unsigned int &az) {
+void get_axis_indices(math::Axis axis, unsigned int &ax, unsigned int &ay, unsigned int &az) {
 	switch (axis) {
-		case Vector3f::AXIS_X:
-			ax = Vector3f::AXIS_Z;
-			ay = Vector3f::AXIS_Y;
-			az = Vector3f::AXIS_X;
+		case math::AXIS_X:
+			ax = math::AXIS_Z;
+			ay = math::AXIS_Y;
+			az = math::AXIS_X;
 			break;
-		case Vector3f::AXIS_Y:
-			ax = Vector3f::AXIS_X;
-			ay = Vector3f::AXIS_Z;
-			az = Vector3f::AXIS_Y;
+		case math::AXIS_Y:
+			ax = math::AXIS_X;
+			ay = math::AXIS_Z;
+			az = math::AXIS_Y;
 			break;
-		case Vector3f::AXIS_Z:
-			ax = Vector3f::AXIS_X;
-			ay = Vector3f::AXIS_Y;
-			az = Vector3f::AXIS_Z;
+		case math::AXIS_Z:
+			ax = math::AXIS_X;
+			ay = math::AXIS_Y;
+			az = math::AXIS_Z;
 			break;
 		default:
 			ZN_CRASH();
@@ -391,7 +391,7 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 		unsigned int ax;
 		unsigned int ay;
 		unsigned int az;
-		get_axis_indices(Vector3f::Axis(tile.axis), ax, ay, az);
+		get_axis_indices(math::Axis(tile.axis), ax, ay, az);
 
 		Vector3f quad_origin_world = cell_origin_world;
 		quad_origin_world[az] += cell_size * 0.5f;

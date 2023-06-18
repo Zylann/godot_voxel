@@ -437,7 +437,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 	return mesh;
 }
 
-void VoxelBlockyModel::rotate_collision_boxes_90(Vector3i::Axis axis, bool clockwise) {
+void VoxelBlockyModel::rotate_collision_boxes_90(math::Axis axis, bool clockwise) {
 	for (AABB &aabb : _collision_aabbs) {
 		// Make it centered, rotation axis is the center of the voxel
 		aabb.position -= Vector3(0.5, 0.5, 0.5);
@@ -446,7 +446,7 @@ void VoxelBlockyModel::rotate_collision_boxes_90(Vector3i::Axis axis, bool clock
 		points[0] = to_vec3f(aabb.position);
 		points[1] = to_vec3f(aabb.position + aabb.size);
 		// TODO Move Axis enum outside of vectors?
-		math::rotate_90(to_span(points), Vector3f::Axis(axis), clockwise);
+		math::rotate_90(to_span(points), math::Axis(axis), clockwise);
 		const Vector3f min_pos = math::min(points[0], points[1]);
 		const Vector3f max_pos = math::max(points[0], points[1]);
 		aabb = AABB(to_vec3(min_pos), to_vec3(max_pos - min_pos));
@@ -473,7 +473,7 @@ void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis
 	}
 }
 
-void VoxelBlockyModel::rotate_90(Vector3i::Axis axis, bool clockwise) {
+void VoxelBlockyModel::rotate_90(math::Axis axis, bool clockwise) {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in child classes
 }
@@ -484,7 +484,8 @@ void VoxelBlockyModel::rotate_ortho(math::OrthoBasis ortho_basis) {
 }
 
 void VoxelBlockyModel::_b_rotate_90(Vector3i::Axis axis, bool clockwise) {
-	rotate_90(axis, clockwise);
+	ERR_FAIL_INDEX(axis, Vector3i::AXIS_COUNT);
+	rotate_90(math::Axis(axis), clockwise);
 }
 
 // void ortho_simplify(Span<const Vector3f> vertices, Span<const int> indices, std::vector<int> &output) {

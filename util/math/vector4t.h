@@ -11,13 +11,7 @@ namespace zylann {
 // shaders.
 template <typename T>
 struct Vector4T {
-	enum Axis { //
-		AXIS_X = 0,
-		AXIS_Y = 1,
-		AXIS_Z = 2,
-		AXIS_W = 3,
-		AXIS_COUNT = 4
-	};
+	static const unsigned int AXIS_COUNT = 4;
 
 	union {
 		struct {

@@ -7,8 +7,6 @@ namespace zylann {
 
 template <typename T>
 struct Vector2T {
-	static const unsigned int AXIS_X = 0;
-	static const unsigned int AXIS_Y = 1;
 	static const unsigned int AXIS_COUNT = 2;
 
 	union {

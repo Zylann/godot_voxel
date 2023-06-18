@@ -144,7 +144,7 @@ inline Vector3i rotate_z_90_cw(Vector3i v) {
 	return Vector3i(v.y, -v.x, v.z);
 }
 
-Vector3i rotate_90(Vector3i v, Vector3i::Axis axis, bool clockwise);
+Vector3i rotate_90(Vector3i v, Axis axis, bool clockwise);
 
 } // namespace math
 
