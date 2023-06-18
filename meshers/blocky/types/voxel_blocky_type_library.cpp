@@ -82,6 +82,8 @@ void VoxelBlockyTypeLibrary::bake() {
 				}
 			}
 
+			_baked_data.models[model_index] = std::move(baked_model);
+
 			++rel_key_index;
 		}
 
