@@ -3,6 +3,7 @@
 #include "../../../util/container_funcs.h"
 #include "../../../util/godot/classes/json.h"
 #include "../../../util/godot/classes/time.h"
+#include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
 #ifdef ZN_GODOT_EXTENSION
