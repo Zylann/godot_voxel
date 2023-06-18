@@ -1,4 +1,6 @@
 #include "voxel_blocky_library_editor_plugin.h"
+#include "../../util/godot/classes/control.h"
+#include "../../util/godot/classes/editor_interface.h"
 #include "types/voxel_blocky_type_editor_inspector_plugin.h"
 #include "types/voxel_blocky_type_library_editor_inspector_plugin.h"
 #include "types/voxel_blocky_type_library_ids_dialog.h"
