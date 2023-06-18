@@ -73,7 +73,9 @@ public:
 
 	Ref<Material> get_material_by_index(unsigned int index) const;
 
+#ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
+#endif
 
 private:
 	// Convenience method to get all indexed materials after baking,

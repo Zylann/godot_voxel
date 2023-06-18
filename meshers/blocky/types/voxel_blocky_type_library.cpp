@@ -137,6 +137,8 @@ void VoxelBlockyTypeLibrary::update_id_map(std::vector<VoxelID> &id_map, std::ve
 	}
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	ZN_PROFILE_SCOPE();
 
@@ -206,6 +208,8 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 	// Currently, two attributes with the same name on two different types can have completely different values or
 	// meaning. This is probably not a good idea.
 }
+
+#endif
 
 int VoxelBlockyTypeLibrary::get_model_index_default(StringName type_name) const {
 	Ref<VoxelBlockyType> type = get_type_from_name(type_name);

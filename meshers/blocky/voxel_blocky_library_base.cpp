@@ -45,9 +45,13 @@ Ref<Material> VoxelBlockyLibraryBase::get_material_by_index(unsigned int index) 
 	return _indexed_materials[index];
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelBlockyLibraryBase::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	// Implemented in child classes
 }
+
+#endif
 
 void VoxelBlockyLibraryBase::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_materials"), &VoxelBlockyLibraryBase::_b_get_materials);

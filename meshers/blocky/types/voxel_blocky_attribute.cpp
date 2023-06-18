@@ -95,6 +95,8 @@ bool find_non_empty_duplicate(const std::vector<StringName> &names) {
 	return false;
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelBlockyAttribute::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	if (find_non_empty_duplicate(_value_names)) {
 		out_warnings.push_back(String("{0} named {1} has multiple values with the same name.")
@@ -106,6 +108,8 @@ void VoxelBlockyAttribute::get_configuration_warnings(PackedStringArray &out_war
 									   .format(varray(get_class(), get_attribute_name())));
 	}
 }
+
+#endif
 
 // int VoxelBlockyAttribute::get_order() const {
 // 	ZN_PRINT_ERROR("Not implemented");

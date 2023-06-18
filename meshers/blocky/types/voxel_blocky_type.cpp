@@ -431,6 +431,8 @@ unsigned int get_non_null_count(const std::vector<T> &objects) {
 	return count;
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	ZN_PROFILE_SCOPE();
 
@@ -467,6 +469,8 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 									   .format(varray(get_class(), get_unique_name(), unspecified_keys_count)));
 	}
 }
+
+#endif
 
 Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 	std::vector<VoxelBlockyModel::BakedData> baked_models;

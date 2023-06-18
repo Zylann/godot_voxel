@@ -43,7 +43,9 @@ public:
 	// 	return **model;
 	// }
 
+#ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
+#endif
 
 private:
 	Ref<VoxelBlockyModel> _b_get_model(unsigned int id) const;

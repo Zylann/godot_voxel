@@ -65,7 +65,9 @@ public:
 	void bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
 			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const;
 
+#ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const;
+#endif
 
 	Ref<Mesh> get_preview_mesh(const VariantKey &key) const;
 

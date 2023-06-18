@@ -1,6 +1,7 @@
 #include "voxel_blocky_library.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/time.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/log.h"
 #include "../../util/math/conv.h"
@@ -154,6 +155,8 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 	return false;
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warnings) const {
 	std::vector<int> null_indices;
 
@@ -182,6 +185,8 @@ void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warni
 									.format(varray(VoxelBlockyLibrary::get_class_static(), indices_str)));
 	}
 }
+
+#endif
 
 Ref<VoxelBlockyModel> VoxelBlockyLibrary::_b_get_model(unsigned int id) const {
 	ERR_FAIL_COND_V(id >= _voxel_models.size(), Ref<VoxelBlockyModel>());

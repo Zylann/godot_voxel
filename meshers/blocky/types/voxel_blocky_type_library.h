@@ -15,7 +15,9 @@ public:
 	void clear() override;
 	void load_default() override;
 	void bake() override;
+#ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
+#endif
 
 	int get_model_index_default(StringName type_name) const;
 

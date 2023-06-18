@@ -39,7 +39,9 @@ public:
 
 	bool is_equivalent(const VoxelBlockyAttribute &other) const;
 
+#ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
+#endif
 
 	static void sort_by_name(Span<Ref<VoxelBlockyAttribute>> attributes);
 	static void sort_by_name(Span<StringName> attributes);
