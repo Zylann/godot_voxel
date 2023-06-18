@@ -32,6 +32,9 @@ private:
 #endif
 	void update_camera();
 
+	// When compiling with GodotCpp, `_bind_methods` isn't optional.
+	static void _bind_methods() {}
+
 	Camera3D *_camera = nullptr;
 	float _pitch = 0.f;
 	float _yaw = 0.f;
