@@ -14,6 +14,13 @@ using namespace godot;
 
 #include <vector>
 
+#ifdef ZN_GODOT_EXTENSION
+// TODO GDX: `MAKE_RESOURCE_TYPE_HINT` is not available in GodotCpp
+// Helper macro to use with PROPERTY_HINT_ARRAY_TYPE for arrays of specific resources:
+// PropertyInfo(Variant::ARRAY, "fallbacks", PROPERTY_HINT_ARRAY_TYPE, MAKE_RESOURCE_TYPE_HINT("Font")
+#define MAKE_RESOURCE_TYPE_HINT(m_type) vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, m_type)
+#endif
+
 namespace zylann {
 
 // Turns out these functions are only used in editor for now.
