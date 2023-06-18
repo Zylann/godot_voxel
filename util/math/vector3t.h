@@ -196,7 +196,7 @@ inline Vector3T<T> abs(const Vector3T<T> v) {
 }
 
 template <typename T>
-inline typename Axis get_longest_axis(Vector3T<T> v) {
+inline Axis get_longest_axis(Vector3T<T> v) {
 	v = abs(v);
 	if (v.x > v.y) {
 		if (v.x > v.z) {
