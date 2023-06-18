@@ -250,12 +250,12 @@ static bool parse_attribute_value(
 		StringName value_name = vv;
 
 		Ref<VoxelBlockyAttribute> attrib = type.get_attribute_by_name(attrib_name);
-		ERR_FAIL_COND_V_MSG(attrib.is_null(), -1,
+		ERR_FAIL_COND_V_MSG(attrib.is_null(), false,
 				String("{0} type '{1}' has no attribute named '{2}'")
 						.format(varray(VoxelBlockyType::get_class_static(), type.get_unique_name(), attrib_name)));
 
 		int attrib_value = attrib->get_value_from_name(value_name);
-		ERR_FAIL_COND_V_MSG(attrib_value == -1, -1,
+		ERR_FAIL_COND_V_MSG(attrib_value == -1, false,
 				String("{0} ('{1}') has no value with name '{2}'")
 						.format(varray(attrib->get_class(), attrib->get_attribute_name(), value_name)));
 
@@ -263,7 +263,7 @@ static bool parse_attribute_value(
 
 	} else if (vv.get_type() == Variant::INT) {
 		const int raw_value = vv;
-		ERR_FAIL_COND_V_MSG(raw_value >= 0, -1, "Attribute integer value cannot be negative.");
+		ERR_FAIL_COND_V_MSG(raw_value >= 0, false, "Attribute integer value cannot be negative.");
 		out_attrib_value = raw_value;
 
 	} else if (vv.get_type() == Variant::BOOL) {
