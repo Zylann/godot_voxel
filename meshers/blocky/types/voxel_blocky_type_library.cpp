@@ -504,7 +504,8 @@ private:
 	static inline bool is_keyword(Span<const char32_t> str, const char *keyword) {
 		unsigned int i = 0;
 		while (keyword[i] != '\0') {
-			if (str[i] != keyword[i]) {
+			// Keywords are all ASCII, but our input text might not be
+			if (str[i] != char32_t(keyword[i])) {
 				return false;
 			}
 		}
