@@ -10,7 +10,6 @@ namespace zylann::voxel {
 const char *VoxelBlockyTypeAttributeCombinationSelector::SIGNAL_COMBINATION_CHANGED = "combination_changed";
 
 VoxelBlockyTypeAttributeCombinationSelector::VoxelBlockyTypeAttributeCombinationSelector() {
-	const float editor_scale = EDSCALE;
 	set_columns(2);
 }
 
