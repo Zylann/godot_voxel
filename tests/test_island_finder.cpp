@@ -4,9 +4,6 @@
 
 namespace zylann::tests {
 
-// TODO IslandFinder should only be in zylann::
-using namespace zylann::voxel;
-
 void test_island_finder() {
 	const char *cdata = "X X X - X "
 						"X X X - - "

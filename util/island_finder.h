@@ -4,7 +4,7 @@
 #include "math/box3i.h"
 #include "span.h"
 
-namespace zylann::voxel {
+namespace zylann {
 
 // Scans a grid of binary values and returns another grid
 // where all contiguous islands are labelled with a unique ID.
@@ -211,6 +211,6 @@ private:
 	FixedArray<uint8_t, MAX_ISLANDS> _equivalences;
 };
 
-} // namespace zylann::voxel
+} // namespace zylann
 
 #endif // ISLAND_FINDER_H
