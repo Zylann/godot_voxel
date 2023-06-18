@@ -835,9 +835,13 @@ bool VoxelBlockyType::VariantKey::parse_from_array(const Array &array) {
 		ZN_ASSERT_RETURN_V(name_v.get_type() == Variant::STRING_NAME, false);
 		ZN_ASSERT_RETURN_V(value_v.get_type() == Variant::INT, false);
 
+		// TODO GDX: Variant has no operator to convert to 8-bit integers in GodotCpp
+		const int value = value_v;
+		ZN_ASSERT_RETURN_V(value >= 0 && value < VoxelBlockyAttribute::MAX_VALUES, false);
+
 		const int attrib_index = i / 2;
 		attribute_names[attrib_index] = name_v;
-		attribute_values[attrib_index] = value_v;
+		attribute_values[attrib_index] = value;
 	}
 	return true;
 }
