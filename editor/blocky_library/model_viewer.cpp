@@ -1,6 +1,7 @@
 #include "model_viewer.h"
 #include "../../../util/godot/classes/camera_3d.h"
 #include "../../../util/godot/classes/directional_light_3d.h"
+#include "../../../util/godot/classes/input_event_mouse_motion.h"
 #include "../../../util/godot/classes/sub_viewport.h"
 #include "../../../util/godot/classes/sub_viewport_container.h"
 #include "../../../util/godot/core/mouse_button.h"
