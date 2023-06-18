@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
@@ -190,13 +191,13 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 				ZN_PRINT_ERROR(format("Voxel model is missing tangents and UVs. The model won't be "
 									  "baked. You should consider providing a mesh with tangents, or at least UVs and "
 									  "normals, or turn off tangents baking in {}.",
-						VoxelBlockyLibrary::get_class_static()));
+						get_class_name_str<VoxelBlockyLibrary>()));
 				continue;
 			}
-			WARN_PRINT(String("Voxel model does not have tangents. They will be generated."
-							  "You should consider providing a mesh with tangents, or at least UVs and normals, "
-							  "or turn off tangents baking in {0}.")
-							   .format(varray(VoxelBlockyLibrary::get_class_static())));
+			ZN_PRINT_WARNING(format("Voxel model does not have tangents. They will be generated."
+									"You should consider providing a mesh with tangents, or at least UVs and normals, "
+									"or turn off tangents baking in {}.",
+					get_class_name_str<VoxelBlockyLibrary>()));
 
 			tangents = generate_tangents_from_uvs(positions, normals, uvs, indices);
 		}
