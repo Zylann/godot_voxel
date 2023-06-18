@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyAttributeCustom" inherits="VoxelBlockyAttribute" is_experimental="true" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="set_value_name">
+			<return type="void" />
+			<param index="0" name="value" type="int" />
+			<param index="1" name="value_name" type="StringName" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="attribute_name" type="StringName" setter="set_attribute_name" getter="get_attribute_name" default="&amp;&quot;&quot;">
+		</member>
+		<member name="default_value" type="int" setter="set_default_value" getter="get_default_value" default="0">
+		</member>
+		<member name="value_count" type="int" setter="set_value_count" getter="get_value_count" default="2">
+		</member>
+	</members>
+</class>

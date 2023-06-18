@@ -45,15 +45,19 @@ Return                                                                          
 
 ## Signals: 
 
-- block_loaded( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
+- block_loaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a new data block is loaded from stream.
 
 Note: it might be not visible yet.
 
-- block_unloaded( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
+- block_unloaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a data block is unloaded due to being outside view distance.
+
+- mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+
+- mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 ## Property Descriptions
 
@@ -179,4 +183,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Mar 26, 2023_
+_Generated on Jun 18, 2023_

@@ -222,8 +222,8 @@ void VoxelBlockyLibrary::_bind_methods() {
 			&VoxelBlockyLibrary::get_model_index_from_resource_name);
 
 	// Legacy
-	ClassDB::bind_method(
-			D_METHOD("get_voxel_index_from_name", "name"), &VoxelBlockyLibrary::get_model_index_from_resource_name);
+	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"),
+			&VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name);
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "models", PROPERTY_HINT_ARRAY_TYPE,
 						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyModel::get_class_static())),

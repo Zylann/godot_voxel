@@ -9,22 +9,19 @@ Model stored in [VoxelBlockyLibrary](VoxelBlockyLibrary.md) and used by [VoxelMe
 
 Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelBlockyLibrary](VoxelBlockyLibrary.md) to be used with [VoxelTerrain](VoxelTerrain.md) or directly with a [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
-Some other various properties also exist to make it easier to implement games based on this technique (such as Minecraft).
+A model can be setup in various ways, see child classes.
 
 ## Properties: 
 
 
-Type          | Name                                         | Default           
-------------- | -------------------------------------------- | ------------------
-`AABB[]`      | [collision_aabbs](#i_collision_aabbs)        | []                
-`int`         | [collision_mask](#i_collision_mask)          | 1                 
-`Color`       | [color](#i_color)                            | Color(1, 1, 1, 1) 
-`Mesh`        | [custom_mesh](#i_custom_mesh)                |                   
-`int`         | [geometry_type](#i_geometry_type)            | 0                 
-`bool`        | [random_tickable](#i_random_tickable)        | false             
-`int`         | [transparency_index](#i_transparency_index)  | 0                 
-`bool`        | [transparent](#i_transparent)                | false             
-`StringName`  | [voxel_name](#i_voxel_name)                  | &""               
+Type      | Name                                         | Default           
+--------- | -------------------------------------------- | ------------------
+`AABB[]`  | [collision_aabbs](#i_collision_aabbs)        | []                
+`int`     | [collision_mask](#i_collision_mask)          | 1                 
+`Color`   | [color](#i_color)                            | Color(1, 1, 1, 1) 
+`bool`    | [random_tickable](#i_random_tickable)        | false             
+`int`     | [transparency_index](#i_transparency_index)  | 0                 
+`bool`    | [transparent](#i_transparent)                | false             
 <p></p>
 
 ## Methods: 
@@ -32,23 +29,14 @@ Type          | Name                                         | Default
 
 Return                                                                          | Signature                                                                                                                                                                                                                           
 ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_id](#i_get_id) ( ) const                                                                                                                                                                                                       
 [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)  | [get_material_override](#i_get_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) const                                                                                              
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_empty](#i_is_empty) ( ) const                                                                                                                                                                                                   
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_mesh_collision_enabled](#i_is_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) const                                                                              
-[void](#)                                                                       | [set_id](#i_set_id) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id )                                                                                                                                     
+[void](#)                                                                       | [rotate_90](#i_rotate_90) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) _unnamed_arg1 )                              
 [void](#)                                                                       | [set_material_override](#i_set_material_override) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material )           
 [void](#)                                                                       | [set_mesh_collision_enabled](#i_set_mesh_collision_enabled) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )  
 <p></p>
 
 ## Enumerations: 
-
-enum **GeometryType**: 
-
-- **GEOMETRY_NONE** = **0** --- Don't produce any geometry. The voxel will be invisible.
-- **GEOMETRY_CUBE** = **1** --- Use the shape of a generated cube. It is useful for testing and quick configuration. In this mode, tile positions for sides of the cube are made available in the editor. They refer to coordinates of tiles in a texture atlas. You may use an atlas in order to use them. The size of the atlas may be set in [member VoxelBlockyLibrary.atlas_size].
-- **GEOMETRY_CUSTOM_MESH** = **2** --- Use the mesh specified in the [member mesh] property. This is the most versatile way to create shapes.
-- **GEOMETRY_MAX** = **3** --- How many geometry modes there are.
 
 enum **Side**: 
 
@@ -75,14 +63,6 @@ Collision mask used for box-based collision [VoxelBoxMover](VoxelBoxMover.md) an
 
 Color of the model. It will be used to modulate its color when built into a voxel mesh.
 
-- [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_custom_mesh"></span> **custom_mesh**
-
-Specifies the mesh of the model. Ultimately, all models use a mesh.
-
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_geometry_type"></span> **geometry_type** = 0
-
-Tells which geometry type to use. Most of the time you may use constant GEOMETRY_CUSTOM_MESH, but some shortcuts can be used for cubes or empty models.
-
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_tickable"></span> **random_tickable** = false
 
 If enabled, voxels having this ID in the TYPE channel will be used by method VoxelToolTerrain.run_blocky_random_tick.
@@ -99,33 +79,18 @@ Tells if the model is transparent in the context of sides being culled by neighb
 
 This is a legacy property, member transparency_index may be used instead.
 
-- [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)<span id="i_voxel_name"></span> **voxel_name** = &""
-
-Name that can be used for convenience, when looking up a specific [VoxelBlockyModel](VoxelBlockyModel.md) from [VoxelBlockyLibrary](VoxelBlockyLibrary.md).
-
 ## Method Descriptions
-
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_id"></span> **get_id**( ) 
-
-Gets the ID of the model. This ID is used in voxel data.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_get_material_override"></span> **get_material_override**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) 
 
 Gets the material override for a specific surface of the model.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_empty"></span> **is_empty**( ) 
-
-Tells if the model contains any geometry.
-
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_mesh_collision_enabled"></span> **is_mesh_collision_enabled**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) surface_index ) 
 
 Tells if a specific surface produces mesh-based collisions.
 
-- [void](#)<span id="i_set_id"></span> **set_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
+- [void](#)<span id="i_rotate_90"></span> **rotate_90**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) _unnamed_arg1 ) 
 
-Sets the ID of the model.
-
-This method is deprecated. Changing the ID of a model after it's been added to a library is not supported.
 
 - [void](#)<span id="i_set_material_override"></span> **set_material_override**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
@@ -135,4 +100,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Mar 26, 2023_
+_Generated on Jun 18, 2023_

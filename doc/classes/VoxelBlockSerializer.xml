@@ -1,41 +1,72 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockSerializer" inherits="RefCounted" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockSerializer" inherits="RefCounted" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
 		Low-level utility to save and load the data within a [VoxelBuffer]. This can be useful to send data over the network, or to store it in a file.
-		Note: this utility uses [StreamPeer] as temporary support for the data, because Godot does not have a common interface between files and network streams. So typically, you should use a temporary [StreamPeerBuffer] to put voxel data into, and then you can use its [member StreamPeerBuffer.data_array] to save the data in the actual place you want.
-		To store into a file:
+
+		To store into a file allocating a PackedByteArray:
+		[codeblock]
+		# `voxels` is an existing `VoxelBuffer`
+		var data := VoxelBlockSerializer.serialize_to_byte_array(voxels, true)
+		file.store_32(len(data))
+		file.store_buffer(data)
+		[/codeblock]
+		To read it back:
+		[codeblock]
+		var size := file.get_32()
+		var data := file.get_buffer(size)
+		VoxelBlockSerializer.deserialize_from_byte_array(data, voxels, true)
+		[/codeblock]
+
+		To store into a file by re-using a StreamPeerBuffer:
 		[codeblock]
 		# Note, buffer can be re-used if you do this often
-		var stream_peer_buffer = StreamPeerBuffer.new()
-		var written_size = serializer.serialize(stream_peer_buffer, voxels, true)
+		var stream_peer_buffer := StreamPeerBuffer.new()
+		var written_size = VoxelBlockSerializer.serialize_to_stream_peer(stream_peer_buffer, voxels, true)
 		file.store_32(written_size)
 		file.store_buffer(stream_peer_buffer.data_array)
 		[/codeblock]
 		To read it back:
 		[codeblock]
-		var size = file.get_32()
-		var stream_peer_buffer = StreamPeerBuffer.new()
+		var size := file.get_32()
+		var stream_peer_buffer := StreamPeerBuffer.new()
 		# Unfortunately Godot will always allocate memory with this API, can't avoid that
 		stream_peer_buffer.data_array = file.get_buffer(size)
-		serializer.deserialize(stream_peer_buffer, voxels, size, true)
+		VoxelBlockSerializer.deserialize_from_stream_peer(stream_peer_buffer, voxels, size, true)
 		[/codeblock]
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="deserialize">
+		<method name="deserialize_from_byte_array" qualifiers="static">
+			<return type="void" />
+			<param index="0" name="bytes" type="PackedByteArray" />
+			<param index="1" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="2" name="decompress" type="bool" />
+			<description>
+				Reads the data of a [VoxelBuffer] from a [PackedByteArray].
+			</description>
+		</method>
+		<method name="deserialize_from_stream_peer" qualifiers="static">
 			<return type="void" />
 			<param index="0" name="peer" type="StreamPeer" />
 			<param index="1" name="voxel_buffer" type="VoxelBuffer" />
 			<param index="2" name="size" type="int" />
 			<param index="3" name="decompress" type="bool" />
 			<description>
-				Reads the data of a [VoxelBuffer] from a [StreamPeer]. You must provide the number of bytes to read, and the destination buffer must have the expected size.
+				Reads the data of a [VoxelBuffer] from a [StreamPeer]. You must provide the number of bytes to read.
 			</description>
 		</method>
-		<method name="serialize">
+		<method name="serialize_to_byte_array" qualifiers="static">
+			<return type="PackedByteArray" />
+			<param index="0" name="voxel_buffer" type="VoxelBuffer" />
+			<param index="1" name="compress" type="bool" />
+			<description>
+				Stores the data of a [VoxelBuffer] into a [PackedByteArray].
+			</description>
+		</method>
+		<method name="serialize_to_stream_peer" qualifiers="static">
 			<return type="int" />
 			<param index="0" name="peer" type="StreamPeer" />
 			<param index="1" name="voxel_buffer" type="VoxelBuffer" />

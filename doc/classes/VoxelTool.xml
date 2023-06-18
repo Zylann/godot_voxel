@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTool" inherits="RefCounted" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelTool" inherits="RefCounted" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Helper class to easily access and modify voxels
 	</brief_description>
@@ -56,20 +56,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="smooth_sphere">
-			<return type="void" />
-			<param index="0" name="sphere_center" type="Vector3" />
-			<param index="1" name="sphere_radius" type="float" />
-			<param index="2" name="blur_radius" type="int" />
-			<description>
-				Smoothens out terrain by performing box blur in a spherical area. Strength will be maximal at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
-				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
-				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
-				[code]blur_radius[/code] half the box blur length that will be sampled to calculate average voxel values. Higher values results in more aggressive smoothing. Should be at least 1.
-				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
-				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
-			</description>
-		</method>
 		<method name="get_voxel">
 			<return type="int" />
 			<param index="0" name="pos" type="Vector3i" />
@@ -105,7 +91,6 @@
 			<param index="0" name="dst_pos" type="Vector3i" />
 			<param index="1" name="src_buffer" type="VoxelBuffer" />
 			<param index="2" name="channels_mask" type="int" />
-			<param index="3" name="src_mask_value" type="int" />
 			<description>
 				Paste voxels in a box from the given buffer at a specific location.
 				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
@@ -117,8 +102,8 @@
 			<param index="0" name="dst_pos" type="Vector3i" />
 			<param index="1" name="src_buffer" type="VoxelBuffer" />
 			<param index="2" name="channels_mask" type="int" />
-			<param index="3" name="src_mask_channel" type="int" />
-			<param index="4" name="src_mask_value" type="int" />
+			<param index="3" name="mask_channel" type="int" />
+			<param index="4" name="mask_value" type="int" />
 			<description>
 				Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel will not be pasted.
 				[code]dst_pos[/code] is the lowest corner of the box, and its size is determined by the size of [code]src_buffer[/code].
@@ -160,6 +145,20 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="meta" type="Variant" />
 			<description>
+			</description>
+		</method>
+		<method name="smooth_sphere">
+			<return type="void" />
+			<param index="0" name="sphere_center" type="Vector3" />
+			<param index="1" name="sphere_radius" type="float" />
+			<param index="2" name="blur_radius" type="int" />
+			<description>
+				Smoothens out terrain by performing box blur in a spherical area. Strength will be maximal at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
+				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
+				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
+				[code]blur_radius[/code] half the box blur length that will be sampled to calculate average voxel values. Higher values results in more aggressive smoothing. Should be at least 1.
+				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
 			</description>
 		</method>
 		<method name="u16_indices_to_vec4i" qualifiers="static">

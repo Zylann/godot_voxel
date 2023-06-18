@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyLibrary" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyLibrary" inherits="VoxelBlockyLibraryBase" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Contains a list of models that can be used by [VoxelMesherBlocky].
 	</brief_description>
@@ -11,65 +11,38 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="bake">
-			<return type="void" />
-			<description>
-				Bakes the library. The data of models is optimized in order to combine them more efficiently when generating voxel meshes.
-			</description>
-		</method>
-		<method name="create_voxel">
-			<return type="VoxelBlockyModel" />
-			<param index="0" name="id" type="int" />
-			<param index="1" name="name" type="String" />
-			<description>
-				Creates a new model attached to this library.
-				[code]id[/code]: ID of the model. It must be comprised between 0 and [member voxel_count] excluded. This ID will be used in voxel data.
-				[code]name[/code]: Name of the model. It is convenient to give one for better organization.
-			</description>
-		</method>
-		<method name="get_materials" qualifiers="const">
-			<return type="Material[]" />
-			<description>
-				Gets a list of all distinct materials found in all models of the library.
-				Note, if at least one non-empty model has no material, there will be one [code]null[/code] entry in this list to represent "The default material".
-			</description>
-		</method>
-		<method name="get_voxel">
-			<return type="VoxelBlockyModel" />
-			<param index="0" name="id" type="int" />
-			<description>
-				Gets a model from its ID.
-			</description>
-		</method>
-		<method name="get_voxel_by_name">
-			<return type="VoxelBlockyModel" />
-			<param index="0" name="name" type="StringName" />
-			<description>
-				Finds the first model having the specified name. If not found, returns [code]null[/code].
-			</description>
-		</method>
-		<method name="get_voxel_index_from_name" qualifiers="const">
+		<method name="add_model">
 			<return type="int" />
-			<param index="0" name="name" type="StringName" />
+			<param index="0" name="_unnamed_arg0" type="VoxelBlockyModel" />
 			<description>
-				Finds the ID of the first model having the specified name. If not found, returns [code]null[/code].
+				Adds a model to the library. Returns its index, which will be the value of voxels representing it.
+			</description>
+		</method>
+		<method name="get_model" qualifiers="const">
+			<return type="VoxelBlockyModel" />
+			<param index="0" name="index" type="int" />
+			<description>
+				Gets a model from its index.
+			</description>
+		</method>
+		<method name="get_model_index_from_resource_name" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Finds the index of the first model having the specified resource name. If not found, returns [code]null[/code].
+			</description>
+		</method>
+		<method name="get_voxel_index_from_name" qualifiers="const" is_deprecated="true">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+			<description>
+				Finds the index of the first model having the specified resource name. If not found, returns [code]null[/code].
 			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="atlas_size" type="int" setter="set_atlas_size" getter="get_atlas_size" default="16">
-			Sets a reference size of texture atlas, in tiles. The atlas is assumed to be square (same number of tiles horizontally and vertically). This is only used on models which have a geometry mode set to [code]GEOMETRY_CUBE[/code].
-			This property is old and might be removed or changed in the future, as it only works in specific setups.
-		</member>
-		<member name="bake_tangents" type="bool" setter="set_bake_tangents" getter="get_bake_tangents" default="true">
-			Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
-		</member>
-		<member name="voxel_count" type="int" setter="set_voxel_count" getter="get_voxel_count" default="0">
-			How many models the library can contain. You may set it first before adding models from a script.
+		<member name="models" type="VoxelBlockyModel[]" setter="set_models" getter="get_models" default="[]">
+			Array of all the models. The index of each model corresponds to the value representing them in voxel data's TYPE channel.
 		</member>
 	</members>
-	<constants>
-		<constant name="MAX_VOXEL_TYPES" value="65536">
-		</constant>
-	</constants>
 </class>

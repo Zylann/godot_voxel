@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyLibraryBase" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Contains a list of models that can be used by [VoxelMesherBlocky].
+	</brief_description>
+	<description>
+		Models used by [VoxelMesherBlocky] must be baked before they can be used effifiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="bake">
+			<return type="void" />
+			<description>
+				Bakes the library. The data of models is optimized in order to combine them more efficiently when generating voxel meshes.
+			</description>
+		</method>
+		<method name="get_materials" qualifiers="const">
+			<return type="Material[]" />
+			<description>
+				Gets a list of all distinct materials found in all models of the library.
+				Note, if at least one non-empty model has no material, there will be one [code]null[/code] entry in this list to represent "The default material".
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bake_tangents" type="bool" setter="set_bake_tangents" getter="get_bake_tangents" default="true">
+			Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
+		</member>
+	</members>
+	<constants>
+		<constant name="MAX_MODELS" value="65536">
+		</constant>
+	</constants>
+</class>

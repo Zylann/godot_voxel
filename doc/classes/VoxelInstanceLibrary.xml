@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceLibrary" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelInstanceLibrary" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Contains a list of models that can be used by [VoxelInstancer], associated with a unique ID.
 	</brief_description>
@@ -23,6 +23,11 @@
 		<method name="find_item_by_name" qualifiers="const">
 			<return type="int" />
 			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_all_item_ids" qualifiers="const">
+			<return type="PackedInt32Array" />
 			<description>
 			</description>
 		</method>

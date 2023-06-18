@@ -33,8 +33,19 @@ nav:
     # <generated_class_list>
     - api/FastNoise2.md
     - api/VoxelBlockSerializer.md
+    - api/VoxelBlockyAttribute.md
+    - api/VoxelBlockyAttributeAxis.md
+    - api/VoxelBlockyAttributeCustom.md
+    - api/VoxelBlockyAttributeDirection.md
+    - api/VoxelBlockyAttributeRotation.md
     - api/VoxelBlockyLibrary.md
+    - api/VoxelBlockyLibraryBase.md
     - api/VoxelBlockyModel.md
+    - api/VoxelBlockyModelCube.md
+    - api/VoxelBlockyModelEmpty.md
+    - api/VoxelBlockyModelMesh.md
+    - api/VoxelBlockyType.md
+    - api/VoxelBlockyTypeLibrary.md
     - api/VoxelBoxMover.md
     - api/VoxelBuffer.md
     - api/VoxelColorPalette.md

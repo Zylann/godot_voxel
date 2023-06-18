@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyModelMesh" inherits="VoxelBlockyModel" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generates a model based on a custom mesh.
+	</brief_description>
+	<description>
+		[VoxelMesherBlocky] does not require models to be cubes. Ultimately, model visuals are all meshes. This is the most versatile option to make a model. The workflow is to make these models in a 3D editor such as Blender, making sure they are confined in a box going from (0,0) to (1,1). Textures are assigned with classic UV-mapping.
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="mesh" type="Mesh" setter="set_mesh" getter="get_mesh">
+		</member>
+		<member name="mesh_ortho_rotation_index" type="int" setter="set_mesh_ortho_rotation_index" getter="get_mesh_ortho_rotation_index" default="0">
+			Orthogonal rotation applied to the mesh when baking. Values are taken from the same convention as [GridMap] tiles.
+			([GridMap] provides a conversion method from [Basis], unfortunately it is not a static method so it requires a [GridMap] instance to exist. A helper method could be added in the future if requested)
+		</member>
+	</members>
+</class>

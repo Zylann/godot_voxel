@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelNode" inherits="Node3D" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelNode" inherits="Node3D" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Base class for voxel volumes.
 	</brief_description>
@@ -8,6 +8,8 @@
 	<tutorials>
 	</tutorials>
 	<members>
+		<member name="cast_shadow" type="int" setter="set_shadow_casting" getter="get_shadow_casting" enum="GeometryInstance3D.ShadowCastingSetting" default="1">
+		</member>
 		<member name="generator" type="VoxelGenerator" setter="set_generator" getter="get_generator">
 			Procedural generator used to load voxel blocks when not present in the stream.
 		</member>

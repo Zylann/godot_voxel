@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyModelEmpty" inherits="VoxelBlockyModel" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Explicitely represents an empty model.
+	</brief_description>
+	<description>
+		This can be used for the default air model (at index 0), but may also be useful if you want to define a model that has no visuals, but still has collision or other attributes different than air.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>

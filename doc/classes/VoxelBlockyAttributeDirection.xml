@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyAttributeDirection" inherits="VoxelBlockyAttribute" is_experimental="true" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="from_vec3" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="v" type="Vector3" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="horizontal_only" type="bool" setter="set_horizontal_only" getter="is_horizontal_only" default="false">
+		</member>
+	</members>
+	<constants>
+		<constant name="DIR_NEGATIVE_X" value="0" enum="Direction">
+		</constant>
+		<constant name="DIR_POSITIVE_X" value="1" enum="Direction">
+		</constant>
+		<constant name="DIR_NEGATIVE_Y" value="2" enum="Direction">
+		</constant>
+		<constant name="DIR_POSITIVE_Y" value="3" enum="Direction">
+		</constant>
+		<constant name="DIR_NEGATIVE_Z" value="4" enum="Direction">
+		</constant>
+		<constant name="DIR_POSITIVE_Z" value="5" enum="Direction">
+		</constant>
+		<constant name="DIR_COUNT" value="6" enum="Direction">
+		</constant>
+	</constants>
+</class>

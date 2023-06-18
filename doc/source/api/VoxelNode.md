@@ -8,12 +8,13 @@ Base class for voxel volumes.
 ## Properties: 
 
 
-Type              | Name                       | Default 
------------------ | -------------------------- | --------
-`VoxelGenerator`  | [generator](#i_generator)  |         
-`int`             | [gi_mode](#i_gi_mode)      | 0       
-`VoxelMesher`     | [mesher](#i_mesher)        |         
-`VoxelStream`     | [stream](#i_stream)        |         
+Type              | Name                           | Default 
+----------------- | ------------------------------ | --------
+`int`             | [cast_shadow](#i_cast_shadow)  | 1       
+`VoxelGenerator`  | [generator](#i_generator)      |         
+`int`             | [gi_mode](#i_gi_mode)          | 0       
+`VoxelMesher`     | [mesher](#i_mesher)            |         
+`VoxelStream`     | [stream](#i_stream)            |         
 <p></p>
 
 ## Enumerations: 
@@ -26,6 +27,9 @@ enum **GIMode**:
 
 
 ## Property Descriptions
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
+
 
 - [VoxelGenerator](VoxelGenerator.md)<span id="i_generator"></span> **generator**
 
@@ -42,4 +46,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Mar 26, 2023_
+_Generated on Jun 18, 2023_

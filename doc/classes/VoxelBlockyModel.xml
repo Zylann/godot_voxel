@@ -1,32 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyModel" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyModel" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Model stored in [VoxelBlockyLibrary] and used by [VoxelMesherBlocky].
 	</brief_description>
 	<description>
 		Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelBlockyLibrary] to be used with [VoxelTerrain] or directly with a [VoxelMesherBlocky].
-		Some other various properties also exist to make it easier to implement games based on this technique (such as Minecraft).
+		A model can be setup in various ways, see child classes.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="get_id" qualifiers="const">
-			<return type="int" />
-			<description>
-				Gets the ID of the model. This ID is used in voxel data.
-			</description>
-		</method>
 		<method name="get_material_override" qualifiers="const">
 			<return type="Material" />
 			<param index="0" name="index" type="int" />
 			<description>
 				Gets the material override for a specific surface of the model.
-			</description>
-		</method>
-		<method name="is_empty" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Tells if the model contains any geometry.
 			</description>
 		</method>
 		<method name="is_mesh_collision_enabled" qualifiers="const">
@@ -36,12 +24,11 @@
 				Tells if a specific surface produces mesh-based collisions.
 			</description>
 		</method>
-		<method name="set_id">
+		<method name="rotate_90">
 			<return type="void" />
-			<param index="0" name="id" type="int" />
+			<param index="0" name="_unnamed_arg0" type="int" enum="Vector3i.Axis" />
+			<param index="1" name="_unnamed_arg1" type="bool" />
 			<description>
-				Sets the ID of the model.
-				This method is deprecated. Changing the ID of a model after it's been added to a library is not supported.
 			</description>
 		</method>
 		<method name="set_material_override">
@@ -71,12 +58,6 @@
 		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
 			Color of the model. It will be used to modulate its color when built into a voxel mesh.
 		</member>
-		<member name="custom_mesh" type="Mesh" setter="set_custom_mesh" getter="get_custom_mesh">
-			Specifies the mesh of the model. Ultimately, all models use a mesh.
-		</member>
-		<member name="geometry_type" type="int" setter="set_geometry_type" getter="get_geometry_type" enum="VoxelBlockyModel.GeometryType" default="0">
-			Tells which geometry type to use. Most of the time you may use [constant GEOMETRY_CUSTOM_MESH], but some shortcuts can be used for cubes or empty models.
-		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
 			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].
 		</member>
@@ -88,24 +69,8 @@
 			Tells if the model is transparent in the context of sides being culled by neighbor voxels.
 			This is a legacy property, [member transparency_index] may be used instead.
 		</member>
-		<member name="voxel_name" type="StringName" setter="set_voxel_name" getter="get_voxel_name" default="&amp;&quot;&quot;">
-			Name that can be used for convenience, when looking up a specific [VoxelBlockyModel] from [VoxelBlockyLibrary].
-		</member>
 	</members>
 	<constants>
-		<constant name="GEOMETRY_NONE" value="0" enum="GeometryType">
-			Don't produce any geometry. The voxel will be invisible.
-		</constant>
-		<constant name="GEOMETRY_CUBE" value="1" enum="GeometryType">
-			Use the shape of a generated cube. It is useful for testing and quick configuration.
-			In this mode, tile positions for sides of the cube are made available in the editor. They refer to coordinates of tiles in a texture atlas. You may use an atlas in order to use them. The size of the atlas may be set in [member VoxelBlockyLibrary.atlas_size].
-		</constant>
-		<constant name="GEOMETRY_CUSTOM_MESH" value="2" enum="GeometryType">
-			Use the mesh specified in the [member mesh] property. This is the most versatile way to create shapes.
-		</constant>
-		<constant name="GEOMETRY_MAX" value="3" enum="GeometryType">
-			How many geometry modes there are.
-		</constant>
 		<constant name="SIDE_NEGATIVE_X" value="1" enum="Side">
 		</constant>
 		<constant name="SIDE_POSITIVE_X" value="0" enum="Side">

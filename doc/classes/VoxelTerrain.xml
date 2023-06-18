@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="VoxelNode" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using constant level of detail.
 	</brief_description>
@@ -142,16 +142,26 @@
 	</members>
 	<signals>
 		<signal name="block_loaded">
-			<param index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3i" />
 			<description>
 				Emitted when a new data block is loaded from stream.
 				Note: it might be not visible yet.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
-			<param index="0" name="position" type="Vector3" />
+			<param index="0" name="position" type="Vector3i" />
 			<description>
 				Emitted when a data block is unloaded due to being outside view distance.
+			</description>
+		</signal>
+		<signal name="mesh_block_entered">
+			<param index="0" name="position" type="Vector3i" />
+			<description>
+			</description>
+		</signal>
+		<signal name="mesh_block_exited">
+			<param index="0" name="position" type="Vector3i" />
+			<description>
 			</description>
 		</signal>
 	</signals>

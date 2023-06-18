@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelMesherBlocky" inherits="VoxelMesher" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelMesherBlocky" inherits="VoxelMesher" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Produces a mesh by batching models corresponding to each voxel value, similar to games like Minecraft or StarMade.
 	</brief_description>
@@ -9,7 +9,7 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="library" type="VoxelBlockyLibrary" setter="set_library" getter="get_library">
+		<member name="library" type="VoxelBlockyLibraryBase" setter="set_library" getter="get_library">
 		</member>
 		<member name="occlusion_darkness" type="float" setter="set_occlusion_darkness" getter="get_occlusion_darkness" default="0.8">
 		</member>

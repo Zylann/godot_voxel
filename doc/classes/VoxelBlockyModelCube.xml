@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelBlockyModelCube" inherits="VoxelBlockyModel" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generates a cube model with specific tiles on its sides.
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_tile" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="side" type="int" enum="VoxelBlockyModel.Side" />
+			<description>
+			</description>
+		</method>
+		<method name="set_tile">
+			<return type="void" />
+			<param index="0" name="side" type="int" enum="VoxelBlockyModel.Side" />
+			<param index="1" name="position" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="atlas_size_in_tiles" type="Vector2i" setter="set_atlas_size_in_tiles" getter="get_atlas_size_in_tiles" default="Vector2i(16, 16)">
+			Sets a reference size of texture atlas, in tiles. It must be set so the model generates correct texture coordinates from specified tile positions.
+			If you are not using an atlas and every side uses the same full texture, use (1,1).
+		</member>
+		<member name="collision_aabbs" type="AABB[]" setter="set_collision_aabbs" getter="get_collision_aabbs" overrides="VoxelBlockyModel" default="[AABB(0, 0, 0, 1, 1, 1)]" />
+		<member name="height" type="float" setter="set_height" getter="get_height" default="1.0">
+		</member>
+	</members>
+</class>

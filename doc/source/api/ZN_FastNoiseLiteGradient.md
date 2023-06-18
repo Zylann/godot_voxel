@@ -88,4 +88,4 @@ enum **RotationType3D**:
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_warp_3d"></span> **warp_3d**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
 
-_Generated on Mar 26, 2023_
+_Generated on Jun 18, 2023_

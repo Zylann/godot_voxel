@@ -79,4 +79,4 @@ Return                                                                  | Signat
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Mar 26, 2023_
+_Generated on Jun 18, 2023_
