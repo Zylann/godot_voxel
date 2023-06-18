@@ -26,7 +26,7 @@ void VoxelBlockyAttribute::set_default_value(int value) {
 }
 
 int VoxelBlockyAttribute::get_value_from_name(StringName p_name) const {
-	for (int i = 0; i < _value_names.size(); ++i) {
+	for (unsigned int i = 0; i < _value_names.size(); ++i) {
 		if (_value_names[i] == p_name) {
 			return i;
 		}
@@ -118,7 +118,7 @@ void VoxelBlockyAttribute::get_configuration_warnings(PackedStringArray &out_war
 // }
 
 unsigned int VoxelBlockyAttribute::get_ortho_rotation_index_from_value(int value) const {
-	ZN_ASSERT_RETURN_V(value >= 0 && value < _value_names.size(), math::ORTHO_ROTATION_IDENTITY);
+	ZN_ASSERT_RETURN_V(value >= 0 && value < int(_value_names.size()), math::ORTHO_ROTATION_IDENTITY);
 	if (value >= int(_ortho_rotations.size())) {
 		return math::ORTHO_ROTATION_IDENTITY;
 	}
