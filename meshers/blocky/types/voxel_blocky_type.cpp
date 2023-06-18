@@ -6,6 +6,10 @@
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
 #include "../../../util/godot/funcs.h"
+#ifdef ZN_GODOT_EXTENSION
+// For `MAKE_RESOURCE_TYPE_HINT`
+#include "../../util/godot/classes/object.h"
+#endif
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string_funcs.h"
