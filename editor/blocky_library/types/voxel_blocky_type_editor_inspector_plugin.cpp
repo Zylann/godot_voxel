@@ -12,6 +12,10 @@ void VoxelBlockyTypeEditorInspectorPlugin::set_editor_interface(EditorInterface 
 	_editor_interface = ed;
 }
 
+void VoxelBlockyTypeEditorInspectorPlugin::set_undo_redo(EditorUndoRedoManager *urm) {
+	_undo_redo = urm;
+}
+
 bool VoxelBlockyTypeEditorInspectorPlugin::_zn_can_handle(const Object *p_object) const {
 	return Object::cast_to<VoxelBlockyType>(p_object) != nullptr;
 }
@@ -58,6 +62,7 @@ bool VoxelBlockyTypeEditorInspectorPlugin::_zn_parse_property(Object *p_object, 
 	VoxelBlockyTypeVariantListEditor *variant_list_editor = memnew(VoxelBlockyTypeVariantListEditor);
 	variant_list_editor->set_type(type);
 	variant_list_editor->set_editor_interface(_editor_interface);
+	variant_list_editor->set_undo_redo(_undo_redo);
 	add_custom_control(variant_list_editor);
 
 	// Removes the property, the custom editor replaces it

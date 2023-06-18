@@ -5,6 +5,7 @@
 #include "../../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class EditorInterface);
+ZN_GODOT_FORWARD_DECLARE(class EditorUndoRedoManager);
 
 namespace zylann::voxel {
 
@@ -12,6 +13,7 @@ class VoxelBlockyTypeEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
 	GDCLASS(VoxelBlockyTypeEditorInspectorPlugin, ZN_EditorInspectorPlugin)
 public:
 	void set_editor_interface(EditorInterface *ed);
+	void set_undo_redo(EditorUndoRedoManager *urm);
 
 protected:
 	bool _zn_can_handle(const Object *p_object) const override;
@@ -25,6 +27,7 @@ private:
 	static void _bind_methods() {}
 
 	EditorInterface *_editor_interface = nullptr;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 };
 
 } // namespace zylann::voxel

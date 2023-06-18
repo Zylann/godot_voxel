@@ -230,6 +230,10 @@ void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
 	update_model();
 }
 
+void VoxelBlockyModelViewer::set_undo_redo(EditorUndoRedoManager *urm) {
+	_undo_redo = urm;
+}
+
 void VoxelBlockyModelViewer::update_model() {
 	ZN_ASSERT_RETURN(_model.is_valid());
 	// Can be null
@@ -242,8 +246,9 @@ void VoxelBlockyModelViewer::update_model() {
 
 void VoxelBlockyModelViewer::rotate_model_90(Vector3i::Axis axis) {
 	ZN_ASSERT_RETURN(_model.is_valid());
+	ZN_ASSERT_RETURN(_undo_redo != nullptr);
 
-	EditorUndoRedoManager &urm = *EditorUndoRedoManager::get_singleton();
+	EditorUndoRedoManager &urm = *_undo_redo;
 
 	const bool clockwise = true;
 

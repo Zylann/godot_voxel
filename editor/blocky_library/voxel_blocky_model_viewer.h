@@ -6,6 +6,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class Camera3D);
 ZN_GODOT_FORWARD_DECLARE(class MeshInstance3D);
+ZN_GODOT_FORWARD_DECLARE(class EditorUndoRedoManager);
 
 namespace zylann {
 
@@ -17,6 +18,9 @@ public:
 	VoxelBlockyModelViewer();
 
 	void set_model(Ref<VoxelBlockyModel> model);
+
+	// TODO GDX: `EditorUndoRedoManager` isn't a singleton yet in GDExtension, so it has to be injected
+	void set_undo_redo(EditorUndoRedoManager *urm);
 
 private:
 	void update_model();
@@ -35,6 +39,7 @@ private:
 	static void _bind_methods();
 
 	Ref<VoxelBlockyModel> _model;
+	EditorUndoRedoManager *_undo_redo = nullptr;
 	Camera3D *_camera = nullptr;
 	MeshInstance3D *_mesh_instance = nullptr;
 	MeshInstance3D *_collision_boxes_mesh_instance = nullptr;

@@ -42,6 +42,10 @@ void VoxelBlockyTypeVariantListEditor::set_editor_interface(EditorInterface *ed)
 	_editor_interface = ed;
 }
 
+void VoxelBlockyTypeVariantListEditor::set_undo_redo(EditorUndoRedoManager *undo_redo) {
+	_undo_redo = undo_redo;
+}
+
 void VoxelBlockyTypeVariantListEditor::update_list() {
 	for (VariantEditor &ed : _variant_editors) {
 		ed.key_label->queue_free();
@@ -109,8 +113,9 @@ void VoxelBlockyTypeVariantListEditor::_on_type_changed() {
 
 void VoxelBlockyTypeVariantListEditor::_on_model_changed(Ref<VoxelBlockyModel> model, int editor_index) {
 	ZN_ASSERT_RETURN(_type.is_valid());
+	ZN_ASSERT_RETURN(_undo_redo != nullptr);
 
-	EditorUndoRedoManager *urm = EditorUndoRedoManager::get_singleton();
+	EditorUndoRedoManager *urm = _undo_redo;
 
 	const VoxelBlockyType::VariantKey &key = _variant_editors[editor_index].key;
 	Ref<VoxelBlockyModel> prev_model = _type->get_variant(key);
