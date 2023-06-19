@@ -425,16 +425,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		zylann::free_debug_resources();
 		VoxelGraphEditorNodePreview::unload_resources();
 
-#ifdef ZN_GODOT_EXTENSION
-		EditorPlugins::remove_by_type<VoxelGraphEditorPlugin>();
-		EditorPlugins::remove_by_type<VoxelTerrainEditorPlugin>();
-		EditorPlugins::remove_by_type<VoxelInstanceLibraryEditorPlugin>();
-		EditorPlugins::remove_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
-		EditorPlugins::remove_by_type<ZN_FastNoiseLiteEditorPlugin>();
-		EditorPlugins::remove_by_type<magica::VoxelVoxEditorPlugin>();
-		EditorPlugins::remove_by_type<VoxelInstancerEditorPlugin>();
-		EditorPlugins::remove_by_type<VoxelMeshSDFEditorPlugin>();
-#endif
+		// Plugins are automatically unregistered since https://github.com/godotengine/godot-cpp/pull/1138
 	}
 #endif // TOOLS_ENABLED
 }
