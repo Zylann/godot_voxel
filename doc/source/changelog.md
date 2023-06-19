@@ -16,6 +16,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Added editor shortcut to re-generate the selected terrain
     - Updated FastNoise2 to 0.10.0-alpha
     - Started an experimental type system for the blocky voxels workflow. However it is not fully functional, its API may change in the future or have parts removed.
+    - Voxel engine processing no longer stops when the SceneTree is paused
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
     - `VoxelTerrain`:

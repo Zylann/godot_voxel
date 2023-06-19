@@ -13,6 +13,8 @@ bool g_updater_created = false;
 VoxelEngineUpdater::VoxelEngineUpdater() {
 	ZN_PRINT_VERBOSE("Creating VoxelEngineUpdater");
 	set_process(true);
+	// We don't want it to stop when the scene tree is paused
+	set_process_mode(PROCESS_MODE_ALWAYS);
 	g_updater_created = true;
 }
 
