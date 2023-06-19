@@ -65,8 +65,8 @@ void VoxelBlockyTypeViewer::_on_combination_changed() {
 
 void VoxelBlockyTypeViewer::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyModelViewer::_on_type_changed);
-	ClassDB::bind_method(D_METHOD("_on_combination_changed"), &VoxelBlockyModelViewer::_on_combination_changed);
+	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyTypeViewer::_on_type_changed);
+	ClassDB::bind_method(D_METHOD("_on_combination_changed"), &VoxelBlockyTypeViewer::_on_combination_changed);
 #endif
 }
 
