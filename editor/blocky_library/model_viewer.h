@@ -2,6 +2,10 @@
 #define ZN_GODOT_MODEL_VIEWER_H
 
 #include "../../util/godot/classes/control.h"
+
+// Required in header for GDExtension builds, due to how virtual methods are implemented
+#include "../../util/godot/classes/input_event.h"
+
 #include "../../util/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Camera3D);
