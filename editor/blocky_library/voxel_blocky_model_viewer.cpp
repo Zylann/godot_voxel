@@ -267,11 +267,19 @@ void VoxelBlockyModelViewer::add_rotation_anim(Basis basis) {
 	_rotation_anim_basis = basis * _rotation_anim_basis;
 }
 
+#ifdef ZN_GODOT
 void VoxelBlockyModelViewer::_notification(int p_what) {
 	if (p_what == NOTIFICATION_PROCESS) {
 		process(get_tree()->get_process_time());
 	}
 }
+#endif
+
+#ifdef ZN_GODOT_EXTENSION
+void VoxelBlockyModelViewer::_process(double delta) {
+	process(delta);
+}
+#endif
 
 void VoxelBlockyModelViewer::process(float delta) {
 	if (_rotation_anim_basis.is_equal_approx(Basis())) {

@@ -22,12 +22,19 @@ public:
 	// TODO GDX: `EditorUndoRedoManager` isn't a singleton yet in GDExtension, so it has to be injected
 	void set_undo_redo(EditorUndoRedoManager *urm);
 
+	// TODO GDX: `SceneTree::get_process_time` is not exposed, can't get delta time from `_notification`
+#ifdef ZN_GODOT_EXTENSION
+	void _process(double delta);
+#endif
+
 private:
 	void update_model();
 	void rotate_model_90(Vector3i::Axis axis);
 	void add_rotation_anim(Basis basis);
 
+#ifdef ZN_GODOT
 	void _notification(int p_what);
+#endif
 	void process(float delta);
 
 	void _on_model_changed();
