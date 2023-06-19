@@ -7,6 +7,7 @@
 #include "../../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../../util/godot/classes/grid_container.h"
 #include "../../../util/godot/classes/label.h"
+#include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 
