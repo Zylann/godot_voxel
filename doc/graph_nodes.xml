@@ -37,6 +37,7 @@
 	<node name="Comment" category="Misc">
 		<parameter name="text" type="String" default_value=""/>
 		<description>
+			A rectangular area with a description, to help organizing a graph.
 		</description>
 	</node>
 	<node name="Constant" category="Misc">
@@ -342,6 +343,7 @@
 		<input name="in" default_value="0"/>
 		<output name="out"/>
 		<description>
+			Pass-through node, allowing to better organize the path of long connections.
 		</description>
 	</node>
 	<node name="Remap" category="Math">
