@@ -1,6 +1,8 @@
 #include "../../generators/graph/node_type_db.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/file_access.h"
 #include "../../util/godot/classes/xml_parser.h"
+#include "../../util/godot/core/array.h"
 #include <unordered_map>
 #include <vector>
 
