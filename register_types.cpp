@@ -110,6 +110,7 @@
 #include "editor/graph/voxel_graph_editor_shader_dialog.h"
 #include "editor/graph/voxel_graph_editor_window.h"
 #include "editor/graph/voxel_graph_function_inspector_plugin.h"
+#include "editor/graph/voxel_graph_node_dialog.h"
 #include "editor/graph/voxel_graph_node_inspector_wrapper.h"
 #include "editor/graph/voxel_range_analysis_dialog.h"
 #include "editor/instance_library/voxel_instance_library_inspector_plugin.h"
