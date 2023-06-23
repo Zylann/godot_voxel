@@ -392,18 +392,16 @@ void VoxelGraphNodeDialog::_on_function_file_dialog_file_selected(String fpath) 
 	hide();
 }
 
-#ifdef ZN_GODOT
-
 void VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open() {
+#ifdef ZN_GODOT
 	String fpath = _function_quick_open_dialog->get_selected();
 	if (fpath.is_empty()) {
 		return;
 	}
 	emit_signal(SIGNAL_FILE_SELECTED, fpath);
 	hide();
-}
-
 #endif
+}
 
 void VoxelGraphNodeDialog::_on_description_label_meta_clicked(Variant meta) {
 	// TODO Open docs if a class name is clicked

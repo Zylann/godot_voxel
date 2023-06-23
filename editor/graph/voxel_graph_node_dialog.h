@@ -33,9 +33,7 @@ private:
 	void _on_tree_item_selected();
 	void _on_tree_nothing_selected();
 	void _on_function_file_dialog_file_selected(String fpath);
-#ifdef ZN_GODOT
 	void _on_function_quick_open_dialog_quick_open();
-#endif
 	void _on_description_label_meta_clicked(Variant meta);
 
 	void _notification(int p_what);
