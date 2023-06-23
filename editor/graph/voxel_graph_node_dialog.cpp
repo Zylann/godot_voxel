@@ -20,7 +20,7 @@
 namespace zylann::voxel {
 
 static const GraphNodesDocData::Node *get_graph_node_documentation(String name) {
-	for (int i = 0; i < GraphNodesDocData::COUNT; ++i) {
+	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
 		if (node.name == name) {
 			return &node;
@@ -31,7 +31,7 @@ static const GraphNodesDocData::Node *get_graph_node_documentation(String name) 
 
 static void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
 	std::unordered_set<String> categories;
-	for (int i = 0; i < GraphNodesDocData::COUNT; ++i) {
+	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
 		if (categories.insert(node.category).second) {
 			out_category_names.push_back(node.category);
