@@ -1477,7 +1477,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 
 		// 1-voxel cheap check without interpolation
 		const float sdf = voxel_tool.get_voxel_f(voxel_pos);
-		if (sdf < -0.1f) {
+		if (sdf < -0.0001f) {
 			// Still enough ground
 			continue;
 		}
@@ -1606,7 +1606,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 	voxel_tool.set_channel(VoxelBufferInternal::CHANNEL_SDF);
 
 	const Transform3D parent_transform = get_global_transform();
-	const int base_block_size_po2 = 1 << _parent_mesh_block_size_po2;
+	const int base_block_size_po2 = _parent_mesh_block_size_po2;
 
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
