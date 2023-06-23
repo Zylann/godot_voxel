@@ -1,7 +1,7 @@
 #ifndef FILE_UTILS_H
 #define FILE_UTILS_H
 
-#include "../util/godot/classes/file.h"
+#include "../util/godot/classes/file_access.h"
 #include "../util/math/vector3i.h"
 
 namespace zylann {

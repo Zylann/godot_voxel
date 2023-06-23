@@ -1,5 +1,5 @@
-#ifndef ZN_GODOT_FILE_H
-#define ZN_GODOT_FILE_H
+#ifndef ZN_GODOT_FILE_ACCESS_H
+#define ZN_GODOT_FILE_ACCESS_H
 
 #if defined(ZN_GODOT)
 #include <core/io/file_access.h>
@@ -58,4 +58,4 @@ inline String get_as_text(FileAccess &f) {
 
 } // namespace zylann
 
-#endif // ZN_GODOT_FILE_H
+#endif // ZN_GODOT_FILE_ACCESS_H
