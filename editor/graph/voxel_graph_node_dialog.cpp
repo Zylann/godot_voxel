@@ -29,7 +29,7 @@ static const GraphNodesDocData::Node *get_graph_node_documentation(String name) 
 	return nullptr;
 }
 
-static const void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
+static void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
 	std::unordered_set<String> categories;
 	for (int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
