@@ -60,8 +60,11 @@ public:
 	StringName Add;
 	StringName Remove;
 	StringName EditorIcons;
+	StringName EditorFonts;
 	StringName Pin;
 	StringName ExternalLink;
+	StringName Search;
+	StringName source;
 #endif
 
 	StringName _rpc_receive_blocks;

@@ -65,8 +65,11 @@ VoxelStringNames::VoxelStringNames() {
 	Add = StringName("Add");
 	Remove = StringName("Remove");
 	EditorIcons = StringName("EditorIcons");
+	EditorFonts = StringName("EditorFonts");
 	Pin = StringName("Pin");
 	ExternalLink = StringName("ExternalLink");
+	Search = StringName("Search");
+	source = StringName("source");
 #endif
 
 	_rpc_receive_blocks = StringName("_rpc_receive_blocks");

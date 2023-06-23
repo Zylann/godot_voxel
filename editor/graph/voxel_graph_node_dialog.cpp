@@ -414,9 +414,10 @@ void VoxelGraphNodeDialog::_notification(int p_what) {
 		_filter_line_edit->set_clear_button_enabled(true);
 
 	} else if (p_what == NOTIFICATION_THEME_CHANGED) {
-		_filter_line_edit->set_right_icon(_filter_line_edit->get_theme_icon(SNAME("Search"), SNAME("EditorIcons")));
+		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+		_filter_line_edit->set_right_icon(_filter_line_edit->get_theme_icon(sn.Search, sn.EditorIcons));
 
-		const Ref<Font> mono_font = get_theme_font(SNAME("source"), SNAME("EditorFonts"));
+		const Ref<Font> mono_font = get_theme_font(sn.source, sn.EditorFonts);
 		if (mono_font.is_valid()) {
 			_description_label->add_theme_font_override("mono_font", mono_font);
 		}
