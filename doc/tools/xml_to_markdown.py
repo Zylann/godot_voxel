@@ -12,23 +12,7 @@ import re
 import xml.etree.ElementTree as ET
 from time import gmtime, strftime
 import os
-
-
-godot_classes_url = "https://docs.godotengine.org/en/stable/classes"
-
-
-def make_link(text, url):
-    return "[" + text + "](" + url + ")"
-
-
-def make_type(name, module_class_names):
-    if name == "void":
-        link = "#"
-    elif name in module_class_names:
-        link = name + ".md"
-    else:
-        link = godot_classes_url + "/class_" + name.lower() + ".html"
-    return make_link(name, link)
+import markdown
 
 
 # Assumes text is dedented
@@ -55,12 +39,12 @@ def format_regular_text(text, module_class_names):
             i = text.find('[/url]')
             assert i != -1
             link_text = text[:i]
-            s += make_link(link_text, url)
+            s += markdown.make_link(link_text, url)
             text = text[i + len('[/url]'):]
 
         elif cmd.find(' ') == -1:
             # [typename]
-            s += make_type(cmd, module_class_names)
+            s += markdown.make_type(cmd, module_class_names)
         else:
             # TODO Enhancement: members and shit
             s += cmd
@@ -115,48 +99,13 @@ def make_single_line_text(text):
     return s
 
 
-# `table` is a list of rows. Rows are list of strings.
-def make_table(table):
-    if len(table) == 0:
-        return ""
-    column_count = len(table[0])
-    column_widths = [0] * column_count
-    for row in table:
-        assert len(row) == column_count
-        for i, text in enumerate(row):
-            column_widths[i] = max(len(text), column_widths[i])
-    column_widths = [w + 1 for w in column_widths]
-    #total_width = sum(column_widths) + len(column_widths) + 1
-    s = "\n"
-    for row_index, row in enumerate(table):
-        for column_index, text in enumerate(row):
-            if column_index > 0:
-                s += " | "
-            s += text
-            colw = column_widths[column_index]
-            for i in range(len(text), colw):
-                s += " "
-        if row_index == 0:
-            s += "\n"
-            for column_index in range(0, column_count):
-                if column_index > 0:
-                    s += " | "
-                colw = column_widths[column_index]
-                for i in range(0, colw):
-                    s += "-"
-        s += "\n"
-    # Hack to force some space after tables. Mkdocs sticks next contents too close otherwise.
-    s += "<p></p>"
-    return s
-
-
 # `args` is a list of XML elements
 def make_arglist(args, module_class_names):
     s = "("
     for arg_index, arg in enumerate(args):
         if arg_index > 0:
             s += ","
-        s += " " + make_type(arg.attrib['type'], module_class_names) + " " + arg.attrib['name']
+        s += " " + markdown.make_type(arg.attrib['type'], module_class_names) + " " + arg.attrib['name']
         if 'default' in arg.attrib:
             s += "=" + arg.attrib['default']
     s += " )"
@@ -177,7 +126,7 @@ def make_constants(items):
 
 def make_custom_internal_link(name):
     assert name.find(' ') == -1
-    return make_link(name, "#i_" + name)
+    return markdown.make_link(name, "#i_" + name)
 
 
 # This is a hack we can do because Markdown allows to fallback on HTML
@@ -200,7 +149,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
     # Header
     out = "# " + root.attrib['name'] + "\n\n"
-    out += "Inherits: " + make_type(root.attrib['inherits'], module_class_names) + "\n\n"
+    out += "Inherits: " + markdown.make_type(root.attrib['inherits'], module_class_names) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
         out += ("!!! warn\n    This class is marked as experimental. "
@@ -240,7 +189,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 else:
                     row.append("")
                 table.append(row)
-            out += make_table(table)
+            out += markdown.make_table(table)
             out += "\n\n"
         
     # Methods summary
@@ -266,7 +215,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 return_node = method.find('return')
 
                 row = [
-                    make_type(return_node.attrib['type'], module_class_names),
+                    markdown.make_type(return_node.attrib['type'], module_class_names),
                     signature
                 ]
                 table.append(row)
@@ -340,7 +289,7 @@ def process_xml(f_xml, f_out, module_class_names):
         out += "## Property Descriptions\n\n"
 
         for member in members:
-            out += "- " + make_type(member.attrib['type'], module_class_names) \
+            out += "- " + markdown.make_type(member.attrib['type'], module_class_names) \
                 + make_custom_internal_anchor(member.attrib['name']) + " **" + member.attrib['name'] + "**"
             if 'default' in member.attrib:
                 out += " = " + member.attrib['default']
@@ -360,7 +309,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
         for method in methods:
             return_node = method.find('return')
-            out += "- " + make_type(return_node.attrib['type'], module_class_names) \
+            out += "- " + markdown.make_type(return_node.attrib['type'], module_class_names) \
                 + make_custom_internal_anchor(method.attrib['name']) + " **" + method.attrib['name'] + "**"
             args = method.findall('param')
             out += make_arglist(args, module_class_names)

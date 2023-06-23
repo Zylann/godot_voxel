@@ -36,6 +36,7 @@
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
 #include "voxel_graph_editor_shader_dialog.h"
+#include "voxel_graph_node_dialog.h"
 #include "voxel_range_analysis_dialog.h"
 
 namespace zylann::voxel {
@@ -58,13 +59,6 @@ enum ToolbarMenuIDs {
 	MENU_PREVIEW_AXES_XZ,
 	MENU_PREVIEW_RESET_LOCATION,
 	MENU_GENERATE_SHADER
-};
-
-enum ContextMenuSpecialIDs {
-	// Preceding IDs are node types
-	CONTEXT_MENU_FUNCTION_BROWSE = VoxelGraphFunction::NODE_TYPE_COUNT,
-	CONTEXT_MENU_FUNCTION_QUICK_OPEN,
-	CONTEXT_MENU_ID_MAX
 };
 
 static NodePath to_node_path(const StringName &sn) {
@@ -181,59 +175,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 	add_child(vbox_container);
 
-	_context_menu = memnew(PopupMenu);
-	FixedArray<PopupMenu *, CATEGORY_COUNT> category_menus;
-	for (unsigned int i = 0; i < category_menus.size(); ++i) {
-		if (i == CATEGORY_RELAY) {
-			category_menus[i] = nullptr;
-			_context_menu->add_item("Relay", VoxelGraphFunction::NODE_RELAY);
-			continue;
-		}
-		if (i == CATEGORY_CONSTANT) {
-			continue;
-		}
-		String name = get_category_name(Category(i));
-		PopupMenu *menu = memnew(PopupMenu);
-		menu->set_name(name);
-		menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_context_menu_id_pressed));
-		_context_menu->add_child(menu);
-		_context_menu->add_submenu_item(name, name, i);
-		category_menus[i] = menu;
-	}
-	// TODO Usability: have CustomInput and CustomOutput subcategories based on I/O definitions, + a "new" option for
-	// unbound
-	for (int i = 0; i < NodeTypeDB::get_singleton().get_type_count(); ++i) {
-		if (i == VoxelGraphFunction::NODE_RELAY) {
-			continue;
-		}
-
-		const NodeType &node_type = NodeTypeDB::get_singleton().get_type(i);
-
-		if (i == VoxelGraphFunction::NODE_FUNCTION) {
-			PopupMenu *menu = category_menus[node_type.category];
-			ZN_ASSERT(menu != nullptr);
-			menu->add_item(ZN_TTR("Browse..."), CONTEXT_MENU_FUNCTION_BROWSE);
-#ifdef ZN_GODOT
-			menu->add_item(TTR("Quick Open..."), CONTEXT_MENU_FUNCTION_QUICK_OPEN);
-#endif
-		} else if (i == VoxelGraphFunction::NODE_CONSTANT) {
-			// Exceptionally keep the constant node into the input category in the editor. Internally, "Input" means the
-			// node is an entry point of the graph, like a function parameter. Constants are not considered as such, and
-			// won't work as inputs in graph functions. They have their own category internally, but it still makes
-			// sense to have them in the "input" sub-menu in the editor.
-			PopupMenu *menu = category_menus[CATEGORY_INPUT];
-			ZN_ASSERT(menu != nullptr);
-			menu->add_item(node_type.name, i);
-
-		} else {
-			PopupMenu *menu = category_menus[node_type.category];
-			ZN_ASSERT(menu != nullptr);
-			menu->add_item(node_type.name, i);
-		}
-	}
-	_context_menu->connect("id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_context_menu_id_pressed));
-	_context_menu->hide();
-	add_child(_context_menu);
+	_node_dialog = memnew(VoxelGraphNodeDialog);
+	_node_dialog->connect(VoxelGraphNodeDialog::SIGNAL_NODE_SELECTED,
+			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_node_dialog_node_selected));
+	_node_dialog->connect(VoxelGraphNodeDialog::SIGNAL_FILE_SELECTED,
+			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_node_dialog_file_selected));
+	add_child(_node_dialog);
 
 	_range_analysis_dialog = memnew(VoxelRangeAnalysisDialog);
 	_range_analysis_dialog->connect(
@@ -244,25 +191,6 @@ VoxelGraphEditor::VoxelGraphEditor() {
 
 	_shader_dialog = memnew(VoxelGraphEditorShaderDialog);
 	add_child(_shader_dialog);
-
-	_function_file_dialog = memnew(EditorFileDialog);
-	_function_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
-	_function_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
-	// TODO Usability: there is no way to limit a file dialog to a specific TYPE of resource, only file extensions. So
-	// it's not useful because text resources are almost all using `.tres`...
-	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
-	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
-	_function_file_dialog->connect(
-			"file_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_file_dialog_file_selected));
-	add_child(_function_file_dialog);
-
-	// TODO GDX: EditorQuickOpen is not exposed to extensions
-#ifdef ZN_GODOT
-	_function_quick_open_dialog = memnew(EditorQuickOpen);
-	_function_quick_open_dialog->connect(
-			"quick_open", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_function_quick_open_dialog_quick_open));
-	add_child(_function_quick_open_dialog);
-#endif
 
 	update_buttons_availability();
 }
@@ -601,11 +529,23 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 		if (mb->is_pressed()) {
 			if (mb->get_button_index() == godot::MOUSE_BUTTON_RIGHT) {
 				_click_position = mb->get_position();
+
 				// Careful with how the position is computed, some users have multiple monitors but OSes handle it in
 				// different ways, either with two desktops or one expanded desktop. This affects mouse positions.
 				// I took example on context menus in `filesystem_dock.cpp`.
-				_context_menu->set_position(_graph_edit->get_screen_position() + mb->get_position());
-				_context_menu->popup();
+				_node_dialog->set_position(_graph_edit->get_screen_position() + mb->get_position());
+
+				_node_dialog->popup();
+
+				// Keep within screen bounds.
+				// Seems we also have to do this after showing the window because Godot is unable to update its size
+				// without making it visible first...
+				// TODO Shouldn't we check for screen size instead of window?
+				const Rect2 window_rect = Rect2(DisplayServer::get_singleton()->window_get_position(),
+						DisplayServer::get_singleton()->window_get_size());
+				const Rect2 dialog_rect = Rect2(_node_dialog->get_position(), _node_dialog->get_size());
+				const Vector2 difference = (dialog_rect.get_end() - window_rect.get_end()).max(Vector2());
+				_node_dialog->set_position(_node_dialog->get_position() - difference);
 			}
 		}
 	}
@@ -912,18 +852,7 @@ Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 l
 	return offset;
 }
 
-void VoxelGraphEditor::_on_context_menu_id_pressed(int id) {
-	if (id == CONTEXT_MENU_FUNCTION_BROWSE) {
-		_function_file_dialog->popup();
-		return;
-	}
-#ifdef ZN_GODOT
-	if (id == CONTEXT_MENU_FUNCTION_QUICK_OPEN) {
-		_function_quick_open_dialog->popup_dialog(VoxelGraphFunction::get_class_static());
-		return;
-	}
-#endif
-
+void VoxelGraphEditor::_on_node_dialog_node_selected(int id) {
 	// Create a base node type
 
 	const Vector2 pos = get_graph_offset_from_mouse(_graph_edit, _click_position);
@@ -1362,21 +1291,9 @@ void VoxelGraphEditor::set_popout_button_enabled(bool enable) {
 	_popout_button->set_visible(enable);
 }
 
-void VoxelGraphEditor::_on_function_file_dialog_file_selected(String fpath) {
+void VoxelGraphEditor::_on_node_dialog_file_selected(String fpath) {
 	create_function_node(fpath);
 }
-
-#ifdef ZN_GODOT
-
-void VoxelGraphEditor::_on_function_quick_open_dialog_quick_open() {
-	String path = _function_quick_open_dialog->get_selected();
-	if (path == "") {
-		return;
-	}
-	create_function_node(path);
-}
-
-#endif
 
 void VoxelGraphEditor::create_function_node(String fpath) {
 	Ref<Resource> res = load_resource(fpath);

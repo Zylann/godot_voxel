@@ -15,17 +15,14 @@ ZN_GODOT_FORWARD_DECLARE(class Button)
 ZN_GODOT_FORWARD_DECLARE(class Label)
 ZN_GODOT_FORWARD_DECLARE(class OptionButton)
 ZN_GODOT_FORWARD_DECLARE(class CheckBox)
-ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)
-#ifdef ZN_GODOT
-ZN_GODOT_FORWARD_DECLARE(class EditorQuickOpen)
-#endif
 
 namespace zylann::voxel {
 
 class VoxelRangeAnalysisDialog;
 class VoxelNode;
 class VoxelGraphEditorShaderDialog;
+class VoxelGraphNodeDialog;
 
 // Main GUI of the graph editor
 class VoxelGraphEditor : public Control {
@@ -108,16 +105,14 @@ private:
 
 	void _on_menu_id_pressed(int id);
 	void _on_graph_node_dragged(Vector2 from, Vector2 to, int id);
-	void _on_context_menu_id_pressed(int id);
+	// void _on_context_menu_id_pressed(int id);
 	void _on_graph_changed();
 	void _on_graph_node_name_changed(int node_id);
 	void _on_range_analysis_toggled(bool enabled);
 	void _on_range_analysis_area_changed();
 	void _on_popout_button_pressed();
-	void _on_function_file_dialog_file_selected(String fpath);
-#ifdef ZN_GODOT
-	void _on_function_quick_open_dialog_quick_open();
-#endif
+	void _on_node_dialog_node_selected(int node_type_id);
+	void _on_node_dialog_file_selected(String fpath);
 	void _on_node_resize_request(Vector2 new_size, int node_id);
 	void _on_graph_node_preview_gui_input(Ref<InputEvent> event);
 
@@ -129,15 +124,10 @@ private:
 	Ref<pg::VoxelGraphFunction> _graph;
 
 	GraphEdit *_graph_edit = nullptr;
-	PopupMenu *_context_menu = nullptr;
+	// PopupMenu *_context_menu = nullptr;
 	Label *_profile_label = nullptr;
 	Label *_compile_result_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
-	EditorFileDialog *_function_file_dialog = nullptr;
-#ifdef ZN_GODOT
-	// TODO GDX: EditorQuickOpen is not exposed!
-	EditorQuickOpen *_function_quick_open_dialog = nullptr;
-#endif
 	// Not owned.
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
 	// VisualShader did it that way when this manager got introduced in place of the old global UndoRedo...
@@ -156,6 +146,7 @@ private:
 	MenuButton *_graph_menu_button = nullptr;
 	MenuButton *_debug_menu_button = nullptr;
 	PopupMenu *_preview_axes_menu = nullptr;
+	VoxelGraphNodeDialog *_node_dialog = nullptr;
 
 	enum PreviewAxes { //
 		PREVIEW_AXES_XY = 0,

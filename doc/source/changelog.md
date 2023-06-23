@@ -19,6 +19,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel engine processing no longer stops when the SceneTree is paused
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
+        - Editor: reworked context menu to add nodes, similar to VisualShader. Now has search bar, tree view and node descriptions.
     - `VoxelTerrain`:
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
     - `VoxelTool`:

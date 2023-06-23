@@ -81,6 +81,7 @@
 
 #include "editor/blocky_library/voxel_blocky_library_editor_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_plugin.h"
+#include "editor/graph/graph_nodes_doc_tool.h"
 #include "editor/graph/voxel_graph_editor_node_preview.h"
 #include "editor/graph/voxel_graph_editor_plugin.h"
 #include "editor/instance_library/voxel_instance_library_editor_plugin.h"
@@ -90,6 +91,7 @@
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
+#include "util/godot/classes/os.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "editor/fast_noise_2/fast_noise_2_editor_plugin.h"
@@ -379,6 +381,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGraphEditorShaderDialog>();
 		ClassDB::register_class<VoxelGraphEditorIODialog>();
 		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
+		ClassDB::register_class<VoxelGraphNodeDialog>();
 		ClassDB::register_class<VoxelRangeAnalysisDialog>();
 #endif
 
@@ -393,6 +396,28 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
+#endif
+
+#ifdef TOOLS_ENABLED
+		// TODO Any way to define a custom command line argument that closes Godot afterward?
+
+		const PackedStringArray command_line_arguments = get_command_line_arguments();
+		const String doc_tool_cmd = "--voxel_doc_tool";
+
+		for (int i = 0; i < command_line_arguments.size(); ++i) {
+			const String arg = command_line_arguments[i];
+			if (arg == doc_tool_cmd) {
+				if (i + 2 >= command_line_arguments.size()) {
+					ERR_PRINT(String("Expected source and destination file paths after {0}").format(varray(arg)));
+					break;
+				}
+				const String src_path = command_line_arguments[i + 1];
+				const String dst_path = command_line_arguments[i + 2];
+				run_graph_nodes_doc_tool(src_path, dst_path);
+				break;
+			}
+		}
+// run_graph_nodes_doc_tool
 #endif
 	}
 #endif // TOOLS_ENABLED

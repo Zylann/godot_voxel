@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<nodes>
+	<node name="Abs" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<description>
+			If [code]x[/code] is negative, returns [code]x[/code] as a positive number. Otherwise, returns [code]x[/code].
+		</description>
+	</node>
+	<node name="Add" category="Ops">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the sum of [code]a[/code] and [code]b[/code]
+		</description>
+	</node>
+	<node name="Clamp" category="Math">
+		<input name="x" default_value="0"/>
+		<input name="min" default_value="-1"/>
+		<input name="max" default_value="1"/>
+		<output name="out"/>
+		<description>
+			If [code]x[/code] is lower than [code]min[/code], returns [code]min[/code]. If [code]x[/code] is higher than [code]max[/code], returns [code]max[/code]. Otherwise, returns [code]x[/code].
+		</description>
+	</node>
+	<node name="ClampC" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<parameter name="min" type="float" default_value="-1"/>
+		<parameter name="max" type="float" default_value="1"/>
+		<description>
+			If [code]x[/code] is lower than [code]min[/code], returns [code]min[/code]. If [code]x[/code] is higher than [code]max[/code], returns [code]max[/code]. Otherwise, returns [code]x[/code].
+			This node is an alternative to [code]Clamp[/code], used internally as an optimization if [code]min[/code] and [code]max[/code] are constant.
+		</description>
+	</node>
+	<node name="Comment" category="Misc">
+		<parameter name="text" type="String" default_value=""/>
+		<description>
+		</description>
+	</node>
+	<node name="Constant" category="Misc">
+		<output name="value"/>
+		<parameter name="value" type="float" default_value="0"/>
+		<description>
+            Outputs a constant number.
+		</description>
+	</node>
+	<node name="Curve" category="Mapping">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<parameter name="curve" type="Object" default_value="null"/>
+		<description>
+			Returns the value of a custom [code]curve[/code] at coordinate [code]x[/code], where [code]x[/code] is in the range [code]\[0..1][/code]. The [code]curve[/code] is specified with a [Curve] resource.
+		</description>
+	</node>
+	<node name="CustomInput" category="Input">
+		<output name="value"/>
+		<description>
+			Outputs values from the custom input having the same name as the node. May be used in [VoxelGraphFunction]. It won't be used in [VoxelGeneratorGraph].
+		</description>
+	</node>
+	<node name="CustomOutput" category="Output">
+		<input name="value" default_value="0"/>
+		<description>
+			Sets the value of the custom output having the same name as the node. May be used in [VoxelGraphFunction]. It won't be used in [VoxelGeneratorGraph].
+		</description>
+	</node>
+	<node name="Distance2D" category="Vector">
+		<input name="x0" default_value="0"/>
+		<input name="y0" default_value="0"/>
+		<input name="x1" default_value="0"/>
+		<input name="y1" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the distance between two 2D points [code](x0, y0)[/code] and [code](x1, y1)[/code].
+		</description>
+	</node>
+	<node name="Distance3D" category="Vector">
+		<input name="x0" default_value="0"/>
+		<input name="y0" default_value="0"/>
+		<input name="z0" default_value="0"/>
+		<input name="x1" default_value="0"/>
+		<input name="y1" default_value="0"/>
+		<input name="z1" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the distance between two 3D points [code](x0, y0, z0)[/code] and [code](x1, y1, z1)[/code].
+		</description>
+	</node>
+	<node name="Divide" category="Ops">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="1"/>
+		<output name="out"/>
+		<description>
+			Returns the result of [code]a / b[/code].
+			Note: dividing by zero outputs NaN. It should not cause crashes, but will likely mess up results. Consider using Multiply when possible.
+		</description>
+	</node>
+	<node name="Expression" category="Math">
+		<output name="out"/>
+		<parameter name="expression" type="String" default_value="0"/>
+		<description>
+			Evaluates a math expression. Variable names can be written as inputs of the node. Some functions can be used, but they must be supported graph nodes in the first place, as the expression will be converted to nodes internally.
+			Available functions:
+			[codeblock]
+			sin(x)
+			floor(x)
+			abs(x)
+			sqrt(x)
+			fract(x)
+			stepify(x, step)
+			wrap(x, length)
+			min(a, b)
+			max(a, b)
+			clamp(x, min, max)
+			lerp(a, b, ratio)
+			[/codeblock]
+		</description>
+	</node>
+	<node name="FastNoise2D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns computation of 2D noise at coordinates [code](x, y)[/code] using the FastNoiseLite library. The [code]noise[/code] parameter is specified with an instance of the [ZN_FastNoiseLite] resource.
+			Note: this node might be a little faster than [graph_node Noise2D].
+		</description>
+	</node>
+	<node name="FastNoise2_2D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns computation of 2D SIMD noise at coordinates [code](x, y)[/code] using the FastNoise2 library. The `noise` parameter is specified with an instance of the [FastNoise2] resource. This is the fastest noise currently supported.
+		</description>
+	</node>
+	<node name="FastNoise2_3D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns computation of 3D SIMD noise at coordinates [code](x, y, z)[/code] using the FastNoise2 library. The [code]noise[/code] parameter is specified with an instance of the [FastNoise2] resource. This is the fastest noise currently supported.
+		</description>
+	</node>
+	<node name="FastNoise3D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns computation of 3D noise at coordinates [code](x, y, z)[/code] using the FastNoiseLite library. The [code]noise[/code] parameter is specified with an instance of the [ZN_FastNoiseLite] resource.
+			Note: this node might be a little faster than [graph_node Noise3D].
+		</description>
+	</node>
+	<node name="FastNoiseGradient2D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<output name="out_x"/>
+		<output name="out_y"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Warps 2D coordinates [code](x, y)[/code] using a noise gradient from the FastNoiseLite library. The [code]noise[/code] parameter is specified with an instance of the [FastNoiseLiteGradient] resource.
+		</description>
+	</node>
+	<node name="FastNoiseGradient3D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="out_x"/>
+		<output name="out_y"/>
+		<output name="out_z"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Warps 3D coordinates [code](x, y, z)[/code] using a noise gradient from the FastNoiseLite library. The [code]noise[/code] parameter is specified with an instance of the [FastNoiseLiteGradient] resource.
+		</description>
+	</node>
+	<node name="Floor" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the result of [code]floor(x)[/code], the nearest integer that is equal or lower to [code]x[/code].
+		</description>
+	</node>
+	<node name="Fract" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the decimal part of [code]x[/code]. The result is always positive regardless of sign.
+		</description>
+	</node>
+	<node name="Function" category="Misc">
+		<parameter name="_function" type="Object" default_value="null"/>
+		<description>
+			Runs a custom function, like a re-usable sub-graph. The first parameter (parameter 0) of this node is a reference to a [VoxelGraphFunction]. Further parameters (starting from 1) are those exposed by the function.
+		</description>
+	</node>
+	<node name="Image" category="Mapping">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<output name="out"/>
+		<parameter name="image" type="Object" default_value="null"/>
+		<description>
+			Returns the value of the red channel of an image at coordinates [code](x, y)[/code], where [code]x[/code] and [code]y[/code] are in pixels and the return value is in the range `[0..1]` (or more if the image has an HDR format). If coordinates are outside the image, they will be wrapped around. No filtering is performed. The image must have an uncompressed format.
+		</description>
+	</node>
+	<node name="InputSDF" category="Input">
+		<output name="sdf"/>
+		<description>
+			Outputs the existing signed distance at the current voxel. This may only be used in specific situations, such as using the graph as a procedural brush.
+		</description>
+	</node>
+	<node name="InputX" category="Input">
+		<output name="x"/>
+		<description>
+			Outputs the X coordinate of the current voxel.
+		</description>
+	</node>
+	<node name="InputY" category="Input">
+		<output name="y"/>
+		<description>
+			Outputs the Y coordinate of the current voxel.
+		</description>
+	</node>
+	<node name="InputZ" category="Input">
+		<output name="z"/>
+		<description>
+			Outputs the Z coordinate of the current voxel.
+		</description>
+	</node>
+	<node name="Max" category="Math">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the lowest value between [code]a[/code] and [code]b[/code].
+		</description>
+	</node>
+	<node name="Min" category="Math">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the highest value between [code]a[/code] and [code]b[/code].
+		</description>
+	</node>
+	<node name="Mix" category="Math">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<input name="ratio" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Interpolates between [code]a[/code] and [code]b[/code], using parameter value [code]t[/code]. If [code]t[/code] is [code]0[/code], [code]a[/code] will be returned. If [code]t[/code] is [code]1[/code], [code]b[/code] will be returned. If [code]t[/code] is beyond the [code]\[0..1][/code] range, the returned value will be an extrapolation.
+		</description>
+	</node>
+	<node name="Multiply" category="Ops">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the result of [code]a * b[/code].
+		</description>
+	</node>
+	<node name="Noise2D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns 2D noise at coordinates `(x, y)` using one of the [Noise] subclasses provided by Godot.
+		</description>
+	</node>
+	<node name="Noise3D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="out"/>
+		<parameter name="noise" type="Object" default_value="null"/>
+		<description>
+			Returns 3D noise at coordinates `(x, y, z)` using one of the [Noise] subclasses provided by Godot.
+		</description>
+	</node>
+	<node name="Normalize" category="Vector">
+		<input name="x" default_value="1"/>
+		<input name="y" default_value="1"/>
+		<input name="z" default_value="1"/>
+		<output name="nx"/>
+		<output name="ny"/>
+		<output name="nz"/>
+		<output name="len"/>
+		<description>
+			Returns the normalized coordinates of the given [code](x, y, z)[/code] 3D vector, such that the length of the output vector is 1.
+		</description>
+	</node>
+	<node name="OutputSDF" category="Output">
+		<input name="sdf" default_value="0"/>
+		<description>
+			Sets the Signed Distance Field value of the current voxel.
+		</description>
+	</node>
+	<node name="OutputSingleTexture" category="Output">
+		<input name="index" default_value="0"/>
+		<description>
+			Sets the texture index of the current voxel. This is an alternative to using [graph_node OutputWeight] nodes, if your voxels only have one texture. This is easier to use but does not allow for long gradients. Using this node in combination with [graph_node OutputWeight] is not supported.
+		</description>
+	</node>
+	<node name="OutputType" category="Output">
+		<input name="type" default_value="0"/>
+		<description>
+			Sets the TYPE index of the current voxel. This is for use with [VoxelMesherBlocky]. If you use this output, you don't need to use [graph_node OutputSDF].
+		</description>
+	</node>
+	<node name="OutputWeight" category="Output">
+		<input name="weight" default_value="0"/>
+		<parameter name="layer" type="int" default_value="0"/>
+		<description>
+			Sets the value of a specific texture weight for the current voxel. The texture is specified as an index with the [code]layer[/code] parameter. There can only be one output using a given layer index.
+		</description>
+	</node>
+	<node name="Pow" category="Math">
+		<input name="x" default_value="0"/>
+		<input name="p" default_value="2"/>
+		<output name="out"/>
+		<description>
+			Returns the result of the power function ([code]x ^ power[/code]). It can be relatively slow.
+		</description>
+	</node>
+	<node name="Powi" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<parameter name="power" type="int" default_value="2"/>
+		<description>
+			Returns the result of the power function ([code]x ^ power[/code]), where the exponent is a constant positive integer. May be faster than [graph_node Pow].
+		</description>
+	</node>
+	<node name="Relay" category="Misc">
+		<input name="in" default_value="0"/>
+		<output name="out"/>
+		<description>
+		</description>
+	</node>
+	<node name="Remap" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<parameter name="min0" type="float" default_value="-1"/>
+		<parameter name="max0" type="float" default_value="1"/>
+		<parameter name="min1" type="float" default_value="-1"/>
+		<parameter name="max1" type="float" default_value="1"/>
+		<description>
+			For an input value [code]x[/code] in the range [code]\[min0, max0][/code], converts linearly into the [code]\[min1, max1][/code] range. For example, if [code]x[/code] is [code]min0[/code], then [code]min1[/code] will be returned. If [code]x[/code] is [code]max0[/code], then [code]max1[/code] will be returned. If [code]x[/code] is beyond the [code]\[min0, max0][/code] range, the result will be an extrapolation.
+		</description>
+	</node>
+	<node name="SdfBox" category="SDF">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="size_x" type="float" default_value="10"/>
+		<parameter name="size_y" type="float" default_value="10"/>
+		<parameter name="size_z" type="float" default_value="10"/>
+		<description>
+			Returns the signed distance field of an axis-aligned box centered at the origin, of size [code](size_x, size_y, size_z)[/code], at coordinates [code](x, y, z)[/code].
+		</description>
+	</node>
+	<node name="SdfPlane" category="SDF">
+		<input name="y" default_value="0"/>
+		<input name="height" default_value="0"/>
+		<output name="sdf"/>
+		<description>
+			Returns the signed distance field of a plane facing the Y axis located at a given [code]height[/code], at coordinate [code]y[/code].
+		</description>
+	</node>
+	<node name="SdfPreview" category="SDF">
+		<input name="value" default_value="0"/>
+		<parameter name="min_value" type="float" default_value="-1"/>
+		<parameter name="max_value" type="float" default_value="1"/>
+		<parameter name="fraction_period" type="float" default_value="10"/>
+		<parameter name="mode" type="int" default_value="0"/>
+		<description>
+			Debug node, not used in the final result. In the editor, shows a slice of the values emitted from the output it is connected to, according to boundary [code]\[min_value, max_value][/code]. The slice will be either along the XY plane or the XZ plane, depending on current settings.
+		</description>
+	</node>
+	<node name="SdfSmoothSubtract" category="SDF">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="smoothness" type="float" default_value="0"/>
+		<description>
+			Subtracts signed distance field [code]b[/code] from [code]a[/code], using the same smoothing as with the [graph_node SdfSmoothUnion] node.
+		</description>
+	</node>
+	<node name="SdfSmoothUnion" category="SDF">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="smoothness" type="float" default_value="0"/>
+		<description>
+			Returns the smooth union of two signed distance field values [code]a[/code] and [code]b[/code]. Smoothness is controlled with the [code]smoothness[/code] parameter. Higher smoothness will create a larger "weld" between the shapes formed by the two inputs.
+		</description>
+	</node>
+	<node name="SdfSphere" category="SDF">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="radius" type="float" default_value="1"/>
+		<description>
+			Returns the signed distance field of a sphere centered at the origin, of given [code]radius[/code], at coordinates [code](x, y, z)[/code].
+		</description>
+	</node>
+	<node name="SdfSphereHeightmap" category="SDF">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="image" type="Object" default_value="null"/>
+		<parameter name="radius" type="float" default_value="10"/>
+		<parameter name="factor" type="float" default_value="1"/>
+		<description>
+			Returns an approximation of the signed distance field of a spherical heightmap, at coordinates [code](x, y, z)[/code]. The heightmap is an [code]image[/code] using panoramic projection, similar to those used for environment sky in Godot. The radius of the sphere is specified with [code]radius[/code]. The heights from the heightmap can be scaled using the [code]factor[/code] parameter. The image must use an uncompressed format.
+		</description>
+	</node>
+	<node name="SdfTorus" category="SDF">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<output name="sdf"/>
+		<parameter name="radius1" type="float" default_value="16"/>
+		<parameter name="radius2" type="float" default_value="4"/>
+		<description>
+			Returns the signed distance field of a torus centered at the origin, facing the Y axis, at coordinates [code](x, y, z)[/code]. The radius of the ring is [code]radius1[/code], and its thickness is [code]radius2[/code].
+		</description>
+	</node>
+	<node name="Select" category="Math">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<input name="t" default_value="0"/>
+		<output name="out"/>
+		<parameter name="threshold" type="float" default_value="0"/>
+		<description>
+			If [code]t[/code] is lower than [code]threshold[/code], returns [code]a[/code]. Otherwise, returns [code]b[/code]. 
+		</description>
+	</node>
+	<node name="Sin" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the result of [code]sin(x)[/code]
+		</description>
+	</node>
+	<node name="Smoothstep" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<parameter name="edge0" type="float" default_value="0"/>
+		<parameter name="edge1" type="float" default_value="1"/>
+		<description>
+			Returns the result of smoothly interpolating the value of [code]x[/code] between [code]0[/code] and [code]1[/code], based on the where [code]x[/code] lies with respect to the edges [code]egde0[/code] and [code]edge1[/code]. The return value is [code]0[/code] if [code]x &lt;= edge0[/code], and [code]1[/code] if [code]x &gt;= edge1[/code]. If [code]x[/code] lies between [code]edge0[/code] and [code]edge1[/code], the returned value follows an S-shaped curve that maps [code]x[/code] between [code]0[/code] and [code]1[/code]. This S-shaped curve is the cubic Hermite interpolator, given by [code]f(y) = 3*y^2 - 2*y^3[/code] where [code]y = (x-edge0) / (edge1-edge0)[/code].
+		</description>
+	</node>
+	<node name="Spots2D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="spot_radius" default_value="5"/>
+		<output name="out"/>
+		<parameter name="seed" type="int" default_value="42"/>
+		<parameter name="cell_size" type="float" default_value="32"/>
+		<parameter name="jitter" type="float" default_value="0.9"/>
+		<description>
+			Cellular noise optimized for "ore patch" generation: divides space into a 2D grid where each cell contains a circular "spot". Returns 1 when the position is inside the spot, 0 otherwise. [code]jitter[/code] more or less randomizes the position of the spot inside each cell. Limitation: high jitter can make spots clip with cell borders. This is intentional. If you need more generic cellular noise, use another node.
+		</description>
+	</node>
+	<node name="Spots3D" category="Noise">
+		<input name="x" default_value="0"/>
+		<input name="y" default_value="0"/>
+		<input name="z" default_value="0"/>
+		<input name="spot_radius" default_value="5"/>
+		<output name="out"/>
+		<parameter name="seed" type="int" default_value="42"/>
+		<parameter name="cell_size" type="float" default_value="32"/>
+		<parameter name="jitter" type="float" default_value="0.9"/>
+		<description>
+			Cellular noise optimized for "ore patch" generation: divides space into a 3D grid where each cell contains a circular "spot". Returns 1 when the position is inside the spot, 0 otherwise. [code]jitter[/code] more or less randomizes the position of the spot inside each cell. Limitation: high jitter can make spots clip with cell borders. This is intentional. If you need more generic cellular noise, use another node.
+		</description>
+	</node>
+	<node name="Sqrt" category="Math">
+		<input name="x" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the square root of [code]x[/code].
+			Note: unlike classic square root, if [code]x[/code] is negative, this function returns [code]0[/code] instead of [code]NaN[/code].
+		</description>
+	</node>
+	<node name="Stepify" category="Math">
+		<input name="x" default_value="0"/>
+		<input name="step" default_value="1"/>
+		<output name="out"/>
+		<description>
+			Snaps [code]x[/code] to a given step, similar to GDScript's function [code]stepify[/code].
+		</description>
+	</node>
+	<node name="Subtract" category="Ops">
+		<input name="a" default_value="0"/>
+		<input name="b" default_value="0"/>
+		<output name="out"/>
+		<description>
+			Returns the result of [code]a - b[/code]
+		</description>
+	</node>
+	<node name="Wrap" category="Math">
+		<input name="x" default_value="0"/>
+		<input name="length" default_value="1"/>
+		<output name="out"/>
+		<description>
+			Wraps [code]x[/code] between [code]0[/code] and [code]length[/code], similar to GDScript's function [code]wrapf(x, 0, max)[/code].
+			Note: if [code]length[/code] is 0, this node will return [code]NaN[/code]. If it happens, it should not crash, but results will be messed up.
+		</description>
+	</node>
+</nodes>

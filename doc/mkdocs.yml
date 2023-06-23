@@ -20,6 +20,7 @@ nav:
   - 'blocky_terrain.md'
   - 'smooth_terrain.md'
   - 'generators.md'
+  - 'graph_nodes.md'
   - 'streams.md'
   - 'instancing.md'
   - 'editor.md'
