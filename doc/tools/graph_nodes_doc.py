@@ -205,7 +205,7 @@ def write_markdown_table_from_nodes(nodes, module_class_names):
     return out
 
 
-def strip_leading_and_trailing_empty_lines(text):
+def strip_leading_and_trailing_empty_lines(text, newline = '\n'):
     lines = text.splitlines()
 
     # Remove leading empty lines
@@ -216,7 +216,7 @@ def strip_leading_and_trailing_empty_lines(text):
     while len(lines) > 0 and lines[-1].strip() == "":
         del lines[-1]
 
-    text = '\\n'.join(lines)
+    text = newline.join(lines)
     return text
 
 
@@ -282,7 +282,7 @@ def format_text_for_cpp(text):
     # Remove common whitespace from the beginning of each line
     text = textwrap.dedent(text)
 
-    text = strip_leading_and_trailing_empty_lines(text)
+    text = strip_leading_and_trailing_empty_lines(text, "\\n")
     text = format_doc_bbcodes_to_cpp(text)
     
     text = text.replace('"', '\\"')

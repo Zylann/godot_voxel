@@ -74,14 +74,29 @@ Inputs: `x`
 Outputs: `out`
 Parameters: `min`, `max`
 
-If `x` is lower than `min`, returns `min`. If `x` is higher than `max`, returns `max`. Otherwise, returns `x`.\n			This node is an alternative to `Clamp`, used internally as an optimization if `min` and `max` are constant.
+If `x` is lower than `min`, returns `min`. If `x` is higher than `max`, returns `max`. Otherwise, returns `x`.
+This node is an alternative to `Clamp`, used internally as an optimization if `min` and `max` are constant.
 
 ### Expression
 
 Outputs: `out`
 Parameters: `expression`
 
-Evaluates a math expression. Variable names can be written as inputs of the node. Some functions can be used, but they must be supported graph nodes in the first place, as the expression will be converted to nodes internally.\n			Available functions:\n			```\n			sin(x)\n			floor(x)\n			abs(x)\n			sqrt(x)\n			fract(x)\n			stepify(x, step)\n			wrap(x, length)\n			min(a, b)\n			max(a, b)\n			clamp(x, min, max)\n			lerp(a, b, ratio)\n			```
+Evaluates a math expression. Variable names can be written as inputs of the node. Some functions can be used, but they must be supported graph nodes in the first place, as the expression will be converted to nodes internally.
+Available functions:
+```
+sin(x)
+floor(x)
+abs(x)
+sqrt(x)
+fract(x)
+stepify(x, step)
+wrap(x, length)
+min(a, b)
+max(a, b)
+clamp(x, min, max)
+lerp(a, b, ratio)
+```
 
 ### Floor
 
@@ -169,7 +184,8 @@ Returns the result of smoothly interpolating the value of `x` between `0` and `1
 Inputs: `x`
 Outputs: `out`
 
-Returns the square root of `x`.\n			Note: unlike classic square root, if `x` is negative, this function returns `0` instead of `NaN`.
+Returns the square root of `x`.
+Note: unlike classic square root, if `x` is negative, this function returns `0` instead of `NaN`.
 
 ### Stepify
 
@@ -183,7 +199,8 @@ Snaps `x` to a given step, similar to GDScript's function `stepify`.
 Inputs: `x`, `length`
 Outputs: `out`
 
-Wraps `x` between `0` and `length`, similar to GDScript's function `wrapf(x, 0, max)`.\n			Note: if `length` is 0, this node will return `NaN`. If it happens, it should not crash, but results will be messed up.
+Wraps `x` between `0` and `length`, similar to GDScript's function `wrapf(x, 0, max)`.
+Note: if `length` is 0, this node will return `NaN`. If it happens, it should not crash, but results will be messed up.
 
 ## Misc
 
@@ -191,7 +208,7 @@ Wraps `x` between `0` and `length`, similar to GDScript's function `wrapf(x, 0, 
 
 Parameters: `text`
 
-
+A rectangular area with a description, to help organizing a graph.
 
 ### Constant
 
@@ -211,7 +228,7 @@ Runs a custom function, like a re-usable sub-graph. The first parameter (paramet
 Inputs: `in`
 Outputs: `out`
 
-
+Pass-through node, allowing to better organize the path of long connections.
 
 ## Noise
 
@@ -221,7 +238,8 @@ Inputs: `x`, `y`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 2D noise at coordinates `(x, y)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.\n			Note: this node might be a little faster than `Noise2D`.
+Returns computation of 2D noise at coordinates `(x, y)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.
+Note: this node might be a little faster than `Noise2D`.
 
 ### FastNoise2_2D
 
@@ -245,7 +263,8 @@ Inputs: `x`, `y`, `z`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 3D noise at coordinates `(x, y, z)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.\n			Note: this node might be a little faster than `Noise3D`.
+Returns computation of 3D noise at coordinates `(x, y, z)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.
+Note: this node might be a little faster than `Noise3D`.
 
 ### FastNoiseGradient2D
 
@@ -309,7 +328,8 @@ Returns the sum of `a` and `b`
 Inputs: `a`, `b`
 Outputs: `out`
 
-Returns the result of `a / b`.\n			Note: dividing by zero outputs NaN. It should not cause crashes, but will likely mess up results. Consider using Multiply when possible.
+Returns the result of `a / b`.
+Note: dividing by zero outputs NaN. It should not cause crashes, but will likely mess up results. Consider using Multiply when possible.
 
 ### Multiply
 
