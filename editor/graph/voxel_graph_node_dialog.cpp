@@ -124,8 +124,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	// TODO Usability: have CustomInput and CustomOutput subcategories based on I/O definitions, + a "new" option for
 	// unbound
 	const pg::NodeTypeDB &type_db = pg::NodeTypeDB::get_singleton();
-	for (int i = 0; i < type_db.get_type_count(); ++i) {
-		const pg::NodeType &type = type_db.get_type(i);
+	for (int type_index = 0; type_index < type_db.get_type_count(); ++type_index) {
+		const pg::NodeType &type = type_db.get_type(type_index);
 
 		int category_index = -1;
 		String description;
@@ -141,7 +141,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 			description = doc->description;
 		}
 
-		if (i == pg::VoxelGraphFunction::NODE_FUNCTION) {
+		if (type_index == pg::VoxelGraphFunction::NODE_FUNCTION) {
 			{
 				Item item;
 				item.name = ZN_TTR("Browse Custom Function...");
@@ -164,13 +164,13 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 			continue;
 		}
 
-		const pg::NodeType &node_type = pg::NodeTypeDB::get_singleton().get_type(i);
+		const pg::NodeType &node_type = pg::NodeTypeDB::get_singleton().get_type(type_index);
 
 		Item item;
 		item.name = ZN_TTR(node_type.name);
 		item.category = category_index;
 		item.description = description;
-		item.id = i;
+		item.id = type_index;
 		_items.push_back(item);
 	}
 
