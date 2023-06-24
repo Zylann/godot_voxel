@@ -1499,6 +1499,8 @@ void VoxelTerrain::process_meshing() {
 	// const int used_channels_mask = get_used_channels_mask();
 	const int mesh_to_data_factor = get_mesh_block_size() / get_data_block_size();
 
+	BufferedTaskScheduler &scheduler = BufferedTaskScheduler::get_for_current_thread();
+
 	for (size_t bi = 0; bi < _blocks_pending_update.size(); ++bi) {
 		ZN_PROFILE_SCOPE_NAMED("Block");
 		const Vector3i mesh_block_pos = _blocks_pending_update[bi];
@@ -1555,10 +1557,12 @@ void VoxelTerrain::process_meshing() {
 		init_sparse_grid_priority_dependency(task->priority_dependency, task->mesh_block_position,
 				get_mesh_block_size(), shared_viewers_data, volume_transform);
 
-		VoxelEngine::get_singleton().push_async_task(task);
+		scheduler.push_main_task(task);
 
 		mesh_block->set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_SENT);
 	}
+
+	scheduler.flush();
 
 	_blocks_pending_update.clear();
 
