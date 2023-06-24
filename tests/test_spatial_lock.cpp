@@ -383,7 +383,6 @@ void test_spatial_lock_dependent_map_chunks() {
 
 	ThreadedTaskRunner runner;
 	runner.set_thread_count(test_thread_count);
-	runner.set_batch_count(1);
 	runner.set_name("Test");
 
 	unsigned int in_flight_count = 0;

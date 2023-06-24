@@ -41,11 +41,6 @@ public:
 	}
 
 	// TODO Add ability to change it while running
-	// Sets how many tasks each thread will attempt to dequeue on each iteration.
-	// Can't be changed after tasks have been queued.
-	void set_batch_count(uint32_t count);
-
-	// TODO Add ability to change it while running
 	// Task priorities can change over time, but computing them too often with many tasks can be expensive,
 	// so they are cached. This sets how often task priorities will be polled.
 	// Can't be changed after tasks have been queued.
@@ -133,8 +128,6 @@ private:
 	std::vector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;
 
-	// TODO Remove batching, it's not really useful
-	uint32_t _batch_count = 1;
 	uint32_t _priority_update_period_ms = 32;
 
 	// This boolean is also guarded with `_tasks_mutex`.

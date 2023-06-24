@@ -84,7 +84,6 @@ void test_threaded_task_runner_misc() {
 
 	ThreadedTaskRunner runner;
 	runner.set_thread_count(test_thread_count);
-	runner.set_batch_count(1);
 	runner.set_name("Test");
 
 	// Parallel tasks only
@@ -188,7 +187,6 @@ void test_threaded_task_runner_debug_names() {
 
 	ThreadedTaskRunner runner;
 	runner.set_thread_count(test_thread_count);
-	runner.set_batch_count(1);
 	runner.set_name("Test");
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_msec();
@@ -399,7 +397,6 @@ void test_threaded_task_postponing() {
 
 	ThreadedTaskRunner runner;
 	runner.set_thread_count(test_thread_count);
-	runner.set_batch_count(1);
 	runner.set_name("Test");
 
 	unsigned int in_flight_count = 0;

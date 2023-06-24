@@ -72,10 +72,6 @@ void ThreadedTaskRunner::set_thread_count(uint32_t count) {
 	_thread_count = count;
 }
 
-void ThreadedTaskRunner::set_batch_count(uint32_t count) {
-	_batch_count = count;
-}
-
 void ThreadedTaskRunner::set_priority_update_period(uint32_t milliseconds) {
 	_priority_update_period_ms = milliseconds;
 }
@@ -170,7 +166,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				}
 
 				// Pick best tasks from the prioritized queue
-				for (uint32_t bi = 0; bi < _batch_count && _tasks.size() != 0; ++bi) {
+				if (_tasks.size() != 0) {
 					size_t best_index = 0; // Take first by default, this is a valid index
 					TaskPriority highest_priority = TaskPriority::min();
 					bool picked_task = false;
