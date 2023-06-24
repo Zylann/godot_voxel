@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/button.h"
 #include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/editor_quick_open.h"
+#include "../../util/godot/classes/font.h"
 #include "../../util/godot/classes/input_event_key.h"
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/line_edit.h"
