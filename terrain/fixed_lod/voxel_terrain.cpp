@@ -827,7 +827,7 @@ static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector
 static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency,
 		uint32_t data_block_size, Vector3i block_pos,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D volume_transform,
-		bool request_instances) {
+		bool request_instances, BufferedTaskScheduler &scheduler) {
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	if (stream_dependency->stream.is_valid()) {
@@ -838,7 +838,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
 				stream_dependency, priority_dependency, true));
 
-		VoxelEngine::get_singleton().push_async_io_task(task);
+		scheduler.push_io_task(task);
 
 	} else {
 		// Directly generate the block without checking the stream
@@ -854,7 +854,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		init_sparse_grid_priority_dependency(
 				task->priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
-		VoxelEngine::get_singleton().push_async_task(task);
+		scheduler.push_main_task(task);
 	}
 }
 
@@ -867,13 +867,16 @@ void VoxelTerrain::send_data_load_requests() {
 
 		const Transform3D volume_transform = get_global_transform();
 
+		BufferedTaskScheduler &scheduler = BufferedTaskScheduler::get_for_current_thread();
+
 		// Blocks to load
 		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 			const Vector3i block_pos = _blocks_pending_load[i];
 			// TODO Optimization: Batch request
 			request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
-					volume_transform, _instancer != nullptr);
+					volume_transform, _instancer != nullptr, scheduler);
 		}
+		scheduler.flush();
 		_blocks_pending_load.clear();
 	}
 }
