@@ -28,6 +28,10 @@ if RUN_TESTS:
 	voxel_files += [
 		"tests/*.cpp"
 	]
+
+	if FAST_NOISE_2_SRC:
+		voxel_files += ["tests/fast_noise_2/*.cpp"]
+
 	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
 
 # ----------------------------------------------------------------------------------------------------------------------
