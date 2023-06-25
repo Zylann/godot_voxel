@@ -37,6 +37,8 @@ void test_run_blocky_random_tick() {
 		tickable_id = library->add_model(tickable);
 	}
 
+	library->bake();
+
 	// Create test map
 	VoxelData data;
 	{
