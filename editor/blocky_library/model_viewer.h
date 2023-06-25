@@ -6,7 +6,7 @@
 // Required in header for GDExtension builds, due to how virtual methods are implemented
 #include "../../util/godot/classes/input_event.h"
 
-#include "../../util/macros.h"
+#include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Camera3D);
 ZN_GODOT_FORWARD_DECLARE(class SubViewport);

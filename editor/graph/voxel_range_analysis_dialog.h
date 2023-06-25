@@ -2,7 +2,7 @@
 #define VOXEL_RANGE_ANALYSIS_DIALOG_H
 
 #include "../../util/godot/classes/accept_dialog.h"
-#include "../../util/macros.h"
+#include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class CheckBox)
 ZN_GODOT_FORWARD_DECLARE(class SpinBox)

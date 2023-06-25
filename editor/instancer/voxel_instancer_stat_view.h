@@ -2,7 +2,7 @@
 #define VOXEL_INSTANCER_STAT_VIEW_H
 
 #include "../../util/godot/classes/v_box_container.h"
-#include "../../util/macros.h"
+#include "../../util/godot/macros.h"
 #include <unordered_map>
 
 ZN_GODOT_FORWARD_DECLARE(class Tree)

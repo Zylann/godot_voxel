@@ -2,7 +2,6 @@
 #define VOXEL_TERRAIN_EDITOR_INSPECTOR_PLUGIN_H
 
 #include "../../util/godot/classes/editor_inspector_plugin.h"
-#include "../../util/macros.h"
 
 namespace zylann::voxel {
 

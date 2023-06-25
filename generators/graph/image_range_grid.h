@@ -2,7 +2,7 @@
 #define IMAGE_RANGE_GRID_H
 
 #include "../../util/fixed_array.h"
-#include "../../util/macros.h"
+#include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Image)

@@ -3,7 +3,7 @@
 
 #include "../../util/fixed_array.h"
 #include "../../util/godot/classes/scroll_container.h"
-#include "../../util/macros.h"
+#include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Label)
 ZN_GODOT_FORWARD_DECLARE(class HBoxContainer)

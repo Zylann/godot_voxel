@@ -4,7 +4,6 @@
 #include "../util/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file_access.h"
-#include "../util/macros.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
 #include "../util/serialization.h"

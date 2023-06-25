@@ -2,7 +2,7 @@
 #define ZN_GODOT_NODE_BUCKETS_STRATEGY_H
 
 #include "../errors.h"
-#include "../macros.h"
+#include "macros.h"
 #include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Node)

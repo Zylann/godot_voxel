@@ -14,6 +14,7 @@
 using namespace godot;
 #endif
 
+#include "../godot/macros.h"
 #include <iosfwd>
 
 namespace zylann {

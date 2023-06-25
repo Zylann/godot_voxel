@@ -9,6 +9,7 @@ using namespace godot;
 #endif
 
 #include "../errors.h"
+#include "../godot/macros.h"
 
 ZN_GODOT_NAMESPACE_BEGIN
 

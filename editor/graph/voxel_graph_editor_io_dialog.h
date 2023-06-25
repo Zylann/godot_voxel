@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../util/godot/macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class ItemList)
 ZN_GODOT_FORWARD_DECLARE(class LineEdit)

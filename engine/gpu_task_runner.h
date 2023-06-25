@@ -1,6 +1,7 @@
 #ifndef VOXEL_GPU_TASK_RUNNER_H
 #define VOXEL_GPU_TASK_RUNNER_H
 
+#include "../util/godot/macros.h"
 #include "../util/macros.h"
 #include "../util/thread/mutex.h"
 #include "../util/thread/semaphore.h"

@@ -7,6 +7,7 @@
 #include "../span.h"
 #include "classes/multimesh.h"
 #include "classes/rendering_server.h"
+#include "macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 ZN_GODOT_FORWARD_DECLARE(class Material);

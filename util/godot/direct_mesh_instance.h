@@ -1,10 +1,10 @@
 #ifndef DIRECT_MESH_INSTANCE_H
 #define DIRECT_MESH_INSTANCE_H
 
-#include "../macros.h"
 #include "../non_copyable.h"
 #include "classes/mesh.h"
 #include "classes/rendering_server.h"
+#include "macros.h"
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 

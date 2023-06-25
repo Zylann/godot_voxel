@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "../../macros.h"
+#include "../macros.h"
 #include "rd_shader_spirv.h"
 
 ZN_GODOT_FORWARD_DECLARE(class RDShaderSource)

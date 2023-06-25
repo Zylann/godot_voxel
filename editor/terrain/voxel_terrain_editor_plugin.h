@@ -3,6 +3,7 @@
 
 #include "../../engine/ids.h"
 #include "../../util/godot/classes/editor_plugin.h"
+#include "../../util/godot/macros.h"
 #include "voxel_terrain_editor_inspector_plugin.h"
 
 // When compiling with GodotCpp, it isn't possible to forward-declare these, due to how virtual methods are implemented.

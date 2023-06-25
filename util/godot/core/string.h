@@ -18,6 +18,8 @@ using namespace godot;
 #include <vector>
 #endif
 
+#include "../macros.h"
+
 #include "../../span.h"
 
 namespace zylann {
