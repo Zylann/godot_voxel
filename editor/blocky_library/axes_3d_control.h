@@ -1,7 +1,7 @@
 #ifndef ZN_AXES_3D_CONTROL_H
 #define ZN_AXES_3D_CONTROL_H
 
-#include "../../../util/godot/classes/control.h"
+#include "../../util/godot/classes/control.h"
 
 namespace zylann {
 

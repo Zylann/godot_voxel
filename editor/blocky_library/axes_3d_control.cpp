@@ -1,5 +1,5 @@
 #include "axes_3d_control.h"
-#include "../../../util/math/funcs.h"
+#include "../../util/math/funcs.h"
 
 namespace zylann {
 
