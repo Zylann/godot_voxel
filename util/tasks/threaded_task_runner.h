@@ -137,10 +137,9 @@ private:
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
-	// TODO Rename `_spinning_tasks`
 	// Ongoing tasks that may take more than one iteration
-	std::queue<TaskItem> _postponed_tasks;
-	Mutex _postponed_tasks_mutex;
+	std::queue<TaskItem> _spinning_tasks;
+	Mutex _spinning_tasks_mutex;
 
 	std::vector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;

@@ -28,8 +28,8 @@ ThreadedTaskRunner::~ThreadedTaskRunner() {
 	if (_tasks.size() != 0) {
 		ZN_PRINT_ERROR("There are tasks remaining!");
 	}
-	if (_postponed_tasks.size() != 0) {
-		ZN_PRINT_ERROR("There are postponed tasks remaining!");
+	if (_spinning_tasks.size() != 0) {
+		ZN_PRINT_ERROR("There are spinning tasks remaining!");
 	}
 	if (_completed_tasks.size() != 0) {
 		ZN_PRINT_ERROR("There are completed tasks remaining!");
@@ -167,10 +167,10 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			// TODO What if postponed tasks remain while one big task is locking what they need to access?
 			// Those postponed tasks will sort of spinlock with no sleeping. Is that a bad thing?
 			{
-				MutexLock lock2(_postponed_tasks_mutex);
-				if (_postponed_tasks.size() > 0) {
-					tasks.push_back(_postponed_tasks.front());
-					_postponed_tasks.pop();
+				MutexLock lock2(_spinning_tasks_mutex);
+				if (_spinning_tasks.size() > 0) {
+					tasks.push_back(_spinning_tasks.front());
+					_spinning_tasks.pop();
 				}
 			}
 
@@ -337,9 +337,9 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			tasks.clear();
 
 			{
-				MutexLock lock(_postponed_tasks_mutex);
+				MutexLock lock(_spinning_tasks_mutex);
 				for (const TaskItem &item : postponed_tasks) {
-					_postponed_tasks.push(item);
+					_spinning_tasks.push(item);
 				}
 			}
 
@@ -368,8 +368,8 @@ void ThreadedTaskRunner::wait_for_all_tasks() {
 		if (!any_staged_tasks) {
 			MutexLock lock(_tasks_mutex);
 			if (_tasks.size() == 0) {
-				MutexLock lock2(_postponed_tasks_mutex);
-				if (_postponed_tasks.size() == 0) {
+				MutexLock lock2(_spinning_tasks_mutex);
+				if (_spinning_tasks.size() == 0) {
 					break;
 				}
 			}
