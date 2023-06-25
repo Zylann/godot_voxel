@@ -1,6 +1,7 @@
 #ifndef ZN_MUTEX_H
 #define ZN_MUTEX_H
 
+// #include "../profiling.h"
 #include <mutex>
 
 namespace zylann {
@@ -11,6 +12,7 @@ class MutexImpl {
 
 public:
 	inline void lock() const {
+		// ZN_PROFILE_SCOPE();
 		mutex.lock();
 	}
 

@@ -89,7 +89,8 @@ void test_threaded_task_runner_misc() {
 	// Parallel tasks only
 
 	for (unsigned int i = 0; i < 16; ++i) {
-		runner.enqueue(ZN_NEW(TestTask(parallel_counter)), false);
+		TestTask *task = ZN_NEW(TestTask(parallel_counter));
+		runner.enqueue(task, false);
 	}
 
 	runner.wait_for_all_tasks();
@@ -101,7 +102,8 @@ void test_threaded_task_runner_misc() {
 	// Serial tasks only
 
 	for (unsigned int i = 0; i < 16; ++i) {
-		runner.enqueue(ZN_NEW(TestTask(serial_counter)), true);
+		TestTask *task = ZN_NEW(TestTask(serial_counter));
+		runner.enqueue(task, true);
 	}
 
 	runner.wait_for_all_tasks();
@@ -117,9 +119,11 @@ void test_threaded_task_runner_misc() {
 
 	for (unsigned int i = 0; i < 32; ++i) {
 		if ((i & 1) == 0) {
-			runner.enqueue(ZN_NEW(TestTask(parallel_counter)), false);
+			TestTask *task = ZN_NEW(TestTask(parallel_counter));
+			runner.enqueue(task, false);
 		} else {
-			runner.enqueue(ZN_NEW(TestTask(serial_counter)), true);
+			TestTask *task = ZN_NEW(TestTask(serial_counter));
+			runner.enqueue(task, true);
 		}
 	}
 
@@ -202,9 +206,11 @@ void test_threaded_task_runner_debug_names() {
 		while (in_flight_count < 5000) {
 			for (unsigned int i = 0; i < 1000; ++i) {
 				if ((i % 3) != 0) {
-					runner.enqueue(ZN_NEW(NamedTestTask1(100 + i % 11)), false);
+					NamedTestTask1 *task = ZN_NEW(NamedTestTask1(100 + i % 11));
+					runner.enqueue(task, false);
 				} else {
-					runner.enqueue(ZN_NEW(NamedTestTask2(60 + i % 7)), true);
+					NamedTestTask2 *task = ZN_NEW(NamedTestTask2(60 + i % 7));
+					runner.enqueue(task, true);
 				}
 				++in_flight_count;
 			}
@@ -379,7 +385,6 @@ void test_threaded_task_postponing() {
 		static void dequeue_tasks(ThreadedTaskRunner &runner, unsigned int &r_in_flight_count) {
 			runner.dequeue_completed_tasks([&r_in_flight_count](IThreadedTask *task) {
 				ZN_ASSERT(task != nullptr);
-				// zylann::println(format("Dequeue {}", task));
 				task->apply_result();
 				ZN_DELETE(task);
 				ZN_ASSERT(r_in_flight_count > 0);

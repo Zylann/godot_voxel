@@ -1,7 +1,9 @@
 #ifndef ZYLANN_THREADED_TASK_RUNNER_H
 #define ZYLANN_THREADED_TASK_RUNNER_H
 
+#include "../container_funcs.h"
 #include "../fixed_array.h"
+#include "../profiling.h"
 #include "../span.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
@@ -58,16 +60,22 @@ public:
 	// Schedules multiple tasks at once. Involves less internal locking.
 	void enqueue(Span<IThreadedTask *> new_tasks, bool serial);
 
-	// TODO Optimization: lambda might not be the best API. memcpying to a vector would ensure we lock for a shorter
-	// time.
 	template <typename F>
 	void dequeue_completed_tasks(F f) {
-		MutexLock lock(_completed_tasks_mutex);
-		for (size_t i = 0; i < _completed_tasks.size(); ++i) {
-			IThreadedTask *task = _completed_tasks[i];
+		ZN_PROFILE_SCOPE();
+		std::vector<IThreadedTask *> &temp = get_completed_tasks_temp_tls();
+		ZN_ASSERT(temp.size() == 0);
+		{
+			MutexLock lock(_completed_tasks_mutex);
+			append_array(temp, _completed_tasks);
+			_completed_tasks.clear();
+			// std::move doesn't guarantee preservation of vector capacity
+			// temp = std::move(_completed_tasks);
+		}
+		for (IThreadedTask *task : temp) {
 			f(task);
 		}
-		_completed_tasks.clear();
+		temp.clear();
 	}
 
 	// Blocks and wait for all tasks to finish (assuming no more are getting added!)
@@ -78,12 +86,13 @@ public:
 	unsigned int get_debug_remaining_tasks() const;
 
 private:
+	static std::vector<IThreadedTask *> &get_completed_tasks_temp_tls();
+
 	struct TaskItem {
 		IThreadedTask *task = nullptr;
 		TaskPriority cached_priority;
 		bool is_serial = false;
 		bool postponed = false;
-		uint64_t last_priority_update_time_ms = 0;
 	};
 
 	struct ThreadData {
@@ -116,11 +125,19 @@ private:
 	FixedArray<ThreadData, MAX_THREADS> _threads;
 	uint32_t _thread_count = 0;
 
-	// TODO Optimization: use a less naive design? Maybe moodycamel
+	// Scheduled tasks are put here first. They will be moved to the main waiting queue by the next available thread.
+	// This is because the main waiting queue can be locked for longer due to dynamic priority sorting.
+	std::vector<TaskItem> _staged_tasks;
+	Mutex _staged_tasks_mutex;
+
+	// Main waiting list. Tasks are picked from it by priority. Priority can also change while tasks are in this list,
+	// so we can't use a simple queue or sort at insertion. Every available thread has to find it and potentially update
+	// it every once in a while.
 	std::vector<TaskItem> _tasks;
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
+	// TODO Rename `_spinning_tasks`
 	// Ongoing tasks that may take more than one iteration
 	std::queue<TaskItem> _postponed_tasks;
 	Mutex _postponed_tasks_mutex;
@@ -129,6 +146,7 @@ private:
 	Mutex _completed_tasks_mutex;
 
 	uint32_t _priority_update_period_ms = 32;
+	uint64_t _last_priority_update_time_ms = 0;
 
 	// This boolean is also guarded with `_tasks_mutex`.
 	// Tasks marked as "serial" must be executed by only one thread at a time.
