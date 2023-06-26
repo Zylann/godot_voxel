@@ -10,6 +10,7 @@
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
 
+#include <unordered_map>
 #include <vector>
 
 namespace zylann::voxel {
