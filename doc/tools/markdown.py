@@ -50,7 +50,7 @@ def make_type(name, module_class_names):
     if name == "void":
         link = "#"
     elif name in module_class_names:
-        link = name + ".md"
+        link = 'api/' + name + ".md"
     else:
         link = GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
     return make_link(name, link)

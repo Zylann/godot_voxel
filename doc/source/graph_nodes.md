@@ -1,6 +1,6 @@
 # VoxelGeneratorGraph nodes
 
-This page lists all nodes that can be used in [VoxelGeneratorGraph](VoxelGeneratorGraph.md) and [VoxelGraphFunction](VoxelGraphFunction.md).
+This page lists all nodes that can be used in [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md) and [VoxelGraphFunction](api/VoxelGraphFunction.md).
 
 ## Input
 
@@ -8,7 +8,7 @@ This page lists all nodes that can be used in [VoxelGeneratorGraph](VoxelGenerat
 
 Outputs: `value`
 
-Outputs values from the custom input having the same name as the node. May be used in [VoxelGraphFunction](VoxelGraphFunction.md). It won't be used in [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
+Outputs values from the custom input having the same name as the node. May be used in [VoxelGraphFunction](api/VoxelGraphFunction.md). It won't be used in [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md).
 
 ### InputSDF
 
@@ -221,7 +221,7 @@ Outputs a constant number.
 
 Parameters: `_function`
 
-Runs a custom function, like a re-usable sub-graph. The first parameter (parameter 0) of this node is a reference to a [VoxelGraphFunction](VoxelGraphFunction.md). Further parameters (starting from 1) are those exposed by the function.
+Runs a custom function, like a re-usable sub-graph. The first parameter (parameter 0) of this node is a reference to a [VoxelGraphFunction](api/VoxelGraphFunction.md). Further parameters (starting from 1) are those exposed by the function.
 
 ### Relay
 
@@ -238,7 +238,7 @@ Inputs: `x`, `y`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 2D noise at coordinates `(x, y)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.
+Returns computation of 2D noise at coordinates `(x, y)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](api/ZN_FastNoiseLite.md) resource.
 Note: this node might be a little faster than `Noise2D`.
 
 ### FastNoise2_2D
@@ -247,7 +247,7 @@ Inputs: `x`, `y`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 2D SIMD noise at coordinates `(x, y)` using the FastNoise2 library. The `noise` parameter is specified with an instance of the [FastNoise2](FastNoise2.md) resource. This is the fastest noise currently supported.
+Returns computation of 2D SIMD noise at coordinates `(x, y)` using the FastNoise2 library. The `noise` parameter is specified with an instance of the [FastNoise2](api/FastNoise2.md) resource. This is the fastest noise currently supported.
 
 ### FastNoise2_3D
 
@@ -255,7 +255,7 @@ Inputs: `x`, `y`, `z`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 3D SIMD noise at coordinates `(x, y, z)` using the FastNoise2 library. The `noise` parameter is specified with an instance of the [FastNoise2](FastNoise2.md) resource. This is the fastest noise currently supported.
+Returns computation of 3D SIMD noise at coordinates `(x, y, z)` using the FastNoise2 library. The `noise` parameter is specified with an instance of the [FastNoise2](api/FastNoise2.md) resource. This is the fastest noise currently supported.
 
 ### FastNoise3D
 
@@ -263,7 +263,7 @@ Inputs: `x`, `y`, `z`
 Outputs: `out`
 Parameters: `noise`
 
-Returns computation of 3D noise at coordinates `(x, y, z)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](ZN_FastNoiseLite.md) resource.
+Returns computation of 3D noise at coordinates `(x, y, z)` using the FastNoiseLite library. The `noise` parameter is specified with an instance of the [ZN_FastNoiseLite](api/ZN_FastNoiseLite.md) resource.
 Note: this node might be a little faster than `Noise3D`.
 
 ### FastNoiseGradient2D
@@ -351,7 +351,7 @@ Returns the result of `a - b`
 
 Inputs: `value`
 
-Sets the value of the custom output having the same name as the node. May be used in [VoxelGraphFunction](VoxelGraphFunction.md). It won't be used in [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
+Sets the value of the custom output having the same name as the node. May be used in [VoxelGraphFunction](api/VoxelGraphFunction.md). It won't be used in [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md).
 
 ### OutputSDF
 
@@ -369,7 +369,7 @@ Sets the texture index of the current voxel. This is an alternative to using `Ou
 
 Inputs: `type`
 
-Sets the TYPE index of the current voxel. This is for use with [VoxelMesherBlocky](VoxelMesherBlocky.md). If you use this output, you don't need to use `OutputSDF`.
+Sets the TYPE index of the current voxel. This is for use with [VoxelMesherBlocky](api/VoxelMesherBlocky.md). If you use this output, you don't need to use `OutputSDF`.
 
 ### OutputWeight
 
