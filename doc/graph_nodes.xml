@@ -239,7 +239,7 @@
 		<input name="b" default_value="0"/>
 		<output name="out"/>
 		<description>
-			Returns the lowest value between [code]a[/code] and [code]b[/code].
+			Returns the highest value between [code]a[/code] and [code]b[/code].
 		</description>
 	</node>
 	<node name="Min" category="Math">
@@ -247,7 +247,7 @@
 		<input name="b" default_value="0"/>
 		<output name="out"/>
 		<description>
-			Returns the highest value between [code]a[/code] and [code]b[/code].
+			Returns the lowest value between [code]a[/code] and [code]b[/code].
 		</description>
 	</node>
 	<node name="Mix" category="Math">

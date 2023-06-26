@@ -117,14 +117,14 @@ Returns the decimal part of `x`. The result is always positive regardless of sig
 Inputs: `a`, `b`
 Outputs: `out`
 
-Returns the lowest value between `a` and `b`.
+Returns the highest value between `a` and `b`.
 
 ### Min
 
 Inputs: `a`, `b`
 Outputs: `out`
 
-Returns the highest value between `a` and `b`.
+Returns the lowest value between `a` and `b`.
 
 ### Mix
 
