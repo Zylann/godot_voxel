@@ -628,10 +628,10 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 
 	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Disconnect Nodes"));
 
-	_undo_redo->add_do_method(*_graph, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_do_method(graph_ur_obj, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_do_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-	_undo_redo->add_undo_method(*_graph, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_undo_method(graph_ur_obj, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_undo_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 	_undo_redo->commit_action();
