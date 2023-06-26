@@ -2,6 +2,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/node_type_db.h"
 #include "../../util/godot/classes/button.h"
+#include "../../util/godot/classes/display_server.h"
 #include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/editor_quick_open.h"
 #include "../../util/godot/classes/font.h"
