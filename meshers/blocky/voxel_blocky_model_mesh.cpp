@@ -7,6 +7,8 @@
 #include "../../util/string_funcs.h"
 #include "voxel_blocky_library.h"
 
+#include <unordered_map>
+
 namespace zylann::voxel {
 
 void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {

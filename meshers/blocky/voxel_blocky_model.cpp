@@ -15,8 +15,6 @@
 
 #include "voxel_blocky_model_cube.h"
 
-#include <unordered_map>
-
 namespace zylann::voxel {
 
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
