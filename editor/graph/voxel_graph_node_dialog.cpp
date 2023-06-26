@@ -182,6 +182,27 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	update_tree(false);
 }
 
+void VoxelGraphNodeDialog::popup_at_screen_position(Vector2 screen_pos) {
+	VoxelGraphNodeDialog &dialog = *this;
+
+	dialog.set_position(screen_pos);
+
+	dialog.popup();
+
+	_filter_line_edit->call_deferred(VoxelStringNames::get_singleton().grab_focus); // Still not visible.
+	_filter_line_edit->select_all();
+
+	// Keep within screen bounds.
+	// Seems we also have to do this after showing the window because Godot is unable to update its size
+	// without making it visible first...
+	// TODO Shouldn't we check for screen size instead of window?
+	const Rect2 window_rect = Rect2(
+			DisplayServer::get_singleton()->window_get_position(), DisplayServer::get_singleton()->window_get_size());
+	const Rect2 dialog_rect = Rect2(dialog.get_position(), get_size());
+	const Vector2 difference = (dialog_rect.get_end() - window_rect.get_end()).max(Vector2());
+	dialog.set_position(dialog.get_position() - difference);
+}
+
 void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 	_tree->clear();
 	TreeItem *root = _tree->create_item();

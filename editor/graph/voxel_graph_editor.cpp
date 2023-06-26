@@ -534,19 +534,7 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 				// Careful with how the position is computed, some users have multiple monitors but OSes handle it in
 				// different ways, either with two desktops or one expanded desktop. This affects mouse positions.
 				// I took example on context menus in `filesystem_dock.cpp`.
-				_node_dialog->set_position(_graph_edit->get_screen_position() + mb->get_position());
-
-				_node_dialog->popup();
-
-				// Keep within screen bounds.
-				// Seems we also have to do this after showing the window because Godot is unable to update its size
-				// without making it visible first...
-				// TODO Shouldn't we check for screen size instead of window?
-				const Rect2 window_rect = Rect2(DisplayServer::get_singleton()->window_get_position(),
-						DisplayServer::get_singleton()->window_get_size());
-				const Rect2 dialog_rect = Rect2(_node_dialog->get_position(), _node_dialog->get_size());
-				const Vector2 difference = (dialog_rect.get_end() - window_rect.get_end()).max(Vector2());
-				_node_dialog->set_position(_node_dialog->get_position() - difference);
+				_node_dialog->popup_at_screen_position(_graph_edit->get_screen_position() + mb->get_position());
 			}
 		}
 	}

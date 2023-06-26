@@ -24,6 +24,8 @@ public:
 
 	VoxelGraphNodeDialog();
 
+	void popup_at_screen_position(Vector2 screen_pos);
+
 private:
 	void update_tree(bool autoselect);
 
