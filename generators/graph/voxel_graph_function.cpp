@@ -1375,8 +1375,8 @@ void VoxelGraphFunction::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGraphFunction::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGraphFunction::create_node,
 			DEFVAL(ProgramGraph::NULL_ID));
-	ClassDB::bind_method(D_METHOD("create_function_node", "position", "id"), &VoxelGraphFunction::create_function_node,
-			DEFVAL(ProgramGraph::NULL_ID));
+	ClassDB::bind_method(D_METHOD("create_function_node", "function", "position", "id"),
+			&VoxelGraphFunction::create_function_node, DEFVAL(ProgramGraph::NULL_ID));
 	ClassDB::bind_method(D_METHOD("remove_node", "node_id"), &VoxelGraphFunction::remove_node);
 	ClassDB::bind_method(D_METHOD("can_connect", "src_node_id", "src_port_index", "dst_node_id", "dst_port_index"),
 			&VoxelGraphFunction::can_connect);
