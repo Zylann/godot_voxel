@@ -1656,6 +1656,10 @@ void VoxelGeneratorGraph::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_graph_data", "data"), &VoxelGeneratorGraph::load_graph_from_variant_data);
 	ClassDB::bind_method(D_METHOD("_get_graph_data"), &VoxelGeneratorGraph::get_graph_as_variant_data);
 
+#ifdef TOOLS_ENABLED
+	ClassDB::bind_method(D_METHOD("_dummy_function"), &VoxelGeneratorGraph::_b_dummy_function);
+#endif
+
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
 #endif

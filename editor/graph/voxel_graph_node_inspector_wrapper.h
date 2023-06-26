@@ -4,6 +4,8 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../util/godot/classes/ref_counted.h"
 
+ZN_GODOT_FORWARD_DECLARE(class EditorUndoRedoManager)
+
 namespace zylann::voxel {
 
 class VoxelGraphEditor;
@@ -34,6 +36,8 @@ protected:
 	bool _dont_undo_redo() const;
 
 private:
+	Object *create_undo_redo_action(EditorUndoRedoManager &undo_redo, String name);
+
 	static void _bind_methods();
 
 	Ref<pg::VoxelGraphFunction> _graph;

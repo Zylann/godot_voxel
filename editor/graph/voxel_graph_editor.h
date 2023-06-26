@@ -87,6 +87,8 @@ private:
 	void update_functions();
 	void set_preview_transform(Vector2f offset, float scale);
 
+	Object *create_undo_redo_action(String name, UndoRedo::MergeMode merge_mode = UndoRedo::MERGE_DISABLE);
+
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);

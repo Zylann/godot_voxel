@@ -7,6 +7,9 @@
 #include "program_graph.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
+#ifdef TOOLS_ENABLED
+#include "../../editor/graph/voxel_generator_graph_undo_redo_workaround.h"
+#endif
 
 #include <memory>
 
@@ -113,6 +116,8 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
+
+	Ref<VoxelGeneratorGraphUndoRedoWorkaround> editor_undo_redo_workaround;
 #endif
 
 private:
@@ -121,6 +126,13 @@ private:
 	Vector2 _b_debug_analyze_range(Vector3 min_pos, Vector3 max_pos) const;
 	Dictionary _b_compile();
 	float _b_debug_measure_microseconds_per_voxel(bool singular);
+#ifdef TOOLS_ENABLED
+	// This exists because some custom editors will edit an internal object instead of the resource itself
+	// (here the "main function" object). And because Godot determines wether or not a resource should be saved based on
+	// UndoRedo, if the containing resource doesn't appear in UndoRedo actions, it will consider the resource hasn't
+	// changed and won't save it... so we call a dummy function first, just to make Godot understand that...
+	void _b_dummy_function() {}
+#endif
 	Dictionary get_graph_as_variant_data() const;
 	void load_graph_from_variant_data(Dictionary data);
 
