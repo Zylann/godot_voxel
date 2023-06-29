@@ -539,31 +539,6 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 	}
 }
 
-Object *VoxelGraphEditor::create_undo_redo_action(String name, UndoRedo::MergeMode merge_mode) {
-	ZN_ASSERT(_undo_redo != nullptr);
-	EditorUndoRedoManager &undo_redo = *_undo_redo;
-
-	undo_redo.create_action(name, merge_mode);
-
-	if (_generator.is_valid()) {
-		// When the edited graph is an internal object of another resource, Godot won't detect if that other resource is
-		// modified and won't save it... so we have to somehow make the resource appear in UndoRedo actions
-		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-		undo_redo.add_do_method(_generator.ptr(), sn._dummy_function);
-		undo_redo.add_undo_method(_generator.ptr(), sn._dummy_function);
-	}
-
-	Ref<RefCounted> graph_obj = _graph;
-	if (_generator.is_valid()) {
-		// When editing a nested graph resource we have to use this STUPID workaround to not trigger errors with
-		// EditorUndoRedoManager... more info in the description of that class.
-		graph_obj = VoxelGeneratorGraphUndoRedoWorkaround::get_or_create(_generator);
-	}
-
-	// Return the object to be used to edit the graph with UndoRedoManager
-	return graph_obj.ptr();
-}
-
 void VoxelGraphEditor::_on_graph_edit_connection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
 	//
@@ -582,7 +557,7 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 		return;
 	}
 
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Connect Nodes"));
+	_undo_redo->create_action(ZN_TTR("Connect Nodes"));
 
 	ProgramGraph::PortLocation prev_src_port;
 	String prev_src_node_name;
@@ -592,22 +567,22 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 	if (replacing) {
 		// Remove existing connection so we can replace with the new one
 		prev_src_node_name = node_to_gui_name(prev_src_port.node_id);
-		_undo_redo->add_do_method(graph_ur_obj, "remove_connection", prev_src_port.node_id, prev_src_port.port_index,
+		_undo_redo->add_do_method(_graph.ptr(), "remove_connection", prev_src_port.node_id, prev_src_port.port_index,
 				dst_node_id, to_slot);
 		_undo_redo->add_do_method(
 				_graph_edit, "disconnect_node", prev_src_node_name, prev_src_port.port_index, to_node_name, to_slot);
 	}
 
-	_undo_redo->add_do_method(graph_ur_obj, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_do_method(_graph.ptr(), "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_do_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-	_undo_redo->add_undo_method(graph_ur_obj, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_undo_method(_graph.ptr(), "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_undo_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 	if (replacing) {
 		// After undoing the connection we added, put back the connection we replaced
 		_undo_redo->add_undo_method(
-				graph_ur_obj, "add_connection", prev_src_port.node_id, prev_src_port.port_index, dst_node_id, to_slot);
+				_graph.ptr(), "add_connection", prev_src_port.node_id, prev_src_port.port_index, dst_node_id, to_slot);
 		_undo_redo->add_undo_method(
 				_graph_edit, "connect_node", prev_src_node_name, prev_src_port.port_index, to_node_name, to_slot);
 	}
@@ -625,12 +600,12 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	const uint32_t src_node_id = src_node_view->get_generator_node_id();
 	const uint32_t dst_node_id = dst_node_view->get_generator_node_id();
 
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Disconnect Nodes"));
+	_undo_redo->create_action(ZN_TTR("Disconnect Nodes"));
 
-	_undo_redo->add_do_method(graph_ur_obj, "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_do_method(_graph.ptr(), "remove_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_do_method(_graph_edit, "disconnect_node", from_node_name, from_slot, to_node_name, to_slot);
 
-	_undo_redo->add_undo_method(graph_ur_obj, "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
+	_undo_redo->add_undo_method(_graph.ptr(), "add_connection", src_node_id, from_slot, dst_node_id, to_slot);
 	_undo_redo->add_undo_method(_graph_edit, "connect_node", from_node_name, from_slot, to_node_name, to_slot);
 
 	_undo_redo->commit_action();
@@ -656,7 +631,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 		}
 	}
 
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Delete Nodes"));
+	_undo_redo->create_action(ZN_TTR("Delete Nodes"));
 
 	std::vector<ProgramGraph::Connection> all_connections;
 	_graph->get_connections(all_connections);
@@ -666,23 +641,23 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 		const uint32_t node_id = node_view->get_generator_node_id();
 		const uint32_t node_type_id = _graph->get_node_type_id(node_id);
 
-		_undo_redo->add_do_method(graph_ur_obj, "remove_node", node_id);
+		_undo_redo->add_do_method(_graph.ptr(), "remove_node", node_id);
 		_undo_redo->add_do_method(this, "remove_node_gui", node_view->get_name());
 
 		if (node_type_id == VoxelGraphFunction::NODE_FUNCTION) {
 			Ref<VoxelGraphFunction> func = _graph->get_node_param(node_id, 0);
 			_undo_redo->add_undo_method(
-					graph_ur_obj, "create_function_node", func, _graph->get_node_gui_position(node_id), node_id);
+					_graph.ptr(), "create_function_node", func, _graph->get_node_gui_position(node_id), node_id);
 		} else {
 			_undo_redo->add_undo_method(
-					graph_ur_obj, "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
+					_graph.ptr(), "create_node", node_type_id, _graph->get_node_gui_position(node_id), node_id);
 		}
 
 		// Params undo
 		const size_t param_count = NodeTypeDB::get_singleton().get_type(node_type_id).params.size();
 		for (size_t j = 0; j < param_count; ++j) {
 			Variant param_value = _graph->get_node_param(node_id, j);
-			_undo_redo->add_undo_method(graph_ur_obj, "set_node_param", node_id, ZN_SIZE_T_TO_VARIANT(j), param_value);
+			_undo_redo->add_undo_method(_graph.ptr(), "set_node_param", node_id, ZN_SIZE_T_TO_VARIANT(j), param_value);
 		}
 
 		_undo_redo->add_undo_method(this, "create_node_gui", node_id);
@@ -692,7 +667,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 			const ProgramGraph::Connection &con = all_connections[j];
 
 			if (con.src.node_id == node_id || con.dst.node_id == node_id) {
-				_undo_redo->add_undo_method(graph_ur_obj, "add_connection", con.src.node_id, con.src.port_index,
+				_undo_redo->add_undo_method(_graph.ptr(), "add_connection", con.src.node_id, con.src.port_index,
 						con.dst.node_id, con.dst.port_index);
 
 				const String src_node_name = node_to_gui_name(con.src.node_id);
@@ -792,11 +767,11 @@ void VoxelGraphEditor::_on_node_resize_request(Vector2 new_size, int node_id) {
 	ZN_ASSERT_RETURN(_graph.is_valid());
 
 	// TODO Not sure if EDSCALE has to be unapplied in this case?
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Resize Node"), UndoRedo::MERGE_ENDS);
+	_undo_redo->create_action(ZN_TTR("Resize Node"), UndoRedo::MERGE_ENDS);
 	_undo_redo->add_do_method(this, "set_node_size", node_id, new_size);
-	_undo_redo->add_do_method(graph_ur_obj, "set_node_gui_size", node_id, new_size);
+	_undo_redo->add_do_method(_graph.ptr(), "set_node_gui_size", node_id, new_size);
 	_undo_redo->add_undo_method(this, "set_node_size", node_id, node_view->get_size());
-	_undo_redo->add_undo_method(graph_ur_obj, "set_node_gui_size", node_id, node_view->get_size());
+	_undo_redo->add_undo_method(_graph.ptr(), "set_node_gui_size", node_id, node_view->get_size());
 	_undo_redo->commit_action();
 }
 
@@ -875,10 +850,10 @@ void VoxelGraphEditor::_on_node_dialog_node_selected(int id) {
 	const uint32_t node_id = _graph->generate_node_id();
 	const StringName node_name = node_to_gui_name(node_id);
 
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Create Node"));
-	_undo_redo->add_do_method(graph_ur_obj, "create_node", node_type_id, pos, node_id);
+	_undo_redo->create_action(ZN_TTR("Create Node"));
+	_undo_redo->add_do_method(_graph.ptr(), "create_node", node_type_id, pos, node_id);
 	_undo_redo->add_do_method(this, "create_node_gui", node_id);
-	_undo_redo->add_undo_method(graph_ur_obj, "remove_node", node_id);
+	_undo_redo->add_undo_method(_graph.ptr(), "remove_node", node_id);
 	_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
 	_undo_redo->commit_action();
 }
@@ -1337,10 +1312,10 @@ void VoxelGraphEditor::create_function_node(String fpath) {
 	const uint32_t node_id = _graph->generate_node_id();
 	const StringName node_name = node_to_gui_name(node_id);
 
-	Object *graph_ur_obj = create_undo_redo_action(ZN_TTR("Create Function Node"));
-	_undo_redo->add_do_method(graph_ur_obj, "create_function_node", func, pos, node_id);
+	_undo_redo->create_action(ZN_TTR("Create Function Node"));
+	_undo_redo->add_do_method(_graph.ptr(), "create_function_node", func, pos, node_id);
 	_undo_redo->add_do_method(this, "create_node_gui", node_id);
-	_undo_redo->add_undo_method(graph_ur_obj, "remove_node", node_id);
+	_undo_redo->add_undo_method(_graph.ptr(), "remove_node", node_id);
 	_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
 	_undo_redo->commit_action();
 }

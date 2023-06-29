@@ -7,9 +7,6 @@
 #include "program_graph.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
-#ifdef TOOLS_ENABLED
-#include "../../editor/graph/voxel_generator_graph_undo_redo_workaround.h"
-#endif
 
 #include <memory>
 
@@ -116,8 +113,6 @@ public:
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const override;
-
-	Ref<VoxelGeneratorGraphUndoRedoWorkaround> editor_undo_redo_workaround;
 #endif
 
 private:

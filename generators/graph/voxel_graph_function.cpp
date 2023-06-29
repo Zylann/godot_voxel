@@ -281,6 +281,7 @@ uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, u
 	if (type_id == NODE_CUSTOM_OUTPUT) {
 		L::bind_custom_port(_outputs, *node);
 	}
+	emit_changed();
 	return node->id;
 }
 
@@ -294,6 +295,7 @@ uint32_t VoxelGraphFunction::create_function_node(Ref<VoxelGraphFunction> func, 
 	ProgramGraph::Node &node = _graph.get_node(id);
 	setup_function(node, func);
 	register_subresource(**func);
+	emit_changed();
 	return id;
 }
 
@@ -397,6 +399,7 @@ void VoxelGraphFunction::set_node_name(uint32_t node_id, StringName p_name) {
 	}
 	node->name = p_name;
 	emit_signal(SIGNAL_NODE_NAME_CHANGED, node_id);
+	emit_changed();
 }
 
 StringName VoxelGraphFunction::get_node_name(uint32_t node_id) const {
@@ -559,6 +562,9 @@ void VoxelGraphFunction::set_node_gui_position(uint32_t node_id, Vector2 pos) {
 	ERR_FAIL_COND(node == nullptr);
 	if (node->gui_position != pos) {
 		node->gui_position = pos;
+		// Note that this is not a meaningful change, but emitting anyways, because it might be used to know if the
+		// graph needs to be saved...
+		emit_changed();
 	}
 }
 
@@ -573,6 +579,9 @@ void VoxelGraphFunction::set_node_gui_size(uint32_t node_id, Vector2 size) {
 	ERR_FAIL_COND(node == nullptr);
 	if (node->gui_size != size) {
 		node->gui_size = size;
+		// Note that this is not a meaningful change, but emitting anyways, because it might be used to know if the
+		// graph needs to be saved...
+		emit_changed();
 	}
 }
 
@@ -1149,6 +1158,7 @@ void VoxelGraphFunction::set_io_definitions(Span<const Port> inputs, Span<const 
 #ifdef TOOLS_ENABLED
 	notify_property_list_changed();
 #endif
+	emit_changed();
 }
 
 bool VoxelGraphFunction::contains_reference_to_function(Ref<VoxelGraphFunction> p_func, int max_recursion) const {

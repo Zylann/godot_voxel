@@ -26,6 +26,7 @@ private:
 	bool _zn_handles(const Object *p_object) const override;
 	void _zn_edit(Object *p_object) override;
 	void _zn_make_visible(bool visible) override;
+	void _zn_save_external_data() override;
 
 	void _notification(int p_what);
 
@@ -40,6 +41,7 @@ private:
 	void _on_graph_editor_regenerate_requested();
 	void _on_graph_editor_popout_requested();
 	void _on_graph_editor_window_close_requested();
+	void _on_generator_changed();
 	void _hide_deferred();
 
 	static void _bind_methods();
@@ -60,6 +62,9 @@ private:
 	// Since this boils down to the plugin triggering a change in inspected object, we set a boolean to IGNORE
 	// `edit(nullptr)` calls.
 	bool _ignore_edit_null = false;
+	// Editing nested resources doesn't signal Godot to save the containing resource, so we have to do it manually.
+	// Unfortunately it might cause saving twice sometimes, and it still won't cover worst cases of nesting...
+	std::vector<Ref<VoxelGeneratorGraph>> _modified_graph_containers;
 };
 
 } // namespace zylann::voxel

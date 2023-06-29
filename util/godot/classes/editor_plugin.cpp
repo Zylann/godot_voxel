@@ -20,6 +20,10 @@ EditorPlugin::AfterGUIInput ZN_EditorPlugin::forward_3d_gui_input(Camera3D *p_ca
 	return _zn_forward_3d_gui_input(p_camera, p_event);
 }
 
+void ZN_EditorPlugin::save_external_data() {
+	_zn_save_external_data();
+}
+
 #elif defined(ZN_GODOT_EXTENSION)
 
 bool ZN_EditorPlugin::_handles(Object *p_object) const {
@@ -38,6 +42,10 @@ int32_t ZN_EditorPlugin::_forward_3d_gui_input(Camera3D *p_camera, const Ref<Inp
 	return _zn_forward_3d_gui_input(p_camera, p_event);
 }
 
+void ZN_EditorPlugin::_save_external_data() {
+	_zn_save_external_data();
+}
+
 #endif
 
 bool ZN_EditorPlugin::_zn_handles(const Object *p_object) const {
@@ -47,6 +55,8 @@ bool ZN_EditorPlugin::_zn_handles(const Object *p_object) const {
 void ZN_EditorPlugin::_zn_edit(Object *p_object) {}
 
 void ZN_EditorPlugin::_zn_make_visible(bool visible) {}
+
+void ZN_EditorPlugin::_zn_save_external_data() {}
 
 EditorPlugin::AfterGUIInput ZN_EditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {

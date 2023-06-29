@@ -10,7 +10,8 @@ using namespace godot;
 
 namespace zylann {
 
-inline Error save_resource(const Ref<Resource> &resource, const String &path, ResourceSaver::SaverFlags flags) {
+inline Error save_resource(const Ref<Resource> &resource, const String &path = "",
+		ResourceSaver::SaverFlags flags = ResourceSaver::FLAG_NONE) {
 #if defined(ZN_GODOT)
 	return ResourceSaver::save(resource, path, flags);
 #elif defined(ZN_GODOT_EXTENSION)

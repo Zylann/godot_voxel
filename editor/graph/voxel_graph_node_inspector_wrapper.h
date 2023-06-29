@@ -36,8 +36,6 @@ protected:
 	bool _dont_undo_redo() const;
 
 private:
-	Object *create_undo_redo_action(EditorUndoRedoManager &undo_redo, String name);
-
 	static void _bind_methods();
 
 	Ref<pg::VoxelGraphFunction> _graph;

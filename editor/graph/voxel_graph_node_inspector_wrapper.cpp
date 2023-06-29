@@ -130,7 +130,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 // the expression's code also changes dynamic inputs of the node and reconnects existing connections, all as one
 // UndoRedo action.
 static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, String code,
-		EditorUndoRedoManager &ur, VoxelGraphEditor &graph_editor, Object *graph_ur_obj) {
+		EditorUndoRedoManager &ur, VoxelGraphEditor &graph_editor) {
 	//
 	const CharString code_utf8 = code.utf8();
 	std::vector<std::string_view> new_input_names;
@@ -171,16 +171,14 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 
 	for (size_t i = 0; i < to_disconnect.size(); ++i) {
 		const Connection con = to_disconnect[i];
-		ur.add_do_method(
-				graph_ur_obj, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
+		ur.add_do_method(&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
-	ur.add_do_method(graph_ur_obj, "set_expression_node_inputs", node_id, to_godot(new_input_names));
+	ur.add_do_method(&graph, "set_expression_node_inputs", node_id, to_godot(new_input_names));
 
 	for (size_t i = 0; i < to_reconnect.size(); ++i) {
 		const Connection con = to_reconnect[i];
-		ur.add_do_method(
-				graph_ur_obj, "add_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
+		ur.add_do_method(&graph, "add_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
 	// Undo
@@ -188,41 +186,18 @@ static void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id
 	for (size_t i = 0; i < to_reconnect.size(); ++i) {
 		const Connection con = to_reconnect[i];
 		ur.add_undo_method(
-				graph_ur_obj, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
+				&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
-	ur.add_undo_method(graph_ur_obj, "set_expression_node_inputs", node_id, to_godot(old_input_names));
+	ur.add_undo_method(&graph, "set_expression_node_inputs", node_id, to_godot(old_input_names));
 
 	for (size_t i = 0; i < to_disconnect.size(); ++i) {
 		const Connection con = to_disconnect[i];
-		ur.add_undo_method(
-				graph_ur_obj, "add_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
+		ur.add_undo_method(&graph, "add_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
 	ur.add_do_method(&graph_editor, "update_node_layout", node_id);
 	ur.add_undo_method(&graph_editor, "update_node_layout", node_id);
-}
-
-Object *VoxelGraphNodeInspectorWrapper::create_undo_redo_action(EditorUndoRedoManager &undo_redo, String name) {
-	undo_redo.create_action(name);
-
-	Ref<VoxelGeneratorGraph> generator = get_generator();
-	if (generator.is_valid()) {
-		// When the edited graph is an internal object of another resource, Godot won't detect if that other resource is
-		// modified and won't save it... so we have to somehow make the resource appear in UndoRedo actions
-		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-		undo_redo.add_do_method(generator.ptr(), sn._dummy_function);
-		undo_redo.add_undo_method(generator.ptr(), sn._dummy_function);
-	}
-
-	Ref<RefCounted> graph_obj = _graph;
-	if (_generator.is_valid()) {
-		// When editing a nested graph resource we have to use this STUPID workaround to not trigger errors with
-		// EditorUndoRedoManager...
-		graph_obj = VoxelGeneratorGraphUndoRedoWorkaround::get_or_create(_generator);
-	}
-
-	return graph_obj.ptr();
 }
 
 bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Variant &p_value) {
@@ -240,9 +215,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 	// Special case because `name` is neither a parameter nor an output
 	if (name == "name") {
 		String previous_name = graph->get_node_name(_node_id);
-		Object *graph_ur_obj = create_undo_redo_action(ur, "Set VoxelGeneratorGraph node name");
-		ur.add_do_method(graph_ur_obj, "set_node_name", _node_id, p_value);
-		ur.add_undo_method(graph_ur_obj, "set_node_name", _node_id, previous_name);
+		ur.create_action("Set VoxelGeneratorGraph node name");
+		ur.add_do_method(graph.ptr(), "set_node_name", _node_id, p_value);
+		ur.add_undo_method(graph.ptr(), "set_node_name", _node_id, previous_name);
 		// ur->add_do_method(this, "notify_property_list_changed");
 		// ur->add_undo_method(this, "notify_property_list_changed");
 		ur.commit_action();
@@ -251,9 +226,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 
 	if (name == AUTOCONNECT_PROPERTY_NAME) {
 		const bool prev_autoconnect = graph->get_node_default_inputs_autoconnect(_node_id);
-		Object *graph_ur_obj = create_undo_redo_action(ur, String("Set ") + AUTOCONNECT_PROPERTY_NAME);
-		ur.add_do_method(graph_ur_obj, "set_node_default_inputs_autoconnect", _node_id, p_value);
-		ur.add_undo_method(graph_ur_obj, "set_node_default_inputs_autoconnect", _node_id, prev_autoconnect);
+		ur.create_action(String("Set ") + AUTOCONNECT_PROPERTY_NAME);
+		ur.add_do_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, p_value);
+		ur.add_undo_method(graph.ptr(), "set_node_default_inputs_autoconnect", _node_id, prev_autoconnect);
 		// To update disabled default input values in the inspector
 		ur.add_do_method(this, "notify_property_list_changed");
 		ur.add_undo_method(this, "notify_property_list_changed");
@@ -265,14 +240,14 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 
 	if (graph->get_node_param_index_by_name(_node_id, p_name, index)) {
 		Variant previous_value = graph->get_node_param(_node_id, index);
-		Object *graph_ur_obj = create_undo_redo_action(ur, "Set VoxelGeneratorGraph node parameter");
-		ur.add_do_method(graph_ur_obj, "set_node_param", _node_id, index, p_value);
-		ur.add_undo_method(graph_ur_obj, "set_node_param", _node_id, index, previous_value);
+		ur.create_action("Set VoxelGeneratorGraph node parameter");
+		ur.add_do_method(graph.ptr(), "set_node_param", _node_id, index, p_value);
+		ur.add_undo_method(graph.ptr(), "set_node_param", _node_id, index, previous_value);
 
 		const VoxelGraphFunction::NodeTypeID node_type_id = _graph->get_node_type_id(_node_id);
 
 		if (node_type_id == VoxelGraphFunction::NODE_EXPRESSION) {
-			update_expression_inputs(**graph, _node_id, p_value, ur, *_graph_editor, graph_ur_obj);
+			update_expression_inputs(**graph, _node_id, p_value, ur, *_graph_editor);
 			// TODO Default inputs cannot be set after adding variables!
 			// It requires calling `notify_property_list_changed`, however that makes the LineEdit in the inspector to
 			// reset its cursor position, making string parameter edition a nightmare. Only workaround is to deselect
@@ -289,9 +264,9 @@ bool VoxelGraphNodeInspectorWrapper::_set(const StringName &p_name, const Varian
 
 	} else if (graph->get_node_input_index_by_name(_node_id, p_name, index)) {
 		Variant previous_value = graph->get_node_default_input(_node_id, index);
-		Object *graph_ur_obj = create_undo_redo_action(ur, "Set VoxelGeneratorGraph node default input");
-		ur.add_do_method(graph_ur_obj, "set_node_default_input", _node_id, index, p_value);
-		ur.add_undo_method(graph_ur_obj, "set_node_default_input", _node_id, index, previous_value);
+		ur.create_action("Set VoxelGeneratorGraph node default input");
+		ur.add_do_method(graph.ptr(), "set_node_default_input", _node_id, index, p_value);
+		ur.add_undo_method(graph.ptr(), "set_node_default_input", _node_id, index, previous_value);
 		ur.add_do_method(this, "notify_property_list_changed");
 		ur.add_undo_method(this, "notify_property_list_changed");
 		ur.commit_action();
