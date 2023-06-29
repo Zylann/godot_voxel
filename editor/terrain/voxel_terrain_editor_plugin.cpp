@@ -74,6 +74,12 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 			popup->set_item_as_checkable(i, true);
 			popup->set_item_checked(i, _show_mesh_updates);
 		}
+		{
+			popup->add_item(ZN_TTR("Show modifier bounds"), MENU_SHOW_MODIFIER_BOUNDS);
+			const int i = popup->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, _show_modifier_bounds);
+		}
 	}
 	popup->add_separator();
 	popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
@@ -189,6 +195,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
 		}
 	}
 }
@@ -277,6 +284,16 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MESH_UPDATES);
 			_menu_button->get_popup()->set_item_checked(i, _show_mesh_updates);
+		} break;
+
+		case MENU_SHOW_MODIFIER_BOUNDS: {
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			ERR_FAIL_COND(lod_terrain == nullptr);
+			_show_modifier_bounds = !_show_modifier_bounds;
+			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
+			_menu_button->get_popup()->set_item_checked(i, _show_modifier_bounds);
 		} break;
 
 		case MENU_ABOUT:

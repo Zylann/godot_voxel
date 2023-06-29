@@ -2636,6 +2636,16 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+	// Modifiers
+	if (debug_get_draw_flag(DEBUG_DRAW_MODIFIER_BOUNDS)) {
+		const VoxelModifierStack &modifiers = _data->get_modifiers();
+		modifiers.for_each_modifier([&dr](const VoxelModifier &modifier) {
+			const AABB aabb = modifier.get_aabb();
+			const Transform3D t(Basis().scaled(aabb.size), aabb.get_center() - aabb.size * 0.5);
+			dr.draw_box_mm(t, Color8(0, 0, 255, 255));
+		});
+	}
+
 	dr.end();
 }
 
@@ -2894,6 +2904,7 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDIT_BOXES);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_GROUP("Bounds", "");

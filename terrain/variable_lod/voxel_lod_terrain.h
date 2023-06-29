@@ -200,8 +200,9 @@ public:
 		DEBUG_DRAW_EDIT_BOXES = 3,
 		DEBUG_DRAW_VOLUME_BOUNDS = 4,
 		DEBUG_DRAW_EDITED_BLOCKS = 5,
+		DEBUG_DRAW_MODIFIER_BOUNDS = 6,
 
-		DEBUG_DRAW_FLAGS_COUNT = 6
+		DEBUG_DRAW_FLAGS_COUNT = 7
 	};
 
 	void debug_set_draw_enabled(bool enabled);

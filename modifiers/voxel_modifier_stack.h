@@ -41,6 +41,14 @@ public:
 	void apply_for_detail_gpu_rendering(std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb) const;
 	void clear();
 
+	template <typename F>
+	void for_each_modifier(F f) const {
+		RWLockRead rlock(_stack_lock);
+		for (const VoxelModifier *modifier : _stack) {
+			f(*modifier);
+		}
+	}
+
 private:
 	void move_from_noclear(VoxelModifierStack &other);
 
