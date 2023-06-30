@@ -20,6 +20,9 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 		ZN_ASSERT_RETURN_MSG(
 				!Box3i::from_min_max(src_min, src_max).intersects(Box3i::from_min_max(dst_min, dst_min + area_size)),
 				"Copy across the same buffer to an overlapping area is not supported");
+	} else if (src.overlaps(dst)) {
+		ZN_PRINT_ERROR("Different overlapping spans are not allowed");
+		return;
 	}
 	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= dst.size());
 	ZN_ASSERT_RETURN(Vector3iUtil::get_volume(area_size) * item_size <= src.size());
@@ -45,6 +48,7 @@ void copy_3d_region_zxy(Span<uint8_t> dst, Vector3i dst_size, Vector3i dst_min, 
 #ifdef DEBUG_ENABLED
 				ZN_ASSERT_RETURN(dst_ri < dst.size());
 				ZN_ASSERT_RETURN(dst.size() - dst_ri >= area_size.y * item_size);
+				ZN_ASSERT_RETURN(src.size() - src_ri >= area_size.y * item_size);
 #endif
 				// TODO Cast src and dst to `restrict` so the optimizer can assume addresses don't overlap,
 				//      which might allow to write as a for loop (which may compile as a `memcpy`)?

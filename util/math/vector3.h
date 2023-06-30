@@ -25,6 +25,10 @@ inline Vector3 floor(const Vector3 &p) {
 	return p.floor();
 }
 
+inline Vector3 ceil(const Vector3 &p) {
+	return p.ceil();
+}
+
 inline Vector3 round(const Vector3 &p) {
 	return p.round();
 }

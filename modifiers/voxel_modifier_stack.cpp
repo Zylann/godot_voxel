@@ -17,25 +17,36 @@ std::vector<Vector3> &get_tls_positions() {
 	return tls_positions;
 }
 
-Span<const Vector3> get_positions_temporary(Vector3i buffer_size, Vector3 origin, Vector3 size) {
-	get_tls_positions().resize(Vector3iUtil::get_volume(buffer_size));
-	Span<Vector3> positions = to_span(get_tls_positions());
+void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, std::vector<Vector3> &positions) {
+	positions.resize(Vector3iUtil::get_volume(buffer_size));
 
 	const Vector3 end = origin + size;
-	const Vector3 bsf = buffer_size;
+	const Vector3 inv_bsf = Vector3(1.0, 1.0, 1.0) / buffer_size;
 
 	unsigned int i = 0;
 
+	Vector3 pos;
+
 	for (int z = 0; z < buffer_size.z; ++z) {
+		pos.z = Math::lerp(origin.z, end.z, z * inv_bsf.z);
+
 		for (int x = 0; x < buffer_size.x; ++x) {
+			pos.x = Math::lerp(origin.x, end.x, x * inv_bsf.x);
+
 			for (int y = 0; y < buffer_size.y; ++y) {
-				positions[i] = math::lerp(origin, end, Vector3(x / bsf.x, y / bsf.y, z / bsf.z));
+				pos.y = Math::lerp(origin.y, end.y, y * inv_bsf.y);
+
+				positions[i] = pos;
 				++i;
 			}
 		}
 	}
+}
 
-	return positions;
+Span<const Vector3> get_positions_temporary(Vector3i buffer_size, Vector3 origin, Vector3 size) {
+	std::vector<Vector3> &vec = get_tls_positions();
+	get_positions_buffer(buffer_size, origin, size, vec);
+	return to_span(vec);
 }
 
 Span<const Vector3> get_positions_temporary(
@@ -53,11 +64,10 @@ Span<const Vector3> get_positions_temporary(
 }
 
 // TODO Use VoxelBufferInternal helper function
-Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
+void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &sdf) {
 	ZN_DSTACK();
-	const Vector3i bs = voxels.get_size();
-	get_tls_sdf().resize(Vector3iUtil::get_volume(bs));
-	Span<float> sdf = to_span(get_tls_sdf());
+
+	sdf.resize(Vector3iUtil::get_volume(voxels.get_size()));
 
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
 	voxels.decompress_channel(channel);
@@ -103,8 +113,12 @@ Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
 	for (unsigned int i = 0; i < sdf.size(); ++i) {
 		sdf[i] *= inv_scale;
 	}
+}
 
-	return sdf;
+Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
+	std::vector<float> &vec = get_tls_sdf();
+	decompress_sdf_to_buffer(voxels, vec);
+	return to_span(vec);
 }
 
 } // namespace
@@ -175,24 +189,69 @@ void VoxelModifierStack::apply(VoxelBufferInternal &voxels, AABB aabb) const {
 	VoxelModifierContext ctx;
 	bool any_intersection = false;
 
+	// This version can be slower because we are trying to workaround a side-effect of fixed-point compression.
+	// Processing through the whole block is easier, but it can introduce artifacts because scaling and applying
+	// modifiers can cause tiny changes all over the area when encoded back to snorm/i16/i8, not just inside the shape.
+	// Even if modifiers are made to do nothing, the presence of one in a mesh block and not in another block can
+	// produce a seam in between them (one will have evaluated SDF with it, and the other without). So we try to
+	// modify only the area that intersects the block, and we re-encode only what was modified.
+	// Another option later could be to use uncompressed blocks (32-bit float) when doing on-the-fly sampling?
+
+	thread_local std::vector<float> tls_block_sdf_initial;
+	thread_local std::vector<float> tls_block_sdf;
+
+	std::vector<float> &area_sdf = get_tls_sdf();
+	std::vector<Vector3> &area_positions = get_tls_positions();
+
+	const Vector3 v_to_w = aabb.size / Vector3(voxels.get_size());
+	const Vector3 w_to_v = Vector3(voxels.get_size()) / aabb.size;
+	const Vector3i origin_voxels = Vector3i(math::floor(aabb.position * w_to_v));
+
 	for (unsigned int i = 0; i < _stack.size(); ++i) {
 		const VoxelModifier *modifier = _stack[i];
 		ZN_ASSERT(modifier != nullptr);
 
-		if (modifier->get_aabb().intersects(aabb)) {
+		const AABB modifier_aabb = modifier->get_aabb();
+		if (modifier_aabb.intersects(aabb)) {
+			ZN_PROFILE_SCOPE_NAMED("Intersecting modifier");
+
 			if (any_intersection == false) {
+				ZN_PROFILE_SCOPE_NAMED("Read block");
 				any_intersection = true;
 
-				ctx.positions = get_positions_temporary(voxels.get_size(), aabb.position, aabb.size);
-				ctx.sdf = decompress_sdf_to_temporary(voxels);
+				decompress_sdf_to_buffer(voxels, tls_block_sdf_initial);
+
+				tls_block_sdf.resize(tls_block_sdf_initial.size());
+				memcpy(tls_block_sdf.data(), tls_block_sdf_initial.data(), tls_block_sdf.size() * sizeof(float));
 			}
 
+			// Get modifier bounds in voxels
+			Box3i modifier_box(math::floor(modifier_aabb.position * w_to_v), math::ceil(modifier_aabb.size * w_to_v));
+			modifier_box.clip(Box3i(origin_voxels, voxels.get_size()));
+			const Vector3i local_origin_in_voxels = modifier_box.pos - origin_voxels;
+
+			const int64_t volume = Vector3iUtil::get_volume(modifier_box.size);
+			area_sdf.resize(volume);
+			copy_3d_region_zxy(to_span(area_sdf), modifier_box.size, Vector3i(), to_span_const(tls_block_sdf),
+					voxels.get_size(), local_origin_in_voxels, local_origin_in_voxels + modifier_box.size);
+
+			get_positions_buffer(
+					modifier_box.size, v_to_w * modifier_box.pos, v_to_w * modifier_box.size, area_positions);
+
+			ctx.positions = to_span(area_positions);
+			ctx.sdf = to_span(area_sdf);
 			modifier->apply(ctx);
+
+			// Write modifications back to the full-block decompressed buffer
+			// TODO Maybe use an unchecked version for a bit more speed?
+			copy_3d_region_zxy(to_span(tls_block_sdf), voxels.get_size(), local_origin_in_voxels,
+					Span<const float>(ctx.sdf), modifier_box.size, Vector3i(), modifier_box.size);
 		}
 	}
 
 	if (any_intersection) {
-		scale_and_store_sdf(voxels, ctx.sdf);
+		// scale_and_store_sdf(voxels, to_span(tls_block_sdf));
+		scale_and_store_sdf_if_modified(voxels, to_span(tls_block_sdf), to_span(tls_block_sdf_initial));
 		voxels.compress_uniform_channels();
 	}
 }

@@ -507,6 +507,7 @@ inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &vo
 
 void get_unscaled_sdf(const VoxelBufferInternal &voxels, Span<float> sdf);
 void scale_and_store_sdf(VoxelBufferInternal &voxels, Span<float> sdf);
+void scale_and_store_sdf_if_modified(VoxelBufferInternal &voxels, Span<float> sdf, Span<const float> comparand);
 
 } // namespace zylann::voxel
 
