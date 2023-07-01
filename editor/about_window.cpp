@@ -212,7 +212,9 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Treer\n"
 						"MrGreaterThan\n"
 						"lenis0012\n"
-						"ilievmark (Iliev Mark)\n";
+						"ilievmark (Iliev Mark)\n"
+						"OrbitalHare\n"
+						"matthewhilton (Matthew Hilton)";
 	{
 		Dictionary d;
 		// TODO Take version from somewhere unique
