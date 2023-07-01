@@ -121,12 +121,12 @@ void RenderDetailTextureTask::apply_result() {
 	VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 	ZN_ASSERT_RETURN(callbacks.mesh_output_callback != nullptr);
 	ZN_ASSERT_RETURN(callbacks.data != nullptr);
-	callbacks.virtual_texture_output_callback(callbacks.data, o);
+	callbacks.detail_texture_output_callback(callbacks.data, o);
 }
 
 TaskPriority RenderDetailTextureTask::get_priority() {
 	// Priority by distance, but after meshes
-	TaskPriority p = priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2, nullptr);
+	TaskPriority p = priority_dependency.evaluate(lod_index, constants::TASK_PRIORITY_DETAIL_TEXTURES_BAND2, nullptr);
 	return p;
 }
 
@@ -196,7 +196,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	DetailTextureData edited_tiles_normalmap_data;
 	compute_detail_texture_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
 			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels,
-			size_in_voxels, lod_index, false, /*virtual_texture_settings.octahedral_encoding_enabled*/
+			size_in_voxels, lod_index, false, /*detail_texture_settings.octahedral_encoding_enabled*/
 			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), true);
 
 	const unsigned int tile_count = cell_iterator->get_count();
@@ -246,8 +246,8 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	gpu_task->cell_triangles = std::move(cell_triangles);
 	gpu_task->tile_data = std::move(tile_data);
 	gpu_task->params = params;
-	gpu_task->shader = generator->get_virtual_rendering_shader();
-	gpu_task->shader_params = generator->get_virtual_rendering_shader_parameters();
+	gpu_task->shader = generator->get_detail_rendering_shader();
+	gpu_task->shader_params = generator->get_detail_rendering_shader_parameters();
 	gpu_task->output = output_textures;
 	gpu_task->edited_tiles_texture_data = std::move(edited_tiles_normalmap_data);
 	gpu_task->block_position = mesh_block_position;
@@ -365,7 +365,7 @@ void RenderDetailTexturePass2Task::apply_result() {
 	VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 	ZN_ASSERT_RETURN(callbacks.mesh_output_callback != nullptr);
 	ZN_ASSERT_RETURN(callbacks.data != nullptr);
-	callbacks.virtual_texture_output_callback(callbacks.data, o);
+	callbacks.detail_texture_output_callback(callbacks.data, o);
 }
 
 } // namespace zylann::voxel

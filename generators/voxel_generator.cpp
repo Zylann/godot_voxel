@@ -57,21 +57,21 @@ bool VoxelGenerator::get_shader_source(ShaderSourceData &out_params) const {
 	return false;
 }
 
-std::shared_ptr<ComputeShader> VoxelGenerator::get_virtual_rendering_shader() {
+std::shared_ptr<ComputeShader> VoxelGenerator::get_detail_rendering_shader() {
 	{
 		MutexLock mlock(_shader_mutex);
-		return _virtual_rendering_shader;
+		return _detail_rendering_shader;
 	}
 }
 
-std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_virtual_rendering_shader_parameters() {
+std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_detail_rendering_shader_parameters() {
 	{
 		MutexLock mlock(_shader_mutex);
-		return _virtual_rendering_shader_parameters;
+		return _detail_rendering_shader_parameters;
 	}
 }
 
-std::shared_ptr<ComputeShader> compile_virtual_rendering_compute_shader(
+std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
 	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
@@ -115,21 +115,21 @@ void VoxelGenerator::compile_shaders() {
 	ZN_PRINT_VERBOSE("Compiling compute shaders for virtual rendering");
 
 	std::shared_ptr<ComputeShaderParameters> params = make_shared_instance<ComputeShaderParameters>();
-	std::shared_ptr<ComputeShader> vrender_shader = compile_virtual_rendering_compute_shader(*this, *params);
+	std::shared_ptr<ComputeShader> detail_render_shader = compile_detail_rendering_compute_shader(*this, *params);
 
 	{
 		MutexLock mlock(_shader_mutex);
-		_virtual_rendering_shader = vrender_shader;
 
-		_virtual_rendering_shader_parameters = params;
+		_detail_rendering_shader = detail_render_shader;
+		_detail_rendering_shader_parameters = params;
 	}
 }
 
 void VoxelGenerator::invalidate_shaders() {
 	{
 		MutexLock mlock(_shader_mutex);
-		_virtual_rendering_shader.reset();
-		_virtual_rendering_shader_parameters.reset();
+		_detail_rendering_shader.reset();
+		_detail_rendering_shader_parameters.reset();
 	}
 }
 

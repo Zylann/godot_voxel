@@ -317,14 +317,14 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
 
-	// Currently, Transvoxel only is supported in combination with virtual normalmap texturing, because the algorithm
+	// Currently, Transvoxel only is supported in combination with detail normalmap texturing, because the algorithm
 	// provides a cheap source for cells subdividing the mesh. It should be possible to obtain cells from any mesh, but
 	// it is more expensive to find them from scratch, and for now Transvoxel is the most viable algorithm for smooth
 	// terrain.
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 
 	if (transvoxel_mesher.is_valid() && detail_texture_settings.enabled && !mesh_is_empty &&
-			lod_index >= detail_texture_settings.begin_lod_index && require_virtual_texture) {
+			lod_index >= detail_texture_settings.begin_lod_index && require_detail_texture) {
 		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
 
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
@@ -345,7 +345,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		nm_task->mesh_normals = mesh_arrays.normals;
 		nm_task->mesh_indices = mesh_arrays.indices;
 		if (detail_texture_generator_override.is_valid()) {
-			nm_task->generator = lod_index >= virtual_texture_generator_override_begin_lod_index
+			nm_task->generator = lod_index >= detail_texture_generator_override_begin_lod_index
 					? detail_texture_generator_override
 					: meshing_dependency->generator;
 		} else {
@@ -359,7 +359,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		nm_task->output_textures = detail_textures;
 		nm_task->detail_texture_settings = detail_texture_settings;
 		nm_task->priority_dependency = priority_dependency;
-		nm_task->use_gpu = virtual_texture_use_gpu;
+		nm_task->use_gpu = detail_texture_use_gpu;
 
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}

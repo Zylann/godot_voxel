@@ -50,7 +50,7 @@ static const uint8_t TASK_PRIORITY_MESH_BAND2 = 10;
 static const uint8_t TASK_PRIORITY_GENERATE_BAND2 = 10;
 static const uint8_t TASK_PRIORITY_LOAD_BAND2 = 10;
 static const uint8_t TASK_PRIORITY_SAVE_BAND2 = 9;
-static const uint8_t TASK_PRIORITY_VIRTUAL_TEXTURES_BAND2 = 8; // After meshes
+static const uint8_t TASK_PRIORITY_DETAIL_TEXTURES_BAND2 = 8; // After meshes
 
 static const uint8_t TASK_PRIORITY_BAND3_DEFAULT = 10;
 

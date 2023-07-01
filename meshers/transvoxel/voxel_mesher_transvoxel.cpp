@@ -239,7 +239,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
-	if (input.virtual_texture_hint) {
+	if (input.detail_texture_hint) {
 		transvoxel::get_tls_cell_infos().clear();
 		cell_infos = &transvoxel::get_tls_cell_infos();
 	}

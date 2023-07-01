@@ -60,8 +60,8 @@ struct VoxelLodTerrainUpdateData {
 		// Not really exposed for now, will wait for it to be really needed. It might never be.
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
-		bool virtual_textures_use_gpu = false;
-		uint8_t virtual_texture_generator_override_begin_lod_index = 0;
+		bool detail_textures_use_gpu = false;
+		uint8_t detail_texture_generator_override_begin_lod_index = 0;
 		unsigned int mesh_block_size_po2 = 4;
 		DetailRenderingSettings detail_texture_settings;
 		Ref<VoxelGenerator> detail_texture_generator_override;
@@ -76,22 +76,22 @@ struct VoxelLodTerrainUpdateData {
 		MESH_UPDATE_SENT // The mesh is out of date, and an update request was sent, pending response
 	};
 
-	enum VirtualTextureState { //
-		VIRTUAL_TEXTURE_IDLE = 0,
-		VIRTUAL_TEXTURE_NEED_UPDATE,
-		VIRTUAL_TEXTURE_PENDING
+	enum DetailTextureState { //
+		DETAIL_TEXTURE_IDLE = 0,
+		DETAIL_TEXTURE_NEED_UPDATE,
+		DETAIL_TEXTURE_PENDING
 	};
 
 	struct MeshBlockState {
 		std::atomic<MeshState> state;
-		std::atomic<VirtualTextureState> virtual_texture_state;
+		std::atomic<DetailTextureState> detail_texture_state;
 		uint8_t transition_mask;
 		bool active;
 		// bool pending_transition_update;
 
 		MeshBlockState() :
 				state(MESH_NEVER_UPDATED),
-				virtual_texture_state(VIRTUAL_TEXTURE_IDLE),
+				detail_texture_state(DETAIL_TEXTURE_IDLE),
 				transition_mask(0),
 				active(false) {}
 	};

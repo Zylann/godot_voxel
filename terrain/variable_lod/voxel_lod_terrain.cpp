@@ -150,7 +150,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_data_block_response(ob);
 	};
-	callbacks.virtual_texture_output_callback = [](void *cb_data, VoxelEngine::BlockDetailTextureOutput &ob) {
+	callbacks.detail_texture_output_callback = [](void *cb_data, VoxelEngine::BlockDetailTextureOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
 		self->apply_detail_texture_update(ob);
 	};
@@ -1043,7 +1043,7 @@ void VoxelLodTerrain::process(float delta) {
 			generator = get_generator();
 		}
 		if (generator.is_valid() && generator->supports_shaders() &&
-				generator->get_virtual_rendering_shader() == nullptr) {
+				generator->get_detail_rendering_shader() == nullptr) {
 			generator->compile_shaders();
 		}
 	}
@@ -1605,7 +1605,7 @@ static void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, 
 	const Vector4 parent_offset_and_scale =
 			parent_material->get_shader_parameter(sn.u_voxel_virtual_texture_offset_scale);
 	const Vector3i parent_offset(parent_offset_and_scale.x, parent_offset_and_scale.y, parent_offset_and_scale.z);
-	const int fallback_level = parent_block.virtual_texture_fallback_level + 1;
+	const int fallback_level = parent_block.detail_texture_fallback_level + 1;
 
 	const Vector3i offset = parent_offset + (bpos - (parent_bpos * 2)) * (mesh_block_size >> fallback_level);
 	const float scale = 1.f / float(1 << fallback_level);
@@ -1619,7 +1619,7 @@ static void try_apply_parent_virtual_texture_to_block(VoxelMeshBlockVLT &block, 
 			get_detail_texture_tile_resolution_for_lod(detail_texture_settings, parent_lod_index);
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
 
-	block.virtual_texture_fallback_level = fallback_level;
+	block.detail_texture_fallback_level = fallback_level;
 }
 
 void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
@@ -1695,18 +1695,18 @@ void VoxelLodTerrain::apply_detail_texture_update_to_block(
 		RWLockRead rlock(lod.mesh_map_state.map_lock);
 		auto mesh_block_state_it = lod.mesh_map_state.map.find(block.position);
 		if (mesh_block_state_it != lod.mesh_map_state.map.end()) {
-			VoxelLodTerrainUpdateData::VirtualTextureState expected_vt_state =
-					VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_PENDING;
+			VoxelLodTerrainUpdateData::DetailTextureState expected_dt_state =
+					VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING;
 			// If it was PENDING, set it to IDLE.
-			mesh_block_state_it->second.virtual_texture_state.compare_exchange_strong(
-					expected_vt_state, VoxelLodTerrainUpdateData::VIRTUAL_TEXTURE_IDLE);
+			mesh_block_state_it->second.detail_texture_state.compare_exchange_strong(
+					expected_dt_state, VoxelLodTerrainUpdateData::DETAIL_TEXTURE_IDLE);
 			// TODO If the mesh was modified again since, we need to schedule an extra update for the virtual texture to
 			// catch up. But for now I'm not sure if there is much value in doing so. It can get updated by the next
 			// edit. Scheduling an update from here isn't mildly inconvenient due to threading.
 		}
 	}
 
-	block.virtual_texture_fallback_level = 0;
+	block.detail_texture_fallback_level = 0;
 }
 
 void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) {
@@ -2127,20 +2127,20 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_normalmap_generator_override() const {
 void VoxelLodTerrain::set_normalmap_generator_override_begin_lod_index(int lod_index) {
 	ERR_FAIL_COND(lod_index < 0);
 	ERR_FAIL_COND(lod_index > static_cast<int>(constants::MAX_LOD));
-	_update_data->settings.virtual_texture_generator_override_begin_lod_index = lod_index;
+	_update_data->settings.detail_texture_generator_override_begin_lod_index = lod_index;
 }
 
 int VoxelLodTerrain::get_normalmap_generator_override_begin_lod_index() const {
-	return _update_data->settings.virtual_texture_generator_override_begin_lod_index;
+	return _update_data->settings.detail_texture_generator_override_begin_lod_index;
 }
 
 void VoxelLodTerrain::set_normalmap_use_gpu(bool enabled) {
-	_update_data->settings.virtual_textures_use_gpu = enabled;
+	_update_data->settings.detail_textures_use_gpu = enabled;
 	update_configuration_warnings();
 }
 
 bool VoxelLodTerrain::get_normalmap_use_gpu() const {
-	return _update_data->settings.virtual_textures_use_gpu;
+	return _update_data->settings.detail_textures_use_gpu;
 }
 
 #ifdef TOOLS_ENABLED

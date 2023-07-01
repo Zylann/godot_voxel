@@ -36,7 +36,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 				math::clamp(int(additional_data.get("normalmap_max_deviation_degrees", 0)),
 						int(DetailRenderingSettings::MIN_DEVIATION_DEGREES),
 						int(DetailRenderingSettings::MAX_DEVIATION_DEGREES));
-		input.virtual_texture_hint = detail_texture_settings.enabled;
+		input.detail_texture_hint = detail_texture_settings.enabled;
 	}
 
 	build(output, input);

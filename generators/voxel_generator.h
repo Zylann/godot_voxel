@@ -88,8 +88,8 @@ public:
 	};
 
 	virtual bool get_shader_source(ShaderSourceData &out_data) const;
-	std::shared_ptr<ComputeShader> get_virtual_rendering_shader();
-	std::shared_ptr<ComputeShaderParameters> get_virtual_rendering_shader_parameters();
+	std::shared_ptr<ComputeShader> get_detail_rendering_shader();
+	std::shared_ptr<ComputeShaderParameters> get_detail_rendering_shader_parameters();
 	void compile_shaders();
 	// Drops currently compiled shaders if any, so that they get recompiled when they are needed again
 	void invalidate_shaders();
@@ -105,8 +105,8 @@ protected:
 
 	void _b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 
-	std::shared_ptr<ComputeShader> _virtual_rendering_shader;
-	std::shared_ptr<ComputeShaderParameters> _virtual_rendering_shader_parameters;
+	std::shared_ptr<ComputeShader> _detail_rendering_shader;
+	std::shared_ptr<ComputeShaderParameters> _detail_rendering_shader_parameters;
 	Mutex _shader_mutex;
 };
 

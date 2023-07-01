@@ -43,9 +43,9 @@ public:
 		// If true, the mesher is told that the mesh will be used in a context with variable level of detail.
 		// For example, transition meshes will or will not be generated based on this (overriding mesher settings).
 		bool lod_hint = false;
-		// If true, the mesher can collect some extra information which can be useful to speed up virtual texture
+		// If true, the mesher can collect some extra information which can be useful to speed up detail texture
 		// baking. Depends on the mesher.
-		bool virtual_texture_hint = false;
+		bool detail_texture_hint = false;
 	};
 
 	struct Output {

@@ -60,7 +60,7 @@ public:
 
 	// Exposed for a fast-path. Return values are only valid until the next invocation of build() in the calling thread.
 	static const transvoxel::MeshArrays &get_mesh_cache_from_current_thread();
-	// Exposed for a fast-path. Return values are only valid if `virtual_texture_hint` is true in the input given to
+	// Exposed for a fast-path. Return values are only valid if `detail_texture_hint` is true in the input given to
 	// `build`, and only remains valid until the next invocation of build() in the calling thread.
 	static Span<const transvoxel::CellInfo> get_cell_info_from_current_thread();
 

@@ -87,7 +87,7 @@ public:
 	struct VolumeCallbacks {
 		void (*mesh_output_callback)(void *, BlockMeshOutput &) = nullptr;
 		void (*data_output_callback)(void *, BlockDataOutput &) = nullptr;
-		void (*virtual_texture_output_callback)(void *, BlockDetailTextureOutput &) = nullptr;
+		void (*detail_texture_output_callback)(void *, BlockDetailTextureOutput &) = nullptr;
 		void *data = nullptr;
 
 		inline bool check_callbacks() const {

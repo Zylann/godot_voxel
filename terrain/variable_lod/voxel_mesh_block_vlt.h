@@ -35,7 +35,7 @@ public:
 	// 0 means not using fallback.
 	// 1 means using texture of parent LOD (lod_index+1).
 	// 2 means using texture of grand-parent LOD (lod_index+2), etc.
-	uint8_t virtual_texture_fallback_level = 0;
+	uint8_t detail_texture_fallback_level = 0;
 
 	uint64_t last_collider_update_time = 0;
 	UniquePtr<VoxelMesher::Output> deferred_collider_data;
