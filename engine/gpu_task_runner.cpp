@@ -58,6 +58,9 @@ void GPUTaskRunner::thread_func() {
 	// Godot does not support async compute, so in order to get results from a compute shader, the only way is to sync
 	// with the device, waiting for everything to complete. So instead of running one shader at a time, we run a few of
 	// them.
+	// It's also unclear how much to execute per frame.
+	// 4 tasks was good enough on an nVidia 1060 for detail rendering, but for tasks with different costs it might need
+	// different quota to prevent rendering slowdowns...
 	const unsigned int batch_count = 4;
 
 	while (_running) {

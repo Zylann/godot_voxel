@@ -9,6 +9,7 @@
 #include "render_detail_texture_task.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
+#include "generate_block_gpu_task.h"
 #include "voxel_engine.h"
 
 namespace zylann::voxel {
@@ -52,7 +53,8 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // which includes enough neighbors for the mesher to avoid doing bound checks.
 static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
-		uint8_t lod_index, Vector3i mesh_block_pos) {
+		uint8_t lod_index, Vector3i mesh_block_pos, std::vector<Box3i> *out_boxes_to_generate,
+		Vector3i *out_origin_in_voxels) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
@@ -94,6 +96,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
 	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
 
+	// These boxes are in buffer coordinates (not world voxel coordinates)
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
 	boxes_to_generate.push_back(mesh_data_box);
@@ -154,18 +157,30 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		}
 	}
 
-	{
-		// Complete data with generated voxels
+	const Vector3i origin_in_voxels =
+			mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index) -
+			Vector3iUtil::create(min_padding << lod_index);
+
+	for (Box3i &box : boxes_to_generate) {
+		box.pos += Vector3iUtil::create(min_padding);
+	}
+
+	if (out_origin_in_voxels != nullptr) {
+		*out_origin_in_voxels = origin_in_voxels;
+	}
+
+	if (out_boxes_to_generate != nullptr) {
+		// Delegate generation to the caller
+		append_array(*out_boxes_to_generate, boxes_to_generate);
+
+	} else {
+		// Complete data with generated voxels on the CPU
 		ZN_PROFILE_SCOPE_NAMED("Generate");
 		VoxelBufferInternal generated_voxels;
 
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
-		const Vector3i origin_in_voxels =
-				mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index);
-
-		for (unsigned int i = 0; i < boxes_to_generate.size(); ++i) {
-			const Box3i &box = boxes_to_generate[i];
+		for (const Box3i &box : boxes_to_generate) {
 			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
@@ -178,8 +193,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
 			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(),
-						box.pos + Vector3iUtil::create(min_padding), channels[ci]);
+				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
 			}
 		}
 	}
@@ -260,6 +274,20 @@ int MeshBlockTask::debug_get_running_count() {
 void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
+	if (block_generation_use_gpu) {
+		if (stage == STAGE_GATHER_VOXELS) {
+			gather_voxels_gpu(ctx);
+		}
+		if (stage == STAGE_BUILD_MESH) {
+			build_mesh();
+		}
+	} else {
+		gather_voxels_cpu();
+		build_mesh();
+	}
+}
+
+void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	ZN_ASSERT(meshing_dependency != nullptr);
 	ZN_ASSERT(data != nullptr);
 
@@ -269,9 +297,53 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	VoxelBufferInternal voxels;
+	std::vector<Box3i> boxes_to_generate;
+	Vector3i origin_in_voxels;
+
 	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
-			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position);
+			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
+			&boxes_to_generate, &origin_in_voxels);
+
+	if (boxes_to_generate.size() == 0) {
+		stage = STAGE_BUILD_MESH;
+
+	} else {
+		// TODO Broad-phase to avoid the GPU part entirely?
+
+		Ref<VoxelGenerator> generator = meshing_dependency->generator;
+		ERR_FAIL_COND(generator.is_null());
+
+		std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
+		ERR_FAIL_COND(generator_shader == nullptr);
+
+		GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+		gpu_task->boxes_to_generate = std::move(boxes_to_generate);
+		gpu_task->generator_shader = generator_shader;
+		gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
+		gpu_task->lod_index = lod_index;
+		gpu_task->origin_in_voxels = origin_in_voxels;
+		gpu_task->mesh_task = this;
+
+		ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+
+		// Start GPU task, we'll continue meshing after it
+		VoxelEngine::get_singleton().push_gpu_task(gpu_task);
+	}
+}
+
+void MeshBlockTask::gather_voxels_cpu() {
+	ZN_ASSERT(meshing_dependency != nullptr);
+	ZN_ASSERT(data != nullptr);
+
+	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
+	ZN_ASSERT_RETURN_MSG(
+			mesher.is_valid(), "Meshing task started without a mesher. Maybe missing on the terrain node?");
+	const unsigned int min_padding = mesher->get_minimum_padding();
+	const unsigned int max_padding = mesher->get_maximum_padding();
+
+	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
+			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
+			nullptr, nullptr);
 
 	// Could cache generator data from here if it was safe to write into the map
 	/*if (data != nullptr && cache_generated_blocks) {
@@ -305,7 +377,10 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			}
 		}
 	}*/
+}
 
+void MeshBlockTask::build_mesh() {
+	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
 	const Vector3i mesh_block_size =
 			voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
 
@@ -318,9 +393,9 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
 
 	// Currently, Transvoxel only is supported in combination with detail normalmap texturing, because the algorithm
-	// provides a cheap source for cells subdividing the mesh. It should be possible to obtain cells from any mesh, but
-	// it is more expensive to find them from scratch, and for now Transvoxel is the most viable algorithm for smooth
-	// terrain.
+	// provides a cheap source for cells subdividing the mesh. It should be possible to obtain cells from any mesh,
+	// but it is more expensive to find them from scratch, and for now Transvoxel is the most viable algorithm for
+	// smooth terrain.
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
 
 	if (transvoxel_mesher.is_valid() && detail_texture_settings.enabled && !mesh_is_empty &&
@@ -366,7 +441,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
 		// This shall only run if Godot supports building meshes from multiple threads
-		_mesh = build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
+		_mesh = zylann::voxel::build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);
 		_has_mesh_resource = true;
 
@@ -393,7 +468,8 @@ void MeshBlockTask::apply_result() {
 	if (VoxelEngine::get_singleton().is_volume_valid(volume_id)) {
 		// The request response must match the dependency it would have been requested with.
 		// If it doesn't match, we are no longer interested in the result.
-		// It is assumed that if a dependency is changed, a new copy of it is made and the old one is marked invalid.
+		// It is assumed that if a dependency is changed, a new copy of it is made and the old one is marked
+		// invalid.
 		if (meshing_dependency->valid) {
 			VoxelEngine::BlockMeshOutput o;
 			// TODO Check for invalidation due to property changes

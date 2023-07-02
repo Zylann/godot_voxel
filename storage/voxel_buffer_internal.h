@@ -178,7 +178,7 @@ public:
 			unsigned int channel_index) {
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
-		const Channel &channel = _channels[channel_index];
+		Channel &channel = _channels[channel_index];
 #ifdef DEBUG_ENABLED
 		// Size of source and destination values must match
 		ZN_ASSERT_RETURN(channel.depth == get_depth_from_size(sizeof(T)));
@@ -189,7 +189,7 @@ public:
 		// or schedule a recompression for later.
 		decompress_channel(channel_index);
 
-		Span<T> dst(static_cast<T *>(channel.data), channel.size_in_bytes / sizeof(T));
+		Span<T> dst = Span<uint8_t>(channel.data, channel.size_in_bytes).reinterpret_cast_to<T>();
 		copy_3d_region_zxy<T>(dst, _size, dst_min, src, src_size, src_min, src_max);
 	}
 

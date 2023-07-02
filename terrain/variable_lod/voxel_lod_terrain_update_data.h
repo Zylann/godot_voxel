@@ -61,6 +61,7 @@ struct VoxelLodTerrainUpdateData {
 		bool cache_generated_blocks = false;
 		bool collision_enabled = true;
 		bool detail_textures_use_gpu = false;
+		bool generator_use_gpu = false;
 		uint8_t detail_texture_generator_override_begin_lod_index = 0;
 		unsigned int mesh_block_size_po2 = 4;
 		DetailRenderingSettings detail_texture_settings;

@@ -123,6 +123,9 @@ public:
 	void set_normalmap_use_gpu(bool enabled);
 	bool get_normalmap_use_gpu() const;
 
+	void set_generator_use_gpu(bool enabled);
+	bool get_generator_use_gpu() const;
+
 	// These must be called after an edit
 	void post_edit_area(Box3i p_box);
 	void post_edit_modifiers(Box3i p_voxel_box);

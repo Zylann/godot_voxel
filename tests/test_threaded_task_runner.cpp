@@ -353,7 +353,7 @@ void test_threaded_task_postponing() {
 			static thread_local std::vector<Block *> locked_blocks;
 
 			if (!try_lock_area(locked_blocks)) {
-				ctx.postpone = true;
+				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
 				return;
 			}
 

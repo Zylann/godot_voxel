@@ -1010,8 +1010,9 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 			task->detail_texture_generator_override_begin_lod_index =
 					settings.detail_texture_generator_override_begin_lod_index;
 			task->detail_texture_use_gpu = settings.detail_textures_use_gpu;
+			task->block_generation_use_gpu = settings.generator_use_gpu;
 
-			// Don't update a virtual texture if one update is already processing
+			// Don't update a detail texture if one update is already processing
 			if (settings.detail_texture_settings.enabled &&
 					lod_index >= settings.detail_texture_settings.begin_lod_index &&
 					mesh_block.detail_texture_state != VoxelLodTerrainUpdateData::DETAIL_TEXTURE_PENDING) {

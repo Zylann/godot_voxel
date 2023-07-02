@@ -301,7 +301,7 @@ void test_spatial_lock_dependent_map_chunks() {
 					Vector3i(column_pos.x + 1, 24, column_pos.y + 1) + Vector3i(1, 1, 1));
 
 			if (!map.spatial_lock.try_lock_write(box)) {
-				ctx.postpone = true;
+				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
 				return;
 			}
 
@@ -346,7 +346,7 @@ void test_spatial_lock_dependent_map_chunks() {
 			const BoxBounds3i box(bpos0 - Vector3i(1, 1, 1), bpos0 + Vector3i(2, 2, 2));
 
 			if (!map.spatial_lock.try_lock_read(box)) {
-				ctx.postpone = true;
+				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
 				return;
 			}
 

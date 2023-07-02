@@ -20,6 +20,8 @@ public:
 	MeshBlockTask();
 	~MeshBlockTask();
 
+	enum Stage { STAGE_GATHER_VOXELS = 0, STAGE_BUILD_MESH = 1 };
+
 	const char *get_debug_name() const override {
 		return "MeshBlock";
 	}
@@ -46,13 +48,20 @@ public:
 	bool require_detail_texture = false;
 	uint8_t detail_texture_generator_override_begin_lod_index = 0;
 	bool detail_texture_use_gpu = false;
+	bool block_generation_use_gpu = false;
+	uint8_t stage = 0;
 	PriorityDependency priority_dependency;
 	std::shared_ptr<MeshingDependency> meshing_dependency;
 	std::shared_ptr<VoxelData> data;
 	DetailRenderingSettings detail_texture_settings;
 	Ref<VoxelGenerator> detail_texture_generator_override;
+	VoxelBufferInternal voxels;
 
 private:
+	void gather_voxels_gpu(zylann::ThreadedTaskContext &ctx);
+	void gather_voxels_cpu();
+	void build_mesh();
+
 	bool _has_run = false;
 	bool _too_far = false;
 	bool _has_mesh_resource = false;

@@ -1,5 +1,6 @@
 #include "rendering_device.h"
 #include "../../dstack.h"
+#include "../../profiling.h"
 #include "rd_sampler_state.h"
 #include "rd_shader_source.h"
 #include "rd_texture_format.h"
@@ -112,6 +113,7 @@ RID texture_create(RenderingDevice &rd, RDTextureFormat &p_format, RDTextureView
 }
 
 RID uniform_set_create(RenderingDevice &rd, Array uniforms, RID shader, int shader_set) {
+	ZN_PROFILE_SCOPE();
 #if defined(ZN_GODOT)
 	// Can't access the version of that method taking an `Array` because it is private...
 	return rd.call(SNAME("uniform_set_create"), uniforms, shader, shader_set);

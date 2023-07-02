@@ -2,6 +2,7 @@
 
 namespace zylann::voxel {
 
+#include "block_generator_shader_template.h"
 #include "detail_gather_hits_shader.h"
 #include "detail_generator_shader_template.h"
 #include "detail_modifier_shader_template.h"

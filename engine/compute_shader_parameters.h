@@ -17,6 +17,8 @@ struct ComputeShaderParameters {
 	std::vector<ComputeShaderParameter> params;
 };
 
+void add_uniform_params(const std::vector<ComputeShaderParameter> &params, Array &uniforms);
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_COMPUTE_SHADER_PARAMETERS_H

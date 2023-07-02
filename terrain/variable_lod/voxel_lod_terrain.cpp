@@ -1047,6 +1047,13 @@ void VoxelLodTerrain::process(float delta) {
 			generator->compile_shaders();
 		}
 	}
+	if (get_generator_use_gpu()) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid() && generator->supports_shaders() &&
+				generator->get_block_rendering_shader() == nullptr) {
+			generator->compile_shaders();
+		}
+	}
 
 	// Get block loading responses
 	// Note: if block loading is too fast, this can cause stutters.
@@ -1083,7 +1090,7 @@ void VoxelLodTerrain::process(float delta) {
 			VoxelEngine::get_singleton().push_async_task(task);
 
 		} else {
-			ThreadedTaskContext ctx{ 0, false };
+			ThreadedTaskContext ctx{ 0, ThreadedTaskContext::STATUS_COMPLETE };
 			task->run(ctx);
 			memdelete(task);
 			apply_main_thread_update_tasks();
@@ -2143,6 +2150,15 @@ bool VoxelLodTerrain::get_normalmap_use_gpu() const {
 	return _update_data->settings.detail_textures_use_gpu;
 }
 
+void VoxelLodTerrain::set_generator_use_gpu(bool enabled) {
+	_update_data->settings.generator_use_gpu = enabled;
+	update_configuration_warnings();
+}
+
+bool VoxelLodTerrain::get_generator_use_gpu() const {
+	return _update_data->settings.generator_use_gpu;
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -2211,6 +2227,12 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		// Virtual textures
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
+			if (get_generator_use_gpu() && !generator->supports_shaders()) {
+				warnings.append(ZN_TTR("The option to use GPU when generating voxels is enabled, but the current "
+									   "generator ({0}) does not support GLSL.")
+										.format(varray(generator->get_class())));
+			}
+
 			if (is_normalmap_enabled()) {
 				if (!generator->supports_series_generation()) {
 					warnings.append(ZN_TTR(
@@ -2869,6 +2891,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_process_callback", "mode"), &VoxelLodTerrain::set_process_callback);
 	ClassDB::bind_method(D_METHOD("get_process_callback"), &VoxelLodTerrain::get_process_callback);
 
+	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enabled"), &VoxelLodTerrain::set_generator_use_gpu);
+	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelLodTerrain::get_generator_use_gpu);
+
 	// Debug
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
@@ -2963,6 +2988,7 @@ void VoxelLodTerrain::_bind_methods() {
 			"is_full_load_mode_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "threaded_update_enabled"), "set_threaded_update_enabled",
 			"is_threaded_update_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 }
 
 } // namespace zylann::voxel

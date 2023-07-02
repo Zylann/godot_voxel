@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cn0l06khtmlma"
+path="res://.godot/imported/block_generator_template.glsl-25e8d773e1d95e4dfc69659b7a35fd60.res"
+
+[deps]
+
+source_file="res://block_generator_template.glsl"
+dest_files=["res://.godot/imported/block_generator_template.glsl-25e8d773e1d95e4dfc69659b7a35fd60.res"]
+
+[params]
+

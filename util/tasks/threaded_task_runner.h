@@ -92,7 +92,7 @@ private:
 		IThreadedTask *task = nullptr;
 		TaskPriority cached_priority;
 		bool is_serial = false;
-		bool postponed = false;
+		uint8_t status = ThreadedTaskContext::STATUS_COMPLETE;
 	};
 
 	struct ThreadData {
