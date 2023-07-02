@@ -628,18 +628,26 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	if (is_full_load_mode_enabled() && get_stream().is_valid()) {
-		// TODO May want to defer this to be sure it's not done multiple times.
-		// This would be a side-effect of setting properties one by one, either by scene loader or by script
+	if (is_full_load_mode_enabled()) {
+		if (get_stream().is_valid()) {
+			// TODO May want to defer this to be sure it's not done multiple times.
+			// This would be a side-effect of setting properties one by one, either by scene loader or by script
 
-		ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", _volume_id));
-		ZN_ASSERT(_streaming_dependency != nullptr);
+			ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", _volume_id));
+			ZN_ASSERT(_streaming_dependency != nullptr);
 
-		LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
-		task->volume_id = _volume_id;
-		task->stream_dependency = _streaming_dependency;
+			_data->set_full_load_completed(false);
 
-		VoxelEngine::get_singleton().push_async_io_task(task);
+			LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
+			task->volume_id = _volume_id;
+			task->stream_dependency = _streaming_dependency;
+			task->data = _data;
+
+			VoxelEngine::get_singleton().push_async_io_task(task);
+
+		} else {
+			_data->set_full_load_completed(true);
+		}
 	}
 }
 

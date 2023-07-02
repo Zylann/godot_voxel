@@ -8,6 +8,8 @@
 
 namespace zylann::voxel {
 
+class VoxelData;
+
 class LoadAllBlocksDataTask : public IThreadedTask {
 public:
 	const char *get_debug_name() const override {
@@ -21,6 +23,7 @@ public:
 
 	VolumeID volume_id;
 	std::shared_ptr<StreamingDependency> stream_dependency;
+	std::shared_ptr<VoxelData> data;
 
 private:
 	VoxelStream::FullLoadingResult _result;

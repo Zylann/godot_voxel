@@ -1,4 +1,5 @@
 #include "load_all_blocks_data_task.h"
+#include "../storage/voxel_data.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
@@ -49,6 +50,8 @@ void LoadAllBlocksDataTask::apply_result() {
 
 				callbacks.data_output_callback(callbacks.data, o);
 			}
+
+			data->set_full_load_completed(true);
 		}
 
 	} else {

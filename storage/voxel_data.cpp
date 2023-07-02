@@ -117,6 +117,11 @@ void VoxelData::set_streaming_enabled(bool enabled) {
 	_streaming_enabled = enabled;
 }
 
+void VoxelData::set_full_load_completed(bool complete) {
+	// Can be set by other threads
+	_full_load_completed = complete;
+}
+
 inline VoxelSingleValue get_voxel_sv(VoxelBufferInternal &vb, Vector3i pos, unsigned int channel) {
 	VoxelSingleValue v;
 	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
@@ -326,8 +331,7 @@ void VoxelData::paste_masked(Vector3i min_pos, const VoxelBufferInternal &src_bu
 
 bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	if (is_streaming_enabled() == false) {
-		// TODO Actually, there is still a check to make because loading still takes time
-		return true;
+		return _full_load_completed;
 	}
 	const Box3i voxel_box = p_voxels_box.clipped(get_bounds());
 	const Lod &data_lod0 = _lods[0];

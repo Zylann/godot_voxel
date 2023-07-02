@@ -87,6 +87,8 @@ public:
 		return _streaming_enabled;
 	}
 
+	void set_full_load_completed(bool complete);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Voxel queries.
 	// When not specified, the used LOD index is 0.
@@ -343,6 +345,11 @@ private:
 	// a block isn't stored, it means we can use the generator and modifiers to obtain its data. This mostly changes
 	// how this class is used, streaming itself is not directly implemented in this class.
 	bool _streaming_enabled = true;
+
+	// When streaming is disabled, this will tell if all data has finished loading.
+	// This is because *everything* will load, we can't tell in advance what is loaded and what isn't by looking at
+	// individual blocks.
+	bool _full_load_completed = false;
 
 	// Procedural generation stack
 	VoxelModifierStack _modifiers;
