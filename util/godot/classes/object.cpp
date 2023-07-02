@@ -1,6 +1,10 @@
 #include "object.h"
 #include "../../hash_funcs.h"
 #include "../../profiling.h"
+#ifdef ZN_GODOT_EXTENSION
+#include "../core/callable.h"
+#include "undo_redo.h"
+#endif
 
 namespace zylann {
 
@@ -64,6 +68,31 @@ uint64_t get_deep_hash(const Object &obj, uint32_t property_usage, uint64_t hash
 	}
 
 	return hash;
+}
+
+void set_object_edited(Object &obj) {
+#if defined(ZN_GODOT)
+	obj.set_edited(true);
+
+#elif defined(ZN_GODOT_EXTENSION)
+	// TODO GDX: Object::set_edited is not exposed, and nested resource saving is an unexplained problem
+	// See https://github.com/godotengine/godot-proposals/discussions/7168
+
+	// WARN_PRINT(String("Can't mark {0} as edited for saving, Object.set_edited() is not exposed to GDExtension. You "
+	// 				  "will have to manually save using the floppy icon in the inspector.")
+	// 				   .format(obj.get_class()));
+
+	// A dirty workaround is to call a method without side-effects with a temporary UndoRedo instance, which should
+	// internally call `set_edited` in the editor, if the object is a resource...
+
+	UndoRedo *ur = memnew(UndoRedo);
+	ur->create_action("Dummy Action");
+	Callable callable = ZN_GODOT_CALLABLE_MP(&obj, Object, is_blocking_signals);
+	ur->add_do_method(callable);
+	ur->add_undo_method(callable);
+	ur->commit_action();
+	memdelete(ur);
+#endif
 }
 
 #endif

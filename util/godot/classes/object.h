@@ -55,6 +55,8 @@ struct GodotPropertyInfo {
 };
 void get_property_list(const Object &obj, std::vector<GodotPropertyInfo> &out_properties);
 
+void set_object_edited(Object &obj);
+
 #endif
 
 } // namespace zylann
