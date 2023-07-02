@@ -72,7 +72,11 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	codegen.add("float get_sd(vec3 pos) {\n");
 	codegen.indent();
 
+	// This map only contains output ports.
 	std::unordered_map<ProgramGraph::PortLocation, std::string> port_to_var;
+
+	FixedArray<std::string, 8> unconnected_input_var_names;
+
 	FixedArray<const char *, 8> input_names;
 	FixedArray<const char *, 8> output_names;
 
@@ -144,13 +148,12 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 				ZN_ASSERT(it != port_to_var.end());
 				input_names[port_index] = it->second.c_str();
 			} else {
-				std::string var_name;
+				// No incoming connections to this input. Make up a variable so following code can stay the same.
+				// It will only be used for this node.
+				std::string &var_name = unconnected_input_var_names[port_index];
 				codegen.generate_var_name(var_name);
-				auto p = port_to_var.insert({ { node_id, port_index }, var_name });
-				ZN_ASSERT(p.second);
-				const std::string &name = p.first->second;
-				input_names[port_index] = name.c_str();
-				codegen.add_format("float {} = {};\n", name, float(node.default_inputs[port_index]));
+				input_names[port_index] = var_name.c_str();
+				codegen.add_format("float {} = {};\n", var_name, float(node.default_inputs[port_index]));
 			}
 		}
 
@@ -158,7 +161,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 			std::string var_name;
 			codegen.generate_var_name(var_name);
 			auto p = port_to_var.insert({ { node_id, port_index }, var_name });
-			ZN_ASSERT(p.second);
+			ZN_ASSERT(p.second); // Conflict with an existing port?
 			output_names[port_index] = p.first->second.c_str();
 			codegen.add_format("float {};\n", var_name.c_str());
 		}

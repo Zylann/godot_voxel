@@ -46,6 +46,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed crash if a graph contains a node with both used and unused outputs, and gets compiled with `debug=false`
         - Fixed error when adding Constant nodes
         - Fixed graph not always saving when saving the scene
+        - Fixed shader generator crash when a node has an unconnected input
     - `VoxelInstanceLibrary`: fixed `find_item_by_name` was not finding items
     - `VoxelLodTerrain`: fixed error spam when re-generating or destroying the terrain
     - `VoxelMeshSDF`: fixed saved resource was not loading properly
