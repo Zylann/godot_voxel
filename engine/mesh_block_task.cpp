@@ -309,6 +309,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 
 	} else {
 		// TODO Broad-phase to avoid the GPU part entirely?
+		// Implement and call `VoxelGenerator::generate_broad_block()`
 
 		Ref<VoxelGenerator> generator = meshing_dependency->generator;
 		ERR_FAIL_COND(generator.is_null());
@@ -320,6 +321,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 		gpu_task->boxes_to_generate = std::move(boxes_to_generate);
 		gpu_task->generator_shader = generator_shader;
 		gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
+		gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
 		gpu_task->lod_index = lod_index;
 		gpu_task->origin_in_voxels = origin_in_voxels;
 		gpu_task->mesh_task = this;

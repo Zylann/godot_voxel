@@ -1,7 +1,9 @@
 #include "voxel_graph_shader_generator.h"
 #include "../../engine/compute_shader_parameters.h"
 #include "../../engine/compute_shader_resource.h"
+#include "../../util/container_funcs.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../../util/godot/core/string.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "node_type_db.h"
@@ -29,7 +31,8 @@ std::string ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString output, std::vector<ShaderParameter> &shader_params) {
+		FwdMutableStdString source_code, std::vector<ShaderParameter> &shader_params,
+		std::vector<ShaderOutput> &outputs, Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs) {
 	ZN_PROFILE_SCOPE();
 
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -44,15 +47,23 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	std::vector<uint32_t> order;
 	std::vector<uint32_t> terminal_nodes;
 
-	// Only getting SDF for now, as this is the first use case I want to test this feature with
-	expanded_graph.for_each_node_const([&terminal_nodes](const ProgramGraph::Node &node) {
-		if (node.type_id == VoxelGraphFunction::NODE_OUTPUT_SDF) {
-			terminal_nodes.push_back(node.id);
+	expanded_graph.for_each_node_const([&terminal_nodes, restricted_outputs, &type_db](const ProgramGraph::Node &node) {
+		const NodeType &node_type = type_db.get_type(node.type_id);
+		if (node_type.category == pg::CATEGORY_OUTPUT) {
+			if (restricted_outputs.size() == 0) {
+				// Get all outputs
+				terminal_nodes.push_back(node.id);
+			} else {
+				// Only get dependencies of specific outputs
+				if (contains(restricted_outputs, VoxelGraphFunction::NodeTypeID(node.type_id))) {
+					terminal_nodes.push_back(node.id);
+				}
+			}
 		}
 	});
 
 	if (terminal_nodes.size() == 0) {
-		return CompilationResult::make_error("The graph must contain an SDF output.");
+		return CompilationResult::make_error("Can't generate shader, the graph does not contain the required outputs.");
 	}
 
 	// Exclude debug nodes
@@ -68,8 +79,32 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	std::stringstream lib_ss;
 	CodeGenHelper codegen(main_ss, lib_ss);
 
-	// This function name is chosen to match the expected signature when used with normalmap baking compute shaders.
-	codegen.add("float get_sd(vec3 pos) {\n");
+	codegen.add("void generate(vec3 pos");
+
+	for (const uint32_t node_id : order) {
+		const ProgramGraph::Node &node = expanded_graph.get_node(node_id);
+		const NodeType &node_type = type_db.get_type(node.type_id);
+
+		if (node_type.category == CATEGORY_OUTPUT) {
+			switch (node.type_id) {
+				case VoxelGraphFunction::NODE_OUTPUT_SDF:
+					codegen.add(", out float out_sd");
+					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_SDF });
+					break;
+				case VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE:
+					codegen.add(", out float out_single_texture");
+					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_SINGLE_TEXTURE });
+					break;
+				default:
+					ZN_PRINT_WARNING(
+							format("Output type {} is not supported yet in shader generator.", node_type.name));
+					break;
+			}
+		}
+	}
+
+	codegen.add(") {\n");
+
 	codegen.indent();
 
 	// This map only contains output ports.
@@ -120,9 +155,22 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					ZN_ASSERT(input_port.connections.size() == 1);
 					auto it = port_to_var.find(input_port.connections[0]);
 					ZN_ASSERT(it != port_to_var.end());
-					codegen.add_format("return {};\n", it->second);
+					codegen.add_format("out_sd = {};\n", it->second);
 				} else {
-					codegen.add("return 0.0;\n");
+					codegen.add("out_sd = 0.0;\n");
+				}
+				continue;
+			}
+			case VoxelGraphFunction::NODE_OUTPUT_SINGLE_TEXTURE: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::Port &input_port = node.inputs[0];
+				if (input_port.connections.size() > 0) {
+					ZN_ASSERT(input_port.connections.size() == 1);
+					auto it = port_to_var.find(input_port.connections[0]);
+					ZN_ASSERT(it != port_to_var.end());
+					codegen.add_format("out_single_texture = {};\n", it->second);
+				} else {
+					codegen.add("out_single_texture = 0.0;\n");
 				}
 				continue;
 			}
@@ -188,7 +236,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	codegen.dedent();
 	codegen.add("}\n");
 
-	codegen.print(output);
+	codegen.print(source_code);
 
 	CompilationResult result;
 	result.success = true;

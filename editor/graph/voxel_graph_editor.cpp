@@ -953,6 +953,9 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 	ZN_PRINT_VERBOSE(format("Previews generated in {} us", time_taken));
 
 	if (_live_update_enabled && with_live_update) {
+		// TODO Use that hash to prevent full recompiling, because the `changed` now reports ANY changes, including
+		// those that don't require recompiling...
+
 		// Check if the graph changed in a way that actually changes the output,
 		// because re-generating all voxels is expensive.
 		// Note, sub-resouces can be involved, not just node connections and properties.

@@ -9,12 +9,13 @@ layout (set = 0, binding = 0, std430) restrict readonly buffer Params {
 	ivec3 block_size;
 } u_params;
 
+// <PLACEHOLDER_SECTION>
+
 layout (set = 0, binding = 1, std430) restrict writeonly buffer OutSDBuffer {
 	float values[];
 } u_out_sd;
 
-// <PLACEHOLDER_SECTION>
-float get_sd(vec3 pos) {
+void generate(vec3 pos, float out_sd) {
 	return 0.0;
 }
 // </PLACEHOLDER_SECTION>
@@ -37,6 +38,10 @@ void main() {
 
 	const int out_index = get_zxy_index(rpos, u_params.block_size);
 	const vec3 wpos = u_params.origin_in_voxels + vec3(rpos) * u_params.voxel_size;
-	float sd = get_sd(wpos);
-	u_out_sd.values[out_index] = sd;
+	// float sd = get_sd(wpos);
+	// u_out_sd.values[out_index] = sd;
+
+// <PLACEHOLDER_SECTION>
+	generate(wpos, u_out_sd[out_index]);
+// </PLACEHOLDER_SECTION>
 }

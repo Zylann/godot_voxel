@@ -1295,10 +1295,11 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 
 	std::string code_utf8;
 	std::vector<pg::ShaderParameter> params;
-	pg::CompilationResult result =
-			pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8, params);
+	std::vector<pg::ShaderOutput> outputs;
+	pg::CompilationResult result = pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8,
+			params, outputs, Span<const pg::VoxelGraphFunction::NodeTypeID>());
 
-	ERR_FAIL_COND_V_MSG(!result.success, "", result.message);
+	ERR_FAIL_COND_V_MSG(!result.success, false, result.message);
 
 	if (params.size() > 0) {
 		out_data.parameters.reserve(params.size());
@@ -1308,6 +1309,23 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	}
 
 	out_data.glsl = String(code_utf8.c_str());
+
+	for (const pg::ShaderOutput &output : outputs) {
+		ShaderOutput out;
+		switch (output.type) {
+			case pg::ShaderOutput::TYPE_SDF:
+				out.type = ShaderOutput::TYPE_SDF;
+				break;
+			case pg::ShaderOutput::TYPE_SINGLE_TEXTURE:
+				out.type = ShaderOutput::TYPE_SINGLE_TEXTURE;
+				break;
+			default:
+				ZN_PRINT_ERROR(format("Unsupported output for generator shader generation ({})", output.type));
+				return false;
+		}
+		out_data.outputs.push_back(out);
+	}
+
 	return true;
 }
 

@@ -110,14 +110,20 @@ static func export_to_cpp(src_fpath: String, dst_fpath: String, var_name : Strin
 	
 	var sections = parse_file_sections_from_file(src_fpath, [
 		"// <PLACEHOLDER_SECTION>",	
+		"// </PLACEHOLDER_SECTION>",
+		"// <PLACEHOLDER_SECTION>",	
 		"// </PLACEHOLDER_SECTION>"
 	], true)
 	
 	if len(sections) == 0:
 		return
 
-	if len(sections) == 3:
+	elif len(sections) == 3:
 		sections.remove_at(1)
+
+	elif len(sections) == 5:
+		sections.remove_at(1)
+		sections.remove_at(2)
 
 	var cpp_text = generate_cpp_code(sections, var_name, structure_mode)
 	write_text_to_file(cpp_text, dst_fpath)

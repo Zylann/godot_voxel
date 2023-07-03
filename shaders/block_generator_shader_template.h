@@ -11,10 +11,6 @@ const char *g_block_generator_shader_template_0 =
 "	float voxel_size;\n"
 "	ivec3 block_size;\n"
 "} u_params;\n"
-"\n"
-"layout (set = 0, binding = 1, std430) restrict writeonly buffer OutSDBuffer {\n"
-"	float values[];\n"
-"} u_out_sd;\n"
 "\n";
 // clang-format on
 
@@ -39,8 +35,13 @@ const char *g_block_generator_shader_template_1 =
 "\n"
 "	const int out_index = get_zxy_index(rpos, u_params.block_size);\n"
 "	const vec3 wpos = u_params.origin_in_voxels + vec3(rpos) * u_params.voxel_size;\n"
-"	float sd = get_sd(wpos);\n"
-"	u_out_sd.values[out_index] = sd;\n"
+"	// float sd = get_sd(wpos);\n"
+"	// u_out_sd.values[out_index] = sd;\n"
+"\n";
+// clang-format on
+
+// clang-format off
+const char *g_block_generator_shader_template_2 = 
 "}\n"
 "\n";
 // clang-format on

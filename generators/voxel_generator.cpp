@@ -86,6 +86,28 @@ std::shared_ptr<ComputeShaderParameters> VoxelGenerator::get_block_rendering_sha
 	}
 }
 
+std::shared_ptr<VoxelGenerator::ShaderOutputs> VoxelGenerator::get_block_rendering_shader_outputs() {
+	{
+		MutexLock mlock(_shader_mutex);
+		return _block_rendering_shader_outputs;
+	}
+}
+
+static void append_generator_parameter_uniforms(String &source_text, ComputeShaderParameters &out_params,
+		VoxelGenerator::ShaderSourceData &shader_data, unsigned int bindings_start) {
+	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
+		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
+		const unsigned int binding = bindings_start + i;
+		ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE_2D);
+		source_text +=
+				String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
+		std::shared_ptr<ComputeShaderResource> res = make_unique_instance<ComputeShaderResource>();
+		*res = std::move(p.resource);
+		out_params.params.push_back(ComputeShaderParameter{ binding, res });
+	}
+	source_text += "\n";
+}
+
 std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
 	ZN_PROFILE_SCOPE();
@@ -101,21 +123,38 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 	// We are only sure here what binding it's going to be, we can't do it earlier
 	const unsigned int generator_uniform_binding_start = 3;
 	{
+		// Header
 		source_text += g_detail_generator_shader_template_0;
 
-		for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
-			VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
-			const unsigned int binding = generator_uniform_binding_start + i;
-			ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE_2D);
-			source_text +=
-					String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
-			std::shared_ptr<ComputeShaderResource> res = make_unique_instance<ComputeShaderResource>();
-			*res = std::move(p.resource);
-			out_params.params.push_back(ComputeShaderParameter{ binding, res });
-		}
-		source_text += "\n";
+		append_generator_parameter_uniforms(source_text, out_params, shader_data, generator_uniform_binding_start);
 
+		// Generator code
 		source_text += shader_data.glsl;
+
+		// Generate wrapper to use only one output, and adapt to the function name expected by the detail rendering
+		// template
+		{
+			source_text += "float get_sd(vec3 pos) {\n";
+			int sdf_output_index = -1;
+			for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
+				const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
+				if (output.type == VoxelGenerator::ShaderOutput::TYPE_SDF) {
+					sdf_output_index = output_index;
+				}
+				source_text += String("\tfloat v{0};\n").format(varray(output_index));
+			}
+			ERR_FAIL_COND_V_MSG(sdf_output_index == -1, ComputeShader::create_invalid(),
+					"Can't generate detail generator shader, SDF output not found");
+			// Call the generator shader function
+			source_text += "\tgenerate(pos";
+			for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
+				source_text += String(", v{0}").format(varray(output_index));
+			}
+			source_text += ");\n";
+			source_text += String("\treturn v{0};\n}\n").format(varray(sdf_output_index));
+		}
+
+		// Footer
 		source_text += g_detail_generator_shader_template_1;
 	}
 
@@ -127,7 +166,7 @@ std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 }
 
 std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
-		VoxelGenerator &generator, ComputeShaderParameters &out_params) {
+		VoxelGenerator &generator, ComputeShaderParameters &out_params, VoxelGenerator::ShaderOutputs &outputs) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V_MSG(!generator.supports_shaders(), ComputeShader::create_invalid(),
 			String("Can't use the provided {0} with compute shaders, it does not support GLSL.")
@@ -138,24 +177,46 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 			"Failed to get shader source code.");
 
 	String source_text;
-	const unsigned int generator_uniform_binding_start = 2;
+	const unsigned int generator_uniform_binding_start = 1;
 
 	source_text += g_block_generator_shader_template_0;
 
-	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
-		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
-		const unsigned int binding = generator_uniform_binding_start + i;
-		ZN_ASSERT(p.resource.get_type() == ComputeShaderResource::TYPE_TEXTURE_2D);
-		source_text +=
-				String("layout (set = 0, binding = {0}) uniform sampler2D {1};\n").format(varray(binding, p.name));
-		std::shared_ptr<ComputeShaderResource> res = make_unique_instance<ComputeShaderResource>();
-		*res = std::move(p.resource);
-		out_params.params.push_back(ComputeShaderParameter{ binding, res });
+	append_generator_parameter_uniforms(source_text, out_params, shader_data, generator_uniform_binding_start);
+
+	// Generate output uniforms
+	const unsigned int generator_output_binding_start = generator_uniform_binding_start + out_params.params.size();
+	outputs.binding_begin_index = generator_output_binding_start;
+
+	for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
+		const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
+		const unsigned int binding = generator_output_binding_start + output_index;
+		source_text += String("layout (set = 0, binding = {0}) restrict writeonly buffer OutBuffer{1} { float "
+							  "values[]; } u_out_{2};\n")
+							   .format(varray(binding, output_index, output_index));
+
+		outputs.outputs.push_back(output);
 	}
 	source_text += "\n";
 
+	// Generator code
 	source_text += shader_data.glsl;
+
+	// Header of main()
 	source_text += g_block_generator_shader_template_1;
+
+	// Call generator function
+	{
+		source_text += "\tgenerate(wpos";
+		for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
+			const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
+			// TODO Perhaps we should be able to pack outputs instead of always using floats?
+			source_text += String(", u_out_{0}.values[out_index]").format(varray(output_index));
+		}
+		source_text += ");\n";
+	}
+
+	// Footer of main()
+	source_text += g_block_generator_shader_template_2;
 
 	// TODO Pick different name somehow for different generators
 	std::shared_ptr<ComputeShader> shader =
@@ -174,7 +235,9 @@ void VoxelGenerator::compile_shaders() {
 			compile_detail_rendering_compute_shader(*this, *detail_params);
 
 	std::shared_ptr<ComputeShaderParameters> block_params = make_shared_instance<ComputeShaderParameters>();
-	std::shared_ptr<ComputeShader> block_render_shader = compile_block_rendering_compute_shader(*this, *block_params);
+	std::shared_ptr<ShaderOutputs> block_outputs = make_shared_instance<ShaderOutputs>();
+	std::shared_ptr<ComputeShader> block_render_shader =
+			compile_block_rendering_compute_shader(*this, *block_params, *block_outputs);
 
 	{
 		MutexLock mlock(_shader_mutex);
@@ -184,6 +247,7 @@ void VoxelGenerator::compile_shaders() {
 
 		_block_rendering_shader = block_render_shader;
 		_block_rendering_shader_parameters = block_params;
+		_block_rendering_shader_outputs = block_outputs;
 	}
 }
 
@@ -196,7 +260,14 @@ void VoxelGenerator::invalidate_shaders() {
 
 		_block_rendering_shader.reset();
 		_block_rendering_shader_parameters.reset();
+		_block_rendering_shader_outputs.reset();
 	}
+}
+
+bool VoxelGenerator::generate_broad_block(VoxelQueryData &input) {
+	// By default, generators don't support this separately and just do it inside `generate_block`.
+	// However if a generator supports GPU, it is recommended to implement it.
+	return false;
 }
 
 void VoxelGenerator::_bind_methods() {

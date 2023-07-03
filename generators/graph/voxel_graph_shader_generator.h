@@ -16,9 +16,15 @@ struct ShaderParameter {
 	ComputeShaderResource resource;
 };
 
+struct ShaderOutput {
+	enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_CUSTOM };
+	Type type;
+};
+
 // Generates GLSL code from the given graph.
 CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString output, std::vector<ShaderParameter> &uniforms);
+		FwdMutableStdString source_code, std::vector<ShaderParameter> &uniforms, std::vector<ShaderOutput> &outputs,
+		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs);
 
 // Sent as argument to functions implementing generator nodes, in order to generate shader code.
 class ShaderGenContext {

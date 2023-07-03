@@ -80,11 +80,37 @@ public:
 		ComputeShaderResource resource;
 	};
 
+	struct ShaderOutput {
+		enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_CUSTOM };
+		Type type;
+	};
+
 	struct ShaderSourceData {
 		// Source code relevant to the generator only. Does not contain interface blocks (uniforms), because they may be
 		// generated depending on where the code is integrated.
 		String glsl;
+		// Associated resources
 		std::vector<ShaderParameter> parameters;
+
+		// The generated source will contain a `generate` function starting with a `vec3 position` argument,
+		// followed by outputs like `out float out_sd, ...`, which determines what will be returned by the
+		// compute shader.
+		std::vector<ShaderOutput> outputs;
+
+		// inline bool find_output_index(ShaderOutput::Type type, unsigned int &out_i) const {
+		// 	for (unsigned int i = 0; i < outputs.size(); ++i) {
+		// 		if (outputs[i].type == type) {
+		// 			out_i = i;
+		// 			return true;
+		// 		}
+		// 	}
+		// 	return false;
+		// }
+	};
+
+	struct ShaderOutputs {
+		unsigned int binding_begin_index;
+		std::vector<ShaderOutput> outputs;
 	};
 
 	virtual bool get_shader_source(ShaderSourceData &out_data) const;
@@ -93,9 +119,17 @@ public:
 	std::shared_ptr<ComputeShader> get_block_rendering_shader();
 	// TODO Shouldn't these parameters be shared for each shader type?
 	std::shared_ptr<ComputeShaderParameters> get_block_rendering_shader_parameters();
+	std::shared_ptr<ShaderOutputs> get_block_rendering_shader_outputs();
 	void compile_shaders();
 	// Drops currently compiled shaders if any, so that they get recompiled when they are needed again
 	void invalidate_shaders();
+
+	// Requests to generate a broad result, which is supposed to be faster to obtain than full generation.
+	// If it returns true, the returned block may be used as if it was a result from `generate_block`.
+	// If it returns false, no block is returned and full generation should be used.
+	// Usually, `generate_block` can do this anyways internally, but in some cases like GPU generation it may be used
+	// to avoid sending work to the graphics card.
+	virtual bool generate_broad_block(VoxelQueryData &input);
 
 	// Editor
 
@@ -112,6 +146,7 @@ protected:
 	std::shared_ptr<ComputeShaderParameters> _detail_rendering_shader_parameters;
 	std::shared_ptr<ComputeShader> _block_rendering_shader;
 	std::shared_ptr<ComputeShaderParameters> _block_rendering_shader_parameters;
+	std::shared_ptr<ShaderOutputs> _block_rendering_shader_outputs;
 	Mutex _shader_mutex;
 };
 

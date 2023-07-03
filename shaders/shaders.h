@@ -5,6 +5,7 @@ namespace zylann::voxel {
 
 extern const char *g_block_generator_shader_template_0;
 extern const char *g_block_generator_shader_template_1;
+extern const char *g_block_generator_shader_template_2;
 extern const char *g_detail_gather_hits_shader;
 extern const char *g_detail_generator_shader_template_0;
 extern const char *g_detail_generator_shader_template_1;

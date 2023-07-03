@@ -28,15 +28,20 @@ public:
 	// Base generator
 	std::shared_ptr<ComputeShader> generator_shader;
 	std::shared_ptr<ComputeShaderParameters> generator_shader_params;
+	std::shared_ptr<VoxelGenerator::ShaderOutputs> generator_shader_outputs;
 
 	// TODO Modifiers
 
 private:
+	struct OutputData {
+		GPUStorageBuffer sb;
+		Ref<RDUniform> uniform;
+	};
+
 	struct BoxData {
 		GPUStorageBuffer params_sb;
-		GPUStorageBuffer output_voxel_data_sb;
 		Ref<RDUniform> params_uniform;
-		Ref<RDUniform> output_voxel_data_uniform;
+		std::vector<OutputData> outputs;
 	};
 
 	std::vector<BoxData> _boxes_data;
