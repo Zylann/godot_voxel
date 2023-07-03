@@ -155,6 +155,7 @@ private:
 
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;
+	unsigned int _debug_taken_out_tasks = 0;
 };
 
 } // namespace zylann

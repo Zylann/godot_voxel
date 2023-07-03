@@ -339,6 +339,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 
 						case ThreadedTaskContext::STATUS_TAKEN_OUT:
 							// Drop task pointer, its ownership may have been passed to another task
+							++_debug_taken_out_tasks;
 							break;
 
 						default:
@@ -434,7 +435,7 @@ const char *ThreadedTaskRunner::get_thread_debug_task_name(unsigned int thread_i
 }
 
 unsigned int ThreadedTaskRunner::get_debug_remaining_tasks() const {
-	return _debug_received_tasks - _debug_completed_tasks;
+	return _debug_received_tasks - _debug_completed_tasks - _debug_taken_out_tasks;
 }
 
 std::vector<IThreadedTask *> &ThreadedTaskRunner::get_completed_tasks_temp_tls() {
