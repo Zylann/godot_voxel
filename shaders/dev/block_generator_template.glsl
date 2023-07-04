@@ -15,17 +15,12 @@ layout (set = 0, binding = 1, std430) restrict writeonly buffer OutSDBuffer {
 	float values[];
 } u_out_sd;
 
-void generate(vec3 pos, float out_sd) {
-	return 0.0;
+void generate(vec3 pos, out float out_sd) {
 }
 // </PLACEHOLDER_SECTION>
 
 int get_zxy_index(ivec3 pos, ivec3 size) {
 	return pos.y + size.y * (pos.x + size.x * pos.z);
-}
-
-int get_volume(ivec3 v) {
-	return v.x * v.y * v.z;
 }
 
 void main() {
@@ -42,6 +37,6 @@ void main() {
 	// u_out_sd.values[out_index] = sd;
 
 // <PLACEHOLDER_SECTION>
-	generate(wpos, u_out_sd[out_index]);
+	generate(wpos, u_out_sd.values[out_index]);
 // </PLACEHOLDER_SECTION>
 }
