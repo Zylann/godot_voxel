@@ -80,3 +80,9 @@ func _export_to_cpp():
 		root + "block_generator_shader_template.h", 
 		"g_block_generator_shader_template"
 	)
+
+	TextToCpp.export_to_cpp(
+		"block_modifier_template.glsl",
+		root + "block_modifier_shader_template.h", 
+		"g_block_modifier_shader_template"
+	)

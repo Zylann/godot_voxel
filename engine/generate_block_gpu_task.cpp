@@ -1,4 +1,5 @@
 #include "generate_block_gpu_task.h"
+#include "../modifiers/voxel_modifier.h"
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/conv.h"
@@ -40,6 +41,19 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
+
+	// Modifiers only support SDF for now.
+	int sd_output_index = -1;
+	{
+		int i = 0;
+		for (const VoxelGenerator::ShaderOutput &output : generator_shader_outputs->outputs) {
+			if (output.type == VoxelGenerator::ShaderOutput::TYPE_SDF) {
+				sd_output_index = i;
+				break;
+			}
+			++i;
+		}
+	}
 
 	_boxes_data.resize(boxes_to_generate.size());
 
@@ -91,6 +105,16 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 			++output_index;
 		}
+
+		if (modifiers.size() > 0 && sd_output_index != -1) {
+			bd.modifier_sd_output_temp.sb =
+					storage_buffer_pool.allocate(Vector3iUtil::get_volume(buffer_resolution) * sizeof(float));
+			ERR_FAIL_COND(bd.modifier_sd_output_temp.sb.is_null());
+
+			bd.modifier_sd_output_temp.uniform.instantiate();
+			bd.modifier_sd_output_temp.uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_STORAGE_BUFFER);
+			bd.modifier_sd_output_temp.uniform->add_id(bd.modifier_sd_output_temp.sb.rid);
+		}
 	}
 
 	// Pipelines
@@ -99,6 +123,13 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	const RID generator_shader_rid = generator_shader->get_rid();
 	_generator_pipeline_rid = rd.compute_pipeline_create(generator_shader_rid);
 	ERR_FAIL_COND(!_generator_pipeline_rid.is_valid());
+
+	for (const ModifierData &modifier : modifiers) {
+		ERR_FAIL_COND(!modifier.shader_rid.is_valid());
+		const RID rid = rd.compute_pipeline_create(modifier.shader_rid);
+		ERR_FAIL_COND(!rid.is_valid());
+		_modifier_pipelines.push_back(rid);
+	}
 
 	// Make compute list
 
@@ -150,9 +181,56 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		}
 	}
 
-	// TODO Barrier and apply modifiers
+	rd.compute_list_add_barrier(compute_list_id);
 
-	// rd.compute_list_add_barrier(compute_list_id);
+	// Apply modifiers
+
+	if (sd_output_index != -1) {
+		for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
+			BoxData &bd = _boxes_data[box_index];
+
+			const Box3i &box = boxes_to_generate[box_index];
+			const Vector3i groups = math::ceildiv(box.size, Vector3i(4, 4, 4));
+
+			Ref<RDUniform> sd_buffer0_uniform = bd.outputs[sd_output_index].uniform;
+			Ref<RDUniform> sd_buffer1_uniform = bd.modifier_sd_output_temp.uniform;
+
+			for (unsigned int modifier_index = 0; modifier_index < modifiers.size(); ++modifier_index) {
+				const ModifierData &modifier_data = modifiers[modifier_index];
+				ZN_ASSERT_CONTINUE(modifier_data.shader_rid.is_valid());
+
+				bd.params_uniform->set_binding(0);
+				sd_buffer0_uniform->set_binding(1);
+				sd_buffer1_uniform->set_binding(2);
+
+				Array modifier_uniforms;
+				modifier_uniforms.resize(3);
+				modifier_uniforms[0] = bd.params_uniform;
+				modifier_uniforms[1] = sd_buffer0_uniform;
+				modifier_uniforms[2] = sd_buffer1_uniform;
+
+				// Swap buffers
+				Ref<RDUniform> temp = sd_buffer1_uniform;
+				sd_buffer1_uniform = sd_buffer0_uniform;
+				sd_buffer0_uniform = temp;
+
+				// Extra params
+				if (modifier_data.params != nullptr) {
+					add_uniform_params(modifier_data.params->params, modifier_uniforms);
+				}
+
+				const RID modifier_uniform_set = uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
+
+				const RID pipeline_rid = _modifier_pipelines[modifier_index];
+				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
+				rd.compute_list_bind_uniform_set(compute_list_id, modifier_uniform_set, 0);
+
+				rd.compute_list_dispatch(compute_list_id, groups.x, groups.y, groups.z);
+
+				rd.compute_list_add_barrier(compute_list_id);
+			}
+		}
+	}
 
 	rd.compute_list_end();
 }
@@ -276,21 +354,38 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 		for (unsigned int output_index = 0; output_index < bd.outputs.size(); ++output_index) {
 			const OutputData &od = bd.outputs[output_index];
+			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];
 			PackedByteArray voxel_data;
+
+			RID sb_rid = od.sb.rid;
+			if (modifiers.size() > 0 && output_info.type == VoxelGenerator::ShaderOutput::TYPE_SDF &&
+					(modifiers.size() % 2) == 1) {
+				// In some cases we have to get the second buffer, because modifiers are applied in ping-pong
+				sb_rid = bd.modifier_sd_output_temp.sb.rid;
+			}
+
 			{
 				ZN_PROFILE_SCOPE_NAMED("buffer_get_data");
-				voxel_data = rd.buffer_get_data(od.sb.rid, 0, data_size);
+				voxel_data = rd.buffer_get_data(sb_rid, 0, data_size);
 			}
-			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];
+
 			outputs_data.push_back(VoxelGeneratorGPUOutputDataForBox{ box, output_info.type, voxel_data });
 
 			storage_buffer_pool.recycle(od.sb);
 		}
 
 		storage_buffer_pool.recycle(bd.params_sb);
+
+		if (bd.modifier_sd_output_temp.sb.is_valid()) {
+			storage_buffer_pool.recycle(bd.modifier_sd_output_temp.sb);
+		}
 	}
 
 	free_rendering_device_rid(rd, _generator_pipeline_rid);
+
+	for (RID rid : _modifier_pipelines) {
+		free_rendering_device_rid(rd, rid);
+	}
 
 	// TODO Move this back to the meshing task, the GPU thread must not do such work
 	convert_gpu_output_data(to_span(outputs_data), dst);

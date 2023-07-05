@@ -49,6 +49,13 @@ void ComputeShader::load_from_glsl(String source_text, String name) {
 	ZN_PROFILE_SCOPE();
 	clear();
 
+	// For debugging
+	// {
+	// 	Ref<FileAccess> f = FileAccess::open("debug_" + name + ".txt", FileAccess::WRITE);
+	// 	ZN_ASSERT(f.is_valid());
+	// 	f->store_string(source_text);
+	// }
+
 	Ref<RDShaderSource> shader_source;
 	shader_source.instantiate();
 	shader_source->set_language(RenderingDevice::SHADER_LANGUAGE_GLSL);

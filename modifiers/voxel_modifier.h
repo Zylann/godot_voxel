@@ -35,6 +35,7 @@ public:
 
 	struct ShaderData {
 		RID detail_rendering_shader_rid;
+		RID block_rendering_shader_rid;
 		std::shared_ptr<ComputeShaderParameters> params;
 	};
 

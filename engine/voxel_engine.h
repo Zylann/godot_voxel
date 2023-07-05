@@ -240,6 +240,14 @@ public:
 		return _detail_modifier_mesh_shader;
 	}
 
+	const ComputeShader &get_block_modifier_sphere_shader() const {
+		return _block_modifier_sphere_shader;
+	}
+
+	const ComputeShader &get_block_modifier_mesh_shader() const {
+		return _block_modifier_mesh_shader;
+	}
+
 	RID get_filtering_sampler() const {
 		return _filtering_sampler_rid;
 	}
@@ -304,6 +312,8 @@ private:
 	ComputeShader _detail_normalmap_shader;
 	ComputeShader _detail_modifier_sphere_shader;
 	ComputeShader _detail_modifier_mesh_shader;
+	ComputeShader _block_modifier_sphere_shader;
+	ComputeShader _block_modifier_mesh_shader;
 };
 
 struct VoxelFileLockerRead {

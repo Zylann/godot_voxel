@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://ba3txmdt1miqa"
+path="res://.godot/imported/block_modifier_template.glsl-40e5c997e3bd03ffe63d02bce506f5b6.res"
+
+[deps]
+
+source_file="res://block_modifier_template.glsl"
+dest_files=["res://.godot/imported/block_modifier_template.glsl-40e5c997e3bd03ffe63d02bce506f5b6.res"]
+
+[params]
+

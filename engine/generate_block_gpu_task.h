@@ -17,6 +17,9 @@ public:
 	void prepare(GPUTaskContext &ctx) override;
 	void collect(GPUTaskContext &ctx) override;
 
+	// TODO Not sure if it's worth dealing with sub-boxes. That's only in case of partially-edited meshing blocks...
+	// it doesn't sound like a common case.
+
 	// Exclusive boxes relative to a VoxelBuffer (not world voxel coordinates)
 	std::vector<Box3i> boxes_to_generate;
 	// Position of the lower corner of the VoxelBuffer in world voxel coordinates
@@ -30,7 +33,11 @@ public:
 	std::shared_ptr<ComputeShaderParameters> generator_shader_params;
 	std::shared_ptr<VoxelGenerator::ShaderOutputs> generator_shader_outputs;
 
-	// TODO Modifiers
+	struct ModifierData {
+		RID shader_rid;
+		std::shared_ptr<ComputeShaderParameters> params;
+	};
+	std::vector<ModifierData> modifiers;
 
 private:
 	struct OutputData {
@@ -42,10 +49,13 @@ private:
 		GPUStorageBuffer params_sb;
 		Ref<RDUniform> params_uniform;
 		std::vector<OutputData> outputs;
+		// Secondary SDF buffer for modifiers
+		OutputData modifier_sd_output_temp;
 	};
 
 	std::vector<BoxData> _boxes_data;
 	RID _generator_pipeline_rid;
+	std::vector<RID> _modifier_pipelines;
 };
 
 } // namespace zylann::voxel

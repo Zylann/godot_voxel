@@ -136,6 +136,8 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 
 	out_shader_data.detail_rendering_shader_rid =
 			VoxelEngine::get_singleton().get_detail_modifier_sphere_shader().get_rid();
+	out_shader_data.block_rendering_shader_rid =
+			VoxelEngine::get_singleton().get_block_modifier_sphere_shader().get_rid();
 	out_shader_data.params = _shader_data;
 }
 
