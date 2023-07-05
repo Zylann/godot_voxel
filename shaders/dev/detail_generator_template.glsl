@@ -24,11 +24,11 @@ layout (set = 0, binding = 2, std430) restrict writeonly buffer OutSDBuffer {
 	float values[];
 } u_out_sd;
 
-// <PLACEHOLDER_SECTION>
+// <PLACEHOLDER>
 float get_sd(vec3 pos) {
 	return 0.0;
 }
-// </PLACEHOLDER_SECTION>
+// </PLACEHOLDER>
 
 void main() {
 	const ivec2 pixel_pos_in_tile = ivec2(gl_GlobalInvocationID.xy);

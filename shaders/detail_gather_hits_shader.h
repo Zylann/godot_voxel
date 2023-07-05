@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_detail_gather_hits_shader = 
+const char *g_detail_gather_hits_shader =
 "#version 450\n"
 "\n"
 "// Takes a mesh and a list of tiles, where each tile corresponds to a cubic cell of the mesh.\n"
@@ -172,6 +172,5 @@ const char *g_detail_gather_hits_shader =
 "	} else {\n"
 "		u_hits.positions[index] = vec4(0.0, 0.0, 0.0, -1.0);\n"
 "	}\n"
-"}\n"
-"\n";
+"}\n";
 // clang-format on

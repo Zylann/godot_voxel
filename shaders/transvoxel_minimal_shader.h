@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_transvoxel_minimal_shader = 
+const char *g_transvoxel_minimal_shader =
 "shader_type spatial;\n"
 "\n"
 "// From Voxel Tools API\n"
@@ -49,6 +49,5 @@ const char *g_transvoxel_minimal_shader =
 "\n"
 "void vertex() {\n"
 "	VERTEX = get_transvoxel_position(VERTEX, CUSTOM0);\n"
-"}\n"
-"\n";
+"}\n";
 // clang-format on

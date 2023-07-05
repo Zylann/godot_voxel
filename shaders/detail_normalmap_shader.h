@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_detail_normalmap_shader = 
+const char *g_detail_normalmap_shader =
 "#version 450\n"
 "\n"
 "// Takes signed distance values and computes a world-space normal from them.\n"
@@ -137,6 +137,5 @@ const char *g_detail_normalmap_shader =
 "	const ivec4 col = ivec4(255.0 * (vec3(0.5) + 0.5 * normal), 255);\n"
 "\n"
 "	imageStore(u_target_image, pixel_pos, col);\n"
-"}\n"
-"\n";
+"}\n";
 // clang-format on

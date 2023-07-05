@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_detail_generator_shader_template_0 = 
+const char *g_detail_generator_shader_template_0 =
 "#version 450\n"
 "\n"
 "// Takes a list of positions and evaluates a signed distance field in 4 locations around them.\n"
@@ -30,7 +30,7 @@ const char *g_detail_generator_shader_template_0 =
 // clang-format on
 
 // clang-format off
-const char *g_detail_generator_shader_template_1 = 
+const char *g_detail_generator_shader_template_1 =
 "\n"
 "void main() {\n"
 "	const ivec2 pixel_pos_in_tile = ivec2(gl_GlobalInvocationID.xy);\n"
@@ -54,6 +54,5 @@ const char *g_detail_generator_shader_template_1 =
 "	u_out_sd.values[sdi + 1] = get_sd(pos1);\n"
 "	u_out_sd.values[sdi + 2] = get_sd(pos2);\n"
 "	u_out_sd.values[sdi + 3] = get_sd(pos3);\n"
-"}\n"
-"\n";
+"}\n";
 // clang-format on

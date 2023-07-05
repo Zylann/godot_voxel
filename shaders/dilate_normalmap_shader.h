@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_dilate_normalmap_shader = 
+const char *g_dilate_normalmap_shader =
 "#version 450\n"
 "\n"
 "// Dilates a normalmap by filling \"empty\" pixels with the average of surrounding pixels.\n"
@@ -67,6 +67,5 @@ const char *g_dilate_normalmap_shader =
 "	ivec4 col_avg = count == 0 ? col11 : col_sum / count;\n"
 "\n"
 "	imageStore(u_dst_image, pixel_pos, col_avg);\n"
-"}\n"
-"\n";
+"}\n";
 // clang-format on

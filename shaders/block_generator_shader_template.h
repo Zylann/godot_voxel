@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_block_generator_shader_template_0 = 
+const char *g_block_generator_shader_template_0 =
 "#version 450\n"
 "\n"
 "layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;\n"
@@ -15,7 +15,7 @@ const char *g_block_generator_shader_template_0 =
 // clang-format on
 
 // clang-format off
-const char *g_block_generator_shader_template_1 = 
+const char *g_block_generator_shader_template_1 =
 "\n"
 "int get_zxy_index(ivec3 pos, ivec3 size) {\n"
 "	return pos.y + size.y * (pos.x + size.x * pos.z);\n"
@@ -37,7 +37,6 @@ const char *g_block_generator_shader_template_1 =
 // clang-format on
 
 // clang-format off
-const char *g_block_generator_shader_template_2 = 
-"}\n"
-"\n";
+const char *g_block_generator_shader_template_2 =
+"}\n";
 // clang-format on

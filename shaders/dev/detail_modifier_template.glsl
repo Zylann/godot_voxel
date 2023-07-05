@@ -38,11 +38,11 @@ layout (set = 0, binding = 4, std430) restrict readonly buffer BaseModifierParam
 	float sd_scale;
 } u_base_modifier_params;
 
-// <PLACEHOLDER_SECTION>
+// <PLACEHOLDER>
 float get_sd(vec3 pos) {
 	return 0.0;
 }
-// </PLACEHOLDER_SECTION>
+// </PLACEHOLDER>
 
 float sd_smooth_union(float a, float b, float s) {
 	const float h = clamp(0.5 + 0.5 * (b - a) / s, 0.0, 1.0);

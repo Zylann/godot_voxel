@@ -1,7 +1,7 @@
 // Generated file
 
 // clang-format off
-const char *g_modifier_mesh_shader_snippet = 
+const char *g_modifier_mesh_shader_snippet =
 "\n"
 "layout (set = 0, binding = 5) restrict readonly buffer ShapeParams {\n"
 "	vec3 model_to_buffer_translation;\n"

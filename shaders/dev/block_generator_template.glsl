@@ -9,7 +9,7 @@ layout (set = 0, binding = 0, std430) restrict readonly buffer Params {
 	ivec3 block_size;
 } u_params;
 
-// <PLACEHOLDER_SECTION>
+// <PLACEHOLDER>
 
 layout (set = 0, binding = 1, std430) restrict writeonly buffer OutSDBuffer {
 	float values[];
@@ -17,7 +17,7 @@ layout (set = 0, binding = 1, std430) restrict writeonly buffer OutSDBuffer {
 
 void generate(vec3 pos, out float out_sd) {
 }
-// </PLACEHOLDER_SECTION>
+// </PLACEHOLDER>
 
 int get_zxy_index(ivec3 pos, ivec3 size) {
 	return pos.y + size.y * (pos.x + size.x * pos.z);
@@ -36,7 +36,7 @@ void main() {
 	// float sd = get_sd(wpos);
 	// u_out_sd.values[out_index] = sd;
 
-// <PLACEHOLDER_SECTION>
+// <PLACEHOLDER>
 	generate(wpos, u_out_sd.values[out_index]);
-// </PLACEHOLDER_SECTION>
+// </PLACEHOLDER>
 }
