@@ -43,12 +43,6 @@ void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, st
 	}
 }
 
-Span<const Vector3> get_positions_temporary(Vector3i buffer_size, Vector3 origin, Vector3 size) {
-	std::vector<Vector3> &vec = get_tls_positions();
-	get_positions_buffer(buffer_size, origin, size, vec);
-	return to_span(vec);
-}
-
 Span<const Vector3> get_positions_temporary(
 		Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer) {
 	ZN_ASSERT(x_buffer.size() == z_buffer.size() && y_buffer.size() == z_buffer.size());
@@ -113,12 +107,6 @@ void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &s
 	for (unsigned int i = 0; i < sdf.size(); ++i) {
 		sdf[i] *= inv_scale;
 	}
-}
-
-Span<float> decompress_sdf_to_temporary(VoxelBufferInternal &voxels) {
-	std::vector<float> &vec = get_tls_sdf();
-	decompress_sdf_to_buffer(voxels, vec);
-	return to_span(vec);
 }
 
 } // namespace
