@@ -14,6 +14,8 @@ class GenerateBlockGPUTask : public IGPUTask {
 public:
 	~GenerateBlockGPUTask();
 
+	unsigned int get_required_shared_output_buffer_size() const override;
+
 	void prepare(GPUTaskContext &ctx) override;
 	void collect(GPUTaskContext &ctx) override;
 
@@ -40,17 +42,10 @@ public:
 	std::vector<ModifierData> modifiers;
 
 private:
-	struct OutputData {
-		GPUStorageBuffer sb;
-		Ref<RDUniform> uniform;
-	};
-
 	struct BoxData {
 		GPUStorageBuffer params_sb;
 		Ref<RDUniform> params_uniform;
-		std::vector<OutputData> outputs;
-		// Secondary SDF buffer for modifiers
-		OutputData modifier_sd_output_temp;
+		Ref<RDUniform> output_uniform;
 	};
 
 	std::vector<BoxData> _boxes_data;

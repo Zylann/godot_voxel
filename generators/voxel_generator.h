@@ -96,20 +96,9 @@ public:
 		// followed by outputs like `out float out_sd, ...`, which determines what will be returned by the
 		// compute shader.
 		std::vector<ShaderOutput> outputs;
-
-		// inline bool find_output_index(ShaderOutput::Type type, unsigned int &out_i) const {
-		// 	for (unsigned int i = 0; i < outputs.size(); ++i) {
-		// 		if (outputs[i].type == type) {
-		// 			out_i = i;
-		// 			return true;
-		// 		}
-		// 	}
-		// 	return false;
-		// }
 	};
 
 	struct ShaderOutputs {
-		unsigned int binding_begin_index;
 		std::vector<ShaderOutput> outputs;
 	};
 

@@ -372,6 +372,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		detail_modifier_uniforms[3] = sd_buffer1_uniform;
 
 		// Swap buffers
+		// TODO Would it be possible to read and write to the same buffer so we would not need to ping-pong?
 		Ref<RDUniform> temp = sd_buffer1_uniform;
 		sd_buffer1_uniform = sd_buffer0_uniform;
 		sd_buffer0_uniform = temp;

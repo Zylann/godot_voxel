@@ -7,15 +7,13 @@ layout (set = 0, binding = 0, std430) restrict readonly buffer Params {
 	vec3 origin_in_voxels;
 	float voxel_size;
 	ivec3 block_size;
+	int buffer_offset;
 } u_params;
 
-layout (set = 0, binding = 1, std430) restrict readonly buffer InSDBuffer {
+// SDF is modified in-place
+layout (set = 0, binding = 1, std430) restrict buffer InSDBuffer {
 	float values[];
-} u_in_sd;
-
-layout (set = 0, binding = 2, std430) restrict writeonly buffer OutSDBuffer {
-	float values[];
-} u_out_sd;
+} u_inout_sd;
 
 // Parameters common to all modifiers.
 // Keeping the same binding number as other shader types, to simplify usage in C++
@@ -60,9 +58,9 @@ void main() {
 
 	pos = (u_base_modifier_params.world_to_model * vec4(pos, 1.0)).xyz;
 
-	const int index = get_zxy_index(rpos, u_params.block_size);
+	const int index = get_zxy_index(rpos, u_params.block_size) + u_params.buffer_offset;
 
-	float sd = u_in_sd.values[index];
+	float sd = u_inout_sd.values[index];
 
 	const float msd = get_sd(pos) * u_base_modifier_params.sd_scale;
 
@@ -76,5 +74,5 @@ void main() {
 		sd = msd;
 	}
 
-	u_out_sd.values[index] = sd;
+	u_inout_sd.values[index] = sd;
 }

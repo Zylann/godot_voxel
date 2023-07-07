@@ -177,26 +177,16 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 			"Failed to get shader source code.");
 
 	String source_text;
-	const unsigned int generator_uniform_binding_start = 1;
+	const unsigned int generator_uniform_binding_start = 2;
 
 	source_text += g_block_generator_shader_template_0;
 
 	append_generator_parameter_uniforms(source_text, out_params, shader_data, generator_uniform_binding_start);
 
-	// Generate output uniforms
-	const unsigned int generator_output_binding_start = generator_uniform_binding_start + out_params.params.size();
-	outputs.binding_begin_index = generator_output_binding_start;
-
 	for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
 		const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
-		const unsigned int binding = generator_output_binding_start + output_index;
-		source_text += String("layout (set = 0, binding = {0}) restrict writeonly buffer OutBuffer{1} { float "
-							  "values[]; } u_out_{2};\n")
-							   .format(varray(binding, output_index, output_index));
-
 		outputs.outputs.push_back(output);
 	}
-	source_text += "\n";
 
 	// Generator code
 	source_text += shader_data.glsl;
@@ -210,7 +200,8 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 		for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
 			const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
 			// TODO Perhaps we should be able to pack outputs instead of always using floats?
-			source_text += String(", u_out_{0}.values[out_index]").format(varray(output_index));
+			// TODO Maybe interleaved output would be more performant due to data locality?
+			source_text += String(", u_out.values[out_index + volume * {0}]").format(varray(output_index));
 		}
 		source_text += ");\n";
 	}

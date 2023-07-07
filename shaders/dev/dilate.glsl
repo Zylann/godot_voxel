@@ -7,8 +7,10 @@
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
+// We must use alternating images because each iteration reads neighbor pixels
 layout (set = 0, binding = 0, rgba8ui) restrict readonly uniform uimage2D u_src_image;
 layout (set = 0, binding = 1, rgba8ui) restrict writeonly uniform uimage2D u_dst_image;
+
 layout (set = 0, binding = 2) uniform Params {
 	int u_tile_size;
 };
