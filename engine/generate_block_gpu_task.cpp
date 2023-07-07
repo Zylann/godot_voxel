@@ -277,16 +277,11 @@ static void convert_gpu_output_single_texture(VoxelBufferInternal &dst, Span<flo
 			VoxelBufferInternal::CHANNEL_INDICES);
 }
 
-struct VoxelGeneratorGPUOutputDataForBox {
-	Box3i box;
-	VoxelGenerator::ShaderOutput::Type type;
-	PackedByteArray bytes;
-};
-
-static void convert_gpu_output_data(Span<VoxelGeneratorGPUOutputDataForBox> boxes_data, VoxelBufferInternal &dst) {
+void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
+		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst) {
 	ZN_PROFILE_SCOPE();
 
-	for (VoxelGeneratorGPUOutputDataForBox &box_data : boxes_data) {
+	for (GenerateBlockGPUTaskResult &box_data : boxes_data) {
 		// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?
 		// TODO Should we convert in the compute shader to reduce bandwidth and CPU work?
 		Span<float> src_data_f =
@@ -322,8 +317,8 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	const VoxelBufferInternal::Depth sd_depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
 	const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(sd_depth);
 
-	std::vector<VoxelGeneratorGPUOutputDataForBox> outputs_data;
-	outputs_data.reserve(_boxes_data.size());
+	std::vector<GenerateBlockGPUTaskResult> results;
+	results.reserve(_boxes_data.size());
 
 	for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 		BoxData &bd = _boxes_data[box_index];
@@ -333,16 +328,19 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		const unsigned int data_size = Vector3iUtil::get_volume(box.size) * sizeof(float);
 
 		for (unsigned int output_index = 0; output_index < generator_shader_outputs->outputs.size(); ++output_index) {
-			ZN_PROFILE_SCOPE();
+			ZN_PROFILE_SCOPE_NAMED("Copy sub-buffer");
 			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];
 
 			Span<const uint8_t> output_bytes =
 					ctx.downloaded_shared_output_data.sub(data_size * output_index, data_size);
 
+			// TODO There should be a way to use the full PackedByteArray and share it with each consumer,
+			// rather than allocating individual buffers from it. But, consumers must not have write access to it,
+			// (which they currently exploit) because it would trigger CoW
 			PackedByteArray pba;
 			pba.resize(data_size);
 			memcpy(pba.ptrw(), output_bytes.data(), data_size);
-			outputs_data.push_back(VoxelGeneratorGPUOutputDataForBox{ box, output_info.type, pba });
+			results.push_back(GenerateBlockGPUTaskResult{ box, output_info.type, pba });
 		}
 
 		storage_buffer_pool.recycle(bd.params_sb);
@@ -354,10 +352,12 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		free_rendering_device_rid(rd, rid);
 	}
 
-	// TODO Move this back to the meshing task, the GPU thread must not do such work
-	convert_gpu_output_data(to_span(outputs_data), dst);
+	// We leave conversion to the CPU task, because we have only one thread for GPU work and it only exists for waiting
+	// blocking functions, not doing work
+	mesh_task->gpu_generation_results = std::move(results);
 
-	// Resume meshing task, pass ownership back to the task runner
+	// Resume meshing task, pass ownership back to the task runner.
+	// TODO We may want to abstract this somehow, it won't be the only kind of task to use GPU
 	mesh_task->stage = MeshBlockTask::STAGE_BUILD_MESH;
 	VoxelEngine::get_singleton().push_async_task(mesh_task);
 	mesh_task = nullptr;

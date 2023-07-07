@@ -53,6 +53,14 @@ private:
 	std::vector<RID> _modifier_pipelines;
 };
 
+struct GenerateBlockGPUTaskResult {
+	Box3i box;
+	VoxelGenerator::ShaderOutput::Type type;
+	PackedByteArray bytes;
+
+	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst);
+};
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_GENERATE_BLOCK_GPU_TASK_H

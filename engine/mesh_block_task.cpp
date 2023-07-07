@@ -280,6 +280,7 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			gather_voxels_gpu(ctx);
 		}
 		if (stage == STAGE_BUILD_MESH) {
+			GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(gpu_generation_results), voxels);
 			build_mesh();
 		}
 	} else {

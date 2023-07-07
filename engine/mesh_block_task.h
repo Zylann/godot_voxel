@@ -6,7 +6,9 @@
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/threaded_task.h"
 #include "detail_rendering.h"
+#include "generate_block_gpu_task.h"
 #include "ids.h"
+#include "mesh_block_task.h"
 #include "meshing_dependency.h"
 #include "priority_dependency.h"
 
@@ -56,6 +58,7 @@ public:
 	DetailRenderingSettings detail_texture_settings;
 	Ref<VoxelGenerator> detail_texture_generator_override;
 	VoxelBufferInternal voxels;
+	std::vector<GenerateBlockGPUTaskResult> gpu_generation_results;
 
 private:
 	void gather_voxels_gpu(zylann::ThreadedTaskContext &ctx);
