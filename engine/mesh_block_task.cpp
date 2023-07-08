@@ -103,7 +103,9 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	// These boxes are in buffer coordinates (not world voxel coordinates)
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
-	boxes_to_generate.push_back(mesh_data_box);
+	if (contains(blocks.to_const(), std::shared_ptr<VoxelBufferInternal>())) {
+		boxes_to_generate.push_back(mesh_data_box);
+	}
 
 	{
 		// TODO The following logic might as well be simplified and moved to VoxelData.
@@ -134,7 +136,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
 					}
 
-					{
+					if (boxes_to_generate.size() > 0) {
 						// Subtract edited box from the area to generate
 						// TODO This approach allows to batch boxes if necessary,
 						// but is it just better to do it anyways for every clipped box?

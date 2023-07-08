@@ -38,6 +38,12 @@ public:
 		_size = p_other.size();
 	}
 
+	// Had to add this because somehow calling `template_func_expecting_span_const_t(Span<T>)` does not work...
+	// Curiously enough, std::span has the same issue. I wonder what I'm missing.
+	inline Span<const T> to_const() const {
+		return Span<const T>(*this);
+	}
+
 	inline Span<T> sub(size_t from, size_t len) const {
 		ZN_ASSERT(from + len <= _size);
 		return Span<T>(_ptr + from, len);
