@@ -36,7 +36,7 @@ public:
 	std::shared_ptr<VoxelBufferInternal> voxels;
 	Vector3i position;
 	VolumeID volume_id;
-	uint8_t lod; // TODO Rename lod_index
+	uint8_t lod_index;
 	uint8_t block_size;
 	bool has_run = false;
 	bool too_far = false;

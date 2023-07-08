@@ -64,7 +64,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
 	ERR_FAIL_COND(generator_shader == nullptr);
 
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
+	const Vector3i origin_in_voxels = (position << lod_index) * block_size;
 	const Vector3i resolution = Vector3iUtil::create(block_size);
 
 	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
@@ -72,12 +72,12 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	gpu_task->generator_shader = generator_shader;
 	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
 	gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
-	gpu_task->lod_index = lod;
+	gpu_task->lod_index = lod_index;
 	gpu_task->origin_in_voxels = origin_in_voxels;
 	gpu_task->consumer_task = this;
 
 	if (data != nullptr) {
-		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << lod));
+		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << lod_index));
 		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = data->get_modifiers();
 		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
@@ -102,17 +102,17 @@ void GenerateBlockTask::run_gpu_conversion() {
 }
 
 void GenerateBlockTask::run_cpu_generation() {
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
+	const Vector3i origin_in_voxels = (position << lod_index) * block_size;
 
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 
-	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod };
+	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod_index };
 	const VoxelGenerator::Result result = generator->generate_block(query_data);
 	max_lod_hint = result.max_lod_hint;
 
 	if (data != nullptr) {
-		data->get_modifiers().apply(
-				query_data.voxel_buffer, AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << lod));
+		data->get_modifiers().apply(query_data.voxel_buffer,
+				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << lod_index));
 	}
 }
 
@@ -123,7 +123,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 		// TODO In some cases we don't want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			ZN_PRINT_VERBOSE(format("Requesting save of generator output for block {} lod {}", position, int(lod)));
+			ZN_PRINT_VERBOSE(
+					format("Requesting save of generator output for block {} lod {}", position, int(lod_index)));
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
@@ -132,8 +133,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(
-					SaveBlockDataTask(volume_id, position, lod, block_size, voxels_copy, stream_dependency, nullptr));
+			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
+					volume_id, position, lod_index, block_size, voxels_copy, stream_dependency, nullptr));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -144,8 +145,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 
 TaskPriority GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
-	const TaskPriority p =
-			priority_dependency.evaluate(lod, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
+	const TaskPriority p = priority_dependency.evaluate(
+			lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
 	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
@@ -167,7 +168,7 @@ void GenerateBlockTask::apply_result() {
 			VoxelEngine::BlockDataOutput o;
 			o.voxels = voxels;
 			o.position = position;
-			o.lod = lod;
+			o.lod_index = lod_index;
 			o.dropped = !has_run;
 			if (stream.is_valid() && stream->get_save_generator_output()) {
 				// We can't consider the block as "generated" since there is no state to tell that once saved,

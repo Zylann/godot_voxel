@@ -861,7 +861,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 		task->volume_id = volume_id;
 		task->position = block_pos;
-		task->lod = 0;
+		task->lod_index = 0;
 		task->block_size = data_block_size;
 		task->stream_dependency = stream_dependency;
 		task->use_gpu = use_gpu;
@@ -1386,7 +1386,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		// We'll have to request it again.
 		ZN_PRINT_VERBOSE(format("Received a block loading drop while we were still expecting it: "
 								"lod{} ({}, {}, {}), re-requesting it",
-				ob.lod, ob.position.x, ob.position.y, ob.position.z));
+				ob.lod_index, ob.position.x, ob.position.y, ob.position.z));
 
 		++_stats.dropped_block_loads;
 
@@ -1413,7 +1413,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 
 	CRASH_COND(ob.voxels == nullptr);
 
-	VoxelDataBlock block(ob.voxels, ob.lod);
+	VoxelDataBlock block(ob.voxels, ob.lod_index);
 	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
 	// Viewers will be set only if the block doesn't already exist
 	block.viewers = loading_block.viewers;
@@ -1449,7 +1449,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	// }
 
 	if (_instancer != nullptr && ob.instances != nullptr) {
-		_instancer->on_data_block_loaded(ob.position, ob.lod, std::move(ob.instances));
+		_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
 	}
 }
 

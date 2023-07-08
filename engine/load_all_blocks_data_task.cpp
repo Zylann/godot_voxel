@@ -42,7 +42,7 @@ void LoadAllBlocksDataTask::apply_result() {
 				o.voxels = rb.voxels;
 				o.instances = std::move(rb.instances_data);
 				o.position = rb.position;
-				o.lod = rb.lod;
+				o.lod_index = rb.lod;
 				o.dropped = false;
 				o.max_lod_hint = false;
 				o.initial_load = true;

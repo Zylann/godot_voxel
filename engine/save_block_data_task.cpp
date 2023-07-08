@@ -118,7 +118,7 @@ void SaveBlockDataTask::apply_result() {
 			// TODO Perhaps separate save and load callbacks?
 			VoxelEngine::BlockDataOutput o;
 			o.position = _position;
-			o.lod = _lod;
+			o.lod_index = _lod;
 			o.dropped = !_has_run;
 			o.max_lod_hint = false; // Unused
 			o.initial_load = false; // Unused

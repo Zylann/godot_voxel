@@ -37,7 +37,7 @@ private:
 	UniquePtr<InstanceBlockData> _instances;
 	Vector3i _position; // In data blocks of the specified lod
 	VolumeID _volume_id;
-	uint8_t _lod;
+	uint8_t _lod_index;
 	uint8_t _block_size;
 	bool _has_run = false;
 	bool _too_far = false;

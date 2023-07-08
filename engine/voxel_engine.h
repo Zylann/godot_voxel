@@ -69,8 +69,7 @@ public:
 		std::shared_ptr<VoxelBufferInternal> voxels;
 		UniquePtr<InstanceBlockData> instances;
 		Vector3i position;
-		// TODO Rename lod_index
-		uint8_t lod;
+		uint8_t lod_index;
 		bool dropped;
 		bool max_lod_hint;
 		// Blocks with this flag set should not be ignored.

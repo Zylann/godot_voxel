@@ -861,7 +861,7 @@ static void request_block_generate(VolumeID volume_id, unsigned int data_block_s
 	GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 	task->volume_id = volume_id;
 	task->position = block_pos;
-	task->lod = lod;
+	task->lod_index = lod;
 	task->block_size = data_block_size;
 	task->stream_dependency = stream_dependency;
 	task->tracker = tracker;

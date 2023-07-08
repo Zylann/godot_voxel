@@ -1300,7 +1300,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		return;
 	}
 
-	if (ob.lod >= get_lod_count()) {
+	if (ob.lod_index >= get_lod_count()) {
 		// That block was requested at a time where LOD was higher... drop it
 		++_stats.dropped_block_loads;
 		return;
@@ -1308,11 +1308,12 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 
 	// Initial load will be true when we requested data without specifying specific positions,
 	// so we wouldn't know which ones to expect. This is the case of full load mode.
-	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod];
+	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
 	if (!ob.initial_load) {
 		if (!thread_safe_contains(lod.loading_blocks, ob.position, lod.loading_blocks_mutex)) {
 			// That block was not requested, or is no longer needed. drop it...
-			ZN_PRINT_VERBOSE(format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod));
+			ZN_PRINT_VERBOSE(
+					format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod_index));
 			++_stats.dropped_block_loads;
 			return;
 		}
@@ -1331,7 +1332,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		return;
 	}
 
-	VoxelDataBlock block(ob.voxels, ob.lod);
+	VoxelDataBlock block(ob.voxels, ob.lod_index);
 	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
 
 	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
@@ -1356,7 +1357,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	}
 
 	if (_instancer != nullptr && ob.instances != nullptr) {
-		_instancer->on_data_block_loaded(ob.position, ob.lod, std::move(ob.instances));
+		_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
 	}
 }
 
