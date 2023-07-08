@@ -36,25 +36,28 @@ Ref<VoxelGenerator> VoxelNode::get_generator() const {
 }
 
 void VoxelNode::restart_stream() {
-	// Not implemented
+	// Implemented in subclasses
 }
 
 void VoxelNode::remesh_all_blocks() {
-	// Not implemented
+	// Implemented in subclasses
 }
 
 VolumeID VoxelNode::get_volume_id() const {
-	CRASH_NOW_MSG("Not implemented");
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in subclasses
 	return VolumeID();
 }
 
 std::shared_ptr<StreamingDependency> VoxelNode::get_streaming_dependency() const {
-	CRASH_NOW_MSG("Not implemented");
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in subclasses
 	return nullptr;
 }
 
 Ref<VoxelTool> VoxelNode::get_voxel_tool() {
-	CRASH_NOW_MSG("Not implemented");
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in subclasses
 	return Ref<VoxelTool>();
 }
 

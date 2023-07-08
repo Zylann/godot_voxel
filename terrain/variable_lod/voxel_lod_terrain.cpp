@@ -2175,6 +2175,14 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		warnings.append(ZN_TTR("The assigned {0} has no shader").format(varray(ShaderMaterial::get_class_static())));
 	}
 
+	if (get_generator_use_gpu()) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid() && !generator->supports_shaders()) {
+			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
+									.format(varray(generator->get_class())));
+		}
+	}
+
 	if (mesher.is_valid()) {
 		// LOD support in mesher
 		if (!mesher->supports_lod()) {
@@ -2224,7 +2232,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 			}
 		}
 
-		// Virtual textures
+		// Detail textures
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
 			if (get_generator_use_gpu() && !generator->supports_shaders()) {

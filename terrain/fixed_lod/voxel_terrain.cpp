@@ -1757,7 +1757,13 @@ const VoxelTerrainMultiplayerSynchronizer *VoxelTerrain::get_multiplayer_synchro
 void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
 	VoxelNode::get_configuration_warnings(warnings);
 
-	// TODO warn in case of using GPU but generator is not compatible
+	if (get_generator_use_gpu()) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid() && !generator->supports_shaders()) {
+			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
+									.format(varray(generator->get_class())));
+		}
+	}
 }
 
 #endif
