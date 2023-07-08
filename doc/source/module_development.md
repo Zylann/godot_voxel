@@ -405,6 +405,24 @@ Some can be specified through SCons command line parameters.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
 
 
+Shaders
+---------
+
+The module contains shaders for some of its features, mainly compute shaders. They are found under the `shaders/dev/` folder.
+
+`shaders/dev` contains a Godot project. The purpose of this project is mainly to quickly test if shaders compile properly, and eventually test them with simple scenes and GDScript code.
+
+There are several ways shaders are written:
+
+- Plain: regular shaders, which will used as-is.
+- Templates: these contain `<PLACEHOLDER>` sections, which the engine will replace with generated code. Code inside those sections will be replaced and is only present to make the shader compile in the test project.
+- Snippets: these contain `<SNIPPET>` sections, which will be inserted into templates or other generated code. Code outside those sections will not be used and is only present to make the shader compile in the test project.
+
+Shipping external files when compiling as a module is inconvenient, so instead they are embedded in C++ directly, similarly to how Godot does. A script can be executed to update those generated files. You must open a command line inside the `shaders/` folder and run `python text2cpp.py`.
+
+Currently, C++ code generating shaders is intertwined with the contents of those shaders. For example, C++ strings in code generation can contain variable names found in GLSL files, so you should have both open to understand the context.
+
+
 GDExtension
 -------------
 
