@@ -47,6 +47,11 @@ void GPUTaskRunner::push(IGPUTask *task) {
 	MutexLock mlock(_mutex);
 	_shared_tasks.push_back(task);
 	_semaphore.post();
+	++_pending_count;
+}
+
+unsigned int GPUTaskRunner::get_pending_task_count() const {
+	return _pending_count;
 }
 
 void GPUTaskRunner::thread_func() {
@@ -88,7 +93,6 @@ void GPUTaskRunner::thread_func() {
 
 		for (size_t begin_index = 0; begin_index < tasks.size(); begin_index += batch_count) {
 			ZN_PROFILE_SCOPE_NAMED("Batch");
-			ZN_PROFILE_PLOT("Pending GPU tasks", int64_t(tasks.size()));
 
 			const size_t end_index = math::min(begin_index + batch_count, tasks.size());
 
@@ -166,6 +170,7 @@ void GPUTaskRunner::thread_func() {
 				IGPUTask *task = tasks[i];
 				task->collect(ctx);
 				ZN_DELETE(task);
+				--_pending_count;
 			}
 		}
 

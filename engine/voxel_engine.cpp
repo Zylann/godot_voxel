@@ -345,6 +345,8 @@ void VoxelEngine::process() {
 		// - Hysteresis is needed to reduce ping-pong
 		_world.shared_priority_dependency->highest_view_distance = max_distance * 2;
 	}
+
+	ZN_PROFILE_PLOT("Pending GPU tasks", int64_t(_gpu_task_runner.get_pending_task_count()));
 }
 
 static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {

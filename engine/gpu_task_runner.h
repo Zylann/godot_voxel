@@ -9,6 +9,7 @@
 #include "../util/thread/semaphore.h"
 #include "../util/thread/thread.h"
 #include <vector>
+#include <atomic>
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
 #ifdef ZN_GODOT_EXTENSION
@@ -57,6 +58,7 @@ public:
 	void start(RenderingDevice *rd, GPUStorageBufferPool *pool);
 	void stop();
 	void push(IGPUTask *task);
+	unsigned int get_pending_task_count() const;
 
 private:
 	void thread_func();
@@ -71,6 +73,7 @@ private:
 	// Since we already have a thread pool, this thread is supposed to be mostly sleeping or waiting.
 	Thread _thread;
 	bool _running = false;
+	std::atomic_uint32_t _pending_count = 0;
 };
 
 } // namespace zylann::voxel
