@@ -3,6 +3,7 @@
 #include "../storage/voxel_data.h"
 #include "../util/godot/funcs.h"
 #include "../util/log.h"
+#include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "../util/tasks/async_dependency_tracker.h"
@@ -34,12 +35,76 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 	ERR_FAIL_COND(generator.is_null());
 
-	const Vector3i origin_in_voxels = (position << lod) * block_size;
-
 	if (voxels == nullptr) {
 		voxels = make_shared_instance<VoxelBufferInternal>();
 		voxels->create(block_size, block_size, block_size);
 	}
+
+	if (use_gpu) {
+		if (_stage == 0) {
+			run_gpu_task(ctx);
+		}
+		if (_stage == 1) {
+			run_gpu_conversion();
+			run_stream_saving_and_finish();
+		}
+	} else {
+		run_cpu_generation();
+		run_stream_saving_and_finish();
+	}
+}
+
+void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
+	Ref<VoxelGenerator> generator = stream_dependency->generator;
+	ERR_FAIL_COND(generator.is_null());
+
+	// TODO Broad-phase to avoid the GPU part entirely?
+	// Implement and call `VoxelGenerator::generate_broad_block()`
+
+	std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
+	ERR_FAIL_COND(generator_shader == nullptr);
+
+	const Vector3i origin_in_voxels = (position << lod) * block_size;
+	const Vector3i resolution = Vector3iUtil::create(block_size);
+
+	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	gpu_task->boxes_to_generate.push_back(Box3i(Vector3i(), resolution));
+	gpu_task->generator_shader = generator_shader;
+	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
+	gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
+	gpu_task->lod_index = lod;
+	gpu_task->origin_in_voxels = origin_in_voxels;
+	gpu_task->consumer_task = this;
+
+	if (data != nullptr) {
+		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(resolution << lod));
+		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+		const VoxelModifierStack &modifiers = data->get_modifiers();
+		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
+		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
+			gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{ d.block_rendering_shader_rid, d.params });
+		}
+	}
+
+	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+
+	// Start GPU task, we'll continue after it
+	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
+}
+
+void GenerateBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
+	_gpu_generation_results = std::move(results);
+	_stage = 1;
+}
+
+void GenerateBlockTask::run_gpu_conversion() {
+	GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(_gpu_generation_results), *voxels);
+}
+
+void GenerateBlockTask::run_cpu_generation() {
+	const Vector3i origin_in_voxels = (position << lod) * block_size;
+
+	Ref<VoxelGenerator> generator = stream_dependency->generator;
 
 	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod };
 	const VoxelGenerator::Result result = generator->generate_block(query_data);
@@ -49,7 +114,9 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		data->get_modifiers().apply(
 				query_data.voxel_buffer, AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << lod));
 	}
+}
 
+void GenerateBlockTask::run_stream_saving_and_finish() {
 	if (stream_dependency->valid) {
 		Ref<VoxelStream> stream = stream_dependency->stream;
 

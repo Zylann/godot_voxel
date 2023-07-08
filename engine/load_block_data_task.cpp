@@ -15,7 +15,8 @@ std::atomic_int g_debug_load_block_tasks_count = { 0 };
 
 LoadBlockDataTask::LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		PriorityDependency p_priority_dependency, bool generate_cache_data) :
+		PriorityDependency p_priority_dependency, bool generate_cache_data, bool generator_use_gpu,
+		const std::shared_ptr<VoxelData> &vdata) :
 		_priority_dependency(p_priority_dependency),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -23,8 +24,10 @@ LoadBlockDataTask::LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_block_size(p_block_size),
 		_request_instances(p_request_instances),
 		_generate_cache_data(generate_cache_data),
+		_generator_use_gpu(generator_use_gpu),
 		//_request_voxels(true),
-		_stream_dependency(p_stream_dependency) {
+		_stream_dependency(p_stream_dependency),
+		_voxel_data(vdata) {
 	//
 	++g_debug_load_block_tasks_count;
 }
@@ -68,7 +71,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 			Ref<VoxelGenerator> generator = _stream_dependency->generator;
 
 			if (generator.is_valid()) {
-				GenerateBlockTask *task = memnew(GenerateBlockTask);
+				GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 				task->voxels = _voxels;
 				task->volume_id = _volume_id;
 				task->position = _position;
@@ -76,6 +79,8 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 				task->block_size = _block_size;
 				task->stream_dependency = _stream_dependency;
 				task->priority_dependency = _priority_dependency;
+				task->use_gpu = _generator_use_gpu;
+				task->data = _voxel_data;
 
 				VoxelEngine::get_singleton().push_async_task(task);
 				_requested_generator_task = true;

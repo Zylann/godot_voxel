@@ -15,11 +15,12 @@
 namespace zylann::voxel {
 
 GenerateBlockGPUTask::~GenerateBlockGPUTask() {
-	if (mesh_task != nullptr) {
+	if (consumer_task != nullptr) {
 		// If we get here, it means the engine got shut down before a mesh task could complete,
 		// so we still have ownership on this task and it should be deleted from here.
-		ZN_PRINT_VERBOSE("Freeing interrupted meshing task");
-		memdelete(mesh_task);
+		ZN_PRINT_VERBOSE("Freeing interrupted consumer task");
+		// TODO We may not assume how this task was allocated
+		ZN_DELETE(consumer_task);
 	}
 }
 
@@ -43,8 +44,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	ZN_ASSERT_RETURN(generator_shader_outputs != nullptr);
 	ZN_ASSERT_RETURN(generator_shader_outputs->outputs.size() > 0);
 
-	ZN_ASSERT(mesh_task != nullptr);
-	ZN_ASSERT(mesh_task->block_generation_use_gpu);
+	ZN_ASSERT(consumer_task != nullptr);
 
 	ERR_FAIL_COND(boxes_to_generate.size() == 0);
 
@@ -313,10 +313,6 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
 
-	VoxelBufferInternal &dst = mesh_task->voxels;
-	const VoxelBufferInternal::Depth sd_depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
-	const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(sd_depth);
-
 	std::vector<GenerateBlockGPUTaskResult> results;
 	results.reserve(_boxes_data.size());
 
@@ -354,13 +350,11 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 	// We leave conversion to the CPU task, because we have only one thread for GPU work and it only exists for waiting
 	// blocking functions, not doing work
-	mesh_task->gpu_generation_results = std::move(results);
+	consumer_task->set_gpu_results(std::move(results));
 
 	// Resume meshing task, pass ownership back to the task runner.
-	// TODO We may want to abstract this somehow, it won't be the only kind of task to use GPU
-	mesh_task->stage = MeshBlockTask::STAGE_BUILD_MESH;
-	VoxelEngine::get_singleton().push_async_task(mesh_task);
-	mesh_task = nullptr;
+	VoxelEngine::get_singleton().push_async_task(consumer_task);
+	consumer_task = nullptr;
 }
 
 } // namespace zylann::voxel

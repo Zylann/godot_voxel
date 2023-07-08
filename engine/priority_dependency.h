@@ -17,6 +17,7 @@ struct PriorityDependency {
 		// a task will run much sooner or later than expected, but it will run in any case.
 		// No resizing should happen concurrently. If it happens, a new instance will be made for future tasks,
 		// while old tasks will keep referencing the previous version.
+		// TODO Use Vector3f, no need for high precision
 		std::vector<Vector3> viewers;
 		float highest_view_distance = 999999;
 	};

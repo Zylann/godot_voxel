@@ -87,6 +87,9 @@ void GPUTaskRunner::thread_func() {
 		GPUTaskContext ctx(*_rendering_device, *_storage_buffer_pool);
 
 		for (size_t begin_index = 0; begin_index < tasks.size(); begin_index += batch_count) {
+			ZN_PROFILE_SCOPE_NAMED("Batch");
+			ZN_PROFILE_PLOT("Pending GPU tasks", int64_t(tasks.size()));
+
 			const size_t end_index = math::min(begin_index + batch_count, tasks.size());
 
 			unsigned int required_shared_output_buffer_size = 0;

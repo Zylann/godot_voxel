@@ -97,6 +97,9 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 	const Vector3i min_pos = -Vector3iUtil::create(min_padding);
 	const Vector3i max_pos = Vector3iUtil::create(mesh_block_size + max_padding);
 
+	// TODO In terrains that only work with caches, we should never consider generating voxels from here.
+	// This is the case of VoxelTerrain, which is now doing unnecessary box subtraction calculations...
+
 	// These boxes are in buffer coordinates (not world voxel coordinates)
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
@@ -182,6 +185,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
 		for (const Box3i &box : boxes_to_generate) {
+			ZN_PROFILE_SCOPE_NAMED("Box");
 			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
@@ -276,11 +280,11 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	if (block_generation_use_gpu) {
-		if (stage == STAGE_GATHER_VOXELS) {
+		if (_stage == STAGE_GATHER_VOXELS) {
 			gather_voxels_gpu(ctx);
 		}
-		if (stage == STAGE_BUILD_MESH) {
-			GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(gpu_generation_results), voxels);
+		if (_stage == STAGE_BUILD_MESH) {
+			GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(_gpu_generation_results), _voxels);
 			build_mesh();
 		}
 	} else {
@@ -302,12 +306,12 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	std::vector<Box3i> boxes_to_generate;
 	Vector3i origin_in_voxels;
 
-	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
+	copy_block_and_neighbors(to_span(blocks, blocks_count), _voxels, min_padding, max_padding,
 			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
 			&boxes_to_generate, &origin_in_voxels);
 
 	if (boxes_to_generate.size() == 0) {
-		stage = STAGE_BUILD_MESH;
+		_stage = STAGE_BUILD_MESH;
 
 	} else {
 		// TODO Broad-phase to avoid the GPU part entirely?
@@ -326,9 +330,9 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 		gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
 		gpu_task->lod_index = lod_index;
 		gpu_task->origin_in_voxels = origin_in_voxels;
-		gpu_task->mesh_task = this;
+		gpu_task->consumer_task = this;
 
-		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(voxels.get_size() << lod_index));
+		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
 		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = data->get_modifiers();
 		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
@@ -343,6 +347,11 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	}
 }
 
+void MeshBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
+	_gpu_generation_results = std::move(results);
+	_stage = STAGE_BUILD_MESH;
+}
+
 void MeshBlockTask::gather_voxels_cpu() {
 	ZN_ASSERT(meshing_dependency != nullptr);
 	ZN_ASSERT(data != nullptr);
@@ -353,7 +362,7 @@ void MeshBlockTask::gather_voxels_cpu() {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	copy_block_and_neighbors(to_span(blocks, blocks_count), voxels, min_padding, max_padding,
+	copy_block_and_neighbors(to_span(blocks, blocks_count), _voxels, min_padding, max_padding,
 			mesher->get_used_channels_mask(), meshing_dependency->generator, *data, lod_index, mesh_block_position,
 			nullptr, nullptr);
 
@@ -394,11 +403,11 @@ void MeshBlockTask::gather_voxels_cpu() {
 void MeshBlockTask::build_mesh() {
 	Ref<VoxelMesher> mesher = meshing_dependency->mesher;
 	const Vector3i mesh_block_size =
-			voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
+			_voxels.get_size() - Vector3iUtil::create(mesher->get_minimum_padding() + mesher->get_maximum_padding());
 
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
-	const VoxelMesher::Input input = { voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
+	const VoxelMesher::Input input = { _voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
 		lod_index, collision_hint, lod_hint, true };
 	mesher->build(_surfaces_output, input);
 

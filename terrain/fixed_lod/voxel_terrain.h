@@ -87,6 +87,9 @@ public:
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
+	void set_generator_use_gpu(bool enabled);
+	bool get_generator_use_gpu() const;
+
 	VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
 		return *_data;
@@ -154,6 +157,10 @@ public:
 
 	void set_multiplayer_synchronizer(VoxelTerrainMultiplayerSynchronizer *synchronizer);
 	const VoxelTerrainMultiplayerSynchronizer *get_multiplayer_synchronizer() const;
+
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
+#endif // TOOLS_ENABLED
 
 protected:
 	void _notification(int p_what);
@@ -300,6 +307,7 @@ private:
 	bool _area_edit_notification_enabled = false;
 	// If enabled, VoxelViewers will cause blocks to automatically load around them.
 	bool _automatic_loading_enabled = true;
+	bool _generator_use_gpu = false;
 
 	Ref<Material> _material_override;
 

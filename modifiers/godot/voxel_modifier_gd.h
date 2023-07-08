@@ -27,6 +27,8 @@ public:
 	void set_smoothness(float s);
 	float get_smoothness() const;
 
+	// TODO Add configuration warnings
+
 protected:
 	virtual zylann::voxel::VoxelModifier *create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id);
 	void _notification(int p_what);

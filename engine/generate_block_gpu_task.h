@@ -3,13 +3,29 @@
 
 #include "../generators/voxel_generator.h"
 #include "../util/math/box3i.h"
+#include "../util/tasks/threaded_task.h"
 #include "gpu_storage_buffer_pool.h"
 #include "gpu_task_runner.h"
 
 namespace zylann::voxel {
 
-class MeshBlockTask;
+struct GenerateBlockGPUTaskResult {
+	Box3i box;
+	VoxelGenerator::ShaderOutput::Type type;
+	PackedByteArray bytes;
 
+	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst);
+};
+
+// Interface used for tasks that can spawn `GenerateBlockGPUTask`. It is required to return their results.
+class IGeneratingVoxelsThreadedTask : public IThreadedTask {
+public:
+	// Called when the GPU task is complete.
+	virtual void set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) = 0;
+};
+
+// Generates a block of voxels on the GPU. Must be scheduled from a threaded task, which will be resumed when this one
+// finishes.
 class GenerateBlockGPUTask : public IGPUTask {
 public:
 	~GenerateBlockGPUTask();
@@ -20,15 +36,15 @@ public:
 	void collect(GPUTaskContext &ctx) override;
 
 	// TODO Not sure if it's worth dealing with sub-boxes. That's only in case of partially-edited meshing blocks...
-	// it doesn't sound like a common case.
+	// this case doesn't sound common enough.
 
-	// Exclusive boxes relative to a VoxelBuffer (not world voxel coordinates)
+	// Boxes relative to a VoxelBuffer (not world voxel coordinates). They must not interesect.
 	std::vector<Box3i> boxes_to_generate;
 	// Position of the lower corner of the VoxelBuffer in world voxel coordinates
 	Vector3i origin_in_voxels;
 	uint8_t lod_index = 0;
 	// Task for which the voxel data is for.
-	MeshBlockTask *mesh_task = nullptr;
+	IGeneratingVoxelsThreadedTask *consumer_task = nullptr;
 
 	// Base generator
 	std::shared_ptr<ComputeShader> generator_shader;
@@ -51,14 +67,6 @@ private:
 	std::vector<BoxData> _boxes_data;
 	RID _generator_pipeline_rid;
 	std::vector<RID> _modifier_pipelines;
-};
-
-struct GenerateBlockGPUTaskResult {
-	Box3i box;
-	VoxelGenerator::ShaderOutput::Type type;
-	PackedByteArray bytes;
-
-	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst);
 };
 
 } // namespace zylann::voxel

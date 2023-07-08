@@ -117,6 +117,14 @@ Ref<Material> VoxelTerrain::get_material_override() const {
 	return _material_override;
 }
 
+void VoxelTerrain::set_generator_use_gpu(bool enabled) {
+	_generator_use_gpu = enabled;
+}
+
+bool VoxelTerrain::get_generator_use_gpu() const {
+	return _generator_use_gpu;
+}
+
 void VoxelTerrain::set_stream(Ref<VoxelStream> p_stream) {
 	if (p_stream == get_stream()) {
 		return;
@@ -825,10 +833,16 @@ static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector
 }
 
 static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency,
-		uint32_t data_block_size, Vector3i block_pos,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D volume_transform,
-		bool request_instances, BufferedTaskScheduler &scheduler) {
+		Vector3i block_pos, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D volume_transform, bool request_instances, BufferedTaskScheduler &scheduler, bool use_gpu,
+		const std::shared_ptr<VoxelData> &voxel_data) {
 	ZN_ASSERT(stream_dependency != nullptr);
+
+	if (use_gpu && (stream_dependency->generator.is_null() || !stream_dependency->generator->supports_shaders())) {
+		use_gpu = false;
+	}
+
+	const unsigned int data_block_size = voxel_data->get_block_size();
 
 	if (stream_dependency->stream.is_valid()) {
 		PriorityDependency priority_dependency;
@@ -836,7 +850,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
-				stream_dependency, priority_dependency, true));
+				stream_dependency, priority_dependency, true, use_gpu, voxel_data));
 
 		scheduler.push_io_task(task);
 
@@ -850,6 +864,8 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		task->lod = 0;
 		task->block_size = data_block_size;
 		task->stream_dependency = stream_dependency;
+		task->use_gpu = use_gpu;
+		task->data = voxel_data;
 
 		init_sparse_grid_priority_dependency(
 				task->priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
@@ -872,9 +888,8 @@ void VoxelTerrain::send_data_load_requests() {
 		// Blocks to load
 		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 			const Vector3i block_pos = _blocks_pending_load[i];
-			// TODO Optimization: Batch request
-			request_block_load(_volume_id, _streaming_dependency, get_data_block_size(), block_pos, shared_viewers_data,
-					volume_transform, _instancer != nullptr, scheduler);
+			request_block_load(_volume_id, _streaming_dependency, block_pos, shared_viewers_data, volume_transform,
+					_instancer != nullptr, scheduler, _generator_use_gpu, _data);
 		}
 		scheduler.flush();
 		_blocks_pending_load.clear();
@@ -989,6 +1004,15 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 
 void VoxelTerrain::process() {
 	ZN_PROFILE_SCOPE();
+
+	if (get_generator_use_gpu()) {
+		Ref<VoxelGenerator> generator = get_generator();
+		if (generator.is_valid() && generator->supports_shaders() &&
+				generator->get_block_rendering_shader() == nullptr) {
+			generator->compile_shaders();
+		}
+	}
+
 	process_viewers();
 	// process_received_data_blocks();
 	process_meshing();
@@ -1728,6 +1752,16 @@ const VoxelTerrainMultiplayerSynchronizer *VoxelTerrain::get_multiplayer_synchro
 	return _multiplayer_synchronizer;
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const {
+	VoxelNode::get_configuration_warnings(warnings);
+
+	// TODO warn in case of using GPU but generator is not compatible
+}
+
+#endif
+
 Vector3i VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
 	return _data->voxel_to_block(math::floor_to_int(pos));
 }
@@ -1851,6 +1885,9 @@ void VoxelTerrain::_bind_methods() {
 			D_METHOD("set_automatic_loading_enabled", "enable"), &VoxelTerrain::set_automatic_loading_enabled);
 	ClassDB::bind_method(D_METHOD("is_automatic_loading_enabled"), &VoxelTerrain::is_automatic_loading_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enable"), &VoxelTerrain::set_generator_use_gpu);
+	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelTerrain::get_generator_use_gpu);
+
 	// TODO Rename `_voxel_bounds`
 	ClassDB::bind_method(D_METHOD("set_bounds"), &VoxelTerrain::_b_set_bounds);
 	ClassDB::bind_method(D_METHOD("get_bounds"), &VoxelTerrain::_b_get_bounds);
@@ -1907,6 +1944,7 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"), "set_run_stream_in_editor",
 			"is_stream_running_in_editor");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 
 	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3I, "position")));

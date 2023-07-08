@@ -305,6 +305,7 @@ void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_b
 	}
 }
 
+// TODO This is practically identical with block GPU rendering, only a few things to change maybe
 void VoxelModifierStack::apply_for_detail_gpu_rendering(
 		std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb) const {
 	ZN_PROFILE_SCOPE();

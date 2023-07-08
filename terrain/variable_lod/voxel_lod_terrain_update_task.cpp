@@ -849,8 +849,8 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 static void request_block_generate(VolumeID volume_id, unsigned int data_block_size,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		Vector3i block_pos, int lod, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
-		const Transform3D &volume_transform, float lod_distance, std::shared_ptr<AsyncDependencyTracker> tracker,
-		bool allow_drop, BufferedTaskScheduler &task_scheduler) {
+		const Transform3D &volume_transform, const VoxelLodTerrainUpdateData::Settings &settings,
+		std::shared_ptr<AsyncDependencyTracker> tracker, bool allow_drop, BufferedTaskScheduler &task_scheduler) {
 	//
 	CRASH_COND(data_block_size > 255);
 	CRASH_COND(stream_dependency == nullptr);
@@ -858,7 +858,7 @@ static void request_block_generate(VolumeID volume_id, unsigned int data_block_s
 	// We should not have done this request in the first place if both stream and generator are null
 	ERR_FAIL_COND(stream_dependency->generator.is_null());
 
-	GenerateBlockTask *task = memnew(GenerateBlockTask);
+	GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 	task->volume_id = volume_id;
 	task->position = block_pos;
 	task->lod = lod;
@@ -867,9 +867,10 @@ static void request_block_generate(VolumeID volume_id, unsigned int data_block_s
 	task->tracker = tracker;
 	task->drop_beyond_max_distance = allow_drop;
 	task->data = data;
+	task->use_gpu = settings.generator_use_gpu;
 
 	init_sparse_octree_priority_dependency(task->priority_dependency, block_pos, lod, data_block_size,
-			shared_viewers_data, volume_transform, lod_distance);
+			shared_viewers_data, volume_transform, settings.lod_distance);
 
 	task_scheduler.push_main_task(task);
 }
@@ -889,15 +890,16 @@ static void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 		init_sparse_octree_priority_dependency(priority_dependency, block_pos, lod, data_block_size,
 				shared_viewers_data, volume_transform, settings.lod_distance);
 
-		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod, data_block_size,
-				request_instances, stream_dependency, priority_dependency, settings.cache_generated_blocks));
+		LoadBlockDataTask *task = memnew(
+				LoadBlockDataTask(volume_id, block_pos, lod, data_block_size, request_instances, stream_dependency,
+						priority_dependency, settings.cache_generated_blocks, settings.generator_use_gpu, data));
 
 		task_scheduler.push_io_task(task);
 
 	} else if (settings.cache_generated_blocks) {
 		// Directly generate the block without checking the stream.
 		request_block_generate(volume_id, data_block_size, stream_dependency, data, block_pos, lod, shared_viewers_data,
-				volume_transform, settings.lod_distance, nullptr, true, task_scheduler);
+				volume_transform, settings, nullptr, true, task_scheduler);
 
 	} else {
 		ZN_PRINT_WARNING("Requesting a block load when it should not have been necessary");
@@ -997,7 +999,7 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 			// mesh_request.lod = lod_index;
 
 			// We'll allocate this quite often. If it becomes a problem, it should be easy to pool.
-			MeshBlockTask *task = memnew(MeshBlockTask);
+			MeshBlockTask *task = ZN_NEW(MeshBlockTask);
 			task->volume_id = volume_id;
 			task->mesh_block_position = mesh_block_pos;
 			task->lod_index = lod_index;
@@ -1121,8 +1123,7 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 		for (unsigned int i = 0; i < todo.size(); ++i) {
 			const TaskArguments args = todo[i];
 			request_block_generate(volume_id, data_block_size, stream_dependency, data_ptr, args.block_pos,
-					args.lod_index, shared_viewers_data, volume_transform, settings.lod_distance, tracker, false,
-					task_scheduler);
+					args.lod_index, shared_viewers_data, volume_transform, settings, tracker, false, task_scheduler);
 		}
 
 	} else if (next_tasks.size() > 0) {
