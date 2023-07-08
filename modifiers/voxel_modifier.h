@@ -34,8 +34,9 @@ public:
 	virtual bool is_sdf() const = 0;
 
 	struct ShaderData {
-		RID detail_rendering_shader_rid;
-		RID block_rendering_shader_rid;
+		enum Type { TYPE_BLOCK = 0, TYPE_DETAIL, TYPE_COUNT };
+
+		FixedArray<RID, TYPE_COUNT> shader_rids;
 		std::shared_ptr<ComputeShaderParameters> params;
 	};
 

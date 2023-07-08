@@ -38,7 +38,8 @@ public:
 	void apply(float &sdf, Vector3 position) const;
 	void apply(Span<const float> x_buffer, Span<const float> y_buffer, Span<const float> z_buffer,
 			Span<float> sdf_buffer, Vector3f min_pos, Vector3f max_pos) const;
-	void apply_for_detail_gpu_rendering(std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb) const;
+	void apply_for_gpu_rendering(
+			std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const;
 	void clear();
 
 	template <typename F>

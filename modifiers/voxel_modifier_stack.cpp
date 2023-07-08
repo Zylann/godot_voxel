@@ -305,9 +305,8 @@ void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_b
 	}
 }
 
-// TODO This is practically identical with block GPU rendering, only a few things to change maybe
-void VoxelModifierStack::apply_for_detail_gpu_rendering(
-		std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb) const {
+void VoxelModifierStack::apply_for_gpu_rendering(
+		std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 
@@ -322,7 +321,7 @@ void VoxelModifierStack::apply_for_detail_gpu_rendering(
 		if (modifier->get_aabb().intersects(aabb)) {
 			VoxelModifier::ShaderData sd;
 			modifier->get_shader_data(sd);
-			if (sd.detail_rendering_shader_rid.is_valid()) {
+			if (sd.shader_rids[type].is_valid()) {
 				out_data.push_back(sd);
 			}
 		}

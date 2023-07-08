@@ -236,10 +236,10 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(mesh_block_size << lod_index));
 		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = voxel_data->get_modifiers();
-		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
+		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_DETAIL);
 		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
-			gpu_task->modifiers.push_back(
-					RenderDetailTextureGPUTask::ModifierData{ d.detail_rendering_shader_rid, d.params });
+			gpu_task->modifiers.push_back(RenderDetailTextureGPUTask::ModifierData{
+					d.shader_rids[VoxelModifier::ShaderData::TYPE_DETAIL], d.params });
 		}
 	}
 

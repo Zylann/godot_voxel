@@ -335,9 +335,10 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
 		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = data->get_modifiers();
-		modifiers.apply_for_detail_gpu_rendering(modifiers_shader_data, aabb_voxels);
+		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
 		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
-			gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{ d.block_rendering_shader_rid, d.params });
+			gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{
+					d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
 		}
 
 		ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
