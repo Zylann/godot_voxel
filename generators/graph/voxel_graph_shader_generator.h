@@ -17,7 +17,7 @@ struct ShaderParameter {
 };
 
 struct ShaderOutput {
-	enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_CUSTOM };
+	enum Type { TYPE_SDF, TYPE_SINGLE_TEXTURE, TYPE_TYPE };
 	Type type;
 };
 

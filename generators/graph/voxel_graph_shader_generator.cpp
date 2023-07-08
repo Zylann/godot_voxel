@@ -95,6 +95,10 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					codegen.add(", out float out_single_texture");
 					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_SINGLE_TEXTURE });
 					break;
+				case VoxelGraphFunction::NODE_OUTPUT_TYPE:
+					codegen.add(", out float out_type");
+					outputs.push_back(ShaderOutput{ ShaderOutput::TYPE_TYPE });
+					break;
 				default:
 					ZN_PRINT_WARNING(
 							format("Output type {} is not supported yet in shader generator.", node_type.name));
@@ -171,6 +175,19 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					codegen.add_format("out_single_texture = {};\n", it->second);
 				} else {
 					codegen.add("out_single_texture = 0.0;\n");
+				}
+				continue;
+			}
+			case VoxelGraphFunction::NODE_OUTPUT_TYPE: {
+				ZN_ASSERT(node.outputs.size() == 1);
+				const ProgramGraph::Port &input_port = node.inputs[0];
+				if (input_port.connections.size() > 0) {
+					ZN_ASSERT(input_port.connections.size() == 1);
+					auto it = port_to_var.find(input_port.connections[0]);
+					ZN_ASSERT(it != port_to_var.end());
+					codegen.add_format("out_type = {};\n", it->second);
+				} else {
+					codegen.add("out_type = 0.0;\n");
 				}
 				continue;
 			}

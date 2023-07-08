@@ -1319,6 +1319,9 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 			case pg::ShaderOutput::TYPE_SINGLE_TEXTURE:
 				out.type = ShaderOutput::TYPE_SINGLE_TEXTURE;
 				break;
+			case pg::ShaderOutput::TYPE_TYPE:
+				out.type = ShaderOutput::TYPE_TYPE;
+				break;
 			default:
 				ZN_PRINT_ERROR(format("Unsupported output for generator shader generation ({})", output.type));
 				return false;

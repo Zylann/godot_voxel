@@ -277,6 +277,53 @@ static void convert_gpu_output_single_texture(VoxelBufferInternal &dst, Span<flo
 			VoxelBufferInternal::CHANNEL_INDICES);
 }
 
+template <typename T>
+Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &memory) {
+	memory.resize(src_data_f.size() * sizeof(T));
+	Span<T> dst = to_span(memory).reinterpret_cast_to<T>();
+	unsigned int dst_i = 0;
+	for (const float src_value : src_data_f) {
+		dst[dst_i] = src_value;
+		++dst_i;
+	}
+	return dst;
+}
+
+static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box,
+		VoxelBufferInternal::ChannelId channel_index) {
+	ZN_PROFILE_SCOPE();
+
+	const unsigned int data_volume = src_data_f.size();
+	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
+	static thread_local std::vector<uint8_t> tls_temp;
+
+	switch (channel_index) {
+		case VoxelBufferInternal::DEPTH_8_BIT: {
+			dst.copy_from(
+					cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos, channel_index);
+		} break;
+
+		case VoxelBufferInternal::DEPTH_16_BIT: {
+			dst.copy_from(cast_floats<uint16_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
+					channel_index);
+		} break;
+
+		case VoxelBufferInternal::DEPTH_32_BIT: {
+			dst.copy_from(cast_floats<uint32_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
+					channel_index);
+		} break;
+
+		case VoxelBufferInternal::DEPTH_64_BIT: {
+			dst.copy_from(cast_floats<uint64_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
+					channel_index);
+		} break;
+
+		default:
+			ZN_PRINT_ERROR("Unhandled depth");
+			break;
+	}
+}
+
 void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
 		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst) {
 	ZN_PROFILE_SCOPE();
@@ -294,6 +341,10 @@ void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
 
 			case VoxelGenerator::ShaderOutput::TYPE_SINGLE_TEXTURE:
 				convert_gpu_output_single_texture(dst, src_data_f, box_data.box);
+				break;
+
+			case VoxelGenerator::ShaderOutput::TYPE_TYPE:
+				convert_gpu_output_uint(dst, src_data_f, box_data.box, VoxelBufferInternal::CHANNEL_TYPE);
 				break;
 
 			default:
