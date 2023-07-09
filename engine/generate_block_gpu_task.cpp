@@ -335,35 +335,38 @@ static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> 
 	}
 }
 
+void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &dst) {
+	// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?
+	// TODO Should we convert in the compute shader to reduce bandwidth and CPU work?
+	Span<const float> src_data_f = _bytes.reinterpret_cast_to<const float>();
+
+	switch (_type) {
+		case VoxelGenerator::ShaderOutput::TYPE_SDF:
+			convert_gpu_output_sdf(dst, src_data_f, _box);
+			break;
+
+		case VoxelGenerator::ShaderOutput::TYPE_SINGLE_TEXTURE:
+			convert_gpu_output_single_texture(dst, src_data_f, _box);
+			break;
+
+		case VoxelGenerator::ShaderOutput::TYPE_TYPE:
+			convert_gpu_output_uint(dst, src_data_f, _box, VoxelBufferInternal::CHANNEL_TYPE);
+			break;
+
+		default:
+			ZN_PRINT_ERROR("Unhandled output");
+			break;
+	}
+}
+
 void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
 		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst) {
 	ZN_PROFILE_SCOPE();
 
 	for (GenerateBlockGPUTaskResult &box_data : boxes_data) {
-		// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?
-		// TODO Should we convert in the compute shader to reduce bandwidth and CPU work?
-		Span<const float> src_data_f = box_data.bytes.reinterpret_cast_to<const float>();
-
-		switch (box_data.type) {
-			case VoxelGenerator::ShaderOutput::TYPE_SDF:
-				convert_gpu_output_sdf(dst, src_data_f, box_data.box);
-				break;
-
-			case VoxelGenerator::ShaderOutput::TYPE_SINGLE_TEXTURE:
-				convert_gpu_output_single_texture(dst, src_data_f, box_data.box);
-				break;
-
-			case VoxelGenerator::ShaderOutput::TYPE_TYPE:
-				convert_gpu_output_uint(dst, src_data_f, box_data.box, VoxelBufferInternal::CHANNEL_TYPE);
-				break;
-
-			default:
-				ZN_PRINT_ERROR("Unhandled output");
-				break;
-		}
+		box_data.convert_to_voxel_buffer(dst);
 	}
 
-	// TODO Clip SDF before doing this? Would accelerate empty mesh skipping
 	dst.compress_uniform_channels();
 }
 
@@ -391,11 +394,10 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		for (unsigned int output_index = 0; output_index < generator_shader_outputs->outputs.size(); ++output_index) {
 			const VoxelGenerator::ShaderOutput &output_info = generator_shader_outputs->outputs[output_index];
 
-			GenerateBlockGPUTaskResult result(ctx.downloaded_shared_output_data);
-			result.box = box;
-			result.type = output_info.type;
-			// Get span for that specific output
-			result.bytes = outputs_bytes.sub(size_per_output * output_index, size_per_output);
+			GenerateBlockGPUTaskResult result(box, output_info.type,
+					// Get span for that specific output
+					outputs_bytes.sub(size_per_output * output_index, size_per_output),
+					ctx.downloaded_shared_output_data);
 
 			results.push_back(result);
 		}

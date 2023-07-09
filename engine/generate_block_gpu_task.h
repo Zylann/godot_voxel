@@ -13,17 +13,19 @@ namespace zylann::voxel {
 
 class GenerateBlockGPUTaskResult {
 public:
-	// TODO Should these be private too?
-	Box3i box;
-	VoxelGenerator::ShaderOutput::Type type;
-	// Span of the shared output buffer pertaining to results in this particular box.
-	Span<const uint8_t> bytes;
-
-	GenerateBlockGPUTaskResult(PackedByteArray shared_bytes) : _shared_bytes(shared_bytes) {}
+	GenerateBlockGPUTaskResult(Box3i p_box, VoxelGenerator::ShaderOutput::Type p_type, Span<const uint8_t> p_bytes,
+			PackedByteArray p_shared_bytes) :
+			_box(p_box), _type(p_type), _bytes(p_bytes), _shared_bytes(p_shared_bytes) {}
 
 	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst);
 
 private:
+	void convert_to_voxel_buffer(VoxelBufferInternal &dst);
+
+	Box3i _box;
+	VoxelGenerator::ShaderOutput::Type _type;
+	// Span of the shared output buffer pertaining to results in this particular box.
+	Span<const uint8_t> _bytes;
 	// This is the buffer that was directly downloaded from GPU. It is shared among multiple consumers, and should
 	// remain in memory until they are all done with it, so we hold a reference in every result. It is read-only
 	// to avoid CoW. This is done to avoid allocating individual buffers to pass around.
