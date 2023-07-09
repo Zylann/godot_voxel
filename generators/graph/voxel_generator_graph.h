@@ -53,6 +53,7 @@ public:
 	int get_used_channels_mask() const override;
 
 	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
+	bool generate_broad_block(VoxelGenerator::VoxelQueryData &input) override;
 	// float generate_single(const Vector3i &position);
 	bool supports_single_generation() const override {
 		return true;

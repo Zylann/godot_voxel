@@ -282,11 +282,14 @@ void MeshBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	if (block_generation_use_gpu) {
-		if (_stage == STAGE_GATHER_VOXELS) {
+		if (_stage == 0) {
 			gather_voxels_gpu(ctx);
 		}
-		if (_stage == STAGE_BUILD_MESH) {
+		if (_stage == 1) {
 			GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(_gpu_generation_results), _voxels);
+			_stage = 2;
+		}
+		if (_stage == 2) {
 			build_mesh();
 		}
 	} else {
@@ -313,46 +316,50 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 			&boxes_to_generate, &origin_in_voxels);
 
 	if (boxes_to_generate.size() == 0) {
-		_stage = STAGE_BUILD_MESH;
-
-	} else {
-		// TODO Broad-phase to avoid the GPU part entirely?
-		// Implement and call `VoxelGenerator::generate_broad_block()`
-
-		Ref<VoxelGenerator> generator = meshing_dependency->generator;
-		ERR_FAIL_COND(generator.is_null());
-
-		std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
-		ERR_FAIL_COND(generator_shader == nullptr);
-
-		GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
-		gpu_task->boxes_to_generate = std::move(boxes_to_generate);
-		gpu_task->generator_shader = generator_shader;
-		gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
-		gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
-		gpu_task->lod_index = lod_index;
-		gpu_task->origin_in_voxels = origin_in_voxels;
-		gpu_task->consumer_task = this;
-
-		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
-		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
-		const VoxelModifierStack &modifiers = data->get_modifiers();
-		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
-		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
-			gpu_task->modifiers.push_back(GenerateBlockGPUTask::ModifierData{
-					d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
-		}
-
-		ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
-
-		// Start GPU task, we'll continue meshing after it
-		VoxelEngine::get_singleton().push_gpu_task(gpu_task);
+		_stage = 2;
+		return;
 	}
+
+	Ref<VoxelGenerator> generator = meshing_dependency->generator;
+	ERR_FAIL_COND(generator.is_null());
+
+	VoxelGenerator::VoxelQueryData generator_query{ _voxels, origin_in_voxels, lod_index };
+
+	if (generator->generate_broad_block(generator_query)) {
+		_stage = 2;
+		return;
+	}
+
+	std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
+	ERR_FAIL_COND(generator_shader == nullptr);
+
+	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	gpu_task->boxes_to_generate = std::move(boxes_to_generate);
+	gpu_task->generator_shader = generator_shader;
+	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
+	gpu_task->generator_shader_outputs = generator->get_block_rendering_shader_outputs();
+	gpu_task->lod_index = lod_index;
+	gpu_task->origin_in_voxels = origin_in_voxels;
+	gpu_task->consumer_task = this;
+
+	const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
+	std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+	const VoxelModifierStack &modifiers = data->get_modifiers();
+	modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
+	for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
+		gpu_task->modifiers.push_back(
+				GenerateBlockGPUTask::ModifierData{ d.shader_rids[VoxelModifier::ShaderData::TYPE_BLOCK], d.params });
+	}
+
+	ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+
+	// Start GPU task, we'll continue meshing after it
+	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
 void MeshBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
 	_gpu_generation_results = std::move(results);
-	_stage = STAGE_BUILD_MESH;
+	_stage = 1;
 }
 
 void MeshBlockTask::gather_voxels_cpu() {

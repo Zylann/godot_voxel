@@ -46,6 +46,8 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		}
 		if (_stage == 1) {
 			run_gpu_conversion();
+		}
+		if (_stage == 2) {
 			run_stream_saving_and_finish();
 		}
 	} else {
@@ -65,6 +67,14 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 	ERR_FAIL_COND(generator_shader == nullptr);
 
 	const Vector3i origin_in_voxels = (position << lod_index) * block_size;
+
+	ZN_ASSERT(voxels != nullptr);
+	VoxelGenerator::VoxelQueryData generator_query{ *voxels, origin_in_voxels, lod_index };
+	if (generator->generate_broad_block(generator_query)) {
+		_stage = 2;
+		return;
+	}
+
 	const Vector3i resolution = Vector3iUtil::create(block_size);
 
 	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
@@ -100,6 +110,7 @@ void GenerateBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> 
 
 void GenerateBlockTask::run_gpu_conversion() {
 	GenerateBlockGPUTaskResult::convert_to_voxel_buffer(to_span(_gpu_generation_results), *voxels);
+	_stage = 2;
 }
 
 void GenerateBlockTask::run_cpu_generation() {

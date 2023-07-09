@@ -22,8 +22,6 @@ public:
 	MeshBlockTask();
 	~MeshBlockTask();
 
-	enum Stage { STAGE_GATHER_VOXELS = 0, STAGE_BUILD_MESH = 1 };
-
 	const char *get_debug_name() const override {
 		return "MeshBlock";
 	}
