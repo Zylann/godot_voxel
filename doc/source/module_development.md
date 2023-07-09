@@ -405,6 +405,26 @@ Some can be specified through SCons command line parameters.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
 
 
+Using the module from another module
+----------------------------------------
+
+Writing a custom C++ module directly in Godot is one way to access features of Godot and the voxel engine more directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
+
+You can include files from the voxel module by using `modules/voxel/` in your includes:
+
+```cpp
+#include <modules/voxel/storage/voxel_buffer_internal.h>
+```
+
+You will also need to define preprocessor macros in your `SCsub` file:
+
+```py
+env_yourmodule.Append(CPPDEFINES = [
+    'ZN_GODOT'
+])
+```
+
+
 GDExtension
 -------------
 
