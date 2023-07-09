@@ -1,6 +1,7 @@
 #ifndef VOXEL_GPU_TASK_RUNNER_H
 #define VOXEL_GPU_TASK_RUNNER_H
 
+#include "../util/godot/core/packed_byte_array.h"
 #include "../util/godot/core/rid.h"
 #include "../util/godot/macros.h"
 #include "../util/macros.h"
@@ -8,8 +9,8 @@
 #include "../util/thread/mutex.h"
 #include "../util/thread/semaphore.h"
 #include "../util/thread/thread.h"
-#include <vector>
 #include <atomic>
+#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice)
 #ifdef ZN_GODOT_EXTENSION
@@ -27,11 +28,10 @@ struct GPUTaskContext {
 	// Buffer shared by multiple tasks in the current batch.
 	// It will be downloaded in one go before collection, which is faster than downloading multiple individual buffers,
 	// due to Godot's API only exposing blocking calls.
-	unsigned int shared_output_buffer_begin = 0; // In buffer elements
-	unsigned int shared_output_buffer_size = 0; // In buffer elements
+	unsigned int shared_output_buffer_begin = 0; // In bytes
+	unsigned int shared_output_buffer_size = 0; // In bytes
 	RID shared_output_buffer_rid;
-	// Range of the shared buffer associated with the current task
-	Span<const uint8_t> downloaded_shared_output_data;
+	PackedByteArray downloaded_shared_output_data;
 
 	GPUTaskContext(RenderingDevice &rd, GPUStorageBufferPool &sb_pool) :
 			rendering_device(rd), storage_buffer_pool(sb_pool) {}

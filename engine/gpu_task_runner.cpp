@@ -122,7 +122,6 @@ void GPUTaskRunner::thread_func() {
 			}
 
 			ctx.shared_output_buffer_rid = shared_output_storage_buffer_rid;
-			ctx.downloaded_shared_output_data = Span<const uint8_t>();
 
 			// Prepare tasks
 			for (size_t i = begin_index; i < end_index; ++i) {
@@ -147,10 +146,11 @@ void GPUTaskRunner::thread_func() {
 			}
 
 			// Download data from shared buffer
-			PackedByteArray shared_output_storage_buffer_downloaded_data;
 			if (required_shared_output_buffer_size > 0 && shared_output_storage_buffer_rid.is_valid()) {
 				ZN_PROFILE_SCOPE_NAMED("Download shared output buffer");
-				shared_output_storage_buffer_downloaded_data = ctx.rendering_device.buffer_get_data(
+				// Unfortunately we can't re-use memory for that buffer, Godot will always want to allocate it using
+				// malloc. That buffer can be a few megabytes long...
+				ctx.downloaded_shared_output_data = ctx.rendering_device.buffer_get_data(
 						shared_output_storage_buffer_rid, 0, required_shared_output_buffer_size);
 			}
 
@@ -159,19 +159,16 @@ void GPUTaskRunner::thread_func() {
 				ZN_PROFILE_SCOPE_NAMED("GPU Task Collect");
 
 				const SBRange range = shared_output_storage_buffer_segments[i - begin_index];
-				if (range.size > 0) {
-					ZN_ASSERT(int(range.position + range.size) <= shared_output_storage_buffer_downloaded_data.size());
-					ctx.downloaded_shared_output_data = Span<const uint8_t>(
-							shared_output_storage_buffer_downloaded_data.ptr() + range.position, range.size);
-				} else {
-					ctx.downloaded_shared_output_data = Span<const uint8_t>();
-				}
+				ctx.shared_output_buffer_begin = range.position;
+				ctx.shared_output_buffer_size = range.size;
 
 				IGPUTask *task = tasks[i];
 				task->collect(ctx);
 				ZN_DELETE(task);
 				--_pending_count;
 			}
+
+			ctx.downloaded_shared_output_data = PackedByteArray();
 		}
 
 		tasks.clear();
