@@ -428,7 +428,7 @@ env_yourmodule.Append(CPPDEFINES = [
 GDExtension
 -------------
 
-!!! warn
+!!! warning
     This feature is under development and is not ready for production. It has bugs and can crash the engine. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
 
 This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine. TODO: Godot's documentation doesn't seem to contain information about GDExtension yet. For now, you can check [this old news](https://godotengine.org/article/introducing-gd-extensions) and the [GodotCpp repository](https://github.com/godotengine/godot-cpp).

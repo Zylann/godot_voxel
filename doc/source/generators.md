@@ -64,7 +64,7 @@ Node-graph generators (VoxelGraphs)
 
 Basic generators may often not be suited to make a whole game from, but you don't necessarily need to program one. C++ is a very fast language to program a generator but it can be a tedious workflow, especially when prototyping. If you need smooth terrain, a graph-based generator is available, which offers a very customizable approach to make procedural volumes.
 
-!!! warn
+!!! warning
     This generator was originally made for smooth terrain, but works with blocky too, to some extent.
 
 
@@ -140,7 +140,7 @@ However you might still want a heightmap-like result. One way to do this is to f
 
 #### Caves
 
-!!! warn
+!!! warning
     This section is a bit advanced and lacks details because at the moment there is no built-in "macro" to do this in a user-friendly way, and I kind of came up with it by experimentation
 
 It is possible to generate caves by subtracting noise "worms" from a base SDF terrain. To simplify the approach, let's first look at what 2D noise looks like, with a few octaves:

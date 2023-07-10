@@ -1,7 +1,7 @@
 Voxel block format
 ====================
 
-!!! warn
+!!! warning
     This document is about an old version of the format. You may check the most recent version.
 
 Version: 3

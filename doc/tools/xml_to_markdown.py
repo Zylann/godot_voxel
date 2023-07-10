@@ -152,7 +152,7 @@ def process_xml(f_xml, f_out, module_class_names):
     out += "Inherits: " + markdown.make_type(root.attrib['inherits'], module_class_names) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
-        out += ("!!! warn\n    This class is marked as experimental. "
+        out += ("!!! warning\n    This class is marked as experimental. "
             "It is subject to likely change or possible removal in future versions. Use at your own discretion.")
 
     out += "\n"

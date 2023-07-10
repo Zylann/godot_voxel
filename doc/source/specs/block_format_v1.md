@@ -1,7 +1,7 @@
 Block format
 ====================
 
-!!! warn
+!!! warning
     This document is about an old version of the format. You may check the most recent version.
 
 This page describes the binary format used by default in this module to serialize voxel blocks to files, network or databases.

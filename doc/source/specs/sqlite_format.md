@@ -50,6 +50,6 @@ channels {
 
 Contains general info about which channel formats should be expected in the volume. There is one row per used channel.
 
-!!! warn
+!!! warning
     Currently this table is actually not used, because the engine still needs work to manage formats in general. For now the database accepts blocks of any formats since they are standalone since version 3, but ideally they must be consistent.
 

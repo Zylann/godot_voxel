@@ -28,7 +28,7 @@ Each slot can contain a `VoxelBlockyModel` resource. The index shown on their le
 
 With default 16-bit voxel data, you can create up to 65,536 models.
 
-!!! warn
+!!! warning
 	To allow conversion from older versions of the module, `VoxelBlockyModel` can be instanced, which means the inspector and scripts can create it. However, it is not actually expected. You should not create instances of `VoxelBlockyModel`, instead you should use its derived classes.
 
 ### Cubes
@@ -133,7 +133,7 @@ Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
 `VoxelMesherBlocky` with types
 --------------------------------
 
-!!! warn
+!!! warning
 	This feature is experimental, may have bugs, missing parts and may change over time. It proposes a way to organize models for a game and automates a few things, but you may still use `VoxelBlockyLibrary` if you want to handle this in your own way. See also the [corresponding issue on Github](https://github.com/Zylann/godot_voxel/issues/506).
 
 An alternative library type exists, `VoxelBlockyTypeLibrary`. Instead of directly containing a list of models, it contains a list of `VoxelBlockyType`. A type is closer to what you would call a "block type" in a game, and this system was designed to be very similar to how blocks are defined in Minecraft (inspiration from https://docs.minecraftforge.net/en/1.19.2/blocks/states/).

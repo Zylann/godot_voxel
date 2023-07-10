@@ -314,7 +314,8 @@ Here, we will consider a case where each block can affect its neighbors in a 1-b
 
 #### Implementation
 
-!!! warning: code in this article hasn't been tested and might not work as-is. It is only here to give an idea of what would be involved.
+!!! warning
+    code in this article hasn't been tested and might not work as-is. It is only here to give an idea of what would be involved.
 
 A generator can have a member variable containing partially-generated blocks:
 
