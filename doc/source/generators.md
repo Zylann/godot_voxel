@@ -138,49 +138,7 @@ However you might still want a heightmap-like result. One way to do this is to f
     ![Torus voxel graph](images/voxel_graph_torus.webp)
 
 
-#### Caves
-
-!!! warning
-    This section is a bit advanced and lacks details because at the moment there is no built-in "macro" to do this in a user-friendly way, and I kind of came up with it by experimentation
-
-It is possible to generate caves by subtracting noise "worms" from a base SDF terrain. To simplify the approach, let's first look at what 2D noise looks like, with a few octaves:
-
-![Noise](images/noise.webp)
-
-If we multiply that noise by itself (i.e square it), we obtain this:
-
-![Squared noise](images/squared_noise.webp)
-
-And if we clamp it to highlight values below a threshold close to zero, we can notice a path-like pattern going on:
-
-![Squared noise path highlight](images/squared_noise_with_highlight.webp)
-
-In 2D (or in 3D when using normalized coordinates) this is the key to produce rivers, or ravines. But the problem with caves is to obtain 3D, round-shaped "worms", not just 2D shapes. So we can cheat a little, by still using 2D noise, but instead we modulate the threshold along the Y axis. We need a parabola-shaped curve for this, which can be obtained with a second-degree polynome like `y^2 - 1`:
-
-![Cave threshold modulation](images/cave_threshold_modulation.webp)
-
-Back to the voxel graph, we may connect directly the cave generation nodes to the output just to preview what they look like, without the rest of the terrain:
-
-![Cave voxel graph](images/caves_flat.webp)
-
-After tweaking noise and other values, we obtain those famous worms, but there are two problems:
-
-- The caves are still flat, they don't go up or down
-- They go on endlessly, there are no dead-ends
-
-We can fix the first problem by adding an extra layer of 2D noise to the Y coordinate so it can perturb the caves vertically. Re-using the ground surface noise with an extra multiplier can prove effective sometimes, so we avoid computing extra noise.
-
-![Caves perturb](images/caves_perturb.webp)
-
-The second problem can also be fixed with yet another layer of low-frequency noise, which can be added to the cave threshold so caves will shrink to become dead-ends on some regions. Again, adding multipliers may change how sharply that transition occurs.
-
-![Cave voxel graph perturb and modulated](images/caves_perturb_modulated.webp)
-
-Finally, we can blend our terrain with caves by subtracting them. This can be done with the `SdfSmoothSubtract` node, essentially doing `terrain - caves`.
-
-![Cave voxel graph terrain subtract](images/caves_composed.webp)
-
-There are likely variants of this to obtain different results.
+More techniques can be found in the [Procedural Generation](procedural_generation.md) section.
 
 
 ### Usage with blocky voxels
@@ -213,7 +171,7 @@ A special `Relay` node exists to organize long connections between nodes. They d
 
 This is a more technical section.
 
-This generator uses a number of optimization strategies to make the calculations faster. You may want to fine-tune them in some cases depending on the kind of volume you want to generate. When you get more familiar with the tool it may be useful to know how it works under the hood, notably to troubleshoot generation issues when they occur.
+`VoxelGeneratorGraph` uses a number of optimization strategies to make the calculations faster. You may want to fine-tune them in some cases depending on the kind of volume you want to generate. When you get more familiar with the tool it may be useful to know how it works under the hood, notably to troubleshoot generation issues when they occur.
 
 #### Buffer processing
 

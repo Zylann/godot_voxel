@@ -26,6 +26,7 @@ nav:
   - 'editor.md'
   - 'multiplayer.md'
   - 'scripting.md'
+  - 'procedural_generation.md'
   - 'performance.md'
   - 'module_development.md'
   - 'changelog.md'
