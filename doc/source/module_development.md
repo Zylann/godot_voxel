@@ -414,7 +414,7 @@ The module contains shaders for some of its features, mainly compute shaders. Th
 
 There are several ways shaders are written:
 
-- Plain: regular shaders, which will used as-is.
+- Plain: regular shaders, which will be used as-is.
 - Templates: these contain `<PLACEHOLDER>` sections, which the engine will replace with generated code. Code inside those sections will be replaced and is only present to make the shader compile in the test project.
 - Snippets: these contain `<SNIPPET>` sections, which will be inserted into templates or other generated code. Code outside those sections will not be used and is only present to make the shader compile in the test project.
 
