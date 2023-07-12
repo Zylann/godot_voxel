@@ -28,9 +28,13 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const FastNoiseLite
 				   "state.octaves = {};\n"
 				   "state.gain = {};\n"
 				   "state.frequency = {};\n"
-				   "state.lacunarity = {};\n",
+				   "state.lacunarity = {};\n"
+				   "state.cellular_distance_func = {};\n"
+				   "state.cellular_return_type = {};\n"
+				   "state.cellular_jitter_mod = {};\n",
 			fnl.get_seed(), fnl.get_noise_type(), fnl.get_fractal_type(), fnl.get_fractal_octaves(),
-			fnl.get_fractal_gain(), fnl.get_frequency(), fnl.get_fractal_lacunarity());
+			fnl.get_fractal_gain(), fnl.get_frequency(), fnl.get_fractal_lacunarity(),
+			fnl.get_cellular_distance_function(), fnl.get_cellular_return_type(), fnl.get_cellular_jitter());
 }
 
 void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLite &fnl) {
@@ -41,9 +45,13 @@ void add_fast_noise_lite_state_config(ShaderGenContext &ctx, const ZN_FastNoiseL
 				   "state.octaves = {};\n"
 				   "state.gain = {};\n"
 				   "state.frequency = {};\n"
-				   "state.lacunarity = {};\n",
+				   "state.lacunarity = {};\n"
+				   "state.cellular_distance_func = {};\n"
+				   "state.cellular_return_type = {};\n"
+				   "state.cellular_jitter_mod = {};\n",
 			fnl.get_seed(), fnl.get_noise_type(), fnl.get_fractal_type(), fnl.get_fractal_octaves(),
-			fnl.get_fractal_gain(), 1.0 / fnl.get_period(), fnl.get_fractal_lacunarity());
+			fnl.get_fractal_gain(), 1.0 / fnl.get_period(), fnl.get_fractal_lacunarity(),
+			fnl.get_cellular_distance_function(), fnl.get_cellular_return_type(), fnl.get_cellular_jitter());
 }
 
 void add_fast_noise_lite_gradient_state_config(ShaderGenContext &ctx, const ZN_FastNoiseLiteGradient &fnl) {
