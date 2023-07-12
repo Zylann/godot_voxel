@@ -13,6 +13,8 @@ const char *g_block_generator_shader_template_0 =
 "	int buffer_offset;\n"
 "} u_params;\n"
 "\n"
+"// Contains all outputs, each laid out in contiguous chunks of the same size.\n"
+"// It must be indexed starting from `u_params.buffer_offset`.\n"
 "layout (set = 0, binding = 1, std430) restrict writeonly buffer OutBuffer {\n"
 "	float values[];\n"
 "} u_out;\n"

@@ -1,10 +1,10 @@
+#include "../../../shaders/fast_noise_lite_shader.h"
 #include "../../../util/godot/classes/fast_noise_lite.h"
 #include "../../../util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "../../../util/noise/fast_noise_lite/fast_noise_lite_range.h"
 #include "../../../util/noise/gd_noise_range.h"
 #include "../../../util/noise/spot_noise.h"
 #include "../../../util/profiling.h"
-#include "../fast_noise_lite_gdshader.h"
 #include "../node_type_db.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
@@ -135,7 +135,7 @@ void register_noise_nodes(Span<NodeType> types) {
 								.format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **fnl);
 			ctx.add_format("{} = fnlGetNoise2D(state, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
 					ctx.get_input_name(1));
@@ -209,7 +209,7 @@ void register_noise_nodes(Span<NodeType> types) {
 								.format(varray(noise->get_class(), ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **fnl);
 			// TODO Add missing options
 			ctx.add_format("{} = fnlGetNoise3D(state, {}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
@@ -268,7 +268,7 @@ void register_noise_nodes(Span<NodeType> types) {
 						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **noise);
 			ctx.add_format("{} = fnlGetNoise2D(state, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
 					ctx.get_input_name(1));
@@ -329,7 +329,7 @@ void register_noise_nodes(Span<NodeType> types) {
 						String(ZN_TTR("{0} instance is null")).format(varray(ZN_FastNoiseLite::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_state_config(ctx, **noise);
 			ctx.add_format("{} = fnlGetNoise3D(state, {}, {}, {});\n", ctx.get_output_name(0), ctx.get_input_name(0),
 					ctx.get_input_name(1), ctx.get_input_name(2));
@@ -395,7 +395,7 @@ void register_noise_nodes(Span<NodeType> types) {
 									   .format(varray(ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_gradient_state_config(ctx, **noise);
 			ctx.add_format("float wx = {};\n"
 						   "float wy = {};\n"
@@ -473,7 +473,7 @@ void register_noise_nodes(Span<NodeType> types) {
 									   .format(varray(ZN_FastNoiseLiteGradient::get_class_static())));
 				return;
 			}
-			ctx.require_lib_code("vg_fnl", zylann::fast_noise_lite::GDSHADER_SOURCE);
+			ctx.require_lib_code("vg_fnl", g_fast_noise_lite_shader);
 			add_fast_noise_lite_gradient_state_config(ctx, **noise);
 			ctx.add_format("float wx = {};\n"
 						   "float wy = {};\n"

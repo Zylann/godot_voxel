@@ -1,0 +1,32 @@
+[gd_scene load_steps=8 format=3 uid="uid://k887w3nnckjj"]
+
+[ext_resource type="Shader" path="res://fast_noise_lite/fnl_test_noise.gdshader" id="1_c8732"]
+[ext_resource type="Shader" path="res://fast_noise_lite/fnl_test_normal.gdshader" id="1_rv1gc"]
+[ext_resource type="Texture2D" uid="uid://jutxvvhemlt6" path="res://icon.svg" id="2_vilks"]
+[ext_resource type="Shader" path="res://fast_noise_lite/fnl_test_warp.gdshader" id="4_ub484"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_07oyh"]
+shader = ExtResource("1_c8732")
+
+[sub_resource type="ShaderMaterial" id="1"]
+shader = ExtResource("1_rv1gc")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_t6vc4"]
+shader = ExtResource("4_ub484")
+
+[node name="Node" type="Node"]
+
+[node name="Noise" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_07oyh")
+position = Vector2(409, 87)
+texture = ExtResource("2_vilks")
+
+[node name="Normal" type="Sprite2D" parent="."]
+material = SubResource("1")
+position = Vector2(84, 85)
+texture = ExtResource("2_vilks")
+
+[node name="Warp" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_t6vc4")
+position = Vector2(246, 89)
+texture = ExtResource("2_vilks")

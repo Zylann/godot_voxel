@@ -101,6 +101,9 @@ def add_cpp_string_array(src_lines, var_name, lines):
 	for src_line in src_lines:
 		lines.append('"' + cpp_escape(src_line) + "\\n\",")
 
+	# Null string at the end to act as terminator
+	lines.append('0')
+
 	lines.append("};")
 
 	add_comments_footer(lines)
@@ -169,13 +172,14 @@ def process_file(src_fpath, dst_fpath):
 
 
 if __name__ == '__main__':
-	process_file("dev/block_generator_template.glsl",     "block_generator_shader_template.h")
-	process_file("dev/block_modifier_template.glsl",      "block_modifier_shader_template.h")
-	process_file("dev/detail_gather_hits.glsl",           "detail_gather_hits_shader.h")
-	process_file("dev/detail_generator_template.glsl",    "detail_generator_shader_template.h")
-	process_file("dev/detail_normalmap.glsl",             "detail_normalmap_shader.h")
-	process_file("dev/dilate.glsl",                       "dilate_normalmap_shader.h")
-	process_file("dev/modifier_mesh_snippet.glsl",        "modifier_mesh_shader_snippet.h")
-	process_file("dev/modifier_sphere_snippet.glsl",      "modifier_sphere_shader_snippet.h")
-	process_file("dev/transvoxel_minimal.gdshader",       "transvoxel_minimal_shader.h")
+	process_file("dev/block_generator_template.glsl",                 "block_generator_shader_template.h")
+	process_file("dev/block_modifier_template.glsl",                  "block_modifier_shader_template.h")
+	process_file("dev/detail_gather_hits.glsl",                       "detail_gather_hits_shader.h")
+	process_file("dev/detail_generator_template.glsl",                "detail_generator_shader_template.h")
+	process_file("dev/detail_normalmap.glsl",                         "detail_normalmap_shader.h")
+	process_file("dev/dilate.glsl",                                   "dilate_normalmap_shader.h")
+	process_file("dev/modifier_mesh_snippet.glsl",                    "modifier_mesh_shader_snippet.h")
+	process_file("dev/modifier_sphere_snippet.glsl",                  "modifier_sphere_shader_snippet.h")
+	process_file("dev/transvoxel_minimal.gdshader",                   "transvoxel_minimal_shader.h")
+	process_file("dev/fast_noise_lite/fast_noise_lite.gdshaderinc",   "fast_noise_lite_shader.h")
 

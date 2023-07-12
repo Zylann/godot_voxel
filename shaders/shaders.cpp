@@ -9,6 +9,7 @@ namespace zylann::voxel {
 #include "detail_modifier_shader_template.h"
 #include "detail_normalmap_shader.h"
 #include "dilate_normalmap_shader.h"
+#include "fast_noise_lite_shader.h"
 #include "modifier_mesh_shader_snippet.h"
 #include "modifier_sphere_shader_snippet.h"
 

@@ -17,6 +17,7 @@ extern const char *g_detail_normalmap_shader;
 extern const char *g_dilate_normalmap_shader;
 extern const char *g_modifier_sphere_shader_snippet;
 extern const char *g_modifier_mesh_shader_snippet;
+extern const char *g_fast_noise_lite_shader[];
 
 } // namespace zylann::voxel
 
