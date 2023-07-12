@@ -19,6 +19,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Voxel engine processing no longer stops when the SceneTree is paused
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
+        - Added shader support for `FastNoiseGradient2D` and `FastNoiseGradient3D` nodes
         - Editor: reworked context menu to add nodes, similar to VisualShader. Now has search bar, tree view and node descriptions.
     - `VoxelTerrain`:
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
@@ -54,7 +55,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - Breaking changes
     - `VoxelBlockyLibrary`:
         - Changed the list of models to be handled by a typed array instead of individual properties. When opened in the editor, old resources will get converted. Re-save them to make the conversion persist.
-    - `VoxelBlockyModel`
+    - `VoxelBlockyModel`:
         - The class was split into several subclasses for each type of geometry. When opened in the editor, old resources will get converted, but only if they are part of a `VoxelBlockyLibaray`. They won't work if they are individual resource files.
 
 
