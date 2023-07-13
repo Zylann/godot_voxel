@@ -99,7 +99,6 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	mw.store_32(voxel_box.pos.z);
 	mw.store_32(result.data.size());
 	mw.store_buffer(to_span(result.data));
-
 	for (const ViewerID viewer_id : viewers) {
 		const int peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_id);
 		// TODO Don't bother copying and serializing if no networked viewers are around?
@@ -225,7 +224,10 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
 	_terrain->get_storage().paste(pos, voxels, 0xff, false);
-	_terrain->post_edit_area(Box3i(pos, voxels.get_size()));
+	_terrain->post_edit_area(Box3i(pos, voxels.get_size()),
+			// Don't bother for now, update mesh regardless. If necessary we would have to add a flag with the message
+			// to tell it's not actually changing voxels (if it's metadata changes), but might not be worth it
+			true);
 }
 
 #ifdef TOOLS_ENABLED

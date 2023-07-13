@@ -684,7 +684,7 @@ void VoxelTerrain::reset_map() {
 }
 
 void VoxelTerrain::post_edit_voxel(Vector3i pos) {
-	post_edit_area(Box3i(pos, Vector3i(1, 1, 1)));
+	post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), true);
 }
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels) {
@@ -701,8 +701,8 @@ void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels
 	});
 }
 
-void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
-	_data->mark_area_modified(box_in_voxels, nullptr);
+void VoxelTerrain::post_edit_area(Box3i box_in_voxels, bool update_mesh) {
+	_data->mark_area_modified(box_in_voxels, nullptr, false);
 
 	box_in_voxels.clip(_data->get_bounds());
 
@@ -716,13 +716,18 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels) {
 	}
 
 	if (_multiplayer_synchronizer != nullptr && _multiplayer_synchronizer->is_server()) {
+		// TODO This is not efficient when the user does many individual modifications in a specific area.
+		// We would either have to batch modified areas somehow, or expose a transactional API to the user
+		// (begin(area), edit in area, end(area))
 		_multiplayer_synchronizer->send_area(box_in_voxels);
 	}
 
-	try_schedule_mesh_update_from_data(box_in_voxels);
+	if (update_mesh) {
+		try_schedule_mesh_update_from_data(box_in_voxels);
 
-	if (_instancer != nullptr) {
-		_instancer->on_area_edited(box_in_voxels);
+		if (_instancer != nullptr) {
+			_instancer->on_area_edited(box_in_voxels);
+		}
 	}
 }
 

@@ -132,7 +132,7 @@ public:
 	// Flags all blocks in the given area as modified at LOD0.
 	// Also marks them as requiring LOD updates (if lod count is 1 this has no effect).
 	// Optionally, returns a list of affected block positions which did not require LOD updates before.
-	void mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod);
+	void mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Block-aware API
