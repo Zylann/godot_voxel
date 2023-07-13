@@ -67,7 +67,11 @@ The first thing to do is to figure out, in the current block, where should trees
 But how to make it deterministic? We can use the seed of a `RandomNumberGenerator` instance. But if we give it the seed of the world, every block will have trees at the same position in them. What we really need, is a seed that is unique per block. We can achieve that by using a hash of the 2D coordinates of the block:
 
 ```gdscript
-var block_position := origin_in_voxels >> 4 # floored division by 16
+var block_position := Vector3i(
+    origin_in_voxels.x >> 4,
+    origin_in_voxels.y >> 4,
+    origin_in_voxels.z >> 4) # floored division by 16
+
 var rng := RandomNumberGenerator.new()
 rng.seed = global_seed + hash(Vector2i(block_position.x, block_position.z))
 ```
@@ -244,7 +248,10 @@ The code would have to take care of different local offsets when pasting trees s
 Once we are done, if the current block was in `_generating_blocks` at the start, we can remove it, since there should be nothing else affecting it. We will leave the 8 neighbors partially generated, if any, for other threads to start from in case they are requested.
 
 ```gdscript
-var current_block_position := origin_in_voxels >> 4 # floored division by 16
+var block_position := Vector3i(
+    origin_in_voxels.x >> 4,
+    origin_in_voxels.y >> 4,
+    origin_in_voxels.z >> 4) # floored division by 16
 
 _generating_blocks_mutex.lock()
 
