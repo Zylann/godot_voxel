@@ -140,7 +140,7 @@ def write_cpp(sections, var_base_name, dst_fpath):
 
 	code = '\n'.join(lines)
 
-	with open(dst_fpath, 'w', newline='\n') as f:
+	with open(dst_fpath, 'w') as f:
 		f.write(code)
 
 
