@@ -82,6 +82,7 @@ And now we can generate how many trees are in the block, and where:
 var block_size := out_buffer.get_size()
 var tree_count := rng.randi_range(0, 2)
 var tree_positions := []
+tree_positions.resize(tree_count)
 for i in tree_count:
     var tree_pos := Vector3i(
         rng.randi_range(0, block_size.x), 0, # We leave Y for later
