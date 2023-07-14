@@ -87,6 +87,8 @@ public:
 		return _streaming_enabled;
 	}
 
+	void set_full_load_completed(bool complete);
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Voxel queries.
 	// When not specified, the used LOD index is 0.
@@ -130,7 +132,7 @@ public:
 	// Flags all blocks in the given area as modified at LOD0.
 	// Also marks them as requiring LOD updates (if lod count is 1 this has no effect).
 	// Optionally, returns a list of affected block positions which did not require LOD updates before.
-	void mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod);
+	void mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Block-aware API
@@ -343,6 +345,11 @@ private:
 	// a block isn't stored, it means we can use the generator and modifiers to obtain its data. This mostly changes
 	// how this class is used, streaming itself is not directly implemented in this class.
 	bool _streaming_enabled = true;
+
+	// When streaming is disabled, this will tell if all data has finished loading.
+	// This is because *everything* will load, we can't tell in advance what is loaded and what isn't by looking at
+	// individual blocks.
+	bool _full_load_completed = false;
 
 	// Procedural generation stack
 	VoxelModifierStack _modifiers;

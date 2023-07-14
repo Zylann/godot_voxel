@@ -127,7 +127,7 @@ public:
 	bool get_generator_use_gpu() const;
 
 	// These must be called after an edit
-	void post_edit_area(Box3i p_box);
+	void post_edit_area(Box3i p_box, bool update_mesh);
 	void post_edit_modifiers(Box3i p_voxel_box);
 
 	// TODO This still sucks atm cuz the edit will still run on the main thread

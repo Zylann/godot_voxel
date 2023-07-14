@@ -423,10 +423,30 @@ Shipping external files when compiling as a module is inconvenient, so instead t
 Currently, C++ code generating shaders is intertwined with the contents of those shaders. For example, C++ strings in code generation can contain variable names found in GLSL files, so you should have both open to understand the context.
 
 
+Using the module from another module
+----------------------------------------
+
+Writing a custom C++ module directly in Godot is one way to access features of Godot and the voxel engine more directly, which can be better for performance and more stable than a GDExtension. You can do this too if you want to create a custom generator, mesher, stream, or just use components of the module, without having to modify the module directly.
+
+You can include files from the voxel module by using `modules/voxel/` in your includes:
+
+```cpp
+#include <modules/voxel/storage/voxel_buffer_internal.h>
+```
+
+You will also need to define preprocessor macros in your `SCsub` file:
+
+```py
+env_yourmodule.Append(CPPDEFINES = [
+    'ZN_GODOT'
+])
+```
+
+
 GDExtension
 -------------
 
-!!! warn
+!!! warning
     This feature is under development and is not ready for production. It has bugs and can crash the engine. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
 
 This module can compile as a GDExtension library. This allows to distribute it as a library file (`.dll`, `.so`...) without having to recompile Godot Engine. TODO: Godot's documentation doesn't seem to contain information about GDExtension yet. For now, you can check [this old news](https://godotengine.org/article/introducing-gd-extensions) and the [GodotCpp repository](https://github.com/godotengine/godot-cpp).

@@ -117,6 +117,11 @@ void VoxelData::set_streaming_enabled(bool enabled) {
 	_streaming_enabled = enabled;
 }
 
+void VoxelData::set_full_load_completed(bool complete) {
+	// Can be set by other threads
+	_full_load_completed = complete;
+}
+
 inline VoxelSingleValue get_voxel_sv(VoxelBufferInternal &vb, Vector3i pos, unsigned int channel) {
 	VoxelSingleValue v;
 	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
@@ -326,8 +331,7 @@ void VoxelData::paste_masked(Vector3i min_pos, const VoxelBufferInternal &src_bu
 
 bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	if (is_streaming_enabled() == false) {
-		// TODO Actually, there is still a check to make because loading still takes time
-		return true;
+		return _full_load_completed;
 	}
 	const Box3i voxel_box = p_voxels_box.clipped(get_bounds());
 	const Lod &data_lod0 = _lods[0];
@@ -459,14 +463,15 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 	}
 }
 
-void VoxelData::mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod) {
+void VoxelData::mark_area_modified(
+		Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates) {
 	const Box3i bbox = p_voxel_box.downscaled(get_block_size());
 
 	Lod &data_lod0 = _lods[0];
 	{
 		RWLockRead rlock(data_lod0.map_lock);
 
-		bbox.for_each_cell([this, &data_lod0, lod0_new_blocks_to_lod](Vector3i block_pos_lod0) {
+		bbox.for_each_cell([this, &data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
 			// We can get null blocks due to the added padding...
 			// ERR_FAIL_COND(block == nullptr);
@@ -483,7 +488,7 @@ void VoxelData::mark_area_modified(Box3i p_voxel_box, std::vector<Vector3i> *lod
 			block->set_edited(true);
 
 			// TODO That boolean is also modified by the threaded update task (always set to false)
-			if (!block->get_needs_lodding()) {
+			if (!block->get_needs_lodding() && require_lod_updates) {
 				block->set_needs_lodding(true);
 
 				// This is what indirectly causes remeshing

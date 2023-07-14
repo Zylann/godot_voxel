@@ -19,4 +19,8 @@ Ref<Mesh> VoxelBlockyModelEmpty::get_preview_mesh() const {
 	return Ref<Mesh>();
 }
 
+bool VoxelBlockyModelEmpty::is_empty() const {
+	return true;
+}
+
 } // namespace zylann::voxel

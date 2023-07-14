@@ -64,7 +64,7 @@ Node-graph generators (VoxelGraphs)
 
 Basic generators may often not be suited to make a whole game from, but you don't necessarily need to program one. C++ is a very fast language to program a generator but it can be a tedious workflow, especially when prototyping. If you need smooth terrain, a graph-based generator is available, which offers a very customizable approach to make procedural volumes.
 
-!!! warn
+!!! warning
     This generator was originally made for smooth terrain, but works with blocky too, to some extent.
 
 
@@ -138,49 +138,7 @@ However you might still want a heightmap-like result. One way to do this is to f
     ![Torus voxel graph](images/voxel_graph_torus.webp)
 
 
-#### Caves
-
-!!! warn
-    This section is a bit advanced and lacks details because at the moment there is no built-in "macro" to do this in a user-friendly way, and I kind of came up with it by experimentation
-
-It is possible to generate caves by subtracting noise "worms" from a base SDF terrain. To simplify the approach, let's first look at what 2D noise looks like, with a few octaves:
-
-![Noise](images/noise.webp)
-
-If we multiply that noise by itself (i.e square it), we obtain this:
-
-![Squared noise](images/squared_noise.webp)
-
-And if we clamp it to highlight values below a threshold close to zero, we can notice a path-like pattern going on:
-
-![Squared noise path highlight](images/squared_noise_with_highlight.webp)
-
-In 2D (or in 3D when using normalized coordinates) this is the key to produce rivers, or ravines. But the problem with caves is to obtain 3D, round-shaped "worms", not just 2D shapes. So we can cheat a little, by still using 2D noise, but instead we modulate the threshold along the Y axis. We need a parabola-shaped curve for this, which can be obtained with a second-degree polynome like `y^2 - 1`:
-
-![Cave threshold modulation](images/cave_threshold_modulation.webp)
-
-Back to the voxel graph, we may connect directly the cave generation nodes to the output just to preview what they look like, without the rest of the terrain:
-
-![Cave voxel graph](images/caves_flat.webp)
-
-After tweaking noise and other values, we obtain those famous worms, but there are two problems:
-
-- The caves are still flat, they don't go up or down
-- They go on endlessly, there are no dead-ends
-
-We can fix the first problem by adding an extra layer of 2D noise to the Y coordinate so it can perturb the caves vertically. Re-using the ground surface noise with an extra multiplier can prove effective sometimes, so we avoid computing extra noise.
-
-![Caves perturb](images/caves_perturb.webp)
-
-The second problem can also be fixed with yet another layer of low-frequency noise, which can be added to the cave threshold so caves will shrink to become dead-ends on some regions. Again, adding multipliers may change how sharply that transition occurs.
-
-![Cave voxel graph perturb and modulated](images/caves_perturb_modulated.webp)
-
-Finally, we can blend our terrain with caves by subtracting them. This can be done with the `SdfSmoothSubtract` node, essentially doing `terrain - caves`.
-
-![Cave voxel graph terrain subtract](images/caves_composed.webp)
-
-There are likely variants of this to obtain different results.
+More techniques can be found in the [Procedural Generation](procedural_generation.md) section.
 
 
 ### Usage with blocky voxels
@@ -207,137 +165,6 @@ Currently, graph generators only work per voxel. That makes them good to generat
 A special `Relay` node exists to organize long connections between nodes. They do nothing on their own, they just redirect a connection. It also remains possible for a relay to have multiple destinations.
 
 ![Screenshot of a relay node](images/relay_node.webp)
-
-
-### Performance tuning
-
-This is a more technical section.
-
-This generator uses a number of optimization strategies to make the calculations faster. You may want to fine-tune them in some cases depending on the kind of volume you want to generate. When you get more familiar with the tool it may be useful to know how it works under the hood, notably to troubleshoot generation issues when they occur.
-
-#### Buffer processing
-
-Contrary to many node-based or expression tools existing in Godot so far, voxel graphs are not tailored to run on voxels one by one. The main use case is to process a bunch of them. Indeed, for a 16x16x16 block, there are 4096 voxels to generate. That would mean traversing the entire graph 4096 times, and the cost of doing that individually can exceed the cost of the calculations themselves. Besides, switching constantly between node types to run different operations is not CPU-friendly due to all the jumps required.
-
-So instead, outputs of each node are associated small buffers for a subset of the voxels, say, a 16x16 slice. Then, the graph is traversed once ahead-of-time to obtain a simple list of operations. It is guaranteed that if a node depends on another, the other will have run before.
-
-![Graph to operations schema](images/voxel_graph_operation_list.webp)
-
-Finally, the generator executes the list, node by node, and each node computes a bunch of voxels at once instead of just one. This ensures that the CPU is almost exclusively used for the operations themselves, providing performance similar to C++, while graph traversal becomes neglibible. It also offers the opportunity to use [SIMD](https://en.wikipedia.org/wiki/SIMD) very easily, which can be even faster than if the code was written in plain C++.
-
-Buffer processing is mostly an internal detail so there are no particular settings on the scripting API.
-
-#### Range analysis
-
-Before processing voxels in a specific region of space (a box), the generator first runs a [range analysis](https://en.wikipedia.org/wiki/Interval_arithmetic) pass. Each node has an alternative implementation using intervals, with the sole purpose of estimating the range of values it will output in the area. It's like a broad-phase before the heavy work.
-
-It is possible to inspect results of this pass in the editor by enabling it with the `Analyse range` button. The analysis will focus on the box specified in the dialog, which will appear as a yellow wireframe in the 3D viewport.
-
-![Analyse range editor screenshot](images/range_analysis_dialog.webp)
-
-You can also hover the output label of any node to see what range was calculated for it:
-
-![Range analysis tooltips](images/range_analysis_tooltip.webp)
-
-!!! note
-    Noise is typically between -1 and 1, but we take it a step further. Ranges are approximated using maximum derivatives, which is how fast noise can vary along a given distance. Each noise algorithm has its own. We calculate noise at the center of the box, and add half of the maximum derivative, positively and negatively. In other words, in the box, we know noise cannot exceed the central value + the maximum variation along extents of the box. At close range, this can successfully detect valleys and hills, without fully computing them.
-
-Results of this pass are used for several optimization techniques described below.
-
-#### SDF clipping
-
-3D volumes represented with meshes to form a terrain have an interesting property: to generate them, we are mostly interested in the areas where voxel values are crossing the isolevel (zero). That means we could completely discard regions of space that are guaranteed to never get near zero, and simplify them to a single value (like "only matter" or "only air"). Doing that in 3 dimensions has tremendous speed implications so it is a major feature of this generator.
-
-Range analysis is used to perform this optimization. In a given area, if the maximum value of SDF is lower than a threshold below zero, then the whole block is skipped and assigned a uniform negative value. The same happens with a threshold above zero.
-
-It is possible to choose that threshold with the `sdf_clip_threshold` property in the inspector. If given an extremely large value like `10000`, it will essentially turn off this optimization.
-
-It is exposed because in some situations, clipping can cause artifacts when the edge of a block is too close from a clipped one. Indeed, clipping blocks cause discontinuities in the distance field.
-
-![Sdf clipping schema](images/sdf_clipping.webp)
-
-Usually they happen far enough from the surface to be of any concern, but sometimes they can come close if the threshold is too low:
-
-![Sdf clipping artifacts](images/sdf_clipping_artifacts.webp)
-
-So by default the threshold is above zero and should cover most cases.
-
-It is also possible to instruct the generator to invert clipped blocks, which will make them stand out:
-
-![Sdf clipping debug](images/sdf_clip_debug.webp)
-
-
-#### Local optimization
-
-Conditionals (`if/else`) are not supported by this voxel graph implementation. The main reason is because of the buffer processing approach. The CPU can churn through buffers very fast, but branching on a per-voxel basis would disrupt it. Besides, range analysis might get a lot more complicated if branching was added. They can exist within nodes, but cannot exist as a graph-level primitive. So the usual approach is to blend things by mixing, adding, subtracting parts of the graph. But when a graph becomes big, even with SDF clipping, performance could be better. Conditionals are often used to optimize locally, so how can we do this without?
-
-Let's consider an example world made of two biomes, each generated with a big node setup, and blended together across the world's X axis.
-
-![Two biomes](images/biomes.webp)
-
-If we don't optimize this, both biomes will constantly get calculated at every point of space close enough to the surface. But if we look at the range analysis we performed earlier, and focus on one of the biomes, we notice that the range of values received by the `Mix` node are such that only one biome is blended. In other words, one of the inputs of `Mix` has no effect on its result, and is therefore ignored there.
-
-![Ignored input](images/range_of_ignored_input.webp)
-
-So each biome then only computes its own branch when far away enough from the blending area:
-
-![Ignored biome range debug](images/biomes_optimization.png)
-
-Thanks again to range analysis, the generator is able to detect this locally, and *dynamically skips whole branches of nodes* if they are found to not affect the final result. Therefore, it is not required to add conditionals for this use case, it's done automatically. You can visualize this by turning on the analysis tool, which will grey out nodes that are ignored in the specified area.
-
-Internally, the generator parses the graph locally (using a faster data structure since the graph is compiled) to obtain an alternative list of operations. This list is currently nicknamed an `execution map`, because it maps the full list of operations to a reduced one.
-
-![Execution map schema](images/voxel_graph_operation_list_optimized.webp)
-
-This setting can be toggled in the inspector.
-
-!!! note
-    This feature may be more or less precise depending on the range of values parts of the graph are producing. So it is possible that two different graphs providing the same result can run at different speeds. For this reason, analysing ranges can prove useful to understand why parts of the graph are still computed.
-
-
-#### Subdivision
-
-Previous optimizations are tied to the size of the considered area. The bigger the area, the less precise they will be. For example, with a larger box, it is more likely to find a place where voxels produce a surface. It is also more likely for more biomes or other shapes to appear and blend together. Besides, changing the size of our world chunks isn't a light decision.
-
-So a simple improvement is to tell the generator to further subdivide itself the region of space it works on. Usually a subdivision size of 16x16x16 is ok. 8x8x8 is even more precise, but below that size the cost of iteration will eventually exceed the cost of computations again (see Buffer processing). Subdivision sizes must also divide volume block sizes without remainder. This is mostly to avoid having to deal with buffers of different sizes.
-
-
-#### XZ caching
-
-When generating voxel-based terrains, despite the attractiveness of overhangs, there can be a large part of your generator only relying on the X and Z coordinates. Typically, generating from 2D noise as a base layer is one of these situations.
-When the generator is done with a slice along X and Z, it increases Y and does the slice above. But since 2D noise only depends on X and Z, it would get recomputed again. And noise is expensive.
-
-This situation is similar to the following pseudocode:
-
-```
-for z in size_z:
-    for x in size_x:
-        for y in size_y:
-            set_voxel(x, y, z, noise2d(x, z) + y)
-```
-
-Typically, to optimize this, you would move out the `noise2d` call into the outer loop, like so:
-
-```
-for z in size_z:
-    for x in size_x:
-        n = noise2d(x, z)
-        for y in size_y:
-            set_voxel(x, y, z, n + y)
-```
-
-This way, the 2D noise is only computed once for each column of voxels along Y, which speeds up generation a lot.
-
-In Voxel Graphs, the same optimization occurs. When the list of operations is computed, they are put in two groups: `XZ` and `XZY`. All operations that only depend on X and Z are put into the `XZ` group, and others go into the `XZY` group.
-When generating a block of voxels, the `XZ` group is executed once for the first slice of voxels, and the `XZY` group is executed for every slice, re-using results from the `XZ` group.
-
-This optimization only applies on both X and Z axes. It can be toggled in the inspector.
-
-
-#### Buffer reduction
-
-The graph attempts to use as few temporary buffers as possible. For example, if you have 10 nodes processing before the output, it won't necessarily allocate 10 unique buffers to store intermediary outputs. Instead, buffers will be re-used for multiple nodes, if that doesn't change the result. Buffers are assigned ahead-of-time, when the graph is compiled. It saves memory, and might improve performance because less data has to be loaded into CPU cache.
-This feature is disabled when the graph is compiled in debug mode, as it allows inspecting the state of each output.
 
 
 Custom generator

@@ -7,7 +7,6 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.0"
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
@@ -18,6 +17,16 @@ jobs:
     strategy:
       matrix:
         include:
+          # Just to check if building still works in that version
+          - name: Editor debug build (4.0)
+            float: 32
+            target: editor
+            dev_build: yes
+            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
+            production: no
+            executable_name: godot.linuxbsd.editor.dev.x86_64
+            godot_base_branch: "4.0"
+
           - name: Editor debug build
             float: 32
             target: editor
@@ -25,6 +34,7 @@ jobs:
             #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
+            godot_base_branch: "4.1"
 
           - name: Editor build
             float: 32
@@ -33,6 +43,7 @@ jobs:
             #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.1"
 
           - name: Editor build with 64-bit floats
             float: 64
@@ -41,13 +52,14 @@ jobs:
             #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
+            godot_base_branch: "4.1"
 
     steps:
       # Clone Godot
       - uses: actions/checkout@v3
         with:
           repository: godotengine/godot
-          ref: "4.0"
+          ref: ${{ matrix.godot_base_branch }}
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v3
@@ -94,11 +106,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/.scons_cache/
-          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          key: ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
-            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+            ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}
+            ${{github.job}}-${{matrix.godot_base_branch}}
 
       # [Already provided by the custom buildroot]
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)

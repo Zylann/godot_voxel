@@ -152,28 +152,6 @@ func _notification(what: int):
 Image.lock() won't be required anymore in Godot 4.
 
 
-### Accessing neighbors to generate structures
-
-Generators cannot access neighbor blocks, because they may be dependent on neighbors themselves, and may, or may not be available yet. It's also bad for performance to have threads interdepend on others. A solution to overcome this is to use a seed to drive every calculations so results are predictable.
-
-Noise-based terrain usually don't need any dependency on neighbors, since any queried voxel position will always yield the same values. Generating structures like trees in a Minecraft world is however a bit more complicated.
-
-#### Deterministic threaded approach
-
-One approach for trees on top of a noise-based terrain allows to keep all the code inside the generator:
-
-- Define a deterministic function that will tell where and how big trees should grow, based on the position of a chunk. It can be made deterministic by using chunk position as a random seed. This function does not need to generate the tree entirely, it should just tell which box it will occupy.
-- When generating a chunk, run that function for every neighboring chunk position (8 neighbors + the current chunk, or more depending on the logic). It should be pretty cheap since there will often be only a handful of trees to find.
-- Determine the height of each tree using the noise-based generator. Because it is also deterministic, we don't need to generate neighbor chunks entirely.
-- For every tree bounding box, check if it intersects with the current chunk. If it does, generate the tree within its own buffer, and paste its voxels in the chunk.
-
-In this approach, it is possible that a tree might be generated multiple times for each chunk it intersects with, but this should be outweighted by the fact it is easily multithreaded and self-contained. Pre-generating a bunch of models up-front can help speeding up the process.
-
-This logic has been implemented [in this demo](https://github.com/Zylann/voxelgame/blob/2fa552abfdf52c688bbec27edd676018a31373e0/project/blocky_game/generator/generator.gd#L144).
-
-!!! note
-    If the structure to generate is larger, then instead of using chunk size as a reference grid, use a larger grid, and use intersecting cells instead so there are less checks to do. If it's a complex structure, it can get subdivided in smaller bounding boxes, to avoid generating everything during the first pass, and only generate it partially when it intersects the chunk.
-
 
 Custom stream
 ---------------
@@ -185,9 +163,4 @@ See
 
 TODO Script example of a custom stream
 
-
-Creating a terrain node
---------------------------
-
-TODO
 

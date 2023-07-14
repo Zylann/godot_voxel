@@ -162,37 +162,6 @@ void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 	}
 }
 
-void VoxelGraphEditorPlugin::_zn_save_external_data() {
-	// This is to workaround the fact Godot won't save resource A if we edit a built-in resource B inside it from a
-	// custom editor with UndoRedoManager.
-	// This might also cause spurious saves of the same resource when the user saves the current scene, in cases Godot
-	// already "marked" the resource for saving (I dont know how it really works). Also because we use the `changed`
-	// signal, which can be caused by more than just editing nested resources.
-	//
-	// So far from my experience, Godot's main way of detecting if a resource has changed is by having it
-	// appear in UndoRedo actions. But if a resource is built-in (embedded in another), it will not be saved with Ctrl+S
-	// unless the resource that contains it is saved. Sadly, Godot devs I discussed with so far seem to be unaware of
-	// how this situation is supposed to be handled with custom editors. As if it was an edge case that was somehow
-	// luckily avoided in the engine, or dealt with using ad-hoc per-case hacks.
-	// There is `Object::set_edited` and `Resource::owners`, which are used in arbitrary places of the editor, but of
-	// course not exposed to scripts or extensions and no idea how they work with nesting...
-	// Maybe I haven't yet encountered The Dev Who Knows...
-	//
-	// This workaround might not even be enough if the edited graph is nested deeper. Pushing to the extreme, we would
-	// have to trace back containing resources recursively until we find the one with a file path, and tell Godot that
-	// it needs to be marked for saving, but that's just incredibly tedious to do, as resources don't just have "parent"
-	// properties like nodes do...
-	//
-	// See https://github.com/godotengine/godot-proposals/discussions/7168
-
-	for (Ref<VoxelGeneratorGraph> container : _modified_graph_containers) {
-		if (!container->get_path().is_empty()) {
-			save_resource(container);
-		}
-	}
-	_modified_graph_containers.clear();
-}
-
 void VoxelGraphEditorPlugin::_hide_deferred() {
 	_deferred_visibility_scheduled = false;
 	if (_bottom_panel_button->is_visible()) {
@@ -300,9 +269,27 @@ void VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested() {
 }
 
 void VoxelGraphEditorPlugin::_on_generator_changed() {
+	// This is to workaround the fact Godot won't save resource A if we edit a built-in resource B inside it from a
+	// custom editor with UndoRedoManager.
+	//
+	// So far from my experience, Godot's main way of detecting if a resource has changed is by having it
+	// appear in UndoRedo actions. But if a resource is built-in (embedded in another), it will not be saved with Ctrl+S
+	// unless the resource that contains it is saved. Sadly, Godot devs I discussed with so far seem to be unaware of
+	// how this situation is supposed to be handled with custom editors. As if it was an edge case that was somehow
+	// luckily avoided in the engine, or dealt with using ad-hoc per-case hacks.
+	// There is `Object::set_edited` and `Resource::owners`, which are used in arbitrary places of the editor, but of
+	// course not exposed to scripts or extensions and no idea how they work with nesting...
+	// Maybe I haven't yet encountered The Dev Who Knows...
+	//
+	// This workaround might not even be enough if the edited graph is nested deeper. Pushing to the extreme, we would
+	// have to trace back containing resources recursively until we find the one with a file path, and tell Godot that
+	// it needs to be marked for saving, but that's just incredibly tedious to do, as resources don't just have "parent"
+	// properties like nodes do...
+	//
+	// See https://github.com/godotengine/godot-proposals/discussions/7168
 	Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
-	if (generator.is_valid() && !contains(to_span_const(_modified_graph_containers), generator)) {
-		_modified_graph_containers.push_back(generator);
+	if (generator.is_valid()) {
+		set_object_edited(**generator);
 	}
 }
 

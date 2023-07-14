@@ -515,7 +515,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 // Marks intersecting blocks in the area as modified, updates LODs and schedules remeshing.
 // The provided box must be at LOD0 coordinates.
-void VoxelLodTerrain::post_edit_area(Box3i p_box) {
+void VoxelLodTerrain::post_edit_area(Box3i p_box, bool update_mesh) {
 	ZN_PROFILE_SCOPE();
 	// TODO Better decoupling is needed here.
 	// In the past this padding was necessary for mesh blocks because visuals depend on neighbor voxels.
@@ -527,7 +527,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	const Box3i box = p_box.padded(1);
 	{
 		MutexLock lock(_update_data->state.blocks_pending_lodding_lod0_mutex);
-		_data->mark_area_modified(box, &_update_data->state.blocks_pending_lodding_lod0);
+		_data->mark_area_modified(box, &_update_data->state.blocks_pending_lodding_lod0, update_mesh);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -536,7 +536,7 @@ void VoxelLodTerrain::post_edit_area(Box3i p_box) {
 	}
 #endif
 
-	if (_instancer != nullptr) {
+	if (_instancer != nullptr && update_mesh) {
 		_instancer->on_area_edited(p_box);
 	}
 }
@@ -628,18 +628,26 @@ void VoxelLodTerrain::stop_updater() {
 }
 
 void VoxelLodTerrain::start_streamer() {
-	if (is_full_load_mode_enabled() && get_stream().is_valid()) {
-		// TODO May want to defer this to be sure it's not done multiple times.
-		// This would be a side-effect of setting properties one by one, either by scene loader or by script
+	if (is_full_load_mode_enabled()) {
+		if (get_stream().is_valid()) {
+			// TODO May want to defer this to be sure it's not done multiple times.
+			// This would be a side-effect of setting properties one by one, either by scene loader or by script
 
-		ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", _volume_id));
-		ZN_ASSERT(_streaming_dependency != nullptr);
+			ZN_PRINT_VERBOSE(format("Request all blocks for volume {}", _volume_id));
+			ZN_ASSERT(_streaming_dependency != nullptr);
 
-		LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
-		task->volume_id = _volume_id;
-		task->stream_dependency = _streaming_dependency;
+			_data->set_full_load_completed(false);
 
-		VoxelEngine::get_singleton().push_async_io_task(task);
+			LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
+			task->volume_id = _volume_id;
+			task->stream_dependency = _streaming_dependency;
+			task->data = _data;
+
+			VoxelEngine::get_singleton().push_async_io_task(task);
+
+		} else {
+			_data->set_full_load_completed(true);
+		}
 	}
 }
 
@@ -1264,7 +1272,12 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (e.tracker->has_next_tasks()) {
 				ERR_PRINT("Completed async edit had next tasks?");
 			}
-			post_edit_area(e.box);
+			post_edit_area(e.box,
+					// Assume the async edit modified voxels in a way it affects the mesh.
+					// Won't be the case if changed only metadata, but so far there is no use case for using an async
+					// edit to change metadata. Metadata is not even used often in smooth terrains (which
+					// VoxelLodTerrain is mostly for)
+					true);
 			return true;
 
 		} else if (e.tracker->is_aborted()) {

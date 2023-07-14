@@ -56,7 +56,7 @@ public:
 	void set_mesh_block_size(unsigned int p_block_size);
 
 	void post_edit_voxel(Vector3i pos);
-	void post_edit_area(Box3i box_in_voxels);
+	void post_edit_area(Box3i box_in_voxels, bool update_mesh);
 
 	void set_generate_collisions(bool enabled);
 	bool get_generate_collisions() const {

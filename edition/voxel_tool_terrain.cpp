@@ -262,13 +262,14 @@ void VoxelToolTerrain::_set_voxel_f(Vector3i pos, float v) {
 
 void VoxelToolTerrain::_post_edit(const Box3i &box) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	_terrain->post_edit_area(box);
+	_terrain->post_edit_area(box, true);
 }
 
 void VoxelToolTerrain::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	VoxelData &data = _terrain->get_storage();
 	data.set_voxel_metadata(pos, meta);
+	_terrain->post_edit_area(Box3i(pos, Vector3i(1, 1, 1)), false);
 }
 
 Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
