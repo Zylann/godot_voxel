@@ -184,9 +184,8 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 			}
 		};
 
-		const bool tangents_empty = (tangents.size() == 0);
-
 #ifdef TOOLS_ENABLED
+		const bool tangents_empty = (tangents.size() == 0);
 		if (tangents_empty && bake_tangents) {
 			if (uvs.size() == 0) {
 				// TODO Provide context where the model is used, they can't always be named
