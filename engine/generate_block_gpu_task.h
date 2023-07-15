@@ -53,7 +53,7 @@ public:
 	// TODO Not sure if it's worth dealing with sub-boxes. That's only in case of partially-edited meshing blocks...
 	// this case doesn't sound common enough.
 
-	// Boxes relative to a VoxelBuffer (not world voxel coordinates). They must not interesect.
+	// Boxes relative to the VoxelBuffer (not world voxel coordinates). They must not interesect.
 	std::vector<Box3i> boxes_to_generate;
 	// Position of the lower corner of the VoxelBuffer in world voxel coordinates
 	Vector3i origin_in_voxels;

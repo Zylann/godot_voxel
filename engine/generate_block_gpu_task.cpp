@@ -89,7 +89,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		params.block_size = buffer_resolution;
 		params.output_buffer_start = (ctx.shared_output_buffer_begin / sizeof(float)) + out_offset_elements;
 
-		out_offset_elements += buffer_volume;
+		out_offset_elements += buffer_volume * generator_shader_outputs->outputs.size();
 
 		PackedByteArray params_pba;
 		copy_bytes_to(params_pba, params);
@@ -384,6 +384,8 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	Span<const uint8_t> outputs_bytes = to_span(ctx.downloaded_shared_output_data)
 												.sub(ctx.shared_output_buffer_begin, ctx.shared_output_buffer_size);
 
+	unsigned int box_offset = 0;
+
 	for (unsigned int box_index = 0; box_index < _boxes_data.size(); ++box_index) {
 		BoxData &bd = _boxes_data[box_index];
 		const Box3i box = boxes_to_generate[box_index];
@@ -396,11 +398,14 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 
 			GenerateBlockGPUTaskResult result(box, output_info.type,
 					// Get span for that specific output
-					outputs_bytes.sub(size_per_output * output_index, size_per_output),
+					outputs_bytes.sub(box_offset + size_per_output * output_index, size_per_output),
+					// Pass reference to the backing buffer to keep it valid until all consumers are done with it
 					ctx.downloaded_shared_output_data);
 
 			results.push_back(result);
 		}
+
+		box_offset += size_per_output * generator_shader_outputs->outputs.size();
 
 		storage_buffer_pool.recycle(bd.params_sb);
 	}
