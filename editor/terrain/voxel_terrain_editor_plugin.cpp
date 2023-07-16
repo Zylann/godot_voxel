@@ -19,7 +19,11 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelTerrainEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(ZN_TTR("Terrain"));
 	menu_button->get_popup()->connect(
@@ -88,6 +92,8 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
+			init();
+
 			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
 			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
 			// No collision needed in editor, also it updates faster without

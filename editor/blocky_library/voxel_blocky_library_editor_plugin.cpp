@@ -8,7 +8,11 @@
 
 namespace zylann::voxel {
 
-VoxelBlockyLibraryEditorPlugin::VoxelBlockyLibraryEditorPlugin() {
+VoxelBlockyLibraryEditorPlugin::VoxelBlockyLibraryEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelBlockyLibraryEditorPlugin::init() {
 	EditorUndoRedoManager *undo_redo = get_undo_redo();
 	EditorInterface *editor_interface = get_editor_interface();
 
@@ -39,6 +43,12 @@ VoxelBlockyLibraryEditorPlugin::VoxelBlockyLibraryEditorPlugin() {
 		plugin.instantiate();
 		plugin->set_ids_dialog(_type_library_ids_dialog);
 		add_inspector_plugin(plugin);
+	}
+}
+
+void VoxelBlockyLibraryEditorPlugin::_notification(int p_what) {
+	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
 	}
 }
 

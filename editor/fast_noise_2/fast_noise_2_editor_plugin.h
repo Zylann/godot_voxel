@@ -17,6 +17,9 @@ public:
 	}
 
 private:
+	void init();
+	void _notification(int p_what);
+
 	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 

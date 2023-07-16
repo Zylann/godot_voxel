@@ -35,6 +35,11 @@ public:
 	void clear();
 
 private:
+	// TODO GDX: Can't access RenderingServer in the constructor of a registered class.
+	// We have to somehow defer initialization to later. See https://github.com/godotengine/godot-cpp/issues/1179
+	void init();
+	bool _initialized = false;
+
 	std::vector<DirectMultiMeshInstance::TransformAndColor32> _items;
 	Ref<MultiMesh> _multimesh;
 	DirectMultiMeshInstance _multimesh_instance;
@@ -50,6 +55,10 @@ class DebugRendererItem;
 class DebugRenderer {
 public:
 	~DebugRenderer();
+
+	// TODO GDX: Can't access RenderingServer in the constructor of a registered class.
+	// We have to somehow defer initialization to later. See https://github.com/godotengine/godot-cpp/issues/1179
+	void init();
 
 	// This class does not uses nodes. Call this first to choose in which world it renders.
 	void set_world(World3D *world);

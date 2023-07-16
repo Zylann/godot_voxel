@@ -32,6 +32,8 @@ protected:
 	void _notification(int p_what);
 
 private:
+	void init();
+
 	void set_node(VoxelNode *node);
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 

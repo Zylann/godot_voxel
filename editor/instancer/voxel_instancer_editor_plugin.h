@@ -22,6 +22,8 @@ protected:
 	void _zn_make_visible(bool visible) override;
 
 private:
+	void init();
+	void _notification(int p_what);
 	bool toggle_stat_view();
 	void _on_menu_item_selected(int id);
 

@@ -61,6 +61,7 @@
 #include "util/tasks/godot/threaded_task_gd.h"
 
 #ifdef ZN_GODOT_EXTENSION
+#include "engine/voxel_engine_updater.h"
 #include "util/thread/godot_thread_helper.h"
 #endif
 
@@ -127,6 +128,7 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
+#include "editor/terrain/editor_property_aabb_min_max.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 #endif
 
@@ -280,8 +282,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelMesherCubes>();
 
 #ifdef ZN_GODOT_EXTENSION
-		// TODO GDX: I don't want to expose this one but there is no way not to expose it
+		// TODO GDX: I don't want to expose these classes, but there is no way not to expose them
 		ClassDB::register_class<ZN_GodotThreadHelper>();
+		ClassDB::register_class<VoxelEngineUpdater>();
 #endif
 
 		print_size_reminders();
@@ -360,6 +363,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_EditorProperty>();
 		ClassDB::register_class<ZN_Axes3DControl>();
 		ClassDB::register_class<ZN_ModelViewer>();
+		ClassDB::register_class<EditorPropertyAABBMinMax>();
 
 		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();

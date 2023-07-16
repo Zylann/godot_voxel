@@ -16,7 +16,11 @@ enum MenuItemID { //
 };
 }
 
-VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin() {
+VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelInstancerEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(VoxelInstancer::get_class_static());
 	{
@@ -30,6 +34,12 @@ VoxelInstancerEditorPlugin::VoxelInstancerEditorPlugin() {
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
+}
+
+void VoxelInstancerEditorPlugin::_notification(int p_what) {
+	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
+	}
 }
 
 bool VoxelInstancerEditorPlugin::_zn_handles(const Object *p_object) const {

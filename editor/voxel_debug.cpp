@@ -208,7 +208,9 @@ void DebugRenderer::end() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DebugMultiMeshRenderer::DebugMultiMeshRenderer() {
+DebugMultiMeshRenderer::DebugMultiMeshRenderer() {}
+
+void DebugMultiMeshRenderer::init() {
 	_multimesh_instance.create();
 	// TODO When shadow casting is on, directional shadows completely break.
 	// The reason is still unknown.
@@ -237,6 +239,11 @@ DebugMultiMeshRenderer::~DebugMultiMeshRenderer() {
 }
 
 void DebugMultiMeshRenderer::set_world(World3D *world) {
+	if (_initialized == false) {
+		init();
+		_initialized = true;
+	}
+
 	_multimesh_instance.set_world(world);
 	_world = world;
 }
@@ -271,7 +278,10 @@ void DebugMultiMeshRenderer::end() {
 
 void DebugMultiMeshRenderer::clear() {
 	_items.clear();
-	_multimesh->set_instance_count(0);
+	// Can be null if `init()` hasn't been called
+	if (_multimesh.is_valid()) {
+		_multimesh->set_instance_count(0);
+	}
 }
 
 } // namespace zylann
