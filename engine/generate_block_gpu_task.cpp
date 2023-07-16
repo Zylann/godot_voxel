@@ -144,6 +144,9 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 			add_uniform_params(generator_shader_params->params, generator_uniforms);
 		}
 
+		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
+		// of the compute list (which already locks the class mutex until it ends). Thankfully, it uses a recursive
+		// Mutex (instead of BinaryMutex)
 		const RID generator_uniform_set = uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
 
 		{
