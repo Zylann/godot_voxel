@@ -99,6 +99,16 @@
 
 #ifdef ZN_GODOT_EXTENSION
 #include "editor/about_window.h"
+#include "editor/blocky_library/axes_3d_control.h"
+#include "editor/blocky_library/model_viewer.h"
+#include "editor/blocky_library/types/voxel_blocky_type_attribute_combination_selector.h"
+#include "editor/blocky_library/types/voxel_blocky_type_editor_inspector_plugin.h"
+#include "editor/blocky_library/types/voxel_blocky_type_library_editor_inspector_plugin.h"
+#include "editor/blocky_library/types/voxel_blocky_type_library_ids_dialog.h"
+#include "editor/blocky_library/types/voxel_blocky_type_variant_list_editor.h"
+#include "editor/blocky_library/types/voxel_blocky_type_viewer.h"
+#include "editor/blocky_library/voxel_blocky_model_editor_inspector_plugin.h"
+#include "editor/blocky_library/voxel_blocky_model_viewer.h"
 #include "editor/fast_noise_lite/fast_noise_lite_editor_inspector_plugin.h"
 #include "editor/fast_noise_lite/fast_noise_lite_viewer.h"
 #include "editor/graph/editor_property_text_change_on_submit.h"
@@ -176,36 +186,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace voxel;
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		VoxelMemoryPool::create_singleton();
-		VoxelStringNames::create_singleton();
-		pg::NodeTypeDB::create_singleton();
-
-		unsigned int main_thread_budget_usec;
-		const VoxelEngine::ThreadsConfig threads_config =
-				gd::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
-		VoxelEngine::create_singleton(threads_config);
-		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
-#if defined(ZN_GODOT)
-		// TODO Enhancement: threaded graphics resource building should be initialized better.
-		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-		// renderer and has not figured out how such option would be exposed). Could use `can_create_resources_async`
-		// but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not
-		// supporting async resource creation.
-		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-				RenderingServer::get_singleton()->is_low_end() == false);
-#else
-		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
-		// different threads
-#endif
-
-		gd::VoxelEngine::create_singleton();
-		add_godot_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
-
-		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
-				gd::METADATA_TYPE_VARIANT);
-
-		VoxelMesherTransvoxel::load_static_resources();
-
 		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
 		// This class is used as a singleton so it's not really abstract.
 		// Should I use `register_abstract_class` anyways?
@@ -263,8 +243,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Generators
 		register_abstract_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorFlat>();
-		ClassDB::register_class<VoxelGeneratorWaves>();
 		register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_class<VoxelGeneratorWaves>();
 		ClassDB::register_class<VoxelGeneratorImage>();
 		ClassDB::register_class<VoxelGeneratorNoise2D>();
 		ClassDB::register_class<VoxelGeneratorNoise>();
@@ -324,6 +304,38 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// However this is an abstract class so it should not be found in resources hopefully
 		// ClassDB::add_compatibility_class("VoxelInstanceLibraryItemBase", "VoxelInstanceLibraryItem");
 #endif
+		// Setup engine after classes are registered.
+		// This is necessary when using GDExtension because classes can't be instantiated until they are registered.
+
+		VoxelMemoryPool::create_singleton();
+		VoxelStringNames::create_singleton();
+		pg::NodeTypeDB::create_singleton();
+
+		unsigned int main_thread_budget_usec;
+		const VoxelEngine::ThreadsConfig threads_config =
+				gd::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
+		VoxelEngine::create_singleton(threads_config);
+		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
+#if defined(ZN_GODOT)
+		// TODO Enhancement: threaded graphics resource building should be initialized better.
+		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
+		// renderer and has not figured out how such option would be exposed). Could use `can_create_resources_async`
+		// but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not
+		// supporting async resource creation.
+		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
+				RenderingServer::get_singleton()->is_low_end() == false);
+#else
+		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
+		// different threads
+#endif
+
+		gd::VoxelEngine::create_singleton();
+		add_godot_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
+
+		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
+				gd::METADATA_TYPE_VARIANT);
+
+		VoxelMesherTransvoxel::load_static_resources();
 
 #ifdef VOXEL_RUN_TESTS
 		zylann::voxel::tests::run_voxel_tests();
@@ -342,19 +354,32 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// TODO GDX: I don't want to expose any of the following classes, but it looks like there is no way to make them
 		// functional as extensions BUT not expose them
 
-		ClassDB::register_class<VoxelAboutWindow>();
-		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+		ClassDB::register_class<ZN_EditorPlugin>();
+		ClassDB::register_class<ZN_EditorImportPlugin>();
+		ClassDB::register_class<ZN_EditorInspectorPlugin>();
+		ClassDB::register_class<ZN_EditorProperty>();
+		ClassDB::register_class<ZN_Axes3DControl>();
+		ClassDB::register_class<ZN_ModelViewer>();
 
 		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
 		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
 
-		ClassDB::register_class<ZN_EditorPlugin>();
-		ClassDB::register_class<ZN_EditorImportPlugin>();
-		ClassDB::register_class<ZN_EditorInspectorPlugin>();
-		ClassDB::register_class<ZN_EditorProperty>();
+		ClassDB::register_class<VoxelAboutWindow>();
+		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelTerrainEditorPlugin>();
+		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+
+		ClassDB::register_class<VoxelBlockyModelViewer>();
+		ClassDB::register_class<VoxelBlockyLibraryEditorPlugin>();
+		ClassDB::register_class<VoxelBlockyModelEditorInspectorPlugin>();
+
+		ClassDB::register_class<VoxelBlockyTypeViewer>();
+		ClassDB::register_class<VoxelBlockyTypeEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelBlockyTypeLibraryIDSDialog>();
+		ClassDB::register_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelBlockyTypeAttributeCombinationSelector>();
+		ClassDB::register_class<VoxelBlockyTypeVariantListEditor>();
 
 		ClassDB::register_class<magica::VoxelVoxEditorPlugin>();
 		ClassDB::register_class<magica::VoxelVoxMeshImporter>();

@@ -70,7 +70,12 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of MeshBlockTask: {}", sizeof(MeshBlockTask)));
 
-	_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
+	if (RenderingServer::get_singleton() != nullptr) {
+		_rendering_device = RenderingServer::get_singleton()->create_local_rendering_device();
+	} else {
+		// Sadly, that happens. This is a problem in GDExtension...
+		ZN_PRINT_ERROR("RenderingServer singleton is null when creating VoxelEngine!");
+	}
 
 	if (_rendering_device != nullptr) {
 		Ref<RDSamplerState> sampler_state;
