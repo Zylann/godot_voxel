@@ -51,10 +51,7 @@ void print_error(const char *error, const FwdConstStdString &msg, const char *fu
 }
 
 void flush_stdout() {
-#if defined(ZN_GODOT)
 	_err_flush_stdout();
-#endif
-	// TODO GodotCpp does not expose a way to flush logging output. Crashing errors might then miss log messages.
 }
 
 } // namespace zylann
