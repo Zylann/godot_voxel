@@ -63,7 +63,6 @@ void ChartView::_notification(int p_what) {
 }
 
 void ChartView::_draw() {
-	const Color bg_color(Color(0.15, 0.15, 0.15));
 	const Color line_color(Color(0.8, 0.8, 0.8, 1.0));
 	const Color x_axis_color(Color(1.0, 1.0, 1.0, 0.5));
 	const Color y_axis_color(Color(1.0, 1.0, 1.0, 0.5));

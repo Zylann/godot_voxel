@@ -21,6 +21,7 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	emit_changed();
 }
 
+#ifdef TOOLS_ENABLED
 // Generate tangents based on UVs (won't be as good as properly imported tangents)
 static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &positions,
 		const PackedVector3Array &normals, const PackedVector2Array &uvs, const PackedInt32Array &indices) {
@@ -56,6 +57,7 @@ static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &p
 
 	return tangents;
 }
+#endif
 
 static void add(Span<Vector3> vectors, Vector3 rhs) {
 	for (Vector3 &v : vectors) {

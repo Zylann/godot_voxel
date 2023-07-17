@@ -42,7 +42,7 @@ public:
 		}
 	}
 
-	void rewind() {
+	void rewind() override {
 		_current_index = 0;
 		_triangle_begin_index = 0;
 	}

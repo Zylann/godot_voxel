@@ -93,9 +93,9 @@ public:
 			const TIndex i = _slots.size();
 			// Start versions at 1, so we can represent 0 as invalid
 			const uint32_t v = 1;
-			_slots.push_back(Slot{ value, v });
+			_slots.push_back(Slot{ value, {v} });
 			++_count;
-			return Key{ i, v };
+			return Key{ i, {v} };
 		}
 	}
 
