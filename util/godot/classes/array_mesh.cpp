@@ -2,6 +2,7 @@
 #include "../funcs.h"
 
 #include <map>
+#include <unordered_map>
 
 namespace zylann {
 
