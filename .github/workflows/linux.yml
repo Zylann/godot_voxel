@@ -27,6 +27,16 @@ jobs:
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.0"
 
+          # Just to check if building works in Godot master
+          - name: Editor debug build (master)
+            float: 32
+            target: editor
+            dev_build: yes
+            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
+            production: no
+            executable_name: godot.linuxbsd.editor.dev.x86_64
+            godot_base_branch: "master"
+
           - name: Editor debug build
             float: 32
             target: editor
