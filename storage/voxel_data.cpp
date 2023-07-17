@@ -471,7 +471,7 @@ void VoxelData::mark_area_modified(
 	{
 		RWLockRead rlock(data_lod0.map_lock);
 
-		bbox.for_each_cell([this, &data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
+		bbox.for_each_cell([&data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
 			// We can get null blocks due to the added padding...
 			// ERR_FAIL_COND(block == nullptr);
