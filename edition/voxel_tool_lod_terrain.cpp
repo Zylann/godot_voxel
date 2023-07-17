@@ -660,7 +660,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 			// TODO If normalmapping is used here with the Transvoxel mesher, we need to either turn it off just for
 			// this call, or to pass the right options
-			Ref<Mesh> mesh = mesher->build_mesh(info.voxels, materials, Dictionary());
+			Ref<ArrayMesh> mesh = mesher->build_mesh(info.voxels, materials, Dictionary());
 			// The mesh is not supposed to be null,
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());

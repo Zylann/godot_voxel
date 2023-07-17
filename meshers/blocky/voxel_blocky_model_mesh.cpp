@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
@@ -343,7 +344,11 @@ bool VoxelBlockyModelMesh::is_empty() const {
 	if (_mesh.is_null()) {
 		return true;
 	}
-	return is_mesh_empty(**_mesh);
+	Ref<ArrayMesh> array_mesh = _mesh;
+	if (array_mesh.is_valid()) {
+		return is_mesh_empty(**array_mesh);
+	}
+	return false;
 }
 
 void VoxelBlockyModelMesh::set_mesh_ortho_rotation_index(int i) {
