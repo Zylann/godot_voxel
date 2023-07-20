@@ -28,6 +28,9 @@ public:
 	Ref<Mesh> get_mesh(int mesh_lod_index) const;
 	int get_mesh_lod_count() const;
 
+	void set_render_layer(int render_layer);
+	int get_render_layer() const;
+
 	void set_material_override(Ref<Material> material);
 	Ref<Material> get_material_override() const;
 
@@ -55,6 +58,7 @@ public:
 	struct Settings {
 		FixedArray<Ref<Mesh>, MAX_MESH_LODS> mesh_lods;
 		unsigned int mesh_lod_count = 1;
+		int render_layer = 1;
 
 		// It is preferred to have materials on the mesh already,
 		// but this is in case OBJ meshes are used, which often dont have a material of their own

@@ -665,6 +665,7 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 		if (block.layer_id != layer_id || !block.multimesh_instance.is_valid()) {
 			continue;
 		}
+		block.multimesh_instance.set_render_layer(settings.render_layer);
 		block.multimesh_instance.set_material_override(settings.material_override);
 		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
@@ -1038,6 +1039,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 				block.multimesh_instance.set_visible(is_visible());
 			}
 			block.multimesh_instance.set_multimesh(multimesh);
+			block.multimesh_instance.set_render_layer(settings.render_layer);
 			block.multimesh_instance.set_world(&world);
 			block.multimesh_instance.set_transform(block_global_transform);
 			block.multimesh_instance.set_material_override(settings.material_override);
