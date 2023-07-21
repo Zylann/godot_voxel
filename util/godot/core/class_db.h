@@ -15,6 +15,7 @@ inline void register_abstract_class() {
 	ClassDB::register_abstract_class<T>();
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO GDX: No way to register abstract classes in GDExtension!
+	// The API is there, but needs some pending fixes https://github.com/godotengine/godot/pull/67512
 	ClassDB::register_class<T>();
 #endif
 }
