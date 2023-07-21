@@ -696,7 +696,6 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	const float sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(sdf_channel_depth);
 
 	const VoxelBufferInternal::ChannelId type_channel = VoxelBufferInternal::CHANNEL_TYPE;
-	const VoxelBufferInternal::Depth type_channel_depth = out_buffer.get_channel_depth(type_channel);
 
 	const int stride = 1 << input.lod;
 
@@ -712,12 +711,8 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	const float air_sdf = _debug_clipped_blocks ? -1.f : 1.f;
 	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
 
-	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
 	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
 	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
-
-	bool all_sdf_is_air = (sdf_output_buffer_index != -1) && (type_output_buffer_index == -1);
-	bool all_sdf_is_matter = all_sdf_is_air;
 
 	const Vector3i gmin = origin;
 	const Vector3i gmax = origin + (bs << input.lod);
@@ -729,10 +724,8 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	}
 
 	bool sdf_is_air = true;
-	bool sdf_is_uniform = true;
 	if (sdf_output_buffer_index != -1) {
 		const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
-		bool sdf_is_matter = false;
 
 		if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
 			out_buffer.fill_f(air_sdf, sdf_channel);
@@ -741,28 +734,21 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 		} else if (sdf_range.min < -clip_threshold && sdf_range.max < -clip_threshold) {
 			out_buffer.fill_f(matter_sdf, sdf_channel);
 			sdf_is_air = false;
-			sdf_is_matter = true;
 
 		} else if (sdf_range.is_single_value()) {
 			out_buffer.fill_f(sdf_range.min, sdf_channel);
 			sdf_is_air = sdf_range.min > 0.f;
-			sdf_is_matter = !sdf_is_air;
 
 		} else {
 			// SDF is not uniform, we'll need to compute it per voxel
 			return false;
 		}
-
-		all_sdf_is_air = all_sdf_is_air && sdf_is_air;
-		all_sdf_is_matter = all_sdf_is_matter && sdf_is_matter;
 	}
 
-	bool type_is_uniform = false;
 	if (type_output_buffer_index != -1) {
 		const math::Interval type_range = cache.state.get_range(type_output_buffer_index);
 		if (type_range.is_single_value()) {
 			out_buffer.fill(int(type_range.min), type_channel);
-			type_is_uniform = true;
 		} else {
 			// Types are not uniform, we'll need to compute them per voxel
 			return false;
@@ -779,7 +765,6 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	// Because currently our logic seems redundant and more complicated, since we also have to not request
 	// those outputs later if any other output isn't uniform. Instead, the graph runtime can figure out
 	// that stuff is constant.
-	bool single_texture_is_uniform = false;
 	if (runtime_ptr->single_texture_output_index != -1 && !sdf_is_air) {
 		const math::Interval index_range = cache.state.get_range(runtime_ptr->single_texture_output_buffer_index);
 		if (index_range.is_single_value()) {
@@ -790,7 +775,6 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 			const uint16_t encoded_indices = encode_indices_to_packed_u16(index, other_index, other_index, other_index);
 			out_buffer.fill(encoded_indices, VoxelBufferInternal::CHANNEL_INDICES);
 			out_buffer.fill(0x000f, VoxelBufferInternal::CHANNEL_WEIGHTS);
-			single_texture_is_uniform = true;
 		} else {
 			return false;
 		}
