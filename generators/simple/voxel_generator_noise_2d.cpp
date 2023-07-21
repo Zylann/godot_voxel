@@ -99,8 +99,6 @@ void VoxelGeneratorNoise2D::generate_series(Span<const float> positions_x, Span<
 		params = _parameters;
 	}
 
-	Result result;
-
 	ERR_FAIL_COND(params.noise.is_null());
 	Noise &noise = **params.noise;
 

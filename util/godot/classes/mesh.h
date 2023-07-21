@@ -15,11 +15,7 @@ namespace zylann {
 // Mesh utilities
 
 bool is_surface_triangulated(const Array &surface);
-bool is_mesh_empty(const Mesh &mesh);
 bool is_mesh_empty(Span<const Array> surfaces);
-
-// Generates a wireframe-mesh that highlights edges of a triangle-mesh where vertices are not shared
-Array generate_debug_seams_wireframe_surface(const Mesh &src_mesh, int surface_index);
 
 void scale_vec3_array(PackedVector3Array &array, float scale);
 void offset_vec3_array(PackedVector3Array &array, Vector3 offset);

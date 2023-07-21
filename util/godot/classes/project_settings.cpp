@@ -14,8 +14,15 @@ void add_custom_godot_project_setting(Variant::Type type, const char *name, Prop
 
 #elif defined(ZN_GODOT_EXTENSION)
 	ProjectSettings &ps = *ProjectSettings::get_singleton();
+
+	String name_str(name);
+
+	if (!ps.has_setting(name_str)) {
+		ps.set_setting(name_str, default_value);
+	}
+
 	Dictionary d;
-	d["name"] = String(name);
+	d["name"] = name_str;
 	d["type"] = type;
 	d["hint"] = hint;
 	d["hint_string"] = String(hint_string);

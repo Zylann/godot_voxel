@@ -8,6 +8,7 @@
 
 namespace zylann {
 
+// TODO Prefix with `ZN_`
 // Alternative to the default AABB editor which presents it as a minimum and maximum point
 class EditorPropertyAABBMinMax : public ZN_EditorProperty {
 	GDCLASS(EditorPropertyAABBMinMax, ZN_EditorProperty);

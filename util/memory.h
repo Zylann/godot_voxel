@@ -4,7 +4,7 @@
 #include <memory>
 
 // Default new and delete operators.
-#ifdef ZN_GODOT
+#if defined(ZN_GODOT)
 
 #include <core/os/memory.h>
 
@@ -16,14 +16,15 @@
 #define ZN_REALLOC(p, size) memrealloc(p, size)
 #define ZN_FREE(p) memfree(p)
 
-#else
+#elif defined(ZN_GODOT_EXTENSION)
 
-#define ZN_NEW(t) new t
-#define ZN_DELETE(t) delete t
-// TODO In GodotCpp, memnew and memdelete can't be used with any class, but the alloc/free funcs should be generic
-#define ZN_ALLOC(size) malloc(size)
-#define ZN_REALLOC(p, size) realloc(p, size)
-#define ZN_FREE(p) free(p)
+#include <godot_cpp/core/memory.hpp>
+
+#define ZN_NEW(t) memnew(t)
+#define ZN_DELETE(t) godot::memdelete(t)
+#define ZN_ALLOC(size) memalloc(size)
+#define ZN_REALLOC(p, size) memrealloc(p, size)
+#define ZN_FREE(p) memfree(p)
 
 #endif
 

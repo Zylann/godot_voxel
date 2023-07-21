@@ -62,10 +62,7 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 	ZN_ASSERT_RETURN_V(!has_block(bpos), nullptr);
 #endif
 	VoxelDataBlock &map_block = _blocks_map[bpos];
-	// TODO Clang complains the `move` prevents copy elision.
-	// But I don't want `VoxelDataBlock` to have copy... so what, should I add [expensive] copy construction just so
-	// clang is able to elide it?
-	map_block = std::move(VoxelDataBlock(buffer, _lod_index));
+	map_block = VoxelDataBlock(buffer, _lod_index);
 	return &map_block;
 }
 
@@ -130,7 +127,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 
 	if (block == nullptr) {
 		VoxelDataBlock &map_block = _blocks_map[bpos];
-		map_block = std::move(VoxelDataBlock(buffer, _lod_index));
+		map_block = VoxelDataBlock(buffer, _lod_index);
 		block = &map_block;
 
 	} else if (overwrite) {
@@ -157,7 +154,7 @@ VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
 
 	if (block == nullptr) {
 		VoxelDataBlock &map_block = _blocks_map[bpos];
-		map_block = std::move(VoxelDataBlock(_lod_index));
+		map_block = VoxelDataBlock(_lod_index);
 		block = &map_block;
 
 	} else if (overwrite) {

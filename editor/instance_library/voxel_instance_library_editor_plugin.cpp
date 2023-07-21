@@ -16,7 +16,11 @@
 
 namespace zylann::voxel {
 
-VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin() {
+VoxelInstanceLibraryEditorPlugin::VoxelInstanceLibraryEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelInstanceLibraryEditorPlugin::init() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
@@ -50,6 +54,8 @@ void VoxelInstanceLibraryEditorPlugin::_zn_edit(Object *p_object) {
 
 void VoxelInstanceLibraryEditorPlugin::_notification(int p_what) {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
+
 		Control *base_control = get_editor_interface()->get_base_control();
 		_inspector_plugin.instantiate();
 		_inspector_plugin->button_listener = this;

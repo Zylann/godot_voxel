@@ -65,8 +65,8 @@ void ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_exited() {
 
 void ZN_EditorPropertyTextChangeOnSubmit::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_line_edit_text_submitted"),
-			&ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_submitted);
+	ClassDB::bind_method(
+			D_METHOD("_on_line_edit_focus_entered"), &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_entered);
 	ClassDB::bind_method(D_METHOD("_on_line_edit_text_changed", "new_text"),
 			&ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_changed);
 	ClassDB::bind_method(D_METHOD("_on_line_edit_text_submitted", "text"),

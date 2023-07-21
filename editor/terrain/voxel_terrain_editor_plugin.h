@@ -32,18 +32,20 @@ protected:
 	void _notification(int p_what);
 
 private:
+	void init();
+
 	void set_node(VoxelNode *node);
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
 #if defined(ZN_GODOT)
 	void _on_terrain_tree_entered(Node *node);
-	void _on_terrain_tree_exited(Node *node);
+	void _on_terrain_tree_exited();
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
 	// This doubled down with the fact we can't use direct method pointers with `Callable`, hence the need to bind.
 	void _on_terrain_tree_entered(Object *node_o);
-	void _on_terrain_tree_exited(Object *node_o);
+	void _on_terrain_tree_exited();
 #endif
 
 	static void _bind_methods();

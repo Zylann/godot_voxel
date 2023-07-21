@@ -8,7 +8,11 @@
 
 namespace zylann::voxel {
 
-VoxelInstanceLibraryMultiMeshItemEditorPlugin::VoxelInstanceLibraryMultiMeshItemEditorPlugin() {
+VoxelInstanceLibraryMultiMeshItemEditorPlugin::VoxelInstanceLibraryMultiMeshItemEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelInstanceLibraryMultiMeshItemEditorPlugin::init() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_open_scene_dialog = memnew(EditorFileDialog);
@@ -46,6 +50,8 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_make_visible(bool visibl
 
 void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_notification(int p_what) {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
+
 		_inspector_plugin.instantiate();
 		_inspector_plugin->listener = this;
 		add_inspector_plugin(_inspector_plugin);

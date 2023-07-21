@@ -23,7 +23,11 @@ namespace zylann::voxel {
 
 using namespace pg;
 
-VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {
+VoxelGraphEditorPlugin::VoxelGraphEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelGraphEditorPlugin::init() {
 	// EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);
 	_graph_editor->set_custom_minimum_size(Size2(0, 300) * EDSCALE);
@@ -294,7 +298,10 @@ void VoxelGraphEditorPlugin::_on_generator_changed() {
 }
 
 void VoxelGraphEditorPlugin::_notification(int p_what) {
-	if (p_what == NOTIFICATION_EXIT_TREE) {
+	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
+
+	} else if (p_what == NOTIFICATION_EXIT_TREE) {
 		for (Ref<VoxelGraphNodeInspectorWrapper> &w : _node_wrappers) {
 			ERR_CONTINUE(w.is_null());
 			w->detach_from_graph_editor();

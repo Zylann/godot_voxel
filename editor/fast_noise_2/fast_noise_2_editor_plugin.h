@@ -12,11 +12,14 @@ class FastNoise2EditorPlugin : public EditorPlugin {
 public:
 	FastNoise2EditorPlugin();
 
-	virtual String get_name() const {
+	String get_name() const override {
 		return "FastNoise2";
 	}
 
 private:
+	void init();
+	void _notification(int p_what);
+
 	NoiseAnalysisWindow *_noise_analysis_window = nullptr;
 };
 

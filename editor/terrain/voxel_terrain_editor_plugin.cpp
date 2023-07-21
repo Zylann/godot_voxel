@@ -19,7 +19,11 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void VoxelTerrainEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(ZN_TTR("Terrain"));
 	menu_button->get_popup()->connect(
@@ -88,6 +92,8 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
+			init();
+
 			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
 			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
 			// No collision needed in editor, also it updates faster without
@@ -160,11 +166,11 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
 		_node->disconnect(
 				"tree_entered", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered));
-		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 #else
 // TODO GDX: Callable::bind() isn't implemented, can't use this signal
 // See https://github.com/godotengine/godot-cpp/issues/802
 #endif
+		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
@@ -178,12 +184,15 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 #ifdef ZN_GODOT
 		_node->connect("tree_entered",
 				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered).bind(_node));
-		_node->connect("tree_exited",
-				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited).bind(_node));
 #else
 // TODO GDX: Callable::bind() isn't implemented, can't use this signal
 // See https://github.com/godotengine/godot-cpp/issues/802
+// That means we can't take back the reference to the terrain if we reparented it, or switched between scene tabs, and
+// will cause errors. The user has to deselect the node and reselect it...
 #endif
+		// The real reason we use this signal is to invalidate the pointer when the object is destroyed.
+		// TODO Perhaps we should use an ObjectID instead?
+		_node->connect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 
@@ -313,9 +322,9 @@ void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Object *node_o) {
 }
 
 #if defined(ZN_GODOT)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Node *node) {
+void VoxelTerrainEditorPlugin::_on_terrain_tree_exited() {
 #elif defined(ZN_GODOT_EXTENSION)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_exited(Object *node_o) {
+void VoxelTerrainEditorPlugin::_on_terrain_tree_exited() {
 #endif
 	// If the node exited the tree because it was deleted, signals we connected should automatically disconnect.
 	_node = nullptr;
@@ -326,8 +335,7 @@ void VoxelTerrainEditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
 	ClassDB::bind_method(
 			D_METHOD("_on_terrain_tree_entered", "node"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
-	ClassDB::bind_method(
-			D_METHOD("_on_terrain_tree_exited", "node"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
+	ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
 #endif
 }
 

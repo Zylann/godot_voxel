@@ -32,6 +32,7 @@ protected:
 	void _zn_edit(Object *p_object) override;
 
 private:
+	void init();
 	void _notification(int p_what);
 
 	int try_get_selected_item_id();

@@ -83,7 +83,7 @@ jobs:
           SCONS_CACHE: /.scons_cache/
         run: |
           scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
-          cd bin
+          cd project/addons/zylann.voxel/bin
           dir
 
       # Make build available
@@ -91,5 +91,5 @@ jobs:
         #if: ${{ matrix.target == 'Editor' }}
         with:
           name: ${{matrix.executable_name}}
-          path: bin/${{matrix.executable_name}}
+          path: project/addons/zylann.voxel/bin/${{matrix.executable_name}}
 

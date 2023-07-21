@@ -9,7 +9,7 @@ import sys
 import common
 
 LIB_NAME = "libvoxel"
-BIN_FOLDER = "bin"
+BIN_FOLDER = "project/addons/zylann.voxel/bin"
 
 # TODO Enhancement: not sure how to provide this as a SCons option since we get our environment *by running GodotCpp*...
 #env_vars.Add(PathVariable("godot_cpp_path", "Path to the GodotCpp library source code", None, PathVariable.PathIsDir))

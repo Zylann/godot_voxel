@@ -14,6 +14,8 @@ namespace zylann {
 // We can workaround this by creating a dummy instance of `EditorPlugin` once and access `EditorInterface` from it. It
 // should work because `EditorPlugin` is not abstract, does nothing in its constructor, and `EditorInterface` is
 // internally a singleton, so we don't even need to add the plugin to the tree.
+// It also doesn't access `EditorNode`,
+// which is important due to this other ongoing problem: https://github.com/godotengine/godot-cpp/issues/1179
 float get_editor_scale() {
 	using namespace godot;
 

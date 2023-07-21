@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
@@ -21,6 +22,7 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	emit_changed();
 }
 
+#ifdef TOOLS_ENABLED
 // Generate tangents based on UVs (won't be as good as properly imported tangents)
 static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &positions,
 		const PackedVector3Array &normals, const PackedVector2Array &uvs, const PackedInt32Array &indices) {
@@ -56,6 +58,7 @@ static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &p
 
 	return tangents;
 }
+#endif
 
 static void add(Span<Vector3> vectors, Vector3 rhs) {
 	for (Vector3 &v : vectors) {
@@ -184,9 +187,8 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 			}
 		};
 
-		const bool tangents_empty = (tangents.size() == 0);
-
 #ifdef TOOLS_ENABLED
+		const bool tangents_empty = (tangents.size() == 0);
 		if (tangents_empty && bake_tangents) {
 			if (uvs.size() == 0) {
 				// TODO Provide context where the model is used, they can't always be named
@@ -342,7 +344,11 @@ bool VoxelBlockyModelMesh::is_empty() const {
 	if (_mesh.is_null()) {
 		return true;
 	}
-	return is_mesh_empty(**_mesh);
+	Ref<ArrayMesh> array_mesh = _mesh;
+	if (array_mesh.is_valid()) {
+		return is_mesh_empty(**array_mesh);
+	}
+	return false;
 }
 
 void VoxelBlockyModelMesh::set_mesh_ortho_rotation_index(int i) {

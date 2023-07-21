@@ -162,6 +162,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::update_attribute_editors() {
 #else
 		// TODO GDX: Callable::bind() isn't implemented, can't use this signal
 		// See https://github.com/godotengine/godot-cpp/issues/802
+		ZN_PRINT_ERROR("Callable::bind() cannot be used in GDExtension, can't select attribute value");
 #endif
 
 		// Make a copy so we can detect changes later. It should be cheap as attributes are small resources.

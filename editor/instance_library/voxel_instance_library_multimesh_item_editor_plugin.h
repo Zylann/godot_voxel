@@ -26,6 +26,7 @@ protected:
 	void _zn_make_visible(bool visible) override;
 
 private:
+	void init();
 	void _notification(int p_what);
 
 	void _on_open_scene_dialog_file_selected(String fpath);

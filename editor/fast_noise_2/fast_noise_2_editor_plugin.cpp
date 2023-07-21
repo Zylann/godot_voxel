@@ -1,6 +1,7 @@
 #include "fast_noise_2_editor_plugin.h"
 #include "../../util/godot/classes/editor_inspector_plugin.h"
 #include "../../util/godot/classes/editor_interface.h"
+#include "../../util/godot/classes/image_texture.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/noise/fast_noise_2.h"
@@ -164,7 +165,11 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FastNoise2EditorPlugin::FastNoise2EditorPlugin() {
+FastNoise2EditorPlugin::FastNoise2EditorPlugin() {}
+
+// TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
+// See https://github.com/godotengine/godot-cpp/issues/1179
+void FastNoise2EditorPlugin::init() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_noise_analysis_window = memnew(NoiseAnalysisWindow);
@@ -174,6 +179,12 @@ FastNoise2EditorPlugin::FastNoise2EditorPlugin() {
 	plugin.instantiate();
 	plugin->set_noise_analysis_window(_noise_analysis_window);
 	add_inspector_plugin(plugin);
+}
+
+void FastNoise2EditorPlugin::_notification(int p_what) {
+	if (p_what == NOTIFICATION_ENTER_TREE) {
+		init();
+	}
 }
 
 } // namespace zylann

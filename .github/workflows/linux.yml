@@ -19,7 +19,7 @@ jobs:
         include:
           # Just to check if building still works in that version
           - name: Editor debug build (4.0)
-            float: 32
+            precision: single
             target: editor
             dev_build: yes
             #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
@@ -27,8 +27,18 @@ jobs:
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.0"
 
+          # Just to check if building works in Godot master
+          - name: Editor debug build (master)
+            precision: single
+            target: editor
+            dev_build: yes
+            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
+            production: no
+            executable_name: godot.linuxbsd.editor.dev.x86_64
+            godot_base_branch: "master"
+
           - name: Editor debug build
-            float: 32
+            precision: single
             target: editor
             dev_build: yes
             #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
@@ -37,7 +47,7 @@ jobs:
             godot_base_branch: "4.1"
 
           - name: Editor build
-            float: 32
+            precision: single
             target: editor
             dev_build: no
             #dev_mode: no
@@ -46,7 +56,7 @@ jobs:
             godot_base_branch: "4.1"
 
           - name: Editor build with 64-bit floats
-            float: 64
+            precision: double
             target: editor
             dev_build: no
             #dev_mode: no
@@ -137,7 +147,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons -j2 verbose=yes warnings=extra werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} float=${{matrix.float}}
+          scons -j2 verbose=yes warnings=extra werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
       - uses: actions/upload-artifact@v3
