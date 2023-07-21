@@ -55,11 +55,9 @@ String get_missing_uniform_names(Span<const StringName> expected_uniforms, const
 
 		if (!found) {
 			if (missing_uniforms.length() > 0) {
-				// TODO GDX: `String::operator+=` is missing
-				missing_uniforms = missing_uniforms + ", ";
+				missing_uniforms += ", ";
 			}
-			// TODO GDX: `String::operator+=` is missing
-			missing_uniforms = missing_uniforms + name;
+			missing_uniforms += name;
 		}
 	}
 
