@@ -198,7 +198,6 @@ std::shared_ptr<ComputeShader> compile_block_rendering_compute_shader(
 	{
 		source_text += "\tgenerate(wpos";
 		for (unsigned int output_index = 0; output_index < shader_data.outputs.size(); ++output_index) {
-			const VoxelGenerator::ShaderOutput &output = shader_data.outputs[output_index];
 			// TODO Perhaps we should be able to pack outputs instead of always using floats?
 			// TODO Maybe interleaved output would be more performant due to data locality?
 			source_text += String(", u_out.values[out_index + volume * {0}]").format(varray(output_index));
