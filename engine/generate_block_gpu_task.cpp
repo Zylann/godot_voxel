@@ -235,7 +235,7 @@ static void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> s
 	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
 	const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
 
-	switch (dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF)) {
+	switch (depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT: {
 			Span<int8_t> sd_data = get_temporary_conversion_memory_tls<int8_t>(src_data_f.size());
 			for (unsigned int i = 0; i < src_data_f.size(); ++i) {
@@ -311,7 +311,7 @@ static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> 
 	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
 	std::vector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
 
-	switch (channel_index) {
+	switch (depth) {
 		case VoxelBufferInternal::DEPTH_8_BIT: {
 			dst.copy_from(
 					cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos, channel_index);
