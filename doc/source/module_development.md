@@ -453,7 +453,7 @@ This module can compile as a GDExtension library. This allows to distribute it a
 
 To compile the library:
 - Download a copy of [GodotCpp](https://github.com/godotengine/godot-cpp)
-- In the voxel module's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script.
+- In the voxel module's root directory, write the path to GodotCpp at the beginning of the `SConstruct` script, or set the environment variable from command line.
 - Open the same kind of console you would use to compile Godot, change directory to the voxel module's root folder, and run SCons there. It will use the `SConstruct` file instead of `SCsub`. The library will be saved under a `bin/` folder.
 
 Example of build command on Windows (unoptimized debug build for use in editor):
@@ -461,16 +461,7 @@ Example of build command on Windows (unoptimized debug build for use in editor):
 scons platform=windows target=debug -j4
 ```
 
-Example of `voxel.gdextension` file for Godot to detect the library (Windows 64-bits only):
-```
-[configuration]
+The built library will be placed inside the `project/` folder, which contains a Godot 4 project. It is then possible to open it to test the extension. Note that it might not be setup for all platforms yet (so far Windows 64-bits is setup).
 
-entry_symbol = "voxel_library_init"
-
-[libraries]
-
-windows.debug.x86_64 = "res://addons/zylann.voxel/bin/libvoxel.windows.tools.debug.x86_64.dll"
-```
-
-There are a number of issues to address before this target can be usable. The module wasn't tested at all at the moment. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
+There are a number of issues to address before this target can be usable. The extension is able to run, but there are known issues. Check the [issue tracker](https://github.com/Zylann/godot_voxel/issues/333) for work in progress.
 
