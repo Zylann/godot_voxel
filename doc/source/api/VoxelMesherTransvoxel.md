@@ -1,6 +1,6 @@
 # VoxelMesherTransvoxel
 
-Inherits: [VoxelMesher](VoxelMesher.md)
+Inherits: [VoxelMesher](api/VoxelMesher.md)
 
 
 Implements isosurface generation (smooth voxels) using the [Transvoxel](https://transvoxel.org/) algorithm.
@@ -21,9 +21,9 @@ Type     | Name                                                                 
 ## Methods: 
 
 
-Return                                                                            | Signature                                                                                                                                                                         
---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)  | [build_transition_mesh](#i_build_transition_mesh) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction )  
+Return                                                                            | Signature                                                                                                                                                                             
+--------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)  | [build_transition_mesh](#i_build_transition_mesh) ( [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction )  
 <p></p>
 
 ## Enumerations: 
@@ -56,7 +56,7 @@ enum **TexturingMode**:
 
 ## Method Descriptions
 
-- [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
+- [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

@@ -1,6 +1,6 @@
 # VoxelInstanceLibraryMultiMeshItem
 
-Inherits: [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)
+Inherits: [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md)
 
 
 
@@ -19,6 +19,7 @@ Type           | Name                                       | Default
 `Mesh`         | [mesh_lod1](#i_mesh_lod1)                  |         
 `Mesh`         | [mesh_lod2](#i_mesh_lod2)                  |         
 `Mesh`         | [mesh_lod3](#i_mesh_lod3)                  |         
+`int`          | [render_layer](#i_render_layer)            | 1       
 `PackedScene`  | [scene](#i_scene)                          |         
 <p></p>
 
@@ -65,6 +66,9 @@ Return                                                                  | Signat
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh_lod3"></span> **mesh_lod3**
 
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_render_layer"></span> **render_layer** = 1
+
+
 - [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
 
@@ -79,4 +83,4 @@ Return                                                                  | Signat
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

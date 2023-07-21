@@ -1,6 +1,6 @@
 # VoxelMesherCubes
 
-Inherits: [VoxelMesher](VoxelMesher.md)
+Inherits: [VoxelMesher](api/VoxelMesher.md)
 
 
 
@@ -52,7 +52,7 @@ enum **ColorMode**:
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_opaque_material"></span> **opaque_material**
 
 
-- [VoxelColorPalette](VoxelColorPalette.md)<span id="i_palette"></span> **palette**
+- [VoxelColorPalette](api/VoxelColorPalette.md)<span id="i_palette"></span> **palette**
 
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_transparent_material"></span> **transparent_material**
@@ -66,4 +66,4 @@ enum **ColorMode**:
 - [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

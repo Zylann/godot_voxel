@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelLodTerrain" inherits="VoxelNode" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -239,12 +239,16 @@
 			This is the resolution at which normalmaps will begin with, at the LOD level defined in [member normalmap_begin_lod_index]. Resolutions will double at each LOD level, until they reach [member normalmap_tile_resolution_max].
 		</member>
 		<member name="normalmap_use_gpu" type="bool" setter="set_normalmap_use_gpu" getter="get_normalmap_use_gpu" default="false">
+			Enables GPU detail normalmaps generation, which can speed it up. This is only valid for generators that support it. Vulkan is required.
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Sets wether the [member generator] and the [member stream] will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
 		</member>
 		<member name="threaded_update_enabled" type="bool" setter="set_threaded_update_enabled" getter="is_threaded_update_enabled" default="false">
 			When enabled, this node will run a large part of its update cycle in a separate thread. Otherwise, it will run on the main thread.
+		</member>
+		<member name="use_gpu_generation" type="bool" setter="set_generator_use_gpu" getter="get_generator_use_gpu" default="false">
+			Enables GPU block generation, which can speed it up. This is only valid for generators that support it. Vulkan is required.
 		</member>
 		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="512">
 			Maximum distance where terrain will load around viewers. If your terrain size is finite (like for a planet) and you want to keep it in view, you may want to set this value to a very large number. This is mainly useful for infinite terrains.
@@ -276,7 +280,9 @@
 		</constant>
 		<constant name="DEBUG_DRAW_EDITED_BLOCKS" value="5" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="6" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_MODIFIER_BOUNDS" value="6" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="7" enum="DebugDrawFlag">
 		</constant>
 	</constants>
 </class>

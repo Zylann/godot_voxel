@@ -1,6 +1,6 @@
 # VoxelModifierMesh
 
-Inherits: [VoxelModifier](VoxelModifier.md)
+Inherits: [VoxelModifier](api/VoxelModifier.md)
 
 
 
@@ -19,7 +19,7 @@ Type            | Name                     | Default
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_isolevel"></span> **isolevel** = 0.0
 
 
-- [VoxelMeshSDF](VoxelMeshSDF.md)<span id="i_mesh_sdf"></span> **mesh_sdf**
+- [VoxelMeshSDF](api/VoxelMeshSDF.md)<span id="i_mesh_sdf"></span> **mesh_sdf**
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

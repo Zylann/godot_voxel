@@ -1,6 +1,6 @@
 # VoxelGeneratorGraph
 
-Inherits: [VoxelGenerator](VoxelGenerator.md)
+Inherits: [VoxelGenerator](api/VoxelGenerator.md)
 
 
 Graph-based voxel generator.
@@ -40,7 +40,7 @@ Return                                                                          
 [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)        | [debug_analyze_range](#i_debug_analyze_range) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) const                                                                                                                                                      
 [void](#)                                                                           | [debug_load_waves_preset](#i_debug_load_waves_preset) ( )                                                                                                                                                                                                                                                                                                                               
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)            | [debug_measure_microseconds_per_voxel](#i_debug_measure_microseconds_per_voxel) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) use_singular_queries )                                                                                                                                                                                                         
-[VoxelGraphFunction](VoxelGraphFunction.md)                                         | [get_main_function](#i_get_main_function) ( ) const                                                                                                                                                                                                                                                                                                                                     
+[VoxelGraphFunction](api/VoxelGraphFunction.md)                                     | [get_main_function](#i_get_main_function) ( ) const                                                                                                                                                                                                                                                                                                                                     
 <p></p>
 
 ## Signals: 
@@ -91,7 +91,7 @@ Bakes a spherical normalmap using SDF output produced by the generator, if any. 
 
 `strength`: strength of produced normals, may default to 1.0.
 
-Note: an alternative is to use distance normals feature with [VoxelLodTerrain](VoxelLodTerrain.md).
+Note: an alternative is to use distance normals feature with [VoxelLodTerrain](api/VoxelLodTerrain.md).
 
 - [void](#)<span id="i_clear"></span> **clear**( ) 
 
@@ -132,7 +132,7 @@ The node ID will be -1 if the error is not about a particular node.
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_debug_measure_microseconds_per_voxel"></span> **debug_measure_microseconds_per_voxel**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) use_singular_queries ) 
 
 
-- [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_get_main_function"></span> **get_main_function**( ) 
+- [VoxelGraphFunction](api/VoxelGraphFunction.md)<span id="i_get_main_function"></span> **get_main_function**( ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

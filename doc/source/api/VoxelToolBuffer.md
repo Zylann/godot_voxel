@@ -1,8 +1,8 @@
 # VoxelToolBuffer
 
-Inherits: [VoxelTool](VoxelTool.md)
+Inherits: [VoxelTool](api/VoxelTool.md)
 
 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

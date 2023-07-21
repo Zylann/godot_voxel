@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceLibraryMultiMeshItem" inherits="VoxelInstanceLibraryItem" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelInstanceLibraryMultiMeshItem" inherits="VoxelInstanceLibraryItem" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -45,6 +45,8 @@
 		<member name="mesh_lod2" type="Mesh" setter="_set_mesh_lod2" getter="_get_mesh_lod2">
 		</member>
 		<member name="mesh_lod3" type="Mesh" setter="_set_mesh_lod3" getter="_get_mesh_lod3">
+		</member>
+		<member name="render_layer" type="int" setter="set_render_layer" getter="get_render_layer" default="1">
 		</member>
 		<member name="scene" type="PackedScene" setter="set_scene" getter="get_scene">
 		</member>

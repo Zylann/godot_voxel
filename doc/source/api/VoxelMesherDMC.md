@@ -1,6 +1,6 @@
 # VoxelMesherDMC
 
-Inherits: [VoxelMesher](VoxelMesher.md)
+Inherits: [VoxelMesher](api/VoxelMesher.md)
 
 
 Implements isosurface generation (smooth voxels) using [Dual Marching Cubes](https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/).
@@ -72,4 +72,4 @@ enum **SeamMode**:
 - [void](#)<span id="i_set_geometric_error"></span> **set_geometric_error**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) error ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

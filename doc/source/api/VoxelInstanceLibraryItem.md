@@ -3,7 +3,7 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Settings for a model that can be used by [VoxelInstancer](VoxelInstancer.md)
+Settings for a model that can be used by [VoxelInstancer](api/VoxelInstancer.md)
 
 ## Properties: 
 
@@ -18,7 +18,7 @@ Type                      | Name                         | Default
 
 ## Property Descriptions
 
-- [VoxelInstanceGenerator](VoxelInstanceGenerator.md)<span id="i_generator"></span> **generator**
+- [VoxelInstanceGenerator](api/VoxelInstanceGenerator.md)<span id="i_generator"></span> **generator**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_index"></span> **lod_index** = 0
@@ -30,4 +30,4 @@ Type                      | Name                         | Default
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_persistent"></span> **persistent** = false
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

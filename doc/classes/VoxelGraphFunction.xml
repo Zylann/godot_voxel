@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGraphFunction" inherits="Resource" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelGraphFunction" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Graph for generating or processing voxels.
 	</brief_description>
@@ -38,9 +38,9 @@
 		</method>
 		<method name="create_function_node">
 			<return type="int" />
-			<param index="0" name="position" type="VoxelGraphFunction" />
-			<param index="1" name="id" type="Vector2" />
-			<param index="2" name="_unnamed_arg2" type="int" default="0" />
+			<param index="0" name="function" type="VoxelGraphFunction" />
+			<param index="1" name="position" type="Vector2" />
+			<param index="2" name="id" type="int" default="0" />
 			<description>
 				Creates a node based on an existing graph (creates a "sub-graph instance").
 			</description>

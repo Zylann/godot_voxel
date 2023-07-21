@@ -3,11 +3,11 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Contains a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
+Contains a list of models that can be used by [VoxelMesherBlocky](api/VoxelMesherBlocky.md).
 
 ## Description: 
 
-Models used by [VoxelMesherBlocky](VoxelMesherBlocky.md) must be baked before they can be used effifiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
+Models used by [VoxelMesherBlocky](api/VoxelMesherBlocky.md) must be baked before they can be used effifiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
 
 ## Properties: 
 
@@ -48,4 +48,4 @@ Gets a list of all distinct materials found in all models of the library.
 
 Note, if at least one non-empty model has no material, there will be one `null` entry in this list to represent "The default material".
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

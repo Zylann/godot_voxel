@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTerrain" inherits="VoxelNode" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelTerrain" inherits="VoxelNode" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using constant level of detail.
 	</brief_description>
@@ -138,6 +138,9 @@
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Makes the terrain appear in the editor.
 			Important: this option will turn off automatically if you setup a script world generator. Modifying scripts while they are in use by threads causes undefined behaviors. You can still turn on this option if you need a preview, but it is strongly advised to turn it back off and wait until all generation has finished before you edit the script again.
+		</member>
+		<member name="use_gpu_generation" type="bool" setter="set_generator_use_gpu" getter="get_generator_use_gpu" default="false">
+			Enables GPU block generation, which can speed it up. This is only valid for generators that support it. Vulkan is required.
 		</member>
 	</members>
 	<signals>

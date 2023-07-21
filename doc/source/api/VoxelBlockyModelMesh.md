@@ -1,13 +1,13 @@
 # VoxelBlockyModelMesh
 
-Inherits: [VoxelBlockyModel](VoxelBlockyModel.md)
+Inherits: [VoxelBlockyModel](api/VoxelBlockyModel.md)
 
 
 Generates a model based on a custom mesh.
 
 ## Description: 
 
-[VoxelMesherBlocky](VoxelMesherBlocky.md) does not require models to be cubes. Ultimately, model visuals are all meshes. This is the most versatile option to make a model. The workflow is to make these models in a 3D editor such as Blender, making sure they are confined in a box going from (0,0) to (1,1). Textures are assigned with classic UV-mapping.
+[VoxelMesherBlocky](api/VoxelMesherBlocky.md) does not require models to be cubes. Ultimately, model visuals are all meshes. This is the most versatile option to make a model. The workflow is to make these models in a 3D editor such as Blender, making sure they are confined in a box going from (0,0) to (1,1). Textures are assigned with classic UV-mapping.
 
 ## Properties: 
 
@@ -29,4 +29,4 @@ Orthogonal rotation applied to the mesh when baking. Values are taken from the s
 
 ([GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) provides a conversion method from [Basis](https://docs.godotengine.org/en/stable/classes/class_basis.html), unfortunately it is not a static method so it requires a [GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) instance to exist. A helper method could be added in the future if requested)
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

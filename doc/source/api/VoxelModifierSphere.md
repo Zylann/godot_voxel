@@ -1,6 +1,6 @@
 # VoxelModifierSphere
 
-Inherits: [VoxelModifier](VoxelModifier.md)
+Inherits: [VoxelModifier](api/VoxelModifier.md)
 
 
 
@@ -18,4 +18,4 @@ Type     | Name                 | Default
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_radius"></span> **radius** = 10.0
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

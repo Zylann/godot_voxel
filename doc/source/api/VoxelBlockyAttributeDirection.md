@@ -1,6 +1,6 @@
 # VoxelBlockyAttributeDirection
 
-Inherits: [VoxelBlockyAttribute](VoxelBlockyAttribute.md)
+Inherits: [VoxelBlockyAttribute](api/VoxelBlockyAttribute.md)
 
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
@@ -45,4 +45,4 @@ enum **Direction**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_from_vec3"></span> **from_vec3**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) v ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

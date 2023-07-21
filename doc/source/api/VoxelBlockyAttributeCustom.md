@@ -1,6 +1,6 @@
 # VoxelBlockyAttributeCustom
 
-Inherits: [VoxelBlockyAttribute](VoxelBlockyAttribute.md)
+Inherits: [VoxelBlockyAttribute](api/VoxelBlockyAttribute.md)
 
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
@@ -40,4 +40,4 @@ Return     | Signature
 - [void](#)<span id="i_set_value_name"></span> **set_value_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) value_name ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

@@ -1,6 +1,6 @@
 # VoxelTerrain
 
-Inherits: [VoxelNode](VoxelNode.md)
+Inherits: [VoxelNode](api/VoxelNode.md)
 
 
 Voxel volume using constant level of detail.
@@ -22,6 +22,7 @@ Type        | Name                                                              
 `int`       | [max_view_distance](#i_max_view_distance)                                | 128                                                                                   
 `int`       | [mesh_block_size](#i_mesh_block_size)                                    | 16                                                                                    
 `bool`      | [run_stream_in_editor](#i_run_stream_in_editor)                          | true                                                                                  
+`bool`      | [use_gpu_generation](#i_use_gpu_generation)                              | false                                                                                 
 <p></p>
 
 ## Methods: 
@@ -30,16 +31,16 @@ Type        | Name                                                              
 Return                                                                                                              | Signature                                                                                                                                                                                                                                                                    
 ------------------------------------------------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [void](#)                                                                                                           | [_on_area_edited](#i__on_area_edited) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) virtual                                       
-[void](#)                                                                                                           | [_on_data_block_entered](#i__on_data_block_entered) ( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) virtual                                                                                                                                                   
+[void](#)                                                                                                           | [_on_data_block_entered](#i__on_data_block_entered) ( [VoxelDataBlockEnterInfo](api/VoxelDataBlockEnterInfo.md) info ) virtual                                                                                                                                               
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)                                      | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) const                                                                                                                             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                                                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                                                      
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)                                  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                                                
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)                      | [get_viewer_network_peer_ids_in_area](#i_get_viewer_network_peer_ids_in_area) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) const 
-[VoxelTool](VoxelTool.md)                                                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                      
+[VoxelTool](api/VoxelTool.md)                                                                                       | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                      
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [has_data_block](#i_has_data_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position ) const                                                                                                                                  
 [void](#)                                                                                                           | [save_block](#i_save_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position )                                                                                                                                                      
 [VoxelSaveCompletionTracker](https://docs.godotengine.org/en/stable/classes/class_voxelsavecompletiontracker.html)  | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                                          
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [try_set_block_data](#i_try_set_block_data) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels )                                                                                                
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [try_set_block_data](#i_try_set_block_data) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](api/VoxelBuffer.md) voxels )                                                                                            
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)                                      | [voxel_to_data_block](#i_voxel_to_data_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) const                                                                                                                               
 <p></p>
 
@@ -87,16 +88,16 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 
 Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 
-Note 1: you also need [VoxelViewer](VoxelViewer.md) to request collisions, otherwise they won't generate.
+Note 1: you also need [VoxelViewer](api/VoxelViewer.md) to request collisions, otherwise they won't generate.
 
-Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](VoxelBoxMover.md) which may perform better in blocky worlds.
+Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](api/VoxelBoxMover.md) which may perform better in blocky worlds.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material_override"></span> **material_override**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_max_view_distance"></span> **max_view_distance** = 128
 
-Sets the maximum distance this terrain can support. If a [VoxelViewer](VoxelViewer.md) requests more, it will be clamped.
+Sets the maximum distance this terrain can support. If a [VoxelViewer](api/VoxelViewer.md) requests more, it will be clamped.
 
 Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 
@@ -109,12 +110,16 @@ Makes the terrain appear in the editor.
 
 Important: this option will turn off automatically if you setup a script world generator. Modifying scripts while they are in use by threads causes undefined behaviors. You can still turn on this option if you need a preview, but it is strongly advised to turn it back off and wait until all generation has finished before you edit the script again.
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_gpu_generation"></span> **use_gpu_generation** = false
+
+Enables GPU block generation, which can speed it up. This is only valid for generators that support it. Vulkan is required.
+
 ## Method Descriptions
 
 - [void](#)<span id="i__on_area_edited"></span> **_on_area_edited**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) 
 
 
-- [void](#)<span id="i__on_data_block_entered"></span> **_on_data_block_entered**( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) 
+- [void](#)<span id="i__on_data_block_entered"></span> **_on_data_block_entered**( [VoxelDataBlockEnterInfo](api/VoxelDataBlockEnterInfo.md) info ) 
 
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_data_block_to_voxel"></span> **data_block_to_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) 
@@ -148,9 +153,9 @@ The returned dictionary has the following structure:
 - [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)<span id="i_get_viewer_network_peer_ids_in_area"></span> **get_viewer_network_peer_ids_in_area**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) 
 
 
-- [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
+- [VoxelTool](api/VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Creates an instance of [VoxelTool](VoxelTool.md) bound to this node, to access voxels and edition methods.
+Creates an instance of [VoxelTool](api/VoxelTool.md) bound to this node, to access voxels and edition methods.
 
 You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 
@@ -177,10 +182,10 @@ Note 2: this will only have an effect if the stream setup on this terrain suppor
 
 Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_try_set_block_data"></span> **try_set_block_data**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels ) 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_try_set_block_data"></span> **try_set_block_data**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](api/VoxelBuffer.md) voxels ) 
 
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

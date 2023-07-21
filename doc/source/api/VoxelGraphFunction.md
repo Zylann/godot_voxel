@@ -9,7 +9,7 @@ Graph for generating or processing voxels.
 
 Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
 
-Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
+Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md).
 
 ## Properties: 
 
@@ -28,7 +28,7 @@ Return                                                                          
 [void](#)                                                                                       | [add_connection](#i_add_connection) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index )        
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [can_connect](#i_can_connect) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_port_index, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_port_index ) const        
 [void](#)                                                                                       | [clear](#i_clear) ( )                                                                                                                                                                                                                                                                                                                                                                       
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_function_node](#i_create_function_node) ( [VoxelGraphFunction](VoxelGraphFunction.md) position, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg2=0 )                                                                                                             
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_function_node](#i_create_function_node) ( [VoxelGraphFunction](api/VoxelGraphFunction.md) function, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                              
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [create_node](#i_create_node) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 )                                                                                                            
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [find_node_by_name](#i_find_node_by_name) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) name ) const                                                                                                                                                                                                                                                 
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                        | [get_connections](#i_get_connections) ( ) const                                                                                                                                                                                                                                                                                                                                             
@@ -144,7 +144,7 @@ Tests if two ports can be connected together.
 
 Removes all nodes from the graph. Input and output definitions will not be cleared.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_function_node"></span> **create_function_node**( [VoxelGraphFunction](VoxelGraphFunction.md) position, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg2=0 ) 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_create_function_node"></span> **create_function_node**( [VoxelGraphFunction](api/VoxelGraphFunction.md) function, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id=0 ) 
 
 Creates a node based on an existing graph (creates a "sub-graph instance").
 
@@ -234,4 +234,4 @@ Sets a custom name for a node.
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

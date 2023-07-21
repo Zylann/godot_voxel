@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyTypeLibrary" inherits="VoxelBlockyLibraryBase" is_experimental="true" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyTypeLibrary" inherits="VoxelBlockyLibraryBase" is_experimental="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -63,6 +63,8 @@
 		</method>
 	</methods>
 	<members>
+		<member name="_id_map_data" type="PackedStringArray" setter="_set_id_map_data" getter="_get_id_map_data" default="PackedStringArray()">
+		</member>
 		<member name="types" type="VoxelBlockyType[]" setter="set_types" getter="get_types" default="[]">
 		</member>
 	</members>

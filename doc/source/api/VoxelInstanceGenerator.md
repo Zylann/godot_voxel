@@ -7,9 +7,9 @@ Decides where to spawn instances on top of a voxel surface.
 
 ## Description: 
 
-Generates the necessary information to spawn instances on top of a voxel surface. This may be used by a [VoxelInstancer](VoxelInstancer.md).
+Generates the necessary information to spawn instances on top of a voxel surface. This may be used by a [VoxelInstancer](api/VoxelInstancer.md).
 
-Note: to generate voxels, see [VoxelGenerator](VoxelGenerator.md).
+Note: to generate voxels, see [VoxelGenerator](api/VoxelGenerator.md).
 
 ## Properties: 
 
@@ -138,4 +138,4 @@ If 1, they will completely align with whichever direction is considered "up".
 
 This depends on member VoxelInstancer.up_node.
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

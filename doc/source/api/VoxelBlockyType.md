@@ -20,10 +20,10 @@ Type                      | Name                                             | D
 ## Methods: 
 
 
-Return                                           | Signature                                                                                                                                                                                    
------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[VoxelBlockyAttribute](VoxelBlockyAttribute.md)  | [get_rotation_attribute](#i_get_rotation_attribute) ( ) const                                                                                                                                
-[void](#)                                        | [set_variant_model](#i_set_variant_model) ( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 )  
+Return                                               | Signature                                                                                                                                                                                        
+---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[VoxelBlockyAttribute](api/VoxelBlockyAttribute.md)  | [get_rotation_attribute](#i_get_rotation_attribute) ( ) const                                                                                                                                    
+[void](#)                                            | [set_variant_model](#i_set_variant_model) ( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](api/VoxelBlockyModel.md) _unnamed_arg1 )  
 <p></p>
 
 ## Constants: 
@@ -38,7 +38,7 @@ Return                                           | Signature
 - [VoxelBlockyAttribute[]](https://docs.godotengine.org/en/stable/classes/class_voxelblockyattribute[].html)<span id="i_attributes"></span> **attributes** = []
 
 
-- [VoxelBlockyModel](VoxelBlockyModel.md)<span id="i_base_model"></span> **base_model**
+- [VoxelBlockyModel](api/VoxelBlockyModel.md)<span id="i_base_model"></span> **base_model**
 
 
 - [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html)<span id="i_unique_name"></span> **unique_name** = &"unnamed"
@@ -46,10 +46,10 @@ Return                                           | Signature
 
 ## Method Descriptions
 
-- [VoxelBlockyAttribute](VoxelBlockyAttribute.md)<span id="i_get_rotation_attribute"></span> **get_rotation_attribute**( ) 
+- [VoxelBlockyAttribute](api/VoxelBlockyAttribute.md)<span id="i_get_rotation_attribute"></span> **get_rotation_attribute**( ) 
 
 
-- [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 ) 
+- [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](api/VoxelBlockyModel.md) _unnamed_arg1 ) 
 
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_

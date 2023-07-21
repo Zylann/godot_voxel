@@ -7,7 +7,7 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 ## Description: 
 
-Low-level utility to save and load the data within a [VoxelBuffer](VoxelBuffer.md). This can be useful to send data over the network, or to store it in a file.
+Low-level utility to save and load the data within a [VoxelBuffer](api/VoxelBuffer.md). This can be useful to send data over the network, or to store it in a file.
 
 
 
@@ -57,30 +57,30 @@ VoxelBlockSerializer.deserialize_from_stream_peer(stream_peer_buffer, voxels, si
 ## Methods: 
 
 
-Return                                                                                        | Signature                                                                                                                                                                                                                                                                                                                                                                    
---------------------------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[void](#)                                                                                     | [deserialize_from_byte_array](#i_deserialize_from_byte_array) ( [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html) bytes, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static                                                                   
-[void](#)                                                                                     | [deserialize_from_stream_peer](#i_deserialize_from_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) size, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static 
-[PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)  | [serialize_to_byte_array](#i_serialize_to_byte_array) ( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                                                                                                                 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                          | [serialize_to_stream_peer](#i_serialize_to_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                      
+Return                                                                                        | Signature                                                                                                                                                                                                                                                                                                                                                                        
+--------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                                                                                     | [deserialize_from_byte_array](#i_deserialize_from_byte_array) ( [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html) bytes, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static                                                                   
+[void](#)                                                                                     | [deserialize_from_stream_peer](#i_deserialize_from_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) size, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) static 
+[PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)  | [serialize_to_byte_array](#i_serialize_to_byte_array) ( [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                                                                                                                 
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                          | [serialize_to_stream_peer](#i_serialize_to_stream_peer) ( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) static                                                                                      
 <p></p>
 
 ## Method Descriptions
 
-- [void](#)<span id="i_deserialize_from_byte_array"></span> **deserialize_from_byte_array**( [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html) bytes, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) 
+- [void](#)<span id="i_deserialize_from_byte_array"></span> **deserialize_from_byte_array**( [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html) bytes, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) 
 
-Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html).
+Reads the data of a [VoxelBuffer](api/VoxelBuffer.md) from a [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html).
 
-- [void](#)<span id="i_deserialize_from_stream_peer"></span> **deserialize_from_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) size, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) 
+- [void](#)<span id="i_deserialize_from_stream_peer"></span> **deserialize_from_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) size, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) decompress ) 
 
-Reads the data of a [VoxelBuffer](VoxelBuffer.md) from a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). You must provide the number of bytes to read.
+Reads the data of a [VoxelBuffer](api/VoxelBuffer.md) from a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). You must provide the number of bytes to read.
 
-- [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)<span id="i_serialize_to_byte_array"></span> **serialize_to_byte_array**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
+- [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html)<span id="i_serialize_to_byte_array"></span> **serialize_to_byte_array**( [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
 
-Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html).
+Stores the data of a [VoxelBuffer](api/VoxelBuffer.md) into a [PackedByteArray](https://docs.godotengine.org/en/stable/classes/class_packedbytearray.html).
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize_to_stream_peer"></span> **serialize_to_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_serialize_to_stream_peer"></span> **serialize_to_stream_peer**( [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html) peer, [VoxelBuffer](api/VoxelBuffer.md) voxel_buffer, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) compress ) 
 
-Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
+Stores the data of a [VoxelBuffer](api/VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Jun 18, 2023_
+_Generated on Jul 21, 2023_
