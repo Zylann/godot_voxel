@@ -31,6 +31,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added helper function to convert an image into a 1-voxel thick "sprite mesh"
     - `VoxelInstanceLibrary`:
         - Added `get_all_item_ids()` to allow iterating over all items of a library
+    - `VoxelLibraryMultiMeshItem `:
+        - Added `render_layer` property (thanks to m4nu3lf)
     - `VoxelLodTerrain`:
         - Added debug drawing for modifier bounds
     - `VoxelVoxLoader`:
