@@ -220,7 +220,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 ]
                 table.append(row)
 
-            out += make_table(table)
+            out += markdown.make_table(table)
             out += "\n\n"
     
     # Signals
