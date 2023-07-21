@@ -78,6 +78,7 @@ bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_property(Object
 		"collision_mask", //
 		"collision_shapes", //
 		"material_override", //
+		"render_layer", //
 		"mesh", //
 		"mesh_lod1", //
 		"mesh_lod2", //

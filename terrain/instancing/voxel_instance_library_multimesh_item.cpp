@@ -72,6 +72,20 @@ Ref<Mesh> VoxelInstanceLibraryMultiMeshItem::get_mesh(int mesh_lod_index) const 
 	return settings.mesh_lods[mesh_lod_index];
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_render_layer(int render_layer) {
+	Settings &settings = _manual_settings;
+	if (settings.render_layer == render_layer) {
+		return;
+	}
+	settings.render_layer = render_layer;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+int VoxelInstanceLibraryMultiMeshItem::get_render_layer() const {
+	const Settings &settings = _manual_settings;
+	return settings.render_layer;
+}
+
 void VoxelInstanceLibraryMultiMeshItem::set_material_override(Ref<Material> material) {
 	Settings &settings = _manual_settings;
 	if (material == settings.material_override) {
@@ -142,6 +156,8 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 
 		p_list->push_back(PropertyInfo(Variant::OBJECT, "scene_material_override", PROPERTY_HINT_RESOURCE_TYPE,
 				Material::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_render_layer", PROPERTY_HINT_LAYERS_3D_RENDER, "",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES,
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
@@ -172,6 +188,10 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 		}
 		if (property_name == "scene_mesh_lod3") {
 			r_ret = _scene_settings.mesh_lods[3];
+			return true;
+		}
+		if (property_name == "scene_render_layer") {
+			r_ret = _scene_settings.render_layer;
 			return true;
 		}
 		if (property_name == "scene_material_override") {
@@ -257,6 +277,7 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 			const unsigned int lod_index = L::get_lod_index_from_name(mi->get_name());
 			settings.mesh_lods[lod_index] = mi->get_mesh();
 			settings.mesh_lod_count = math::max(lod_index + 1, settings.mesh_lod_count);
+			settings.render_layer = mi->get_layer_mask();
 			settings.material_override = mi->get_material_override();
 			settings.shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
 		}
@@ -324,6 +345,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 	}
 	a.push_back(settings.mesh_lod_count);
 	a.push_back(settings.material_override);
+	a.push_back(settings.render_layer);
 	a.push_back(settings.shadow_casting_setting);
 	a.push_back(settings.collision_layer);
 	a.push_back(settings.collision_mask);
@@ -340,6 +362,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	}
 	settings.mesh_lod_count = a[ai++];
 	settings.material_override = a[ai++];
+	settings.render_layer = a[ai++];
 	settings.shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
 	settings.collision_layer = a[ai++];
 	settings.collision_mask = a[ai++];
@@ -372,6 +395,10 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_get_mesh_lod1"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod1);
 	ClassDB::bind_method(D_METHOD("_get_mesh_lod2"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod2);
 	ClassDB::bind_method(D_METHOD("_get_mesh_lod3"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod3);
+
+	ClassDB::bind_method(
+			D_METHOD("set_render_layer", "render_layer"), &VoxelInstanceLibraryMultiMeshItem::set_render_layer);
+	ClassDB::bind_method(D_METHOD("get_render_layer"), &VoxelInstanceLibraryMultiMeshItem::get_render_layer);
 
 	ClassDB::bind_method(
 			D_METHOD("set_material_override", "material"), &VoxelInstanceLibraryMultiMeshItem::set_material_override);
@@ -417,6 +444,9 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			"_set_mesh_lod2", "_get_mesh_lod2");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_lod3", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
 			"_set_mesh_lod3", "_get_mesh_lod3");
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layer", PROPERTY_HINT_LAYERS_3D_RENDER), "set_render_layer",
+			"get_render_layer");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
 						 // TODO Disallow CanvasItemMaterial?
