@@ -188,6 +188,8 @@ public:
 	void restart_stream() override;
 	void remesh_all_blocks() override;
 
+	bool is_area_meshed(const Box3i &box_in_voxels, unsigned int lod_index) const;
+
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
@@ -300,6 +302,8 @@ private:
 	int _b_debug_get_data_block_count() const;
 	// TODO GDX: Can't bind functions returning a `godot::Error` enum
 	int /*Error*/ _b_debug_dump_as_scene(String fpath, bool include_instancer) const;
+
+	bool _b_is_area_meshed(AABB aabb, int lod_index) const;
 
 	Dictionary _b_get_statistics() const;
 

@@ -1927,7 +1927,7 @@ void VoxelTerrain::_bind_methods() {
 			&VoxelTerrain::_b_get_viewer_network_peer_ids_in_area);
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
-	ClassDB::bind_method(D_METHOD("is_area_meshed", "area"), &VoxelTerrain::_b_is_area_meshed);
+	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels"), &VoxelTerrain::_b_is_area_meshed);
 
 #ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");

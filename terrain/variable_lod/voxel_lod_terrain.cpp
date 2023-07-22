@@ -2053,6 +2053,23 @@ void VoxelLodTerrain::remesh_all_blocks() {
 	}
 }
 
+bool VoxelLodTerrain::is_area_meshed(const Box3i &box_in_voxels, unsigned int lod_index) const {
+	const Box3i box_in_blocks = box_in_voxels.downscaled(1 << (get_mesh_block_size_pow2() + lod_index));
+	// We have to check this separate map instead of the mesh map, because the mesh map will not contain blocks in areas
+	// that have no mesh (one reason is so it reduces the time it takes to update all mesh positions when the terrain is
+	// moved)
+	VoxelLodTerrainUpdateData::MeshMapState &mms = _update_data->state.lods[lod_index].mesh_map_state;
+	RWLockRead rlock(mms.map_lock);
+	return box_in_blocks.all_cells_match([&mms](Vector3i bpos) {
+		auto it = mms.map.find(bpos);
+		if (it == mms.map.end()) {
+			return false;
+		}
+		const VoxelLodTerrainUpdateData::MeshBlockState &block = it->second;
+		return block.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE;
+	});
+}
+
 void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	_update_data->wait_for_end_of_task();
 	Box3i bounds_in_voxels =
@@ -2795,6 +2812,11 @@ int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include
 	return save_result;
 }
 
+bool VoxelLodTerrain::_b_is_area_meshed(AABB aabb, int lod_index) const {
+	ERR_FAIL_INDEX_V(lod_index, static_cast<int>(constants::MAX_LOD), false);
+	return is_area_meshed(Box3i(aabb.position, aabb.size), lod_index);
+}
+
 void VoxelLodTerrain::_bind_methods() {
 	// Material
 
@@ -2853,6 +2875,9 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor"), &VoxelLodTerrain::set_run_stream_in_editor);
 	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelLodTerrain::is_stream_running_in_editor);
+
+	ClassDB::bind_method(
+			D_METHOD("is_area_meshed", "area_in_voxels", "lod_index"), &VoxelLodTerrain::_b_is_area_meshed);
 
 	// Normalmaps
 
