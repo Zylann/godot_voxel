@@ -48,7 +48,7 @@
 		</member>
 		<member name="offset_along_normal" type="float" setter="set_offset_along_normal" getter="get_offset_along_normal" default="0.0">
 			Offsets spawned instances along the normal of the ground.
-			The normal depends on [member VoxelInstancer.up_node] and is also affected by [member vertical_alignment].
+			The normal depends on [member VoxelInstancer.up_mode] and is also affected by [member vertical_alignment].
 		</member>
 		<member name="random_rotation" type="bool" setter="set_random_rotation" getter="get_random_rotation" default="true">
 			When enbabled, instances will be given a random rotation. If not, they will use a consistent rotation depending on the ground slope.
@@ -63,7 +63,7 @@
 			Sets how much instances will align with the ground.
 			If 0, they will completely align with the ground.
 			If 1, they will completely align with whichever direction is considered "up".
-			This depends on [member VoxelInstancer.up_node].
+			This depends on [member VoxelInstancer.up_mode].
 		</member>
 	</members>
 	<constants>
