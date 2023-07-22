@@ -1,7 +1,7 @@
 #ifndef VOXEL_GRAPH_SHADER_GENERATOR_H
 #define VOXEL_GRAPH_SHADER_GENERATOR_H
 
-#include "../../engine/compute_shader_resource.h"
+#include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/errors.h"
 #include "../../util/godot/core/variant.h"
 #include "../../util/span.h"

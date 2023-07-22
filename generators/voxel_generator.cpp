@@ -1,7 +1,7 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
-#include "../engine/compute_shader.h"
-#include "../engine/compute_shader_parameters.h"
+#include "../engine/gpu/compute_shader.h"
+#include "../engine/gpu/compute_shader_parameters.h"
 #include "../shaders/shaders.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/array.h" // for `varray` in GDExtension builds

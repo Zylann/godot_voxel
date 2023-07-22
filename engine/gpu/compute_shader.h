@@ -1,9 +1,9 @@
 #ifndef VOXEL_COMPUTE_SHADER_H
 #define VOXEL_COMPUTE_SHADER_H
 
-#include "../util/godot/core/rid.h"
-#include "../util/godot/core/string.h"
-#include "../util/memory.h"
+#include "../../util/godot/core/rid.h"
+#include "../../util/godot/core/string.h"
+#include "../../util/memory.h"
 
 namespace zylann::voxel {
 

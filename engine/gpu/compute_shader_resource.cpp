@@ -1,12 +1,12 @@
 #include "compute_shader_resource.h"
-#include "../util/dstack.h"
-#include "../util/godot/classes/curve.h"
-#include "../util/godot/classes/image.h"
-#include "../util/godot/classes/rd_texture_format.h"
-#include "../util/godot/classes/rd_texture_view.h"
-#include "../util/godot/core/array.h" // for `varray` in GDExtension builds
-#include "../util/profiling.h"
-#include "voxel_engine.h"
+#include "../../util/dstack.h"
+#include "../../util/godot/classes/curve.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/rd_texture_format.h"
+#include "../../util/godot/classes/rd_texture_view.h"
+#include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
+#include "../../util/profiling.h"
+#include "../voxel_engine.h"
 
 namespace zylann::voxel {
 

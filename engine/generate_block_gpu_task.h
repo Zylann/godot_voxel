@@ -5,8 +5,8 @@
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
 #include "../util/tasks/threaded_task.h"
-#include "gpu_storage_buffer_pool.h"
-#include "gpu_task_runner.h"
+#include "gpu/gpu_storage_buffer_pool.h"
+#include "gpu/gpu_task_runner.h"
 
 #include "../util/memory.h"
 

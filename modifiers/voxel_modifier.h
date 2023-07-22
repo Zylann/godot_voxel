@@ -1,7 +1,7 @@
 #ifndef VOXEL_MODIFIER_H
 #define VOXEL_MODIFIER_H
 
-#include "../engine/compute_shader_parameters.h"
+#include "../engine/gpu/compute_shader_parameters.h"
 #include "../util/math/transform_3d.h"
 #include "../util/thread/rw_lock.h"
 

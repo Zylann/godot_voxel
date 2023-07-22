@@ -1,6 +1,6 @@
 #include "compute_shader_parameters.h"
-#include "../util/godot/classes/rd_uniform.h"
-#include "voxel_engine.h"
+#include "../../util/godot/classes/rd_uniform.h"
+#include "../voxel_engine.h"
 
 namespace zylann::voxel {
 

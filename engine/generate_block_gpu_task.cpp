@@ -5,8 +5,8 @@
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "compute_shader.h"
-#include "compute_shader_parameters.h"
+#include "gpu/compute_shader.h"
+#include "gpu/compute_shader_parameters.h"
 #include "mesh_block_task.h"
 #include "voxel_engine.h"
 

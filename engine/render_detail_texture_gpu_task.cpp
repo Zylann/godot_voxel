@@ -3,8 +3,8 @@
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/profiling.h"
-#include "compute_shader.h"
-#include "compute_shader_parameters.h"
+#include "gpu/compute_shader.h"
+#include "gpu/compute_shader_parameters.h"
 #include "render_detail_texture_task.h"
 #include "voxel_engine.h"
 

@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESH_SDF_GD_H
 #define VOXEL_MESH_SDF_GD_H
 
-#include "../engine/compute_shader_resource.h"
+#include "../engine/gpu/compute_shader_resource.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/godot/classes/resource.h"

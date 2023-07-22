@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_H
 #define VOXEL_GENERATOR_H
 
-#include "../engine/compute_shader_resource.h"
+#include "../engine/gpu/compute_shader_resource.h"
 #include "../util/godot/classes/resource.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"

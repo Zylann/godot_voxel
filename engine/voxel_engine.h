@@ -9,10 +9,10 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "compute_shader.h"
 #include "detail_rendering.h"
-#include "gpu_storage_buffer_pool.h"
-#include "gpu_task_runner.h"
+#include "gpu/compute_shader.h"
+#include "gpu/gpu_storage_buffer_pool.h"
+#include "gpu/gpu_task_runner.h"
 #include "ids.h"
 #include "priority_dependency.h"
 

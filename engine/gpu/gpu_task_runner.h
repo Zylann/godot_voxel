@@ -1,14 +1,14 @@
 #ifndef VOXEL_GPU_TASK_RUNNER_H
 #define VOXEL_GPU_TASK_RUNNER_H
 
-#include "../util/godot/core/packed_byte_array.h"
-#include "../util/godot/core/rid.h"
-#include "../util/godot/macros.h"
-#include "../util/macros.h"
-#include "../util/span.h"
-#include "../util/thread/mutex.h"
-#include "../util/thread/semaphore.h"
-#include "../util/thread/thread.h"
+#include "../../util/godot/core/packed_byte_array.h"
+#include "../../util/godot/core/rid.h"
+#include "../../util/godot/macros.h"
+#include "../../util/macros.h"
+#include "../../util/span.h"
+#include "../../util/thread/mutex.h"
+#include "../../util/thread/semaphore.h"
+#include "../../util/thread/thread.h"
 #include <atomic>
 #include <vector>
 
