@@ -20,6 +20,7 @@ Ref<Shortcut> get_or_create_editor_shortcut(const String &p_path, const String &
 	Key keycode = p_keycode;
 
 	// TODO GDX: No built-in macros to test the target platform
+	// See https://github.com/godotengine/godot-cpp/pull/1188
 #ifdef MACOS_ENABLED
 	// Use Cmd+Backspace as a general replacement for Delete shortcuts on macOS
 	if (keycode == Key::KEY_DELETE) {
