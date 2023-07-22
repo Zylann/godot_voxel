@@ -213,6 +213,8 @@ private:
 
 	void notify_data_block_enter(const VoxelDataBlock &block, Vector3i bpos, ViewerID viewer_id);
 
+	bool is_area_meshed(const Box3i &box_in_voxels) const;
+
 #ifdef ZN_GODOT
 	// Called each time a data block enters a viewer's area.
 	// This can be either when the block exists and the viewer gets close enough, or when it gets loaded.
@@ -240,6 +242,7 @@ private:
 	PackedInt32Array _b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const;
 	void _b_rpc_receive_block(PackedByteArray data);
 	void _b_rpc_receive_area(PackedByteArray data);
+	bool _b_is_area_meshed(AABB aabb) const;
 
 	VolumeID _volume_id;
 

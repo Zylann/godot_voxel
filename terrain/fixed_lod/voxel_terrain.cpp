@@ -408,7 +408,7 @@ bool VoxelTerrain::is_automatic_loading_enabled() const {
 
 void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
 	ZN_PROFILE_SCOPE();
-	if (mesh_block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
+	if (mesh_block.is_in_update_list) {
 		// Already in the list
 		return;
 	}
@@ -430,7 +430,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
 	if (data_available) {
 		// Regardless of if the updater is updating the block already,
 		// the block could have been modified again so we schedule another update
-		mesh_block.set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
+		mesh_block.is_in_update_list = true;
 		_blocks_pending_update.push_back(mesh_block.position);
 	}
 }
@@ -498,7 +498,7 @@ void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
 
 	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlockVT &block) {
-		if (block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT) {
+		if (block.is_in_update_list) {
 			// That block was in the list of blocks to update later in the process loop, we'll need to unregister
 			// it. We expect that block to be in that list. If it isn't, something wrong happened with its state.
 			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
@@ -609,13 +609,14 @@ void VoxelTerrain::stop_updater() {
 	// TODO We can still receive a few mesh delayed mesh updates after this. Is it a problem?
 	//_reception_buffers.mesh_output.clear();
 
-	_blocks_pending_update.clear();
-
-	_mesh_map.for_each_block([](VoxelMeshBlockVT &block) {
-		if (block.get_mesh_state() == VoxelMeshBlockVT::MESH_UPDATE_SENT) {
-			block.set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
+	for (const Vector3i bpos : _blocks_pending_update) {
+		VoxelMeshBlockVT *block = _mesh_map.get_block(bpos);
+		if (block != nullptr) {
+			block->is_in_update_list = false;
 		}
-	});
+	}
+
+	_blocks_pending_update.clear();
 }
 
 void VoxelTerrain::remesh_all_blocks() {
@@ -1537,8 +1538,8 @@ void VoxelTerrain::process_meshing() {
 		VoxelMeshBlockVT *mesh_block = _mesh_map.get_block(mesh_block_pos);
 
 		// If we got here, it must have been because of scheduling an update
-		ERR_CONTINUE(mesh_block == nullptr);
-		ERR_CONTINUE(mesh_block->get_mesh_state() != VoxelMeshBlockVT::MESH_UPDATE_NOT_SENT);
+		ZN_ASSERT_CONTINUE(mesh_block != nullptr);
+		ZN_ASSERT_CONTINUE(mesh_block->is_in_update_list);
 
 		// Pad by 1 because meshing requires neighbors
 		const Box3i data_box =
@@ -1548,7 +1549,7 @@ void VoxelTerrain::process_meshing() {
 		// We must have picked up a valid data block
 		{
 			const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
-			ERR_CONTINUE(!_data->has_block(anchor_pos, 0));
+			ZN_ASSERT_CONTINUE(_data->has_block(anchor_pos, 0));
 		}
 #endif
 
@@ -1588,7 +1589,7 @@ void VoxelTerrain::process_meshing() {
 
 		scheduler.push_main_task(task);
 
-		mesh_block->set_mesh_state(VoxelMeshBlockVT::MESH_UPDATE_SENT);
+		mesh_block->is_in_update_list = false;
 	}
 
 	scheduler.flush();
@@ -1687,6 +1688,10 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?
+	// Can't set the state because there could be more than one update in progress. Perhaps it needs refactoring.
+	// block->set_mesh_state(VoxelMeshBlockVT::MESH_UP_TO_DATE);
+
+	block->is_loaded = true;
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
@@ -1755,6 +1760,15 @@ void VoxelTerrain::set_multiplayer_synchronizer(VoxelTerrainMultiplayerSynchroni
 
 const VoxelTerrainMultiplayerSynchronizer *VoxelTerrain::get_multiplayer_synchronizer() const {
 	return _multiplayer_synchronizer;
+}
+
+bool VoxelTerrain::is_area_meshed(const Box3i &box_in_voxels) const {
+	// This assumes we store mesh blocks even when there is no mesh
+	const Box3i mesh_box = box_in_voxels.downscaled(get_mesh_block_size());
+	return mesh_box.all_cells_match([this](Vector3i bpos) {
+		const VoxelMeshBlockVT *block = _mesh_map.get_block(bpos);
+		return block->is_loaded;
+	});
 }
 
 #ifdef TOOLS_ENABLED
@@ -1846,6 +1860,10 @@ PackedInt32Array VoxelTerrain::_b_get_viewer_network_peer_ids_in_area(Vector3i a
 	return peer_ids;
 }
 
+bool VoxelTerrain::_b_is_area_meshed(AABB aabb) const {
+	return is_area_meshed(Box3i(aabb.position, aabb.size));
+}
+
 void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_material_override", "material"), &VoxelTerrain::set_material_override);
 	ClassDB::bind_method(D_METHOD("get_material_override"), &VoxelTerrain::get_material_override);
@@ -1909,6 +1927,7 @@ void VoxelTerrain::_bind_methods() {
 			&VoxelTerrain::_b_get_viewer_network_peer_ids_in_area);
 
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
+	ClassDB::bind_method(D_METHOD("is_area_meshed", "area"), &VoxelTerrain::_b_is_area_meshed);
 
 #ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
