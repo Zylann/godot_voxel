@@ -53,7 +53,7 @@ struct BeforeUnloadMeshAction {
 	}
 };
 
-static inline uint64_t get_ticks_msec() {
+inline uint64_t get_ticks_msec() {
 	return Time::get_singleton()->get_ticks_msec();
 }
 
