@@ -10,7 +10,7 @@ env:
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
-  linux-editor:
+  linux:
     runs-on: "ubuntu-20.04"
     name: ${{matrix.name}}
 
@@ -112,15 +112,15 @@ jobs:
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
-        id: linux-editor-cache
+        id: linux-cache
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/.scons_cache/
-          key: ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+          key: ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
-            ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
-            ${{github.job}}-${{matrix.godot_base_branch}}-${{github.ref}}
-            ${{github.job}}-${{matrix.godot_base_branch}}
+            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}
+            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}
 
       # [Already provided by the custom buildroot]
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
