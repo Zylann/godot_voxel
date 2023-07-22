@@ -29,6 +29,7 @@ void VoxelModifierMesh::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 	const AABB new_aabb = modifier->get_aabb();
 	post_edit_modifier(*_volume, prev_aabb);
 	post_edit_modifier(*_volume, new_aabb);
+	update_configuration_warnings();
 }
 
 Ref<VoxelMeshSDF> VoxelModifierMesh::get_mesh_sdf() const {
@@ -71,7 +72,29 @@ void VoxelModifierMesh::_on_mesh_sdf_baked() {
 	const AABB new_aabb = modifier->get_aabb();
 	post_edit_modifier(*_volume, prev_aabb);
 	post_edit_modifier(*_volume, new_aabb);
+	update_configuration_warnings();
 }
+
+#ifdef TOOLS_ENABLED
+
+void VoxelModifierMesh::get_configuration_warnings(PackedStringArray &warnings) const {
+	if (_mesh_sdf.is_null()) {
+		warnings.append(
+				ZN_TTR("A {0} resource is required for {1} to function.")
+						.format(varray(VoxelMeshSDF::get_class_static(), VoxelModifierMesh::get_class_static())));
+	} else {
+		if (_mesh_sdf->get_mesh().is_null()) {
+			warnings.append(
+					ZN_TTR("The {0} resource has no mesh assigned.").format(varray(VoxelMeshSDF::get_class_static())));
+
+		} else if (!_mesh_sdf->is_baked()) {
+			warnings.append(
+					ZN_TTR("The {0} resource needs to be baked.").format(varray(VoxelMeshSDF::get_class_static())));
+		}
+	}
+}
+
+#endif
 
 void VoxelModifierMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh_sdf", "mesh_sdf"), &VoxelModifierMesh::set_mesh_sdf);

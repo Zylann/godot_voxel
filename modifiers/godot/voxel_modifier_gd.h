@@ -7,7 +7,6 @@
 #include "../voxel_modifier.h"
 
 namespace zylann::voxel {
-
 namespace gd {
 
 class VoxelModifier : public Node3D {
@@ -27,7 +26,14 @@ public:
 	void set_smoothness(float s);
 	float get_smoothness() const;
 
-	// TODO Add configuration warnings
+#ifdef TOOLS_ENABLED
+#if defined(ZN_GODOT)
+	PackedStringArray get_configuration_warnings() const override;
+#elif defined(ZN_GODOT_EXTENSION)
+	PackedStringArray _get_configuration_warnings() const override;
+#endif
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
+#endif
 
 protected:
 	virtual zylann::voxel::VoxelModifier *create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id);

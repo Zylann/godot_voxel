@@ -16,11 +16,16 @@ public:
 	void set_isolevel(float isolevel);
 	float get_isolevel() const;
 
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
+#endif
+
 protected:
 	zylann::voxel::VoxelModifier *create(zylann::voxel::VoxelModifierStack &modifiers, uint32_t id) override;
 
 private:
 	void _on_mesh_sdf_baked();
+
 	static void _bind_methods();
 
 	Ref<VoxelMeshSDF> _mesh_sdf;

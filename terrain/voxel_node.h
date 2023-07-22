@@ -51,7 +51,7 @@ public:
 #if defined(ZN_GODOT)
 	PackedStringArray get_configuration_warnings() const override;
 #elif defined(ZN_GODOT_EXTENSION)
-	virtual PackedStringArray _get_configuration_warnings() const override;
+	PackedStringArray _get_configuration_warnings() const override;
 #endif
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
