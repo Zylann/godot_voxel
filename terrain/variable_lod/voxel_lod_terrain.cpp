@@ -230,7 +230,7 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
 
-			map.for_each_block([this, &shader_material](VoxelMeshBlockVLT &block) { //
+			map.for_each_block([this](VoxelMeshBlockVLT &block) { //
 				Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
 				Ref<ShaderMaterial> prev_material = block.get_shader_material();
 				if (prev_material.is_valid()) {
@@ -247,7 +247,7 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
 
-			map.for_each_block([this, &p_material](VoxelMeshBlockVLT &block) { //
+			map.for_each_block([&p_material](VoxelMeshBlockVLT &block) { //
 				block.set_shader_material(Ref<ShaderMaterial>());
 
 				Ref<Mesh> mesh = block.get_mesh();
