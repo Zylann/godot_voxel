@@ -39,6 +39,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelLodTerrain`:
         - Added debug drawing for modifier bounds
         - Added `is_area_meshed` as an alternative to `VoxelTool.is_area_editable` for games using mesh colliders
+        - Terrain now updates when the `material` property is assigned in the editor
     - `VoxelVoxLoader`:
         - Added parameter to allow loading data in a custom channel (instead of the color channel)
     - `VoxelBlockyModel`:

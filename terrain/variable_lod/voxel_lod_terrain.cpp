@@ -63,20 +63,37 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(material.is_valid());
 
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
 	// Reset textures to avoid hoarding them in the pool
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_normalmap_atlas, Ref<Texture2D>());
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_lookup, Ref<Texture2D>());
-	material->set_shader_parameter(
-			VoxelStringNames::get_singleton().u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
+	material->set_shader_parameter(sn.u_voxel_normalmap_atlas, Ref<Texture2D>());
+	material->set_shader_parameter(sn.u_voxel_cell_lookup, Ref<Texture2D>());
+	material->set_shader_parameter(sn.u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
 	// TODO Would be nice if we repurposed `u_transition_mask` to store extra flags.
 	// Here we exploit cell_size==0 as "there is no virtual normalmaps on this block"
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_cell_size, 0.f);
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_virtual_texture_fade, 0.f);
+	material->set_shader_parameter(sn.u_voxel_cell_size, 0.f);
+	material->set_shader_parameter(sn.u_voxel_virtual_texture_fade, 0.f);
 
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_transition_mask, 0);
-	material->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+	material->set_shader_parameter(sn.u_transition_mask, 0);
+	material->set_shader_parameter(sn.u_lod_fade, Vector2(0.0, 0.0));
 
 	ShaderMaterialPool::recycle(material);
+}
+
+inline void copy_param(ShaderMaterial &src, ShaderMaterial &dst, const StringName &name) {
+	dst.set_shader_parameter(name, src.get_shader_parameter(name));
+}
+
+static void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+	copy_param(src, dst, sn.u_voxel_normalmap_atlas);
+	copy_param(src, dst, sn.u_voxel_cell_lookup);
+	copy_param(src, dst, sn.u_voxel_virtual_texture_offset_scale);
+	copy_param(src, dst, sn.u_voxel_cell_size);
+	copy_param(src, dst, sn.u_voxel_virtual_texture_fade);
+	copy_param(src, dst, sn.u_transition_mask);
+	copy_param(src, dst, sn.u_lod_fade);
 }
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
@@ -186,25 +203,63 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	// TODO Update existing block surfaces
 	_material = p_material;
 
-	update_shader_material_pool_template();
+	Ref<ShaderMaterial> shader_material = p_material;
+	const unsigned int lod_count = get_lod_count();
 
 #ifdef TOOLS_ENABLED
 	// Create a fork of the default shader if a new empty ShaderMaterial is assigned
 	if (Engine::get_singleton()->is_editor_hint()) {
-		Ref<ShaderMaterial> sm = p_material;
-		if (sm.is_valid() && sm->get_shader().is_null() && _mesher.is_valid()) {
+		if (shader_material.is_valid() && shader_material->get_shader().is_null() && _mesher.is_valid()) {
 			Ref<ShaderMaterial> default_sm = _mesher->get_default_lod_material();
 			if (default_sm.is_valid()) {
 				Ref<Shader> default_shader = default_sm->get_shader();
 				ZN_ASSERT_RETURN(default_shader.is_valid());
 				Ref<Shader> shader_copy = default_shader->duplicate();
-				sm->set_shader(shader_copy);
+				shader_material->set_shader(shader_copy);
 			}
 		}
 
 		update_configuration_warnings();
 	}
 #endif
+
+	update_shader_material_pool_template();
+
+	// Update existing meshes
+	if (shader_material.is_valid() && _shader_material_pool.get_template().is_valid()) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
+
+			map.for_each_block([this, &shader_material](VoxelMeshBlockVLT &block) { //
+				Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
+				Ref<ShaderMaterial> prev_material = block.get_shader_material();
+				if (prev_material.is_valid()) {
+					ZN_ASSERT_RETURN(sm.is_valid());
+					// Each block can have specific shader parameters so we have to keep them
+					copy_vlt_block_params(**prev_material, **sm);
+				}
+				block.set_shader_material(sm);
+			});
+		}
+
+	} else {
+		// The material isn't ShaderMaterial, fallback. Will probably not work correctly with transition meshes
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
+
+			map.for_each_block([this, &p_material](VoxelMeshBlockVLT &block) { //
+				block.set_shader_material(Ref<ShaderMaterial>());
+
+				Ref<Mesh> mesh = block.get_mesh();
+				if (mesh.is_valid()) {
+					const int surface_count = mesh->get_surface_count();
+					for (int surface_index = 0; surface_index < surface_count; ++surface_index) {
+						mesh->surface_set_material(surface_index, p_material);
+					}
+				}
+			});
+		}
+	}
 }
 
 unsigned int VoxelLodTerrain::get_data_block_size() const {
