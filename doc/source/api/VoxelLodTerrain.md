@@ -1,13 +1,13 @@
 # VoxelLodTerrain
 
-Inherits: [VoxelNode](api/VoxelNode.md)
+Inherits: [VoxelNode](VoxelNode.md)
 
 
 Voxel volume using variable level of detail.
 
 ## Description: 
 
-Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](api/VoxelMesherTransvoxel.md).
+Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md).
 
 ## Properties: 
 
@@ -59,13 +59,13 @@ Return                                                                          
 [void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_region_extent](#i_get_data_block_region_extent) ( ) const                                                                                                                                                                             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                               
-[VoxelGenerator](api/VoxelGenerator.md)                                             | [get_normalmap_generator_override](#i_get_normalmap_generator_override) ( ) const                                                                                                                                                                     
+[VoxelGenerator](VoxelGenerator.md)                                                 | [get_normalmap_generator_override](#i_get_normalmap_generator_override) ( ) const                                                                                                                                                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_normalmap_generator_override_begin_lod_index](#i_get_normalmap_generator_override_begin_lod_index) ( ) const                                                                                                                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                             
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                         
-[VoxelTool](api/VoxelTool.md)                                                       | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
+[VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
 [void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
-[void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](api/VoxelGenerator.md) generator_override )                                                                                                                
+[void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](VoxelGenerator.md) generator_override )                                                                                                                    
 [void](#)                                                                           | [set_normalmap_generator_override_begin_lod_index](#i_set_normalmap_generator_override_begin_lod_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )                                                            
 [void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode )                                                                                                                         
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)      | [voxel_to_data_block_position](#i_voxel_to_data_block_position) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_position, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const 
@@ -242,7 +242,7 @@ Note, because this volume uses chunks with LOD, these bounds will snap to the cl
 
 Gets the size of one cunic data block in voxels.
 
-- [VoxelGenerator](api/VoxelGenerator.md)<span id="i_get_normalmap_generator_override"></span> **get_normalmap_generator_override**( ) 
+- [VoxelGenerator](VoxelGenerator.md)<span id="i_get_normalmap_generator_override"></span> **get_normalmap_generator_override**( ) 
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_normalmap_generator_override_begin_lod_index"></span> **get_normalmap_generator_override_begin_lod_index**( ) 
@@ -274,9 +274,9 @@ The returned dictionary has the following structure:
 
 ```
 
-- [VoxelTool](api/VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
+- [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Gets an instance of [VoxelTool](api/VoxelTool.md) bound to this volume. Allows to query and edit voxels.
+Gets an instance of [VoxelTool](VoxelTool.md) bound to this volume. Allows to query and edit voxels.
 
 - [void](#)<span id="i_save_modified_blocks"></span> **save_modified_blocks**( ) 
 
@@ -286,7 +286,7 @@ There is currently no reliable way to tell if saving has completed.
 
 Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 
-- [void](#)<span id="i_set_normalmap_generator_override"></span> **set_normalmap_generator_override**( [VoxelGenerator](api/VoxelGenerator.md) generator_override ) 
+- [void](#)<span id="i_set_normalmap_generator_override"></span> **set_normalmap_generator_override**( [VoxelGenerator](VoxelGenerator.md) generator_override ) 
 
 
 - [void](#)<span id="i_set_normalmap_generator_override_begin_lod_index"></span> **set_normalmap_generator_override_begin_lod_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
@@ -304,4 +304,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

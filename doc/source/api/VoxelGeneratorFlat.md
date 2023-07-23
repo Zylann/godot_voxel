@@ -1,6 +1,6 @@
 # VoxelGeneratorFlat
 
-Inherits: [VoxelGenerator](api/VoxelGenerator.md)
+Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 
 Voxel generator producing an infinite flat ground.
@@ -29,4 +29,4 @@ Altitude of the ground.
 
 If member channel is set to constant VoxelBuffer.CHANNEL_TYPE, this value will be used to fill ground voxels.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

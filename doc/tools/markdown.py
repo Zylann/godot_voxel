@@ -46,11 +46,11 @@ def make_table(table):
     return s
 
 
-def make_type(name, module_class_names):
+def make_type(name, local_prefix, module_class_names):
     if name == "void":
         link = "#"
     elif name in module_class_names:
-        link = 'api/' + name + ".md"
+        link = local_prefix + name + ".md"
     else:
         link = GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
     return make_link(name, link)

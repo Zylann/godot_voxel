@@ -1,6 +1,6 @@
 # VoxelBlockyTypeLibrary
 
-Inherits: [VoxelBlockyLibraryBase](api/VoxelBlockyLibraryBase.md)
+Inherits: [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)
 
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
@@ -23,7 +23,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                              | [get_model_index_default](#i_get_model_index_default) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name ) const                                                                                                                  
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                              | [get_model_index_single_attribute](#i_get_model_index_single_attribute) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) attrib_value ) const     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                              | [get_model_index_with_attributes](#i_get_model_index_with_attributes) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name, [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) attribs_dict ) const 
-[VoxelBlockyType](api/VoxelBlockyType.md)                                                         | [get_type_from_name](#i_get_type_from_name) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name ) const                                                                                                                            
+[VoxelBlockyType](VoxelBlockyType.md)                                                             | [get_type_from_name](#i_get_type_from_name) ( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name ) const                                                                                                                            
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)                          | [get_type_name_and_attributes_from_model_index](#i_get_type_name_and_attributes_from_model_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) model_index ) const                                                                                  
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                            | [load_id_map_from_json](#i_load_id_map_from_json) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) json )                                                                                                                                         
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                            | [load_id_map_from_string_array](#i_load_id_map_from_string_array) ( [PackedStringArray](https://docs.godotengine.org/en/stable/classes/class_packedstringarray.html) str_array )                                                                                              
@@ -50,7 +50,7 @@ Return                                                                          
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_model_index_with_attributes"></span> **get_model_index_with_attributes**( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name, [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) attribs_dict ) 
 
 
-- [VoxelBlockyType](api/VoxelBlockyType.md)<span id="i_get_type_from_name"></span> **get_type_from_name**( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name ) 
+- [VoxelBlockyType](VoxelBlockyType.md)<span id="i_get_type_from_name"></span> **get_type_from_name**( [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) type_name ) 
 
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_get_type_name_and_attributes_from_model_index"></span> **get_type_name_and_attributes_from_model_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) model_index ) 
@@ -68,4 +68,4 @@ Return                                                                          
 - [PackedStringArray](https://docs.godotengine.org/en/stable/classes/class_packedstringarray.html)<span id="i_serialize_id_map_to_string_array"></span> **serialize_id_map_to_string_array**( ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

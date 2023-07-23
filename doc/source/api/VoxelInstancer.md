@@ -52,7 +52,7 @@ enum **DebugDrawFlag**:
 
 ## Property Descriptions
 
-- [VoxelInstanceLibrary](api/VoxelInstanceLibrary.md)<span id="i_library"></span> **library**
+- [VoxelInstanceLibrary](VoxelInstanceLibrary.md)<span id="i_library"></span> **library**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_up_mode"></span> **up_mode** = 0
@@ -81,4 +81,4 @@ enum **DebugDrawFlag**:
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

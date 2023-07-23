@@ -3,11 +3,11 @@
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
 
-Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](api/VoxelViewer.md).
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md).
 
 ## Description: 
 
-Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](api/VoxelViewer.md). See method VoxelTerrain._on_data_block_entered.
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md). See method VoxelTerrain._on_data_block_entered.
 
 Instances of this class must not be stored, as they will become invalid after the call they come from.
 
@@ -20,7 +20,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_lod_index](#i_get_lod_index) ( ) const             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_network_peer_id](#i_get_network_peer_id) ( ) const 
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)  | [get_position](#i_get_position) ( ) const               
-[VoxelBuffer](api/VoxelBuffer.md)                                               | [get_voxels](#i_get_voxels) ( ) const                   
+[VoxelBuffer](VoxelBuffer.md)                                                   | [get_voxels](#i_get_voxels) ( ) const                   
 <p></p>
 
 ## Method Descriptions
@@ -35,14 +35,14 @@ Gets which LOD index the data block is in.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_network_peer_id"></span> **get_network_peer_id**( ) 
 
-Gets the network peer ID of the [VoxelViewer](api/VoxelViewer.md) who caused the block to be referenced.
+Gets the network peer ID of the [VoxelViewer](VoxelViewer.md) who caused the block to be referenced.
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_position"></span> **get_position**( ) 
 
 Gets the position of the data block, in data block coordinates (voxel coordinates are obtained by multiplying these coordinates with data block size).
 
-- [VoxelBuffer](api/VoxelBuffer.md)<span id="i_get_voxels"></span> **get_voxels**( ) 
+- [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxels"></span> **get_voxels**( ) 
 
 Gets access to the voxels in the block.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

@@ -1,6 +1,6 @@
 # VoxelInstanceLibraryMultiMeshItem
 
-Inherits: [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md)
+Inherits: [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)
 
 
 
@@ -83,4 +83,4 @@ Return                                                                  | Signat
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

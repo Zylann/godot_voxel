@@ -1,6 +1,6 @@
 # VoxelGeneratorHeightmap
 
-Inherits: [VoxelGenerator](api/VoxelGenerator.md)
+Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 
 
@@ -35,4 +35,4 @@ Minimum height where the surface will generate.
 
 Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

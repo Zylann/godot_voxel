@@ -3,11 +3,11 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Model stored in [VoxelBlockyLibrary](api/VoxelBlockyLibrary.md) and used by [VoxelMesherBlocky](api/VoxelMesherBlocky.md).
+Model stored in [VoxelBlockyLibrary](VoxelBlockyLibrary.md) and used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
 ## Description: 
 
-Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelBlockyLibrary](api/VoxelBlockyLibrary.md) to be used with [VoxelTerrain](api/VoxelTerrain.md) or directly with a [VoxelMesherBlocky](api/VoxelMesherBlocky.md).
+Represents a model to be used for voxels of a specific TYPE value. Such models must be contained within a [VoxelBlockyLibrary](VoxelBlockyLibrary.md) to be used with [VoxelTerrain](VoxelTerrain.md) or directly with a [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
 A model can be setup in various ways, see child classes.
 
@@ -53,11 +53,11 @@ enum **Side**:
 
 - [AABB[]](https://docs.godotengine.org/en/stable/classes/class_aabb[].html)<span id="i_collision_aabbs"></span> **collision_aabbs** = []
 
-List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover](api/VoxelBoxMover.md). They are not used with mesh-based collision.
+List of bounding boxes relative to the model. They are used for box-based collision, using [VoxelBoxMover](VoxelBoxMover.md). They are not used with mesh-based collision.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
 
-Collision mask used for box-based collision [VoxelBoxMover](api/VoxelBoxMover.md) and voxel raycasts ([VoxelToolTerrain](api/VoxelToolTerrain.md)). It is not used for mesh-based collisions.
+Collision mask used for box-based collision [VoxelBoxMover](VoxelBoxMover.md) and voxel raycasts ([VoxelToolTerrain](VoxelToolTerrain.md)). It is not used for mesh-based collisions.
 
 - [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_color"></span> **color** = Color(1, 1, 1, 1)
 
@@ -100,4 +100,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

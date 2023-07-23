@@ -28,7 +28,7 @@ Return                                                                    | Sign
 [void](#)                                                                 | [bake_async](#i_bake_async) ( [SceneTree](https://docs.godotengine.org/en/stable/classes/class_scenetree.html) scene_tree )  
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [debug_check_sdf](#i_debug_check_sdf) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh )        
 [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)    | [get_aabb](#i_get_aabb) ( ) const                                                                                            
-[VoxelBuffer](api/VoxelBuffer.md)                                         | [get_voxel_buffer](#i_get_voxel_buffer) ( ) const                                                                            
+[VoxelBuffer](VoxelBuffer.md)                                             | [get_voxel_buffer](#i_get_voxel_buffer) ( ) const                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [is_baked](#i_is_baked) ( ) const                                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [is_baking](#i_is_baking) ( ) const                                                                                          
 <p></p>
@@ -85,7 +85,7 @@ enum **BakeMode**:
 - [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_get_aabb"></span> **get_aabb**( ) 
 
 
-- [VoxelBuffer](api/VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
+- [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
 
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baked"></span> **is_baked**( ) 
@@ -94,4 +94,4 @@ enum **BakeMode**:
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

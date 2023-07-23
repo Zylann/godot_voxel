@@ -1,32 +1,34 @@
 # VoxelToolLodTerrain
 
-Inherits: [VoxelTool](api/VoxelTool.md)
+Inherits: [VoxelTool](VoxelTool.md)
 
 
-Implementation of [VoxelTool](api/VoxelTool.md) specialized for uses on [VoxelLodTerrain](api/VoxelLodTerrain.md).
+Implementation of [VoxelTool](VoxelTool.md) specialized for uses on [VoxelLodTerrain](VoxelLodTerrain.md).
 
 ## Description: 
 
-It's not a class to instantiate alone, you may get it from [VoxelLodTerrain](api/VoxelLodTerrain.md) using the `get_voxel_tool()` method.
+Functions in this class are specific to [VoxelLodTerrain](VoxelLodTerrain.md). For generic functions, you may also check [VoxelTool](VoxelTool.md).
+
+It's not a class to instantiate alone, you may get it from [VoxelLodTerrain](VoxelLodTerrain.md) using the `get_voxel_tool()` method.
 
 ## Methods: 
 
 
 Return                                                                    | Signature                                                                                                                                                                                                                                                                                                                                                                                         
 ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[void](#)                                                                 | [do_graph](#i_do_graph) ( [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size )                                                                                                                       
+[void](#)                                                                 | [do_graph](#i_do_graph) ( [VoxelGeneratorGraph](VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size )                                                                                                                           
 [void](#)                                                                 | [do_hemisphere](#i_do_hemisphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 )  
 [void](#)                                                                 | [do_sphere_async](#i_do_sphere_async) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                    
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [get_raycast_binary_search_iterations](#i_get_raycast_binary_search_iterations) ( ) const                                                                                                                                                                                                                                                                                                         
 [float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [get_voxel_f_interpolated](#i_get_voxel_f_interpolated) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) const                                                                                                                                                                                                                                           
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)  | [separate_floating_chunks](#i_separate_floating_chunks) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box, [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) parent_node )                                                                                                                                                                        
 [void](#)                                                                 | [set_raycast_binary_search_iterations](#i_set_raycast_binary_search_iterations) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) iterations )                                                                                                                                                                                                                               
-[void](#)                                                                 | [stamp_sdf](#i_stamp_sdf) ( [VoxelMeshSDF](api/VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale )                                                 
+[void](#)                                                                 | [stamp_sdf](#i_stamp_sdf) ( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale )                                                     
 <p></p>
 
 ## Method Descriptions
 
-- [void](#)<span id="i_do_graph"></span> **do_graph**( [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size ) 
+- [void](#)<span id="i_do_graph"></span> **do_graph**( [VoxelGeneratorGraph](VoxelGeneratorGraph.md) graph, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) area_size ) 
 
 
 - [void](#)<span id="i_do_hemisphere"></span> **do_hemisphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) flat_direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) smoothness=0.0 ) 
@@ -52,7 +54,7 @@ This algorithm can become expensive quickly, so the box should not be too big. A
 - [void](#)<span id="i_set_raycast_binary_search_iterations"></span> **set_raycast_binary_search_iterations**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) iterations ) 
 
 
-- [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](api/VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
+- [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

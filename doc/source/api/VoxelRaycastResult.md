@@ -28,4 +28,4 @@ Integer position of the voxel that was hit.
 
 Integer position of the previous voxel along the ray before the final hit.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

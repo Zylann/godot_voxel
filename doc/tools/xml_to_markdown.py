@@ -44,7 +44,7 @@ def format_regular_text(text, module_class_names):
 
         elif cmd.find(' ') == -1:
             # [typename]
-            s += markdown.make_type(cmd, module_class_names)
+            s += markdown.make_type(cmd, '', module_class_names)
         else:
             # TODO Enhancement: members and shit
             s += cmd
@@ -105,7 +105,7 @@ def make_arglist(args, module_class_names):
     for arg_index, arg in enumerate(args):
         if arg_index > 0:
             s += ","
-        s += " " + markdown.make_type(arg.attrib['type'], module_class_names) + " " + arg.attrib['name']
+        s += " " + markdown.make_type(arg.attrib['type'], '', module_class_names) + " " + arg.attrib['name']
         if 'default' in arg.attrib:
             s += "=" + arg.attrib['default']
     s += " )"
@@ -149,7 +149,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
     # Header
     out = "# " + root.attrib['name'] + "\n\n"
-    out += "Inherits: " + markdown.make_type(root.attrib['inherits'], module_class_names) + "\n\n"
+    out += "Inherits: " + markdown.make_type(root.attrib['inherits'], '', module_class_names) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
         out += ("!!! warning\n    This class is marked as experimental. "
@@ -215,7 +215,7 @@ def process_xml(f_xml, f_out, module_class_names):
                 return_node = method.find('return')
 
                 row = [
-                    markdown.make_type(return_node.attrib['type'], module_class_names),
+                    markdown.make_type(return_node.attrib['type'], '', module_class_names),
                     signature
                 ]
                 table.append(row)
@@ -289,7 +289,7 @@ def process_xml(f_xml, f_out, module_class_names):
         out += "## Property Descriptions\n\n"
 
         for member in members:
-            out += "- " + markdown.make_type(member.attrib['type'], module_class_names) \
+            out += "- " + markdown.make_type(member.attrib['type'], '', module_class_names) \
                 + make_custom_internal_anchor(member.attrib['name']) + " **" + member.attrib['name'] + "**"
             if 'default' in member.attrib:
                 out += " = " + member.attrib['default']
@@ -309,7 +309,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
         for method in methods:
             return_node = method.find('return')
-            out += "- " + markdown.make_type(return_node.attrib['type'], module_class_names) \
+            out += "- " + markdown.make_type(return_node.attrib['type'], '', module_class_names) \
                 + make_custom_internal_anchor(method.attrib['name']) + " **" + method.attrib['name'] + "**"
             args = method.findall('param')
             out += make_arglist(args, module_class_names)

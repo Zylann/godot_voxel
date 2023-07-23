@@ -31,19 +31,19 @@ enum **GIMode**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
 
 
-- [VoxelGenerator](api/VoxelGenerator.md)<span id="i_generator"></span> **generator**
+- [VoxelGenerator](VoxelGenerator.md)<span id="i_generator"></span> **generator**
 
 Procedural generator used to load voxel blocks when not present in the stream.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 0
 
 
-- [VoxelMesher](api/VoxelMesher.md)<span id="i_mesher"></span> **mesher**
+- [VoxelMesher](VoxelMesher.md)<span id="i_mesher"></span> **mesher**
 
 Defines how voxels are transformed into visible meshes.
 
-- [VoxelStream](api/VoxelStream.md)<span id="i_stream"></span> **stream**
+- [VoxelStream](VoxelStream.md)<span id="i_stream"></span> **stream**
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_

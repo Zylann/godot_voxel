@@ -135,7 +135,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names):
                 # Class lookup: assuming name convention, 
                 # otherwise we need a complete list of classes and it's a bit cumbersome to obtain
                 if bb_node.name[0].isupper():
-                    out += markdown.make_type(bb_node.name, module_class_names)
+                    out += markdown.make_type(bb_node.name, 'api/', module_class_names)
 
                 else:
                     # Error fallback

@@ -3,19 +3,19 @@
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
 
-Contains a list of models that can be used by [VoxelInstancer](api/VoxelInstancer.md), associated with a unique ID.
+Contains a list of models that can be used by [VoxelInstancer](VoxelInstancer.md), associated with a unique ID.
 
 ## Methods: 
 
 
-Return                                                                                          | Signature                                                                                                                                                              
------------------------------------------------------------------------------------------------ | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[void](#)                                                                                       | [add_item](#i_add_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md) item )  
-[void](#)                                                                                       | [clear](#i_clear) ( )                                                                                                                                                  
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [find_item_by_name](#i_find_item_by_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const                                    
-[PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [get_all_item_ids](#i_get_all_item_ids) ( ) const                                                                                                                      
-[VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md)                                     | [get_item](#i_get_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) const                                                              
-[void](#)                                                                                       | [remove_item](#i_remove_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id )                                                              
+Return                                                                                          | Signature                                                                                                                                                          
+----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[void](#)                                                                                       | [add_item](#i_add_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md) item )  
+[void](#)                                                                                       | [clear](#i_clear) ( )                                                                                                                                              
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [find_item_by_name](#i_find_item_by_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const                                
+[PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [get_all_item_ids](#i_get_all_item_ids) ( ) const                                                                                                                  
+[VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)                                         | [get_item](#i_get_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) const                                                          
+[void](#)                                                                                       | [remove_item](#i_remove_item) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id )                                                          
 <p></p>
 
 ## Constants: 
@@ -24,7 +24,7 @@ Return                                                                          
 
 ## Method Descriptions
 
-- [void](#)<span id="i_add_item"></span> **add_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md) item ) 
+- [void](#)<span id="i_add_item"></span> **add_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md) item ) 
 
 
 - [void](#)<span id="i_clear"></span> **clear**( ) 
@@ -36,10 +36,10 @@ Return                                                                          
 - [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)<span id="i_get_all_item_ids"></span> **get_all_item_ids**( ) 
 
 
-- [VoxelInstanceLibraryItem](api/VoxelInstanceLibraryItem.md)<span id="i_get_item"></span> **get_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
+- [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)<span id="i_get_item"></span> **get_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
 - [void](#)<span id="i_remove_item"></span> **remove_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Jul 21, 2023_
+_Generated on Jul 23, 2023_
