@@ -9,7 +9,7 @@ namespace zylann::voxel {
 // Used as child of scene items instanced with VoxelInstancer.
 //
 // It is needed because such instances are tied with some of the logic in VoxelInstancer.
-// The root of a scene could be anything derived from Spatial,
+// The root of a scene could be anything derived from Node3D,
 // so offering an API using inheritance on the root node is impractical.
 // So instead the component approach is taken.
 // If a huge amount of instances is needed, prefer using fast/multimesh instances.
