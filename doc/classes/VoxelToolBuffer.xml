@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelToolBuffer" inherits="VoxelTool" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Implementation of the [VoxelTool] API for [VoxelBuffer].
 	</brief_description>
 	<description>
+		There are no functions specific to [VoxelBuffer]. You may check generic ones in [VoxelTool].
 	</description>
 	<tutorials>
 	</tutorials>

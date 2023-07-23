@@ -4,6 +4,7 @@
 		Implementation of [VoxelTool] specialized for uses on [VoxelTerrain].
 	</brief_description>
 	<description>
+		Functions in this class are specific to [VoxelTerrain]. For generic functions, you may also check [VoxelTool].
 		It's not a class to instantiate alone, you may get it from [VoxelTerrain] using the `get_voxel_tool()` method.
 	</description>
 	<tutorials>
