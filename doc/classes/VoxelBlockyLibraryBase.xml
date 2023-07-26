@@ -4,7 +4,7 @@
 		Contains a list of models that can be used by [VoxelMesherBlocky].
 	</brief_description>
 	<description>
-		Models used by [VoxelMesherBlocky] must be baked before they can be used effifiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
+		Models used by [VoxelMesherBlocky] must be baked before they can be used efficiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
 	</description>
 	<tutorials>
 	</tutorials>
