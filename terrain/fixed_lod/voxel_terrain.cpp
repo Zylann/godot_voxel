@@ -1767,7 +1767,7 @@ bool VoxelTerrain::is_area_meshed(const Box3i &box_in_voxels) const {
 	const Box3i mesh_box = box_in_voxels.downscaled(get_mesh_block_size());
 	return mesh_box.all_cells_match([this](Vector3i bpos) {
 		const VoxelMeshBlockVT *block = _mesh_map.get_block(bpos);
-		return block->is_loaded;
+		return block != nullptr && block->is_loaded;
 	});
 }
 
