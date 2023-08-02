@@ -160,7 +160,14 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          # PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
+          #set correct PATH for different arch
+          if [ ${{matrix.arch}} == "x86_32" ];then
+            PATH=${GITHUB_WORKSPACE}/i686-godot-linux-gnu_sdk-buildroot/bin:$PATH
+
+          else
+            PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
+          fi
+
           scons -j2 verbose=yes warnings=extra platform=linuxbsd tests=no target=${{matrix.target}} arch=${{matrix.arch}}
           echo "bin/ files:"
           ls bin/
