@@ -66,7 +66,7 @@ jobs:
       #      the working directory for all following steps.
       # TODO Bug: pkg-config wrongly points to lib instead of lib64 for arch-dependent header.
       #      Using `sed` to patch it as a workaround.
-           See https://github.com/godotengine/buildroot/issues/6
+      #     See https://github.com/godotengine/buildroot/issues/6
       - name: Setup buildroot
        run: |
          wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
