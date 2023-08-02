@@ -9,6 +9,11 @@ on:
 env:
   SCONS_CACHE_LIMIT: 4096
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+
 jobs:
   linux:
     runs-on: "ubuntu-20.04"

@@ -10,6 +10,11 @@ env:
   GODOT_BASE_BRANCH: "4.1"
   SCONS_CACHE_LIMIT: 4096
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   mono-glue:

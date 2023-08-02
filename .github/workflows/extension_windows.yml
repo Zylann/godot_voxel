@@ -14,6 +14,10 @@ env:
   SCONS_CACHE_LIMIT: 4096
   GODOT_CPP_PATH: thirdparty/godot-cpp
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   extension-windows:
     # Windows 10 with latest image
