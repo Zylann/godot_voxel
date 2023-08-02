@@ -1,0 +1,158 @@
+name: 🐧 Linux export build
+on:
+  push:
+    branches: [ master, github_actions ]
+  pull_request:
+    branches: [ master ]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: "4.1"
+  SCONS_CACHE_LIMIT: 4096
+  
+  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+
+jobs:
+  linux-editor:
+    runs-on: "ubuntu-20.04"
+    name: ${{matrix.name}}
+
+    strategy:
+      matrix:
+        include:
+          - name: release-32bit-x86
+            target: template_release
+            arch: x86_32
+            executable_name: linux_x11_32_debug
+            
+          - name: debug-32bit-x86
+            target: template_debug
+            arch: x86_32
+            executable_name: linux_x11_32_release
+            
+          - name: release-64bit-x86_64
+            target: template_release
+            arch: x86_64
+            executable_name: linux_x11_64_debug
+            
+          - name: debug-64bit-x86_64
+            target: template_debug
+            arch: x86_64
+            executable_name: linux_x11_64_release
+            
+
+    steps:
+      # Clone Godot
+      - uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: "4.1"
+
+      # Clone our module under the correct directory
+      - uses: actions/checkout@v2
+        with:
+          path: modules/voxel
+
+      # Setup custom buildroot so we may use an old but compatible GLIBC version, while keeping recent toolchain.
+      # This allows to make production builds that are compatible with older Linux distros.
+      # TODO Enhancement: cache buildroot so future runs can use it?
+      # TODO Enhancement: make buildroot setup a self-contained step. There are bits of setup elsewhere.
+      #      Currently I also setup `PATH` in the Compilation step because modifications
+      #      do not persist between steps (?). I also placed this step after checkout because the checkout step changes
+      #      the working directory for all following steps.
+      # TODO Bug: pkg-config wrongly points to lib instead of lib64 for arch-dependent header.
+      #      Using `sed` to patch it as a workaround.
+      #      See https://github.com/godotengine/buildroot/issues/6
+      #- name: Setup buildroot
+      #  run: |
+      #    wget https://download.tuxfamily.org/godotengine/toolchains/linux/x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+      #    tar -xjf x86_64-godot-linux-gnu_sdk-buildroot.tar.bz2
+      #    cd x86_64-godot-linux-gnu_sdk-buildroot
+      #    sed -i x86_64-godot-linux-gnu/sysroot/usr/lib/pkgconfig/dbus-1.pc -e "s@/lib@/lib64@g"
+      #    ./relocate-sdk.sh
+      #    cd ..
+
+      # [Already provided by the custom buildroot]
+      # Azure repositories are not reliable, we need to prevent azure giving us packages.
+      # - name: Make apt sources.list use the default Ubuntu repositories
+      #   run: |
+      #     sudo rm -f /etc/apt/sources.list.d/*
+      #     sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+      #     sudo apt-get update
+
+      # [Already provided by the custom buildroot]
+      # Install all packages (except scons)
+      # - name: Configure dependencies
+      #   run: |
+      #     sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+      #       libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm
+      
+      
+      
+      - name: Make apt sources.list use the default Ubuntu repositories
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          echo "current dir: "
+          pwd
+          
+          echo "modules/voxel/misc/: "
+          ls modules/voxel/misc/
+          sudo cp -f modules/voxel/misc/sources.list /etc/apt/sources.list
+          sudo apt-get update
+        
+            # Install all packages (except scons)
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
+            libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libudev-dev libxi-dev libxrandr-dev yasm g++-multilib libc6-dev-i386
+
+      
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-templates
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}-${{matrix.target}}-${{matrix.arch}}
+          restore-keys: |
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}-${{matrix.target}}-${{matrix.arch}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.GODOT_BASE_BRANCH}}
+
+      # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+      #     # Semantic version range syntax or exact version of a Python version
+          python-version: '3.x'
+      #     # Optional - x64 or x86 architecture, defaults to x64
+          architecture: 'x64'
+
+      # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
+      - name: Configuring Python packages
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -m pip install scons
+          python --version
+          scons --version
+
+      # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
+      - name: Compilation
+        env:
+          SCONS_CACHE: ${{github.workspace}}/.scons_cache/
+        run: |
+          # PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
+          scons -j2 verbose=yes warnings=extra platform=linuxbsd tests=no target=${{matrix.target}} arch=${{matrix.arch}}
+          echo "bin/ files:"
+          ls bin/
+
+      # Make build available
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{matrix.executable_name}}-${{matrix.target}}-${{matrix.arch}}
+          path: bin/*
