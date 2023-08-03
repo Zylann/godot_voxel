@@ -9,7 +9,7 @@ on:
 env:
   GODOT_BASE_BRANCH: "4.1"
   SCONS_CACHE_LIMIT: 4096
-  
+
   
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,25 +24,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: release-32bit-x86
+          - name: Release template build x86
             target: template_release
             arch: x86_32
-            executable_name: linux_x11_32_debug
+            executable_name: godot.linuxbsd.template_release.x86_32
             
-          - name: debug-32bit-x86
+          - name: Debug template build x86
             target: template_debug
             arch: x86_32
-            executable_name: linux_x11_32_release
+            executable_name: godot.linuxbsd.template_debug.x86_32
             
-          - name: release-64bit-x86_64
+          - name: Release template build x86_64
             target: template_release
             arch: x86_64
-            executable_name: linux_x11_64_debug
+            executable_name: godot.linuxbsd.template_release.x86_64
             
-          - name: debug-64bit-x86_64
+          - name: Debug template build x86_64
             target: template_debug
             arch: x86_64
-            executable_name: linux_x11_64_release
+            executable_name: godot.linuxbsd.template_debug.x86_32
             
 
     steps:
@@ -175,5 +175,5 @@ jobs:
       # Make build available
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{matrix.executable_name}}-${{matrix.target}}-${{matrix.arch}}
-          path: bin/*
+          name: ${{matrix.executable_name}}
+          path: bin/${{matrix.executable_name}}

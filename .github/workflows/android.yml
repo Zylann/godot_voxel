@@ -1,4 +1,4 @@
-name: android builds
+name: 🤖android builds
 on:
   push:
     branches: [ master, github_actions ]
@@ -23,64 +23,64 @@ jobs:
       matrix:
         include:
         ####TEPMPLATES####
-          - name: android-32bit-release-arm
+          - name: Release build arm
             target: template_release
-            arch: armv7
+            arch: arm32
             executable_name: android_release.apk
             
-          - name: android-64bit-release-arm64
+          - name: Release build arm64
             target: template_release
-            arch: arm64v8
+            arch: arm64
             executable_name: android_release.apk
             
-          - name: android-32bit-debug-arm
+          - name: Debug build arm
             target: template_debug
-            arch: armv7
+            arch: arm32
             executable_name: android_debug.apk
             
-          - name: android-64bit-debug-arm64
+          - name: Debug build arm64
             target: template_debug
-            arch: arm64v8
+            arch: arm64
             executable_name: android_debug.apk
             
-          - name: android-32bit-debug-x86
+          - name: Debug build x86
             target: template_debug
-            arch: x86
+            arch: x86_32
             executable_name: android_debug.apk
             
-          - name: android-64bit-debug-x86_64
+          - name: Debug build x86_64
             target: template_debug
             arch: x86_64
             executable_name: android_debug.apk
             
-          - name: android-32bit-release-x86
+          - name: Release build x86
             target: template_release
-            arch: x86
+            arch: x86_32
             executable_name: android_release.apk
             
-          - name: android-64bit-release-x86_64
+          - name: Release build x86_64
             target: template_release
             arch: x86_64
             executable_name: android_release.apk
           ####EDITOR####
-          - name: android-64bit-editor-x86_64
+          - name: Editor build x86_64
             target: editor
             arch: x86_64
             executable_name: android_editor.apk
             
-          - name: android-32bit-editor-x86
+          - name: Editor build x86
             target: editor
-            arch: x86
+            arch: x86_32
             executable_name: android_editor.apk
             
-          - name: android-32bit-editor-arm
+          - name: Editor build arm
             target: editor
-            arch: armv7
+            arch: arm32
             executable_name: android_editor.apk
             
-          - name: android-32bit-editor-arm64
+          - name: Editor build arm64
             target: editor
-            arch: arm64v8
+            arch: arm64
             executable_name: android_editor.apk
             
 
