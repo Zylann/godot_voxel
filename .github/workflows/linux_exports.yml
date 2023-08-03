@@ -10,7 +10,7 @@ env:
   GODOT_BASE_BRANCH: "4.1"
   SCONS_CACHE_LIMIT: 4096
 
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,25 +24,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Release template build x86
+          - name: Release build x86
             target: template_release
             arch: x86_32
             executable_name: godot.linuxbsd.template_release.x86_32
             
-          - name: Debug template build x86
+          - name: Debug build x86
             target: template_debug
             arch: x86_32
             executable_name: godot.linuxbsd.template_debug.x86_32
             
-          - name: Release template build x86_64
+          - name: Release build x86_64
             target: template_release
             arch: x86_64
             executable_name: godot.linuxbsd.template_release.x86_64
             
-          - name: Debug template build x86_64
+          - name: Debug build x86_64
             target: template_debug
             arch: x86_64
-            executable_name: godot.linuxbsd.template_debug.x86_32
+            executable_name: godot.linuxbsd.template_debug.x86_64
             
 
     steps:
