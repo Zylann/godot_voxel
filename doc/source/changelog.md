@@ -57,6 +57,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed cellular noise when used on GPU
     - `VoxelInstanceLibrary`: fixed `find_item_by_name` was not finding items
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
+    - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata
     - `VoxelMeshSDF`: fixed saved resource was not loading properly
 
