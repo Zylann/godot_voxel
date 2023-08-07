@@ -201,7 +201,7 @@ void VoxelInstancer::process() {
 		process_mesh_lods();
 	}
 #ifdef TOOLS_ENABLED
-	if (_gizmos_enabled) {
+	if (_gizmos_enabled && is_visible_in_tree()) {
 		process_gizmos();
 	}
 #endif
