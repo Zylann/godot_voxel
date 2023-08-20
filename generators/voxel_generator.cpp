@@ -233,7 +233,7 @@ void VoxelGenerator::compile_shaders() {
 		MutexLock mlock(_shader_mutex);
 
 		_detail_rendering_shader = detail_render_shader;
-		_detail_rendering_shader_parameters = block_params;
+		_detail_rendering_shader_parameters = detail_params;
 
 		_block_rendering_shader = block_render_shader;
 		_block_rendering_shader_parameters = block_params;
