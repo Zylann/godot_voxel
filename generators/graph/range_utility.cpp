@@ -22,8 +22,11 @@ void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSectio
 	bool current_stationary = true;
 	bool current_increasing = false;
 
+	// Iterating up to `res` included, to include the final value (Godot's PR #76617 fixed an issue in Curve, which also
+	// made it apparent that our code didn't properly include the end of the curve)
 	for (int i = 1; i < res; ++i) {
-		const float x = static_cast<float>(i) / res;
+		// We do -1 because [res-1] is the last value in the baked array, therefore `x` must be 1
+		const float x = static_cast<float>(i) / (res - 1);
 		const float y = curve.sample_baked(x);
 		// Curve can sometimes appear flat but it still oscillates by very small amounts due to float imprecision
 		// which occurred during bake(). Attempting to workaround that by taking the error into account
