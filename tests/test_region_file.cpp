@@ -17,15 +17,40 @@ void test_region_file() {
 	struct RandomBlockGenerator {
 		RandomPCG rng;
 
+		RandomBlockGenerator() {
+			rng.seed(131183);
+		}
+
 		void generate(VoxelBufferInternal &buffer) {
 			buffer.create(Vector3iUtil::create(block_size));
-			buffer.set_channel_depth(0, VoxelBufferInternal::DEPTH_16_BIT);
+			const unsigned int channel_index = 0;
+			buffer.set_channel_depth(channel_index, VoxelBufferInternal::DEPTH_16_BIT);
 
-			// Make a block with enough data to take some significant space even if compressed
-			for (int z = 0; z < buffer.get_size().z; ++z) {
-				for (int x = 0; x < buffer.get_size().x; ++x) {
-					for (int y = 0; y < buffer.get_size().y; ++y) {
-						buffer.set_voxel(rng.rand() % 256, x, y, z, 0);
+			const float r = rng.randf();
+
+			if (r < 0.2f) {
+				// Every so often, make a uniform block
+				buffer.clear_channel(channel_index, rng.rand() % 256);
+
+			} else if (r < 0.4f) {
+				// Every so often, make a semi-uniform block
+				buffer.clear_channel(channel_index, rng.rand() % 256);
+				const int ymax = rng.rand() % buffer.get_size().y;
+				for (int z = 0; z < buffer.get_size().z; ++z) {
+					for (int x = 0; x < buffer.get_size().x; ++x) {
+						for (int y = 0; y < ymax; ++y) {
+							buffer.set_voxel(rng.rand() % 256, x, y, z, channel_index);
+						}
+					}
+				}
+
+			} else {
+				// Make a block with enough data to take some significant space even if compressed
+				for (int z = 0; z < buffer.get_size().z; ++z) {
+					for (int x = 0; x < buffer.get_size().x; ++x) {
+						for (int y = 0; y < buffer.get_size().y; ++y) {
+							buffer.set_voxel(rng.rand() % 256, x, y, z, channel_index);
+						}
 					}
 				}
 			}
