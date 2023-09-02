@@ -1420,17 +1420,6 @@ void VoxelGraphFunction::_b_set_node_name(int node_id, String node_name) {
 	set_node_name(node_id, node_name);
 }
 
-PackedInt32Array to_godot_int32_array(const std::vector<uint32_t> &vec) {
-	PackedInt32Array a;
-	a.resize(vec.size());
-	// Using pointer access because in GDExtension builds writing into a packed array has different syntax
-	int32_t *p = a.ptrw();
-	for (unsigned int i = 0; i < vec.size(); ++i) {
-		p[i] = vec[i];
-	}
-	return a;
-}
-
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 	Array data;
