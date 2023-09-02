@@ -50,9 +50,10 @@ bool VoxelInstancerEditorPlugin::_zn_handles(const Object *p_object) const {
 void VoxelInstancerEditorPlugin::_zn_edit(Object *p_object) {
 	// Godot will call `edit(null)` when selecting another node
 	if (p_object == nullptr) {
-		if (_node != nullptr) {
-			_node->debug_set_draw_enabled(false);
-			_node = nullptr;
+		VoxelInstancer *instancer = get_instancer();
+		if (instancer != nullptr) {
+			instancer->debug_set_draw_enabled(false);
+			_instancer_object_id = ObjectID();
 		}
 		if (_stat_view != nullptr) {
 			_stat_view->set_instancer(nullptr);
@@ -63,19 +64,21 @@ void VoxelInstancerEditorPlugin::_zn_edit(Object *p_object) {
 	ERR_FAIL_COND(instancer == nullptr);
 	instancer->debug_set_draw_enabled(true);
 	instancer->debug_set_draw_flag(VoxelInstancer::DEBUG_DRAW_ALL_BLOCKS, true);
-	_node = instancer;
+	_instancer_object_id = instancer->get_instance_id();
 	if (_stat_view != nullptr) {
-		_stat_view->set_instancer(_node);
+		_stat_view->set_instancer(instancer);
 	}
 }
 
 void VoxelInstancerEditorPlugin::_zn_make_visible(bool visible) {
 	_menu_button->set_visible(visible);
 
+	VoxelInstancer *instancer = get_instancer();
+
 	if (visible == false) {
-		if (_node != nullptr) {
-			_node->debug_set_draw_enabled(false);
-			_node = nullptr;
+		if (instancer != nullptr) {
+			instancer->debug_set_draw_enabled(false);
+			_instancer_object_id = ObjectID();
 		}
 		if (_stat_view != nullptr) {
 			_stat_view->hide();
@@ -83,7 +86,7 @@ void VoxelInstancerEditorPlugin::_zn_make_visible(bool visible) {
 		}
 	} else {
 		if (_stat_view != nullptr) {
-			_stat_view->set_instancer(_node);
+			_stat_view->set_instancer(instancer);
 			_stat_view->show();
 		}
 	}
@@ -107,7 +110,8 @@ bool VoxelInstancerEditorPlugin::toggle_stat_view() {
 			_stat_view->set_custom_minimum_size(Vector2(0, EDSCALE * 50));
 			add_control_to_container(CONTAINER_SPATIAL_EDITOR_BOTTOM, _stat_view);
 		}
-		_stat_view->set_instancer(_node);
+		VoxelInstancer *instancer = get_instancer();
+		_stat_view->set_instancer(instancer);
 		_stat_view->show();
 
 	} else {
@@ -118,6 +122,21 @@ bool VoxelInstancerEditorPlugin::toggle_stat_view() {
 		}
 	}
 	return active;
+}
+
+VoxelInstancer *VoxelInstancerEditorPlugin::get_instancer() {
+	if (!_instancer_object_id.is_valid()) {
+		return nullptr;
+	}
+	Object *obj = ObjectDB::get_instance(_instancer_object_id);
+	if (obj == nullptr) {
+		// Could have been destroyed
+		return nullptr;
+	}
+	VoxelInstancer *instancer = Object::cast_to<VoxelInstancer>(obj);
+	// We don't expect Godot to re-use the same ObjectID for different objects
+	ERR_FAIL_COND_V(instancer == nullptr, nullptr);
+	return instancer;
 }
 
 void VoxelInstancerEditorPlugin::_bind_methods() {
