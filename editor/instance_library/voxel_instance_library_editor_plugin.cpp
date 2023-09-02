@@ -91,7 +91,12 @@ void VoxelInstanceLibraryEditorPlugin::_on_button_pressed(int id) {
 			Ref<BoxMesh> mesh;
 			mesh.instantiate();
 			item->set_mesh(mesh, 0);
-			item->set_lod_index(2);
+
+			// We could decide to use a different default here if we can detect that the instancer the library is used
+			// into is child of a terrain with LOD or no LOD. At the very least it should always be 0 if there is no LOD
+			// support, otherwise things look broken. 0 is the default.
+			// item->set_lod_index(2);
+
 			Ref<VoxelInstanceGenerator> generator;
 			generator.instantiate();
 			item->set_generator(generator);
