@@ -282,7 +282,7 @@ void VoxelGraphEditorIODialog::process_ui(PortsUI &ui, std::vector<VoxelGraphFun
 void VoxelGraphEditorIODialog::_on_auto_generate_button_pressed() {
 	ERR_FAIL_COND(_graph.is_null());
 
-	auto_pick_input_and_outputs(_graph->get_graph(), _inputs, _outputs);
+	auto_pick_inputs_and_outputs(_graph->get_graph(), _inputs, _outputs);
 
 	copy_data_to_ui(_inputs_ui, _inputs);
 	copy_data_to_ui(_outputs_ui, _outputs);

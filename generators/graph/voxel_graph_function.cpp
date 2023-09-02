@@ -57,7 +57,7 @@ ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction
 }
 
 // Automatically chooses inputs and outputs based on a graph.
-void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
+void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
 		std::vector<VoxelGraphFunction::Port> &outputs) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
@@ -1191,7 +1191,7 @@ bool VoxelGraphFunction::contains_reference_to_function(const VoxelGraphFunction
 }
 
 void VoxelGraphFunction::auto_pick_inputs_and_outputs() {
-	zylann::voxel::pg::auto_pick_input_and_outputs(_graph, _inputs, _outputs);
+	zylann::voxel::pg::auto_pick_inputs_and_outputs(_graph, _inputs, _outputs);
 }
 
 bool find_port_by_name(Span<const VoxelGraphFunction::Port> ports, const String &name, unsigned int &out_index) {

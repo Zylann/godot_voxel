@@ -262,7 +262,7 @@ private:
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
 		uint32_t id, bool create_default_instances);
 
-void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
+void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
 		std::vector<VoxelGraphFunction::Port> &outputs);
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
