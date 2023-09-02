@@ -14,17 +14,6 @@ const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
 
-inline Vector3f normalized(Vector3f pos, float &length) {
-	length = math::length(pos);
-	if (length == 0) {
-		return Vector3f();
-	}
-	pos.x /= length;
-	pos.y /= length;
-	pos.z /= length;
-	return pos;
-}
-
 // Heron's formula is overly represented on SO but uses 4 square roots. This uses only one.
 // A parallelogram's area is found with the magnitude of the cross product of two adjacent side vectors,
 // so a triangle's area is half of it
@@ -439,7 +428,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 		} else {
 			if (up_mode == UP_MODE_SPHERE) {
-				global_up = normalized(mesh_block_origin + t.origin, sphere_distance);
+				global_up = math::normalized(mesh_block_origin + t.origin, sphere_distance);
 				sphere_up_is_computed = true;
 				sphere_distance_is_computed = true;
 			}
@@ -460,7 +449,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 			float ny = surface_normal.y;
 			if (up_mode == UP_MODE_SPHERE) {
 				if (!sphere_up_is_computed) {
-					global_up = normalized(mesh_block_origin + t.origin, sphere_distance);
+					global_up = math::normalized(mesh_block_origin + t.origin, sphere_distance);
 					sphere_up_is_computed = true;
 					sphere_distance_is_computed = true;
 				}

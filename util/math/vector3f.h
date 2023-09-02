@@ -41,6 +41,18 @@ inline Vector3f normalized(const Vector3f &v) {
 	}
 }
 
+inline Vector3f normalized(Vector3f v, float &out_length) {
+	const float lengthsq = length_squared(v);
+	if (lengthsq == 0) {
+		out_length = 0.f;
+		return Vector3f();
+	} else {
+		const float length = Math::sqrt(lengthsq);
+		out_length = length;
+		return v / length;
+	}
+}
+
 inline bool is_normalized(const Vector3f &v) {
 	// use length_squared() instead of length() to avoid sqrt(), makes it more stringent.
 	return Math::is_equal_approx(length_squared(v), 1, float(UNIT_EPSILON));
