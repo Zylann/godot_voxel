@@ -5,6 +5,7 @@
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {
@@ -13,16 +14,6 @@ namespace {
 const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
-
-// Heron's formula is overly represented on SO but uses 4 square roots. This uses only one.
-// A parallelogram's area is found with the magnitude of the cross product of two adjacent side vectors,
-// so a triangle's area is half of it
-inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
-	const Vector3 p01 = p1 - p0;
-	const Vector3 p02 = p2 - p0;
-	const Vector3 c = p01.cross(p02);
-	return 0.5f * c.length();
-}
 
 void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position,
 		int lod_index, int layer_id, Array surface_arrays, UpMode up_mode, uint8_t octant_mask, float block_size) {
@@ -182,7 +173,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 					const Vector3 &nb = normals[ib];
 					const Vector3 &nc = normals[ic];
 
-					const float triangle_area = get_triangle_area(pa, pb, pc);
+					const float triangle_area = math::get_triangle_area(pa, pb, pc);
 					accumulator += triangle_area;
 
 					const int count_in_triangle = int(accumulator * _density);
