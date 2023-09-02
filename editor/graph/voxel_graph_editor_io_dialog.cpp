@@ -311,10 +311,16 @@ void VoxelGraphEditorIODialog::_on_ok_pressed() {
 	// Show dialog again, otherwise the user can't see what undo/redo did
 	_undo_redo->add_undo_method(this, "reshow", _graph);
 
+	const bool prev_reshow_value = _reshow_on_undo_redo;
+	_reshow_on_undo_redo = false;
 	_undo_redo->commit_action();
+	_reshow_on_undo_redo = prev_reshow_value;
 }
 
 void VoxelGraphEditorIODialog::reshow(Ref<VoxelGraphFunction> graph) {
+	if (_reshow_on_undo_redo == false) {
+		return;
+	}
 	show();
 	set_graph(graph);
 }
