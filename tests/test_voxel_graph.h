@@ -29,6 +29,7 @@ void test_voxel_graph_issue471();
 void test_voxel_graph_unused_single_texture_output();
 void test_voxel_graph_spots2d_optimized_execution_map();
 void test_voxel_graph_unused_inner_output();
+void test_voxel_graph_function_execute();
 
 } // namespace zylann::voxel::tests
 

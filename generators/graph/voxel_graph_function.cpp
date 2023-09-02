@@ -5,6 +5,7 @@
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/funcs.h"
+#include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "node_type_db.h"
 
@@ -13,6 +14,7 @@
 namespace zylann::voxel::pg {
 
 const char *VoxelGraphFunction::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
+const char *VoxelGraphFunction::SIGNAL_COMPILED = "compiled";
 
 void VoxelGraphFunction::clear() {
 	unregister_subresources();
@@ -610,7 +612,15 @@ unsigned int VoxelGraphFunction::get_nodes_count() const {
 
 #ifdef TOOLS_ENABLED
 
-void VoxelGraphFunction::get_configuration_warnings(PackedStringArray &out_warnings) const {}
+void VoxelGraphFunction::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	if (_last_compiling_result.success == false) {
+		if (_last_compiling_result.message.is_empty()) {
+			out_warnings.append("The graph isn't compiled.");
+		} else {
+			out_warnings.append(String("Compiling failed: {0}").format(_last_compiling_result.message));
+		}
+	}
+}
 
 uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -987,6 +997,9 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 bool VoxelGraphFunction::load_graph_from_variant_data(Dictionary data) {
 	clear();
 
+	// Unfortunately we can't compile on load, because input/output information are separate properties and they can be
+	// set by Godot in any order... we would need a post-load callback for when all properties have been assigned.
+
 	if (zylann::voxel::pg::load_graph_from_variant_data(_graph, data, get_path())) {
 		register_subresources();
 		return true;
@@ -1194,6 +1207,10 @@ void VoxelGraphFunction::auto_pick_inputs_and_outputs() {
 	zylann::voxel::pg::auto_pick_inputs_and_outputs(_graph, _inputs, _outputs);
 }
 
+bool VoxelGraphFunction::is_automatic_io_setup_enabled() const {
+	return _automatic_io_setup_enabled;
+}
+
 bool find_port_by_name(Span<const VoxelGraphFunction::Port> ports, const String &name, unsigned int &out_index) {
 	for (unsigned int i = 0; i < ports.size(); ++i) {
 		const VoxelGraphFunction::Port &port = ports[i];
@@ -1246,6 +1263,123 @@ void VoxelGraphFunction::update_function_nodes(std::vector<ProgramGraph::Connect
 			update_function(graph, node.id, removed_connections);
 		}
 	});
+}
+
+pg::CompilationResult VoxelGraphFunction::compile(bool debug) {
+	std::shared_ptr<CompiledGraph> compiled_graph = make_shared_instance<CompiledGraph>();
+
+	if (_automatic_io_setup_enabled) {
+		auto_pick_inputs_and_outputs();
+	}
+
+	pg::CompilationResult result = compiled_graph->runtime.compile(*this, debug);
+	_last_compiling_result = result;
+
+	if (!result.success) {
+		// This is only to propagate the update of configuration warnings...
+		// We should not use `changed` for this, because it causes infinite compilation cycles in the editor (the editor
+		// thinks the graph was changed [by the user] and tries to auto-recompile)
+		emit_signal(VoxelStringNames::get_singleton().compiled);
+
+		return result;
+	}
+
+	{
+		MutexLock lock(_compiled_graph_mutex);
+		_compiled_graph = compiled_graph;
+	}
+
+	emit_signal(VoxelStringNames::get_singleton().compiled);
+	return result;
+}
+
+std::shared_ptr<VoxelGraphFunction::CompiledGraph> VoxelGraphFunction::get_compiled_graph() const {
+	MutexLock lock(_compiled_graph_mutex);
+	return _compiled_graph;
+}
+
+VoxelGraphFunction::RuntimeCache &VoxelGraphFunction::get_runtime_cache_tls() {
+	static thread_local RuntimeCache tls_cache;
+	return tls_cache;
+}
+
+bool VoxelGraphFunction::is_compiled() const {
+	MutexLock lock(_compiled_graph_mutex);
+	return _compiled_graph != nullptr;
+}
+
+void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> outputs) {
+	ZN_PROFILE_SCOPE();
+
+	if (inputs.size() == 0) {
+		return;
+	}
+	if (outputs.size() == 0) {
+		return;
+	}
+
+	const unsigned int total_buffer_size = inputs[0].size();
+
+#ifdef DEBUG_ENABLED
+	for (Span<float> &s : inputs) {
+		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+	}
+	for (Span<float> &s : outputs) {
+		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+	}
+	ZN_ASSERT_RETURN(_compiled_graph->runtime.get_output_count() >= outputs.size());
+#endif
+
+	std::shared_ptr<CompiledGraph> compiled_graph = get_compiled_graph();
+
+	if (_compiled_graph == nullptr) {
+		return;
+	}
+
+	// Note, we may not use I/O definitions, but ONLY the CompiledGraph, because the graph and I/O definitions can be
+	// modified by another thread while this function runs.
+
+	// TODO If some outputs are not provided, optimize with an execution map
+
+	// If the input length is too big, run multiple passes so we don't allocate too much memory, which might help
+	// reducing space occupied in CPU cache
+	const unsigned int max_buffer_size = 256;
+	const unsigned int chunk_count = math::ceildiv(total_buffer_size, max_buffer_size);
+	const unsigned int chunk_size = math::min(total_buffer_size, max_buffer_size);
+
+	RuntimeCache &cache = get_runtime_cache_tls();
+
+	cache.input_chunks.resize(inputs.size());
+
+	_compiled_graph->runtime.prepare_state(cache.state, chunk_size,
+			// since we generate arbitrary series, outer group optimization cannot apply.
+			false);
+
+	for (unsigned int chunk_index = 0; chunk_index < chunk_count; ++chunk_index) {
+		const unsigned buffer_begin = chunk_index * chunk_size;
+		const unsigned buffer_chunk_size = math::min(chunk_size, total_buffer_size - buffer_begin);
+
+		for (unsigned int input_index = 0; input_index < inputs.size(); ++input_index) {
+			cache.input_chunks[input_index] = inputs[input_index].sub(buffer_begin, buffer_chunk_size);
+		}
+
+		_compiled_graph->runtime.generate_set(cache.state, to_span(cache.input_chunks), false, nullptr);
+
+		// Copy outputs
+		for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
+			Span<float> output = outputs[output_index].sub(buffer_begin, buffer_chunk_size);
+			const pg::Runtime::OutputInfo &oi = _compiled_graph->runtime.get_output_info(output_index);
+			const pg::Runtime::Buffer &b = cache.state.get_buffer(oi.buffer_address);
+			if (b.data == nullptr) {
+				for (float &dst : output) {
+					dst = b.constant_value;
+				}
+			} else {
+				ZN_ASSERT_CONTINUE(b.size >= output.size());
+				Span<float>(b.data, output.size()).copy_to(output);
+			}
+		}
+	}
 }
 
 // Binding land
@@ -1449,6 +1583,7 @@ void VoxelGraphFunction::_bind_methods() {
 			PropertyInfo(Variant::ARRAY, "output_definitions"), "_set_output_definitions", "_get_output_definitions");
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
+	ADD_SIGNAL(MethodInfo(SIGNAL_COMPILED));
 
 	BIND_ENUM_CONSTANT(NODE_CONSTANT);
 	BIND_ENUM_CONSTANT(NODE_INPUT_X);

@@ -104,6 +104,8 @@ VoxelStringNames::VoxelStringNames() {
 		}
 		ortho_rotation_enum_hint_string += String(math::ortho_rotation_to_string(i));
 	}
+
+	compiled = StringName("compiled");
 }
 
 } // namespace zylann::voxel

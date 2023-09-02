@@ -1405,9 +1405,18 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 			case VoxelGraphFunction::NODE_INPUT_Y:
 			case VoxelGraphFunction::NODE_INPUT_Z:
 			case VoxelGraphFunction::NODE_INPUT_SDF:
-			case VoxelGraphFunction::NODE_CUSTOM_INPUT:
+			case VoxelGraphFunction::NODE_CUSTOM_INPUT: {
+				if (!contains(input_node_ids, node_id)) {
+					CompilationResult result;
+					result.success = false;
+					result.message =
+							ZN_TTR("Used input node isn't registered. Remove it, or add it to function inputs.");
+					result.node_id = node_id;
+					return result;
+				}
 				// Handled earlier
 				continue;
+			}
 
 			case VoxelGraphFunction::NODE_SDF_PREVIEW: {
 				if (!debug) {

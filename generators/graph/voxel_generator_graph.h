@@ -170,7 +170,9 @@ private:
 
 	// Wrapper around the runtime with extra information specialized for the use case
 	struct Runtime {
+		// TODO Use the runtime and state from `VoxelGraphFunction`
 		pg::Runtime runtime;
+
 		// Indices that are not used in the graph.
 		// This is used when there are less than 4 texture weight outputs.
 		FixedArray<uint8_t, 4> spare_texture_indices;
@@ -231,6 +233,7 @@ private:
 		std::vector<float> z_cache;
 		std::vector<float> input_sdf_slice_cache;
 		std::vector<float> input_sdf_full_cache;
+		// TODO Use the runtime and state from `VoxelGraphFunction`
 		pg::Runtime::State state;
 		pg::Runtime::ExecutionMap optimized_execution_map;
 	};

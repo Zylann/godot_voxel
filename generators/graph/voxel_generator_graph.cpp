@@ -831,6 +831,7 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 		}
 	}
 
+	// TODO This bypasses VoxelGraphFunction's compiling method, we should probably use it now
 	// Core compilation
 	pg::Runtime &runtime = r->runtime;
 	const pg::CompilationResult result = runtime.compile(**_main_function, debug);

@@ -78,6 +78,10 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 	static thread_local std::vector<Vector3f> g_vertex_cache;
 	static thread_local std::vector<Vector3f> g_normal_cache;
 	static thread_local std::vector<float> g_noise_cache;
+	// static thread_local std::vector<float> g_noise_graph_output_cache;
+	static thread_local std::vector<float> g_noise_graph_x_cache;
+	static thread_local std::vector<float> g_noise_graph_y_cache;
+	static thread_local std::vector<float> g_noise_graph_z_cache;
 
 	std::vector<Vector3f> &vertex_cache = g_vertex_cache;
 	std::vector<Vector3f> &normal_cache = g_normal_cache;
@@ -236,48 +240,162 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		}
 	}
 
+	// Position of the block relative to the instancer node.
+	// Use full-precision here because we deal with potentially large coordinates
+	const Vector3 mesh_block_origin_d = grid_position * block_size;
+
+	// Filter out by noise graph
+	if (_noise_graph.is_valid()) {
+		ZN_PROFILE_SCOPE_NAMED("Noise graph filter");
+
+		std::vector<float> &out_buffer = g_noise_cache;
+		out_buffer.resize(vertex_cache.size());
+
+		// Check noise graph validity
+		std::shared_ptr<pg::VoxelGraphFunction::CompiledGraph> compiled_graph = _noise_graph->get_compiled_graph();
+		if (compiled_graph != nullptr) {
+			const int input_count = compiled_graph->runtime.get_input_count();
+			const int output_count = compiled_graph->runtime.get_output_count();
+
+			bool valid = (output_count == 1);
+
+			switch (_noise_dimension) {
+				case DIMENSION_2D:
+					if (input_count != 2) {
+						valid = false;
+					}
+					break;
+				case DIMENSION_3D:
+					if (input_count != 3) {
+						valid = false;
+					}
+					break;
+				default:
+					ERR_FAIL();
+			}
+
+			if (!valid) {
+				compiled_graph = nullptr;
+			}
+		}
+
+		if (compiled_graph != nullptr) {
+			// Execute graph
+
+			std::vector<float> &x_buffer = g_noise_graph_x_cache;
+			std::vector<float> &z_buffer = g_noise_graph_z_cache;
+			x_buffer.resize(vertex_cache.size());
+			z_buffer.resize(vertex_cache.size());
+
+			FixedArray<Span<float>, 1> outputs;
+			outputs[0] = to_span(out_buffer);
+
+			switch (_noise_dimension) {
+				case DIMENSION_2D: {
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						x_buffer[i] = pos.x;
+						z_buffer[i] = pos.z;
+					}
+
+					FixedArray<Span<float>, 2> inputs;
+					inputs[0] = to_span(x_buffer);
+					inputs[1] = to_span(z_buffer);
+
+					_noise_graph->execute(to_span(inputs), to_span(outputs));
+				} break;
+
+				case DIMENSION_3D: {
+					std::vector<float> &y_buffer = g_noise_graph_y_cache;
+					y_buffer.resize(vertex_cache.size());
+
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						x_buffer[i] = pos.x;
+						y_buffer[i] = pos.y;
+						z_buffer[i] = pos.z;
+					}
+
+					FixedArray<Span<float>, 3> inputs;
+					inputs[0] = to_span(x_buffer);
+					inputs[1] = to_span(y_buffer);
+					inputs[2] = to_span(z_buffer);
+
+					_noise_graph->execute(to_span(inputs), to_span(outputs));
+				} break;
+
+				default:
+					ERR_FAIL();
+			}
+
+		} else {
+			// Error fallback
+			for (float &v : out_buffer) {
+				v = 0.f;
+			}
+		}
+	}
+
 	std::vector<float> &noise_cache = g_noise_cache;
 
-	// Filter out by noise
+	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
 	if (_noise.is_valid()) {
-		// Position of the block relative to the instancer node.
-		// Use full-precision here because we deal with potentially large coordinates
-		const Vector3 mesh_block_origin_d = grid_position * block_size;
-		ZN_PROFILE_SCOPE_NAMED("noise filter");
-
-		noise_cache.clear();
+		noise_cache.resize(vertex_cache.size());
 
 		switch (_noise_dimension) {
 			case DIMENSION_2D: {
-				for (size_t i = 0; i < vertex_cache.size(); ++i) {
-					const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-					const float n = _noise->get_noise_2d(pos.x, pos.z);
-					if (n < 0) {
-						unordered_remove(vertex_cache, i);
-						unordered_remove(normal_cache, i);
-						--i;
-					} else {
-						noise_cache.push_back(n);
+				if (_noise_graph.is_valid()) {
+					// Multiply output of noise graph
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						noise_cache[i] *= math::max(_noise->get_noise_2d(pos.x, pos.z), 0.f);
+					}
+				} else {
+					// Use noise directly
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						noise_cache[i] = _noise->get_noise_2d(pos.x, pos.z);
 					}
 				}
 			} break;
 
 			case DIMENSION_3D: {
-				for (size_t i = 0; i < vertex_cache.size(); ++i) {
-					const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-					const float n = _noise->get_noise_3d(pos.x, pos.y, pos.z);
-					if (n < 0) {
-						unordered_remove(vertex_cache, i);
-						unordered_remove(normal_cache, i);
-						--i;
-					} else {
-						noise_cache.push_back(n);
+				if (_noise_graph.is_valid()) {
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						noise_cache[i] *= math::max(_noise->get_noise_3d(pos.x, pos.y, pos.z), 0.f);
+					}
+				} else {
+					for (size_t i = 0; i < vertex_cache.size(); ++i) {
+						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+						noise_cache[i] = _noise->get_noise_3d(pos.x, pos.y, pos.z);
 					}
 				}
 			} break;
 
 			default:
 				ERR_FAIL();
+		}
+	}
+
+	const bool use_noise = _noise.is_valid() || _noise_graph.is_valid();
+
+	// Filter out by noise
+	if (use_noise) {
+		// Position of the block relative to the instancer node.
+		// Use full-precision here because we deal with potentially large coordinates
+		const Vector3 mesh_block_origin_d = grid_position * block_size;
+		ZN_PROFILE_SCOPE_NAMED("Noise filter");
+
+		for (size_t i = 0; i < vertex_cache.size(); ++i) {
+			const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
+			const float n = noise_cache[i];
+			if (n <= 0) {
+				unordered_remove(vertex_cache, i);
+				unordered_remove(normal_cache, i);
+				unordered_remove(noise_cache, i);
+				--i;
+			}
 		}
 	}
 
@@ -424,7 +542,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 					break;
 			}
 
-			if (_noise.is_valid() && _noise_on_scale > 0.f) {
+			if (use_noise && _noise_on_scale > 0.f) {
 #ifdef DEBUG_ENABLED
 				CRASH_COND(vertex_index >= noise_cache.size());
 #endif
@@ -637,6 +755,31 @@ Ref<Noise> VoxelInstanceGenerator::get_noise() const {
 	return _noise;
 }
 
+void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
+	if (_noise_graph == func) {
+		return;
+	}
+	if (_noise_graph.is_valid()) {
+		_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+	}
+
+	_noise_graph = func;
+
+	if (_noise_graph.is_valid()) {
+		// Compile on assignment because there isn't really a good place to do it...
+		func->compile(Engine::get_singleton()->is_editor_hint());
+
+		_noise_graph->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+	}
+	emit_changed();
+}
+
+Ref<pg::VoxelGraphFunction> VoxelInstanceGenerator::get_noise_graph() const {
+	return _noise_graph;
+}
+
 void VoxelInstanceGenerator::set_noise_dimension(Dimension dim) {
 	ERR_FAIL_INDEX(dim, DIMENSION_COUNT);
 	if (dim == _noise_dimension) {
@@ -666,6 +809,35 @@ float VoxelInstanceGenerator::get_noise_on_scale() const {
 void VoxelInstanceGenerator::_on_noise_changed() {
 	emit_changed();
 }
+
+void VoxelInstanceGenerator::_on_noise_graph_changed() {
+	emit_changed();
+}
+
+#ifdef TOOLS_ENABLED
+
+void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warnings) const {
+	if (_noise_graph.is_valid()) {
+		// Graph compiles?
+		get_resource_configuration_warnings(**_noise_graph, warnings, []() { return "noise_graph: "; });
+
+		// Check I/Os
+		const int expected_input_count = (_noise_dimension == DIMENSION_2D ? 2 : 3);
+		const int expected_output_count = 1;
+		const int input_count = _noise_graph->get_input_definitions().size();
+		const int output_count = _noise_graph->get_output_definitions().size();
+		if (input_count != expected_input_count) {
+			warnings.append(String("The noise graph has an invalid number of inputs. Expected {0}, found {1}")
+									.format(varray(expected_input_count, input_count)));
+		}
+		if (output_count != expected_output_count) {
+			warnings.append(String("The noise graph has an invalid number of outputs. Expected {0}, found {1}")
+									.format(varray(expected_output_count, output_count)));
+		}
+	}
+}
+
+#endif
 
 void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_density", "density"), &VoxelInstanceGenerator::set_density);
@@ -713,6 +885,9 @@ void VoxelInstanceGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_noise", "noise"), &VoxelInstanceGenerator::set_noise);
 	ClassDB::bind_method(D_METHOD("get_noise"), &VoxelInstanceGenerator::get_noise);
 
+	ClassDB::bind_method(D_METHOD("set_noise_graph", "graph"), &VoxelInstanceGenerator::set_noise_graph);
+	ClassDB::bind_method(D_METHOD("get_noise_graph"), &VoxelInstanceGenerator::get_noise_graph);
+
 	ClassDB::bind_method(D_METHOD("set_noise_dimension", "dim"), &VoxelInstanceGenerator::set_noise_dimension);
 	ClassDB::bind_method(D_METHOD("get_noise_dimension"), &VoxelInstanceGenerator::get_noise_dimension);
 
@@ -721,6 +896,7 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
+	ClassDB::bind_method(D_METHOD("_on_noise_graph_changed"), &VoxelInstanceGenerator::_on_noise_graph_changed);
 #endif
 
 	ADD_GROUP("Emission", "");
@@ -760,8 +936,11 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ADD_GROUP("Noise", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLite"), "set_noise",
-			"get_noise");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, Noise::get_class_static()),
+			"set_noise", "get_noise");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise_graph", PROPERTY_HINT_RESOURCE_TYPE,
+						 pg::VoxelGraphFunction::get_class_static()),
+			"set_noise_graph", "get_noise_graph");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_dimension", PROPERTY_HINT_ENUM, "2D,3D"), "set_noise_dimension",
 			"get_noise_dimension");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "noise_on_scale", PROPERTY_HINT_RANGE, "0.0, 1.0, 0.01"),

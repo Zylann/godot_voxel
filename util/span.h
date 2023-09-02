@@ -2,6 +2,7 @@
 #define ZN_SPAN_H
 
 #include "fixed_array.h"
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <vector>
@@ -101,6 +102,16 @@ public:
 		for (T *p = _ptr; p != end; ++p) {
 			*p = v;
 		}
+	}
+
+	inline void copy_to(Span<T> other) const {
+		ZN_ASSERT(other.size() == _size);
+		ZN_ASSERT(other._ptr != nullptr);
+		// for (size_t i = 0; i < _size; ++i) {
+		// 	other._ptr[i] = _ptr[i];
+		// }
+		// Should compile to memcpy if T is simple enough
+		std::copy(_ptr, _ptr + _size, other._ptr);
 	}
 
 	inline bool overlaps(const Span<T> other) const {

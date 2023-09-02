@@ -3,6 +3,7 @@
 
 #include "../../util/godot/classes/resource.h"
 #include "program_graph.h"
+#include "voxel_graph_runtime.h"
 
 namespace zylann::voxel::pg {
 
@@ -15,6 +16,7 @@ class VoxelGraphFunction : public Resource {
 	GDCLASS(VoxelGraphFunction, Resource)
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
+	static const char *SIGNAL_COMPILED;
 
 	// Node indexes within the DB.
 	// Don't use these in saved data,
@@ -179,6 +181,10 @@ public:
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
 	uint64_t get_output_graph_hash() const;
+
+	bool can_load_default_graph() const {
+		return _can_load_default_graph;
+	}
 #endif
 
 	// Internal
@@ -213,16 +219,35 @@ public:
 	bool contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
 
+	bool is_automatic_io_setup_enabled() const;
+
 	bool get_node_input_index_by_name(uint32_t node_id, String input_name, unsigned int &out_input_index) const;
 	bool get_node_param_index_by_name(uint32_t node_id, String param_name, unsigned int &out_param_index) const;
 
 	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
 
-#ifdef TOOLS_ENABLED
-	bool can_load_default_graph() const {
-		return _can_load_default_graph;
-	}
-#endif
+	// Compiling and running
+
+	pg::CompilationResult compile(bool debug);
+	void execute(Span<Span<float>> inputs, Span<Span<float>> outputs);
+
+	bool is_compiled() const;
+
+	struct CompiledGraph {
+		// This is read-only once it is compiled! Multiple threads can read it at the same time.
+		// In order to recompile the graph, a new instance is created.
+		pg::Runtime runtime;
+	};
+
+	std::shared_ptr<CompiledGraph> get_compiled_graph() const;
+
+	// Per-thread re-used memory for runtime executions
+	struct RuntimeCache {
+		pg::Runtime::State state;
+		std::vector<Span<float>> input_chunks;
+	};
+
+	static RuntimeCache &get_runtime_cache_tls();
 
 private:
 	void register_subresource(Resource &resource);
@@ -248,15 +273,25 @@ private:
 	static void _bind_methods();
 
 	ProgramGraph _graph;
+	// If enabled, inputs and outputs will be automatically setup from nodes of the graph when compiling.
+	// However this doesn't give fine control over the order I/Os appear in, so it may be disabled if that's desired.
+	bool _automatic_io_setup_enabled = true;
 	std::vector<Port> _inputs;
 	std::vector<Port> _outputs;
 #ifdef TOOLS_ENABLED
-	// Godot doesn't make a difference between a resource newly created in the inspector and an empty one or one created
-	// from script... It is necessary to know that in order to load a "hello world" graph in the editor when creating a
-	// new graph. True by default after being created, but will become false if cleared (which means it's not a brand
-	// new instance).
+	// Godot doesn't make a difference between a resource newly created in the inspector, an existing empty one, or one
+	// created from script... It is necessary to know that in order to load a "hello world" graph in the editor when
+	// creating a new graph in the editor. True by default after being created, but will become false if cleared (which
+	// means it's not a brand new instance).
 	bool _can_load_default_graph = true;
 #endif
+	pg::CompilationResult _last_compiling_result;
+
+	// Compiled part.
+	// Must never be mutated after being assigned.
+	// This can be accessed by multiple threads so it needs to be protected.
+	std::shared_ptr<CompiledGraph> _compiled_graph = nullptr;
+	Mutex _compiled_graph_mutex;
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,

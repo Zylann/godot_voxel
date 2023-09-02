@@ -156,6 +156,13 @@ inline int ceildiv(int x, int d) {
 	// return -floordiv(-x, d);
 }
 
+inline int ceildiv(unsigned int x, unsigned int d) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(d > 0);
+#endif
+	return (x + d - 1) / d;
+}
+
 // TODO Rename `wrapi`
 // `Math::wrapi` with zero min
 inline int wrap(int x, int d) {

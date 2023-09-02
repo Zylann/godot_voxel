@@ -1910,6 +1910,9 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 								.format(varray(VoxelInstanceLibrary::get_class_static())));
 	} else if (_library->get_item_count() == 0) {
 		warnings.append(ZN_TTR("The assigned library is empty. Add items to it so they can be spawned."));
+
+	} else {
+		get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
 	}
 }
 

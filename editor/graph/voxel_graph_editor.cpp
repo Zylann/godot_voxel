@@ -901,9 +901,7 @@ void reset_modulates(GraphEdit &graph_edit) {
 }
 
 void VoxelGraphEditor::update_previews(bool with_live_update) {
-	if (_generator.is_null()) {
-		return;
-	}
+	ZN_ASSERT_RETURN(_graph.is_valid());
 
 	clear_range_analysis_tooltips();
 	hide_profiling_ratios();
@@ -913,9 +911,11 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 	const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-	const pg::CompilationResult result = _generator->compile(true);
+	// VoxelGeneratorGraph has extra requirements to compile
+	const pg::CompilationResult result = _generator.is_valid() ? _generator->compile(true) : _graph->compile(true);
+
 	if (!result.success) {
-		ERR_PRINT(String("Voxel graph compilation failed: {0}").format(varray(result.message)));
+		ERR_PRINT(String("Graph compilation failed: {0}").format(varray(result.message)));
 
 		_compile_result_label->set_text(result.message);
 		_compile_result_label->set_tooltip_text(result.message);
@@ -938,10 +938,13 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 		_compile_result_label->hide();
 	}
 
-	if (!_generator->is_good()) {
+	if (_generator.is_null() || !_generator->is_good()) {
 		return;
 	}
 	// We assume no other thread will try to modify the graph and compile something not good
+
+	// TODO Make slice previews work with arbitrary functions, when possible
+	// TODO Make range analysis previews work with arbitrary functions, when possible
 
 	update_slice_previews();
 

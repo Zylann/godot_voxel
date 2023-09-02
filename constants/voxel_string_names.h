@@ -91,6 +91,8 @@ public:
 
 	FixedArray<StringName, math::ORTHO_ROTATION_COUNT> ortho_rotation_names;
 	String ortho_rotation_enum_hint_string;
+
+	StringName compiled;
 };
 
 } // namespace zylann::voxel

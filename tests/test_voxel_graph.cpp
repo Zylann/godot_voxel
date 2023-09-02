@@ -1779,4 +1779,81 @@ void test_voxel_graph_unused_inner_output() {
 	ZN_TEST_ASSERT(result_ndebug.success);
 }
 
+void test_voxel_graph_function_execute() {
+	Ref<VoxelGraphFunction> function;
+	function.instantiate();
+
+	// out = sin(x) + sin(z + PI/2.0) + y;
+
+	//   X --- sin ----- + --- + --- out
+	//                  /     /
+	//   Z --- + --- sin     Y
+	//        /
+	//     PI/2
+
+	{
+		const uint32_t n_x = function->create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+		const uint32_t n_y = function->create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
+		const uint32_t n_z = function->create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
+		const uint32_t n_sin1 = function->create_node(VoxelGraphFunction::NODE_SIN, Vector2());
+		const uint32_t n_sin2 = function->create_node(VoxelGraphFunction::NODE_SIN, Vector2());
+		const uint32_t n_add1 = function->create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_add2 = function->create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_add3 = function->create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+		const uint32_t n_out_sd = function->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+
+		function->add_connection(n_x, 0, n_sin1, 0);
+		function->add_connection(n_z, 0, n_add1, 0);
+		function->add_connection(n_add1, 0, n_sin2, 0);
+		function->add_connection(n_sin1, 0, n_add2, 0);
+		function->add_connection(n_sin2, 0, n_add2, 1);
+		function->add_connection(n_add2, 0, n_add3, 0);
+		function->add_connection(n_y, 0, n_add3, 1);
+		function->add_connection(n_add3, 0, n_out_sd, 0);
+
+		function->set_node_default_input(n_add1, 1, math::PI_32 / 2.f);
+
+		function->auto_pick_inputs_and_outputs();
+		const CompilationResult result = function->compile(false);
+		ZN_TEST_ASSERT(result.success);
+	}
+
+	const Vector3i block_size(16, 18, 20);
+	const int volume = Vector3iUtil::get_volume(block_size);
+
+	std::vector<float> x_buffer;
+	std::vector<float> y_buffer;
+	std::vector<float> z_buffer;
+	std::vector<float> sd_buffer;
+
+	x_buffer.resize(volume);
+	y_buffer.resize(volume);
+	z_buffer.resize(volume);
+	sd_buffer.resize(volume);
+
+	{
+		unsigned int i = 0;
+		for (int z = 0; z < block_size.z; ++z) {
+			for (int x = 0; x < block_size.x; ++x) {
+				for (int y = 0; y < block_size.y; ++y) {
+					x_buffer[i] = x;
+					y_buffer[i] = y;
+					z_buffer[i] = z;
+					++i;
+				}
+			}
+		}
+	}
+
+	Span<float> inputs[3] = { to_span(x_buffer), to_span(y_buffer), to_span(z_buffer) };
+	Span<float> outputs = to_span(sd_buffer);
+	function->execute(Span<Span<float>>(inputs, 3), Span<Span<float>>(&outputs, 1));
+
+	for (int i = 0; i < volume; ++i) {
+		const float obtained_result = sd_buffer[i];
+		const float expected_result = Math::sin(x_buffer[i]) + Math::cos(z_buffer[i]) + y_buffer[i];
+		ZN_TEST_ASSERT(Math::is_equal_approx(obtained_result, expected_result));
+	}
+}
+
 } // namespace zylann::voxel::tests

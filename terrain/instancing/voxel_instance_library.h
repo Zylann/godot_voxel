@@ -45,6 +45,8 @@ public:
 	void add_listener(IListener *listener);
 	void remove_listener(IListener *listener);
 
+	void get_configuration_warnings(PackedStringArray &warnings) const;
+
 protected:
 	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;
 	PackedInt32Array _b_get_all_item_ids() const;

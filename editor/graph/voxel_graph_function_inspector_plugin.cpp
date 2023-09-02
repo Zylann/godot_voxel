@@ -53,21 +53,23 @@ bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, con
 
 		add_custom_control(hb);
 
-		Ref<VoxelGraphFunction> graph_ref(graph);
+		if (!graph->is_automatic_io_setup_enabled()) {
+			Ref<VoxelGraphFunction> graph_ref(graph);
 
-		Button *edit_io_button = memnew(Button);
-		edit_io_button->set_text(ZN_TTR("Edit inputs/outputs..."));
+			Button *edit_io_button = memnew(Button);
+			edit_io_button->set_text(ZN_TTR("Edit inputs/outputs..."));
 #if defined(ZN_GODOT)
-		edit_io_button->connect("pressed",
-				ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunctionInspectorPlugin, _on_edit_io_button_pressed)
-						.bind(graph_ref));
+			edit_io_button->connect("pressed",
+					ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunctionInspectorPlugin, _on_edit_io_button_pressed)
+							.bind(graph_ref));
 #elif defined(ZN_GODOT_EXTENSION)
-		// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
-		// See https://github.com/godotengine/godot-cpp/issues/802
-		ZN_PRINT_ERROR("`Callable::bind()` isn't implemented in GodotCpp! Can't edit function I/O.");
+			// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
+			// See https://github.com/godotengine/godot-cpp/issues/802
+			ZN_PRINT_ERROR("`Callable::bind()` isn't implemented in GodotCpp! Can't edit function I/O.");
 #endif
 
-		add_custom_control(edit_io_button);
+			add_custom_control(edit_io_button);
+		}
 
 		return true;
 

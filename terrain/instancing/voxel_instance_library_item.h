@@ -41,6 +41,8 @@ public:
 	void add_listener(IListener *listener, int id);
 	void remove_listener(IListener *listener, int id);
 
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
+
 protected:
 	void notify_listeners(ChangeType change);
 

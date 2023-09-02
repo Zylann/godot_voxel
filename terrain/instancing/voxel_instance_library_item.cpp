@@ -73,6 +73,15 @@ void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
 	_listeners.erase(it);
 }
 
+void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &warnings) const {
+	if (_generator.is_null()) {
+		warnings.append(
+				String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class()));
+	} else {
+		get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
+	}
+}
+
 void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
 	for (unsigned int i = 0; i < _listeners.size(); ++i) {
 		ListenerSlot &slot = _listeners[i];
