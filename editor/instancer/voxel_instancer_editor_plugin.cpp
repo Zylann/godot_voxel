@@ -48,6 +48,17 @@ bool VoxelInstancerEditorPlugin::_zn_handles(const Object *p_object) const {
 }
 
 void VoxelInstancerEditorPlugin::_zn_edit(Object *p_object) {
+	// Godot will call `edit(null)` when selecting another node
+	if (p_object == nullptr) {
+		if (_node != nullptr) {
+			_node->debug_set_draw_enabled(false);
+			_node = nullptr;
+		}
+		if (_stat_view != nullptr) {
+			_stat_view->set_instancer(nullptr);
+		}
+		return;
+	}
 	VoxelInstancer *instancer = Object::cast_to<VoxelInstancer>(p_object);
 	ERR_FAIL_COND(instancer == nullptr);
 	instancer->debug_set_draw_enabled(true);
