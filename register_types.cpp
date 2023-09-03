@@ -359,7 +359,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<ZN_EditorProperty>();
 		ClassDB::register_class<ZN_Axes3DControl>();
 		ClassDB::register_class<ZN_ModelViewer>();
-		ClassDB::register_class<EditorPropertyAABBMinMax>();
+		ClassDB::register_class<ZN_EditorPropertyAABBMinMax>();
 
 		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
 		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
