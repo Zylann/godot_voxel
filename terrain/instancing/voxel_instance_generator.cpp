@@ -2,6 +2,8 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/container_funcs.h"
 #include "../../util/godot/classes/array_mesh.h"
+#include "../../util/godot/classes/engine.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
