@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelInstanceGenerator" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelInstanceGenerator" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Decides where to spawn instances on top of a voxel surface.
 	</brief_description>
@@ -41,7 +41,11 @@
 			Noise used to filter out spawned instances, so that they may spawn in patterns described by the noise.
 		</member>
 		<member name="noise_dimension" type="int" setter="set_noise_dimension" getter="get_noise_dimension" enum="VoxelInstanceGenerator.Dimension" default="1">
-			Which dimension should be used when evaluating [member noise].
+			Which dimension should be used when evaluating [member noise] and [member noise_graph].
+		</member>
+		<member name="noise_graph" type="VoxelGraphFunction" setter="set_noise_graph" getter="get_noise_graph">
+			Graph function used to filter out spawned instances, similar to [member noise], but allows more custom noise computations.
+			The graph must have 2 inputs (X and Z) if [member noise_dimension] is 2D, and 3 inputs (X, Y and Z) if 3D. There must be one SDF output.
 		</member>
 		<member name="noise_on_scale" type="float" setter="set_noise_on_scale" getter="get_noise_on_scale" default="0.0">
 			How much [member noise] also affects the scale of instances.

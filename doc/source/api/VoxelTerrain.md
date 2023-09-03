@@ -38,6 +38,7 @@ Return                                                                          
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)                      | [get_viewer_network_peer_ids_in_area](#i_get_viewer_network_peer_ids_in_area) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) const 
 [VoxelTool](VoxelTool.md)                                                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                      
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [has_data_block](#i_has_data_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position ) const                                                                                                                                  
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [is_area_meshed](#i_is_area_meshed) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels ) const                                                                                                                                          
 [void](#)                                                                                                           | [save_block](#i_save_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position )                                                                                                                                                      
 [VoxelSaveCompletionTracker](https://docs.godotengine.org/en/stable/classes/class_voxelsavecompletiontracker.html)  | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                                          
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [try_set_block_data](#i_try_set_block_data) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels )                                                                                                
@@ -162,6 +163,14 @@ You can keep it in a member variable to avoid creating one again, as long as the
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_has_data_block"></span> **has_data_block**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position ) 
 
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_meshed"></span> **is_area_meshed**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels ) 
+
+Returns true if the area has been processed by meshing. It does not mean the area actually contains a mesh.
+
+Returns false if the area has not been processed by meshing (therefore it is unknown whethere there should be a mesh here or not).
+
+When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
+
 - [void](#)<span id="i_save_block"></span> **save_block**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Forces a specific block to be saved.
@@ -188,4 +197,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Sep 03, 2023_

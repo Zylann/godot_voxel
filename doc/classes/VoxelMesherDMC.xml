@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelMesherDMC" inherits="VoxelMesher" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelMesherDMC" inherits="VoxelMesher" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Implements isosurface generation (smooth voxels) using [url=https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/]Dual Marching Cubes[/url].
 	</brief_description>

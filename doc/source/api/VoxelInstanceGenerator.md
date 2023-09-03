@@ -14,24 +14,25 @@ Note: to generate voxels, see [VoxelGenerator](VoxelGenerator.md).
 ## Properties: 
 
 
-Type     | Name                                             | Default     
--------- | ------------------------------------------------ | ------------
-`float`  | [density](#i_density)                            | 0.1         
-`int`    | [emit_mode](#i_emit_mode)                        | 0           
-`float`  | [max_height](#i_max_height)                      | 3.40282e+38 
-`float`  | [max_scale](#i_max_scale)                        | 1.0         
-`float`  | [max_slope_degrees](#i_max_slope_degrees)        | 180.0       
-`float`  | [min_height](#i_min_height)                      | 1.17549e-38 
-`float`  | [min_scale](#i_min_scale)                        | 1.0         
-`float`  | [min_slope_degrees](#i_min_slope_degrees)        | 0.0         
-`Noise`  | [noise](#i_noise)                                |             
-`int`    | [noise_dimension](#i_noise_dimension)            | 1           
-`float`  | [noise_on_scale](#i_noise_on_scale)              | 0.0         
-`float`  | [offset_along_normal](#i_offset_along_normal)    | 0.0         
-`bool`   | [random_rotation](#i_random_rotation)            | true        
-`bool`   | [random_vertical_flip](#i_random_vertical_flip)  | false       
-`int`    | [scale_distribution](#i_scale_distribution)      | 1           
-`float`  | [vertical_alignment](#i_vertical_alignment)      | 1.0         
+Type                  | Name                                             | Default     
+--------------------- | ------------------------------------------------ | ------------
+`float`               | [density](#i_density)                            | 0.1         
+`int`                 | [emit_mode](#i_emit_mode)                        | 0           
+`float`               | [max_height](#i_max_height)                      | 3.40282e+38 
+`float`               | [max_scale](#i_max_scale)                        | 1.0         
+`float`               | [max_slope_degrees](#i_max_slope_degrees)        | 180.0       
+`float`               | [min_height](#i_min_height)                      | 1.17549e-38 
+`float`               | [min_scale](#i_min_scale)                        | 1.0         
+`float`               | [min_slope_degrees](#i_min_slope_degrees)        | 0.0         
+`Noise`               | [noise](#i_noise)                                |             
+`int`                 | [noise_dimension](#i_noise_dimension)            | 1           
+`VoxelGraphFunction`  | [noise_graph](#i_noise_graph)                    |             
+`float`               | [noise_on_scale](#i_noise_on_scale)              | 0.0         
+`float`               | [offset_along_normal](#i_offset_along_normal)    | 0.0         
+`bool`                | [random_rotation](#i_random_rotation)            | true        
+`bool`                | [random_vertical_flip](#i_random_vertical_flip)  | false       
+`int`                 | [scale_distribution](#i_scale_distribution)      | 1           
+`float`               | [vertical_alignment](#i_vertical_alignment)      | 1.0         
 <p></p>
 
 ## Enumerations: 
@@ -104,7 +105,13 @@ Noise used to filter out spawned instances, so that they may spawn in patterns d
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_noise_dimension"></span> **noise_dimension** = 1
 
-Which dimension should be used when evaluating member noise.
+Which dimension should be used when evaluating member noise and member noise_graph.
+
+- [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_noise_graph"></span> **noise_graph**
+
+Graph function used to filter out spawned instances, similar to member noise, but allows more custom noise computations.
+
+The graph must have 2 inputs (X and Z) if member noise_dimension is 2D, and 3 inputs (X, Y and Z) if 3D. There must be one SDF output.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_noise_on_scale"></span> **noise_on_scale** = 0.0
 
@@ -138,4 +145,4 @@ If 1, they will completely align with whichever direction is considered "up".
 
 This depends on member VoxelInstancer.up_mode.
 
-_Generated on Jul 23, 2023_
+_Generated on Sep 03, 2023_

@@ -64,6 +64,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_process_callback](#i_get_process_callback) ( ) const                                                                                                                                                                                             
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                         
 [VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [is_area_meshed](#i_is_area_meshed) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const                                   
 [void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
 [void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](VoxelGenerator.md) generator_override )                                                                                                                    
 [void](#)                                                                           | [set_normalmap_generator_override_begin_lod_index](#i_set_normalmap_generator_override_begin_lod_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )                                                            
@@ -278,6 +279,14 @@ The returned dictionary has the following structure:
 
 Gets an instance of [VoxelTool](VoxelTool.md) bound to this volume. Allows to query and edit voxels.
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_meshed"></span> **is_area_meshed**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
+
+Returns true if the area has been processed by meshing. It does not mean the area actually contains a mesh.
+
+Returns false if the area has not been processed by meshing (therefore it is unknown whethere there should be a mesh here or not).
+
+When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
+
 - [void](#)<span id="i_save_modified_blocks"></span> **save_modified_blocks**( ) 
 
 Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
@@ -304,4 +313,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Jul 23, 2023_
+_Generated on Sep 03, 2023_

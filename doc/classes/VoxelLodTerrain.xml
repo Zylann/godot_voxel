@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelLodTerrain" inherits="VoxelNode" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelLodTerrain" inherits="VoxelNode" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Voxel volume using variable level of detail.
 	</brief_description>
@@ -135,6 +135,16 @@
 			<return type="VoxelTool" />
 			<description>
 				Gets an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
+			</description>
+		</method>
+		<method name="is_area_meshed" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="area_in_voxels" type="AABB" />
+			<param index="1" name="lod_index" type="int" />
+			<description>
+				Returns true if the area has been processed by meshing. It does not mean the area actually contains a mesh.
+				Returns false if the area has not been processed by meshing (therefore it is unknown whethere there should be a mesh here or not).
+				When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
 			</description>
 		</method>
 		<method name="save_modified_blocks">

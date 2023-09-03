@@ -30,4 +30,4 @@ Type                      | Name                                         | Defau
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_occlusion_enabled"></span> **occlusion_enabled** = true
 
 
-_Generated on Jul 23, 2023_
+_Generated on Sep 03, 2023_

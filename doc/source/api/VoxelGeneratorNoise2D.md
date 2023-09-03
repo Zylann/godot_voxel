@@ -30,4 +30,4 @@ By default, a linear curve from 0 to 1 is used.
 
 Noise used to produce the heightmap. It is required for the generator to work.
 
-_Generated on Jul 23, 2023_
+_Generated on Sep 03, 2023_
