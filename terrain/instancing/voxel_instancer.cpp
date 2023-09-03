@@ -1916,7 +1916,7 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 	}
 }
 
-#endif
+#endif // TOOLS_ENABLED
 
 void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_library", "library"), &VoxelInstancer::set_library);

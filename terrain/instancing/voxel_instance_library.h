@@ -45,7 +45,9 @@ public:
 	void add_listener(IListener *listener);
 	void remove_listener(IListener *listener);
 
+#ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
+#endif
 
 protected:
 	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;

@@ -73,6 +73,8 @@ void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
 	_listeners.erase(it);
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_generator.is_null()) {
 		warnings.append(
@@ -81,6 +83,8 @@ void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &war
 		get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
 	}
 }
+
+#endif
 
 void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
 	for (unsigned int i = 0; i < _listeners.size(); ++i) {

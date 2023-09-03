@@ -118,6 +118,8 @@ void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 	_listeners.erase(it);
 }
 
+#ifdef TOOLS_ENABLED
+
 void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warnings) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		Ref<VoxelInstanceLibraryItem> item = it->second;
@@ -128,6 +130,8 @@ void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warning
 				});
 	}
 }
+
+#endif
 
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	const String property_name = p_name;
