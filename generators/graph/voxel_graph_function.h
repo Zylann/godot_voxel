@@ -2,8 +2,10 @@
 #define VOXEL_GRAPH_FUNCTION_H
 
 #include "../../util/godot/classes/resource.h"
+#include "../../util/thread/mutex.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"
+#include <memory>
 
 namespace zylann::voxel::pg {
 
