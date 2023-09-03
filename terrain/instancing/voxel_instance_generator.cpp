@@ -338,7 +338,9 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 					// Multiply output of noise graph
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] *= math::max(noise->get_noise_2d(pos.x, pos.z), 0.f);
+						// Casting to float because Noise returns `real_t`, which is `double` in 64-bit float builds,
+						// but we don't need doubles for noise in this context...
+						noise_cache[i] *= math::max(float(noise->get_noise_2d(pos.x, pos.z)), 0.f);
 					}
 				} else {
 					// Use noise directly
@@ -353,7 +355,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				if (noise_graph.is_valid()) {
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] *= math::max(noise->get_noise_3d(pos.x, pos.y, pos.z), 0.f);
+						noise_cache[i] *= math::max(float(noise->get_noise_3d(pos.x, pos.y, pos.z)), 0.f);
 					}
 				} else {
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
