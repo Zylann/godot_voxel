@@ -6,6 +6,7 @@
 #include "../../util/godot/classes/noise.h"
 #include "../../util/math/transform3f.h"
 #include "../../util/math/vector3i.h"
+#include "../../util/thread/short_lock.h"
 
 #include <limits>
 #include <vector>
@@ -169,6 +170,10 @@ private:
 	// Stored separately for editor
 	float _min_slope_degrees = 0.f;
 	float _max_slope_degrees = 180.f;
+
+	// Used when accessing pointer settings, since this generator can be used in a thread while the editor thread can
+	// modify settings.
+	mutable ShortLock _ptr_settings_lock;
 };
 
 } // namespace zylann::voxel

@@ -224,15 +224,25 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 	// Use full-precision here because we deal with potentially large coordinates
 	const Vector3 mesh_block_origin_d = grid_position * block_size;
 
+	// Don't directly access member vars because they can be modified by the editor thread (the resources themselves can
+	// get modified with relatively no harm, but the pointers can't)
+	Ref<pg::VoxelGraphFunction> noise_graph;
+	Ref<Noise> noise;
+	{
+		ShortLockScope slock(_ptr_settings_lock);
+		noise = _noise;
+		noise_graph = _noise_graph;
+	}
+
 	// Filter out by noise graph
-	if (_noise_graph.is_valid()) {
+	if (noise_graph.is_valid()) {
 		ZN_PROFILE_SCOPE_NAMED("Noise graph filter");
 
 		std::vector<float> &out_buffer = g_noise_cache;
 		out_buffer.resize(vertex_cache.size());
 
 		// Check noise graph validity
-		std::shared_ptr<pg::VoxelGraphFunction::CompiledGraph> compiled_graph = _noise_graph->get_compiled_graph();
+		std::shared_ptr<pg::VoxelGraphFunction::CompiledGraph> compiled_graph = noise_graph->get_compiled_graph();
 		if (compiled_graph != nullptr) {
 			const int input_count = compiled_graph->runtime.get_input_count();
 			const int output_count = compiled_graph->runtime.get_output_count();
@@ -282,7 +292,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 					inputs[0] = to_span(x_buffer);
 					inputs[1] = to_span(z_buffer);
 
-					_noise_graph->execute(to_span(inputs), to_span(outputs));
+					noise_graph->execute(to_span(inputs), to_span(outputs));
 				} break;
 
 				case DIMENSION_3D: {
@@ -301,7 +311,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 					inputs[1] = to_span(y_buffer);
 					inputs[2] = to_span(z_buffer);
 
-					_noise_graph->execute(to_span(inputs), to_span(outputs));
+					noise_graph->execute(to_span(inputs), to_span(outputs));
 				} break;
 
 				default:
@@ -319,36 +329,36 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 	std::vector<float> &noise_cache = g_noise_cache;
 
 	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
-	if (_noise.is_valid()) {
+	if (noise.is_valid()) {
 		noise_cache.resize(vertex_cache.size());
 
 		switch (_noise_dimension) {
 			case DIMENSION_2D: {
-				if (_noise_graph.is_valid()) {
+				if (noise_graph.is_valid()) {
 					// Multiply output of noise graph
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] *= math::max(_noise->get_noise_2d(pos.x, pos.z), 0.f);
+						noise_cache[i] *= math::max(noise->get_noise_2d(pos.x, pos.z), 0.f);
 					}
 				} else {
 					// Use noise directly
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] = _noise->get_noise_2d(pos.x, pos.z);
+						noise_cache[i] = noise->get_noise_2d(pos.x, pos.z);
 					}
 				}
 			} break;
 
 			case DIMENSION_3D: {
-				if (_noise_graph.is_valid()) {
+				if (noise_graph.is_valid()) {
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] *= math::max(_noise->get_noise_3d(pos.x, pos.y, pos.z), 0.f);
+						noise_cache[i] *= math::max(noise->get_noise_3d(pos.x, pos.y, pos.z), 0.f);
 					}
 				} else {
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
 						const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
-						noise_cache[i] = _noise->get_noise_3d(pos.x, pos.y, pos.z);
+						noise_cache[i] = noise->get_noise_3d(pos.x, pos.y, pos.z);
 					}
 				}
 			} break;
@@ -358,7 +368,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		}
 	}
 
-	const bool use_noise = _noise.is_valid() || _noise_graph.is_valid();
+	const bool use_noise = noise.is_valid() || noise_graph.is_valid();
 
 	// Filter out by noise
 	if (use_noise) {
@@ -716,6 +726,8 @@ bool VoxelInstanceGenerator::get_random_rotation() const {
 }
 
 void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
+	ShortLockScope slock(_ptr_settings_lock);
+
 	if (_noise == noise) {
 		return;
 	}
@@ -732,10 +744,13 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 }
 
 Ref<Noise> VoxelInstanceGenerator::get_noise() const {
+	ShortLockScope slock(_ptr_settings_lock);
 	return _noise;
 }
 
 void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
+	ShortLockScope slock(_ptr_settings_lock);
+
 	if (_noise_graph == func) {
 		return;
 	}
@@ -757,6 +772,7 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 }
 
 Ref<pg::VoxelGraphFunction> VoxelInstanceGenerator::get_noise_graph() const {
+	ShortLockScope slock(_ptr_settings_lock);
 	return _noise_graph;
 }
 
@@ -797,15 +813,17 @@ void VoxelInstanceGenerator::_on_noise_graph_changed() {
 #ifdef TOOLS_ENABLED
 
 void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warnings) const {
-	if (_noise_graph.is_valid()) {
+	Ref<pg::VoxelGraphFunction> noise_graph = get_noise_graph();
+
+	if (noise_graph.is_valid()) {
 		// Graph compiles?
-		get_resource_configuration_warnings(**_noise_graph, warnings, []() { return "noise_graph: "; });
+		get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
 
 		// Check I/Os
 		const int expected_input_count = (_noise_dimension == DIMENSION_2D ? 2 : 3);
 		const int expected_output_count = 1;
-		const int input_count = _noise_graph->get_input_definitions().size();
-		const int output_count = _noise_graph->get_output_definitions().size();
+		const int input_count = noise_graph->get_input_definitions().size();
+		const int output_count = noise_graph->get_output_definitions().size();
 		if (input_count != expected_input_count) {
 			warnings.append(String("The noise graph has an invalid number of inputs. Expected {0}, found {1}")
 									.format(varray(expected_input_count, input_count)));
