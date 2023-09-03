@@ -1359,6 +1359,12 @@ void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> out
 		const unsigned buffer_begin = chunk_index * chunk_size;
 		const unsigned buffer_chunk_size = math::min(chunk_size, total_buffer_size - buffer_begin);
 
+		if (buffer_chunk_size != chunk_size) {
+			// When there is more than one chunk, the last chunk may need to be smaller to get to the right count.
+			// All chunks before have the same size.
+			_compiled_graph->runtime.prepare_state(cache.state, buffer_chunk_size, false);
+		}
+
 		for (unsigned int input_index = 0; input_index < inputs.size(); ++input_index) {
 			cache.input_chunks[input_index] = inputs[input_index].sub(buffer_begin, buffer_chunk_size);
 		}
