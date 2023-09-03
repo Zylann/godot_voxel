@@ -377,7 +377,6 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		ZN_PROFILE_SCOPE_NAMED("Noise filter");
 
 		for (size_t i = 0; i < vertex_cache.size(); ++i) {
-			const Vector3 &pos = to_vec3(vertex_cache[i]) + mesh_block_origin_d;
 			const float n = noise_cache[i];
 			if (n <= 0) {
 				unordered_remove(vertex_cache, i);
