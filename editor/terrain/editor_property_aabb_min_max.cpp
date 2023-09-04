@@ -109,7 +109,7 @@ void ZN_EditorPropertyAABBMinMax::setup(
 
 void ZN_EditorPropertyAABBMinMax::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_value_changed"), &EditorPropertyAABBMinMax::_on_value_changed);
+	ClassDB::bind_method(D_METHOD("_on_value_changed"), &ZN_EditorPropertyAABBMinMax::_on_value_changed);
 #endif
 }
 
