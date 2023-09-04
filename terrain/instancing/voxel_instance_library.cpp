@@ -2,6 +2,7 @@
 #include "voxel_instancer.h"
 #include <algorithm>
 #ifdef ZN_GODOT_EXTENSION
+#include "../../util/godot/core/array.h"
 #include "../../util/string_funcs.h"
 #endif
 
