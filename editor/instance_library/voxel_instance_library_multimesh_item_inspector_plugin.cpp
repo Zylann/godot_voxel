@@ -66,7 +66,9 @@ bool VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_property(Object
 	}
 	// Hide manual properties if a scene is assigned, because it will override them
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(p_object);
-	ERR_FAIL_COND_V(item == nullptr, false);
+	ERR_FAIL_COND_V_MSG(item == nullptr, false,
+			String("Did not expect {0}, see https://github.com/godotengine/godot/issues/71236")
+					.format(varray(p_object->get_class())));
 	if (item->get_scene().is_null()) {
 		return false;
 	}
