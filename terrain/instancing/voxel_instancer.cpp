@@ -759,6 +759,8 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			ERR_PRINT("Unknown change");
 			break;
 	}
+
+	update_configuration_warnings();
 }
 
 void VoxelInstancer::add_layer(int layer_id, int lod_index) {

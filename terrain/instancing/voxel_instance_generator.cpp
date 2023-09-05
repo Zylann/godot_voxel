@@ -759,6 +759,8 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 	if (_noise_graph.is_valid()) {
 		_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
 				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
 	}
 
 	_noise_graph = func;
@@ -768,6 +770,8 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 		func->compile(Engine::get_singleton()->is_editor_hint());
 
 		_noise_graph->connect(VoxelStringNames::get_singleton().changed,
+				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
 				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
 	}
 	emit_changed();
