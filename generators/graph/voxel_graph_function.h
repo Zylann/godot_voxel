@@ -228,6 +228,15 @@ public:
 
 	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
 
+	// Copies nodes into another graph, and connections between them only.
+	// Resources in node parameters will be duplicated if they don't have a file path.
+	// If `dst_node_ids` is provided with non-zero size, defines the IDs of copied nodes. Otherwise, they are
+	// generated.
+	void duplicate_subgraph(Span<const uint32_t> src_node_ids, Span<const uint32_t> dst_node_ids,
+			VoxelGraphFunction &dst_graph, Vector2 gui_offset) const;
+
+	void paste_graph(const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset);
+
 	// Compiling and running
 
 	pg::CompilationResult compile(bool debug);
@@ -272,6 +281,9 @@ private:
 	Array _b_get_output_definitions() const;
 	void _b_set_output_definitions(Array data);
 
+	void _b_paste_graph_with_pre_generated_ids(
+			Ref<VoxelGraphFunction> graph, PackedInt32Array dst_node_ids, Vector2 gui_offset);
+
 	static void _bind_methods();
 
 	ProgramGraph _graph;
@@ -303,6 +315,10 @@ void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGr
 		std::vector<VoxelGraphFunction::Port> &outputs);
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
+
+// Duplicates a node into the target graph (can be a different graph). Connections are not copied.
+ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node,
+		bool duplicate_resources, uint32_t id = ProgramGraph::NULL_ID);
 
 #ifdef TOOLS_ENABLED
 

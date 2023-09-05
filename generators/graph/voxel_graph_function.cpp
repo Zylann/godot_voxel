@@ -248,6 +248,44 @@ void update_function(
 	}
 }
 
+ProgramGraph::Node *duplicate_node(
+		ProgramGraph &dst_graph, const ProgramGraph::Node &src_node, bool duplicate_resources, uint32_t id) {
+	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id, id);
+	ZN_ASSERT(dst_node != nullptr);
+	dst_node->name = src_node.name;
+
+	dst_node->inputs.resize(src_node.inputs.size());
+	for (unsigned int i = 0; i < src_node.inputs.size(); ++i) {
+		const ProgramGraph::Port &src_input = src_node.inputs[i];
+		ProgramGraph::Port &dst_input = dst_node->inputs[i];
+		dst_input.dynamic_name = src_input.dynamic_name;
+		// Should this be copied?
+		// dst_input.autoconnect_hint = src_input.autoconnect_hint;
+	}
+
+	dst_node->outputs.resize(src_node.outputs.size());
+
+	dst_node->default_inputs = src_node.default_inputs;
+	dst_node->params = src_node.params;
+	dst_node->gui_position = src_node.gui_position;
+	dst_node->gui_size = src_node.gui_size;
+	dst_node->autoconnect_default_inputs = src_node.autoconnect_default_inputs;
+
+	if (duplicate_resources) {
+		for (Variant &param_value : dst_node->params) {
+			Ref<Resource> res = param_value;
+			if (res.is_valid()) {
+				// If the resource has a path, keep it shared
+				if (!is_resource_file(res->get_path())) {
+					param_value = res->duplicate();
+				}
+			}
+		}
+	}
+
+	return dst_node;
+}
+
 uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
 	ERR_FAIL_COND_V(!NodeTypeDB::get_singleton().is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id, true);
@@ -373,7 +411,7 @@ void VoxelGraphFunction::get_connections(std::vector<ProgramGraph::Connection> &
 bool VoxelGraphFunction::try_get_connection_to(
 		ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const {
 	const ProgramGraph::Node &node = _graph.get_node(dst.node_id);
-	CRASH_COND(dst.port_index >= node.inputs.size());
+	ZN_ASSERT_RETURN_V(dst.port_index < node.inputs.size(), false);
 	const ProgramGraph::Port &port = node.inputs[dst.port_index];
 	if (port.connections.size() == 0) {
 		return false;
@@ -1426,6 +1464,81 @@ void VoxelGraphFunction::_b_set_node_name(int node_id, String node_name) {
 	set_node_name(node_id, node_name);
 }
 
+void VoxelGraphFunction::duplicate_subgraph(Span<const uint32_t> original_node_ids,
+		const Span<const uint32_t> dst_node_ids, VoxelGraphFunction &dst_graph, Vector2 gui_offset) const {
+	ZN_ASSERT_RETURN(!has_duplicate(original_node_ids));
+
+	const bool use_pre_generated_ids = dst_node_ids.size() != 0;
+	if (use_pre_generated_ids) {
+		ZN_ASSERT_RETURN(dst_node_ids.size() == original_node_ids.size());
+		ZN_ASSERT_RETURN(!has_duplicate(dst_node_ids));
+		for (const uint32_t id : dst_node_ids) {
+			ZN_ASSERT_RETURN(!dst_graph.has_node(id));
+		}
+	}
+
+	// index of original node in `node_ids` => copied node ID
+	std::vector<uint32_t> original_to_copied_node_ids;
+	original_to_copied_node_ids.reserve(original_node_ids.size());
+
+	// Copy nodes
+	for (unsigned int original_node_index = 0; original_node_index < original_node_ids.size(); ++original_node_index) {
+		const uint32_t original_node_id = original_node_ids[original_node_index];
+		const ProgramGraph::Node *original_node = _graph.try_get_node(original_node_id);
+		ZN_ASSERT_CONTINUE(original_node != nullptr);
+
+		const uint32_t copied_node_id =
+				(use_pre_generated_ids ? dst_node_ids[original_node_index] : ProgramGraph::NULL_ID);
+
+		ProgramGraph::Node *copied_node = duplicate_node(dst_graph._graph, *original_node, true, copied_node_id);
+		copied_node->gui_position += gui_offset;
+		original_to_copied_node_ids.push_back(copied_node->id);
+
+		for (Variant v : copied_node->params) {
+			Ref<Resource> resource = v;
+			if (resource.is_valid()) {
+				dst_graph.register_subresource(**resource);
+			}
+		}
+	}
+
+	// Copy connections
+	unsigned int original_node_index = 0;
+	for (const uint32_t node_id : original_node_ids) {
+		const ProgramGraph::Node *original_src_node = _graph.try_get_node(node_id);
+
+		for (const ProgramGraph::Port &port : original_src_node->inputs) {
+			unsigned int dst_port_index = 0;
+
+			for (const ProgramGraph::PortLocation loc : port.connections) {
+				size_t copied_src_node_index;
+
+				// Only copy connections between nodes that are in the copied subset
+				if (find(original_node_ids, loc.node_id, copied_src_node_index)) {
+					const uint32_t copied_src_node_id = original_to_copied_node_ids[copied_src_node_index];
+					const uint32_t copied_dst_node_id = original_to_copied_node_ids[original_node_index];
+
+					dst_graph.add_connection(copied_src_node_id, loc.port_index, copied_dst_node_id, dst_port_index);
+				}
+
+				++dst_port_index;
+			}
+		}
+
+		// We don't need to iterate output ports, since we only care aboud connections between nodes
+		// of the copied sub-graph, so connections we found from input ports would be found too from output ports.
+
+		++original_node_index;
+	}
+}
+
+void VoxelGraphFunction::paste_graph(
+		const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset) {
+	PackedInt32Array src_node_ids = src_graph.get_node_ids();
+	src_graph.duplicate_subgraph(
+			to_span(src_node_ids).reinterpret_cast_to<const uint32_t>(), dst_node_ids, *this, gui_offset);
+}
+
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 	Array data;
@@ -1510,6 +1623,12 @@ void VoxelGraphFunction::_b_set_output_definitions(Array data) {
 #endif
 }
 
+void VoxelGraphFunction::_b_paste_graph_with_pre_generated_ids(
+		Ref<VoxelGraphFunction> graph, PackedInt32Array dst_node_ids, Vector2 gui_offset) {
+	ZN_ASSERT_RETURN(graph.is_valid());
+	paste_graph(**graph, to_span(dst_node_ids).reinterpret_cast_to<const uint32_t>(), gui_offset);
+}
+
 void VoxelGraphFunction::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGraphFunction::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGraphFunction::create_node,
@@ -1563,6 +1682,9 @@ void VoxelGraphFunction::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_set_output_definitions", "data"), &VoxelGraphFunction::_b_set_output_definitions);
 	ClassDB::bind_method(D_METHOD("_get_output_definitions"), &VoxelGraphFunction::_b_get_output_definitions);
+
+	ClassDB::bind_method(D_METHOD("paste_graph_with_pre_generated_ids", "graph", "node_ids", "gui_offset"),
+			&VoxelGraphFunction::_b_paste_graph_with_pre_generated_ids);
 
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGraphFunction::_on_subresource_changed);

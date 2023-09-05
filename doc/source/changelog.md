@@ -22,6 +22,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
         - Added shader support for `FastNoiseGradient2D` and `FastNoiseGradient3D` nodes
         - Editor: reworked context menu to add nodes, similar to VisualShader. Now has search bar, tree view and node descriptions.
+        - Editor: added copy/paste with Ctrl+C/Ctrl+V shortcuts
     - `VoxelGraphFunction`:
         - Editor: the graph will now get compiled while editing, which provides some checks
         - Editor: I/Os are setup automatically when the graph is compiled by default. Manual setup might be exposed in the future if necessary.

@@ -668,31 +668,6 @@ void replace_simplifiable_nodes(ProgramGraph &graph, const NodeTypeDB &type_db, 
 	}
 }
 
-// Duplicates a node into the target graph (can be a different graph). Connections are not copied.
-ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node) {
-	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id);
-	ZN_ASSERT(dst_node != nullptr);
-	dst_node->name = src_node.name;
-
-	dst_node->inputs.resize(src_node.inputs.size());
-	for (unsigned int i = 0; i < src_node.inputs.size(); ++i) {
-		const ProgramGraph::Port &src_input = src_node.inputs[i];
-		ProgramGraph::Port &dst_input = dst_node->inputs[i];
-		dst_input.dynamic_name = src_input.dynamic_name;
-		// Should this be copied?
-		// dst_input.autoconnect_hint = src_input.autoconnect_hint;
-	}
-
-	dst_node->outputs.resize(src_node.outputs.size());
-
-	dst_node->default_inputs = src_node.default_inputs;
-	dst_node->params = src_node.params;
-	// dst_node->gui_position = src_node.gui_position;
-	// dst_node->gui_size = src_node.gui_size;
-	dst_node->autoconnect_default_inputs = src_node.autoconnect_default_inputs;
-	return dst_node;
-}
-
 // If the passed node corresponds to a port, adds it to the list of nodes corresponding to the port.
 bool try_add_io_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
 		Span<std::vector<uint32_t>> node_ids_per_port) {
@@ -804,7 +779,7 @@ CompilationResult expand_function(
 					expanded_node = create_node_internal(
 							graph, VoxelGraphFunction::NODE_RELAY, Vector2(), graph.generate_node_id(), false);
 				} else {
-					expanded_node = duplicate_node(graph, src_node);
+					expanded_node = duplicate_node(graph, src_node, false);
 				}
 
 				fn_to_expanded_node_ids[src_node.id] = expanded_node->id;

@@ -155,7 +155,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit->set_right_disconnects(true);
 	// TODO Performance: sorry, had to turn off AA because Godot's current implementation is incredibly slow.
 	// It slows down the editor a lot when a graph has lots of connections. Because despite Godot 4 now supporting
-	// 2D MSAA, it still relies on a fake AA method which draws 9 times the same line and allocates
+	// 2D MSAA, it still relies on a fake AA method which generates more geometry and allocates
 	// memory (malloc) on the fly. See `RendererCanvasCull::canvas_item_add_polyline`.
 	// 2D MSAA also is only exposed in Project Settings, which does not apply to editor UIs... (and shouldn't, but there
 	// should be a setting in Editor Settings).
@@ -171,6 +171,10 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit->connect("node_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_node_selected));
 	_graph_edit->connect(
 			"node_deselected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_node_deselected));
+	_graph_edit->connect(
+			"copy_nodes_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_copy_nodes_request));
+	_graph_edit->connect(
+			"paste_nodes_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_paste_nodes_request));
 	vbox_container->add_child(_graph_edit);
 
 	add_child(vbox_container);
@@ -611,6 +615,19 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 	_undo_redo->commit_action();
 }
 
+namespace {
+void get_selected_nodes(const GraphEdit &graph_edit, std::vector<VoxelGraphEditorNode *> &out_nodes) {
+	for (int i = 0; i < graph_edit.get_child_count(); ++i) {
+		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_child(i));
+		if (node_view != nullptr) {
+			if (node_view->is_selected()) {
+				out_nodes.push_back(node_view);
+			}
+		}
+	}
+}
+} // namespace
+
 #if defined(ZN_GODOT)
 void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(TypedArray<StringName> node_names) {
 #elif defined(ZN_GODOT_EXTENSION)
@@ -622,14 +639,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 	// the nodes themselves, it also has the downside of being always empty if you choose to not show "close" buttons
 	// on every graph node corner, even if you have nodes selected. That behavior was even documented. Go figure.
 	// So... I keep doing it the old way.
-	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
-		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(_graph_edit->get_child(i));
-		if (node_view != nullptr) {
-			if (node_view->is_selected()) {
-				to_erase.push_back(node_view);
-			}
-		}
-	}
+	get_selected_nodes(*_graph_edit, to_erase);
 
 	_undo_redo->create_action(ZN_TTR("Delete Nodes"));
 
@@ -1357,6 +1367,119 @@ void VoxelGraphEditor::update_functions() {
 	}
 }
 
+void VoxelGraphEditor::copy_selected_nodes_to_clipboard() {
+	ZN_ASSERT_RETURN(_graph.is_valid());
+
+	std::vector<VoxelGraphEditorNode *> node_views;
+	get_selected_nodes(*_graph_edit, node_views);
+
+	if (node_views.size() == 0) {
+		ZN_PRINT_VERBOSE("No selected nodes to copy");
+		return;
+	}
+
+	std::vector<uint32_t> node_ids;
+	node_ids.reserve(node_views.size());
+
+	for (VoxelGraphEditorNode *node_view : node_views) {
+		node_ids.push_back(node_view->get_generator_node_id());
+	}
+
+	Ref<VoxelGraphFunction> dup;
+	dup.instantiate();
+	_graph->duplicate_subgraph(to_span(node_ids), Span<const uint32_t>(), **dup, Vector2());
+
+	_clipboard.graph = dup;
+	ZN_ASSERT_RETURN(dup.is_valid());
+
+	ZN_PRINT_VERBOSE(format("Copied {} nodes", _clipboard.graph->get_nodes_count()));
+}
+
+void VoxelGraphEditor::_on_graph_edit_copy_nodes_request() {
+	copy_selected_nodes_to_clipboard();
+}
+
+void VoxelGraphEditor::_on_graph_edit_paste_nodes_request() {
+	paste_clipboard();
+}
+
+void VoxelGraphEditor::paste_clipboard() {
+	ZN_ASSERT_RETURN(_graph.is_valid());
+
+	if (!_clipboard.graph.is_valid()) {
+		ZN_PRINT_VERBOSE("No nodes to paste, clipboard is empty");
+		return;
+	}
+
+	// We need to generate node IDs up-front to make Undo/Redo work
+	PackedInt32Array pre_generated_ids;
+	for (unsigned int i = 0; i < _clipboard.graph->get_nodes_count(); ++i) {
+		pre_generated_ids.append(_graph->generate_node_id());
+	}
+
+	// Roughly center nodes to where the mouse is pointing
+	Vector2 gui_offset;
+	{
+		PackedInt32Array node_ids = _clipboard.graph->get_node_ids();
+		ZN_ASSERT_RETURN(node_ids.size() > 0);
+		Vector2 clipboard_center;
+		for (int i = 0; i < node_ids.size(); ++i) {
+			const int id = node_ids[i];
+			clipboard_center += _clipboard.graph->get_node_gui_position(id);
+		}
+		clipboard_center /= float(node_ids.size());
+
+		const Vector2 mouse_position =
+				get_graph_offset_from_mouse(_graph_edit, _graph_edit->get_local_mouse_position());
+		gui_offset = mouse_position - clipboard_center;
+	}
+
+	_undo_redo->create_action("Paste nodes");
+
+	// Do
+
+	_undo_redo->add_do_method(
+			_graph.ptr(), "paste_graph_with_pre_generated_ids", _clipboard.graph, pre_generated_ids, gui_offset);
+
+	for (int i = 0; i < pre_generated_ids.size(); ++i) {
+		const int id = pre_generated_ids[i];
+		_undo_redo->add_do_method(this, "create_node_gui", id);
+	}
+	for (int i = 0; i < pre_generated_ids.size(); ++i) {
+		const int id = pre_generated_ids[i];
+		_undo_redo->add_do_method(this, "create_node_gui_input_connections", id);
+	}
+
+	// Undo
+
+	for (int i = 0; i < pre_generated_ids.size(); ++i) {
+		const int id = pre_generated_ids[i];
+		_undo_redo->add_undo_method(_graph.ptr(), "remove_node", id);
+
+		const StringName node_name = node_to_gui_name(id);
+		_undo_redo->add_undo_method(this, "remove_node_gui", node_name);
+	}
+
+	_undo_redo->commit_action();
+}
+
+void VoxelGraphEditor::create_node_gui_input_connections(int node_id) {
+	ZN_ASSERT_RETURN(_graph.is_valid());
+	// Assumes the node has no connections setup in GraphEdit. Quite specific to copy/paste.
+
+	const uint32_t input_count = _graph->get_node_input_count(node_id);
+
+	for (uint32_t i = 0; i < input_count; ++i) {
+		const ProgramGraph::PortLocation dst{ uint32_t(node_id), i };
+		ProgramGraph::PortLocation src;
+
+		if (_graph->try_get_connection_to(dst, src)) {
+			_graph_edit->connect_node(
+					node_to_gui_name(src.node_id), src.port_index, node_to_gui_name(dst.node_id), dst.port_index);
+		}
+	}
+}
+
 void VoxelGraphEditor::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_graph_edit_gui_input", "event"), &VoxelGraphEditor::_on_graph_edit_gui_input);
@@ -1391,11 +1514,17 @@ void VoxelGraphEditor::_bind_methods() {
 			D_METHOD("_on_node_dialog_node_selected", "id"), &VoxelGraphEditor::_on_node_dialog_node_selected);
 	ClassDB::bind_method(
 			D_METHOD("_on_node_dialog_file_selected", "fpath"), &VoxelGraphEditor::_on_node_dialog_file_selected);
+	ClassDB::bind_method(
+			D_METHOD("_on_graph_edit_copy_nodes_request"), &VoxelGraphEditor::_on_graph_edit_copy_nodes_request);
+	ClassDB::bind_method(
+			D_METHOD("_on_graph_edit_paste_nodes_request"), &VoxelGraphEditor::_on_graph_edit_paste_nodes_request);
 #endif
 
 	ClassDB::bind_method(D_METHOD("_check_nothing_selected"), &VoxelGraphEditor::_check_nothing_selected);
 
 	ClassDB::bind_method(D_METHOD("create_node_gui", "node_id"), &VoxelGraphEditor::create_node_gui);
+	ClassDB::bind_method(D_METHOD("create_node_gui_input_connections", "node_id"),
+			&VoxelGraphEditor::create_node_gui_input_connections);
 	ClassDB::bind_method(D_METHOD("remove_node_gui", "node_name"), &VoxelGraphEditor::remove_node_gui);
 	ClassDB::bind_method(D_METHOD("set_node_position", "node_id", "offset"), &VoxelGraphEditor::set_node_position);
 	ClassDB::bind_method(D_METHOD("set_node_size", "node_id", "size"), &VoxelGraphEditor::set_node_size);
