@@ -47,12 +47,12 @@ String join_comma_separated(Span<const T> items) {
 	return str;
 }
 
+#endif
+
 // Exists in core but isn't exposed to GDExtension
 inline bool is_resource_file(const String &path) {
 	return path.begins_with("res://") && path.find("::") == -1;
 }
-
-#endif
 
 inline std::string to_std_string(const String &godot_string) {
 	const CharString cs = godot_string.utf8();
