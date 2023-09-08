@@ -1525,7 +1525,7 @@ void VoxelGraphFunction::duplicate_subgraph(Span<const uint32_t> original_node_i
 			}
 		}
 
-		// We don't need to iterate output ports, since we only care aboud connections between nodes
+		// We don't need to iterate output ports, since we only care about connections between nodes
 		// of the copied sub-graph, so connections we found from input ports would be found too from output ports.
 
 		++original_node_index;
