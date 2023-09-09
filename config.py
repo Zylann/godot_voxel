@@ -62,6 +62,7 @@ def get_doc_classes():
         "VoxelInstanceLibraryMultiMeshItem",
         "VoxelInstanceLibrarySceneItem",
         "VoxelInstancer",
+        "VoxelInstancerRigidBody",
         "VoxelLodTerrain",
         "VoxelMesher",
         "VoxelMesherBlocky",
