@@ -118,6 +118,7 @@ def get_sources(env, is_editor_build):
             "util/godot/classes/editor_property.cpp",
             "util/godot/classes/editor_settings.cpp",
             "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
+            "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
         ]
 
     def process_glob_paths(p_sources):

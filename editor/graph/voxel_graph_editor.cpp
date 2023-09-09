@@ -164,8 +164,8 @@ VoxelGraphEditor::VoxelGraphEditor() {
 	_graph_edit->connect("gui_input", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_gui_input));
 	_graph_edit->connect(
 			"connection_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_connection_request));
-	_graph_edit->connect(
-			"delete_nodes_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_delete_nodes_request));
+	_graph_edit->connect(GODOT_GraphEdit_delete_nodes_request,
+			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_delete_nodes_request));
 	_graph_edit->connect("disconnection_request",
 			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_disconnection_request));
 	_graph_edit->connect("node_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_edit_node_selected));

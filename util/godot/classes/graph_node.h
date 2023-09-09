@@ -8,4 +8,12 @@
 using namespace godot;
 #endif
 
+namespace zylann {
+
+Vector2 get_graph_node_input_port_position(GraphNode &node, int port_index);
+Vector2 get_graph_node_output_port_position(GraphNode &node, int port_index);
+Color get_graph_node_input_port_color(GraphNode &node, int port_index);
+
+} // namespace zylann
+
 #endif // ZN_GODOT_GRAPH_NODE_H

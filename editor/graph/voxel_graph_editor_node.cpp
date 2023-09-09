@@ -359,10 +359,9 @@ void VoxelGraphEditorNode::_notification(int p_what) {
 			const float width = Math::floor(2.f * get_theme_default_base_scale());
 			// Can't directly use inputs and output positions... Godot pre-scales them, which makes them unusable
 			// for drawing because the node is already scaled
-			const Vector2 scale = get_global_transform().get_scale();
-			const Vector2 input_pos = get_connection_input_position(0) / scale;
-			const Vector2 output_pos = get_connection_output_position(0) / scale;
-			draw_line(input_pos, output_pos, get_connection_input_color(0), width, true);
+			const Vector2 input_pos = get_graph_node_input_port_position(*this, 0);
+			const Vector2 output_pos = get_graph_node_output_port_position(*this, 0);
+			draw_line(input_pos, output_pos, get_graph_node_input_port_color(*this, 0), width, true);
 		}
 		if (_profiling_ratio_enabled) {
 			const float bgh = EDSCALE * 4.f;

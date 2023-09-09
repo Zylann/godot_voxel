@@ -1,5 +1,4 @@
 #include "graph_edit.h"
-#include "../core/version.h"
 
 namespace zylann {
 
