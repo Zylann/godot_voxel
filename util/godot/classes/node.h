@@ -9,6 +9,7 @@ using namespace godot;
 #endif
 
 #include "../../errors.h"
+#include <vector>
 
 namespace zylann {
 
@@ -23,6 +24,8 @@ inline T *get_node_typed(const Node &self, const NodePath &path) {
 	return self.get_node<T>(path);
 #endif
 }
+
+void get_node_groups(const Node &node, std::vector<StringName> &out_groups);
 
 } // namespace zylann
 

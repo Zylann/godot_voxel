@@ -1088,6 +1088,10 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 						body->add_child(cs);
 					}
 
+					for (const StringName &group_name : settings.group_names) {
+						body->add_to_group(group_name);
+					}
+
 					add_child(body);
 					block.bodies.push_back(body);
 				}

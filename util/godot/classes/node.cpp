@@ -24,4 +24,20 @@ void set_nodes_owner_except_root(Node *root, Node *owner) {
 	}
 }
 
+void get_node_groups(const Node &node, std::vector<StringName> &out_groups) {
+#if defined(ZN_GODOT)
+	List<Node::GroupInfo> gi;
+	node.get_groups(&gi);
+	for (const Node::GroupInfo &g : gi) {
+		out_groups.push_back(g.name);
+	}
+
+#elif defined(ZN_GODOT_EXTENSION)
+	TypedArray<StringName> groups = node.get_groups();
+	for (int i = 0; i < groups.size(); ++i) {
+		out_groups.push_back(groups[i]);
+	}
+#endif
+}
+
 } // namespace zylann

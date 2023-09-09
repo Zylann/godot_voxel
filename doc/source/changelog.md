@@ -44,6 +44,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added `get_all_item_ids()` to allow iterating over all items of a library
     - `VoxelLibraryMultiMeshItem `:
         - Added `render_layer` property (thanks to m4nu3lf)
+        - Node groups on the template scene are now added to instance colliders if present
     - `VoxelLodTerrain`:
         - Added debug drawing for modifier bounds
         - Added `is_area_meshed` as an alternative to `VoxelTool.is_area_editable` for games using mesh colliders

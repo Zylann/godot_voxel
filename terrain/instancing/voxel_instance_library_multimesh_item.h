@@ -43,6 +43,9 @@ public:
 	void set_collision_mask(int collision_mask);
 	int get_collision_mask() const;
 
+	void set_collider_group_names(TypedArray<StringName> names);
+	TypedArray<StringName> get_collider_group_names() const;
+
 	// TODO GDX: it seems binding a method taking a `Node*` fails to compile. It is supposed to be working.
 #if defined(ZN_GODOT)
 	void setup_from_template(Node *root);
@@ -69,6 +72,8 @@ public:
 		int collision_mask = 1;
 		int collision_layer = 1;
 		std::vector<CollisionShapeInfo> collision_shapes;
+		// Groups that will be added to colliders if they use nodes
+		std::vector<StringName> group_names;
 	};
 
 	// If a scene is assigned to the item, returns settings converted from it.

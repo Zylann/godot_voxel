@@ -2,6 +2,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/collision_shape_3d.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
+#include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/physics_body_3d.h"
 #include "voxel_instancer.h"
 
@@ -10,8 +11,9 @@ namespace zylann::voxel {
 const char *VoxelInstanceLibraryMultiMeshItem::MANUAL_SETTINGS_GROUP_NAME = "Manual settings";
 const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scene properties";
 
-static Array serialize_collision_shape_infos(
-		const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
+namespace {
+
+Array serialize_collision_shape_infos(const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
 	Array a;
 	for (unsigned int i = 0; i < infos.size(); ++i) {
 		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
@@ -24,7 +26,7 @@ static Array serialize_collision_shape_infos(
 	return a;
 }
 
-static bool deserialize_collision_shape_infos(
+bool deserialize_collision_shape_infos(
 		Array a, std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
@@ -40,6 +42,28 @@ static bool deserialize_collision_shape_infos(
 
 	return false;
 }
+
+TypedArray<StringName> serialize_group_names(const std::vector<StringName> &names) {
+	TypedArray<StringName> a;
+	a.resize(names.size());
+	int i = 0;
+	for (const StringName &name : names) {
+		a[i] = name;
+		++i;
+	}
+	return a;
+}
+
+void deserialize_group_names(const Array &src, std::vector<StringName> &dst) {
+	dst.reserve(src.size());
+	for (int i = 0; i < src.size(); ++i) {
+		StringName name = src[i];
+		ERR_CONTINUE(name == StringName());
+		dst.push_back(name);
+	}
+}
+
+} // namespace
 
 void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
 	Settings &settings = _manual_settings;
@@ -134,6 +158,16 @@ int VoxelInstanceLibraryMultiMeshItem::get_collision_mask() const {
 	return settings.collision_mask;
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_collider_group_names(TypedArray<StringName> names) {
+	Array array = names;
+	_manual_settings.group_names.clear();
+	deserialize_group_names(array, _manual_settings.group_names);
+}
+
+TypedArray<StringName> VoxelInstanceLibraryMultiMeshItem::get_collider_group_names() const {
+	return serialize_group_names(_manual_settings.group_names);
+}
+
 namespace {
 static const char *CAST_SHADOW_ENUM_NAMES = "Off,On,Double-Sided,Shadows Only";
 }
@@ -165,6 +199,8 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::ARRAY, "scene_collision_shapes", PROPERTY_HINT_NONE, "",
+				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::ARRAY, "scene_group_names", PROPERTY_HINT_NONE, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 	}
 }
@@ -212,6 +248,10 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 		}
 		if (property_name == "scene_collision_shapes") {
 			r_ret = serialize_collision_shape_infos(_scene_settings.collision_shapes);
+			return true;
+		}
+		if (property_name == "scene_group_names") {
+			r_ret = serialize_group_names(_scene_settings.group_names);
 			return true;
 		}
 	}
@@ -295,6 +335,8 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 		}
 	}
 
+	get_node_groups(*root, settings.group_names);
+
 	return true;
 }
 
@@ -350,6 +392,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 	a.push_back(settings.collision_layer);
 	a.push_back(settings.collision_mask);
 	a.push_back(serialize_collision_shape_infos(settings.collision_shapes));
+	a.push_back(serialize_group_names(settings.group_names));
 	return a;
 }
 
@@ -368,6 +411,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.collision_mask = a[ai++];
 	settings.collision_shapes.clear();
 	deserialize_collision_shape_infos(a[ai++], settings.collision_shapes);
+	deserialize_group_names(a[ai++], settings.group_names);
 	notify_listeners(CHANGE_VISUAL);
 }
 
@@ -420,6 +464,11 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_collision_shapes", "shape_infos"),
 			&VoxelInstanceLibraryMultiMeshItem::_b_set_collision_shapes);
 	ClassDB::bind_method(D_METHOD("get_collision_shapes"), &VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes);
+
+	ClassDB::bind_method(D_METHOD("set_collider_group_names", "names"),
+			&VoxelInstanceLibraryMultiMeshItem::set_collider_group_names);
+	ClassDB::bind_method(
+			D_METHOD("get_collider_group_names"), &VoxelInstanceLibraryMultiMeshItem::get_collider_group_names);
 
 	ClassDB::bind_method(
 			D_METHOD("setup_from_template", "node"), &VoxelInstanceLibraryMultiMeshItem::setup_from_template);
