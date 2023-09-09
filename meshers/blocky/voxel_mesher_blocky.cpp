@@ -456,7 +456,12 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		params = _parameters;
 	}
 
-	ERR_FAIL_COND(params.library.is_null());
+	if (params.library.is_null()) {
+		// This may be a configuration warning, the mesh will be left empty.
+		// If it was an error it would spam unnecessarily in the editor as users set things up.
+		return;
+	}
+	// ERR_FAIL_COND(params.library.is_null());
 
 	Cache &cache = get_tls_cache();
 
