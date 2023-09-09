@@ -120,8 +120,9 @@
 			<param index="3" name="collision_mask" type="int" default="4294967295" />
 			<description>
 				Runs a voxel-based raycast to find the first hit from an origin and a direction.
+				Returns a result object if a voxel got hit, otherwise returns [code]null[/code].
 				This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
-				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
+				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [member VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
 			</description>
 		</method>
 		<method name="set_voxel">
