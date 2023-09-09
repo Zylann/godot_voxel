@@ -37,14 +37,15 @@ public:
 		queue_free();
 	}
 
+	int get_library_item_id() const;
+
 	// Note, for this the body must switch to convex shapes
 	// void detach_and_become_rigidbody() {
 	// 	//...
 	// }
 
 protected:
-	// When compiling with GodotCpp, `_bind_methods` is not optional
-	static void _bind_methods() {}
+	static void _bind_methods();
 
 	void _notification(int p_what) {
 		switch (p_what) {

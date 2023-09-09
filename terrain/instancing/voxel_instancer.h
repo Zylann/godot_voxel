@@ -88,6 +88,8 @@ public:
 	void set_data_block_size_po2(unsigned int p_data_block_size_po2);
 	void set_mesh_lod_distance(float p_lod_distance);
 
+	int get_library_item_id_from_render_block_index(unsigned render_block_index) const;
+
 	// Debug
 
 	int debug_get_block_count() const;

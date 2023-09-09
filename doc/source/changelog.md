@@ -36,6 +36,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added support for `paste`
     - `VoxelMesherCubes`:
         - Added helper function to convert an image into a 1-voxel thick "sprite mesh"
+    - `VoxelInstancer`:
+        - Added `get_library_item_id` on multimesh instances with physics body nodes, so raycasts hitting them can tell which item they are
     - `VoxelInstanceGenerator`:
         - Added noise graph property, so instances can also be filtered with a custom VoxelGraphFunction
     - `VoxelInstanceLibrary`:

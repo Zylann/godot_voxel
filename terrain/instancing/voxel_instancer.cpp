@@ -1736,6 +1736,12 @@ void VoxelInstancer::set_mesh_lod_distance(float p_lod_distance) {
 	_mesh_lod_distance = p_lod_distance;
 }
 
+int VoxelInstancer::get_library_item_id_from_render_block_index(unsigned int render_block_index) const {
+	ERR_FAIL_INDEX_V(render_block_index, _blocks.size(), -1);
+	Block &block = *_blocks[render_block_index];
+	return block.layer_id;
+}
+
 int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
