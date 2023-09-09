@@ -21,17 +21,19 @@ jobs:
           - name: Editor build
             target: editor
             executable_name: godot.macos.editor.x86_64
+            godot_base_branch: "4.1"
 
           - name: Release build
             target: template_release
             executable_name: godot.macos.template_release.x86_64
+            godot_base_branch: "4.1"
 
     steps:
       # Clone Godot
       - uses: actions/checkout@v3
         with:
           repository: godotengine/godot
-          ref: ${{ matrix.GODOT_BASE_BRANCH }}
+          ref: ${{ matrix.godot_base_branch }}
 
       # Clone our module under the correct directory
       - uses: actions/checkout@v3
