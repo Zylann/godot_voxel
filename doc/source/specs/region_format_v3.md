@@ -1,4 +1,4 @@
-Region format
+Region format v3
 ==================
 
 Version: 3
