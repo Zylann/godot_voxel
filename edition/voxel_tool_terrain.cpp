@@ -149,13 +149,12 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	return res;
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {

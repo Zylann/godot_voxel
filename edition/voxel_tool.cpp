@@ -261,9 +261,13 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
+void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
+	ERR_PRINT("Not implemented");
+}
+
 void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
-	ERR_PRINT("Not implemented");
+	copy(pos, dst->get_buffer(), channel_mask);
 }
 
 void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {

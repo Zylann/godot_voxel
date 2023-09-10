@@ -276,13 +276,12 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
 void VoxelToolLodTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) {
