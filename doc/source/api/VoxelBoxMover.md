@@ -74,4 +74,4 @@ Sets the maximum height that can be climbed like "stairs".
 
 When enabled, method get_motion will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
-_Generated on Sep 03, 2023_
+_Generated on Sep 10, 2023_

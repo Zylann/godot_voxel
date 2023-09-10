@@ -170,9 +170,11 @@ Paste voxels in a box from the given buffer at a specific location. Voxels havin
 
 Runs a voxel-based raycast to find the first hit from an origin and a direction.
 
+Returns a result object if a voxel got hit, otherwise returns `null`.
+
 This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
 
-`collision_mask` is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask](https://docs.godotengine.org/en/stable/classes/class_voxelblockymodel.collision_mask.html) to decide which voxel types the ray can collide with.
+`collision_mask` is currently only used with blocky voxels. It is combined with member VoxelBlockyModel.collision_mask to decide which voxel types the ray can collide with.
 
 - [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
 
@@ -211,4 +213,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Sep 03, 2023_
+_Generated on Sep 10, 2023_
