@@ -51,6 +51,7 @@
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/instancing/voxel_instancer_rigidbody.h"
 #include "terrain/variable_lod/voxel_lod_terrain.h"
+#include "terrain/voxel_a_star_grid_3d.h"
 #include "terrain/voxel_mesh_block.h"
 #include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
@@ -275,6 +276,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 #endif
 		ClassDB::register_class<VoxelMeshSDF>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
+		ClassDB::register_class<VoxelAStarGrid3D>();
 
 		// Meshers
 		register_abstract_class<VoxelMesher>();

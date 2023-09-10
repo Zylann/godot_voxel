@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelAStarGrid3D" inherits="RefCounted" is_experimental="true" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Grid-based A* pathfinding algorithm adapted to blocky voxel terrain.
+	</brief_description>
+	<description>
+		This can be used to find paths between two voxel positions on blocky terrain.
+		It is tuned for agents 2 voxels tall and 1 voxel wide, which must stand on solid voxels and can jump 1 voxel high.
+		Search radius may also be limited (50 voxels and above starts to be relatively expensive).
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="debug_get_visited_positions" qualifiers="const">
+			<return type="Vector3i[]" />
+			<description>
+			</description>
+		</method>
+		<method name="find_path">
+			<return type="Vector3i[]" />
+			<param index="0" name="from_position" type="Vector3i" />
+			<param index="1" name="to_position" type="Vector3i" />
+			<description>
+			</description>
+		</method>
+		<method name="find_path_async">
+			<return type="void" />
+			<param index="0" name="from_position" type="Vector3i" />
+			<param index="1" name="to_position" type="Vector3i" />
+			<description>
+			</description>
+		</method>
+		<method name="get_region">
+			<return type="AABB" />
+			<description>
+			</description>
+		</method>
+		<method name="is_running_async" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_region">
+			<return type="void" />
+			<param index="0" name="box" type="AABB" />
+			<description>
+			</description>
+		</method>
+		<method name="set_terrain">
+			<return type="void" />
+			<param index="0" name="terrain" type="VoxelTerrain" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="async_search_completed">
+			<param index="0" name="name" type="Vector3i[]" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

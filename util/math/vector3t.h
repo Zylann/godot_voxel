@@ -280,6 +280,11 @@ void rotate_90(Span<Vector3T<T>> vectors, Axis axis, bool clockwise) {
 	}
 }
 
+template <typename T>
+inline bool is_valid_size(const Vector3T<T> &s) {
+	return s.x >= 0 && s.y >= 0 && s.z >= 0;
+}
+
 } // namespace math
 } // namespace zylann
 

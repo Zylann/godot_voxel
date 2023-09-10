@@ -93,6 +93,9 @@ public:
 	String ortho_rotation_enum_hint_string;
 
 	StringName compiled;
+
+	StringName _on_async_search_completed;
+	StringName async_search_completed;
 };
 
 } // namespace zylann::voxel

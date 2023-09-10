@@ -26,6 +26,7 @@ def get_icons_path():
 def get_doc_classes():
     return [
         "FastNoise2",
+        "VoxelAStarGrid3D",
         "VoxelBlockSerializer",
         "VoxelBlockyAttribute",
         "VoxelBlockyAttributeAxis",
