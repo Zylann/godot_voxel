@@ -258,6 +258,14 @@ bool VoxelData::try_set_voxel_f(real_t value, Vector3i pos, unsigned int channel
 
 void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
 	ZN_PROFILE_SCOPE();
+
+#ifdef DEBUG_ENABLED
+	if (channels_mask == 0) {
+		ZN_PRINT_WARNING("copy was called with empty channel mask, nothing will be copied");
+		return;
+	}
+#endif
+
 	const Lod &data_lod0 = _lods[0];
 	const VoxelModifierStack &modifiers = _modifiers;
 
