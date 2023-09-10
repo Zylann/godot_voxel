@@ -114,18 +114,31 @@
 		<method name="get_node_type_count" qualifiers="const">
 			<return type="int" />
 			<description>
+				Get how many types of nodes exist in the graph system.
 			</description>
 		</method>
 		<method name="get_node_type_id" qualifiers="const">
 			<return type="int" enum="VoxelGraphFunction.NodeTypeID" />
 			<param index="0" name="node_id" type="int" />
 			<description>
+				Get the ID of the type of a node in the graph.
 			</description>
 		</method>
 		<method name="get_node_type_info" qualifiers="const">
 			<return type="Dictionary" />
 			<param index="0" name="type_id" type="int" />
 			<description>
+			</description>
+		</method>
+		<method name="paste_graph_with_pre_generated_ids">
+			<return type="void" />
+			<param index="0" name="graph" type="VoxelGraphFunction" />
+			<param index="1" name="node_ids" type="PackedInt32Array" />
+			<param index="2" name="gui_offset" type="Vector2" />
+			<description>
+				Copies nodes into another graph, and connections between them only.
+				Resources in node parameters will be duplicated if they don't have a file path.
+				If [code]node_ids[/code] is provided with non-zero size, defines the IDs of copied nodes. Otherwise, they are generated.
 			</description>
 		</method>
 		<method name="remove_connection">
