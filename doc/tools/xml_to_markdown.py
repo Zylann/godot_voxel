@@ -13,8 +13,7 @@ import xml.etree.ElementTree as ET
 from time import gmtime, strftime
 import os
 import markdown
-# TODO Separate BBCode conversion to Markdown into its own file
-import graph_nodes_doc
+import bbcode_to_markdown
 
 
 # Assumes text is dedented
@@ -74,7 +73,7 @@ import graph_nodes_doc
 
 
 def make_text(text, module_class_names, current_class_name):
-    return graph_nodes_doc.format_text_for_markdown(text, module_class_names, current_class_name)
+    return bbcode_to_markdown.format_text(text, module_class_names, current_class_name)
 
     # text = dedent(text)
     # s = ""
