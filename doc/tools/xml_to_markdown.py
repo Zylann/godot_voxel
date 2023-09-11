@@ -16,82 +16,8 @@ import markdown
 import bbcode_to_markdown
 
 
-# Assumes text is dedented
-# def format_regular_text(text, module_class_names):
-#     # Doubling line endings otherwise Mkdocs doesn't give us enough space
-#     text = text.replace('\n', '\n\n').replace('[code]', '`').replace('[/code]', '`')
-#     s = ""
-#     while True:
-#         i = text.find('[')
-#         if i == -1:
-#             s += text
-#             break
-#         s += text[:i]
-#         text = text[i + 1:]
-#         i = text.find(']')
-#         # There must be a closing bracket
-#         assert i != -1
-#         cmd = text[:i]
-#         text = text[i + 1:]
-
-#         if cmd.startswith('url='):
-#             # [url=xxx]text[/url]
-#             url = cmd[len('url='):]
-#             i = text.find('[/url]')
-#             assert i != -1
-#             link_text = text[:i]
-#             s += markdown.make_link(link_text, url)
-#             text = text[i + len('[/url]'):]
-
-#         elif cmd.find(' ') == -1:
-#             # [typename]
-#             s += markdown.make_type(cmd, '', module_class_names)
-#         else:
-#             # TODO Enhancement: members and shit
-#             s += cmd
-#     return s
-
-
-# Removes all indentation found in common with all lines
-# def dedent(text):
-#     lines = text.splitlines()
-#     min_count = 99
-#     for line in lines:
-#         if line.strip() == "":
-#             continue
-#         count = 0
-#         for c in line:
-#             if c == '\t':
-#                 count += 1
-#             else:
-#                 break
-#         min_count = min(count, min_count)
-#     dedented_lines = []
-#     for line in lines:
-#         dedented_lines.append(line[min_count:])
-#     return "\n".join(dedented_lines)
-
-
 def make_text(text, module_class_names, current_class_name):
     return bbcode_to_markdown.format_text(text, module_class_names, current_class_name)
-
-    # text = dedent(text)
-    # s = ""
-    # while True:
-    #     i = text.find("[codeblock]")
-    #     if i == -1:
-    #         s += format_regular_text(text, module_class_names)
-    #         break
-    #     s += format_regular_text(text[:i], module_class_names)
-    #     text = text[i + len("[codeblock]"):]
-    #     s += "```gdscript"
-    #     i = text.find("[/codeblock]")
-    #     # There must be a closing tag
-    #     assert i != -1
-    #     s += re.sub(r'^\s\s', '', text[:i])
-    #     text = text[i + len("[/codeblock]"):]
-    #     s += "\n```"
-    # return s.strip()
 
 
 def make_single_line_text(text):

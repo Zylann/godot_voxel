@@ -38,20 +38,6 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                     lines2.append(line)
                     if line.strip() != "" and '\n' in line:
                         lines2.append('\n')
-
-                # lines2 = [lines[0]]
-                # for line_index in range(1, len(lines)):
-                #     line = lines[line_index]
-                #     if line.strip() != "" and lines[line_index - 1].strip() != "":
-                #         lines2.append("\n")
-                #     lines2.append(line)
-
-                # if "library." in node_text:
-                #     print("--- CV")
-                #     print(lines)
-                #     print("--- To")
-                #     print(lines2)
-                #     print("---")
                 node_text = ''.join(lines2)
             
             if url != None:
@@ -148,10 +134,5 @@ def format_text(text, module_class_names, current_class_name):
     # and there may also be unwanted leading lines. Normally Markdown renderers ignore those, but it's cleaner.
     # Note: we don't use Markdown's indentation syntax (which would break if it begins the text).
     md = md.strip()
-    # print("--- Converting text ---")
-    # print(text)
-    # print(">>> to")
-    # print(md)
-    # print("---")
     return md
 
