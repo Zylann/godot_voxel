@@ -2,7 +2,6 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-
 Implements loading and saving voxel blocks, mainly using files.
 
 ## Properties: 
@@ -62,4 +61,4 @@ When this is enabled, if a block cannot be found in the stream and it gets gener
 - [void](#)<span id="i_save_voxel_block"></span> **save_voxel_block**( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

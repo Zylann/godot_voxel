@@ -2,7 +2,6 @@
 
 Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
-
 Spawns items on top of voxel surfaces.
 
 ## Description: 
@@ -81,4 +80,4 @@ enum **DebugDrawFlag**:
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

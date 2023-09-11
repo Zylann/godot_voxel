@@ -2,14 +2,13 @@
 
 Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
-
 Attach this as a child node of characters, so the voxel world will know where to load blocks around them.
 
 If no viewer is present in the world, nothing will generate.
 
 ## Description: 
 
-The voxel world uses the position and options of all the [VoxelViewer](VoxelViewer.md) nodes to determine where to load blocks, and prioritize updates. For example, a voxel placed 100 units away from a player will have much lower priority than the modifications that player is doing when digging in front of them.
+The voxel world uses the position and options of all the [VoxelViewer](api/VoxelViewer.md) nodes to determine where to load blocks, and prioritize updates. For example, a voxel placed 100 units away from a player will have much lower priority than the modifications that player is doing when digging in front of them.
 
 ## Properties: 
 
@@ -56,4 +55,4 @@ How far should voxels generate around this viewer.
 - [void](#)<span id="i_set_network_peer_id"></span> **set_network_peer_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

@@ -2,7 +2,6 @@
 
 Inherits: [VoxelMesher](VoxelMesher.md)
 
-
 Implements isosurface generation (smooth voxels) using the [Transvoxel](https://transvoxel.org/) algorithm.
 
 ## Properties: 
@@ -59,4 +58,4 @@ enum **TexturingMode**:
 - [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

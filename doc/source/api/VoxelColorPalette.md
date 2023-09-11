@@ -2,14 +2,13 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-
 Limited list of colors that can be indexed quickly.
 
 ## Description: 
 
 Contains a list of colors that can be accessed quickly by their index. This is useful to store colored voxels with small memory footprint.
 
-It can be used with [VoxelMesherCubes](VoxelMesherCubes.md).
+It can be used with [VoxelMesherCubes](api/VoxelMesherCubes.md).
 
 ## Properties: 
 
@@ -49,4 +48,4 @@ Return                                                                    | Sign
 - [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

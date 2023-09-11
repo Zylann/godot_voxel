@@ -2,7 +2,6 @@
 
 Inherits: [VoxelNode](VoxelNode.md)
 
-
 Voxel volume using constant level of detail.
 
 ## Properties: 
@@ -89,16 +88,16 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 
 Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 
-Note 1: you also need [VoxelViewer](VoxelViewer.md) to request collisions, otherwise they won't generate.
+Note 1: you also need [VoxelViewer](api/VoxelViewer.md) to request collisions, otherwise they won't generate.
 
-Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](VoxelBoxMover.md) which may perform better in blocky worlds.
+Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](api/VoxelBoxMover.md) which may perform better in blocky worlds.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material_override"></span> **material_override**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_max_view_distance"></span> **max_view_distance** = 128
 
-Sets the maximum distance this terrain can support. If a [VoxelViewer](VoxelViewer.md) requests more, it will be clamped.
+Sets the maximum distance this terrain can support. If a [VoxelViewer](api/VoxelViewer.md) requests more, it will be clamped.
 
 Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 
@@ -136,7 +135,7 @@ Gets debug information about how much time is spent processing the terrain.
 
 The returned dictionary has the following structure:
 
-```gdscript
+```
 {
 	"time_detect_required_blocks": int,
 	"time_request_blocks_to_load": int,
@@ -148,7 +147,6 @@ The returned dictionary has the following structure:
 	"dropped_block_meshs": int,
 	"updated_blocks": int
 }
-
 ```
 
 - [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)<span id="i_get_viewer_network_peer_ids_in_area"></span> **get_viewer_network_peer_ids_in_area**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) 
@@ -156,7 +154,7 @@ The returned dictionary has the following structure:
 
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Creates an instance of [VoxelTool](VoxelTool.md) bound to this node, to access voxels and edition methods.
+Creates an instance of [VoxelTool](api/VoxelTool.md) bound to this node, to access voxels and edition methods.
 
 You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 
@@ -197,4 +195,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

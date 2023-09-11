@@ -2,14 +2,13 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-
 Graph for generating or processing voxels.
 
 ## Description: 
 
 Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
 
-Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
+Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md).
 
 ## Properties: 
 
@@ -249,4 +248,4 @@ Sets a custom name for a node.
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

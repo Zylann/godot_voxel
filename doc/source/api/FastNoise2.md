@@ -2,7 +2,6 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-
 Wrapper for the FastNoise2 library.
 
 ## Properties: 
@@ -173,4 +172,4 @@ enum **SIMDLevel**:
 - [void](#)<span id="i_update_generator"></span> **update_generator**( ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

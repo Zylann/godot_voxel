@@ -2,7 +2,6 @@
 
 Inherits: [VoxelGenerator](VoxelGenerator.md)
 
-
 Voxel generator producing an infinite flat ground.
 
 ## Properties: 
@@ -27,6 +26,6 @@ Altitude of the ground.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_voxel_type"></span> **voxel_type** = 1
 
-If member channel is set to constant VoxelBuffer.CHANNEL_TYPE, this value will be used to fill ground voxels.
+If [VoxelGeneratorFlat.channel](api/VoxelGeneratorFlat.md#i_channel) is set to [VoxelBuffer.CHANNEL_TYPE](api/VoxelBuffer.md#constants), this value will be used to fill ground voxels.
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

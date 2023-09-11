@@ -2,7 +2,6 @@
 
 Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
-
 Base class for voxel volumes.
 
 ## Properties: 
@@ -46,4 +45,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

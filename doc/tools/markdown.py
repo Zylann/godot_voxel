@@ -46,14 +46,69 @@ def make_table(table):
     return s
 
 
+def get_godot_class_url(name):
+    return GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
+
+
 def make_type(name, local_prefix, module_class_names):
     if name == "void":
         link = "#"
     elif name in module_class_names:
         link = local_prefix + name + ".md"
     else:
-        link = GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
+        link = get_godot_class_url(name)
     return make_link(name, link)
+
+
+def get_godot_member_url(class_name, member_name, member_type):
+    # member_type may be:
+    # "method"
+    # "property"
+    # "constant"
+    return get_godot_class_url(class_name) + "#class-" + class_name.lower() + "-" + member_type + "-" + member_name
+
+
+# Inconsistently different from methods and properties
+def get_godot_enum_url(class_name, member_name):
+    return get_godot_class_url(class_name) + "#enum-" + class_name.lower() + "-" + member_name
+
+
+def make_property_link(class_name, member_name, local_prefix, module_class_names):
+    if class_name in module_class_names:
+        link = local_prefix + class_name + ".md#i_" + member_name
+    else:
+        link = get_godot_member_url(class_name, member_name, "property")
+    link_text = class_name + "." + member_name
+    return make_link(link_text, link)
+
+
+def make_method_link(class_name, member_name, local_prefix, module_class_names):
+    if class_name in module_class_names:
+        link = local_prefix + class_name + ".md#i_" + member_name
+    else:
+        link = get_godot_member_url(class_name, member_name, "method")
+    link_text = class_name + "." + member_name
+    return make_link(link_text, link)
+
+
+def make_enum_link(class_name, member_name, local_prefix, module_class_names):
+    if class_name in module_class_names:
+        # TODO Link to specific enum not supported yet
+        link = local_prefix + class_name + ".md#enumerations"
+    else:
+        link = get_godot_enum_url(class_name, member_name)
+    link_text = class_name + "." + member_name
+    return make_link(link_text, link)
+
+
+def make_constant_link(class_name, member_name, local_prefix, module_class_names):
+    if class_name in module_class_names:
+        # TODO Link to specific constant not supported yet
+        link = local_prefix + class_name + ".md#constants"
+    else:
+        link = get_godot_member_url(class_name, member_name, "constant")
+    link_text = class_name + "." + member_name
+    return make_link(link_text, link)
 
 
 # TESTING

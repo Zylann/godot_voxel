@@ -2,12 +2,11 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
 3D grid storing voxel data.
 
 ## Description: 
 
-This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See enum Depth for more information.
+This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See [VoxelBuffer.Depth](api/VoxelBuffer.md#enumerations) for more information.
 
 Arbitrary metadata can also be stored, either for the whole buffer, or per-voxel, at higher cost. This metadata can get saved and loaded along voxels, however you must make sure the data is serializable (i.e it should not contain nodes or arbitrary objects).
 
@@ -103,11 +102,11 @@ Finds channels that have the same value in all their voxels, and reduces memory 
 
 - [void](#)<span id="i_copy_channel_from"></span> **copy_channel_from**( [VoxelBuffer](VoxelBuffer.md) other, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
-Copies all values from the channel of another [VoxelBuffer](VoxelBuffer.md) into the same channel for the current buffer. The depth formats must match.
+Copies all values from the channel of another [VoxelBuffer](api/VoxelBuffer.md) into the same channel for the current buffer. The depth formats must match.
 
 - [void](#)<span id="i_copy_channel_from_area"></span> **copy_channel_from_area**( [VoxelBuffer](VoxelBuffer.md) other, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_min, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_max, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_min, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
-Copies values from a channel's sub-region of another [VoxelBuffer](VoxelBuffer.md) into the same channel for the current buffer, at a specific location. The depth formats must match.
+Copies values from a channel's sub-region of another [VoxelBuffer](api/VoxelBuffer.md) into the same channel for the current buffer, at a specific location. The depth formats must match.
 
 If corners of the area represent a negative-size area, they will be sorted back.
 
@@ -117,7 +116,7 @@ Copying across the same buffer to overlapping areas is not supported. You may us
 
 - [void](#)<span id="i_copy_voxel_metadata_in_area"></span> **copy_voxel_metadata_in_area**( [VoxelBuffer](VoxelBuffer.md) src_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_min_pos, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_max_pos, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_min_pos ) 
 
-Copies per-voxel metadata from a sub-region of another [VoxelBuffer](VoxelBuffer.md) into the the current buffer, at a specific location. Values will be a shallow copy.
+Copies per-voxel metadata from a sub-region of another [VoxelBuffer](api/VoxelBuffer.md) into the the current buffer, at a specific location. Values will be a shallow copy.
 
 If corners of the area represent a negative-size area, they will be sorted back.
 
@@ -164,7 +163,7 @@ Executes a function on every voxel in this buffer which have associated metadata
 
 - [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_block_metadata"></span> **get_block_metadata**( ) 
 
-Gets metadata associated to this [VoxelBuffer](VoxelBuffer.md).
+Gets metadata associated to this [VoxelBuffer](api/VoxelBuffer.md).
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_channel_compression"></span> **get_channel_compression**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
@@ -192,7 +191,7 @@ Gets the metadata attached to a specific voxel in this buffer.
 
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Constructs a [VoxelTool](VoxelTool.md) instance bound to this buffer. This provides access to some extra common functions.
+Constructs a [VoxelTool](api/VoxelTool.md) instance bound to this buffer. This provides access to some extra common functions.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_uniform"></span> **is_uniform**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
 
@@ -208,15 +207,15 @@ Checks if every voxel within a channel has the same value.
 
 Sets arbitrary data on this buffer. Old data is replaced. Note, this is separate storage from per-voxel metadata.
 
-If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
+If this [VoxelBuffer](api/VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 
 - [void](#)<span id="i_set_channel_depth"></span> **set_channel_depth**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) depth ) 
 
-Changes the bit depth of a given channel. This controls the range of values a channel can hold. See enum VoxelBuffer.Depth for more information.
+Changes the bit depth of a given channel. This controls the range of values a channel can hold. See [VoxelBuffer.Depth](api/VoxelBuffer.md#enumerations) for more information.
 
 - [void](#)<span id="i_set_voxel"></span> **set_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
-Sets the raw value of a voxel. If you use smooth voxels, you may prefer using method set_voxel_f.
+Sets the raw value of a voxel. If you use smooth voxels, you may prefer using [VoxelBuffer.set_voxel_f](api/VoxelBuffer.md#i_set_voxel_f).
 
 - [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
@@ -226,9 +225,9 @@ Sets the float value of a voxel. This method should be used if you work on SDF d
 
 Attaches arbitrary data on a specific voxel. Old data is replaced.
 
-If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
+If this [VoxelBuffer](api/VoxelBuffer.md) is saved, this metadata will also be saved along voxels, so make sure the data supports serialization (i.e you can't put nodes or arbitrary objects in it).
 
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_

@@ -13,82 +13,86 @@ import xml.etree.ElementTree as ET
 from time import gmtime, strftime
 import os
 import markdown
+# TODO Separate BBCode conversion to Markdown into its own file
+import graph_nodes_doc
 
 
 # Assumes text is dedented
-def format_regular_text(text, module_class_names):
-    # Doubling line endings otherwise Mkdocs doesn't give us enough space
-    text = text.replace('\n', '\n\n').replace('[code]', '`').replace('[/code]', '`')
-    s = ""
-    while True:
-        i = text.find('[')
-        if i == -1:
-            s += text
-            break
-        s += text[:i]
-        text = text[i + 1:]
-        i = text.find(']')
-        # There must be a closing bracket
-        assert i != -1
-        cmd = text[:i]
-        text = text[i + 1:]
+# def format_regular_text(text, module_class_names):
+#     # Doubling line endings otherwise Mkdocs doesn't give us enough space
+#     text = text.replace('\n', '\n\n').replace('[code]', '`').replace('[/code]', '`')
+#     s = ""
+#     while True:
+#         i = text.find('[')
+#         if i == -1:
+#             s += text
+#             break
+#         s += text[:i]
+#         text = text[i + 1:]
+#         i = text.find(']')
+#         # There must be a closing bracket
+#         assert i != -1
+#         cmd = text[:i]
+#         text = text[i + 1:]
 
-        if cmd.startswith('url='):
-            # [url=xxx]text[/url]
-            url = cmd[len('url='):]
-            i = text.find('[/url]')
-            assert i != -1
-            link_text = text[:i]
-            s += markdown.make_link(link_text, url)
-            text = text[i + len('[/url]'):]
+#         if cmd.startswith('url='):
+#             # [url=xxx]text[/url]
+#             url = cmd[len('url='):]
+#             i = text.find('[/url]')
+#             assert i != -1
+#             link_text = text[:i]
+#             s += markdown.make_link(link_text, url)
+#             text = text[i + len('[/url]'):]
 
-        elif cmd.find(' ') == -1:
-            # [typename]
-            s += markdown.make_type(cmd, '', module_class_names)
-        else:
-            # TODO Enhancement: members and shit
-            s += cmd
-    return s
+#         elif cmd.find(' ') == -1:
+#             # [typename]
+#             s += markdown.make_type(cmd, '', module_class_names)
+#         else:
+#             # TODO Enhancement: members and shit
+#             s += cmd
+#     return s
 
 
 # Removes all indentation found in common with all lines
-def dedent(text):
-    lines = text.splitlines()
-    min_count = 99
-    for line in lines:
-        if line.strip() == "":
-            continue
-        count = 0
-        for c in line:
-            if c == '\t':
-                count += 1
-            else:
-                break
-        min_count = min(count, min_count)
-    dedented_lines = []
-    for line in lines:
-        dedented_lines.append(line[min_count:])
-    return "\n".join(dedented_lines)
+# def dedent(text):
+#     lines = text.splitlines()
+#     min_count = 99
+#     for line in lines:
+#         if line.strip() == "":
+#             continue
+#         count = 0
+#         for c in line:
+#             if c == '\t':
+#                 count += 1
+#             else:
+#                 break
+#         min_count = min(count, min_count)
+#     dedented_lines = []
+#     for line in lines:
+#         dedented_lines.append(line[min_count:])
+#     return "\n".join(dedented_lines)
 
 
-def make_text(text, module_class_names):
-    text = dedent(text)
-    s = ""
-    while True:
-        i = text.find("[codeblock]")
-        if i == -1:
-            s += format_regular_text(text, module_class_names)
-            break
-        s += format_regular_text(text[:i], module_class_names)
-        text = text[i + len("[codeblock]"):]
-        s += "```gdscript"
-        i = text.find("[/codeblock]")
-        # There must be a closing tag
-        assert i != -1
-        s += re.sub(r'^\s\s', '', text[:i])
-        text = text[i + len("[/codeblock]"):]
-        s += "\n```"
-    return s.strip()
+def make_text(text, module_class_names, current_class_name):
+    return graph_nodes_doc.format_text_for_markdown(text, module_class_names, current_class_name)
+
+    # text = dedent(text)
+    # s = ""
+    # while True:
+    #     i = text.find("[codeblock]")
+    #     if i == -1:
+    #         s += format_regular_text(text, module_class_names)
+    #         break
+    #     s += format_regular_text(text[:i], module_class_names)
+    #     text = text[i + len("[codeblock]"):]
+    #     s += "```gdscript"
+    #     i = text.find("[/codeblock]")
+    #     # There must be a closing tag
+    #     assert i != -1
+    #     s += re.sub(r'^\s\s', '', text[:i])
+    #     text = text[i + len("[/codeblock]"):]
+    #     s += "\n```"
+    # return s.strip()
 
 
 def make_single_line_text(text):
@@ -147,19 +151,21 @@ def process_xml(f_xml, f_out, module_class_names):
         print("Error: No class found. Not a valid Godot class XML file!\n")
         sys.exit(1)
 
+    current_class_name = root.attrib['name']
+
     # Header
-    out = "# " + root.attrib['name'] + "\n\n"
+    out = "# " + current_class_name + "\n\n"
     out += "Inherits: " + markdown.make_type(root.attrib['inherits'], '', module_class_names) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
         out += ("!!! warning\n    This class is marked as experimental. "
             "It is subject to likely change or possible removal in future versions. Use at your own discretion.")
+        out += "\n"
 
-    out += "\n"
-    out += make_text(root.find('brief_description').text, module_class_names) + "\n\n"
+    out += make_text(root.find('brief_description').text, module_class_names, current_class_name) + "\n\n"
 
-    text = make_text(root.find('description').text, module_class_names)
-    if text != "":
+    text = make_text(root.find('description').text, module_class_names, current_class_name)
+    if text.strip() != "":
         out += "## Description: \n\n" + text + "\n\n"
 
     # Tutorials
@@ -242,7 +248,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
                 desc = signal.find('description')
                 if desc is not None:
-                    text = make_text(desc.text, module_class_names)
+                    text = make_text(desc.text, module_class_names, current_class_name)
                     if text != "":
                         out += text
                         out += "\n\n"
@@ -296,8 +302,8 @@ def process_xml(f_xml, f_out, module_class_names):
             out += "\n\n"
 
             if member.text is not None:
-                text = make_text(member.text, module_class_names)
-                if text != "":
+                text = make_text(member.text, module_class_names, current_class_name)
+                if text.strip() != "":
                     out += text
                     out += "\n"
 
@@ -321,8 +327,8 @@ def process_xml(f_xml, f_out, module_class_names):
 
             desc = method.find('description')
             if desc is not None:
-                text = make_text(desc.text, module_class_names)
-                if text != "":
+                text = make_text(desc.text, module_class_names, current_class_name)
+                if text.strip() != "":
                     out += text
                     out += "\n"
             

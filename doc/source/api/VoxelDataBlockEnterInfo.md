@@ -2,12 +2,11 @@
 
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
-
-Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md).
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](api/VoxelViewer.md).
 
 ## Description: 
 
-Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md). See method VoxelTerrain._on_data_block_entered.
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](api/VoxelViewer.md). See [VoxelTerrain._on_data_block_entered](api/VoxelTerrain.md#i__on_data_block_entered).
 
 Instances of this class must not be stored, as they will become invalid after the call they come from.
 
@@ -35,7 +34,7 @@ Gets which LOD index the data block is in.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_network_peer_id"></span> **get_network_peer_id**( ) 
 
-Gets the network peer ID of the [VoxelViewer](VoxelViewer.md) who caused the block to be referenced.
+Gets the network peer ID of the [VoxelViewer](api/VoxelViewer.md) who caused the block to be referenced.
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_position"></span> **get_position**( ) 
 
@@ -45,4 +44,4 @@ Gets the position of the data block, in data block coordinates (voxel coordinate
 
 Gets access to the voxels in the block.
 
-_Generated on Sep 10, 2023_
+_Generated on Sep 11, 2023_
