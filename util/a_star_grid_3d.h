@@ -15,6 +15,7 @@ namespace zylann {
 class AStarGrid3D {
 public:
 	AStarGrid3D();
+	virtual ~AStarGrid3D() {}
 
 	void set_agent_size(Vector3f size);
 	Vector3f get_agent_size() const {
