@@ -2,13 +2,13 @@
 
 Inherits: [VoxelTool](VoxelTool.md)
 
-Implementation of [VoxelTool](api/VoxelTool.md) specialized for uses on [VoxelLodTerrain](api/VoxelLodTerrain.md).
+Implementation of [VoxelTool](VoxelTool.md) specialized for uses on [VoxelLodTerrain](VoxelLodTerrain.md).
 
 ## Description: 
 
-Functions in this class are specific to [VoxelLodTerrain](api/VoxelLodTerrain.md). For generic functions, you may also check [VoxelTool](api/VoxelTool.md).
+Functions in this class are specific to [VoxelLodTerrain](VoxelLodTerrain.md). For generic functions, you may also check [VoxelTool](VoxelTool.md).
 
-It's not a class to instantiate alone, you may get it from [VoxelLodTerrain](api/VoxelLodTerrain.md) using the `get_voxel_tool()` method.
+It's not a class to instantiate alone, you may get it from [VoxelLodTerrain](VoxelLodTerrain.md) using the `get_voxel_tool()` method.
 
 ## Methods: 
 

@@ -66,7 +66,7 @@ If enabled, when generating blocks for a terrain, the generator will attempt to 
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_subdivision"></span> **use_subdivision** = true
 
-If enabled, [VoxelGeneratorGraph.subdivision_size](api/VoxelGeneratorGraph.md#i_subdivision_size) will be used.
+If enabled, [VoxelGeneratorGraph.subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_xz_caching"></span> **use_xz_caching** = true
 
@@ -90,7 +90,7 @@ Bakes a spherical normalmap using SDF output produced by the generator, if any. 
 
 `strength`: strength of produced normals, may default to 1.0.
 
-Note: an alternative is to use distance normals feature with [VoxelLodTerrain](api/VoxelLodTerrain.md).
+Note: an alternative is to use distance normals feature with [VoxelLodTerrain](VoxelLodTerrain.md).
 
 - [void](#)<span id="i_clear"></span> **clear**( ) 
 

@@ -8,7 +8,7 @@ If no viewer is present in the world, nothing will generate.
 
 ## Description: 
 
-The voxel world uses the position and options of all the [VoxelViewer](api/VoxelViewer.md) nodes to determine where to load blocks, and prioritize updates. For example, a voxel placed 100 units away from a player will have much lower priority than the modifications that player is doing when digging in front of them.
+The voxel world uses the position and options of all the [VoxelViewer](VoxelViewer.md) nodes to determine where to load blocks, and prioritize updates. For example, a voxel placed 100 units away from a player will have much lower priority than the modifications that player is doing when digging in front of them.
 
 ## Properties: 
 

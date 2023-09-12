@@ -17,7 +17,7 @@ import bbcode_to_markdown
 
 
 def make_text(text, module_class_names, current_class_name):
-    return bbcode_to_markdown.format_text(text, module_class_names, current_class_name)
+    return bbcode_to_markdown.format_text(text, module_class_names, current_class_name, '')
 
 
 def make_single_line_text(text):

@@ -6,7 +6,7 @@ Voxel volume using variable level of detail.
 
 ## Description: 
 
-Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](api/VoxelMesherTransvoxel.md).
+Renders large terrain using variable level of details. This is preferably used with smooth meshing such as [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md).
 
 ## Properties: 
 
@@ -116,7 +116,7 @@ How long to wait before updating colliders after an edit, in milliseconds. Colli
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_full_load_mode_enabled"></span> **full_load_mode_enabled** = false
 
-If enabled, data streaming will be turned off, and all voxel data will be loaded from the [VoxelLodTerrain.stream](api/VoxelLodTerrain.md#i_stream) into memory.
+If enabled, data streaming will be turned off, and all voxel data will be loaded from the [VoxelLodTerrain.stream](VoxelLodTerrain.md#i_stream) into memory.
 
 This removes several constraints, such as being able to edit anywhere and allowing distant normalmaps to include edited regions. This comes at the expense of more memory usage. However, only edited regions use memory, so in practice it can be good enough.
 
@@ -126,11 +126,11 @@ If enabled, chunked colliders will be generated from meshes.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 4
 
-How many LOD levels to use. This should be tuned alongside [VoxelLodTerrain.lod_distance](api/VoxelLodTerrain.md#i_lod_distance): if you want to see very far, you need more LOD levels. This allows blocks to become larger the further away they are, to keep their numbers to an acceptable amount. In contrast, too few LOD levels means regions far away will have to use too many small blocks, which can affect performance.
+How many LOD levels to use. This should be tuned alongside [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance): if you want to see very far, you need more LOD levels. This allows blocks to become larger the further away they are, to keep their numbers to an acceptable amount. In contrast, too few LOD levels means regions far away will have to use too many small blocks, which can affect performance.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_distance"></span> **lod_distance** = 48.0
 
-How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [VoxelLodTerrain.full_load_mode_enabled](api/VoxelLodTerrain.md#i_full_load_mode_enabled) is disabled, this also defines how far edits are allowed.
+How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [VoxelLodTerrain.full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is disabled, this also defines how far edits are allowed.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_fade_duration"></span> **lod_fade_duration** = 0.0
 
@@ -169,7 +169,7 @@ Maximum resolution of tiles in distant normalmaps.
 
 Minimum resolution of tiles in distant normalmaps.
 
-This is the resolution at which normalmaps will begin with, at the LOD level defined in [VoxelLodTerrain.normalmap_begin_lod_index](api/VoxelLodTerrain.md#i_normalmap_begin_lod_index). Resolutions will double at each LOD level, until they reach [VoxelLodTerrain.normalmap_tile_resolution_max](api/VoxelLodTerrain.md#i_normalmap_tile_resolution_max).
+This is the resolution at which normalmaps will begin with, at the LOD level defined in [VoxelLodTerrain.normalmap_begin_lod_index](VoxelLodTerrain.md#i_normalmap_begin_lod_index). Resolutions will double at each LOD level, until they reach [VoxelLodTerrain.normalmap_tile_resolution_max](VoxelLodTerrain.md#i_normalmap_tile_resolution_max).
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_normalmap_use_gpu"></span> **normalmap_use_gpu** = false
 
@@ -177,7 +177,7 @@ Enables GPU detail normalmaps generation, which can speed it up. This is only va
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_run_stream_in_editor"></span> **run_stream_in_editor** = true
 
-Sets wether the [VoxelLodTerrain.generator](api/VoxelLodTerrain.md#i_generator) and the [VoxelLodTerrain.stream](api/VoxelLodTerrain.md#i_stream) will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
+Sets wether the [VoxelLodTerrain.generator](VoxelLodTerrain.md#i_generator) and the [VoxelLodTerrain.stream](VoxelLodTerrain.md#i_stream) will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_threaded_update_enabled"></span> **threaded_update_enabled** = false
 
@@ -275,7 +275,7 @@ The returned dictionary has the following structure:
 
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Gets an instance of [VoxelTool](api/VoxelTool.md) bound to this volume. Allows to query and edit voxels.
+Gets an instance of [VoxelTool](VoxelTool.md) bound to this volume. Allows to query and edit voxels.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_meshed"></span> **is_area_meshed**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 

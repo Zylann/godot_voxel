@@ -18,7 +18,7 @@ Return     | Signature
 
 Generates a block of voxels within the specified world area.
 
-`out_buffer`: Buffer in which voxel data will be generated. It should not be `null` and should have a non-empty size. Do not keep a reference on it after the call. Note: this buffer can have any non-empty size, but some assumptions can be made depending on which terrain node you're using. [VoxelTerrain](api/VoxelTerrain.md) will always request blocks of size 16x16x16, but [VoxelLodTerrain](api/VoxelLodTerrain.md) can request blocks of different sizes.
+`out_buffer`: Buffer in which voxel data will be generated. It should not be `null` and should have a non-empty size. Do not keep a reference on it after the call. Note: this buffer can have any non-empty size, but some assumptions can be made depending on which terrain node you're using. [VoxelTerrain](VoxelTerrain.md) will always request blocks of size 16x16x16, but [VoxelLodTerrain](VoxelLodTerrain.md) can request blocks of different sizes.
 
 `origin_in_voxels`: Coordinates of the lower corner of the box to generate, relative to LOD0.
 

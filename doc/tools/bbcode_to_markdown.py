@@ -8,7 +8,7 @@ import markdown
 # Utilities to convert Godot's documentation BBCode into Markdown
 
 
-def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current_class_name):
+def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current_class_name, local_link_prefix):
     bb_nodes = bbcode.parse(text)
 
     in_codeblock = False
@@ -89,15 +89,15 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
 
                 # Generate Markdown
                 if bb_node.name == 'member':
-                    out += markdown.make_property_link(class_name, member_name, 'api/', module_class_names)
+                    out += markdown.make_property_link(class_name, member_name, local_link_prefix, module_class_names)
                 elif bb_node.name == 'method':
-                    out += markdown.make_method_link(class_name, member_name, 'api/', module_class_names)
+                    out += markdown.make_method_link(class_name, member_name, local_link_prefix, module_class_names)
                 elif bb_node.name == 'enum':
-                    out += markdown.make_enum_link(class_name, member_name, 'api/', module_class_names)
+                    out += markdown.make_enum_link(class_name, member_name, local_link_prefix, module_class_names)
                 elif bb_node.name == 'constant':
-                    out += markdown.make_constant_link(class_name, member_name, 'api/', module_class_names)
+                    out += markdown.make_constant_link(class_name, member_name, local_link_prefix, module_class_names)
                 elif bb_node.name == 'signal':
-                    out += markdown.make_signal_link(class_name, member_name, 'api/', module_class_names)
+                    out += markdown.make_signal_link(class_name, member_name, local_link_prefix, module_class_names)
                 else:
                     raise Exception("Unhandled case")
 
@@ -105,7 +105,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                 # Class lookup: assuming name convention, 
                 # otherwise we need a complete list of classes and it's a bit cumbersome to obtain
                 if bb_node.name[0].isupper():
-                    out += markdown.make_type(bb_node.name, 'api/', module_class_names)
+                    out += markdown.make_type(bb_node.name, local_link_prefix, module_class_names)
 
                 else:
                     # Error fallback
@@ -116,7 +116,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
     return out
 
 
-def format_text_for_table(text, module_class_names, current_class_name):
+def format_text_for_table(text, module_class_names, current_class_name, local_link_prefix):
     lines = text.splitlines()
 
     for i in range(0, len(lines)):
@@ -125,14 +125,14 @@ def format_text_for_table(text, module_class_names, current_class_name):
     # Newlines aren't supported, but what to replace them with depends on BBCode
     text = '\n'.join(lines)
 
-    text = format_doc_bbcodes_for_markdown(text, False, module_class_names, current_class_name)
+    text = format_doc_bbcodes_for_markdown(text, False, module_class_names, current_class_name, local_link_prefix)
 
     return text
 
 
-def format_text(text, module_class_names, current_class_name):
+def format_text(text, module_class_names, current_class_name, local_link_prefix):
     text = textwrap.dedent(text)
-    md = format_doc_bbcodes_for_markdown(text, True, module_class_names, current_class_name)
+    md = format_doc_bbcodes_for_markdown(text, True, module_class_names, current_class_name, local_link_prefix)
     # Stripping because due to some newline-related workarounds, we may have introduced extra trailing lines,
     # and there may also be unwanted leading lines. Normally Markdown renderers ignore those, but it's cleaner.
     # Note: we don't use Markdown's indentation syntax (which would break if it begins the text).

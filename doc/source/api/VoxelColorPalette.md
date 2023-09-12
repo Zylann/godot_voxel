@@ -8,7 +8,7 @@ Limited list of colors that can be indexed quickly.
 
 Contains a list of colors that can be accessed quickly by their index. This is useful to store colored voxels with small memory footprint.
 
-It can be used with [VoxelMesherCubes](api/VoxelMesherCubes.md).
+It can be used with [VoxelMesherCubes](VoxelMesherCubes.md).
 
 ## Properties: 
 

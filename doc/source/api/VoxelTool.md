@@ -72,7 +72,7 @@ Set which channel will be edited. When used on a terrain node, it will default t
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value**
 
-Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](api/VoxelBuffer.md#enumerations) channel in [VoxelTool.MODE_REMOVE](api/VoxelTool.md#enumerations) mode.
+Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#enumerations) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#enumerations) mode.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
 
@@ -83,7 +83,7 @@ Sets how `do_*` functions will behave. This may vary depending on the channel.
 When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 
-This is related to the [VoxelBuffer.Depth](api/VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
+This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
 
@@ -99,7 +99,7 @@ This is related to the [VoxelBuffer.Depth](api/VoxelBuffer.md#enumerations) conf
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value**
 
-Sets which voxel value will be used. This is not relevant when editing [VoxelBuffer.CHANNEL_SDF](api/VoxelBuffer.md#enumerations).
+Sets which voxel value will be used. This is not relevant when editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations).
 
 ## Method Descriptions
 
@@ -172,7 +172,7 @@ Returns a result object if a voxel got hit, otherwise returns `null`.
 
 This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
 
-`collision_mask` is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask](api/VoxelBlockyModel.md#i_collision_mask) to decide which voxel types the ray can collide with.
+`collision_mask` is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask](VoxelBlockyModel.md#i_collision_mask) to decide which voxel types the ray can collide with.
 
 - [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
 

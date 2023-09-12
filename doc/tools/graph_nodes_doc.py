@@ -119,7 +119,7 @@ def write_markdown_table_from_nodes(nodes, module_class_names):
         table_rows = [["Node name", "Description"]]
 
         for node in nodes_per_category[category_name]:
-            desc = bbcode_to_markdown.format_text_for_table(node.description, module_class_names, None)
+            desc = bbcode_to_markdown.format_text_for_table(node.description, module_class_names, None, 'api/')
             table_rows.append([node.name, desc])
 
         out += markdown.make_table(table_rows)
@@ -164,7 +164,7 @@ def write_markdown_listing_from_nodes(nodes, module_class_names):
             
             out += "\n"
             desc = strip_leading_and_trailing_empty_lines(node.description)
-            out += bbcode_to_markdown.format_text(desc, module_class_names, None)
+            out += bbcode_to_markdown.format_text(desc, module_class_names, None, 'api/')
             out += "\n\n"
     
     return out
@@ -274,6 +274,6 @@ if __name__ == "__main__":
         f.write("# VoxelGeneratorGraph nodes\n\n")
         f.write(bbcode_to_markdown.format_text(
             "This page lists all nodes that can be used in [VoxelGeneratorGraph] and [VoxelGraphFunction].\n\n", 
-            module_class_names, None))
+            module_class_names, None, 'api/'))
         f.write(md)
 

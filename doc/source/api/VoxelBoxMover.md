@@ -37,7 +37,7 @@ Return                                                                        | 
 
 Gets the collision mask used to detect collidable voxels.
 
-This collision mask is specific to this collision system, and is defined in [VoxelBlockyModel.collision_mask](api/VoxelBlockyModel.md#i_collision_mask).
+This collision mask is specific to this collision system, and is defined in [VoxelBlockyModel.collision_mask](VoxelBlockyModel.md#i_collision_mask).
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_max_step_height"></span> **get_max_step_height**( ) 
 
@@ -48,7 +48,7 @@ Given a motion vector, returns a modified vector telling you by how much to move
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_has_stepped_up"></span> **has_stepped_up**( ) 
 
-When step climbing is enabled, tells when the last call to [VoxelBoxMover.get_motion](api/VoxelBoxMover.md#i_get_motion) caused climbing to occur.
+When step climbing is enabled, tells when the last call to [VoxelBoxMover.get_motion](VoxelBoxMover.md#i_get_motion) caused climbing to occur.
 
 Climbing modifies the motion vector upwards so that the body is snapped on top of the step. This can have implications in character controller code, such as considering the character to be on the floor instead of having jumped.
 
@@ -62,7 +62,7 @@ Sets the collision mask used to detect collidable voxels.
 
 Only voxels sharing at least one bit between the masks will be detected.
 
-This collision mask is specific to this collision system, and is defined in [VoxelBlockyModel.collision_mask](api/VoxelBlockyModel.md#i_collision_mask).
+This collision mask is specific to this collision system, and is defined in [VoxelBlockyModel.collision_mask](VoxelBlockyModel.md#i_collision_mask).
 
 - [void](#)<span id="i_set_max_step_height"></span> **set_max_step_height**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) height ) 
 
@@ -70,6 +70,6 @@ Sets the maximum height that can be climbed like "stairs".
 
 - [void](#)<span id="i_set_step_climbing_enabled"></span> **set_step_climbing_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
-When enabled, [VoxelBoxMover.get_motion](api/VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
+When enabled, [VoxelBoxMover.get_motion](VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
 _Generated on Sep 12, 2023_

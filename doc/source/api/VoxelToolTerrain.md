@@ -2,13 +2,13 @@
 
 Inherits: [VoxelTool](VoxelTool.md)
 
-Implementation of [VoxelTool](api/VoxelTool.md) specialized for uses on [VoxelTerrain](api/VoxelTerrain.md).
+Implementation of [VoxelTool](VoxelTool.md) specialized for uses on [VoxelTerrain](VoxelTerrain.md).
 
 ## Description: 
 
-Functions in this class are specific to [VoxelTerrain](api/VoxelTerrain.md). For generic functions, you may also check [VoxelTool](api/VoxelTool.md).
+Functions in this class are specific to [VoxelTerrain](VoxelTerrain.md). For generic functions, you may also check [VoxelTool](VoxelTool.md).
 
-It's not a class to instantiate alone, you may get it from [VoxelTerrain](api/VoxelTerrain.md) using the `get_voxel_tool()` method.
+It's not a class to instantiate alone, you may get it from [VoxelTerrain](VoxelTerrain.md) using the `get_voxel_tool()` method.
 
 ## Methods: 
 
@@ -35,7 +35,7 @@ IMPORTANT: inserting new or removing metadata from inside this function is not a
 
 - [void](#)<span id="i_run_blocky_random_tick"></span> **run_blocky_random_tick**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) voxel_count, [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) batch_count=16 ) 
 
-Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky](api/VoxelMesherBlocky.md). Only voxels where [Voxel.random_tickable](https://docs.godotengine.org/en/stable/classes/class_voxel.html#class-voxel-property-random-tickable) is `true` will be picked.
+Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky](VoxelMesherBlocky.md). Only voxels where [Voxel.random_tickable](https://docs.godotengine.org/en/stable/classes/class_voxel.html#class-voxel-property-random-tickable) is `true` will be picked.
 
 The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
 

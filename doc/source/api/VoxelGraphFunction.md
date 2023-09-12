@@ -8,7 +8,7 @@ Graph for generating or processing voxels.
 
 Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
 
-Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md).
+Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
 
 ## Properties: 
 

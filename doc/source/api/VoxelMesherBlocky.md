@@ -6,7 +6,7 @@ Produces a mesh by batching models corresponding to each voxel value, similar to
 
 ## Description: 
 
-Occluded faces are removed from the result, and some degree of ambient occlusion can be baked on the edges. Values are expected to be in the [VoxelBuffer.CHANNEL_TYPE](api/VoxelBuffer.md#constants) channel. Models are defined with a [VoxelBlockyLibrary](api/VoxelBlockyLibrary.md), in which model indices correspond to the voxel values. Models don't have to be cubes.
+Occluded faces are removed from the result, and some degree of ambient occlusion can be baked on the edges. Values are expected to be in the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#constants) channel. Models are defined with a [VoxelBlockyLibrary](VoxelBlockyLibrary.md), in which model indices correspond to the voxel values. Models don't have to be cubes.
 
 ## Properties: 
 

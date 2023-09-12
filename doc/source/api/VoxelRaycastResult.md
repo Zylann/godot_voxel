@@ -2,7 +2,7 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-Result of a raycast performed with [VoxelTool.raycast](api/VoxelTool.md#i_raycast)
+Result of a raycast performed with [VoxelTool.raycast](VoxelTool.md#i_raycast)
 
 ## Properties: 
 

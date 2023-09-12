@@ -2,7 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Settings for a model that can be used by [VoxelInstancer](api/VoxelInstancer.md)
+Settings for a model that can be used by [VoxelInstancer](VoxelInstancer.md)
 
 ## Properties: 
 

@@ -56,11 +56,11 @@ Emitted when a data block is unloaded due to being outside view distance.
 
 - mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
-Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](api/VoxelTerrain.md#i_is_area_meshed).
+Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](VoxelTerrain.md#i_is_area_meshed).
 
 - mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
-Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](api/VoxelTerrain.md#signals).
+Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](VoxelTerrain.md#signals).
 
 ## Property Descriptions
 
@@ -90,16 +90,16 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 
 Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 
-Note 1: you also need [VoxelViewer](api/VoxelViewer.md) to request collisions, otherwise they won't generate.
+Note 1: you also need [VoxelViewer](VoxelViewer.md) to request collisions, otherwise they won't generate.
 
-Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](api/VoxelBoxMover.md) which may perform better in blocky worlds.
+Note 2: If you need simple Minecraft/AABB physics, you can use [VoxelBoxMover](VoxelBoxMover.md) which may perform better in blocky worlds.
 
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material_override"></span> **material_override**
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_max_view_distance"></span> **max_view_distance** = 128
 
-Sets the maximum distance this terrain can support. If a [VoxelViewer](api/VoxelViewer.md) requests more, it will be clamped.
+Sets the maximum distance this terrain can support. If a [VoxelViewer](VoxelViewer.md) requests more, it will be clamped.
 
 Note: there is an internal limit of 512 for constant LOD terrains, because going further can affect performance and memory very badly at the moment.
 
@@ -156,7 +156,7 @@ The returned dictionary has the following structure:
 
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Creates an instance of [VoxelTool](api/VoxelTool.md) bound to this node, to access voxels and edition methods.
+Creates an instance of [VoxelTool](VoxelTool.md) bound to this node, to access voxels and edition methods.
 
 You can keep it in a member variable to avoid creating one again, as long as the node still exists.
 

@@ -6,7 +6,7 @@ Generates a model based on a custom mesh.
 
 ## Description: 
 
-[VoxelMesherBlocky](api/VoxelMesherBlocky.md) does not require models to be cubes. Ultimately, model visuals are all meshes. This is the most versatile option to make a model. The workflow is to make these models in a 3D editor such as Blender, making sure they are confined in a box going from (0,0) to (1,1). Textures are assigned with classic UV-mapping.
+[VoxelMesherBlocky](VoxelMesherBlocky.md) does not require models to be cubes. Ultimately, model visuals are all meshes. This is the most versatile option to make a model. The workflow is to make these models in a 3D editor such as Blender, making sure they are confined in a box going from (0,0) to (1,1). Textures are assigned with classic UV-mapping.
 
 ## Properties: 
 

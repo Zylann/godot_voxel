@@ -2,11 +2,11 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Contains a list of models that can be used by [VoxelMesherBlocky](api/VoxelMesherBlocky.md).
+Contains a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
 ## Description: 
 
-Models used by [VoxelMesherBlocky](api/VoxelMesherBlocky.md) must be baked before they can be used efficiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
+Models used by [VoxelMesherBlocky](VoxelMesherBlocky.md) must be baked before they can be used efficiently at runtime. The way this process happens depends on the implementation of this class. It can be a simple list of models, or a list of high-level types generating variant models. Check child classes for more information.
 
 ## Properties: 
 

@@ -2,7 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Contains a list of models that can be used by [VoxelInstancer](api/VoxelInstancer.md), associated with a unique ID.
+Contains a list of models that can be used by [VoxelInstancer](VoxelInstancer.md), associated with a unique ID.
 
 ## Methods: 
 

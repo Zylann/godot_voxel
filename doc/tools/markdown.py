@@ -50,6 +50,14 @@ def get_godot_class_url(name):
     return GODOT_CLASSES_URL + "/class_" + name.lower() + ".html"
 
 
+# Note: in MkDocs, by default, links are relative to the Markdown file in the project structure.
+# It is possible to write a URL relative to the root of the MkDocs project by beginning with a '/'
+# since https://github.com/mkdocs/mkdocs/commit/34ef3ca6d0390959080ce93a695361eea1649272.
+# However, other Markdown renderers might not handle this the same way. For example, when viewed on Github or VSCode's 
+# preview plugin, the "root" is not seen as the top of MkDoc's directory, but the root of the repo, or the root of
+# the workspace. Or it might not be handled at all.
+# So we may have to keep using relative paths and so we have to pass prefixes in some cases.
+
 def make_type(name, local_prefix, module_class_names):
     if name == "void":
         link = "#"
