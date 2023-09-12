@@ -8,6 +8,20 @@ import markdown
 # Utilities to convert Godot's documentation BBCode into Markdown
 
 
+def _extract_member_and_class(symbol, current_class_name):
+    member_dot_index = symbol.find('.')
+    if member_dot_index != -1:
+        class_name = symbol[0 : member_dot_index]
+        member_name = symbol[member_dot_index + 1:]
+    else:
+        if current_class_name is None:
+            raise Exception(bb_node.name + \
+                " BBCode was used without class name, but there is no current class in this context.")
+        class_name = current_class_name
+        member_name = symbol
+    return class_name, member_name
+
+
 def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current_class_name, local_link_prefix):
     bb_nodes = bbcode.parse(text)
 
@@ -68,38 +82,25 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                 if bb_node.is_opening():
                     url = bb_node.value
             
-            elif bb_node.name == 'member' \
-            or bb_node.name == 'method' \
-            or bb_node.name == 'enum' \
-            or bb_node.name == 'signal' \
-            or bb_node.name == "constant":
-                member = bb_node.get_first_option_key()
+            elif bb_node.name == 'member':
+                class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
+                out += markdown.make_property_link(class_name, member_name, local_link_prefix, module_class_names)
 
-                # Get class name and member name
-                member_dot_index = member.find('.')
-                if member_dot_index != -1:
-                    class_name = member[0 : member_dot_index]
-                    member_name = member[member_dot_index + 1:]
-                else:
-                    if current_class_name is None:
-                        raise Exception(bb_node.name + \
-                            " BBCode was used without class name, but there is no current class in this context.")
-                    class_name = current_class_name
-                    member_name = member
+            elif bb_node.name == 'method':
+                class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
+                out += markdown.make_method_link(class_name, member_name, local_link_prefix, module_class_names)
 
-                # Generate Markdown
-                if bb_node.name == 'member':
-                    out += markdown.make_property_link(class_name, member_name, local_link_prefix, module_class_names)
-                elif bb_node.name == 'method':
-                    out += markdown.make_method_link(class_name, member_name, local_link_prefix, module_class_names)
-                elif bb_node.name == 'enum':
-                    out += markdown.make_enum_link(class_name, member_name, local_link_prefix, module_class_names)
-                elif bb_node.name == 'constant':
-                    out += markdown.make_constant_link(class_name, member_name, local_link_prefix, module_class_names)
-                elif bb_node.name == 'signal':
-                    out += markdown.make_signal_link(class_name, member_name, local_link_prefix, module_class_names)
-                else:
-                    raise Exception("Unhandled case")
+            elif bb_node.name == 'enum':
+                class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
+                out += markdown.make_enum_link(class_name, member_name, local_link_prefix, module_class_names)
+
+            elif bb_node.name == 'signal':
+                class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
+                out += markdown.make_signal_link(class_name, member_name, local_link_prefix, module_class_names)
+
+            elif bb_node.name == 'constant':
+                class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
+                out += markdown.make_constant_link(class_name, member_name, local_link_prefix, module_class_names)
 
             else:
                 # Class lookup: assuming name convention, 
