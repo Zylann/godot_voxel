@@ -8,7 +8,7 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 Utility class allowing to reproduce simple move-and-slide logic using only voxel AABBs, similar to Minecraft physics. This class may only be used with blocky voxels.
 
-Store an instance of it within a member variable of your script, and use it within [Node._process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method--process) or [Node._physics_process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method--physics-process) (it works wherever you like).
+Store an instance of it within a member variable of your script, and use it within [Node._process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method-process) or [Node._physics_process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method-physics-process) (it works wherever you like).
 
 ```
 var motion = Vector3(0, 0, -10 * delta) # Move forward

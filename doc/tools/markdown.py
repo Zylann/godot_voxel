@@ -73,6 +73,15 @@ def get_godot_member_url(class_name, member_name, member_type):
     # "method"
     # "property"
     # "constant"
+
+    # For some reason there is a special case for members starting with '_'.
+    # As a result, we can't link to Godot methods that have both a version with '_' and a version without (like 
+    # Object._get and Object.get). In those cases, the link's format is `idN` where N is some kind of 
+    # incrementing number... It's hard to figure out automatically. If we have to link these, we'll have to hardcode 
+    # every case...
+    if member_name.startswith('_'):
+        member_name = member_name[1:]
+
     return get_godot_class_url(class_name) + "#class-" + class_name.lower() + "-" + member_type + "-" \
         + member_name.replace('_', '-')
 
