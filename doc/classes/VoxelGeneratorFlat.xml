@@ -15,7 +15,7 @@
 			Altitude of the ground.
 		</member>
 		<member name="voxel_type" type="int" setter="set_voxel_type" getter="get_voxel_type" default="1">
-			If [member channel] is set to [constant VoxelBuffer.CHANNEL_TYPE], this value will be used to fill ground voxels.
+			If [member channel] is set to [enum VoxelBuffer.CHANNEL_TYPE], this value will be used to fill ground voxels.
 		</member>
 	</members>
 </class>

@@ -8,7 +8,7 @@ Contains a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlo
 
 Provides a list of models that can be used by [VoxelMesherBlocky](VoxelMesherBlocky.md). Each model corresponds to an ID in voxel data, and is generally defined from a mesh. Some extra properties can also be defined, such as how sides get culled by neighbor voxels, or how it is treated by some functionality of the voxel engine.
 
-If you create this library from code, it needs to be baked at the end using the [VoxelBlockyLibrary.bake](VoxelBlockyLibrary.md#i_bake) function.
+If you create this library from code, it needs to be baked at the end using the [VoxelBlockyLibraryBase.bake](VoxelBlockyLibraryBase.md#i_bake) function.
 
 The first model (at index 0) is conventionally used for "air" or "empty".
 
