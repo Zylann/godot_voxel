@@ -71,6 +71,7 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
             elif bb_node.name == 'member' \
             or bb_node.name == 'method' \
             or bb_node.name == 'enum' \
+            or bb_node.name == 'signal' \
             or bb_node.name == "constant":
                 member = bb_node.get_first_option_key()
 
@@ -95,6 +96,8 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                     out += markdown.make_enum_link(class_name, member_name, 'api/', module_class_names)
                 elif bb_node.name == 'constant':
                     out += markdown.make_constant_link(class_name, member_name, 'api/', module_class_names)
+                elif bb_node.name == 'signal':
+                    out += markdown.make_signal_link(class_name, member_name, 'api/', module_class_names)
                 else:
                     raise Exception("Unhandled case")
 

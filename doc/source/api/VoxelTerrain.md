@@ -48,9 +48,7 @@ Return                                                                          
 
 - block_loaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
-Emitted when a new data block is loaded from stream.
-
-Note: it might be not visible yet.
+Emitted when a new data block is loaded from stream. This can happen before the mesh or collider becomes available.
 
 - block_unloaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
@@ -58,7 +56,11 @@ Emitted when a data block is unloaded due to being outside view distance.
 
 - mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
+Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](api/VoxelTerrain.md#i_is_area_meshed).
+
 - mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+
+Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](api/VoxelTerrain.md#signals).
 
 ## Property Descriptions
 
@@ -195,4 +197,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_

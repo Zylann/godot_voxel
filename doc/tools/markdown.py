@@ -65,12 +65,13 @@ def get_godot_member_url(class_name, member_name, member_type):
     # "method"
     # "property"
     # "constant"
-    return get_godot_class_url(class_name) + "#class-" + class_name.lower() + "-" + member_type + "-" + member_name
+    return get_godot_class_url(class_name) + "#class-" + class_name.lower() + "-" + member_type + "-" \
+        + member_name.replace('_', '-')
 
 
 # Inconsistently different from methods and properties
 def get_godot_enum_url(class_name, member_name):
-    return get_godot_class_url(class_name) + "#enum-" + class_name.lower() + "-" + member_name
+    return get_godot_class_url(class_name) + "#enum-" + class_name.lower() + "-" + member_name.lower()
 
 
 def make_property_link(class_name, member_name, local_prefix, module_class_names):
@@ -107,6 +108,16 @@ def make_constant_link(class_name, member_name, local_prefix, module_class_names
         link = local_prefix + class_name + ".md#constants"
     else:
         link = get_godot_member_url(class_name, member_name, "constant")
+    link_text = class_name + "." + member_name
+    return make_link(link_text, link)
+
+
+def make_signal_link(class_name, member_name, local_prefix, module_class_names):
+    if class_name in module_class_names:
+        # TODO Link to specific signals not supported yet
+        link = local_prefix + class_name + ".md#signals"
+    else:
+        link = get_godot_member_url(class_name, member_name, "signal")
     link_text = class_name + "." + member_name
     return make_link(link_text, link)
 

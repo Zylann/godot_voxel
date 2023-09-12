@@ -93,4 +93,4 @@ enum **BakeMode**:
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
 
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_

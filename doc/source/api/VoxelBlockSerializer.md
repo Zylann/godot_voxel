@@ -73,4 +73,4 @@ Stores the data of a [VoxelBuffer](api/VoxelBuffer.md) into a [PackedByteArray](
 
 Stores the data of a [VoxelBuffer](api/VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_

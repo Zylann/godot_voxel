@@ -8,4 +8,4 @@ Implementation of the [VoxelTool](api/VoxelTool.md) API for [VoxelBuffer](api/Vo
 
 There are no functions specific to [VoxelBuffer](api/VoxelBuffer.md). You may check generic ones in [VoxelTool](api/VoxelTool.md).
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_

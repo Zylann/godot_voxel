@@ -8,7 +8,7 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 Utility class allowing to reproduce simple move-and-slide logic using only voxel AABBs, similar to Minecraft physics. This class may only be used with blocky voxels.
 
-Store an instance of it within a member variable of your script, and use it within [Node._process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method-_process) or [Node._physics_process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method-_physics_process) (it works wherever you like).
+Store an instance of it within a member variable of your script, and use it within [Node._process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method--process) or [Node._physics_process](https://docs.godotengine.org/en/stable/classes/class_node.html#class-node-method--physics-process) (it works wherever you like).
 
 ```
 var motion = Vector3(0, 0, -10 * delta) # Move forward
@@ -44,7 +44,7 @@ This collision mask is specific to this collision system, and is defined in [Vox
 
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_motion"></span> **get_motion**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) motion, [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb, [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) terrain ) 
 
-Given a motion vector, returns a modified vector telling you by how much to move your character. This is similar to [KinematicBody.move_and_slide](https://docs.godotengine.org/en/stable/classes/class_kinematicbody.html#class-kinematicbody-method-move_and_slide), except you have to apply the movement.
+Given a motion vector, returns a modified vector telling you by how much to move your character. This is similar to [KinematicBody.move_and_slide](https://docs.godotengine.org/en/stable/classes/class_kinematicbody.html#class-kinematicbody-method-move-and-slide), except you have to apply the movement.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_has_stepped_up"></span> **has_stepped_up**( ) 
 
@@ -72,4 +72,4 @@ Sets the maximum height that can be climbed like "stairs".
 
 When enabled, [VoxelBoxMover.get_motion](api/VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_

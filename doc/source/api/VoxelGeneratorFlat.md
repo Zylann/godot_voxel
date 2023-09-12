@@ -28,4 +28,4 @@ Altitude of the ground.
 
 If [VoxelGeneratorFlat.channel](api/VoxelGeneratorFlat.md#i_channel) is set to [VoxelBuffer.CHANNEL_TYPE](api/VoxelBuffer.md#constants), this value will be used to fill ground voxels.
 
-_Generated on Sep 11, 2023_
+_Generated on Sep 12, 2023_
