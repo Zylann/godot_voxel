@@ -142,10 +142,11 @@ public:
 	bool try_set_block(Vector3i block_position, const VoxelDataBlock &block);
 
 	// Sets all the data of a block.
-	// If the block already exists, `action_when_exists` is called.
+	// If the block doesn't exist, it is added and the function returns true.
+	// If the block already exists, `action_when_exists` is called and the function returns false.
 	// `void action_when_exists(VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block)`
 	template <typename F>
-	void try_set_block(Vector3i block_position, const VoxelDataBlock &block, F action_when_exists) {
+	bool try_set_block(Vector3i block_position, const VoxelDataBlock &block, F action_when_exists) {
 		Lod &lod = _lods[block.get_lod_index()];
 #ifdef DEBUG_ENABLED
 		if (block.has_voxels()) {
@@ -156,8 +157,10 @@ public:
 		VoxelDataBlock *existing_block = lod.map.get_block(block_position);
 		if (existing_block != nullptr) {
 			action_when_exists(*existing_block, block);
+			return false;
 		} else {
 			lod.map.set_block(block_position, block);
+			return true;
 		}
 	}
 
@@ -266,9 +269,9 @@ public:
 			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
-	// Returns positions where blocks were found, and where they were missing.
+	// Returns positions where blocks were unloaded, and where they were missing.
 	// If `to_save` is not null and some unloaded blocks contained modifications, their data will be returned too.
-	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &found_blocks,
+	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &removed_blocks,
 			std::vector<BlockToSave> *to_save);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

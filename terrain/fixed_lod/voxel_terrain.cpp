@@ -224,11 +224,15 @@ void VoxelTerrain::set_mesh_block_size(unsigned int mesh_block_size) {
 		VoxelInstancer &instancer = *_instancer;
 		_mesh_map.for_each_block([&instancer, this](VoxelMeshBlockVT &block) { //
 			instancer.on_mesh_block_exit(block.position, 0);
-			emit_mesh_block_exited(block.position);
+			if (block.is_loaded) {
+				emit_mesh_block_exited(block.position);
+			}
 		});
 	} else {
 		_mesh_map.for_each_block([this](VoxelMeshBlockVT &block) { //
-			emit_mesh_block_exited(block.position);
+			if (block.is_loaded) {
+				emit_mesh_block_exited(block.position);
+			}
 		});
 	}
 
@@ -497,18 +501,24 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
 	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
 
-	_mesh_map.remove_block(bpos, [&blocks_pending_update](const VoxelMeshBlockVT &block) {
+	bool was_loaded = false;
+	_mesh_map.remove_block(bpos, [&blocks_pending_update, &was_loaded](const VoxelMeshBlockVT &block) {
 		if (block.is_in_update_list) {
 			// That block was in the list of blocks to update later in the process loop, we'll need to unregister
 			// it. We expect that block to be in that list. If it isn't, something wrong happened with its state.
 			ERR_FAIL_COND(!unordered_remove_value(blocks_pending_update, block.position));
 		}
+		was_loaded = block.is_loaded;
 	});
 
 	if (_instancer != nullptr) {
 		_instancer->on_mesh_block_exit(bpos, 0);
 	}
-	emit_mesh_block_exited(bpos);
+
+	// It's possible the block was added as the viewer moved, but did not have the time to receive its first mesh update
+	if (was_loaded) {
+		emit_mesh_block_exited(bpos);
+	}
 }
 
 void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
@@ -1431,10 +1441,18 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		return;
 	}
 
-	_data->try_set_block(block_pos, block, [](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
-		existing_block.set_voxels(incoming_block.get_voxels_shared());
-		existing_block.set_edited(incoming_block.is_edited());
-	});
+	_data->try_set_block(block_pos, block,
+			[
+#ifdef DEBUG_ENABLED
+					block_pos
+#endif
+	](VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block) {
+#ifdef DEBUG_ENABLED
+				ZN_PRINT_VERBOSE(format("Replacing existing data block {}", block_pos));
+#endif
+				existing_block.set_voxels(incoming_block.get_voxels_shared());
+				existing_block.set_edited(incoming_block.is_edited());
+			});
 
 	emit_data_block_loaded(block_pos);
 
@@ -1650,12 +1668,11 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	if (mesh.is_null() && block != nullptr) {
+	if (mesh.is_null() && block->has_mesh()) {
 		// No surface anymore in this block
 		if (_instancer != nullptr) {
 			_instancer->on_mesh_block_exit(ob.position, ob.lod);
 		}
-		emit_mesh_block_exited(ob.position);
 	}
 	if (ob.surfaces.surfaces.size() > 0 && mesh.is_valid() && !block->has_mesh()) {
 		// TODO The mesh could come from an edited region!
@@ -1664,7 +1681,6 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		if (_instancer != nullptr) {
 			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
-		emit_mesh_block_entered(ob.position);
 	}
 
 	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
@@ -1691,7 +1707,10 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	// Can't set the state because there could be more than one update in progress. Perhaps it needs refactoring.
 	// block->set_mesh_state(VoxelMeshBlockVT::MESH_UP_TO_DATE);
 
-	block->is_loaded = true;
+	if (block->is_loaded == false) {
+		block->is_loaded = true;
+		emit_mesh_block_entered(ob.position);
+	}
 }
 
 Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {

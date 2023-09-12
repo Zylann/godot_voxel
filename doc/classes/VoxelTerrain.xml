@@ -156,8 +156,7 @@
 		<signal name="block_loaded">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
-				Emitted when a new data block is loaded from stream.
-				Note: it might be not visible yet.
+				Emitted when a new data block is loaded from stream. This can happen before the mesh or collider becomes available.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
@@ -169,11 +168,13 @@
 		<signal name="mesh_block_entered">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
+				Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [method is_area_meshed]. 
 			</description>
 		</signal>
 		<signal name="mesh_block_exited">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
+				Emitted when a mesh block gets unloaded. It is the counterpart of [signal mesh_block_entered].
 			</description>
 		</signal>
 	</signals>
