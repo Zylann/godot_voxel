@@ -43,7 +43,7 @@ VoxelGraphEditorNode *VoxelGraphEditorNode::create(const VoxelGraphFunction &gra
 
 	node_view->_is_comment = is_comment;
 
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 	if (is_comment) {
 		node_view->set_comment(true);
 	}

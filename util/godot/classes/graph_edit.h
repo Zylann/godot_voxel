@@ -34,14 +34,10 @@ int get_graph_edit_snapping_distance(const GraphEdit &self);
 // The original code of GraphEdit referred to deleting GraphNodes as "close" and "delete" interchangeably. It was
 // unified for consistency, but the term chosen was "close", which breaks compatibility with a name that is less related
 // to what it was used for...
-#if defined(ZN_GODOT)
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 #define GODOT_GraphEdit_delete_nodes_request "delete_nodes_request"
 #else
 #define GODOT_GraphEdit_delete_nodes_request "close_nodes_request"
-#endif
-#elif defined(ZN_GODOT_EXTENSION)
-#define GODOT_GraphEdit_delete_nodes_request "delete_nodes_request"
 #endif
 
 } // namespace zylann
