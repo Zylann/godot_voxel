@@ -1436,7 +1436,8 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 
 	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
 		// Voxel block size is incorrect, drop it
-		ZN_PRINT_ERROR("Block is different from expected size");
+		ZN_PRINT_ERROR(format("Block is different from expected size. Expected {}, got {}",
+				Vector3iUtil::create(_data->get_block_size()), block.get_voxels_const().get_size()));
 		++_stats.dropped_block_loads;
 		return;
 	}
