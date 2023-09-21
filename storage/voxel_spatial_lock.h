@@ -197,6 +197,16 @@ struct VoxelSpatialLockWrite {
 	const BoxBounds3i box;
 };
 
+struct VoxelSpatialLock_UnlockWriteOnScopeExit {
+	VoxelSpatialLock_UnlockWriteOnScopeExit(VoxelSpatialLock &p_locker, const BoxBounds3i p_box) :
+			locker(p_locker), box(p_box) {}
+	~VoxelSpatialLock_UnlockWriteOnScopeExit() {
+		locker.unlock_write(box);
+	}
+	VoxelSpatialLock &locker;
+	const BoxBounds3i box;
+};
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_SPATIAL_LOCKER_H

@@ -1,4 +1,5 @@
 #include "generate_block_task.h"
+#include "../generators/multipass/generate_block_multipass_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_data.h"
 #include "../util/godot/funcs.h"
@@ -17,11 +18,13 @@ std::atomic_int g_debug_generate_tasks_count = { 0 };
 }
 
 GenerateBlockTask::GenerateBlockTask() {
-	++g_debug_generate_tasks_count;
+	int64_t v = ++g_debug_generate_tasks_count;
+	ZN_PROFILE_PLOT("GenerateBlockTasks", v);
 }
 
 GenerateBlockTask::~GenerateBlockTask() {
-	--g_debug_generate_tasks_count;
+	int64_t v = --g_debug_generate_tasks_count;
+	ZN_PROFILE_PLOT("GenerateBlockTasks", v);
 }
 
 int GenerateBlockTask::debug_get_running_count() {
@@ -34,6 +37,40 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	CRASH_COND(stream_dependency == nullptr);
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 	ERR_FAIL_COND(generator.is_null());
+
+	Ref<VoxelGeneratorMultipass> multipass_generator = generator;
+	if (multipass_generator.is_valid()) {
+		if (_stage == 0) {
+			ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
+			std::shared_ptr<std::atomic_int> counter = make_shared_instance<std::atomic_int>(1);
+			GenerateBlockMultipassTask *task = ZN_NEW(GenerateBlockMultipassTask(position, block_size,
+					multipass_generator->get_pass_count() - 1, multipass_generator, true, this, counter));
+			VoxelEngine::get_singleton().push_async_task(task);
+
+			ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+
+			_stage = 1;
+
+		} else {
+			std::shared_ptr<VoxelGeneratorMultipass::Map> map = multipass_generator->get_map();
+			std::shared_ptr<VoxelGeneratorMultipass::Block> block;
+			{
+				MutexLock mlock(map->mutex);
+				auto it = map->blocks.find(position);
+				if (it == map->blocks.end()) {
+					ZN_PRINT_ERROR(format("Could not generate block {} with multipass", position));
+				}
+				block = it->second;
+			}
+			// TODO Take out voxel data from this block, it must not be touched by generation anymore
+			voxels = make_shared_instance<VoxelBufferInternal>();
+			voxels->create(block->voxels.get_size());
+			voxels->copy_from(block->voxels);
+
+			run_stream_saving_and_finish();
+		}
+		return;
+	}
 
 	if (voxels == nullptr) {
 		voxels = make_shared_instance<VoxelBufferInternal>();
