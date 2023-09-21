@@ -240,6 +240,8 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 						}
 
 						tasks.push_back(item);
+						// We don't just pop the last item because of serial task handling. But ordered removal should
+						// be fast enough since serial tasks aren't common.
 						_tasks.erase(_tasks.begin() + i);
 						break;
 					}
