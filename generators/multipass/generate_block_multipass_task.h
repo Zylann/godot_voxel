@@ -48,11 +48,8 @@ public:
 	// TODO Implement priority
 	// TaskPriority get_priority() {}
 
-	// TODO Implement cancellation
+	// TODO Implement cancellation, not trivial since we use nested tasks
 	// bool is_cancelled() {}
-
-	// int pending_counter = 0;
-	// GenerateBlockMultipassTask *next = nullptr;
 
 private:
 	inline void return_to_caller();

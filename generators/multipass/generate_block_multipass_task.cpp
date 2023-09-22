@@ -72,21 +72,22 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 	std::shared_ptr<VoxelGeneratorMultipass::Map> map = _generator->get_map();
 
 	const VoxelGeneratorMultipass::Pass &pass = _generator->get_pass(_pass_index);
-	ZN_ASSERT(Vector3iUtil::is_valid_size(pass.dependency_extents.get_size()));
 
 	if (_pass_index == 0) {
 		// The first pass can't depend on another pass
-		ZN_ASSERT(pass.dependency_extents.is_empty());
+		ZN_ASSERT(pass.dependency_extents == 0);
+	} else {
+		ZN_ASSERT(pass.dependency_extents > 0);
 	}
 
 	// TODO Handle column-based passes
 
-	const Vector3i bpos_min = _block_position + pass.dependency_extents.min_pos;
-	const Vector3i bpos_max = _block_position + pass.dependency_extents.max_pos;
-	const Box3i neighbors_box = Box3i::from_min_max(bpos_min, bpos_max + Vector3i(1, 1, 1));
+	const Box3i neighbors_box = Box3i::from_min_max( //
+			_block_position - Vector3iUtil::create(pass.dependency_extents),
+			_block_position + Vector3iUtil::create(pass.dependency_extents + 1));
 
 	const unsigned int central_block_index =
-			Vector3iUtil::get_zxy_index(-pass.dependency_extents.min_pos, neighbors_box.size);
+			Vector3iUtil::get_zxy_index(Vector3iUtil::create(pass.dependency_extents), neighbors_box.size);
 
 	// Grid of blocks we'll be working with
 	std::vector<std::shared_ptr<VoxelGeneratorMultipass::Block>> blocks;
@@ -111,23 +112,19 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 		{
 			ZN_PROFILE_SCOPE_NAMED("Fetch blocks");
 
-			// TODO Profile this. If it's a bottleneck, use postponing instead
 			// Locking for writing because we can create new blocks.
+			// Profiling hasn't shown significant bottleneck here. If it happens though, we can use postponing.
 			MutexLock mlock(map->mutex);
 
 			// TODO Handle world bounds
 			Vector3i bpos;
-			for (bpos.z = bpos_min.z; bpos.z <= bpos_max.z; ++bpos.z) {
-				for (bpos.x = bpos_min.x; bpos.x <= bpos_max.x; ++bpos.x) {
-					for (bpos.y = bpos_min.y; bpos.y <= bpos_max.y; ++bpos.y) {
-						std::shared_ptr<VoxelGeneratorMultipass::Block> &block = map->blocks[bpos];
-						if (block == nullptr) {
-							block = make_shared_instance<VoxelGeneratorMultipass::Block>();
-						}
-						blocks.push_back(block);
-					}
+			neighbors_box.for_each_cell_zxy([&blocks, &map](Vector3i bpos) {
+				std::shared_ptr<VoxelGeneratorMultipass::Block> &block = map->blocks[bpos];
+				if (block == nullptr) {
+					block = make_shared_instance<VoxelGeneratorMultipass::Block>();
 				}
-			}
+				blocks.push_back(block);
+			});
 		}
 
 		struct BlockToGenerate {
@@ -147,15 +144,18 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 			if (prev_pass_index >= 0) {
 				const VoxelGeneratorMultipass::Pass &prev_pass = _generator->get_pass(prev_pass_index);
 				// TODO This should be lower at world boundaries
-				prev_pass_completion_iterations =
-						Vector3iUtil::get_volume(prev_pass.dependency_extents.get_size() + Vector3i(1, 1, 1));
+				prev_pass_completion_iterations = math::cubed(prev_pass.dependency_extents * 2 + 1);
 			}
 
 			Vector3i bpos;
 			unsigned int i = 0;
-			for (bpos.z = bpos_min.z; bpos.z <= bpos_max.z; ++bpos.z) {
-				for (bpos.x = bpos_min.x; bpos.x <= bpos_max.x; ++bpos.x) {
-					for (bpos.y = bpos_min.y; bpos.y <= bpos_max.y; ++bpos.y) {
+
+			const Vector3i bpos_min = neighbors_box.pos;
+			const Vector3i bpos_max = neighbors_box.pos + neighbors_box.size;
+
+			for (bpos.z = bpos_min.z; bpos.z < bpos_max.z; ++bpos.z) {
+				for (bpos.x = bpos_min.x; bpos.x < bpos_max.x; ++bpos.x) {
+					for (bpos.y = bpos_min.y; bpos.y < bpos_max.y; ++bpos.y) {
 						std::shared_ptr<VoxelGeneratorMultipass::Block> block = blocks[i];
 						ZN_ASSERT(block != nullptr);
 
@@ -259,8 +259,7 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 				}
 
 				// Debug check
-				const int pass_completion_iterations =
-						Vector3iUtil::get_volume(pass.dependency_extents.get_size() + Vector3i(1, 1, 1));
+				const int pass_completion_iterations = math::cubed(pass.dependency_extents * 2 + 1);
 				ZN_ASSERT(main_block->pass_iterations[_pass_index] < pass_completion_iterations);
 
 				VoxelGeneratorMultipass::PassInput input;

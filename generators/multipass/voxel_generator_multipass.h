@@ -58,9 +58,10 @@ public:
 	};
 
 	struct Pass {
-		// How many blocks to load around the generated area, so that neighbors can be accessed in case the pass has
-		// effects across blocks.
-		BoxBounds3i dependency_extents;
+		// How many blocks to load using the previous pass around the generated area, so that neighbors can be accessed
+		// in case the pass has effects across blocks.
+		// Constraints: the first pass cannot have dependencies; other passes must have dependencies.
+		int dependency_extents = 0;
 		// If true, the pass must run on the whole column of blocks specified in vertical range instead of just one
 		// block.
 		bool column = false;

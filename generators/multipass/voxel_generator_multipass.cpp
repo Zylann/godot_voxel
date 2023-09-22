@@ -14,12 +14,12 @@ VoxelGeneratorMultipass::VoxelGeneratorMultipass() {
 	}
 	{
 		Pass pass;
-		pass.dependency_extents = BoxBounds3i(Vector3i(-1, -1, -1), Vector3i(1, 1, 1));
+		pass.dependency_extents = 1;
 		_passes.push_back(pass);
 	}
 	{
 		Pass pass;
-		pass.dependency_extents = BoxBounds3i(Vector3i(-1, -1, -1), Vector3i(1, 1, 1));
+		pass.dependency_extents = 1;
 		_passes.push_back(pass);
 	}
 }
