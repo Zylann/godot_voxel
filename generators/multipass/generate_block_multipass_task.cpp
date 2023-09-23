@@ -8,44 +8,34 @@
 namespace zylann::voxel {
 
 namespace {
-std::atomic_int g_task_full_count[VoxelGeneratorMultipass::MAX_PASSES] = { 0 };
-std::atomic_int g_task_partial_count[VoxelGeneratorMultipass::MAX_PASSES] = { 0 };
-const char *g_profiling_task_names_partial[VoxelGeneratorMultipass::MAX_PASSES] = {
-	"GenerateBlockMultipassTasks_partial_pass0",
-	"GenerateBlockMultipassTasks_partial_pass1",
-	"GenerateBlockMultipassTasks_partial_pass2",
-	"GenerateBlockMultipassTasks_partual_pass3",
-};
-const char *g_profiling_task_names_full[VoxelGeneratorMultipass::MAX_PASSES] = {
-	"GenerateBlockMultipassTasks_full_pass0",
-	"GenerateBlockMultipassTasks_full_pass1",
-	"GenerateBlockMultipassTasks_full_pass2",
-	"GenerateBlockMultipassTasks_full_pass3",
+std::atomic_int g_task_count[VoxelGeneratorMultipass::MAX_SUBPASSES] = { 0 };
+const char *g_profiling_task_names[VoxelGeneratorMultipass::MAX_SUBPASSES] = {
+	"GenerateBlockMultipassTasks_subpass0",
+	"GenerateBlockMultipassTasks_subpass1",
+	"GenerateBlockMultipassTasks_subpass2",
+	"GenerateBlockMultipassTasks_subpass3",
+	"GenerateBlockMultipassTasks_subpass4",
+	"GenerateBlockMultipassTasks_subpass5",
+	"GenerateBlockMultipassTasks_subpass6",
 };
 
 } // namespace
 
 GenerateBlockMultipassTask::GenerateBlockMultipassTask(Vector3i p_block_position, uint8_t p_block_size,
-		uint8_t p_pass_index, Ref<VoxelGeneratorMultipass> p_generator, bool full, IThreadedTask *p_caller,
+		uint8_t p_subpass_index, Ref<VoxelGeneratorMultipass> p_generator, IThreadedTask *p_caller,
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
 	//
 	_block_position = p_block_position;
 	_block_size = p_block_size;
-	_pass_index = p_pass_index;
-	_full = full;
+	_subpass_index = p_subpass_index;
 	_generator = p_generator;
 	_caller_task = p_caller;
 	ZN_ASSERT(p_caller_dependency_count != nullptr);
 	ZN_ASSERT(*p_caller_dependency_count > 0);
 	_caller_task_dependency_counter = p_caller_dependency_count;
 
-	if (_full) {
-		int64_t v = ++g_task_full_count[_pass_index];
-		ZN_PROFILE_PLOT(g_profiling_task_names_full[_pass_index], v);
-	} else {
-		int64_t v = ++g_task_partial_count[_pass_index];
-		ZN_PROFILE_PLOT(g_profiling_task_names_partial[_pass_index], v);
-	}
+	int64_t v = ++g_task_count[_subpass_index];
+	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
 }
 
 GenerateBlockMultipassTask::~GenerateBlockMultipassTask() {
@@ -56,13 +46,8 @@ GenerateBlockMultipassTask::~GenerateBlockMultipassTask() {
 		ZN_ASSERT(*_caller_task_dependency_counter == 0);
 	}
 
-	if (_full) {
-		int64_t v = --g_task_full_count[_pass_index];
-		ZN_PROFILE_PLOT(g_profiling_task_names_full[_pass_index], v);
-	} else {
-		int64_t v = --g_task_partial_count[_pass_index];
-		ZN_PROFILE_PLOT(g_profiling_task_names_partial[_pass_index], v);
-	}
+	int64_t v = --g_task_count[_subpass_index];
+	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
 }
 
 void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
@@ -71,10 +56,11 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 
 	std::shared_ptr<VoxelGeneratorMultipass::Map> map = _generator->get_map();
 
-	const VoxelGeneratorMultipass::Pass &pass = _generator->get_pass(_pass_index);
+	const int pass_index_ = VoxelGeneratorMultipass::get_pass_index_from_subpass(_subpass_index);
+	const VoxelGeneratorMultipass::Pass &pass = _generator->get_pass(pass_index_);
 
-	if (_pass_index == 0) {
-		// The first pass can't depend on another pass
+	if (_subpass_index == 0) {
+		// The first subpass can't depend on another subpass
 		ZN_ASSERT(pass.dependency_extents == 0);
 	} else {
 		ZN_ASSERT(pass.dependency_extents > 0);
@@ -133,19 +119,12 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 		};
 		std::vector<BlockToGenerate> to_generate;
 
-		const int pass_index = _pass_index;
-		const int prev_pass_index = pass_index - 1;
+		const int subpass_index = _subpass_index;
+		const int prev_subpass_index = subpass_index - 1;
 
 		// Check loading levels
 		{
 			ZN_PROFILE_SCOPE_NAMED("Check levels");
-
-			int prev_pass_completion_iterations = 0;
-			if (prev_pass_index >= 0) {
-				const VoxelGeneratorMultipass::Pass &prev_pass = _generator->get_pass(prev_pass_index);
-				// TODO This should be lower at world boundaries
-				prev_pass_completion_iterations = math::cubed(prev_pass.dependency_extents * 2 + 1);
-			}
 
 			Vector3i bpos;
 			unsigned int i = 0;
@@ -159,53 +138,22 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 						std::shared_ptr<VoxelGeneratorMultipass::Block> block = blocks[i];
 						ZN_ASSERT(block != nullptr);
 
-						if (_full) {
-							// We want all blocks in the neighborhood to be at the same pass (but not necessarily
-							// complete)
-							if (block->pass_index < pass_index) {
-								// Request partial pass
-								to_generate.push_back({ bpos, block });
-							}
-
-						} else {
-							// We want all blocks to have at least completed their previous pass
-							if (block->pass_index < prev_pass_index) {
-								// Request full pass
-								to_generate.push_back({ bpos, block });
-
-							} else if (block->pass_index == prev_pass_index) {
-								// If this fails, something went wrong, it means a chunk was actually processed twice
-								ZN_ASSERT(block->pass_iterations[prev_pass_index] <= prev_pass_completion_iterations);
-
-								if (block->pass_iterations[prev_pass_index] != prev_pass_completion_iterations) {
-									// Request full pass, even though that block has been processed.
-									// It should at least generate relevant neighbors so it can be considered complete.
-									to_generate.push_back({ bpos, block });
-									// This sounds like it would be very rare though... also I don't like having to keep
-									// caches around, it sounds easy to break...
-								}
-							} else {
-								// Already processed to current pass or greater?
-							}
+						// We want all blocks in the neighborhood to be at least at the previous subpass before we can
+						// run the current subpass
+						if (block->subpass_index < prev_subpass_index) {
+							to_generate.push_back({ bpos, block });
 						}
 
 						++i;
 					}
 				}
 			}
-
-			if (_full && to_generate.size() == 1 && to_generate[0].block->pass_index == prev_pass_index &&
-					to_generate[0].position == _block_position) {
-				// This is the central block, we can process it in the current task without having to spawn
-				// another.
-				to_generate.clear();
-			}
 		}
 
 		BufferedTaskScheduler &scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 		if (to_generate.size() > 0) {
-			ZN_ASSERT(_pass_index > 0);
+			ZN_ASSERT(_subpass_index > 0);
 
 			// If we come back here after having requested dependencies (and we never postpone), then it means
 			// tasks we spawned or were waiting for have not fulfilled our expectations, so something must be wrong
@@ -214,22 +162,11 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 			ZN_PROFILE_SCOPE_NAMED("Spawn subtasks");
 			// Generate dependencies
 
-			if (!_full) {
-				ZN_ASSERT(_pass_index > 0);
-			}
-
-			// If we want the current chunk to be generated fully at the current pass, we must request all neighbors
-			// that can reach it to be processed at least partially at that same pass.
-			// If we are only processing the current chunk partially, we instead need to process neighbors that it wants
-			// to reach at least up to the previous pass, and fully.
-			const unsigned int requested_pass_index = _full ? _pass_index : _pass_index - 1;
-			const bool requested_full = !_full;
-
 			std::shared_ptr<std::atomic_int> counter = make_shared_instance<std::atomic_int>(to_generate.size());
 
 			for (const BlockToGenerate &todo : to_generate) {
 				GenerateBlockMultipassTask *task = ZN_NEW(GenerateBlockMultipassTask(
-						todo.position, _block_size, requested_pass_index, _generator, requested_full, this, counter));
+						todo.position, _block_size, prev_subpass_index, _generator, this, counter));
 				scheduler.push_main_task(task);
 			}
 
@@ -250,8 +187,8 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 
 			std::shared_ptr<VoxelGeneratorMultipass::Block> main_block = blocks[central_block_index];
 
-			if (main_block->pass_index == prev_pass_index) {
-				if (_pass_index == 0) {
+			if (main_block->subpass_index == prev_subpass_index) {
+				if (_subpass_index == 0) {
 					// First pass creates the block
 					for (std::shared_ptr<VoxelGeneratorMultipass::Block> block : blocks) {
 						block->voxels.create(Vector3iUtil::create(_block_size));
@@ -259,30 +196,30 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 				}
 
 				// Debug check
-				const int pass_completion_iterations = math::cubed(pass.dependency_extents * 2 + 1);
-				ZN_ASSERT(main_block->pass_iterations[_pass_index] < pass_completion_iterations);
+				// const int subpass_completion_iterations = math::cubed(pass.dependency_extents * 2 + 1);
+				// ZN_ASSERT(main_block->subpass_iterations[_subpass_index] < subpass_completion_iterations);
 
 				VoxelGeneratorMultipass::PassInput input;
 				input.grid = to_span(blocks);
 				input.grid_size = neighbors_box.size;
 				input.grid_origin = neighbors_box.pos;
 				input.main_block_position = _block_position;
-				input.pass_index = pass_index;
+				input.pass_index = pass_index_;
 
 				_generator->generate_pass(input);
 
 				// Update levels
-				main_block->pass_index = _pass_index;
+				main_block->subpass_index = _subpass_index;
 
 				for (std::shared_ptr<VoxelGeneratorMultipass::Block> block : blocks) {
-					block->pass_iterations[_pass_index]++;
+					block->subpass_iterations[_subpass_index]++;
 				}
 
 				// Pass, X, Y, Z, Time
-				// println(format("P {} {} {} {} {}", int(_pass_index), _block_position.x, _block_position.y,
+				// println(format("P {} {} {} {} {}", int(_subpass_index), _block_position.x, _block_position.y,
 				// 		_block_position.z, Time::get_singleton()->get_ticks_usec()));
 
-			} else if (main_block->pass_index == pass_index) {
+			} else if (main_block->subpass_index == subpass_index) {
 				// Already processed. Might have been that this block was in partial state before and just needed
 				// neighbors to be updated?
 

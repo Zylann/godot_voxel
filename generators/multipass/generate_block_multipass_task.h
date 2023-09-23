@@ -27,12 +27,8 @@ namespace zylann::voxel {
 // them, the current task gets piped after those, and so on until everything is ready to generate the requestd blocks.
 class GenerateBlockMultipassTask : public IThreadedTask {
 public:
-	GenerateBlockMultipassTask(Vector3i p_block_position, uint8_t p_block_size, uint8_t p_pass_index,
+	GenerateBlockMultipassTask(Vector3i p_block_position, uint8_t p_block_size, uint8_t p_subpass_index,
 			Ref<VoxelGeneratorMultipass> p_generator,
-			// If true, the task will make sure the target chunk(s) has completed the specified pass. Otherwise, it will
-			// still process the chunk, but if the pass can modify its neighbors, it can't be considered complete until
-			// all neighbors that can reach it have completed the same pass.
-			bool full,
 			// When the current task finishes, it will decrement the given counter, and return control to the following
 			// caller task when the counter reaches 0.
 			IThreadedTask *p_caller, std::shared_ptr<std::atomic_int> p_caller_dependency_count);
@@ -56,8 +52,7 @@ private:
 
 	Vector3i _block_position;
 	uint8_t _block_size;
-	uint8_t _pass_index;
-	bool _full = false;
+	uint8_t _subpass_index;
 	Ref<VoxelGeneratorMultipass> _generator;
 	// Task to execute when `caller_task_dependency_counter` reaches zero.
 	// This means the current task was spawned by this one to compute a dependency.

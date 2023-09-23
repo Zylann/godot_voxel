@@ -17,17 +17,28 @@ class VoxelGeneratorMultipass : public VoxelGenerator {
 public:
 	// TODO Enforce limits
 	// Pass limit is pretty low because in practice not that many should be needed, and it gets expensive really quick
-	static const unsigned int MAX_PASSES = 4;
-	// static const int MAX_PASS_EXTENT = 4;
+	static const int MAX_PASSES = 4;
+	// static const int MAX_PASS_EXTENT = 2;
+
+	// Passes are internally split into subpasses: 1 subpass for pass 0, 2 subpasses for the others. Each subpass
+	// depends on the previous. This is to cover side-effect of passes that can modify neighbors.
+	static const int MAX_SUBPASSES = MAX_PASSES * 2 - 1; // get_subpass_count_from_pass_count(MAX_PASSES);
+	// I would have gladly used a constexpr function but apparently if it's a static method it doesn't work unless it is
+	// moved outside of the class, which is inconvenient
+
+	static inline int get_subpass_count_from_pass_count(int pass_count) {
+		return pass_count * 2 - 1;
+	}
+
+	static inline int get_pass_index_from_subpass(int subpass_index) {
+		return (subpass_index + 1) / 2;
+	}
 
 	struct Block {
 		VoxelBufferInternal voxels;
-		// Index of the last pass that was executed directly on this chunk.
-		// -1 means the chunk just got created and no pass has run on it yet.
-		// This does not mean the pass has been completed though: a pass is completed when the chunk and all neighbors
-		// that can access it within that pass have been processed. So for example, if a pass has an access distance of
-		// 1 neighbor chunks, then a if we run that pass on 3x3x3 chunks, only the middle chunk will be complete.
-		int16_t pass_index = -1;
+		// Index of the last subpass that was executed directly on this chunk.
+		// -1 means the chunk just got created and no subpass has run on it yet.
+		int16_t subpass_index = -1;
 
 		// Each bit corresponds to a pass, and tells if a task is pending to process this chunk.
 		// uint8_t pending_partial_generation_tasks = 0;
@@ -39,15 +50,16 @@ public:
 
 		// Caches how many chunks in the neighborhood have been processed while having access to this one (included).
 		// This is an optimization allowing to reduce chunk map queries. This is an array because it is possible
-		// for a pass to start writing into a block that completed its previous pass but hasn't started the next pass.
-		FixedArray<uint16_t, MAX_PASSES> pass_iterations;
+		// for a subpass to start writing into a block that completed its previous subpass but hasn't started the next
+		// subpass.
+		FixedArray<uint16_t, MAX_SUBPASSES> subpass_iterations;
 
 		// Set to true if a task is pending to process this block. This is to prevent from spawning too many tasks
 		// ending up requesting the same block, due to neighbor dependencies.
 		// bool pending_task = false;
 
 		Block() {
-			fill(pass_iterations, uint16_t(0));
+			fill(subpass_iterations, uint16_t(0));
 		}
 	};
 
