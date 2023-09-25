@@ -402,7 +402,13 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 		// Different type
 		return false;
 	}
-	// Note, some nodes can have dynamic inputs, so we don't check node type specs, we check the nodes
+	if (node1.type_id == VoxelGraphFunction::NODE_CUSTOM_INPUT) {
+		if (node1.name != node2.name) {
+			// Different custom inputs
+			return false;
+		}
+	}
+	// Note, some nodes can have dynamic inputs, so we don't check node type specs, we check the node instances
 	if (node1.inputs.size() != node2.inputs.size()) {
 		// Different input count
 		return false;

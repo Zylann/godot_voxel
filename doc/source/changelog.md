@@ -65,6 +65,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed graph not always saving when saving the scene
         - Fixed shader generator crash when a node has an unconnected input
         - Fixed cellular noise when used on GPU
+    - `VoxelGraphFunction`:
+        - Fixed unexpected "missing node" error when more than one custom inputs are used
     - `VoxelInstancer`:
         - Fixed crash when hiding the node in the editor
         - Fixed crash when closing the scene while an instancer node is selected
