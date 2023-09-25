@@ -124,6 +124,16 @@ Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
 
 ![Screenshot of transparency index being exploited](images/transparency_index_example2.webp)
 
+`VoxelBlockyModel` also has a `culls_neighbors` property. This is enabled by default and prevents unnecessary rendering of neighboring voxel sides. However, for some transparent voxels it may be more desirable to always render neighboring voxel sides. For example, foliage can be made to look denser if all of the inner voxel sides
+are visible.
+
+Here is a group of leaves with `culls_neighbors=true` (the default):
+
+![Screenshot of leaves with culls_neighbors set to true](images/culls_neighbors_enabled.webp)
+
+Here is that same group of leaves with `culls_neighbors=false`. The sides in-between the voxels are rendered, making the group of leaves look less hollow.
+
+![Screenshot of leaves with culls_neighbors set to false](images/culls_neighbors_disabled.webp)
 
 ### Random tick
 

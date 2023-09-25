@@ -20,6 +20,7 @@ Type      | Name                                         | Default
 `Color`   | [color](#i_color)                            | Color(1, 1, 1, 1) 
 `bool`    | [random_tickable](#i_random_tickable)        | false             
 `int`     | [transparency_index](#i_transparency_index)  | 0                 
+`bool`    | [culls_neighbors](#i_culls_neighbors)        | true              
 `bool`    | [transparent](#i_transparent)                | false             
 <p></p>
 
@@ -71,6 +72,10 @@ If enabled, voxels having this ID in the TYPE channel will be used by [VoxelTool
 Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
 
 Equal indices culls the face, different indexes doesn't.
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_culls_neighbors"></span> **culls_neighbors** = true
+
+If enabled, this voxel culls the faces of its neighbors. Disabling can be useful for denser transparent voxels, such as foliage.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_transparent"></span> **transparent** = false
 
