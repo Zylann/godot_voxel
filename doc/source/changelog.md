@@ -56,6 +56,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added 3D preview in editor
         - Added ability to rotate the model in editor (not just for preview, actually rotate the baked model)
         - Changed names to be handled with `Resource.name`, so it also shows them in the list of models in the editor
+        - Added `culls_neighbors` property to control whether the sides of a model can cull sides of other models (thanks to spazzylemons)
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
