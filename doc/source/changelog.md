@@ -74,6 +74,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelInstanceLibrary`: 
         - Fixed `find_item_by_name` was not finding items
         - Fixed newly added items in the editor rendering badly by default when the terrain doesn't have LOD. For now they always default to LOD 0 instead of LOD 2.
+    - `VoxelTerrain`: Fixed crash when the terrain tries to update while it has no mesher assigned
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
     - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata

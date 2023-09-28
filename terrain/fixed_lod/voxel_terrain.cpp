@@ -708,6 +708,10 @@ void VoxelTerrain::post_edit_voxel(Vector3i pos) {
 
 void VoxelTerrain::try_schedule_mesh_update_from_data(const Box3i &box_in_voxels) {
 	ZN_PROFILE_SCOPE();
+	if (_mesher.is_null()) {
+		// No mesher, can't do updates
+		return;
+	}
 	// We pad by 1 because neighbor blocks might be affected visually (for example, baked ambient occlusion)
 	const Box3i mesh_box = box_in_voxels.padded(1).downscaled(get_mesh_block_size());
 	mesh_box.for_each_cell([this](Vector3i pos) {
