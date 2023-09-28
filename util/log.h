@@ -31,6 +31,9 @@ void print_error(const char *error, const FwdConstStdString &msg, const char *fu
 
 void flush_stdout();
 
+// void open_log_file();
+// void close_log_file();
+
 } // namespace zylann
 
 #endif // ZYLANN_LOG_H
