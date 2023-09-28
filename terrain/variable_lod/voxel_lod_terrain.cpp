@@ -2698,7 +2698,9 @@ void VoxelLodTerrain::update_gizmos() {
 		const int data_block_size = get_data_block_size() << _edited_blocks_gizmos_lod_index;
 		const Basis basis(Basis().scaled(Vector3(data_block_size, data_block_size, data_block_size)));
 
-		_data->for_each_block_at_lod(
+		// Note, if this causes too much contention somehow, we could get away with not locking spatial lock, dirty
+		// reads of block flags should not hurt since they are only drawn every frame for debugging
+		_data->for_each_block_at_lod_r(
 				[&dr, parent_transform, data_block_size, basis](const Vector3i &bpos, const VoxelDataBlock &block) {
 					if (block.is_edited()) {
 						const Transform3D local_transform(basis, bpos * data_block_size);

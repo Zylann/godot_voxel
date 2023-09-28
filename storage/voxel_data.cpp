@@ -88,7 +88,13 @@ void VoxelData::reset_maps() {
 void VoxelData::reset_maps_no_settings_lock() {
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &data_lod = _lods[lod_index];
+
+		// Erasing elements requires to have exclusive access to every block.
+		// That means not having any other thread holding a pointer to blocks in the map.
+		VoxelSpatialLockWrite swlock(data_lod.spatial_lock, BoxBounds3i::from_everywhere());
+
 		RWLockWrite wlock(data_lod.map_lock);
+
 		// Instance new maps if we have more lods, or clear them otherwise
 		if (lod_index < _lod_count) {
 			data_lod.map.create(lod_index);
@@ -145,9 +151,14 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 
 	if (!_streaming_enabled) {
 		const Lod &data_lod0 = _lods[0];
+
+		data_lod0.spatial_lock.lock_read(BoxBounds3i::from_position(block_pos));
+
 		std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, generate);
 
 		if (voxels == nullptr) {
+			data_lod0.spatial_lock.unlock_read(BoxBounds3i::from_position(block_pos));
+
 			// No voxel data. We know everything is loaded when data streaming is not used, so try to generate directly.
 			// TODO We should be able to get a value if modifiers are used but not a base generator
 			Ref<VoxelGenerator> generator = get_generator();
@@ -161,9 +172,10 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 				return value;
 			}
 		} else {
-			VoxelSpatialLockRead srlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos));
 			const Vector3i rpos = data_lod0.map.to_local(pos);
-			return get_voxel_sv(*voxels, rpos, channel_index);
+			const VoxelSingleValue sv = get_voxel_sv(*voxels, rpos, channel_index);
+			data_lod0.spatial_lock.unlock_read(BoxBounds3i::from_position(block_pos));
+			return sv;
 		}
 		return defval;
 
@@ -178,24 +190,31 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const Lod &data_lod = _lods[lod_index];
 
+			data_lod.spatial_lock.lock_read(BoxBounds3i::from_position(block_pos));
+
 			std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod, block_pos, generate);
 
 			if (voxels != nullptr) {
-				VoxelSpatialLockRead srlock(data_lod.spatial_lock, BoxBounds3i::from_position(block_pos));
-				return get_voxel_sv(*voxels, data_lod.map.to_local(voxel_pos), channel_index);
+				const VoxelSingleValue sv = get_voxel_sv(*voxels, data_lod.map.to_local(voxel_pos), channel_index);
+				data_lod.spatial_lock.unlock_read(BoxBounds3i::from_position(block_pos));
+				return sv;
 
-			} else if (generate) {
-				// TODO We should be able to get a value if modifiers are used but not a base generator
-				if (generator.is_valid()) {
-					VoxelSingleValue value = generator->generate_single(pos, channel_index);
-					if (channel_index == VoxelBufferInternal::CHANNEL_SDF) {
-						float sdf = value.f;
-						_modifiers.apply(sdf, to_vec3(pos));
-						value.f = sdf;
+			} else {
+				data_lod.spatial_lock.unlock_read(BoxBounds3i::from_position(block_pos));
+
+				if (generate) {
+					// TODO We should be able to get a value if modifiers are used but not a base generator
+					if (generator.is_valid()) {
+						VoxelSingleValue value = generator->generate_single(pos, channel_index);
+						if (channel_index == VoxelBufferInternal::CHANNEL_SDF) {
+							float sdf = value.f;
+							_modifiers.apply(sdf, to_vec3(pos));
+							value.f = sdf;
+						}
+						return value;
+					} else {
+						return defval;
 					}
-					return value;
-				} else {
-					return defval;
 				}
 			}
 
@@ -212,6 +231,8 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 	const Vector3i block_pos_lod0 = pos >> get_block_size_po2();
 	Lod &data_lod0 = _lods[0];
 	const Vector3i block_pos = data_lod0.map.voxel_to_block(pos);
+
+	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos));
 
 	bool can_generate = false;
 	std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, can_generate);
@@ -238,8 +259,6 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 			data_lod0.map.set_block_buffer(block_pos_lod0, voxels, true);
 		}
 	}
-	// If it turns out to be a problem, use CoW?
-	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos));
 	voxels->set_voxel(value, data_lod0.map.to_local(pos), channel_index);
 	// We don't update mips, this must be done by the caller
 	return true;
@@ -342,10 +361,17 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 		return _full_load_completed;
 	}
 	const Box3i voxel_box = p_voxels_box.clipped(get_bounds());
+	const Box3i block_box = voxel_box.downscaled(get_block_size());
 	const Lod &data_lod0 = _lods[0];
 	{
+		VoxelSpatialLockRead srlock(data_lod0.spatial_lock, block_box);
+
 		RWLockRead rlock(data_lod0.map_lock);
-		const bool all_blocks_present = data_lod0.map.is_area_fully_loaded(voxel_box);
+
+		const bool all_blocks_present = block_box.all_cells_match([&data_lod0](Vector3i pos) { //
+			return data_lod0.map.has_block(pos);
+		});
+
 		// In a multi-LOD context, it is assumed the parent LOD follows the rule of covering all its children.
 		// In other words, all parent LODs are assumed to be loaded.
 		return all_blocks_present;
@@ -354,6 +380,8 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 
 void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,
 		unsigned int lod_count, Ref<VoxelGenerator> generator, VoxelModifierStack &modifiers) {
+	// This is mostly used by VoxelLodTerrain, in cases non-edited blocks aren't cached.
+
 	ZN_PROFILE_SCOPE();
 	// ERR_FAIL_COND_MSG(_full_load_mode == false, nullptr, "This function can only be used in full load mode");
 
@@ -369,6 +397,12 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	// TODO Optimize: thread_local pooling?
 	std::vector<unsigned int> count_per_lod;
 
+	// We could have locked all LODs for writing during the whole process.
+	// But in order to reduce the amount of locking and time being locked, we only lock them one by one for reading
+	// first to figure out which blocks we need to generate. Then, we generate voxels separately without holding locks.
+	// Finally, we lock LODs one by one again to insert newly generated blocks.
+	// One downside is that the state of some blocks can change in the meantime. If they do, we skip insertion.
+
 	// Find empty slots
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
@@ -379,7 +413,10 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 		const unsigned int prev_size = todo.size();
 
 		{
+			VoxelSpatialLockRead srlock(data_lod.spatial_lock, block_box);
+
 			RWLockRead rlock(data_lod.map_lock);
+
 			block_box.for_each_cell([&data_lod, lod_index, &todo, streaming](Vector3i block_pos) {
 				// We don't check "loading blocks", because this function wants to complete the task right now.
 				const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
@@ -429,8 +466,13 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 			const unsigned int end_task_index = task_index + count;
 
 			Lod &data_lod = lods[lod_index];
+
+			const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
+			VoxelSpatialLockWrite swlock(data_lod.spatial_lock, block_box);
+
 			RWLockWrite wlock(data_lod.map_lock);
 
+			// Tasks are grouped by LOD so we can get all tasks for a given LOD in contiguous range
 			for (; task_index < end_task_index; ++task_index) {
 				Task &task = todo[task_index];
 				ZN_ASSERT(task.lod_index == lod_index);
@@ -458,9 +500,14 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
+
+		// Locking area for write because technically we may modify blocks
+		const Box3i blocks_box = p_voxel_box.downscaled(lod.map.get_block_size() << lod_index);
+		VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+
+		// Locking map for read because we won't add or remove blocks
 		RWLockRead rlock(lod.map_lock);
 
-		const Box3i blocks_box = p_voxel_box.downscaled(lod.map.get_block_size() << lod_index);
 		blocks_box.for_each_cell_zxy([&lod](const Vector3i bpos) {
 			VoxelDataBlock *block = lod.map.get_block(bpos);
 			if (block == nullptr || block->is_edited() || block->is_modified()) {
@@ -473,10 +520,16 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 
 void VoxelData::mark_area_modified(
 		Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates) {
+	// TODO We should probably merge this with edits, because that means two separate locks occur. There is some time in
+	// between where we end up with modified voxels yet not marked as modified yet.
+
 	const Box3i bbox = p_voxel_box.downscaled(get_block_size());
 
 	Lod &data_lod0 = _lods[0];
 	{
+		VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, bbox);
+
+		// Locking map for read because we won't add or remove blocks
 		RWLockRead rlock(data_lod0.map_lock);
 
 		bbox.for_each_cell([&data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
@@ -566,6 +619,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	{
 		std::vector<Vector3i> &dst_lod0 = tls_blocks_to_process_per_lod[0];
 		dst_lod0.resize(modified_lod0_blocks.size());
+		// TODO Could use std::copy, but I'm unsure if Vector3i will be considered "trivial" enough for the copy to get
+		// optimized as a memcpy/memmove. Needs to be checked, and if possible should write a test for it.
 		memcpy(dst_lod0.data(), modified_lod0_blocks.data(), dst_lod0.size() * sizeof(Vector3i));
 	}
 	{
@@ -574,10 +629,10 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 
 		std::vector<Vector3i> &blocks_pending_lodding_lod0 = tls_blocks_to_process_per_lod[0];
 
-		for (unsigned int i = 0; i < blocks_pending_lodding_lod0.size(); ++i) {
-			const Vector3i data_block_pos = blocks_pending_lodding_lod0[i];
+		for (const Vector3i data_block_pos : blocks_pending_lodding_lod0) {
 			VoxelDataBlock *data_block = data_lod0.map.get_block(data_block_pos);
 			ERR_CONTINUE(data_block == nullptr);
+			// TODO Threading: this is set without spatial lock, so in theory another thread can also change this!
 			data_block->set_needs_lodding(false);
 
 			if (out_updated_blocks != nullptr) {
@@ -618,6 +673,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 			VoxelDataBlock *src_block = src_data_lod.map.get_block(src_bpos);
 			VoxelDataBlock *dst_block = dst_data_lod.map.get_block(dst_bpos);
 
+			ZN_ASSERT(src_block != nullptr);
 			src_block->set_needs_lodding(false);
 
 			if (dst_block == nullptr) {
@@ -649,7 +705,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 
 			// The block and its lower LOD indices are expected to be available.
 			// Otherwise it means the function was called too late?
-			ZN_ASSERT(src_block != nullptr);
+			ZN_ASSERT(dst_block != nullptr);
 			// ZN_ASSERT(dst_block != nullptr);
 			// The block should have voxels if it has been edited or mipped.
 			ZN_ASSERT(src_block->has_voxels());
@@ -693,6 +749,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 
 void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<BlockToSave> *to_save) {
 	Lod &lod = _lods[lod_index];
+	VoxelSpatialLockWrite swlock(lod.spatial_lock, bbox);
 	RWLockWrite wlock(lod.map_lock);
 	if (to_save == nullptr) {
 		bbox.for_each_cell_zxy([&lod](Vector3i bpos) { //
@@ -705,24 +762,31 @@ void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<Bl
 	}
 }
 
-void VoxelData::unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save) {
-	Lod &lod = _lods[0];
-	RWLockWrite wlock(lod.map_lock);
-	if (to_save == nullptr) {
-		for (Vector3i bpos : positions) {
-			lod.map.remove_block(bpos, VoxelDataMap::NoAction());
-		}
-	} else {
-		for (Vector3i bpos : positions) {
-			lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
-		}
-	}
-}
+// void VoxelData::unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save) {
+// 	// Not efficient! We would have to also lock the spatial lock at every position to unload...
+// 	Lod &lod = _lods[0];
+// 	RWLockWrite wlock(lod.map_lock);
+// 	if (to_save == nullptr) {
+// 		for (Vector3i bpos : positions) {
+// 			lod.map.remove_block(bpos, VoxelDataMap::NoAction());
+// 		}
+// 	} else {
+// 		for (Vector3i bpos : positions) {
+// 			lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
+// 		}
+// 	}
+// }
 
 bool VoxelData::consume_block_modifications(Vector3i bpos, VoxelData::BlockToSave &out_to_save) {
 	Lod &lod = _lods[0];
-	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+
+	// Locking for write because we are going to change state on the block.
+	// TODO Could use an atomic in this case, if it causes too much contention?
+	VoxelSpatialLockWrite swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+
+	// Locking for read because we won't add or remove blocks to the map
 	RWLockRead rlock(lod.map_lock);
+
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	if (block == nullptr) {
 		return false;
@@ -744,8 +808,14 @@ void VoxelData::consume_all_modifications(std::vector<BlockToSave> &to_save, boo
 	const unsigned int lod_count = get_lod_count();
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
-		VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
+
+		// Locking for write because we are going to change states on blocks.
+		// TODO Could use an atomic in this case, if it causes too much contention?
+		VoxelSpatialLockWrite srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
+
+		// Locking for read because we won't add or remove blocks to the map
 		RWLockRead rlock(lod.map_lock);
+
 		lod.map.for_each_block(ScheduleSaveAction{ to_save, uint8_t(lod_index), with_copy });
 	}
 }
@@ -783,11 +853,15 @@ void VoxelData::get_blocks_with_voxel_data(
 	ZN_ASSERT(int64_t(out_blocks.size()) >= Vector3iUtil::get_volume(p_blocks_box.size));
 
 	const Lod &data_lod = _lods[lod_index];
+
+	// Locking also with spatial lock because we need to check if blocks have voxels, which is a state that could be
+	// changed by another thread (in theory)
+	VoxelSpatialLockRead srlock(data_lod.spatial_lock, p_blocks_box);
+
 	RWLockRead rlock(data_lod.map_lock);
 
 	unsigned int index = 0;
 
-	// Iteration order matters for thread access.
 	p_blocks_box.for_each_cell_zxy([&index, &data_lod, &out_blocks](Vector3i data_block_pos) {
 		const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
 		// The block can actually be null on some occasions. Not sure yet if it's that bad
@@ -805,7 +879,7 @@ void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsign
 	RWLockRead rlock(data_lod.map_lock);
 	const int bs = data_lod.map.get_block_size() << lod_index;
 	const Box3i box_in_blocks = box_in_voxels.downscaled(bs);
-	grid.reference_area_block_coords(data_lod.map, box_in_blocks, &data_lod.spatial_lock);
+	grid.reference_area_block_coords(data_lod.map, data_lod.map_lock, box_in_blocks, &data_lod.spatial_lock);
 }
 
 VoxelSpatialLock &VoxelData::get_spatial_lock(unsigned int lod_index) const {
@@ -828,6 +902,8 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 	{
 		// Ideally this box shouldn't intersect more than 8 blocks if the box is cubic.
 		const Box3i mip_blocks_box = box_in_voxels.downscaled(mip_data_lod.map.get_block_size() << top_lod_index);
+
+		VoxelSpatialLockRead srlock(mip_data_lod.spatial_lock, mip_blocks_box);
 
 		RWLockRead rlock(mip_data_lod.map_lock);
 
@@ -854,6 +930,12 @@ void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_block
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
 	Lod &lod = _lods[0];
+
+	// Locking for write because we are modifying states on blocks.
+	// TODO Could use atomics if contention is too much?
+	VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+
+	// Locking for read because we don't add or remove blocks.
 	RWLockRead rlock(lod.map_lock);
 
 	blocks_box.for_each_cell_zxy([&lod, &found_blocks_positions, &found_blocks, &missing_blocks](Vector3i bpos) {
@@ -875,7 +957,14 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
 	Lod &lod = _lods[0];
-	RWLockRead rlock(lod.map_lock);
+
+	// Locking for write because we are modifying states on blocks.
+	// TODO Could use atomics if contention is too much? However if we do, we need to ensure no other thread is holding
+	// a pointer to any of the blocks we could remove.
+	VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+
+	// Locking for write because we are potentially going to remove blocks from the map.
+	RWLockWrite wlock(lod.map_lock);
 
 	blocks_box.for_each_cell_zxy([&lod, &missing_blocks, &removed_blocks, to_save](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
@@ -897,7 +986,10 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 
 std::shared_ptr<VoxelBufferInternal> VoxelData::try_get_block_voxels(Vector3i bpos) {
 	Lod &lod = _lods[0];
+
+	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	RWLockRead rlock(lod.map_lock);
+
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	if (block == nullptr) {
 		return nullptr;
@@ -910,11 +1002,14 @@ std::shared_ptr<VoxelBufferInternal> VoxelData::try_get_block_voxels(Vector3i bp
 
 void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 	Lod &lod = _lods[0];
-	RWLockRead rlock(lod.map_lock);
+
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
+
+	VoxelSpatialLockWrite swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	RWLockRead rlock(lod.map_lock);
+
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	ZN_ASSERT_RETURN_MSG(block != nullptr, "Area not editable");
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	// TODO Ability to have metadata in areas where voxels have not been allocated?
 	// Otherwise we have to generate the block, because that's where it is stored at the moment.
 	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Area not cached");
@@ -925,11 +1020,14 @@ void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 
 Variant VoxelData::get_voxel_metadata(Vector3i pos) {
 	Lod &lod = _lods[0];
-	RWLockRead rlock(lod.map_lock);
+
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
+
+	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	RWLockRead rlock(lod.map_lock);
+
 	VoxelDataBlock *block = lod.map.get_block(bpos);
 	ZN_ASSERT_RETURN_V_MSG(block != nullptr, Variant(), "Area not editable");
-	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	ZN_ASSERT_RETURN_V_MSG(block->has_voxels(), Variant(), "Area not cached");
 	const VoxelMetadata *meta = block->get_voxels_const().get_voxel_metadata(lod.map.to_local(pos));
 	if (meta == nullptr) {

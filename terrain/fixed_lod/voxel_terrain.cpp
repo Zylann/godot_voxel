@@ -686,7 +686,7 @@ void VoxelTerrain::stop_streamer() {
 void VoxelTerrain::reset_map() {
 	// Discard everything, to reload it all
 
-	_data->for_each_block([this](const Vector3i &bpos, const VoxelDataBlock &block) { //
+	_data->for_each_block_position([this](const Vector3i &bpos) { //
 		emit_data_block_unloaded(bpos);
 	});
 	_data->reset_maps();

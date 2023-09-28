@@ -164,21 +164,33 @@ public:
 		}
 	}
 
-	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
-	void for_each_block(F op) const {
+	void for_each_block_position(F op) const {
 		const unsigned int lod_count = get_lod_count();
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const Lod &lod = _lods[lod_index];
 			RWLockRead rlock(lod.map_lock);
-			lod.map.for_each_block(op);
+			lod.map.for_each_block_position(op);
 		}
 	}
 
 	// void op(Vector3i bpos, const VoxelDataBlock &block)
+	// template <typename F>
+	// void for_each_block_r(F op) const {
+	// 	const unsigned int lod_count = get_lod_count();
+	// 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+	// 		const Lod &lod = _lods[lod_index];
+	// 		VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
+	// 		RWLockRead rlock(lod.map_lock);
+	// 		lod.map.for_each_block(op);
+	// 	}
+	// }
+
+	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
-	void for_each_block_at_lod(F op, unsigned int lod_index) const {
+	void for_each_block_at_lod_r(F op, unsigned int lod_index) const {
 		const Lod &lod = _lods[lod_index];
+		VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
 		RWLockRead rlock(lod.map_lock);
 		lod.map.for_each_block(op);
 	}
@@ -214,7 +226,7 @@ public:
 
 	// Unloads data blocks at specified positions of LOD0. If some of them were modified and `to_save` is not null,
 	// their data will be returned for the caller to save.
-	void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
+	// void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
 
 	// If the block at the specified LOD0 position exists and is modified, marks it as non-modified and returns a copy
 	// of its data to save. Returns true if there is something to save.

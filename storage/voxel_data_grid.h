@@ -14,18 +14,20 @@ public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
 	// WARNING: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
 	// box if you expect LOD0 coordinates.
-	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
-		const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
-		reference_area_block_coords(map, blocks_box, sl);
-	}
+	// inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
+	// 	const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
+	// 	reference_area_block_coords(map, blocks_box, sl);
+	// }
 
-	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, VoxelSpatialLock *sl) {
+	inline void reference_area_block_coords(
+			const VoxelDataMap &map, const RWLockRead &rwl, Box3i blocks_box, VoxelSpatialLock *sl) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
 		if (sl != nullptr) {
 			sl->lock_read(blocks_box);
 		}
+		RWLockRead rlock(rwl);
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,

@@ -13,9 +13,6 @@ class VoxelGenerator;
 
 // Sparse voxel storage by means of cubic chunks, within a constant LOD.
 //
-// Convenience functions to access VoxelBuffers internally will lock them to protect against multithreaded access.
-// However, the map itself is not thread-safe.
-//
 // When doing data streaming, the volume is *partially* loaded. If a block is not found at some coordinates,
 // it means we don't know if it contains edits or not. Knowing this is important to avoid writing or caching voxel data
 // in blank areas, that may be completely different once loaded.
@@ -110,6 +107,14 @@ public:
 	void clear();
 
 	int get_block_count() const;
+
+	// op(Vector3i bpos)
+	template <typename Op_T>
+	inline void for_each_block_position(Op_T op) const {
+		for (auto it = _blocks_map.begin(); it != _blocks_map.end(); ++it) {
+			op(it->first);
+		}
+	}
 
 	// op(Vector3i bpos, VoxelDataBlock &block)
 	template <typename Op_T>
