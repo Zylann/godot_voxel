@@ -191,7 +191,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace voxel;
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		// open_log_file();
+#ifdef ZN_DEBUG_LOG_FILE_ENABLED
+		open_log_file();
+#endif
 
 		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
 		// This class is used as a singleton so it's not really abstract.
@@ -478,7 +480,9 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();
 
-		// close_log_file();
+#ifdef ZN_DEBUG_LOG_FILE_ENABLED
+		close_log_file();
+#endif
 	}
 
 #ifdef TOOLS_ENABLED
