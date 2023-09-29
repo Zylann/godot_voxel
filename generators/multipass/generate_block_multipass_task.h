@@ -24,7 +24,7 @@ namespace zylann::voxel {
 // First experimental implementation of executing a generation pass on blocks with neighbor dependencies.
 // It naively attempts to generate a single block or column of blocks. It checks first all main blocks and neighbors
 // that could get modified in the process. If any aren't loaded to the required level, sub-tasks are spawned to load
-// them, the current task gets piped after those, and so on until everything is ready to generate the requestd blocks.
+// them, the current task gets piped after those, and so on until everything is ready to generate the requested blocks.
 class GenerateBlockMultipassTask : public IThreadedTask {
 public:
 	GenerateBlockMultipassTask(Vector3i p_block_position, uint8_t p_block_size, uint8_t p_subpass_index,

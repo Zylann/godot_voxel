@@ -40,6 +40,55 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	Ref<VoxelGeneratorMultipass> multipass_generator = generator;
 	if (multipass_generator.is_valid()) {
+		ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
+		std::shared_ptr<VoxelGeneratorMultipass::Map> map = multipass_generator->get_map();
+		const int final_subpass_index =
+				VoxelGeneratorMultipass::get_subpass_count_from_pass_count(multipass_generator->get_pass_count()) - 1;
+
+		{
+			VoxelSpatialLockRead srlock(map->spatial_lock, BoxBounds3i::from_position(position));
+			std::shared_ptr<VoxelGeneratorMultipass::Block> block;
+			{
+				MutexLock mlock(map->mutex);
+				auto block_it = map->blocks.find(position);
+				if (block_it == map->blocks.end()) {
+					// Drop, for some reason it wasn't available
+					return;
+				}
+				block = block_it->second;
+			}
+
+			// Null not allowed
+			ZN_ASSERT(block != nullptr);
+
+			if (block->subpass_index != final_subpass_index) {
+				// The block isn't finished
+
+				if (block->pending_subpass_tasks_mask != 0) {
+					// Some tasks are working on the chunk, so we may try querying it again later.
+					ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
+					// TODO It may be less stressing to just put the task on the block directly, so the generator can
+					// schedule it when the chunk is done, or when it gets unloaded
+
+				} else {
+					// No tasks working on it. That's a drop.
+				}
+
+			} else {
+				// The block is ready
+
+				// TODO Take out voxel data from this block, it must not be touched by generation anymore
+				voxels = make_shared_instance<VoxelBufferInternal>();
+				voxels->create(block->voxels.get_size());
+				voxels->copy_from(block->voxels);
+
+				run_stream_saving_and_finish();
+			}
+		}
+
+		return;
+
+#if 0 // Initial naive implementation concept
 		if (_stage == 0) {
 			ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
 			std::shared_ptr<std::atomic_int> counter = make_shared_instance<std::atomic_int>(1);
@@ -73,6 +122,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			run_stream_saving_and_finish();
 		}
 		return;
+#endif
 	}
 
 	if (voxels == nullptr) {

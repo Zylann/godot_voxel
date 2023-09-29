@@ -33,6 +33,8 @@
 #include "../voxel_save_completion_tracker.h"
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
+#include "../../generators/multipass/voxel_generator_multipass.h"
+
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
@@ -1263,6 +1265,13 @@ void VoxelTerrain::process_viewer_data_box_change(
 	static thread_local std::vector<Vector3i> tls_missing_blocks;
 	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
 
+	Ref<VoxelGeneratorMultipass> multipass_generator = get_generator();
+	if (multipass_generator.is_valid()) {
+		multipass_generator->process_viewer_diff(new_data_box, prev_data_box);
+		// TODO We also need to process diffs when the generator is added after the terrain started running (editor case
+		// mostly).
+	}
+
 	// Unview blocks that just fell out of range
 	//
 	// TODO Any reason to unview old blocks before viewing new blocks?
@@ -1398,7 +1407,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	const Vector3i block_pos = ob.position;
 
 	if (ob.dropped) {
-		// That block was cancelled by the server, but we are still expecting it.
+		// That block was cancelled, but we are still expecting it.
 		// We'll have to request it again.
 		ZN_PRINT_VERBOSE(format("Received a block loading drop while we were still expecting it: "
 								"lod{} ({}, {}, {}), re-requesting it",

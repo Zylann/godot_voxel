@@ -1,8 +1,10 @@
 #ifndef VOXEL_GENERATOR_MULTIPASS_H
 #define VOXEL_GENERATOR_MULTIPASS_H
 
+#include "../../engine/ids.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../storage/voxel_spatial_lock.h"
+#include "../../util/ref_count.h"
 #include "../voxel_generator.h"
 
 namespace zylann::voxel {
@@ -36,9 +38,13 @@ public:
 
 	struct Block {
 		VoxelBufferInternal voxels;
+		RefCount viewers;
 		// Index of the last subpass that was executed directly on this chunk.
 		// -1 means the chunk just got created and no subpass has run on it yet.
-		int16_t subpass_index = -1;
+		int8_t subpass_index = -1;
+		bool saving = false;
+		bool loading = false;
+		uint8_t pending_subpass_tasks_mask = 0;
 
 		// Each bit corresponds to a pass, and tells if a task is pending to process this chunk.
 		// uint8_t pending_partial_generation_tasks = 0;
@@ -52,18 +58,18 @@ public:
 		// This is an optimization allowing to reduce chunk map queries. This is an array because it is possible
 		// for a subpass to start writing into a block that completed its previous subpass but hasn't started the next
 		// subpass.
-		FixedArray<uint16_t, MAX_SUBPASSES> subpass_iterations;
-
-		// Set to true if a task is pending to process this block. This is to prevent from spawning too many tasks
-		// ending up requesting the same block, due to neighbor dependencies.
-		// bool pending_task = false;
+		FixedArray<uint8_t, MAX_SUBPASSES> subpass_iterations;
 
 		Block() {
-			fill(subpass_iterations, uint16_t(0));
+			fill(subpass_iterations, uint8_t(0));
 		}
 	};
 
 	struct Map {
+		// TODO We actually don't need shared_ptrs, as long as we use pointers while holding a write spatial lock.
+		// Pointers to elements of an unordered_map remain stable, unless such elements are removed, which should
+		// require acquiring a write spatial lock. So as long as we hold a write spatial lock, all blocks in the area
+		// are guaranteed to have safe pointers. We only can't keep these pointers after releasing the spatial lock.
 		std::unordered_map<Vector3i, std::shared_ptr<Block>> blocks;
 		Mutex mutex;
 		VoxelSpatialLock spatial_lock;
@@ -124,11 +130,10 @@ public:
 		return _map;
 	}
 
+	void process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box);
+
 private:
 	std::vector<Pass> _passes;
-	// TODO We really have to know about the main map because we must not generate blocks that have already been
-	// generated. Using the same map makes the most sense, unfortunately it would cause lock contention on the
-	// hashmap... and it will anyways if we give access to the data.
 	std::shared_ptr<Map> _map;
 };
 

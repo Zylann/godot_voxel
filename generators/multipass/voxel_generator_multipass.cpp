@@ -1,4 +1,8 @@
 #include "voxel_generator_multipass.h"
+#include "../../engine/voxel_engine.h"
+#include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
+#include "generate_block_multipass_pm_task.h"
 
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 
@@ -62,6 +66,19 @@ struct GridEditor {
 		block->voxels.set_voxel(value, voxel_pos_block, channel);
 	}
 };
+
+int get_total_dependency_extent(const VoxelGeneratorMultipass &generator) {
+	int extent = 1;
+	for (int pass_index = 1; pass_index < generator.get_pass_count(); ++pass_index) {
+		const VoxelGeneratorMultipass::Pass &pass = generator.get_pass(pass_index);
+		if (pass.dependency_extents == 0) {
+			ZN_PRINT_ERROR("Unexpected pass dependency extents");
+		}
+		extent += pass.dependency_extents * 2;
+	}
+	return extent;
+}
+
 } // namespace
 
 void VoxelGeneratorMultipass::generate_pass(PassInput input) {
@@ -121,6 +138,146 @@ void VoxelGeneratorMultipass::generate_pass(PassInput input) {
 		// blep
 		Thread::sleep_usec(1000);
 	}
+}
+
+void VoxelGeneratorMultipass::process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box) {
+	ZN_PROFILE_SCOPE();
+	// TODO Could run as a task similarly to threaded update of VLT
+	// However if we do that we need to make sure block requests dont end up cancelled due to no block being found to
+	// load... the easiest way I can think of, is to just run this in the same thread that triggers the requests, and
+	// that means moving VoxelTerrain's process to a thread as well.
+
+	static const int block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
+
+	const int total_extent = get_total_dependency_extent(*this);
+
+	// Note: empty boxes should not be padded, they mean nothing is requested, so the padded request must also be empty.
+	const Box3i load_requested_box =
+			p_requested_box.is_empty() ? p_requested_box : p_requested_box.padded(total_extent);
+	const Box3i prev_load_requested_box =
+			p_prev_requested_box.is_empty() ? p_prev_requested_box : p_prev_requested_box.padded(total_extent);
+
+	Map &map = *_map;
+
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+
+	// Blocks to view
+	load_requested_box.difference(prev_load_requested_box, [&map](Box3i new_box) {
+		{
+			VoxelSpatialLockWrite swlock(map.spatial_lock, new_box);
+			MutexLock mlock(map.mutex);
+
+			new_box.for_each_cell_zxy([&map](Vector3i bpos) {
+				std::shared_ptr<Block> &block = map.blocks[bpos];
+				if (block == nullptr) {
+					block = make_unique_instance<Block>();
+					// block->loading = true;
+				}
+				block->viewers.add();
+			});
+
+			// TODO Implement loading tasks
+		}
+	});
+
+	// What happens if blocks are unloaded, then requested again before the save task has finished?
+	// We could have an unloading state, at the end of which the block gets removed once it got saved.
+	// But then what should the request do when it finds the unloading block?
+	// Cancel the unloading state. Since that means a saving task is underway, the saving task should check that state
+	// again before removing the block. If the state is no longer active, the task will simply not remove the block
+	// (acting like a regular save). The "unloading" state could be seen as the refcount being 0. If the request is
+	// late, it will find no block, triggering loading, which should work as usual.
+
+	// Blocks to unview
+	prev_load_requested_box.difference(load_requested_box, [&map](Box3i old_box) {
+		{
+			VoxelSpatialLockWrite swlock(map.spatial_lock, old_box);
+			MutexLock mlock(map.mutex);
+
+			old_box.for_each_cell_zxy([&map](Vector3i bpos) {
+				auto it = map.blocks.find(bpos);
+
+				// The block must be found because last time the block was in the loading area of the viewer.
+				ZN_ASSERT(it != map.blocks.end());
+				std::shared_ptr<Block> block = it->second;
+				ZN_ASSERT(block != nullptr);
+
+				block->viewers.remove();
+				if (block->viewers.get() == 0) {
+					// TODO Implement saving tasks
+					// We remove immediately for now
+					map.blocks.erase(it);
+				}
+			});
+		}
+	});
+
+	const int subpass_count = get_subpass_count_from_pass_count(get_pass_count());
+
+	Box3i subpass_box = load_requested_box;
+	Box3i prev_subpass_box = prev_load_requested_box;
+	Ref<VoxelGeneratorMultipass> generator_ref(this);
+
+	const Vector3i viewer_block_pos = p_requested_box.pos + p_requested_box.size / 2;
+
+	// Pass generation tasks
+	for (int subpass_index = 0; subpass_index < subpass_count; ++subpass_index) {
+		// Debug checks: box shrinking must not make boxes empty
+		if (subpass_index > 0) {
+			// Shrink boxes for next subpass
+			const int next_pass_index = VoxelGeneratorMultipass::get_pass_index_from_subpass(subpass_index);
+			const VoxelGeneratorMultipass::Pass &next_pass = get_pass(next_pass_index);
+			subpass_box = subpass_box.padded(-next_pass.dependency_extents);
+			prev_subpass_box = prev_subpass_box.padded(-next_pass.dependency_extents);
+
+			if (!load_requested_box.is_empty()) {
+				ZN_ASSERT(!subpass_box.is_empty());
+			}
+			if (!prev_load_requested_box.is_empty()) {
+				ZN_ASSERT(!prev_subpass_box.is_empty());
+			}
+		}
+
+		// Run pass on new areas
+		subpass_box.difference(prev_subpass_box,
+				[&map, subpass_index, &task_scheduler, &generator_ref, viewer_block_pos](Box3i new_box) {
+					VoxelSpatialLockWrite swlock(map.spatial_lock, new_box);
+					MutexLock mlock(map.mutex);
+
+					new_box.for_each_cell_zxy([&map, subpass_index, &task_scheduler, &generator_ref, viewer_block_pos](
+													  Vector3i bpos) {
+						auto it = map.blocks.find(bpos);
+
+						// The block must be found since we are inside the loading area of the viewer.
+						ZN_ASSERT(it != map.blocks.end());
+						std::shared_ptr<Block> block = it->second;
+						ZN_ASSERT(block != nullptr);
+
+						const unsigned int subpass_bit = (1 << subpass_index);
+
+						if (block->subpass_index < subpass_index &&
+								(block->pending_subpass_tasks_mask & subpass_bit) == 0) {
+							block->pending_subpass_tasks_mask |= subpass_bit;
+
+							const int distance = math::manhattan_distance(viewer_block_pos, bpos);
+
+							TaskPriority priority;
+							// Priority decreases over distance.
+							// Later subpasses also have lower priority since they depend on first passes.
+							priority.band0 = math::max(TaskPriority::BAND_MAX - distance - 2 * subpass_index, 0);
+							priority.band2 = constants::TASK_PRIORITY_LOAD_BAND2;
+
+							// TODO Consider allocating tasks outside the locking scope
+							GenerateBlockMultipassPMTask *task = ZN_NEW(GenerateBlockMultipassPMTask(
+									bpos, block_size, subpass_index, generator_ref, priority));
+
+							task_scheduler.push_main_task(task);
+						}
+					});
+				});
+	}
+
+	task_scheduler.flush();
 }
 
 } // namespace zylann::voxel

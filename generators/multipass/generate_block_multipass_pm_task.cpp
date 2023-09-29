@@ -1,6 +1,6 @@
-#include "generate_block_multipass_task.h"
+#include "generate_block_multipass_pm_task.h"
 #include "../../engine/voxel_engine.h"
-#include "../../util/profiling.h"
+#include "../../storage/voxel_data.h"
 
 #include "../../util/godot/classes/time.h"
 #include "../../util/string_funcs.h"
@@ -10,51 +10,41 @@ namespace zylann::voxel {
 namespace {
 std::atomic_int g_task_count[VoxelGeneratorMultipass::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipass::MAX_SUBPASSES] = {
-	"GenerateBlockMultipassTasks_subpass0",
-	"GenerateBlockMultipassTasks_subpass1",
-	"GenerateBlockMultipassTasks_subpass2",
-	"GenerateBlockMultipassTasks_subpass3",
-	"GenerateBlockMultipassTasks_subpass4",
-	"GenerateBlockMultipassTasks_subpass5",
-	"GenerateBlockMultipassTasks_subpass6",
+	"GenerateBlockMultipassPMTasks_subpass0",
+	"GenerateBlockMultipassPMTasks_subpass1",
+	"GenerateBlockMultipassPMTasks_subpass2",
+	"GenerateBlockMultipassPMTasks_subpass3",
+	"GenerateBlockMultipassPMTasks_subpass4",
+	"GenerateBlockMultipassPMTasks_subpass5",
+	"GenerateBlockMultipassPMTasks_subpass6",
 };
 
 } // namespace
 
-GenerateBlockMultipassTask::GenerateBlockMultipassTask(Vector3i p_block_position, uint8_t p_block_size,
-		uint8_t p_subpass_index, Ref<VoxelGeneratorMultipass> p_generator, IThreadedTask *p_caller,
-		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
+GenerateBlockMultipassPMTask::GenerateBlockMultipassPMTask(Vector3i p_block_position, uint8_t p_block_size,
+		uint8_t p_subpass_index, Ref<VoxelGeneratorMultipass> p_generator, TaskPriority p_priority) {
 	//
 	_block_position = p_block_position;
 	_block_size = p_block_size;
 	_subpass_index = p_subpass_index;
+
+	ZN_ASSERT(p_generator.is_valid());
 	_generator = p_generator;
-	_caller_task = p_caller;
-	ZN_ASSERT(p_caller_dependency_count != nullptr);
-	ZN_ASSERT(*p_caller_dependency_count > 0);
-	_caller_task_dependency_counter = p_caller_dependency_count;
+
+	_priority = p_priority;
 
 	int64_t v = ++g_task_count[_subpass_index];
 	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
 }
 
-GenerateBlockMultipassTask::~GenerateBlockMultipassTask() {
-	// Don't loose the caller task, it needs to be resumed or properly cancelled.
-	ZN_ASSERT(_caller_task == nullptr);
-
-	if (_caller_task_dependency_counter.use_count() == 1) {
-		ZN_ASSERT(*_caller_task_dependency_counter == 0);
-	}
-
+GenerateBlockMultipassPMTask::~GenerateBlockMultipassPMTask() {
 	int64_t v = --g_task_count[_subpass_index];
 	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
 }
 
-void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
+void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(_generator.is_valid());
-
-	std::shared_ptr<VoxelGeneratorMultipass::Map> map = _generator->get_map();
 
 	const int pass_index = VoxelGeneratorMultipass::get_pass_index_from_subpass(_subpass_index);
 	const VoxelGeneratorMultipass::Pass &pass = _generator->get_pass(pass_index);
@@ -77,7 +67,10 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 
 	// Grid of blocks we'll be working with
 	std::vector<std::shared_ptr<VoxelGeneratorMultipass::Block>> blocks;
+	// TODO Cache memory
 	blocks.reserve(Vector3iUtil::get_volume(neighbors_box.size));
+
+	std::shared_ptr<VoxelGeneratorMultipass::Map> map = _generator->get_map();
 
 	// Lock region we are going to process
 	{
@@ -113,14 +106,10 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 			});
 		}
 
-		struct BlockToGenerate {
-			Vector3i position;
-			std::shared_ptr<VoxelGeneratorMultipass::Block> block;
-		};
-		std::vector<BlockToGenerate> to_generate;
-
 		const int subpass_index = _subpass_index;
 		const int prev_subpass_index = subpass_index - 1;
+
+		std::shared_ptr<VoxelGeneratorMultipass::Block> main_block = blocks[central_block_index];
 
 		// Check loading levels
 		{
@@ -136,12 +125,31 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 				for (bpos.x = bpos_min.x; bpos.x < bpos_max.x; ++bpos.x) {
 					for (bpos.y = bpos_min.y; bpos.y < bpos_max.y; ++bpos.y) {
 						std::shared_ptr<VoxelGeneratorMultipass::Block> block = blocks[i];
-						ZN_ASSERT(block != nullptr);
+						if (block == nullptr) {
+							// No longer loaded, we have to cancel the task
+
+							if (main_block != nullptr) {
+								main_block->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
+							}
+
+							return;
+						}
 
 						// We want all blocks in the neighborhood to be at least at the previous subpass before we can
 						// run the current subpass
-						if (block->subpass_index < prev_subpass_index) {
-							to_generate.push_back({ bpos, block });
+						if (prev_subpass_index >= 0 && block->subpass_index < prev_subpass_index) {
+							// Dependencies not ready yet.
+
+							if (block->loading ||
+									(block->pending_subpass_tasks_mask & (1 << prev_subpass_index)) != 0) {
+								// A task is pending to work on the dependency, so we wait.
+								ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
+								return;
+
+							} else {
+								// No task is pending to work on the dependency, we have to cancel.
+								return;
+							}
 						}
 
 						++i;
@@ -150,49 +158,16 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 			}
 		}
 
-		BufferedTaskScheduler &scheduler = BufferedTaskScheduler::get_for_current_thread();
-
-		if (to_generate.size() > 0) {
-			ZN_ASSERT(_subpass_index > 0);
-
-			// If we come back here after having requested dependencies (and we never postpone), then it means
-			// tasks we spawned or were waiting for have not fulfilled our expectations, so something must be wrong
-			ZN_ASSERT(!_debug_has_requested_deps);
-
-			ZN_PROFILE_SCOPE_NAMED("Spawn subtasks");
-			// Generate dependencies
-
-			std::shared_ptr<std::atomic_int> counter = make_shared_instance<std::atomic_int>(to_generate.size());
-
-			for (const BlockToGenerate &todo : to_generate) {
-				GenerateBlockMultipassTask *task = ZN_NEW(GenerateBlockMultipassTask(
-						todo.position, _block_size, prev_subpass_index, _generator, this, counter));
-				scheduler.push_main_task(task);
-			}
-
-			// We queued the current task after the tasks we spawned
-			scheduler.flush();
-			ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
-
-			_debug_has_requested_deps = true;
-
-			// TODO Can we keep a reference to blocks we just fetched so we avoid fetching them again next time?
-			// It sounds like we can, however those blocks could get unloaded in the meantime...
-
-			return;
-
-		} else {
+		{
 			ZN_PROFILE_SCOPE_NAMED("Run pass");
 			// We can run the pass
 
-			std::shared_ptr<VoxelGeneratorMultipass::Block> main_block = blocks[central_block_index];
+			ZN_ASSERT(main_block != nullptr);
 
 			if (main_block->subpass_index == prev_subpass_index) {
 				if (_subpass_index == 0) {
 					// First pass creates the block
-					for (std::shared_ptr<VoxelGeneratorMultipass::Block> block : blocks) {
-						block->voxels.create(Vector3iUtil::create(_block_size));
-					}
+					main_block->voxels.create(Vector3iUtil::create(_block_size));
 				}
 
 				// Debug check
@@ -205,7 +180,7 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 				// further?
 				const int prev_pass_index = VoxelGeneratorMultipass::get_pass_index_from_subpass(prev_subpass_index);
 
-				if (prev_pass_index != pass_index) {
+				if (pass_index == 0 || prev_pass_index != pass_index) {
 					VoxelGeneratorMultipass::PassInput input;
 					input.grid = to_span(blocks);
 					input.grid_size = neighbors_box.size;
@@ -239,15 +214,9 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 				// ZN_PRINT_VERBOSE("WTF");
 			}
 
-			// if (_full) {
-			// 	main_block->pending_full_generation_tasks &= ~(1 << pass_index);
-			// } else {
-			// 	main_block->pending_partial_generation_tasks &= ~(1 << pass_index);
-			// }
+			main_block->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
 		}
 	} // Region lock
-
-	return_to_caller();
 }
 
 // TODO Implement priority
@@ -255,20 +224,5 @@ void GenerateBlockMultipassTask::run(ThreadedTaskContext &ctx) {
 
 // TODO Implement cancellation
 // bool is_cancelled() {}
-
-void GenerateBlockMultipassTask::return_to_caller() {
-	// No use case not using this
-	ZN_ASSERT(_caller_task != nullptr);
-
-	if (_caller_task != nullptr) {
-		ZN_ASSERT(_caller_task_dependency_counter != nullptr);
-		const int counter = --(*_caller_task_dependency_counter);
-		ZN_ASSERT(counter >= 0);
-		if (counter == 0) {
-			VoxelEngine::get_singleton().push_async_task(_caller_task);
-		}
-		_caller_task = nullptr;
-	}
-}
 
 } // namespace zylann::voxel
