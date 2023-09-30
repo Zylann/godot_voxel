@@ -44,9 +44,12 @@ protected:
 
 private:
 	static void _bind_methods();
+	VoxelLodTerrain *find_volume();
 
 	Operation _operation = OPERATION_ADD;
 	float _smoothness = 0.f;
+	bool _is_immediate_child = false;
+	void mark_as_immediate_child(bool v);
 };
 
 // Helpers
