@@ -152,7 +152,6 @@ void VoxelModifier::update_volume() {
 			}
 			modifier->set_transform(terrain_local);
 		}
-		WARN_PRINT("MODIFIER WAS UPDATED");
 		const AABB aabb = modifier->get_aabb();
 		post_edit_modifier(*volume, prev_aabb);
 		post_edit_modifier(*volume, aabb);
@@ -215,8 +214,11 @@ PackedStringArray VoxelModifier::_get_configuration_warnings() const {
 
 void VoxelModifier::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_volume == nullptr) {
-		warnings.append(ZN_TTR("The parent of this node must be of type {0}.")
+		warnings.append(ZN_TTR("This node must be a child of a node of type {0}.")
 								.format(varray(VoxelLodTerrain::get_class_static())));
+	}
+	if (!_is_immediate_child) {
+		warnings.append(ZN_TTR("Avoid nested voxel modifiers when possible"));
 	}
 }
 
