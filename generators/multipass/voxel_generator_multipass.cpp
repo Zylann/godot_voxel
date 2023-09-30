@@ -28,6 +28,19 @@ VoxelGeneratorMultipass::VoxelGeneratorMultipass() {
 	}
 }
 
+VoxelGeneratorMultipass::~VoxelGeneratorMultipass() {}
+
+VoxelGeneratorMultipass::Map::~Map() {
+	// If the map gets destroyed then we know the last reference to it was removed, which means only one thread had
+	// access to it, so we can get away not locking anything.
+
+	// Initially I thought this is where we'd re-schedule any task pointers still in blocks, but that can't happen,
+	// because if tasks exist referencing the multipass generator, then the generator (and so the map) would not be
+	// destroyed, and so we wouldn't be here.
+	// Therefore there is only just an assert in ~Block to ensure the only other case where blocks are removed from the
+	// map before handling these tasks, or to warn us in case there is a case we didn't expect.
+}
+
 VoxelGenerator::Result VoxelGeneratorMultipass::generate_block(VoxelQueryData &input) {
 	// TODO Fallback on an expensive single-threaded dependency generation, which we might throw away after
 	ZN_PRINT_ERROR("Not implemented");
@@ -189,12 +202,12 @@ void VoxelGeneratorMultipass::process_viewer_diff(Box3i p_requested_box, Box3i p
 	// late, it will find no block, triggering loading, which should work as usual.
 
 	// Blocks to unview
-	prev_load_requested_box.difference(load_requested_box, [&map](Box3i old_box) {
+	prev_load_requested_box.difference(load_requested_box, [&map, &task_scheduler](Box3i old_box) {
 		{
 			VoxelSpatialLockWrite swlock(map.spatial_lock, old_box);
 			MutexLock mlock(map.mutex);
 
-			old_box.for_each_cell_zxy([&map](Vector3i bpos) {
+			old_box.for_each_cell_zxy([&map, &task_scheduler](Vector3i bpos) {
 				auto it = map.blocks.find(bpos);
 
 				// The block must be found because last time the block was in the loading area of the viewer.
@@ -204,6 +217,12 @@ void VoxelGeneratorMultipass::process_viewer_diff(Box3i p_requested_box, Box3i p
 
 				block->viewers.remove();
 				if (block->viewers.get() == 0) {
+					if (block->final_pending_task != nullptr) {
+						// There was a pending generate task, resume it, but it will basically return a drop.
+						task_scheduler.push_main_task(block->final_pending_task);
+						block->final_pending_task = nullptr;
+					}
+
 					// TODO Implement saving tasks
 					// We remove immediately for now
 					map.blocks.erase(it);
@@ -259,7 +278,7 @@ void VoxelGeneratorMultipass::process_viewer_diff(Box3i p_requested_box, Box3i p
 								(block->pending_subpass_tasks_mask & subpass_bit) == 0) {
 							block->pending_subpass_tasks_mask |= subpass_bit;
 
-							const int distance = math::manhattan_distance(viewer_block_pos, bpos);
+							const int distance = math::chebyshev_distance(viewer_block_pos, bpos);
 
 							TaskPriority priority;
 							// Priority decreases over distance.

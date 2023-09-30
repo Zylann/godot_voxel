@@ -6,21 +6,6 @@
 
 namespace zylann::voxel {
 
-// TODO Alternative: sliding-box pyramid
-// This builds on top of VoxelViewers. Have concentric sliding boxes around viewers instead of just one. Each one
-// requests blocks at a given level. Tasks still have to check if neighbors are available and get postponed if they are
-// found to be loading, and cancelled otherwise.
-// However it still means that initial loading and teleports will be quite rough due to cubic bunches of tasks spinning
-// spamming the map until they get their dependencies, unless we find a way to pipeline them in a way that minimizes
-// this.
-// We need to test to see what actually happens, considering tasks are sorted and only a handful of them can run at any
-// given time.
-// We could pipeline tasks if sliding boxes change all at the same time: we calculate all diffs, then
-// execute all tasks of each diff serially (while tasks within a diff get done in parallel). It seems it would induce
-// some latency. Need to research.
-// We could mess with the sliding boxes themselves, like shrinking them down to a few
-// blocks and gradually increasing them back. But the question becomes how long should should the transition be.
-
 // First experimental implementation of executing a generation pass on blocks with neighbor dependencies.
 // It naively attempts to generate a single block or column of blocks. It checks first all main blocks and neighbors
 // that could get modified in the process. If any aren't loaded to the required level, sub-tasks are spawned to load

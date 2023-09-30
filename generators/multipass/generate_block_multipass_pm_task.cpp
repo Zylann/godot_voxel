@@ -49,6 +49,9 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 	const int pass_index = VoxelGeneratorMultipass::get_pass_index_from_subpass(_subpass_index);
 	const VoxelGeneratorMultipass::Pass &pass = _generator->get_pass(pass_index);
 
+	const int final_subpass_index =
+			VoxelGeneratorMultipass::get_subpass_count_from_pass_count(_generator->get_pass_count()) - 1;
+
 	if (_subpass_index == 0) {
 		// The first subpass can't depend on another subpass
 		ZN_ASSERT(pass.dependency_extents == 0);
@@ -71,6 +74,8 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 	blocks.reserve(Vector3iUtil::get_volume(neighbors_box.size));
 
 	std::shared_ptr<VoxelGeneratorMultipass::Map> map = _generator->get_map();
+
+	IThreadedTask *next_task = nullptr;
 
 	// Lock region we are going to process
 	{
@@ -134,6 +139,14 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 
 							return;
 						}
+
+						// [Code not using subpasses, trying to rely on some kind of refcount]
+						// if (pass_index > 0 && block->pass_iterations[prev_pass_index] <
+						// expected_prev_pass_iterations) {
+						// 	// Dependencies not ready yet.
+						// 	// TODO But how can we tell if the neighbor has neighbors itself with tasks pending to
+						// 	// complete the dependency? Yet another nightmare checking neighbors...
+						// }
 
 						// We want all blocks in the neighborhood to be at least at the previous subpass before we can
 						// run the current subpass
@@ -216,7 +229,17 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 
 			main_block->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
 		}
+
+		if (main_block->subpass_index == final_subpass_index && main_block->final_pending_task != nullptr) {
+			next_task = main_block->final_pending_task;
+			main_block->final_pending_task = nullptr;
+		}
+
 	} // Region lock
+
+	if (next_task != nullptr) {
+		VoxelEngine::get_singleton().push_async_task(next_task);
+	}
 }
 
 // TODO Implement priority

@@ -7,7 +7,11 @@
 #include "../../util/ref_count.h"
 #include "../voxel_generator.h"
 
-namespace zylann::voxel {
+namespace zylann {
+
+class IThreadedTask;
+
+namespace voxel {
 
 // Generator using multiple passes that can be executed in parallel.
 //
@@ -44,16 +48,16 @@ public:
 		int8_t subpass_index = -1;
 		bool saving = false;
 		bool loading = false;
+
+		// Each bit is set to 1 when a task is pending to process this block at a given subpass.
 		uint8_t pending_subpass_tasks_mask = 0;
 
-		// Each bit corresponds to a pass, and tells if a task is pending to process this chunk.
-		// uint8_t pending_partial_generation_tasks = 0;
-		// uint8_t pending_full_generation_tasks = 0;
-		// Something more extreme we could do: have a list of tasks waiting for the block to be processed by whatever
-		// task is pending? Uses more space though.
-		// FixedArray<std::vector<WaitingTask>, MAX_PASSES> tasks_waiting_for_partial;
-		// FixedArray<std::vector<WaitingTask>, MAX_PASSES> tasks_waiting_for_full;
+		// If set, this task will be scheduled when the block's generation is complete.
+		IThreadedTask *final_pending_task = nullptr;
 
+		// Currently unused, because if chunks get removed from the cache or don't get saved for any reason,
+		// it can become out of sync and we wouldn't know. It would be a nice optimization tho...
+		//
 		// Caches how many chunks in the neighborhood have been processed while having access to this one (included).
 		// This is an optimization allowing to reduce chunk map queries. This is an array because it is possible
 		// for a subpass to start writing into a block that completed its previous subpass but hasn't started the next
@@ -62,6 +66,10 @@ public:
 
 		Block() {
 			fill(subpass_iterations, uint8_t(0));
+		}
+
+		~Block() {
+			ZN_ASSERT(final_pending_task == nullptr);
 		}
 	};
 
@@ -73,6 +81,8 @@ public:
 		std::unordered_map<Vector3i, std::shared_ptr<Block>> blocks;
 		Mutex mutex;
 		VoxelSpatialLock spatial_lock;
+
+		~Map();
 	};
 
 	struct Pass {
@@ -89,6 +99,7 @@ public:
 	};
 
 	VoxelGeneratorMultipass();
+	~VoxelGeneratorMultipass();
 
 	Result generate_block(VoxelQueryData &input) override;
 
@@ -137,6 +148,7 @@ private:
 	std::shared_ptr<Map> _map;
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
 #endif // VOXEL_GENERATOR_MULTIPASS_H

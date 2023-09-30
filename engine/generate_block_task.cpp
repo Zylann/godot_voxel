@@ -66,9 +66,8 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 				if (block->pending_subpass_tasks_mask != 0) {
 					// Some tasks are working on the chunk, so we may try querying it again later.
-					ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
-					// TODO It may be less stressing to just put the task on the block directly, so the generator can
-					// schedule it when the chunk is done, or when it gets unloaded
+					ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+					block->final_pending_task = this;
 
 				} else {
 					// No tasks working on it. That's a drop.

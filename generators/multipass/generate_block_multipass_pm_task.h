@@ -8,7 +8,11 @@ namespace zylann::voxel {
 
 // Looks up blocks in the map in order to run a pass on a specific block.
 // If at least one block isn't found in the map, the task is cancelled.
-// If at least one block doesn't fulfills dependency requirements and no task is pending for it, the task is cancelled.
+// Otherwise:
+// If at least one block doesn't fulfills dependency requirements:
+//     - If another task is working on that block, the task is postponed to run later.
+//     - Otherwise, the task is cancelled.
+// Otherwise, the task runs the pass and returns.
 class GenerateBlockMultipassPMTask : public IThreadedTask {
 public:
 	GenerateBlockMultipassPMTask(Vector3i p_block_position, uint8_t p_block_size, uint8_t p_subpass_index,
@@ -31,10 +35,10 @@ public:
 
 private:
 	Vector3i _block_position;
+	TaskPriority _priority;
 	uint8_t _block_size;
 	uint8_t _subpass_index;
 	Ref<VoxelGeneratorMultipass> _generator;
-	TaskPriority _priority;
 };
 
 } // namespace zylann::voxel
