@@ -103,9 +103,10 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 			// TODO Handle world bounds
 			Vector3i bpos;
 			neighbors_box.for_each_cell_zxy([&blocks, &map](Vector3i bpos) {
-				std::shared_ptr<VoxelGeneratorMultipass::Block> &block = map->blocks[bpos];
-				if (block == nullptr) {
-					block = make_shared_instance<VoxelGeneratorMultipass::Block>();
+				auto it = map->blocks.find(bpos);
+				std::shared_ptr<VoxelGeneratorMultipass::Block> block = nullptr;
+				if (it != map->blocks.end()) {
+					block = it->second;
 				}
 				blocks.push_back(block);
 			});
@@ -161,6 +162,9 @@ void GenerateBlockMultipassPMTask::run(ThreadedTaskContext &ctx) {
 
 							} else {
 								// No task is pending to work on the dependency, we have to cancel.
+								if (main_block != nullptr) {
+									main_block->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
+								}
 								return;
 							}
 						}

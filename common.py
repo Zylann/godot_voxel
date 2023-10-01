@@ -67,6 +67,7 @@ def get_sources(env, is_editor_build):
         "util/noise/fast_noise_lite/*.cpp",
         "util/noise/gd_noise_range.cpp",
         "util/thread/thread.cpp",
+        "util/thread/spatial_lock_2d.cpp",
         "util/tasks/*.cpp",
         "util/tasks/godot/*.cpp",
 

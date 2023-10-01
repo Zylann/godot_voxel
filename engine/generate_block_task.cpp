@@ -1,5 +1,4 @@
 #include "generate_block_task.h"
-#include "../generators/multipass/generate_block_multipass_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_data.h"
 #include "../util/godot/funcs.h"
@@ -10,6 +9,10 @@
 #include "../util/tasks/async_dependency_tracker.h"
 #include "save_block_data_task.h"
 #include "voxel_engine.h"
+
+//#include "../generators/multipass/generate_block_multipass_task.h"
+#include "../generators/multipass/voxel_generator_multipass_cb.h"
+#include "../util/godot/classes/time.h"
 
 namespace zylann::voxel {
 
@@ -25,6 +28,7 @@ GenerateBlockTask::GenerateBlockTask() {
 GenerateBlockTask::~GenerateBlockTask() {
 	int64_t v = --g_debug_generate_tasks_count;
 	ZN_PROFILE_PLOT("GenerateBlockTasks", v);
+	// println(format("H {} {} {} {}", position.x, position.y, position.z, Time::get_singleton()->get_ticks_usec()));
 }
 
 int GenerateBlockTask::debug_get_running_count() {
@@ -38,36 +42,57 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 	ERR_FAIL_COND(generator.is_null());
 
-	Ref<VoxelGeneratorMultipass> multipass_generator = generator;
+	Ref<VoxelGeneratorMultipassCB> multipass_generator = generator;
 	if (multipass_generator.is_valid()) {
 		ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
-		std::shared_ptr<VoxelGeneratorMultipass::Map> map = multipass_generator->get_map();
+		std::shared_ptr<VoxelGeneratorMultipassCB::Map> map = multipass_generator->get_map();
 		const int final_subpass_index =
-				VoxelGeneratorMultipass::get_subpass_count_from_pass_count(multipass_generator->get_pass_count()) - 1;
+				VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(multipass_generator->get_pass_count()) - 1;
 
-		{
-			VoxelSpatialLockRead srlock(map->spatial_lock, BoxBounds3i::from_position(position));
-			std::shared_ptr<VoxelGeneratorMultipass::Block> block;
+		const int column_min_y = multipass_generator->get_column_base_y_blocks();
+		const int column_height = multipass_generator->get_column_height_blocks();
+
+		if (position.y < column_min_y || position.y >= column_min_y + column_height) {
+			// Fallback on single pass
+
+		} else {
+			const Vector2i column_position(position.x, position.z);
+			SpatialLock2D::Read srlock(map->spatial_lock, BoxBounds2i::from_position(column_position));
+			VoxelGeneratorMultipassCB::Column *column = nullptr;
 			{
 				MutexLock mlock(map->mutex);
-				auto block_it = map->blocks.find(position);
-				if (block_it == map->blocks.end()) {
+				auto column_it = map->columns.find(column_position);
+				if (column_it == map->columns.end()) {
 					// Drop, for some reason it wasn't available
 					return;
 				}
-				block = block_it->second;
+
+				column = &column_it->second;
 			}
 
 			// Null not allowed
-			ZN_ASSERT(block != nullptr);
+			ZN_ASSERT(column != nullptr);
 
-			if (block->subpass_index != final_subpass_index) {
+			const int block_index = position.y - column_min_y;
+
+			if (column->subpass_index != final_subpass_index) {
 				// The block isn't finished
 
-				if (block->pending_subpass_tasks_mask != 0) {
-					// Some tasks are working on the chunk, so we may try querying it again later.
+				if (column->pending_subpass_tasks_mask != 0) {
+					// Some tasks are working on the column, so we may try querying it again later.
 					ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
-					block->final_pending_task = this;
+
+					VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
+					if (block.final_pending_task != nullptr) {
+						// This can happen if you teleport forward, then go back, then forward again.
+						// Because VoxelTerrain forgets about "loading blocks" falling out of its play area, while
+						// multipass generators forget about them in a larger radius, therefore causing the same block
+						// to be requested again while the previous request is still cached, not having run yet. We
+						// should be ok deleting the old task.
+						// TODO Can't we get rid of that task when diffing the play radius instead?
+						ZN_DELETE(block.final_pending_task);
+					}
+					block.final_pending_task = this;
 
 				} else {
 					// No tasks working on it. That's a drop.
@@ -76,16 +101,17 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			} else {
 				// The block is ready
 
+				VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
+
 				// TODO Take out voxel data from this block, it must not be touched by generation anymore
 				voxels = make_shared_instance<VoxelBufferInternal>();
-				voxels->create(block->voxels.get_size());
-				voxels->copy_from(block->voxels);
+				voxels->create(block.voxels.get_size());
+				voxels->copy_from(block.voxels);
 
 				run_stream_saving_and_finish();
 			}
+			return;
 		}
-
-		return;
 
 #if 0 // Initial naive implementation concept
 		if (_stage == 0) {

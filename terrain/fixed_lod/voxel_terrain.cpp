@@ -33,7 +33,7 @@
 #include "../voxel_save_completion_tracker.h"
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
-#include "../../generators/multipass/voxel_generator_multipass.h"
+#include "../../generators/multipass/voxel_generator_multipass_cb.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
@@ -876,6 +876,8 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		// Directly generate the block without checking the stream
 		ERR_FAIL_COND(stream_dependency->generator.is_null());
 
+		println(format(
+				"G {} {} {} {}", block_pos.x, block_pos.y, block_pos.z, Time::get_singleton()->get_ticks_usec()));
 		GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 		task->volume_id = volume_id;
 		task->position = block_pos;
@@ -1265,7 +1267,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 	static thread_local std::vector<Vector3i> tls_missing_blocks;
 	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
 
-	Ref<VoxelGeneratorMultipass> multipass_generator = get_generator();
+	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
 	if (multipass_generator.is_valid()) {
 		multipass_generator->process_viewer_diff(new_data_box, prev_data_box);
 		// TODO We also need to process diffs when the generator is added after the terrain started running (editor case
@@ -1407,11 +1409,15 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	const Vector3i block_pos = ob.position;
 
 	if (ob.dropped) {
+		if (_loading_blocks.find(block_pos) == _loading_blocks.end()) {
+			// We are no longer expecting this block, ignore
+			return;
+		}
 		// That block was cancelled, but we are still expecting it.
 		// We'll have to request it again.
 		ZN_PRINT_VERBOSE(format("Received a block loading drop while we were still expecting it: "
 								"lod{} ({}, {}, {}), re-requesting it",
-				ob.lod_index, ob.position.x, ob.position.y, ob.position.z));
+				int(ob.lod_index), ob.position.x, ob.position.y, ob.position.z));
 
 		++_stats.dropped_block_loads;
 

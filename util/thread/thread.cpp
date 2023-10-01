@@ -100,6 +100,7 @@ unsigned int Thread::get_hardware_concurrency() {
 
 static uint64_t get_hash(const std::thread::id &p_t) {
 	static std::hash<std::thread::id> hasher;
+	// TODO Maybe not a good idea to use a hash, could have collisions?
 	return hasher(p_t);
 }
 
