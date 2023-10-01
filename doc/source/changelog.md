@@ -79,7 +79,10 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
     - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata
-    - `VoxelToolLodTerrain`: Fixed `stamp_sdf` wasn't working due to an error when providing a baked mesh
+    - `VoxelToolLodTerrain`: 
+        - Fixed `stamp_sdf` wasn't working due to an error when providing a baked mesh
+        - Fixed `set_voxel` was creating artifacts
+        - Fixed `separate_floating_chunks` was creating artifacts
     - `VoxelMeshSDF`: fixed saved resource was not loading properly
 
 - Breaking changes

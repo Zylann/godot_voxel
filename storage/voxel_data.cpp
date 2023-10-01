@@ -209,12 +209,12 @@ VoxelSingleValue VoxelData::get_voxel(Vector3i pos, unsigned int channel_index, 
 
 // TODO Piggyback on `paste`? The implementation is quite complex, and it's not supposed to be an efficient use case
 bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel_index) {
-	const Vector3i block_pos_lod0 = pos >> get_block_size_po2();
 	Lod &data_lod0 = _lods[0];
-	const Vector3i block_pos = data_lod0.map.voxel_to_block(pos);
+	const Vector3i block_pos_lod0 = data_lod0.map.voxel_to_block(pos);
 
 	bool can_generate = false;
-	std::shared_ptr<VoxelBufferInternal> voxels = try_get_voxel_buffer_with_lock(data_lod0, block_pos, can_generate);
+	std::shared_ptr<VoxelBufferInternal> voxels =
+			try_get_voxel_buffer_with_lock(data_lod0, block_pos_lod0, can_generate);
 
 	if (voxels == nullptr) {
 		if (_streaming_enabled && !can_generate) {
@@ -224,10 +224,10 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 		if (generator.is_valid()) {
 			voxels = make_shared_instance<VoxelBufferInternal>();
 			voxels->create(Vector3iUtil::create(get_block_size()));
-			VoxelGenerator::VoxelQueryData q{ *voxels, pos, 0 };
+			VoxelGenerator::VoxelQueryData q{ *voxels, block_pos_lod0 << get_block_size_po2(), 0 };
 			generator->generate_block(q);
 
-			_modifiers.apply(q.voxel_buffer, AABB(pos, q.voxel_buffer.get_size()));
+			_modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size()));
 
 			RWLockWrite wlock(data_lod0.map_lock);
 			if (data_lod0.map.has_block(block_pos_lod0)) {
@@ -239,7 +239,7 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 		}
 	}
 	// If it turns out to be a problem, use CoW?
-	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos));
+	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos_lod0));
 	voxels->set_voxel(value, data_lod0.map.to_local(pos), channel_index);
 	// We don't update mips, this must be done by the caller
 	return true;
