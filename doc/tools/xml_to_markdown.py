@@ -20,14 +20,6 @@ def make_text(text, module_class_names, current_class_name):
     return bbcode_to_markdown.format_text(text, module_class_names, current_class_name, '')
 
 
-def make_single_line_text(text):
-    s = text.strip()
-    s = re.sub(r'\s\s+', r' ', s)
-    s = s.replace("[code]", '`')
-    s = s.replace("[/code]", '`')
-    return s
-
-
 # `args` is a list of XML elements
 def make_arglist(args, module_class_names):
     s = "("
@@ -42,13 +34,13 @@ def make_arglist(args, module_class_names):
 
 
 # `items` is a list of XML elements
-def make_constants(items):
+def make_constants(items, module_class_names, current_class_name):
     s = ""
     for item in items:
         s += "- **" + item.attrib['name'] + "** = **" + item.attrib['value'] + "**"
         text = item.text.strip()
         if text != "":
-            s += " --- " + make_single_line_text(item.text)
+            s += " --- " + make_text(item.text, module_class_names, current_class_name)
         s += "\n"
     return s
 
@@ -204,7 +196,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
             for enum_name, enum_items in enums.items():
                 out += "enum **" + enum_name + "**: \n\n"
-                out += make_constants(enum_items)
+                out += make_constants(enum_items, module_class_names, current_class_name)
                 out += "\n"
             
             out += "\n"
@@ -212,7 +204,7 @@ def process_xml(f_xml, f_out, module_class_names):
         # Constants
         if len(constants) > 0:
             out += "## Constants: \n\n"
-            out += make_constants(constants)
+            out += make_constants(constants, module_class_names, current_class_name)
             out += "\n"
     
     # Property descriptions
