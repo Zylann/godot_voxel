@@ -1771,6 +1771,8 @@ void VoxelTerrain::set_bounds(Box3i box) {
 		}
 	}
 	// TODO Editor gizmo bounds
+
+	update_configuration_warnings();
 }
 
 Box3i VoxelTerrain::get_bounds() const {
@@ -1805,6 +1807,10 @@ void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
 									.format(varray(generator->get_class())));
 		}
+	}
+
+	if (get_bounds().is_empty()) {
+		warnings.append(String("Terrain bounds have an empty size."));
 	}
 }
 

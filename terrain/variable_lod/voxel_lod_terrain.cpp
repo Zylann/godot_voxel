@@ -2140,6 +2140,8 @@ void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	}
 	_data->set_bounds(bounds_in_voxels);
 	_update_data->state.force_update_octrees_next_update = true;
+
+	update_configuration_warnings();
 }
 
 void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {
@@ -2370,6 +2372,10 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 				}
 			}
 		}
+	}
+
+	if (get_voxel_bounds().is_empty()) {
+		warnings.append(String("Terrain bounds have an empty size."));
 	}
 }
 
