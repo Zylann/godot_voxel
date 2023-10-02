@@ -2,6 +2,8 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
+Inherited by: [VoxelToolBuffer](VoxelToolBuffer.md), [VoxelToolLodTerrain](VoxelToolLodTerrain.md), [VoxelToolTerrain](VoxelToolTerrain.md)
+
 Helper class to easily access and modify voxels
 
 ## Description: 
@@ -58,8 +60,8 @@ Return                                                                          
 
 enum **Mode**: 
 
-- **MODE_ADD** = **0** --- When editing [enum VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
-- **MODE_REMOVE** = **1** --- When editing [enum VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
+- **MODE_ADD** = **0** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations), will add matter. Useful for building.
+- **MODE_REMOVE** = **1** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations), will subtract matter. Useful for digging.
 - **MODE_SET** = **2** --- Replace voxel values without any blending. Useful for blocky voxels.
 - **MODE_TEXTURE_PAINT** = **3**
 
@@ -211,4 +213,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

@@ -8,4 +8,4 @@ This node gets attached to scene items instanced by [VoxelInstancer](VoxelInstan
 
 [VoxelInstancer](VoxelInstancer.md) internally adds this node to instanced scenes, so it can track when they get destroyed or removed from the scene tree.
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

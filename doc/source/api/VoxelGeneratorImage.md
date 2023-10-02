@@ -25,4 +25,4 @@ Type     | Name                             | Default
 - [Image](https://docs.godotengine.org/en/stable/classes/class_image.html)<span id="i_image"></span> **image**
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

@@ -8,4 +8,4 @@ Explicitely represents an empty model.
 
 This can be used for the default air model (at index 0), but may also be useful if you want to define a model that has no visuals, but still has collision or other attributes different than air.
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

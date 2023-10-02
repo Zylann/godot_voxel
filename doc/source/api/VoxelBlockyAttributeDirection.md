@@ -45,4 +45,4 @@ enum **Direction**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_from_vec3"></span> **from_vec3**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) v ) 
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

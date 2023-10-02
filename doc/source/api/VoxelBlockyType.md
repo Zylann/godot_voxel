@@ -52,4 +52,4 @@ Return                                           | Signature
 - [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 ) 
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

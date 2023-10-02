@@ -19,4 +19,4 @@ Type    | Name                                   | Default
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_horizontal_only"></span> **horizontal_only** = false
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_
