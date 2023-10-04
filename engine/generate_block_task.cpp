@@ -10,8 +10,9 @@
 #include "save_block_data_task.h"
 #include "voxel_engine.h"
 
-//#include "../generators/multipass/generate_block_multipass_task.h"
+#include "../generators/multipass/generate_block_multipass_cb_task.h"
 #include "../generators/multipass/voxel_generator_multipass_cb.h"
+#include "../util/dstack.h"
 #include "../util/godot/classes/time.h"
 
 namespace zylann::voxel {
@@ -36,12 +37,14 @@ int GenerateBlockTask::debug_get_running_count() {
 }
 
 void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
 	CRASH_COND(stream_dependency == nullptr);
 	Ref<VoxelGenerator> generator = stream_dependency->generator;
 	ERR_FAIL_COND(generator.is_null());
 
+	// TODO Have a way for generators to provide their own task, instead of shoehorning it here
 	Ref<VoxelGeneratorMultipassCB> multipass_generator = generator;
 	if (multipass_generator.is_valid()) {
 		ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
@@ -57,6 +60,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 
 		} else {
 			const Vector2i column_position(position.x, position.z);
+			// TODO Candidate for postponing? Lots of them, might cause contention
 			SpatialLock2D::Read srlock(map->spatial_lock, BoxBounds2i::from_position(column_position));
 			VoxelGeneratorMultipassCB::Column *column = nullptr;
 			{
@@ -70,33 +74,70 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 				column = &column_it->second;
 			}
 
-			// Null not allowed
-			ZN_ASSERT(column != nullptr);
+			if (column == nullptr) {
+				// Drop.
+				// Either we returned here after subtasks got cancelled, or the target column simply got unloaded before
+				// the task started running.
+				return;
+			}
 
 			const int block_index = position.y - column_min_y;
 
 			if (column->subpass_index != final_subpass_index) {
 				// The block isn't finished
+				if (_stage == 1) {
+					// We came back here after having scheduled subtasks, means they had to cancel.
+					// Drop
+					// TODO We really need to find a way to streamline this coroutine-like task workflow
+					return;
+				}
 
-				if (column->pending_subpass_tasks_mask != 0) {
-					// Some tasks are working on the column, so we may try querying it again later.
-					ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+				VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
 
-					VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
-					if (block.final_pending_task != nullptr) {
-						// This can happen if you teleport forward, then go back, then forward again.
-						// Because VoxelTerrain forgets about "loading blocks" falling out of its play area, while
-						// multipass generators forget about them in a larger radius, therefore causing the same block
-						// to be requested again while the previous request is still cached, not having run yet. We
-						// should be ok deleting the old task.
-						// TODO Can't we get rid of that task when diffing the play radius instead?
-						ZN_DELETE(block.final_pending_task);
-					}
-					block.final_pending_task = this;
+				if (block.final_pending_task != nullptr) {
+					// There is already a generate task for that block.
+
+					// It must not be the current task. Only tasks that are not scheduled and not running can be stored
+					// in here. If it is, something went wrong.
+					ZN_ASSERT(block.final_pending_task != this);
+
+					// This can happen if you teleport forward, then go back, then forward again.
+					// Because VoxelTerrain forgets about "loading blocks" falling out of its play area, while
+					// multipass generators forget about them in a larger radius, therefore causing the same block
+					// to be requested again while the previous request is still cached, not having run yet.
+					// We may not delete this task.
+
+					// Drop current task, we should get the work done by the existing task
+					return;
+					// TODO Not sure if we should let the terrain see this as a drop if there is an existing task!
+					// It could cause a request loop even though a task already is pending
+				}
+
+				if ((column->pending_subpass_tasks_mask & (1 << final_subpass_index)) == 0) {
+					// No tasks working on it, and we are the first top-level task.
+					// Spawn a subtask to bring this column to final state.
+					GenerateBlockMultipassCBTask *subtask = ZN_NEW(
+							GenerateBlockMultipassCBTask(column_position, block_size, final_subpass_index, generator,
+									// The subtask takes ownership of the current task, it will schedule it back when it
+									// finishes (or cancels)
+									this, make_shared_instance<std::atomic_int>(1)));
+
+					column->pending_subpass_tasks_mask |= (1 << final_subpass_index);
+
+					VoxelEngine::get_singleton().push_async_task(subtask);
 
 				} else {
-					// No tasks working on it. That's a drop.
+					// A column task is already underway.
+					// Register as waiting for this column's final result. The block takes ownership.
+					block.final_pending_task = this;
 				}
+
+				// Ownership is now either given to a subtask or the desired block.
+				// As such, we must be taken out of the task runner. We'll get scheduled again when the column is
+				// finished, or when it gets unloaded.
+				ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
+				_stage = 1;
+				// println(format("Takeout {}", uint64_t(this)));
 
 			} else {
 				// The block is ready
@@ -112,6 +153,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			}
 			return;
 		}
+		// Single-pass generation
 
 #if 0 // Initial naive implementation concept
 		if (_stage == 0) {
@@ -235,7 +277,7 @@ void GenerateBlockTask::run_cpu_generation() {
 
 	VoxelGenerator::VoxelQueryData query_data{ *voxels, origin_in_voxels, lod_index };
 	const VoxelGenerator::Result result = generator->generate_block(query_data);
-	max_lod_hint = result.max_lod_hint;
+	_max_lod_hint = result.max_lod_hint;
 
 	if (data != nullptr) {
 		data->get_modifiers().apply(query_data.voxel_buffer,
@@ -267,19 +309,19 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 		}
 	}
 
-	has_run = true;
+	_has_run = true;
 }
 
 TaskPriority GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const TaskPriority p = priority_dependency.evaluate(
 			lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
-	too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
+	_too_far = drop_beyond_max_distance && closest_viewer_distance_sq > priority_dependency.drop_distance_squared;
 	return p;
 }
 
 bool GenerateBlockTask::is_cancelled() {
-	return !stream_dependency->valid || too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
+	return !stream_dependency->valid || _too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
 }
 
 void GenerateBlockTask::apply_result() {
@@ -296,7 +338,7 @@ void GenerateBlockTask::apply_result() {
 			o.voxels = voxels;
 			o.position = position;
 			o.lod_index = lod_index;
-			o.dropped = !has_run;
+			o.dropped = !_has_run;
 			if (stream.is_valid() && stream->get_save_generator_output()) {
 				// We can't consider the block as "generated" since there is no state to tell that once saved,
 				// so it has to be considered an edited block
@@ -304,14 +346,14 @@ void GenerateBlockTask::apply_result() {
 			} else {
 				o.type = VoxelEngine::BlockDataOutput::TYPE_GENERATED;
 			}
-			o.max_lod_hint = max_lod_hint;
+			o.max_lod_hint = _max_lod_hint;
 			o.initial_load = false;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);
 			ERR_FAIL_COND(callbacks.data_output_callback == nullptr);
 			callbacks.data_output_callback(callbacks.data, o);
 
-			aborted = !has_run;
+			aborted = !_has_run;
 		}
 
 	} else {

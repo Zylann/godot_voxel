@@ -39,6 +39,11 @@ public:
 		VoxelBufferInternal voxels;
 
 		// If set, this task will be scheduled when the block's generation is complete.
+		// Only a non-scheduled, non-running task can be referenced here.
+		// These tasks also must NOT have spawned subtasks. That is, they are only owned by the block while they are
+		// here.
+		// In other words, we use this pointer to prevent asking columns to generate multiple times, because there are
+		// multiple block requests but only one column.
 		IThreadedTask *final_pending_task = nullptr;
 
 		Block() {}
@@ -165,7 +170,13 @@ public:
 
 private:
 	std::vector<Pass> _passes;
+
+	// Map used solely for generation purposes. It acts like a cache so we don't recompute the same passes many times.
+	// In theory we could generate blocks without caching or streaming anything, but that would mean every block request
+	// would have to repeatedly generate so much data around it (neighbors, neighbors of neighbors...), it would be
+	// prohibitively slow.
 	std::shared_ptr<Map> _map;
+
 	int _column_base_y_blocks = -4;
 	int _column_height_blocks = 8;
 };

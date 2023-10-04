@@ -217,6 +217,10 @@ void VoxelGeneratorMultipass::process_viewer_diff(Box3i p_requested_box, Box3i p
 
 				block->viewers.remove();
 				if (block->viewers.get() == 0) {
+					// TODO We need to cleanup these blocks in the play radius, not the loading radius.
+					//      They show up in task counts, which is misleading, and can come up as leaks.
+					// TODO We must cleanup these blocks too when the terrain is destroyed, because they
+					//      reference the generator, which contains the cache map, which contains the blocks (cycle)
 					if (block->final_pending_task != nullptr) {
 						// There was a pending generate task, resume it, but it will basically return a drop.
 						task_scheduler.push_main_task(block->final_pending_task);

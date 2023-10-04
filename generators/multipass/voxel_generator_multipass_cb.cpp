@@ -4,6 +4,7 @@
 #include "../../util/string_funcs.h"
 #include "generate_block_multipass_pm_cb_task.h"
 
+#include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 
@@ -33,13 +34,16 @@ VoxelGeneratorMultipassCB::~VoxelGeneratorMultipassCB() {}
 
 VoxelGeneratorMultipassCB::Map::~Map() {
 	// If the map gets destroyed then we know the last reference to it was removed, which means only one thread had
-	// access to it, so we can get away not locking anything.
+	// access to it, so we can get away not locking anything if cleanup is needed.
 
 	// Initially I thought this is where we'd re-schedule any task pointers still in blocks, but that can't happen,
 	// because if tasks exist referencing the multipass generator, then the generator (and so the map) would not be
 	// destroyed, and so we wouldn't be here.
 	// Therefore there is only just an assert in ~Block to ensure the only other case where blocks are removed from the
 	// map before handling these tasks, or to warn us in case there is a case we didn't expect.
+	//
+	// That said, that pretty much describes a cyclic reference. This cycle is usually broken by VoxelTerrain, which
+	// controls the streaming behavior. If a terrain gets destroyed, it must tell the generator to unload its cache.
 }
 
 VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData &input) {
@@ -197,6 +201,7 @@ Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
 } // namespace
 
 void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box) {
+	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// TODO Could run as a task similarly to threaded update of VLT
 	// However if we do that we need to make sure block requests dont end up cancelled due to no block being found to
@@ -269,7 +274,9 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 				if (column.viewers.get() == 0) {
 					for (Block &block : column.blocks) {
 						if (block.final_pending_task != nullptr) {
-							// There was a pending generate task, resume it, but it will basically return a drop.
+							// There was a pending generate task, resume it, but it should basically return a drop.
+							// (also because we are locking the map, that task must not run until we're done removing
+							// its target column)
 							task_scheduler.push_main_task(block.final_pending_task);
 							block.final_pending_task = nullptr;
 						}
@@ -285,6 +292,7 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 		}
 	});
 
+#if 0
 	const int subpass_count = get_subpass_count_from_pass_count(get_pass_count());
 
 	Box2i subpass_box = load_requested_box;
@@ -350,6 +358,8 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 					});
 				});
 	}
+
+#endif
 
 	task_scheduler.flush();
 }

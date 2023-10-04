@@ -33,20 +33,19 @@ public:
 
 	static int debug_get_running_count();
 
+	// Not an input, but can be assigned a re-usable instance to avoid allocating one in the task
 	std::shared_ptr<VoxelBufferInternal> voxels;
+
 	Vector3i position;
 	VolumeID volume_id;
 	uint8_t lod_index;
 	uint8_t block_size;
-	bool has_run = false;
-	bool too_far = false;
-	bool max_lod_hint = false;
 	bool drop_beyond_max_distance = true;
 	bool use_gpu = false;
 	PriorityDependency priority_dependency;
-	std::shared_ptr<StreamingDependency> stream_dependency;
-	std::shared_ptr<VoxelData> data;
-	std::shared_ptr<AsyncDependencyTracker> tracker;
+	std::shared_ptr<StreamingDependency> stream_dependency; // For saving generator output
+	std::shared_ptr<VoxelData> data; // Just for modifiers
+	std::shared_ptr<AsyncDependencyTracker> tracker; // For async edits
 
 private:
 	void run_gpu_task(zylann::ThreadedTaskContext &ctx);
@@ -54,6 +53,9 @@ private:
 	void run_cpu_generation();
 	void run_stream_saving_and_finish();
 
+	bool _has_run = false;
+	bool _too_far = false;
+	bool _max_lod_hint = false;
 	uint8_t _stage = 0;
 	std::vector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
