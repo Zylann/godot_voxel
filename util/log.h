@@ -38,6 +38,7 @@ void flush_stdout();
 
 void open_log_file();
 void close_log_file();
+void flush_log_file();
 
 #endif
 

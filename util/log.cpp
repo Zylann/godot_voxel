@@ -31,6 +31,13 @@ void close_log_file() {
 	g_log_ofs.close();
 }
 
+void flush_log_file() {
+	MutexLock mlock(g_log_file_mutex);
+	if (g_log_to_file) {
+		g_log_ofs.flush();
+	}
+}
+
 #endif
 
 bool is_verbose_output_enabled() {
