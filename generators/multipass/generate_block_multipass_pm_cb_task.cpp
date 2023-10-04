@@ -59,8 +59,6 @@ void GenerateBlockMultipassPMCBTask::run(ThreadedTaskContext &ctx) {
 		ZN_ASSERT(pass.dependency_extents > 0);
 	}
 
-	// TODO Handle column-based passes
-
 	const Box2i neighbors_box = Box2i::from_min_max( //
 			_column_position - Vector2iUtil::create(pass.dependency_extents),
 			_column_position + Vector2iUtil::create(pass.dependency_extents + 1));
@@ -128,8 +126,8 @@ void GenerateBlockMultipassPMCBTask::run(ThreadedTaskContext &ctx) {
 			const Vector2i cpos_min = neighbors_box.pos;
 			const Vector2i cpos_max = neighbors_box.pos + neighbors_box.size;
 
-			for (cpos.x = cpos_min.x; cpos.x < cpos_max.x; ++cpos.x) {
-				for (cpos.y = cpos_min.y; cpos.y < cpos_max.y; ++cpos.y) {
+			for (cpos.y = cpos_min.y; cpos.y < cpos_max.y; ++cpos.y) {
+				for (cpos.x = cpos_min.x; cpos.x < cpos_max.x; ++cpos.x) {
 					VoxelGeneratorMultipassCB::Column *column = columns[i];
 					if (column == nullptr) {
 						// No longer loaded, we have to cancel the task
@@ -203,7 +201,8 @@ void GenerateBlockMultipassPMCBTask::run(ThreadedTaskContext &ctx) {
 					// TODO Cache memory
 					std::vector<VoxelGeneratorMultipassCB::Block *> blocks;
 					blocks.reserve(columns.size() * column_height_blocks);
-					// ZXY indexing is convenient here, since columns are indexed wit YX (where Y in 2D is Z in 3D)
+					// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
+					// ZXY indexing is convenient here, since columns are indexed with YX (where Y in 2D is Z in 3D)
 					for (VoxelGeneratorMultipassCB::Column *column : columns) {
 						for (VoxelGeneratorMultipassCB::Block &block : column->blocks) {
 							blocks.push_back(&block);

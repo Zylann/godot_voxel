@@ -38,7 +38,7 @@ inline int64_t get_area(const Vector2i v) {
 }
 
 inline unsigned int get_yx_index(const Vector2i v, const Vector2i area_size) {
-	return v.x + v.y * area_size.y;
+	return v.x + v.y * area_size.x;
 }
 
 } // namespace Vector2iUtil
