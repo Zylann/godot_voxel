@@ -10,6 +10,13 @@
 #include "../thread/thread.h"
 #include "threaded_task.h"
 
+// For debugging
+// #define ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+#include <unordered_map>
+#endif
+
 #include <atomic>
 #include <queue>
 #include <string>
@@ -73,6 +80,9 @@ public:
 			// temp = std::move(_completed_tasks);
 		}
 		for (IThreadedTask *task : temp) {
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+			debug_remove_owned_task(task);
+#endif
 			f(task);
 		}
 		temp.clear();
@@ -122,6 +132,11 @@ private:
 	void create_thread(ThreadData &d, uint32_t i);
 	void destroy_all_threads();
 
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+	void debug_add_owned_task(IThreadedTask *task);
+	void debug_remove_owned_task(IThreadedTask *task);
+#endif
+
 	FixedArray<ThreadData, MAX_THREADS> _threads;
 	uint32_t _thread_count = 0;
 
@@ -156,6 +171,11 @@ private:
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;
 	unsigned int _debug_taken_out_tasks = 0;
+
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+	std::unordered_map<IThreadedTask *, std::string> _debug_owned_tasks;
+	Mutex _debug_owned_tasks_mutex;
+#endif
 };
 
 } // namespace zylann
