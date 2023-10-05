@@ -1893,7 +1893,6 @@ void VoxelTerrain::process_debug_draw() {
 	dr.begin();
 
 	const Transform3D parent_transform = get_global_transform();
-	const int mesh_block_size = get_mesh_block_size();
 
 	// Volume bounds
 	if (debug_get_draw_flag(DEBUG_DRAW_VOLUME_BOUNDS)) {
