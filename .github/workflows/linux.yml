@@ -55,6 +55,15 @@ jobs:
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.1"
 
+          - name: Template build
+            precision: single
+            target: template_release
+            dev_build: no
+            #dev_mode: no
+            production: yes
+            executable_name: godot.linuxbsd.template_release.x86_64
+            godot_base_branch: "4.1"
+
           - name: Editor build with 64-bit floats
             precision: double
             target: editor

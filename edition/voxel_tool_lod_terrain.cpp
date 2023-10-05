@@ -766,7 +766,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(mesh_sdf.is_null());
-	ERR_FAIL_COND(mesh_sdf->is_baked());
+	ERR_FAIL_COND(!mesh_sdf->is_baked());
 	Ref<gd::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
 	ERR_FAIL_COND(buffer_ref.is_null());
 	const VoxelBufferInternal &buffer = buffer_ref->get_buffer();

@@ -30,6 +30,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelTerrain`:
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
         - Added `is_area_meshed` as an alternative to `VoxelTool.is_area_editable` for games using mesh colliders
+        - Editor: added warning when bounds are empty
     - `VoxelTool`:
         - Added `smooth_sphere`, which smoothens terrain in a spherical area using box blur. Smooth/SDF terrain only. (Thanks to Piratux for the idea and initial implementation)
         - Separated `paste` into `paste` and `paste_masked` functions. The latter performs masking using a specific channel and value.
@@ -50,12 +51,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added debug drawing for modifier bounds
         - Added `is_area_meshed` as an alternative to `VoxelTool.is_area_editable` for games using mesh colliders
         - Terrain now updates when the `material` property is assigned in the editor
+        - Editor: added warning when bounds are empty
     - `VoxelVoxLoader`:
         - Added parameter to allow loading data in a custom channel (instead of the color channel)
     - `VoxelBlockyModel`:
         - Added 3D preview in editor
         - Added ability to rotate the model in editor (not just for preview, actually rotate the baked model)
         - Changed names to be handled with `Resource.name`, so it also shows them in the list of models in the editor
+        - Added `culls_neighbors` property to control whether the sides of a model can cull sides of other models (thanks to spazzylemons)
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
@@ -65,15 +68,23 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed graph not always saving when saving the scene
         - Fixed shader generator crash when a node has an unconnected input
         - Fixed cellular noise when used on GPU
+    - `VoxelGraphFunction`:
+        - Fixed default input values were not properly loaded
+        - Fixed unexpected "missing node" error when more than one custom inputs are used
     - `VoxelInstancer`:
         - Fixed crash when hiding the node in the editor
         - Fixed crash when closing the scene while an instancer node is selected
     - `VoxelInstanceLibrary`: 
         - Fixed `find_item_by_name` was not finding items
         - Fixed newly added items in the editor rendering badly by default when the terrain doesn't have LOD. For now they always default to LOD 0 instead of LOD 2.
+    - `VoxelTerrain`: Fixed crash when the terrain tries to update while it has no mesher assigned
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
     - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata
+    - `VoxelToolLodTerrain`: 
+        - Fixed `stamp_sdf` wasn't working due to an error when providing a baked mesh
+        - Fixed `set_voxel` was creating artifacts
+        - Fixed `separate_floating_chunks` was creating artifacts
     - `VoxelMeshSDF`: fixed saved resource was not loading properly
 
 - Breaking changes

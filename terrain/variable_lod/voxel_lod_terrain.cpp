@@ -2129,8 +2129,14 @@ void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	_update_data->wait_for_end_of_task();
 	Box3i bounds_in_voxels =
 			p_box.clipped(Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)));
-	// Round to octree size
+
 	const int octree_size = get_mesh_block_size() << (get_lod_count() - 1);
+
+	// Clamp smallest size
+	// TODO If mesh block size is set AFTER bounds, this will break when small bounds are used...
+	bounds_in_voxels.size = math::max(bounds_in_voxels.size, Vector3iUtil::create(octree_size));
+
+	// Round to octree size
 	bounds_in_voxels = bounds_in_voxels.snapped(octree_size);
 	// Can't have a smaller region than one octree
 	for (unsigned i = 0; i < Vector3iUtil::AXIS_COUNT; ++i) {
@@ -2140,6 +2146,8 @@ void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	}
 	_data->set_bounds(bounds_in_voxels);
 	_update_data->state.force_update_octrees_next_update = true;
+
+	update_configuration_warnings();
 }
 
 void VoxelLodTerrain::set_collision_update_delay(int delay_msec) {
@@ -2370,6 +2378,10 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 				}
 			}
 		}
+	}
+
+	if (get_voxel_bounds().is_empty()) {
+		warnings.append(String("Terrain bounds have an empty size."));
 	}
 }
 

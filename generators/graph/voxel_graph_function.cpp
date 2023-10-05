@@ -931,14 +931,20 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 		ERR_FAIL_COND_V(node == nullptr, false);
 		// TODO Graphs made in older versions must have autoconnect always off
 
+		const Variant vname = node_data.get("name", Variant());
+		if (vname != Variant()) {
+			node->name = vname;
+		}
+
 		node->gui_size = node_data.get("gui_size", Vector2());
 
+		Ref<VoxelGraphFunction> function;
 		if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
 			const NodeType &ntype = type_db.get_type(type_id);
 			ZN_ASSERT(ntype.params.size() >= 1);
 			// The function reference is always the first parameter
 			const String func_key = ntype.params[0].name;
-			Ref<VoxelGraphFunction> function = node_data[func_key];
+			function = node_data[func_key];
 			if (function.is_null()) {
 				ERR_PRINT(String("Unable to load external function referenced in {0} {}")
 								  .format(varray(VoxelGraphFunction::get_class_static(), resource_path)));
@@ -1008,9 +1014,13 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 				ERR_CONTINUE(param_index < 0 || param_index >= node->default_inputs.size());
 				node->default_inputs[param_index] = node_data[param_key];
 			}
-			const Variant vname = node_data.get("name", Variant());
-			if (vname != Variant()) {
-				node->name = vname;
+			if (function.is_valid()) {
+				Span<const VoxelGraphFunction::Port> input_defs = function->get_input_definitions();
+				for (unsigned int i = 0; i < input_defs.size(); ++i) {
+					if (input_defs[i].name == param_name) {
+						node->default_inputs[i] = node_data[param_key];
+					}
+				}
 			}
 		}
 	}

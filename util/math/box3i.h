@@ -318,8 +318,10 @@ public:
 	inline bool encloses(const Box3i &other) const {
 		return pos.x <= other.pos.x && //
 				pos.y <= other.pos.y && //
+				pos.z <= other.pos.z && //
 				pos.x + size.x >= other.pos.x + other.size.x && //
-				pos.y + size.y >= other.pos.y + other.size.y;
+				pos.y + size.y >= other.pos.y + other.size.y && //
+				pos.z + size.z >= other.pos.z + other.size.z;
 	}
 
 	inline Box3i snapped(int step) const {

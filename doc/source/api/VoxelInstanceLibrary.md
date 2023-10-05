@@ -41,4 +41,4 @@ Return                                                                          
 - [void](#)<span id="i_remove_item"></span> **remove_item**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

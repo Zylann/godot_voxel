@@ -176,6 +176,10 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(false);
 		}
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+		if (vt != nullptr) {
+			vt->debug_set_draw_enabled(false);
+		}
 	}
 
 	_node = node;
@@ -195,6 +199,7 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 		_node->connect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
 
 		generate_menu_items(_menu_button, vlt != nullptr);
 
@@ -205,6 +210,10 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
+
+		} else if (vt != nullptr) {
+			vt->debug_set_draw_enabled(true);
+			vt->debug_set_draw_flag(VoxelTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
 		}
 	}
 }
@@ -218,6 +227,10 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(visible);
+		}
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+		if (vt != nullptr) {
+			vt->debug_set_draw_enabled(visible);
 		}
 	}
 

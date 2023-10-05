@@ -2,6 +2,8 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
+Inherited by: [VoxelBlockyAttributeAxis](VoxelBlockyAttributeAxis.md), [VoxelBlockyAttributeCustom](VoxelBlockyAttributeCustom.md), [VoxelBlockyAttributeDirection](VoxelBlockyAttributeDirection.md), [VoxelBlockyAttributeRotation](VoxelBlockyAttributeRotation.md)
+
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
@@ -35,4 +37,4 @@ Return                                                                          
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_rotation"></span> **is_rotation**( ) 
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

@@ -26,7 +26,8 @@ inline bool is_face_visible(const VoxelBlockyLibraryBase::BakedData &lib, const 
 		uint32_t other_voxel_id, int side) {
 	if (other_voxel_id < lib.models.size()) {
 		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
-		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index)) {
+		// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
+		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors) {
 			return true;
 		} else {
 			const unsigned int ai = vt.model.side_pattern_indices[side];

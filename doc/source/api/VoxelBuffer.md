@@ -53,15 +53,15 @@ Return                                                                          
 
 enum **ChannelId**: 
 
-- **CHANNEL_TYPE** = **0** --- Channel used to store voxel types. Used by [VoxelMesherBlocky].
-- **CHANNEL_SDF** = **1** --- Channel used to store SDF data (signed distance field). Used by [VoxelMesherTransvoxel] and other smooth meshers. Values should preferably be accessed as floats. Negative values are below the isosurface (inside matter), and positive values are above the surface (outside matter).
-- **CHANNEL_COLOR** = **2** --- Channel used to store color data. Used by [VoxelMesherCubes].
+- **CHANNEL_TYPE** = **0** --- Channel used to store voxel types. Used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
+- **CHANNEL_SDF** = **1** --- Channel used to store SDF data (signed distance field). Used by [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) and other smooth meshers. Values should preferably be accessed as floats. Negative values are below the isosurface (inside matter), and positive values are above the surface (outside matter).
+- **CHANNEL_COLOR** = **2** --- Channel used to store color data. Used by [VoxelMesherCubes](VoxelMesherCubes.md).
 - **CHANNEL_INDICES** = **3**
 - **CHANNEL_WEIGHTS** = **4**
 - **CHANNEL_DATA5** = **5** --- Free channel. Not used by the engine yet.
 - **CHANNEL_DATA6** = **6** --- Free channel. Not used by the engine yet.
 - **CHANNEL_DATA7** = **7** --- Free channel. Not used by the engine yet.
-- **MAX_CHANNELS** = **8** --- Maximum number of channels a [VoxelBuffer] can have.
+- **MAX_CHANNELS** = **8** --- Maximum number of channels a [VoxelBuffer](VoxelBuffer.md) can have.
 
 enum **Depth**: 
 
@@ -230,4 +230,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Sep 12, 2023_
+_Generated on Oct 02, 2023_

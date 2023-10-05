@@ -173,7 +173,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		}
 		const StringName type1_name = type1->get_unique_name();
 		for (unsigned int j = i + 1; j < _types.size(); ++j) {
-			const Ref<VoxelBlockyType> &type2 = _types[i];
+			const Ref<VoxelBlockyType> &type2 = _types[j];
 			if (type2.is_null()) {
 				continue;
 			}
