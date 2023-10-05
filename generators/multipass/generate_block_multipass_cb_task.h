@@ -46,6 +46,7 @@ public:
 	// bool is_cancelled() {}
 
 private:
+	void schedule_final_block_tasks(VoxelGeneratorMultipassCB::Column &column, BufferedTaskScheduler &task_scheduler);
 	void return_to_caller(bool success);
 
 	Vector2i _column_position;

@@ -60,6 +60,10 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	ZN_ASSERT(_generator.is_valid());
 
 	std::shared_ptr<VoxelGeneratorMultipassCB::Map> map = _generator->get_map();
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+
+	const int final_subpass_index =
+			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator->get_pass_count()) - 1;
 
 	if (_cancelled) {
 		// At least one subtask was cancelled, therefore we have to cleanup and return too.
@@ -77,20 +81,24 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			MutexLock mlock(map->mutex);
 			auto column_it = map->columns.find(_column_position);
 			if (column_it != map->columns.end()) {
+				// Unregister task from the column
 				VoxelGeneratorMultipassCB::Column &column = column_it->second;
 				column.pending_subpass_tasks_mask &= ~(1 << _subpass_index);
+
+				if (_subpass_index == final_subpass_index) {
+					// Schedule pending block requests to make them handle cancellation
+					schedule_final_block_tasks(column, task_scheduler);
+				}
 			}
 		}
 
 		return_to_caller(false);
+		task_scheduler.flush();
 		return;
 	}
 
 	const int pass_index = VoxelGeneratorMultipassCB::get_pass_index_from_subpass(_subpass_index);
 	const VoxelGeneratorMultipassCB::Pass &pass = _generator->get_pass(pass_index);
-
-	const int final_subpass_index =
-			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator->get_pass_count()) - 1;
 
 	if (_subpass_index == 0) {
 		// The first subpass can't depend on another subpass
@@ -111,8 +119,6 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	columns.reserve(Vector2iUtil::get_area(neighbors_box.size));
 
 	IThreadedTask *next_task = nullptr;
-
-	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	// Lock region we are going to process
 	{
@@ -175,10 +181,15 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 
 					if (main_column != nullptr) {
 						main_column->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
+
+						if (_subpass_index == final_subpass_index) {
+							// Schedule pending block requests to make them handle cancellation
+							schedule_final_block_tasks(*main_column, task_scheduler);
+						}
 					}
-					// println(format("C {} {} {} {} {}", int(_subpass_index), _column_position.x, 0,
-					// _column_position.y, 		Time::get_singleton()->get_ticks_usec()));
+
 					return_to_caller(false);
+					task_scheduler.flush();
 					return;
 				}
 			}
@@ -323,18 +334,9 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			main_column->pending_subpass_tasks_mask &= ~(1 << _subpass_index);
 
 			if (main_column->subpass_index == final_subpass_index) {
-				// println(format("Complete {} t {}", uint64_t(main_column), Thread::get_caller_id()));
 				// All tasks that were waiting for this column to be complete (and did not spawn column subtasks
 				// themselves) may now resume
-				for (VoxelGeneratorMultipassCB::Block &block : main_column->blocks) {
-					if (block.final_pending_task != nullptr) {
-						ZN_ASSERT(block.final_pending_task != _caller_task);
-						// println(format(
-						// 		"Schedule {} t {}", uint64_t(block.final_pending_task), Thread::get_caller_id()));
-						task_scheduler.push_main_task(block.final_pending_task);
-						block.final_pending_task = nullptr;
-					}
-				}
+				schedule_final_block_tasks(*main_column, task_scheduler);
 			}
 
 			return_to_caller(true);
@@ -344,6 +346,17 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 
 	// println(format("End of {} t {}", uint64_t(this), Thread::get_caller_id()));
 	task_scheduler.flush();
+}
+
+void GenerateBlockMultipassCBTask::schedule_final_block_tasks(
+		VoxelGeneratorMultipassCB::Column &column, BufferedTaskScheduler &task_scheduler) {
+	for (VoxelGeneratorMultipassCB::Block &block : column.blocks) {
+		if (block.final_pending_task != nullptr) {
+			ZN_ASSERT(block.final_pending_task != _caller_task);
+			task_scheduler.push_main_task(block.final_pending_task);
+			block.final_pending_task = nullptr;
+		}
+	}
 }
 
 void GenerateBlockMultipassCBTask::return_to_caller(bool success) {
