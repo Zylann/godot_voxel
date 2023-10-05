@@ -12,6 +12,10 @@
 #include "voxel_mesh_block_vt.h"
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
+#ifdef TOOLS_ENABLED
+#include "../../editor/voxel_debug.h"
+#endif
+
 namespace zylann {
 
 class AsyncDependencyTracker;
@@ -139,6 +143,20 @@ public:
 	// 	Vector3i position;
 	// };
 
+	// Debug
+
+	enum DebugDrawFlag {
+		DEBUG_DRAW_VOLUME_BOUNDS = 0,
+
+		DEBUG_DRAW_FLAGS_COUNT = 1
+	};
+
+	void debug_set_draw_enabled(bool enabled);
+	bool debug_is_draw_enabled() const;
+
+	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
+	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
+
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
@@ -214,6 +232,10 @@ private:
 	void notify_data_block_enter(const VoxelDataBlock &block, Vector3i bpos, ViewerID viewer_id);
 
 	bool is_area_meshed(const Box3i &box_in_voxels) const;
+
+#ifdef TOOLS_ENABLED
+	void process_debug_draw();
+#endif
 
 #ifdef ZN_GODOT
 	// Called each time a data block enters a viewer's area.
@@ -321,6 +343,13 @@ private:
 	VoxelTerrainMultiplayerSynchronizer *_multiplayer_synchronizer = nullptr;
 
 	Stats _stats;
+
+#ifdef TOOLS_ENABLED
+	bool _debug_draw_enabled = false;
+	uint8_t _debug_draw_flags = 0;
+
+	DebugRenderer _debug_renderer;
+#endif
 };
 
 } // namespace voxel

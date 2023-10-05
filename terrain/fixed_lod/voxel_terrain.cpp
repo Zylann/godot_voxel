@@ -799,16 +799,30 @@ void VoxelTerrain::_notification(int p_what) {
 		case NOTIFICATION_EXIT_TREE:
 			break;
 
-		case NOTIFICATION_ENTER_WORLD:
-			_mesh_map.for_each_block(SetWorldAction(*get_world_3d()));
-			break;
+		case NOTIFICATION_ENTER_WORLD: {
+			World3D *world = *get_world_3d();
+			_mesh_map.for_each_block(SetWorldAction(world));
+#ifdef TOOLS_ENABLED
+			if (debug_is_draw_enabled()) {
+				_debug_renderer.set_world(is_visible_in_tree() ? world : nullptr);
+			}
+#endif
+		} break;
 
 		case NOTIFICATION_EXIT_WORLD:
 			_mesh_map.for_each_block(SetWorldAction(nullptr));
+#ifdef TOOLS_ENABLED
+			_debug_renderer.set_world(nullptr);
+#endif
 			break;
 
 		case NOTIFICATION_VISIBILITY_CHANGED:
 			_mesh_map.for_each_block(SetParentVisibilityAction(is_visible()));
+#ifdef TOOLS_ENABLED
+			if (debug_is_draw_enabled()) {
+				_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+			}
+#endif
 			break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
@@ -1036,6 +1050,12 @@ void VoxelTerrain::process() {
 	process_viewers();
 	// process_received_data_blocks();
 	process_meshing();
+
+#ifdef TOOLS_ENABLED
+	if (debug_is_draw_enabled() && is_visible_in_tree()) {
+		process_debug_draw();
+	}
+#endif
 }
 
 void VoxelTerrain::process_viewers() {
@@ -1818,6 +1838,83 @@ void VoxelTerrain::get_configuration_warnings(PackedStringArray &warnings) const
 }
 
 #endif
+
+// DEBUG LAND
+
+void VoxelTerrain::debug_set_draw_enabled(bool enabled) {
+#ifdef TOOLS_ENABLED
+	_debug_draw_enabled = enabled;
+	if (_debug_draw_enabled) {
+		if (is_inside_tree()) {
+			_debug_renderer.set_world(is_visible_in_tree() ? *get_world_3d() : nullptr);
+		}
+	} else {
+		_debug_renderer.clear();
+		// _debug_mesh_update_items.clear();
+		// _debug_edit_items.clear();
+	}
+#endif
+}
+
+bool VoxelTerrain::debug_is_draw_enabled() const {
+#ifdef TOOLS_ENABLED
+	return _debug_draw_enabled;
+#else
+	return false;
+#endif
+}
+
+void VoxelTerrain::debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled) {
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX(flag_index, DEBUG_DRAW_FLAGS_COUNT);
+	if (enabled) {
+		_debug_draw_flags |= (1 << flag_index);
+	} else {
+		_debug_draw_flags &= ~(1 << flag_index);
+	}
+#endif
+}
+
+bool VoxelTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
+#ifdef TOOLS_ENABLED
+	ERR_FAIL_INDEX_V(flag_index, DEBUG_DRAW_FLAGS_COUNT, false);
+	return (_debug_draw_flags & (1 << flag_index)) != 0;
+#else
+	return false;
+#endif
+}
+
+#ifdef TOOLS_ENABLED
+
+void VoxelTerrain::process_debug_draw() {
+	ZN_PROFILE_SCOPE();
+
+	DebugRenderer &dr = _debug_renderer;
+	dr.begin();
+
+	const Transform3D parent_transform = get_global_transform();
+	const int mesh_block_size = get_mesh_block_size();
+
+	// Volume bounds
+	if (debug_get_draw_flag(DEBUG_DRAW_VOLUME_BOUNDS)) {
+		const Box3i bounds_in_voxels = get_bounds();
+		const float bounds_in_voxels_len = Vector3(bounds_in_voxels.size).length();
+
+		if (bounds_in_voxels_len < 10000) {
+			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
+			const Vector3 size = bounds_in_voxels.size;
+			const Transform3D local_transform(
+					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
+			dr.draw_box(parent_transform * local_transform, DebugColors::ID_VOXEL_BOUNDS);
+		}
+	}
+
+	dr.end();
+}
+
+#endif
+
+// BINDING LAND
 
 Vector3i VoxelTerrain::_b_voxel_to_data_block(Vector3 pos) const {
 	return _data->voxel_to_block(math::floor_to_int(pos));
