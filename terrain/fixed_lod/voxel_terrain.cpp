@@ -1756,6 +1756,9 @@ void VoxelTerrain::set_bounds(Box3i box) {
 	Box3i bounds_in_voxels =
 			box.clipped(Box3i::from_center_extents(Vector3i(), Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)));
 
+	const int smallest_dimension = get_data_block_size();
+	bounds_in_voxels.size = math::max(bounds_in_voxels.size, Vector3iUtil::create(smallest_dimension));
+
 	// Round to block size
 	bounds_in_voxels = bounds_in_voxels.snapped(get_data_block_size());
 
