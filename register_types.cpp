@@ -93,6 +93,7 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
+#include "editor/multipass/voxel_generator_multipass_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
@@ -132,6 +133,7 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
+#include "editor/multipass/voxel_generator_multipass_cache_viewer.h"
 #include "editor/terrain/editor_property_aabb_min_max.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 #endif
@@ -421,7 +423,11 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
 		ClassDB::register_class<VoxelGraphNodeDialog>();
 		ClassDB::register_class<VoxelRangeAnalysisDialog>();
-#endif
+
+		ClassDB::register_class<VoxelGeneratorMultipassEditorPlugin>();
+		ClassDB::register_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
+		ClassDB::register_class<VoxelGeneratorMultipassCacheViewer>();
+#endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
@@ -432,6 +438,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif

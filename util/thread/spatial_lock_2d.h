@@ -139,6 +139,15 @@ public:
 		const BoxBounds2i box;
 	};
 
+	struct UnlockReadOnScopeExit {
+		UnlockReadOnScopeExit(SpatialLock2D &p_locker, const BoxBounds2i p_box) : locker(p_locker), box(p_box) {}
+		~UnlockReadOnScopeExit() {
+			locker.unlock_read(box);
+		}
+		SpatialLock2D &locker;
+		const BoxBounds2i box;
+	};
+
 private:
 	bool can_lock_for_read(const BoxBounds2i &box) {
 #ifdef ZN_SPATIAL_LOCK_2D_CHECKS

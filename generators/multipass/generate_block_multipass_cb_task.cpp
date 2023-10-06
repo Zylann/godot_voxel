@@ -142,7 +142,6 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			// TODO We don't create new columns from here, could use a shared lock?
 			MutexLock mlock(map->mutex);
 
-			// TODO Handle world bounds
 			Vector2i bpos;
 			// Coordinate order matters (note, Y in Vector2i corresponds to Z in 3D here).
 			neighbors_box.for_each_cell_yx([&columns, map](Vector2i cpos) {

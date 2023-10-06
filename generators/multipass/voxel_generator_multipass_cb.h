@@ -168,13 +168,20 @@ public:
 
 	void process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box);
 
+	struct DebugColumnState {
+		Vector2i position;
+		int8_t subpass_index;
+	};
+
+	bool debug_try_get_column_states(std::vector<DebugColumnState> &out_states);
+
 private:
 	std::vector<Pass> _passes;
 
 	// Map used solely for generation purposes. It acts like a cache so we don't recompute the same passes many times.
 	// In theory we could generate blocks without caching or streaming anything, but that would mean every block request
-	// would have to repeatedly generate so much data around it (neighbors, neighbors of neighbors...), it would be
-	// prohibitively slow.
+	// would have to repeatedly generate so much data around it (column, neighbors, neighbors of neighbors...), it would
+	// be prohibitively slow.
 	std::shared_ptr<Map> _map;
 
 	int _column_base_y_blocks = -4;

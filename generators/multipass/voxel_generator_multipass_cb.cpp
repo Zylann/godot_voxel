@@ -364,4 +364,35 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 	task_scheduler.flush();
 }
 
+
+bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugColumnState> &out_states) {
+	ZN_PROFILE_SCOPE();
+
+	out_states.clear();
+
+	{
+		unsigned int size = 0;
+		{
+			MutexLock mlock(_map->mutex);
+			size = _map->columns.size();
+		}
+		out_states.reserve(size);
+	}
+
+	if (!_map->spatial_lock.try_lock_read(BoxBounds2i::from_everywhere())) {
+		// Don't hang here on the main thread, while generating it's very likely the map is locked somewhere
+		return false;
+	}
+	SpatialLock2D::UnlockReadOnScopeExit srlock(_map->spatial_lock, BoxBounds2i::from_everywhere());
+
+	MutexLock mlock(_map->mutex);
+
+	for (auto it = _map->columns.begin(); it != _map->columns.end(); ++it) {
+		Column &column = it->second;
+		out_states.push_back(DebugColumnState{ it->first, column.subpass_index });
+	}
+
+	return true;
+}
+
 } // namespace zylann::voxel

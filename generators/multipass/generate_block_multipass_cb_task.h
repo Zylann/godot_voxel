@@ -6,6 +6,8 @@
 
 namespace zylann::voxel {
 
+class BufferedTaskScheduler;
+
 // This task is designed to be scheduled from another.
 // Looks up columns in the generator's cache in order to run a pass on a specific column.
 // If at least one column isn't found in the map, the task is cancelled, and so should be all its callers.
