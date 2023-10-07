@@ -3,7 +3,6 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
-#include "generate_block_multipass_pm_cb_task.h"
 
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
@@ -416,75 +415,6 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 			});
 		}
 	});
-
-#if 0
-	const int subpass_count = get_subpass_count_from_pass_count(get_pass_count());
-
-	Box2i subpass_box = load_requested_box;
-	Box2i prev_subpass_box = prev_load_requested_box;
-	Ref<VoxelGeneratorMultipassCB> generator_ref(this);
-
-	const Vector2i viewer_block_pos = requested_box_2d.pos + requested_box_2d.size / 2;
-
-	// Pass generation tasks
-	for (int subpass_index = 0; subpass_index < subpass_count; ++subpass_index) {
-		// Debug checks: box shrinking must not make boxes empty
-		if (subpass_index > 0) {
-			// Shrink boxes for next subpass
-			const int next_pass_index = VoxelGeneratorMultipassCB::get_pass_index_from_subpass(subpass_index);
-			const VoxelGeneratorMultipassCB::Pass &next_pass = get_pass(next_pass_index);
-			subpass_box = subpass_box.padded(-next_pass.dependency_extents);
-			prev_subpass_box = prev_subpass_box.padded(-next_pass.dependency_extents);
-
-			if (!load_requested_box.is_empty()) {
-				ZN_ASSERT(!subpass_box.is_empty());
-			}
-			if (!prev_load_requested_box.is_empty()) {
-				ZN_ASSERT(!prev_subpass_box.is_empty());
-			}
-		}
-
-		// Run pass on new areas
-		subpass_box.difference(prev_subpass_box,
-				[&map, subpass_index, &task_scheduler, &generator_ref, viewer_block_pos](Box2i new_box) {
-					SpatialLock2D::Write swlock(map.spatial_lock, new_box);
-					MutexLock mlock(map.mutex);
-
-					new_box.for_each_cell_yx([&map, subpass_index, &task_scheduler, &generator_ref, viewer_block_pos](
-													 Vector2i cpos) {
-						auto it = map.columns.find(cpos);
-
-						// The block must be found since we are inside the loading area of the viewer.
-						ZN_ASSERT(it != map.columns.end());
-						Column &column = it->second;
-
-						const unsigned int subpass_bit = (1 << subpass_index);
-
-						if (column.subpass_index < subpass_index &&
-								(column.pending_subpass_tasks_mask & subpass_bit) == 0) {
-							column.pending_subpass_tasks_mask |= subpass_bit;
-
-							const int distance = math::chebyshev_distance(viewer_block_pos, cpos);
-
-							TaskPriority priority;
-							// Priority decreases over distance.
-							// Later subpasses also have lower priority since they depend on first passes.
-							priority.band0 = math::max(TaskPriority::BAND_MAX - distance - 2 * subpass_index, 0);
-							priority.band2 = constants::TASK_PRIORITY_LOAD_BAND2;
-
-							// TODO Consider allocating tasks outside the locking scope
-							GenerateBlockMultipassPMCBTask *task = ZN_NEW(GenerateBlockMultipassPMCBTask(
-									cpos, block_size, subpass_index, generator_ref, priority));
-
-							// println(format("S {} {} {} {}", subpass_index, cpos.x, cpos.y,
-							// 		Time::get_singleton()->get_ticks_usec()));
-							task_scheduler.push_main_task(task);
-						}
-					});
-				});
-	}
-
-#endif
 
 	task_scheduler.flush();
 }

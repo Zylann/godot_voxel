@@ -157,42 +157,6 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			return;
 		}
 		// Single-pass generation
-
-#if 0 // Initial naive implementation concept
-		if (_stage == 0) {
-			ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
-			std::shared_ptr<std::atomic_int> counter = make_shared_instance<std::atomic_int>(1);
-			const unsigned int subpass_count =
-					VoxelGeneratorMultipass::get_subpass_count_from_pass_count(multipass_generator->get_pass_count());
-			ZN_ASSERT_RETURN(subpass_count > 0);
-			GenerateBlockMultipassTask *task = ZN_NEW(GenerateBlockMultipassTask(
-					position, block_size, subpass_count - 1, multipass_generator, this, counter));
-			VoxelEngine::get_singleton().push_async_task(task);
-
-			ctx.status = ThreadedTaskContext::STATUS_TAKEN_OUT;
-
-			_stage = 1;
-
-		} else {
-			std::shared_ptr<VoxelGeneratorMultipass::Map> map = multipass_generator->get_map();
-			std::shared_ptr<VoxelGeneratorMultipass::Block> block;
-			{
-				MutexLock mlock(map->mutex);
-				auto it = map->blocks.find(position);
-				if (it == map->blocks.end()) {
-					ZN_PRINT_ERROR(format("Could not generate block {} with multipass", position));
-				}
-				block = it->second;
-			}
-			// TODO Take out voxel data from this block, it must not be touched by generation anymore
-			voxels = make_shared_instance<VoxelBufferInternal>();
-			voxels->create(block->voxels.get_size());
-			voxels->copy_from(block->voxels);
-
-			run_stream_saving_and_finish();
-		}
-		return;
-#endif
 	}
 
 	if (voxels == nullptr) {

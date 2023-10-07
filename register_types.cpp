@@ -12,7 +12,6 @@
 #include "engine/voxel_engine_gd.h"
 #include "generators/graph/node_type_db.h"
 #include "generators/graph/voxel_generator_graph.h"
-#include "generators/multipass/voxel_generator_multipass.h"
 #include "generators/multipass/voxel_generator_multipass_cb.h"
 #include "generators/simple/voxel_generator_flat.h"
 #include "generators/simple/voxel_generator_heightmap.h"
@@ -263,7 +262,6 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelGeneratorNoise>();
 		ClassDB::register_class<VoxelGeneratorGraph>();
 		ClassDB::register_class<VoxelGeneratorScript>();
-		ClassDB::register_class<VoxelGeneratorMultipass>();
 		ClassDB::register_class<VoxelGeneratorMultipassCB>();
 
 		// Utilities
