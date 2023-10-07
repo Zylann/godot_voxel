@@ -162,6 +162,13 @@ void VoxelTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 		return;
 	}
 
+	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
+	if (multipass_generator.is_valid()) {
+		multipass_generator->clear_cache();
+		// TODO if we were to share this generator on multiple terrains, cache should not be entirely cleared. Instead,
+		// we should just remove the area from all paired viewers.
+	}
+
 	_data->set_generator(p_generator);
 
 	MeshingDependency::reset(_meshing_dependency, _mesher, p_generator);
@@ -702,6 +709,11 @@ void VoxelTerrain::reset_map() {
 
 	// No need to care about refcounts, we drop everything anyways. Will pair it back on next process.
 	_paired_viewers.clear();
+
+	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
+	if (multipass_generator.is_valid()) {
+		multipass_generator->clear_cache();
+	}
 }
 
 void VoxelTerrain::post_edit_voxel(Vector3i pos) {
@@ -1293,9 +1305,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
 	if (multipass_generator.is_valid()) {
-		multipass_generator->process_viewer_diff(new_data_box, prev_data_box);
-		// TODO We also need to process diffs when the generator is added after the terrain started running (editor case
-		// mostly).
+		multipass_generator->process_viewer_diff(viewer_id, new_data_box, prev_data_box);
 	}
 
 	// Unview blocks that just fell out of range

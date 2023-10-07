@@ -1,3 +1,4 @@
+#if 0
 #ifndef VOXEL_GENERATE_BLOCK_MULTIPASS_PM_CB_TASK_H
 #define VOXEL_GENERATE_BLOCK_MULTIPASS_PM_CB_TASK_H
 
@@ -37,3 +38,4 @@ private:
 } // namespace zylann::voxel
 
 #endif // VOXEL_GENERATE_BLOCK_MULTIPASS_PM_TASK_H
+#endif

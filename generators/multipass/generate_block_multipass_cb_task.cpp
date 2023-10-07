@@ -23,7 +23,8 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 } // namespace
 
 GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size,
-		uint8_t p_subpass_index, Ref<VoxelGeneratorMultipassCB> p_generator, IThreadedTask *p_caller,
+		uint8_t p_subpass_index, std::shared_ptr<VoxelGeneratorMultipassCB::Internal> p_generator_internal,
+		Ref<VoxelGeneratorMultipassCB> p_generator, IThreadedTask *p_caller,
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
 	//
 	_column_position = p_column_position;
@@ -32,6 +33,9 @@ GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_pos
 
 	ZN_ASSERT(p_generator.is_valid());
 	_generator = p_generator;
+
+	ZN_ASSERT(p_generator_internal != nullptr);
+	_generator_internal = p_generator_internal;
 
 	ZN_ASSERT(p_caller != nullptr);
 	_caller_task = p_caller;
@@ -57,30 +61,30 @@ GenerateBlockMultipassCBTask::~GenerateBlockMultipassCBTask() {
 void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT(_generator.is_valid());
+	ZN_ASSERT(_generator != nullptr);
 
-	std::shared_ptr<VoxelGeneratorMultipassCB::Map> map = _generator->get_map();
+	VoxelGeneratorMultipassCB::Map &map = _generator_internal->map;
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	const int final_subpass_index =
-			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator->get_pass_count()) - 1;
+			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator_internal->pass_count) - 1;
 
 	if (_cancelled) {
 		// At least one subtask was cancelled, therefore we have to cleanup and return too.
 
 		// Unregister from the column if any
 		{
-			if (!map->spatial_lock.try_lock_write(BoxBounds2i::from_position(_column_position))) {
+			if (!map.spatial_lock.try_lock_write(BoxBounds2i::from_position(_column_position))) {
 				// Try later (funny situation, but that's the pattern)
 				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
 				return;
 			}
 			SpatialLock2D::UnlockWriteOnScopeExit swlock(
-					map->spatial_lock, BoxBounds2i::from_position(_column_position));
+					map.spatial_lock, BoxBounds2i::from_position(_column_position));
 
-			MutexLock mlock(map->mutex);
-			auto column_it = map->columns.find(_column_position);
-			if (column_it != map->columns.end()) {
+			MutexLock mlock(map.mutex);
+			auto column_it = map.columns.find(_column_position);
+			if (column_it != map.columns.end()) {
 				// Unregister task from the column
 				VoxelGeneratorMultipassCB::Column &column = column_it->second;
 				column.pending_subpass_tasks_mask &= ~(1 << _subpass_index);
@@ -98,7 +102,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	}
 
 	const int pass_index = VoxelGeneratorMultipassCB::get_pass_index_from_subpass(_subpass_index);
-	const VoxelGeneratorMultipassCB::Pass &pass = _generator->get_pass(pass_index);
+	const VoxelGeneratorMultipassCB::Pass &pass = _generator_internal->passes[pass_index];
 
 	if (_subpass_index == 0) {
 		// The first subpass can't depend on another subpass
@@ -127,27 +131,27 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 		// Blocking until available causes bottlenecks. Not always big ones, but enough to be very noticeable in the
 		// profiler.
 		// VoxelSpatialLockWrite swlock(map->spatial_lock, neighbors_box);
-		if (!map->spatial_lock.try_lock_write(neighbors_box)) {
+		if (!map.spatial_lock.try_lock_write(neighbors_box)) {
 			// Try later
 			ctx.status = ThreadedTaskContext::STATUS_POSTPONED;
 			return;
 		}
 		// Sometimes I wish `defer` was a thing in C++
-		SpatialLock2D::UnlockWriteOnScopeExit swlock(map->spatial_lock, neighbors_box);
+		SpatialLock2D::UnlockWriteOnScopeExit swlock(map.spatial_lock, neighbors_box);
 
 		// Fetch columns from map
 		{
 			ZN_PROFILE_SCOPE_NAMED("Fetch columns");
 
 			// TODO We don't create new columns from here, could use a shared lock?
-			MutexLock mlock(map->mutex);
+			MutexLock mlock(map.mutex);
 
 			Vector2i bpos;
 			// Coordinate order matters (note, Y in Vector2i corresponds to Z in 3D here).
-			neighbors_box.for_each_cell_yx([&columns, map](Vector2i cpos) {
-				auto it = map->columns.find(cpos);
+			neighbors_box.for_each_cell_yx([&columns, &map](Vector2i cpos) {
+				auto it = map.columns.find(cpos);
 				VoxelGeneratorMultipassCB::Column *column = nullptr;
-				if (it != map->columns.end()) {
+				if (it != map.columns.end()) {
 					column = &it->second;
 				}
 				columns.push_back(column);
@@ -223,17 +227,15 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 
 						} else {
 							// No task is pending to work on the dependency, spawn one.
-							// TODO How do we tell if we got there due to having been called back by our dependencies
-							// being cancelled?
-							// If a dependency had to cancel, we have to cancel the entire task tree.
 
 							if (dependency_counter == nullptr) {
 								dependency_counter = make_shared_instance<std::atomic_int>();
 							}
 							++(*dependency_counter);
 
-							GenerateBlockMultipassCBTask *subtask = ZN_NEW(GenerateBlockMultipassCBTask(
-									cpos, _block_size, prev_subpass_index, _generator, this, dependency_counter));
+							GenerateBlockMultipassCBTask *subtask =
+									ZN_NEW(GenerateBlockMultipassCBTask(cpos, _block_size, prev_subpass_index,
+											_generator_internal, _generator, this, dependency_counter));
 							subtask->_caller_mp_task = this;
 							task_scheduler.push_main_task(subtask);
 
@@ -272,7 +274,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			ZN_ASSERT(main_column != nullptr);
 
 			if (main_column->subpass_index == prev_subpass_index) {
-				const int column_height_blocks = _generator->get_column_height_blocks();
+				const int column_height_blocks = _generator_internal->column_height_blocks;
 
 				if (_subpass_index == 0) {
 					// First pass creates blocks
@@ -293,7 +295,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 				const int prev_pass_index = VoxelGeneratorMultipassCB::get_pass_index_from_subpass(prev_subpass_index);
 
 				if (pass_index == 0 || prev_pass_index != pass_index) {
-					const int column_base_y_blocks = _generator->get_column_base_y_blocks();
+					const int column_base_y_blocks = _generator_internal->column_base_y_blocks;
 
 					// TODO Cache memory
 					std::vector<VoxelGeneratorMultipassCB::Block *> blocks;
@@ -315,6 +317,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 					input.pass_index = pass_index;
 					input.block_size = _block_size;
 
+					// This should be the ONLY place where `_generator` is used.
 					_generator->generate_pass(input);
 				}
 

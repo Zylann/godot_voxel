@@ -1,3 +1,4 @@
+#if 0
 #include "generate_block_multipass_pm_cb_task.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data.h"
@@ -250,3 +251,4 @@ void GenerateBlockMultipassPMCBTask::run(ThreadedTaskContext &ctx) {
 }
 
 } // namespace zylann::voxel
+#endif

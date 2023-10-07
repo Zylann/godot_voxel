@@ -13,13 +13,15 @@ class IThreadedTask;
 
 namespace voxel {
 
+// TODO Prevent shared usage on more than one terrain, or find a way to support it
+// TODO Prevent usage on VoxelLodTerrain, or make it return empty blocks
+
 class VoxelGeneratorMultipassCB : public VoxelGenerator {
 	GDCLASS(VoxelGeneratorMultipassCB, VoxelGenerator)
 public:
-	// TODO Enforce limits
 	// Pass limit is pretty low because in practice not that many should be needed, and it gets expensive really quick
 	static const int MAX_PASSES = 4;
-	// static const int MAX_PASS_EXTENT = 2;
+	static const int MAX_PASS_EXTENT = 2;
 
 	// Passes are internally split into subpasses: 1 subpass for pass 0, 2 subpasses for the others. Each subpass
 	// depends on the previous. This is to cover side-effect of passes that can modify neighbors.
@@ -42,8 +44,8 @@ public:
 		// Only a non-scheduled, non-running task can be referenced here.
 		// These tasks also must NOT have spawned subtasks. That is, they are only owned by the block while they are
 		// here.
-		// In other words, we use this pointer to prevent asking columns to generate multiple times, because there are
-		// multiple block requests but only one column.
+		// In other words, we use this pointer to prevent asking columns to generate multiple times, because there can
+		// be multiple block requests for one column.
 		IThreadedTask *final_pending_task = nullptr;
 
 		Block() {}
@@ -60,7 +62,7 @@ public:
 		}
 
 		~Block() {
-			ZN_ASSERT(final_pending_task == nullptr);
+			ZN_ASSERT_RETURN_MSG(final_pending_task == nullptr, "Unhandled task leaked!");
 		}
 	};
 
@@ -95,8 +97,10 @@ public:
 
 	struct Map {
 		std::unordered_map<Vector2i, Column> columns;
+		// Protects the hashmap itself
 		Mutex mutex;
-		SpatialLock2D spatial_lock;
+		// Protects columns
+		mutable SpatialLock2D spatial_lock;
 
 		~Map();
 	};
@@ -105,13 +109,35 @@ public:
 		// How many blocks to load using the previous pass around the generated area, so that neighbors can be accessed
 		// in case the pass has effects across blocks.
 		// Constraints: the first pass cannot have dependencies; other passes must have dependencies.
-		int dependency_extents = 0;
-		// // If true, the pass must run on the whole column of blocks specified in vertical range instead of just one
-		// // block.
-		// bool column = false;
-		// // Height region within which the pass must run
-		// int column_min_y;
-		// int column_max_y;
+		int8_t dependency_extents = 0;
+	};
+
+	// Internal state of the generator.
+	struct Internal {
+		// Map used solely for generation purposes. It acts like a cache so we don't recompute the same passes many
+		// times. In theory we could generate blocks without caching or streaming anything, but that would mean every
+		// block request would have to repeatedly generate so much data around it (column, neighbors, neighbors of
+		// neighbors...), it would be prohibitively slow.
+		// As a cache, it can be deleted anytime (taking care of thread safety ofc).
+		Map map;
+
+		// Params: they should never change. Changing them involves making a whole new instance.
+		FixedArray<Pass, MAX_PASSES> passes;
+		unsigned int pass_count = 1; // TODO Would be nice to have a SmallVector<T, N> container
+		int column_base_y_blocks = -4;
+		int column_height_blocks = 8;
+
+		// Set to `true` if the generator's configuration changed. Means a new instance of Internal has been made.
+		// Existing tasks may still finish their work using the old instance, but results will be thrown away. Such
+		// tasks can end faster if they check this boolean.
+		bool expired = false;
+
+		void copy_params(const Internal &other) {
+			passes = other.passes;
+			pass_count = other.pass_count;
+			column_base_y_blocks = other.column_base_y_blocks;
+			column_height_blocks = other.column_height_blocks;
+		}
 	};
 
 	VoxelGeneratorMultipassCB();
@@ -131,10 +157,10 @@ public:
 	};
 
 	// Executes a pass on a grid of blocks.
-	// The grid contains a central block, or column of blocks, where the main processing must happen.
+	// The grid contains a central column of blocks, where the main processing must happen.
 	// It is surrounded by neighbors, which are accessible in case main processing affects them partially (structures
-	// intersecting, light spreading out...). "Main processing" will be invoked only once per block.
-	// Each block in the grid is guaranteed to have been processed at least by preceding passes.
+	// intersecting, light spreading out...). "Main processing" will be invoked only once per column and per pass.
+	// Each block in the grid is guaranteed to have been processed *at least* by preceding passes.
 	// However, neighbor blocks can also have been processed by the current pass already ("main" or not), which is a
 	// side-effect of being able to modify neighbors. This is where you need to be careful with seeded generation: if
 	// two neighbor blocks both generate things that overlap each other, one will necessarily generate before the other.
@@ -143,30 +169,29 @@ public:
 	// will therefore have some differences.
 	virtual void generate_pass(PassInput input);
 
-	const Pass &get_pass(int index) const {
-		ZN_ASSERT(index >= 0 && index < int(_passes.size()));
-		return _passes[index];
-	}
+	int get_pass_count() const;
+	void set_pass_count(int pass_count);
 
-	inline int get_pass_count() const {
-		return _passes.size();
-	}
+	int get_column_base_y_blocks() const;
+	void set_column_base_y_blocks(int new_y);
 
-	inline int get_column_base_y_blocks() const {
-		return _column_base_y_blocks;
-	}
+	int get_column_height_blocks() const;
+	void set_column_height_blocks(int new_height);
 
-	inline int get_column_height_blocks() const {
-		return _column_height_blocks;
-	}
+	int get_pass_extent_blocks(int pass_index) const;
+	void set_pass_extent_blocks(int pass_index, int new_extent);
 
 	// Internal
 
-	std::shared_ptr<VoxelGeneratorMultipassCB::Map> get_map() const {
-		return _map;
-	}
+	std::shared_ptr<Internal> get_internal() const;
 
-	void process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box);
+	// Must be called when a viewer gets paired, moved, or unpaired from the terrain.
+	// Pairing should send an empty previous box.
+	// Moving should send the the previous box and new box.
+	// Unpairing should send an empty box as the current box.
+	void process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box);
+
+	void clear_cache();
 
 	struct DebugColumnState {
 		Vector2i position;
@@ -175,17 +200,69 @@ public:
 
 	bool debug_try_get_column_states(std::vector<DebugColumnState> &out_states);
 
+protected:
+	bool _set(const StringName &p_name, const Variant &p_value);
+	bool _get(const StringName &p_name, Variant &r_ret) const;
+	void _get_property_list(List<PropertyInfo> *p_list) const;
+
 private:
-	std::vector<Pass> _passes;
+	void process_viewer_diff_internal(Box3i p_requested_box, Box3i p_prev_requested_box);
+	void re_initialize_column_refcounts();
 
-	// Map used solely for generation purposes. It acts like a cache so we don't recompute the same passes many times.
-	// In theory we could generate blocks without caching or streaming anything, but that would mean every block request
-	// would have to repeatedly generate so much data around it (column, neighbors, neighbors of neighbors...), it would
-	// be prohibitively slow.
-	std::shared_ptr<Map> _map;
+	// This must be called each time the structure of passes changes (number of passes, extents)
+	template <typename F>
+	void reset_internal(F f) {
+		std::shared_ptr<Internal> old_internal = get_internal();
 
-	int _column_base_y_blocks = -4;
-	int _column_height_blocks = 8;
+		std::shared_ptr<VoxelGeneratorMultipassCB::Internal> new_internal =
+				make_shared_instance<VoxelGeneratorMultipassCB::Internal>();
+
+		new_internal->copy_params(*old_internal);
+
+		f(*new_internal);
+
+		{
+			MutexLock mlock(_internal_mutex);
+			_internal = new_internal;
+			old_internal->expired = true;
+		}
+
+		// Resetting the cache also means we lost all viewer refcounts in columns, which could be different now. For
+		// example if pass count or extents have changed, viewers will need to reference a larger area.
+		re_initialize_column_refcounts();
+
+		// Alternatives:
+		// - Ticket counter. Lock whole map (or some shared mutex that tasks also lock when they run) and increment,
+		// then any ongoing task is forbidden to modify anything in the map if tickets don't match.
+
+		// Issue:
+		// This kind of generator is very likely to be used with a script. But as with the classic VoxelGeneratorScript,
+		// it is totally unsafe to modify the script while it executes in threads in the editor...
+	}
+
+	static void _bind_methods();
+
+	struct PairedViewer {
+		ViewerID id;
+		Box3i request_box;
+	};
+
+	// Keeps track of viewers to workaround some edge cases.
+	// This is very frustrating, because it is tied to VoxelTerrain and it relates to use cases we usually never
+	// encounter during gameplay. For example if a user changes the number of passes in the editor while terrain is
+	// loaded, the ref-counted area to load for viewers in the cache has to become larger, and we can't make this happen
+	// without having access to the list of paired viewers... if we don't, and if the user doesn't re-generate the
+	// terrain, moving around will start causing failed generation requests in a loop because the cache of
+	// partially-generated columns won't be in the right state...
+	std::vector<PairedViewer> _paired_viewers;
+
+	// Threads can be very busy working on this data structure. Yet in the editor, users can modify its parameters
+	// anytime, which could break everything. So when any parameter changes, a copy of this structure is made, and the
+	// old one is de-referenced from here (and will be thrown away once the last thread is done with it). This incurs
+	// quite some overhead when setting properties, however this should mostly happen in editor and resource loading,
+	// never in the middle of gameplay.
+	std::shared_ptr<Internal> _internal;
+	Mutex _internal_mutex;
 };
 
 } // namespace voxel

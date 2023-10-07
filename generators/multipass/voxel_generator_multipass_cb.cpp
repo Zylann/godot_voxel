@@ -1,5 +1,6 @@
 #include "voxel_generator_multipass_cb.h"
 #include "../../engine/voxel_engine.h"
+#include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "generate_block_multipass_pm_cb_task.h"
@@ -11,23 +12,28 @@
 namespace zylann::voxel {
 
 VoxelGeneratorMultipassCB::VoxelGeneratorMultipassCB() {
-	_map = make_shared_instance<VoxelGeneratorMultipassCB::Map>();
+	std::shared_ptr<Internal> internal = make_shared_instance<Internal>();
 
 	// PLACEHOLDER
 	{
 		Pass pass;
-		_passes.push_back(pass);
+		internal->passes[0] = pass;
 	}
 	{
 		Pass pass;
 		pass.dependency_extents = 1;
-		_passes.push_back(pass);
+		internal->passes[1] = pass;
 	}
 	{
 		Pass pass;
 		pass.dependency_extents = 1;
-		_passes.push_back(pass);
+		internal->passes[2] = pass;
 	}
+
+	internal->pass_count = 3;
+
+	// MutexLock mlock(_internal_mutex);
+	_internal = internal;
 }
 
 VoxelGeneratorMultipassCB::~VoxelGeneratorMultipassCB() {}
@@ -49,10 +55,12 @@ VoxelGeneratorMultipassCB::Map::~Map() {
 VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData &input) {
 	const int bs = input.voxel_buffer.get_size().y;
 
-	if (input.origin_in_voxels.y + bs <= _column_base_y_blocks * bs) {
+	std::shared_ptr<Internal> internal = get_internal();
+
+	if (input.origin_in_voxels.y + bs <= internal->column_base_y_blocks * bs) {
 		// TODO Generate bottom fallback
 
-	} else if (input.origin_in_voxels.y >= (_column_base_y_blocks + _column_height_blocks) * bs) {
+	} else if (input.origin_in_voxels.y >= (internal->column_base_y_blocks + internal->column_height_blocks) * bs) {
 		// TODO Generate top fallback
 
 	} else {
@@ -62,6 +70,88 @@ VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData 
 	}
 
 	return { false };
+}
+
+int VoxelGeneratorMultipassCB::get_pass_count() const {
+	return get_internal()->pass_count;
+}
+
+void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
+	if (get_pass_count() == pass_count) {
+		return;
+	}
+
+	ZN_ASSERT_RETURN_MSG(
+			pass_count > 0 && pass_count < MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES));
+
+	reset_internal([pass_count](Internal &internal) {
+		// Initialize new passes
+		for (int pass_index = internal.pass_count; pass_index < pass_count; ++pass_index) {
+			Pass &pass = internal.passes[pass_index];
+			pass = Pass();
+			pass.dependency_extents = 1;
+		}
+
+		internal.pass_count = pass_count;
+	});
+}
+
+int VoxelGeneratorMultipassCB::get_column_base_y_blocks() const {
+	return get_internal()->column_base_y_blocks;
+}
+
+void VoxelGeneratorMultipassCB::set_column_base_y_blocks(int new_y) {
+	if (get_column_base_y_blocks() == new_y) {
+		return;
+	}
+	reset_internal([new_y](Internal &internal) { //
+		internal.column_base_y_blocks = new_y;
+	});
+}
+
+int VoxelGeneratorMultipassCB::get_column_height_blocks() const {
+	return get_internal()->column_height_blocks;
+}
+
+void VoxelGeneratorMultipassCB::set_column_height_blocks(int new_height) {
+	if (get_column_height_blocks() == new_height) {
+		return;
+	}
+	reset_internal([new_height](Internal &internal) { //
+		internal.column_height_blocks = new_height;
+	});
+}
+
+int VoxelGeneratorMultipassCB::get_pass_extent_blocks(int pass_index) const {
+	std::shared_ptr<Internal> internal = get_internal();
+	ZN_ASSERT_RETURN_V(pass_index >= 0 && pass_index < int(internal->pass_count), 0);
+	return internal->passes[pass_index].dependency_extents;
+}
+
+void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_extent) {
+	std::shared_ptr<Internal> internal = get_internal();
+	ZN_ASSERT_RETURN(pass_index >= 0 && pass_index < int(internal->pass_count));
+
+	if (pass_index == 0) {
+		ZN_ASSERT_RETURN_MSG(new_extent == 0, "Non-zero extents is not supported for the first pass.");
+		return;
+
+	} else {
+		ZN_ASSERT_RETURN_MSG(new_extent >= 1 && new_extent <= MAX_PASS_EXTENT,
+				format("Pass extents are limited between {} and {}.", 1, MAX_PASS_EXTENT));
+	}
+
+	reset_internal([pass_index, new_extent](Internal &internal) { //
+		internal.passes[pass_index].dependency_extents = new_extent;
+	});
+}
+
+// Internal
+
+std::shared_ptr<VoxelGeneratorMultipassCB::Internal> VoxelGeneratorMultipassCB::get_internal() const {
+	MutexLock mlock(_internal_mutex);
+	ZN_ASSERT(_internal != nullptr);
+	return _internal;
 }
 
 namespace {
@@ -95,10 +185,10 @@ struct GridEditor {
 	}
 };
 
-int get_total_dependency_extent(const VoxelGeneratorMultipassCB &generator) {
+int get_total_dependency_extent(const VoxelGeneratorMultipassCB::Internal &generator) {
 	int extent = 0;
-	for (int pass_index = 1; pass_index < generator.get_pass_count(); ++pass_index) {
-		const VoxelGeneratorMultipassCB::Pass &pass = generator.get_pass(pass_index);
+	for (unsigned int pass_index = 1; pass_index < generator.pass_count; ++pass_index) {
+		const VoxelGeneratorMultipassCB::Pass &pass = generator.passes[pass_index];
 		if (pass.dependency_extents == 0) {
 			ZN_PRINT_ERROR("Unexpected pass dependency extents");
 		}
@@ -111,6 +201,8 @@ int get_total_dependency_extent(const VoxelGeneratorMultipassCB &generator) {
 
 void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 	// PLACEHOLDER
+	// Note: must not access _internal from here, only use `input`
+
 	const Vector3i column_origin_in_voxels = input.main_block_position * 16;
 	static const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_TYPE;
 
@@ -200,7 +292,38 @@ Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
 
 } // namespace
 
-void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i p_prev_requested_box) {
+void VoxelGeneratorMultipassCB::re_initialize_column_refcounts() {
+	// This should only be called following a map reset
+	ZN_ASSERT_RETURN_MSG(get_internal()->map.columns.size() == 0, "Bug!");
+
+	for (PairedViewer &pv : _paired_viewers) {
+		process_viewer_diff_internal(pv.request_box, Box3i());
+	}
+}
+
+void VoxelGeneratorMultipassCB::process_viewer_diff(ViewerID id, Box3i p_requested_box, Box3i p_prev_requested_box) {
+	PairedViewer *paired_viewer = nullptr;
+	for (PairedViewer &pv : _paired_viewers) {
+		if (pv.id == id) {
+			paired_viewer = &pv;
+			break;
+		}
+	}
+	if (paired_viewer == nullptr) {
+		// This viewer wasn't known to the generator before. Could mean it just got paired, or properties of the
+		// generator were changed (which can cause the generator's internal state and viewers to be reset)
+		_paired_viewers.push_back(PairedViewer{ id, p_requested_box });
+		// Force updating the whole area by simulating what happens when a viewer gets paired.
+		// p_prev_requested_box = Box3i();
+
+	} else {
+		paired_viewer->request_box = p_requested_box;
+	}
+
+	process_viewer_diff_internal(p_requested_box, p_prev_requested_box);
+}
+
+void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_box, Box3i p_prev_requested_box) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// TODO Could run as a task similarly to threaded update of VLT
@@ -208,14 +331,16 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 	// load... the easiest way I can think of, is to just run this in the same thread that triggers the requests, and
 	// that means moving VoxelTerrain's process to a thread as well.
 
+	std::shared_ptr<Internal> internal = get_internal();
+
 	static const int block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
 
-	const int total_extent = get_total_dependency_extent(*this);
+	const int total_extent = get_total_dependency_extent(*internal);
 
 	const Box2i requested_box_2d =
-			to_box2i_in_height_range(p_requested_box, _column_base_y_blocks, _column_height_blocks);
-	const Box2i prev_requested_box_2d =
-			to_box2i_in_height_range(p_prev_requested_box, _column_base_y_blocks, _column_height_blocks);
+			to_box2i_in_height_range(p_requested_box, internal->column_base_y_blocks, internal->column_height_blocks);
+	const Box2i prev_requested_box_2d = to_box2i_in_height_range(
+			p_prev_requested_box, internal->column_base_y_blocks, internal->column_height_blocks);
 
 	// println(format("R {} {} {} {} {}", requested_box_2d.pos.x, requested_box_2d.pos.y, requested_box_2d.size.x,
 	// 		requested_box_2d.size.y, Time::get_singleton()->get_ticks_usec()));
@@ -230,12 +355,12 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 	// println(format("L {} {} {} {} {}", load_requested_box.pos.x, load_requested_box.pos.y, load_requested_box.size.x,
 	// 		load_requested_box.size.y, Time::get_singleton()->get_ticks_usec()));
 
-	Map &map = *_map;
+	Map &map = internal->map;
 
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	// Blocks to view
-	const int column_height = _column_height_blocks;
+	const int column_height = internal->column_height_blocks;
 	load_requested_box.difference(prev_load_requested_box, [&map, column_height](Box2i new_box) {
 		{
 			SpatialLock2D::Write swlock(map.spatial_lock, new_box);
@@ -364,35 +489,130 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(Box3i p_requested_box, Box3i
 	task_scheduler.flush();
 }
 
+void VoxelGeneratorMultipassCB::clear_cache() {
+	reset_internal([](const Internal &) {});
+
+	// This might lock up for a few seconds if the generator is busy
+	/*
+	Map &map = old_internal->map;
+	SpatialLock2D::Write swlock(map.spatial_lock, BoxBounds2i::from_everywhere());
+	MutexLock mlock(map.mutex);
+
+	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
+
+	for (auto it = map.columns.begin(); it != map.columns.end(); ++it) {
+		Column &column = it->second;
+
+		for (Block &block : column.blocks) {
+			// Kick tasks out of here
+			if (block.final_pending_task != nullptr) {
+				task_scheduler.push_main_task(block.final_pending_task);
+				block.final_pending_task = nullptr;
+			}
+		}
+	}
+	map.columns.clear();
+	*/
+}
 
 bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugColumnState> &out_states) {
 	ZN_PROFILE_SCOPE();
 
 	out_states.clear();
 
+	std::shared_ptr<Internal> internal = get_internal();
+	Map &map = internal->map;
+
 	{
 		unsigned int size = 0;
 		{
-			MutexLock mlock(_map->mutex);
-			size = _map->columns.size();
+			MutexLock mlock(map.mutex);
+			size = map.columns.size();
 		}
 		out_states.reserve(size);
 	}
 
-	if (!_map->spatial_lock.try_lock_read(BoxBounds2i::from_everywhere())) {
-		// Don't hang here on the main thread, while generating it's very likely the map is locked somewhere
+	if (!map.spatial_lock.try_lock_read(BoxBounds2i::from_everywhere())) {
+		// Don't hang here on the main thread, while generating it's very likely the map is locked somewhere.
+		// We can poll this function regularly from a debug tool until locking succeeds.
 		return false;
 	}
-	SpatialLock2D::UnlockReadOnScopeExit srlock(_map->spatial_lock, BoxBounds2i::from_everywhere());
+	SpatialLock2D::UnlockReadOnScopeExit srlock(map.spatial_lock, BoxBounds2i::from_everywhere());
 
-	MutexLock mlock(_map->mutex);
+	MutexLock mlock(map.mutex);
 
-	for (auto it = _map->columns.begin(); it != _map->columns.end(); ++it) {
+	for (auto it = map.columns.begin(); it != map.columns.end(); ++it) {
 		Column &column = it->second;
 		out_states.push_back(DebugColumnState{ it->first, column.subpass_index });
 	}
 
 	return true;
+}
+
+// BINDING LAND
+
+bool VoxelGeneratorMultipassCB::_set(const StringName &p_name, const Variant &p_value) {
+	const String property_name = p_name;
+
+	if (property_name.begins_with("pass_")) {
+		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_end_pos = property_name.find("_", index_pos);
+		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
+
+		String sub_property_name = property_name.substr(index_end_pos);
+		if (sub_property_name == "_extent") {
+			set_pass_extent_blocks(index, p_value);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VoxelGeneratorMultipassCB::_get(const StringName &p_name, Variant &r_ret) const {
+	const String property_name = p_name;
+
+	if (property_name.begins_with("pass_")) {
+		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_end_pos = property_name.find("_", index_pos);
+		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
+
+		String sub_property_name = property_name.substr(index_end_pos);
+		if (sub_property_name == "_extent") {
+			r_ret = get_pass_extent_blocks(index);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void VoxelGeneratorMultipassCB::_get_property_list(List<PropertyInfo> *p_list) const {
+	std::shared_ptr<Internal> internal = get_internal();
+	String pass_extent_range_hint_string = String("{0},{1}").format(varray(1, MAX_PASS_EXTENT));
+
+	for (unsigned int pass_index = 0; pass_index < internal->pass_count; ++pass_index) {
+		String pname = String("pass_{0}_extent").format(varray(pass_index));
+
+		if (pass_index == 0) {
+			p_list->push_back(PropertyInfo(
+					Variant::INT, pname, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_READ_ONLY));
+		} else {
+			p_list->push_back(PropertyInfo(Variant::INT, pname, PROPERTY_HINT_RANGE, pass_extent_range_hint_string));
+		}
+	}
+}
+
+void VoxelGeneratorMultipassCB::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_pass_count"), &VoxelGeneratorMultipassCB::get_pass_count);
+	ClassDB::bind_method(D_METHOD("set_pass_count", "count"), &VoxelGeneratorMultipassCB::set_pass_count);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "pass_count", PROPERTY_HINT_RANGE,
+						 String("{0},{1}").format(varray(1, MAX_PASSES))),
+			"set_pass_count", "get_pass_count");
+
+	BIND_CONSTANT(MAX_PASSES);
+	BIND_CONSTANT(MAX_PASS_EXTENT);
 }
 
 } // namespace zylann::voxel

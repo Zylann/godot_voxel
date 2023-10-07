@@ -48,7 +48,10 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelGeneratorMultipassCB> multipass_generator = generator;
 	if (multipass_generator.is_valid()) {
 		ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
-		std::shared_ptr<VoxelGeneratorMultipassCB::Map> map = multipass_generator->get_map();
+		std::shared_ptr<VoxelGeneratorMultipassCB::Internal> multipass_generator_internal =
+				multipass_generator->get_internal();
+		VoxelGeneratorMultipassCB::Map &map = multipass_generator_internal->map;
+
 		const int final_subpass_index =
 				VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(multipass_generator->get_pass_count()) - 1;
 
@@ -61,12 +64,12 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 		} else {
 			const Vector2i column_position(position.x, position.z);
 			// TODO Candidate for postponing? Lots of them, might cause contention
-			SpatialLock2D::Read srlock(map->spatial_lock, BoxBounds2i::from_position(column_position));
+			SpatialLock2D::Read srlock(map.spatial_lock, BoxBounds2i::from_position(column_position));
 			VoxelGeneratorMultipassCB::Column *column = nullptr;
 			{
-				MutexLock mlock(map->mutex);
-				auto column_it = map->columns.find(column_position);
-				if (column_it == map->columns.end()) {
+				MutexLock mlock(map.mutex);
+				auto column_it = map.columns.find(column_position);
+				if (column_it == map.columns.end()) {
 					// Drop, for some reason it wasn't available
 					return;
 				}
@@ -116,11 +119,11 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 				if ((column->pending_subpass_tasks_mask & (1 << final_subpass_index)) == 0) {
 					// No tasks working on it, and we are the first top-level task.
 					// Spawn a subtask to bring this column to final state.
-					GenerateBlockMultipassCBTask *subtask = ZN_NEW(
-							GenerateBlockMultipassCBTask(column_position, block_size, final_subpass_index, generator,
-									// The subtask takes ownership of the current task, it will schedule it back when it
-									// finishes (or cancels)
-									this, make_shared_instance<std::atomic_int>(1)));
+					GenerateBlockMultipassCBTask *subtask = ZN_NEW(GenerateBlockMultipassCBTask(column_position,
+							block_size, final_subpass_index, multipass_generator_internal, multipass_generator,
+							// The subtask takes ownership of the current task, it will schedule it back when it
+							// finishes (or cancels)
+							this, make_shared_instance<std::atomic_int>(1)));
 
 					column->pending_subpass_tasks_mask |= (1 << final_subpass_index);
 
