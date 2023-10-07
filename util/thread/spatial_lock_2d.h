@@ -39,7 +39,6 @@ public:
 		Mode mode;
 #ifdef ZN_SPATIAL_LOCK_2D_CHECKS
 		Thread::ID thread_id;
-		std::thread::id id;
 #endif
 	};
 
@@ -54,7 +53,7 @@ public:
 		if (can_lock_for_read(box)) {
 			_boxes.push_back(Box{ box, MODE_READ,
 #ifdef ZN_SPATIAL_LOCK_2D_CHECKS
-					Thread::get_caller_id(), std::this_thread::get_id()
+					Thread::get_caller_id()
 #endif
 			});
 			_boxes_mutex.unlock();
@@ -152,7 +151,6 @@ private:
 	bool can_lock_for_read(const BoxBounds2i &box) {
 #ifdef ZN_SPATIAL_LOCK_2D_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
-		std::thread::id id = std::this_thread::get_id();
 #endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
@@ -181,7 +179,6 @@ private:
 	bool can_lock_for_write(const BoxBounds2i &box) {
 #ifdef ZN_SPATIAL_LOCK_2D_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
-		std::thread::id id = std::this_thread::get_id();
 #endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
