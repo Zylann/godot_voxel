@@ -59,6 +59,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const VoxelData &data;
 		const VoxelBlockyLibraryBase::BakedData &baked_data;
 		const uint32_t collision_mask;
+		const Vector3 p_from;
+		const Vector3 p_to;
 
 		bool operator()(const VoxelRaycastState &rs) const {
 			VoxelSingleValue defval;
@@ -78,12 +80,11 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 				return false;
 			}
 
-			if (model.transparency_index == 0) {
-				return true;
-			}
-
-			if (model.transparency_index > 0 && model.box_collision_aabbs.size() > 0) {
-				return true;
+			for (const AABB & aabb : model.box_collision_aabbs)
+			{
+				if (AABB(aabb.position + rs.hit_position, aabb.size).intersects_segment(p_from, p_to)) {
+					return true;
+				}
 			}
 
 			return false;
@@ -110,7 +111,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		if (library_ref.is_null()) {
 			return res;
 		}
-		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask };
+		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask, local_pos, local_pos + local_dir * max_distance};
 		float hit_distance;
 		float hit_distance_prev;
 		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
