@@ -67,6 +67,12 @@ public:
 	StringName source;
 	StringName _dummy_function;
 	StringName grab_focus;
+
+	StringName font;
+	StringName font_size;
+	StringName font_color;
+	StringName Label;
+	StringName Editor;
 #endif
 
 	StringName _rpc_receive_blocks;

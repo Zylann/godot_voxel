@@ -72,6 +72,12 @@ VoxelStringNames::VoxelStringNames() {
 	source = StringName("source");
 	_dummy_function = StringName("_dummy_function");
 	grab_focus = StringName("grab_focus");
+
+	font = StringName("font");
+	font_size = StringName("font_size");
+	font_color = StringName("font_color");
+	Label = StringName("Label");
+	Editor = StringName("Editor");
 #endif
 
 	_rpc_receive_blocks = StringName("_rpc_receive_blocks");
