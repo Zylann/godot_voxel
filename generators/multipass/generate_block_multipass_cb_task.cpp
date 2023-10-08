@@ -67,7 +67,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	const int final_subpass_index =
-			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator_internal->pass_count) - 1;
+			VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(_generator_internal->passes.size()) - 1;
 
 	if (_cancelled) {
 		// At least one subtask was cancelled, therefore we have to cleanup and return too.

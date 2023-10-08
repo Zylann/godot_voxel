@@ -16,20 +16,18 @@ VoxelGeneratorMultipassCB::VoxelGeneratorMultipassCB() {
 	// PLACEHOLDER
 	{
 		Pass pass;
-		internal->passes[0] = pass;
+		internal->passes.push_back(pass);
 	}
 	{
 		Pass pass;
 		pass.dependency_extents = 1;
-		internal->passes[1] = pass;
+		internal->passes.push_back(pass);
 	}
 	{
 		Pass pass;
 		pass.dependency_extents = 1;
-		internal->passes[2] = pass;
+		internal->passes.push_back(pass);
 	}
-
-	internal->pass_count = 3;
 
 	// MutexLock mlock(_internal_mutex);
 	_internal = internal;
@@ -72,7 +70,7 @@ VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData 
 }
 
 int VoxelGeneratorMultipassCB::get_pass_count() const {
-	return get_internal()->pass_count;
+	return get_internal()->passes.size();
 }
 
 void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
@@ -83,15 +81,8 @@ void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
 	ZN_ASSERT_RETURN_MSG(
 			pass_count > 0 && pass_count <= MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES));
 
-	reset_internal([pass_count](Internal &internal) {
-		// Initialize new passes
-		for (int pass_index = internal.pass_count; pass_index < pass_count; ++pass_index) {
-			Pass &pass = internal.passes[pass_index];
-			pass = Pass();
-			pass.dependency_extents = 1;
-		}
-
-		internal.pass_count = pass_count;
+	reset_internal([pass_count](Internal &internal) { //
+		internal.passes.resize(pass_count, Pass{ 1 });
 	});
 }
 
@@ -123,13 +114,13 @@ void VoxelGeneratorMultipassCB::set_column_height_blocks(int new_height) {
 
 int VoxelGeneratorMultipassCB::get_pass_extent_blocks(int pass_index) const {
 	std::shared_ptr<Internal> internal = get_internal();
-	ZN_ASSERT_RETURN_V(pass_index >= 0 && pass_index < int(internal->pass_count), 0);
+	ZN_ASSERT_RETURN_V(pass_index >= 0 && pass_index < int(internal->passes.size()), 0);
 	return internal->passes[pass_index].dependency_extents;
 }
 
 void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_extent) {
 	std::shared_ptr<Internal> internal = get_internal();
-	ZN_ASSERT_RETURN(pass_index >= 0 && pass_index < int(internal->pass_count));
+	ZN_ASSERT_RETURN(pass_index >= 0 && pass_index < int(internal->passes.size()));
 
 	if (pass_index == 0) {
 		ZN_ASSERT_RETURN_MSG(new_extent == 0, "Non-zero extents is not supported for the first pass.");
@@ -186,7 +177,7 @@ struct GridEditor {
 
 int get_total_dependency_extent(const VoxelGeneratorMultipassCB::Internal &generator) {
 	int extent = 0;
-	for (unsigned int pass_index = 1; pass_index < generator.pass_count; ++pass_index) {
+	for (unsigned int pass_index = 1; pass_index < generator.passes.size(); ++pass_index) {
 		const VoxelGeneratorMultipassCB::Pass &pass = generator.passes[pass_index];
 		if (pass.dependency_extents == 0) {
 			ZN_PRINT_ERROR("Unexpected pass dependency extents");
@@ -521,7 +512,7 @@ void VoxelGeneratorMultipassCB::_get_property_list(List<PropertyInfo> *p_list) c
 	std::shared_ptr<Internal> internal = get_internal();
 	String pass_extent_range_hint_string = String("{0},{1}").format(varray(1, MAX_PASS_EXTENT));
 
-	for (unsigned int pass_index = 0; pass_index < internal->pass_count; ++pass_index) {
+	for (unsigned int pass_index = 0; pass_index < internal->passes.size(); ++pass_index) {
 		String pname = String("pass_{0}_extent").format(varray(pass_index));
 
 		if (pass_index == 0) {

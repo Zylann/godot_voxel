@@ -4,6 +4,7 @@
 #include "../../engine/ids.h"
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/ref_count.h"
+#include "../../util/small_vector.h"
 #include "../../util/thread/spatial_lock_2d.h"
 #include "../voxel_generator.h"
 
@@ -122,8 +123,7 @@ public:
 		Map map;
 
 		// Params: they should never change. Changing them involves making a whole new instance.
-		FixedArray<Pass, MAX_PASSES> passes;
-		unsigned int pass_count = 1; // TODO Would be nice to have a SmallVector<T, N> container
+		SmallVector<Pass, MAX_PASSES> passes;
 		int column_base_y_blocks = -4;
 		int column_height_blocks = 8;
 
@@ -134,7 +134,6 @@ public:
 
 		void copy_params(const Internal &other) {
 			passes = other.passes;
-			pass_count = other.pass_count;
 			column_base_y_blocks = other.column_base_y_blocks;
 			column_height_blocks = other.column_height_blocks;
 		}
