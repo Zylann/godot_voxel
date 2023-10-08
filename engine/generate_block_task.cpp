@@ -119,11 +119,12 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 				if ((column->pending_subpass_tasks_mask & (1 << final_subpass_index)) == 0) {
 					// No tasks working on it, and we are the first top-level task.
 					// Spawn a subtask to bring this column to final state.
-					GenerateBlockMultipassCBTask *subtask = ZN_NEW(GenerateBlockMultipassCBTask(column_position,
-							block_size, final_subpass_index, multipass_generator_internal, multipass_generator,
-							// The subtask takes ownership of the current task, it will schedule it back when it
-							// finishes (or cancels)
-							this, make_shared_instance<std::atomic_int>(1)));
+					GenerateBlockMultipassCBTask *subtask =
+							ZN_NEW(GenerateBlockMultipassCBTask(column_position, block_size, final_subpass_index,
+									multipass_generator_internal, multipass_generator, ctx.task_priority,
+									// The subtask takes ownership of the current task, it will schedule it back when it
+									// finishes (or cancels)
+									this, make_shared_instance<std::atomic_int>(1)));
 
 					column->pending_subpass_tasks_mask |= (1 << final_subpass_index);
 

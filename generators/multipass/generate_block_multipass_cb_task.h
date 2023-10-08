@@ -25,7 +25,7 @@ class GenerateBlockMultipassCBTask : public IThreadedTask {
 public:
 	GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size, uint8_t p_subpass_index,
 			std::shared_ptr<VoxelGeneratorMultipassCB::Internal> p_generator_internal,
-			Ref<VoxelGeneratorMultipassCB> p_generator,
+			Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority,
 			// When the current task finishes, it will decrement the given counter, and return control to the following
 			// caller task when the counter reaches 0.
 			IThreadedTask *p_caller, std::shared_ptr<std::atomic_int> p_caller_dependency_count);
@@ -40,8 +40,8 @@ public:
 
 	// TODO Base priority off the original GenerateBlockTask?
 	// We could avoid computing it by passing its cached value through ThreadedTaskContext
-	TaskPriority get_priority() {
-		return TaskPriority(0, 0, constants::TASK_PRIORITY_GENERATE_BAND2, 0);
+	TaskPriority get_priority() override {
+		return _priority;
 	}
 
 	// Cancellation cannot use this API for now (it would prevent the task from running) because the task must run in
@@ -53,6 +53,7 @@ private:
 	void return_to_caller(bool success);
 
 	Vector2i _column_position;
+	TaskPriority _priority;
 	uint8_t _block_size;
 	uint8_t _subpass_index;
 	bool _cancelled = false;

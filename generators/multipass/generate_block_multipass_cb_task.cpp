@@ -24,10 +24,11 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 
 GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size,
 		uint8_t p_subpass_index, std::shared_ptr<VoxelGeneratorMultipassCB::Internal> p_generator_internal,
-		Ref<VoxelGeneratorMultipassCB> p_generator, IThreadedTask *p_caller,
+		Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority, IThreadedTask *p_caller,
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
 	//
 	_column_position = p_column_position;
+	_priority = p_priority;
 	_block_size = p_block_size;
 	_subpass_index = p_subpass_index;
 
@@ -235,7 +236,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 
 							GenerateBlockMultipassCBTask *subtask =
 									ZN_NEW(GenerateBlockMultipassCBTask(cpos, _block_size, prev_subpass_index,
-											_generator_internal, _generator, this, dependency_counter));
+											_generator_internal, _generator, _priority, this, dependency_counter));
 							subtask->_caller_mp_task = this;
 							task_scheduler.push_main_task(subtask);
 

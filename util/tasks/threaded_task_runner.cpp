@@ -342,7 +342,7 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				if (!item.task->is_cancelled()) {
 					ThreadedTaskContext ctx{ uint8_t(data.index),
 						// By default, if the task does not set this status, it will be considered complete after run
-						ThreadedTaskContext::STATUS_COMPLETE };
+						ThreadedTaskContext::STATUS_COMPLETE, item.cached_priority };
 					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
