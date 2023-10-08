@@ -537,6 +537,25 @@ void VoxelGeneratorMultipassCB::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_pass_count"), &VoxelGeneratorMultipassCB::get_pass_count);
 	ClassDB::bind_method(D_METHOD("set_pass_count", "count"), &VoxelGeneratorMultipassCB::set_pass_count);
 
+	ClassDB::bind_method(
+			D_METHOD("get_pass_extent_blocks", "pass_index"), &VoxelGeneratorMultipassCB::get_pass_extent_blocks);
+	ClassDB::bind_method(D_METHOD("set_pass_extent_blocks", "pass_index", "extent"),
+			&VoxelGeneratorMultipassCB::set_pass_extent_blocks);
+
+	ClassDB::bind_method(D_METHOD("get_column_base_y_blocks"), &VoxelGeneratorMultipassCB::get_column_base_y_blocks);
+	ClassDB::bind_method(
+			D_METHOD("set_column_base_y_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_base_y_blocks);
+
+	ClassDB::bind_method(D_METHOD("get_column_height_blocks"), &VoxelGeneratorMultipassCB::get_column_height_blocks);
+	ClassDB::bind_method(
+			D_METHOD("set_column_height_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_height_blocks);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "column_base_y_blocks"), "set_column_base_y_blocks", "get_column_base_y_blocks");
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "column_height_blocks"), "set_column_height_blocks", "get_column_height_blocks");
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "pass_count", PROPERTY_HINT_RANGE,
 						 String("{0},{1}").format(varray(1, MAX_PASSES))),
 			"set_pass_count", "get_pass_count");
