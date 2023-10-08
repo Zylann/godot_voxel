@@ -81,7 +81,7 @@ void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
 	}
 
 	ZN_ASSERT_RETURN_MSG(
-			pass_count > 0 && pass_count < MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES));
+			pass_count > 0 && pass_count <= MAX_PASSES, format("Pass count is limited from {} to {}", 1, MAX_PASSES));
 
 	reset_internal([pass_count](Internal &internal) {
 		// Initialize new passes
