@@ -111,7 +111,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		if (library_ref.is_null()) {
 			return res;
 		}
-		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask, p_pos, p_pos + p_dir * max_distance};
+		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask, local_pos, local_pos + local_dir * max_distance};
 		float hit_distance;
 		float hit_distance_prev;
 		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
