@@ -44,7 +44,7 @@ public:
 
 		// Default-construct new elements
 		for (; _size < new_size; ++_size) {
-			::new (&_data[_size]) T(v);
+			::new (&_data[_size]) T();
 		}
 
 		// Destroy excess elements
