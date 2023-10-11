@@ -84,6 +84,8 @@ void VoxelGeneratorMultipassCB::set_pass_count(int pass_count) {
 	reset_internal([pass_count](Internal &internal) { //
 		internal.passes.resize(pass_count, Pass{ 1 });
 	});
+
+	re_initialize_column_refcounts();
 }
 
 int VoxelGeneratorMultipassCB::get_column_base_y_blocks() const {
@@ -97,6 +99,7 @@ void VoxelGeneratorMultipassCB::set_column_base_y_blocks(int new_y) {
 	reset_internal([new_y](Internal &internal) { //
 		internal.column_base_y_blocks = new_y;
 	});
+	re_initialize_column_refcounts();
 }
 
 int VoxelGeneratorMultipassCB::get_column_height_blocks() const {
@@ -111,6 +114,7 @@ void VoxelGeneratorMultipassCB::set_column_height_blocks(int new_height) {
 	reset_internal([new_height](Internal &internal) { //
 		internal.column_height_blocks = new_height;
 	});
+	re_initialize_column_refcounts();
 }
 
 int VoxelGeneratorMultipassCB::get_pass_extent_blocks(int pass_index) const {
@@ -135,6 +139,7 @@ void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_e
 	reset_internal([pass_index, new_extent](Internal &internal) { //
 		internal.passes[pass_index].dependency_extents = new_extent;
 	});
+	re_initialize_column_refcounts();
 }
 
 // Internal
@@ -304,8 +309,6 @@ void VoxelGeneratorMultipassCB::process_viewer_diff(ViewerID id, Box3i p_request
 		// This viewer wasn't known to the generator before. Could mean it just got paired, or properties of the
 		// generator were changed (which can cause the generator's internal state and viewers to be reset)
 		_paired_viewers.push_back(PairedViewer{ id, p_requested_box });
-		// Force updating the whole area by simulating what happens when a viewer gets paired.
-		// p_prev_requested_box = Box3i();
 
 	} else {
 		paired_viewer->request_box = p_requested_box;
@@ -413,6 +416,10 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 
 void VoxelGeneratorMultipassCB::clear_cache() {
 	reset_internal([](const Internal &) {});
+
+	// We dont reset viewer refcounts, we assume they will be re-paired later by the caller.
+
+	// re_initialize_column_refcounts();
 
 	// This might lock up for a few seconds if the generator is busy
 	/*

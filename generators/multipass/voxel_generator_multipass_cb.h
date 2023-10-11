@@ -231,9 +231,9 @@ private:
 			old_internal->expired = true;
 		}
 
-		// Resetting the cache also means we lost all viewer refcounts in columns, which could be different now. For
-		// example if pass count or extents have changed, viewers will need to reference a larger area.
-		re_initialize_column_refcounts();
+		// Note, resetting the cache also means we lost all viewer refcounts in columns, which could be different now.
+		// For example if pass count or extents have changed, viewers will need to reference a larger area.
+		// Depending on the context, we may call `re_initialize_column_refcounts()`.
 
 		// Alternatives:
 		// - Ticket counter. Lock whole map (or some shared mutex that tasks also lock when they run) and increment,
