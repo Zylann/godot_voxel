@@ -906,8 +906,8 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		// Directly generate the block without checking the stream
 		ERR_FAIL_COND(stream_dependency->generator.is_null());
 
-		println(format(
-				"G {} {} {} {}", block_pos.x, block_pos.y, block_pos.z, Time::get_singleton()->get_ticks_usec()));
+		// println(format(
+		// 		"G {} {} {} {}", block_pos.x, block_pos.y, block_pos.z, Time::get_singleton()->get_ticks_usec()));
 		GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
 		task->volume_id = volume_id;
 		task->position = block_pos;
