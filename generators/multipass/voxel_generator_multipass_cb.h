@@ -71,6 +71,11 @@ public:
 	int get_pass_extent_blocks(int pass_index) const;
 	void set_pass_extent_blocks(int pass_index, int new_extent);
 
+	// Run the generator to get a particular column from scratch, using a single thread for better script debugging
+	// (since Godot 4 still doesn't support debugging scripts in different threads, at time of writing). This doesn't
+	// use the internal cache and can be extremely slow.
+	TypedArray<gd::VoxelBuffer> debug_generate_test_column(Vector2i column_position_blocks);
+
 	// Internal
 
 	std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> get_internal() const;
