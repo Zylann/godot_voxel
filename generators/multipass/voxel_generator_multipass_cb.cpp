@@ -236,8 +236,6 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 
 	std::shared_ptr<Internal> internal = get_internal();
 
-	static const int block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
-
 	const int total_extent = get_total_dependency_extent(*internal);
 
 	const Box2i requested_box_2d =
