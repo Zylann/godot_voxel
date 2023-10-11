@@ -50,6 +50,11 @@ VoxelGeneratorMultipassCB::Map::~Map() {
 }
 
 VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData &input) {
+	if (input.lod > 0) {
+		// Not supported
+		return { false };
+	}
+
 	const int bs = input.voxel_buffer.get_size().y;
 
 	std::shared_ptr<Internal> internal = get_internal();
