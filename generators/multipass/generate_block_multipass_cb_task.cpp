@@ -66,7 +66,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(_generator != nullptr);
 
-	VoxelGeneratorMultipassCB::Map &map = _generator_internal->map;
+	Map &map = _generator_internal->map;
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
 
 	const int final_subpass_index =
