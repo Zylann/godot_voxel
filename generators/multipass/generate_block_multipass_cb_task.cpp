@@ -22,8 +22,10 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 
 } // namespace
 
+using namespace VoxelGeneratorMultipassCBStructs;
+
 GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size,
-		uint8_t p_subpass_index, std::shared_ptr<VoxelGeneratorMultipassCB::Internal> p_generator_internal,
+		uint8_t p_subpass_index, std::shared_ptr<Internal> p_generator_internal,
 		Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority, IThreadedTask *p_caller,
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
 	//
@@ -87,7 +89,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			auto column_it = map.columns.find(_column_position);
 			if (column_it != map.columns.end()) {
 				// Unregister task from the column
-				VoxelGeneratorMultipassCB::Column &column = column_it->second;
+				Column &column = column_it->second;
 				column.pending_subpass_tasks_mask &= ~(1 << _subpass_index);
 
 				if (_subpass_index == final_subpass_index) {
@@ -103,7 +105,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	}
 
 	const int pass_index = VoxelGeneratorMultipassCB::get_pass_index_from_subpass(_subpass_index);
-	const VoxelGeneratorMultipassCB::Pass &pass = _generator_internal->passes[pass_index];
+	const Pass &pass = _generator_internal->passes[pass_index];
 
 	if (_subpass_index == 0) {
 		// The first subpass can't depend on another subpass
@@ -119,7 +121,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	const unsigned int central_block_index =
 			Vector2iUtil::get_yx_index(Vector2iUtil::create(pass.dependency_extents), neighbors_box.size);
 
-	std::vector<VoxelGeneratorMultipassCB::Column *> columns;
+	std::vector<Column *> columns;
 	// TODO Cache memory
 	columns.reserve(Vector2iUtil::get_area(neighbors_box.size));
 
@@ -151,7 +153,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			// Coordinate order matters (note, Y in Vector2i corresponds to Z in 3D here).
 			neighbors_box.for_each_cell_yx([&columns, &map](Vector2i cpos) {
 				auto it = map.columns.find(cpos);
-				VoxelGeneratorMultipassCB::Column *column = nullptr;
+				Column *column = nullptr;
 				if (it != map.columns.end()) {
 					column = &it->second;
 				}
@@ -162,7 +164,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 		const int subpass_index = _subpass_index;
 		const int prev_subpass_index = subpass_index - 1;
 
-		VoxelGeneratorMultipassCB::Column *main_column = columns[central_block_index];
+		Column *main_column = columns[central_block_index];
 
 		bool spawned_subtasks = false;
 		bool postpone = false;
@@ -179,7 +181,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 
 			std::shared_ptr<std::atomic_int> dependency_counter = nullptr;
 
-			for (VoxelGeneratorMultipassCB::Column *column : columns) {
+			for (Column *column : columns) {
 				if (column == nullptr) {
 					// No longer loaded, we have to cancel the task
 
@@ -203,7 +205,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 			unsigned int i = 0;
 			for (cpos.y = cpos_min.y; cpos.y < cpos_max.y; ++cpos.y) {
 				for (cpos.x = cpos_min.x; cpos.x < cpos_max.x; ++cpos.x) {
-					VoxelGeneratorMultipassCB::Column *column = columns[i];
+					Column *column = columns[i];
 					ZN_ASSERT(column != nullptr);
 
 					// We want all blocks in the neighborhood to be at least at the previous subpass before we can
@@ -280,7 +282,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 				if (_subpass_index == 0) {
 					// First pass creates blocks
 					// main_column->blocks.resize(column_height_blocks);
-					for (VoxelGeneratorMultipassCB::Block &block : main_column->blocks) {
+					for (Block &block : main_column->blocks) {
 						block.voxels.create(Vector3iUtil::create(_block_size));
 					}
 				}
@@ -299,18 +301,18 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 					const int column_base_y_blocks = _generator_internal->column_base_y_blocks;
 
 					// TODO Cache memory
-					std::vector<VoxelGeneratorMultipassCB::Block *> blocks;
+					std::vector<Block *> blocks;
 					blocks.reserve(columns.size() * column_height_blocks);
 					// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
 					// ZXY indexing is convenient here, since columns are indexed with YX (aka ZX, because Y in 2D is Z
 					// in 3D)
-					for (VoxelGeneratorMultipassCB::Column *column : columns) {
-						for (VoxelGeneratorMultipassCB::Block &block : column->blocks) {
+					for (Column *column : columns) {
+						for (Block &block : column->blocks) {
 							blocks.push_back(&block);
 						}
 					}
 
-					VoxelGeneratorMultipassCB::PassInput input;
+					PassInput input;
 					input.grid = to_span(blocks);
 					input.grid_size = Vector3i(neighbors_box.size.x, column_height_blocks, neighbors_box.size.y);
 					input.grid_origin = Vector3i(neighbors_box.pos.x, column_base_y_blocks, neighbors_box.pos.y);
@@ -325,7 +327,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 				// Update levels
 				main_column->subpass_index = _subpass_index;
 
-				for (VoxelGeneratorMultipassCB::Column *column : columns) {
+				for (Column *column : columns) {
 					column->subpass_iterations[_subpass_index]++;
 				}
 
@@ -351,9 +353,8 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	task_scheduler.flush();
 }
 
-void GenerateBlockMultipassCBTask::schedule_final_block_tasks(
-		VoxelGeneratorMultipassCB::Column &column, BufferedTaskScheduler &task_scheduler) {
-	for (VoxelGeneratorMultipassCB::Block &block : column.blocks) {
+void GenerateBlockMultipassCBTask::schedule_final_block_tasks(Column &column, BufferedTaskScheduler &task_scheduler) {
+	for (Block &block : column.blocks) {
 		if (block.final_pending_task != nullptr) {
 			ZN_ASSERT(block.final_pending_task != _caller_task);
 			task_scheduler.push_main_task(block.final_pending_task);
@@ -371,6 +372,8 @@ void GenerateBlockMultipassCBTask::return_to_caller(bool success) {
 		if (_caller_mp_task != nullptr) {
 			_caller_mp_task->_cancelled = true;
 		}
+		// println(format("C {} {} {} {} {}", int(_subpass_index), _column_position.x, 0, _column_position.y,
+		// 		Time::get_singleton()->get_ticks_usec()));
 	}
 	if (counter == 0) {
 		VoxelEngine::get_singleton().push_async_task(_caller_task);

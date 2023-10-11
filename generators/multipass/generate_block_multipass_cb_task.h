@@ -24,7 +24,7 @@ class BufferedTaskScheduler;
 class GenerateBlockMultipassCBTask : public IThreadedTask {
 public:
 	GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size, uint8_t p_subpass_index,
-			std::shared_ptr<VoxelGeneratorMultipassCB::Internal> p_generator_internal,
+			std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> p_generator_internal,
 			Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority,
 			// When the current task finishes, it will decrement the given counter, and return control to the following
 			// caller task when the counter reaches 0.
@@ -49,7 +49,8 @@ public:
 	// bool is_cancelled() {}
 
 private:
-	void schedule_final_block_tasks(VoxelGeneratorMultipassCB::Column &column, BufferedTaskScheduler &task_scheduler);
+	void schedule_final_block_tasks(
+			VoxelGeneratorMultipassCBStructs::Column &column, BufferedTaskScheduler &task_scheduler);
 	void return_to_caller(bool success);
 
 	Vector2i _column_position;
@@ -57,7 +58,7 @@ private:
 	uint8_t _block_size;
 	uint8_t _subpass_index;
 	bool _cancelled = false;
-	std::shared_ptr<VoxelGeneratorMultipassCB::Internal> _generator_internal;
+	std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> _generator_internal;
 	Ref<VoxelGeneratorMultipassCB> _generator;
 	// Task to execute when `caller_task_dependency_counter` reaches zero.
 	// This means the current task was spawned by this one to compute a dependency.

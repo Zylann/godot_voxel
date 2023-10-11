@@ -48,9 +48,9 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelGeneratorMultipassCB> multipass_generator = generator;
 	if (multipass_generator.is_valid()) {
 		ZN_ASSERT_RETURN(multipass_generator->get_pass_count() > 0);
-		std::shared_ptr<VoxelGeneratorMultipassCB::Internal> multipass_generator_internal =
+		std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> multipass_generator_internal =
 				multipass_generator->get_internal();
-		VoxelGeneratorMultipassCB::Map &map = multipass_generator_internal->map;
+		VoxelGeneratorMultipassCBStructs::Map &map = multipass_generator_internal->map;
 
 		const int final_subpass_index =
 				VoxelGeneratorMultipassCB::get_subpass_count_from_pass_count(multipass_generator->get_pass_count()) - 1;
@@ -65,7 +65,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			const Vector2i column_position(position.x, position.z);
 			// TODO Candidate for postponing? Lots of them, might cause contention
 			SpatialLock2D::Read srlock(map.spatial_lock, BoxBounds2i::from_position(column_position));
-			VoxelGeneratorMultipassCB::Column *column = nullptr;
+			VoxelGeneratorMultipassCBStructs::Column *column = nullptr;
 			{
 				MutexLock mlock(map.mutex);
 				auto column_it = map.columns.find(column_position);
@@ -95,7 +95,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 					return;
 				}
 
-				VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
+				VoxelGeneratorMultipassCBStructs::Block &block = column->blocks[block_index];
 
 				if (block.final_pending_task != nullptr) {
 					// There is already a generate task for that block.
@@ -146,9 +146,10 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 			} else {
 				// The block is ready
 
-				VoxelGeneratorMultipassCB::Block &block = column->blocks[block_index];
+				VoxelGeneratorMultipassCBStructs::Block &block = column->blocks[block_index];
 
-				// TODO Take out voxel data from this block, it must not be touched by generation anymore
+				// TODO Take out voxel data from this block to save memory, it must not be touched by generation anymore
+				// (if we do, we need to change the column's spatial lock to WRITE)
 				voxels = make_shared_instance<VoxelBufferInternal>();
 				voxels->create(block.voxels.get_size());
 				voxels->copy_from(block.voxels);

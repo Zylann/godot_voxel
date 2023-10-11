@@ -273,6 +273,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
 		// And this can happen in a thread, causing crashes due to the concurrent access
 		register_abstract_class<VoxelToolBuffer>();
+		register_abstract_class<VoxelToolMultipassGenerator>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();

@@ -155,6 +155,16 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 	return math::interpolate_trilinear(s000, s100, s101, s001, s010, s110, s111, s011, to_vec3f(math::fract(pos)));
 }
 
+// Standalone helper function to copy voxels from any 3D chunked container
+void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
+		uint32_t channels_mask, const VoxelBufferInternal *(*get_block_func)(void *, Vector3i),
+		void *get_block_func_ctx);
+
+// Standalone helper function to paste voxels to any 3D chunked container
+void paste_to_chunked_storage(const VoxelBufferInternal &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
+		unsigned int channels_mask, bool use_mask, uint8_t mask_channel, uint64_t mask_value,
+		VoxelBufferInternal *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx);
+
 } // namespace zylann::voxel
 
 namespace zylann::voxel::ops {

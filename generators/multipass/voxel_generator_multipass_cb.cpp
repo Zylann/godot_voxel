@@ -1,53 +1,23 @@
 #include "voxel_generator_multipass_cb.h"
 #include "../../engine/voxel_engine.h"
+#include "../../util/dstack.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 
-#include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
 
 namespace zylann::voxel {
 
+using namespace VoxelGeneratorMultipassCBStructs;
+
 VoxelGeneratorMultipassCB::VoxelGeneratorMultipassCB() {
 	std::shared_ptr<Internal> internal = make_shared_instance<Internal>();
-
-	// PLACEHOLDER
-	{
-		Pass pass;
-		internal->passes.push_back(pass);
-	}
-	{
-		Pass pass;
-		pass.dependency_extents = 1;
-		internal->passes.push_back(pass);
-	}
-	{
-		Pass pass;
-		pass.dependency_extents = 1;
-		internal->passes.push_back(pass);
-	}
-
 	// MutexLock mlock(_internal_mutex);
 	_internal = internal;
 }
 
 VoxelGeneratorMultipassCB::~VoxelGeneratorMultipassCB() {}
-
-VoxelGeneratorMultipassCB::Map::~Map() {
-	// If the map gets destroyed then we know the last reference to it was removed, which means only one thread had
-	// access to it, so we can get away not locking anything if cleanup is needed.
-
-	// Initially I thought this is where we'd re-schedule any task pointers still in blocks, but that can't happen,
-	// because if tasks exist referencing the multipass generator, then the generator (and so the map) would not be
-	// destroyed, and so we wouldn't be here.
-	// Therefore there is only just an assert in ~Block to ensure the only other case where blocks are removed from the
-	// map before handling these tasks, or to warn us in case there is a case we didn't expect.
-	//
-	// That said, that pretty much describes a cyclic reference. This cycle is usually broken by VoxelTerrain, which
-	// controls the streaming behavior. If a terrain gets destroyed, it must tell the generator to unload its cache.
-}
 
 VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData &input) {
 	if (input.lod > 0) {
@@ -60,18 +30,49 @@ VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData 
 	std::shared_ptr<Internal> internal = get_internal();
 
 	if (input.origin_in_voxels.y + bs <= internal->column_base_y_blocks * bs) {
-		// TODO Generate bottom fallback
+		generate_block_fallback_script(input);
 
 	} else if (input.origin_in_voxels.y >= (internal->column_base_y_blocks + internal->column_height_blocks) * bs) {
-		// TODO Generate top fallback
+		generate_block_fallback_script(input);
 
 	} else {
 		// Can't generate column chunks from here for now
-		// TODO Fallback on an expensive single-threaded dependency generation, which we might throw away after
+		// TODO Fallback on an expensive single-threaded dependency generation, which we might throw away after?
+		// Or trigger a threaded task and block here until it's done?
 		ZN_PRINT_ERROR("Not implemented");
 	}
 
 	return { false };
+}
+
+void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &input) {
+	if (get_script() == Variant()) {
+		return;
+	}
+
+	// Create a temporary wrapper so Godot can pass it to scripts
+	Ref<gd::VoxelBuffer> buffer_wrapper;
+	buffer_wrapper.instantiate();
+	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
+	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
+
+#if defined(ZN_GODOT)
+	GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+#else
+	// ERR_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
+#endif
+}
+
+int VoxelGeneratorMultipassCB::get_used_channels_mask() const {
+	int mask = 0;
+#if defined(ZN_GODOT)
+	if (!GDVIRTUAL_CALL(_get_used_channels_mask, mask)) {
+		// WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is unimplemented!");
+	}
+#else
+	// ERR_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is not supported yet in GDExtension!");
+#endif
+	return mask;
 }
 
 int VoxelGeneratorMultipassCB::get_pass_count() const {
@@ -148,47 +149,18 @@ void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_e
 
 // Internal
 
-std::shared_ptr<VoxelGeneratorMultipassCB::Internal> VoxelGeneratorMultipassCB::get_internal() const {
+std::shared_ptr<Internal> VoxelGeneratorMultipassCB::get_internal() const {
 	MutexLock mlock(_internal_mutex);
 	ZN_ASSERT(_internal != nullptr);
 	return _internal;
 }
 
 namespace {
-// TODO Placeholder utility to emulate what would be the final use case
-struct GridEditor {
-	Span<VoxelGeneratorMultipassCB::Block *> blocks;
-	Box3i world_box;
 
-	inline VoxelGeneratorMultipassCB::Block *get_block_and_relative_position(
-			Vector3i voxel_pos_world, Vector3i &voxel_pos_block) {
-		const Vector3i block_pos_world = voxel_pos_world >> 4;
-		ZN_ASSERT(world_box.contains(block_pos_world));
-		const Vector3i block_pos_grid = block_pos_world - world_box.pos;
-		const unsigned int grid_loc = Vector3iUtil::get_zxy_index(block_pos_grid, world_box.size);
-		VoxelGeneratorMultipassCB::Block *block = blocks[grid_loc];
-		ZN_ASSERT(block != nullptr);
-		voxel_pos_block = voxel_pos_world & 15;
-		return block;
-	}
-
-	int get_voxel(Vector3i voxel_pos_world, int value, int channel) {
-		Vector3i voxel_pos_block;
-		VoxelGeneratorMultipassCB::Block *block = get_block_and_relative_position(voxel_pos_world, voxel_pos_block);
-		return block->voxels.get_voxel(voxel_pos_block, channel);
-	}
-
-	void set_voxel(Vector3i voxel_pos_world, int value, int channel) {
-		Vector3i voxel_pos_block;
-		VoxelGeneratorMultipassCB::Block *block = get_block_and_relative_position(voxel_pos_world, voxel_pos_block);
-		block->voxels.set_voxel(value, voxel_pos_block, channel);
-	}
-};
-
-int get_total_dependency_extent(const VoxelGeneratorMultipassCB::Internal &generator) {
+int get_total_dependency_extent(const Internal &generator) {
 	int extent = 0;
 	for (unsigned int pass_index = 1; pass_index < generator.passes.size(); ++pass_index) {
-		const VoxelGeneratorMultipassCB::Pass &pass = generator.passes[pass_index];
+		const Pass &pass = generator.passes[pass_index];
 		if (pass.dependency_extents == 0) {
 			ZN_PRINT_ERROR("Unexpected pass dependency extents");
 		}
@@ -196,87 +168,6 @@ int get_total_dependency_extent(const VoxelGeneratorMultipassCB::Internal &gener
 	}
 	return extent;
 }
-
-} // namespace
-
-void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
-	// PLACEHOLDER
-	// Note: must not access _internal from here, only use `input`
-
-	const Vector3i column_origin_in_voxels = input.main_block_position * 16;
-	static const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_TYPE;
-
-	if (input.pass_index == 0) {
-		GridEditor editor;
-		editor.blocks = input.grid;
-		editor.world_box = Box3i(input.grid_origin, input.grid_size);
-
-		Ref<ZN_FastNoiseLite> fnl;
-		fnl.instantiate();
-
-		for (int rby = 0; rby < input.grid_size.y; ++rby) {
-			Block *block = input.grid[rby];
-			ZN_ASSERT(block != nullptr);
-			VoxelBufferInternal &voxels = block->voxels;
-			Vector3i rpos;
-
-			const Vector3i bs = voxels.get_size();
-			const Vector3i block_origin_in_voxels = column_origin_in_voxels + Vector3i(0, rby * input.block_size, 0);
-
-			for (rpos.z = 0; rpos.z < bs.z; ++rpos.z) {
-				for (rpos.x = 0; rpos.x < bs.x; ++rpos.x) {
-					for (rpos.y = 0; rpos.y < bs.y; ++rpos.y) {
-						Vector3i pos = block_origin_in_voxels + rpos;
-						const float sd = pos.y + 5.f * fnl->get_noise_2d(pos.x, pos.z);
-
-						int v = 0;
-						if (sd < 0.f) {
-							v = 1;
-						}
-
-						voxels.set_voxel(v, rpos, channel);
-					}
-				}
-			}
-
-			voxels.compress_uniform_channels();
-		}
-
-	} else if (input.pass_index == 1) {
-		GridEditor editor;
-		editor.blocks = input.grid;
-		editor.world_box = Box3i(input.grid_origin, input.grid_size);
-
-		const Box3i column_box(input.grid_origin * 16, input.grid_size * 16);
-
-		for (int rby = 0; rby < input.grid_size.y; ++rby) {
-			const Vector3i block_origin_in_voxels = column_origin_in_voxels + Vector3i(0, rby * input.block_size, 0);
-
-			const uint32_t h = Variant(block_origin_in_voxels).hash();
-
-			Vector3i structure_center;
-			structure_center.x = h & 15;
-			structure_center.y = (h >> 4) & 15;
-			structure_center.z = (h >> 8) & 15;
-			const int structure_size = (h >> 12) & 15;
-
-			const Box3i structure_box =
-					Box3i(structure_center - Vector3iUtil::create(structure_size / 2) + block_origin_in_voxels,
-							Vector3iUtil::create(structure_size))
-							.clipped(column_box);
-
-			structure_box.for_each_cell_zxy([&editor](Vector3i pos) { //
-				editor.set_voxel(pos, 1, channel);
-			});
-		}
-
-	} else if (input.pass_index == 2) {
-		// blep
-		Thread::sleep_usec(1000);
-	}
-}
-
-namespace {
 
 inline Vector2i to_vec2i_xz(Vector3i p) {
 	return Vector2i(p.x, p.z);
@@ -291,6 +182,20 @@ Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
 }
 
 } // namespace
+
+void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
+	// Note: must not access _internal from here, only use `input`
+
+	Variant v = get_script();
+	if (get_script() != Variant()) {
+		// TODO Cache it?
+		Ref<VoxelToolMultipassGenerator> vt;
+		vt.instantiate();
+		vt->set_pass_input(input);
+		call("_generate_pass", vt, input.pass_index);
+		// GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+	}
+}
 
 void VoxelGeneratorMultipassCB::re_initialize_column_refcounts() {
 	// This should only be called following a map reset
@@ -482,6 +387,14 @@ bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugCol
 	return true;
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelGeneratorMultipassCB::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	//
+}
+
+#endif
+
 // BINDING LAND
 
 bool VoxelGeneratorMultipassCB::_set(const StringName &p_name, const Variant &p_value) {
@@ -552,6 +465,14 @@ void VoxelGeneratorMultipassCB::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_column_height_blocks"), &VoxelGeneratorMultipassCB::get_column_height_blocks);
 	ClassDB::bind_method(
 			D_METHOD("set_column_height_blocks", "y"), &VoxelGeneratorMultipassCB::set_column_height_blocks);
+
+
+#if defined(ZN_GODOT)
+	// TODO Test if GDVIRTUAL can print errors properly when GDScript fails inside a different thread.
+	GDVIRTUAL_BIND(_generate_pass, "voxel_tool", "pass_index");
+	GDVIRTUAL_BIND(_generate_block_fallback, "out_buffer", "origin_in_voxels");
+	GDVIRTUAL_BIND(_get_used_channels_mask);
+#endif
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "column_base_y_blocks"), "set_column_base_y_blocks", "get_column_base_y_blocks");
