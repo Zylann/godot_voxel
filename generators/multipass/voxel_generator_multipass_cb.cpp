@@ -129,8 +129,7 @@ int VoxelGeneratorMultipassCB::get_pass_extent_blocks(int pass_index) const {
 }
 
 void VoxelGeneratorMultipassCB::set_pass_extent_blocks(int pass_index, int new_extent) {
-	std::shared_ptr<Internal> internal = get_internal();
-	ZN_ASSERT_RETURN(pass_index >= 0 && pass_index < int(internal->passes.size()));
+	ZN_ASSERT_RETURN(pass_index >= 0 && pass_index < int(get_internal()->passes.size()));
 
 	if (pass_index == 0) {
 		ZN_ASSERT_RETURN_MSG(new_extent == 0, "Non-zero extents is not supported for the first pass.");
