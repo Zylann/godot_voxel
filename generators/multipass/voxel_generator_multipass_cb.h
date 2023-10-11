@@ -30,6 +30,10 @@ public:
 	// I would have gladly used a constexpr function but apparently if it's a static method it doesn't work unless it is
 	// moved outside of the class, which is inconvenient
 
+	// Sane safety maximum.
+	// For reference, Minecraft is 24 blocks high (384 voxels)
+	static constexpr int MAX_COLUMN_HEIGHT_BLOCKS = 32;
+
 	static inline int get_subpass_count_from_pass_count(int pass_count) {
 		return pass_count * 2 - 1;
 	}

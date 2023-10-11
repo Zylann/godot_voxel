@@ -104,6 +104,7 @@ int VoxelGeneratorMultipassCB::get_column_height_blocks() const {
 }
 
 void VoxelGeneratorMultipassCB::set_column_height_blocks(int new_height) {
+	new_height = math::clamp(new_height, 0, MAX_COLUMN_HEIGHT_BLOCKS);
 	if (get_column_height_blocks() == new_height) {
 		return;
 	}
