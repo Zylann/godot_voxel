@@ -465,7 +465,7 @@ bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugCol
 
 	for (auto it = map.columns.begin(); it != map.columns.end(); ++it) {
 		Column &column = it->second;
-		out_states.push_back(DebugColumnState{ it->first, column.subpass_index });
+		out_states.push_back(DebugColumnState{ it->first, column.subpass_index, uint8_t(column.viewers.get()) });
 	}
 
 	return true;

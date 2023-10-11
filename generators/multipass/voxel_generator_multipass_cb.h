@@ -199,6 +199,7 @@ public:
 	struct DebugColumnState {
 		Vector2i position;
 		int8_t subpass_index;
+		uint8_t viewer_count;
 	};
 
 	bool debug_try_get_column_states(std::vector<DebugColumnState> &out_states);

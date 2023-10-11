@@ -11,6 +11,8 @@ namespace {
 const uint64_t UPDATE_INTERVAL_MS = 200;
 const int TILE_SIZE = 3;
 
+const Color g_empty_color(0.1, 0.1, 0.1);
+
 // static_assert(VoxelGeneratorMultipassCB::MAX_SUBPASSES == 7);
 static const std::array<Color, VoxelGeneratorMultipassCB::MAX_SUBPASSES> g_subpass_colors = {
 	Color(0.7, 0.7, 0.7), // 0
@@ -82,7 +84,6 @@ void VoxelGeneratorMultipassCacheViewer::update_image() {
 	}
 
 	const Color err_color(1.0, 0.0, 1.0);
-	const Color empty_color(0.1, 0.1, 0.1);
 
 	if (_generator->debug_try_get_column_states(_debug_column_states)) {
 		_image->fill(bg_color);
@@ -94,12 +95,27 @@ void VoxelGeneratorMultipassCacheViewer::update_image() {
 
 			Color color;
 			if (column.subpass_index == -1) {
-				color = empty_color;
+				color = g_empty_color;
 			} else if (column.subpass_index >= 0 && column.subpass_index < int(g_subpass_colors.size())) {
 				color = g_subpass_colors[column.subpass_index];
 			} else {
 				color = err_color;
 			}
+
+			// Debug refcounts
+			// if (column.viewer_count == 0) {
+			// 	color = Color(0, 0, 0);
+			// } else if (column.viewer_count == 1) {
+			// 	color = Color(0.5, 0, 0);
+			// } else if (column.viewer_count == 2) {
+			// 	color = Color(1.0, 0, 0);
+			// } else if (column.viewer_count == 3) {
+			// 	color = Color(1.0, 0.5, 0);
+			// } else if (column.viewer_count == 4) {
+			// 	color = Color(1.0, 1.0, 0);
+			// } else {
+			// 	color = Color(1.0, 1.0, 1.0);
+			// }
 
 			const Vector2i pixel_pos = column.position - view_rect_tiles.position;
 			// TODO Optimize: access pixels directly so we can use exact 8-bit color components.
@@ -141,6 +157,19 @@ void VoxelGeneratorMultipassCacheViewer::draw() {
 		const int pass_count = _generator->get_pass_count();
 
 		Vector2 anchor_pos(EDSCALE, EDSCALE);
+		{
+			Vector2 pos = anchor_pos;
+
+			const Rect2 color_rect = Rect2(pos, Vector2(color_rect_width, line_height)).grow(-color_rect_pad);
+			draw_rect(color_rect, g_empty_color);
+
+			pos.x += color_rect.size.x * 1.2f;
+			pos.y += font_ascent;
+
+			draw_string(font, pos, "Empty", HORIZONTAL_ALIGNMENT_LEFT, -1.f, font_size, text_color);
+
+			anchor_pos.y += line_height;
+		}
 		for (int pass_index = 0; pass_index < pass_count; ++pass_index) {
 			Vector2 pos = anchor_pos;
 
