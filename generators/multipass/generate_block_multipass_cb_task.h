@@ -1,5 +1,5 @@
-#ifndef VOXEL_GENERATE_BLOCK_MULTIPASS_CB_TASK_H
-#define VOXEL_GENERATE_BLOCK_MULTIPASS_CB_TASK_H
+#ifndef VOXEL_GENERATE_COLUMN_MULTIPASS_TASK_H
+#define VOXEL_GENERATE_COLUMN_MULTIPASS_TASK_H
 
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_generator_multipass_cb.h"
@@ -21,19 +21,19 @@ class BufferedTaskScheduler;
 // One reason to use this pattern instead of "pyramid diffs", is that it can be invoked without assumptions. It will
 // return a result if necessary, even if the map is in inconsistent state. We can even decide to override states.
 // It actively looks for dependencies, rather than assuming they are loaded by separate logic.
-class GenerateBlockMultipassCBTask : public IThreadedTask {
+class GenerateColumnMultipassTask : public IThreadedTask {
 public:
-	GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size, uint8_t p_subpass_index,
+	GenerateColumnMultipassTask(Vector2i p_column_position, uint8_t p_block_size, uint8_t p_subpass_index,
 			std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> p_generator_internal,
 			Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority,
 			// When the current task finishes, it will decrement the given counter, and return control to the following
 			// caller task when the counter reaches 0.
 			IThreadedTask *p_caller, std::shared_ptr<std::atomic_int> p_caller_dependency_count);
 
-	~GenerateBlockMultipassCBTask();
+	~GenerateColumnMultipassTask();
 
 	const char *get_debug_name() const override {
-		return "GenerateBlockMultipassCBTask";
+		return "GenerateColumnMultipassCBTask";
 	}
 
 	void run(ThreadedTaskContext &ctx) override;
@@ -66,9 +66,9 @@ private:
 	// Counter to decrement when the task finishes with an outcome equivalent to "the requested block has been
 	// processed".
 	std::shared_ptr<std::atomic_int> _caller_task_dependency_counter;
-	GenerateBlockMultipassCBTask *_caller_mp_task = nullptr;
+	GenerateColumnMultipassTask *_caller_mp_task = nullptr;
 };
 
 } // namespace zylann::voxel
 
-#endif // VOXEL_GENERATE_BLOCK_MULTIPASS_TASK_H
+#endif // VOXEL_GENERATE_COLUMN_MULTIPASS_TASK_H

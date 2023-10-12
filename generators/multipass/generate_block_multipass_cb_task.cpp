@@ -11,20 +11,20 @@ namespace zylann::voxel {
 namespace {
 std::atomic_int g_task_count[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
-	"GenerateBlockMultipassCBTasks_subpass0",
-	"GenerateBlockMultipassCBTasks_subpass1",
-	"GenerateBlockMultipassCBTasks_subpass2",
-	"GenerateBlockMultipassCBTasks_subpass3",
-	"GenerateBlockMultipassCBTasks_subpass4",
-	"GenerateBlockMultipassCBTasks_subpass5",
-	"GenerateBlockMultipassCBTasks_subpass6",
+	"GenerateColumnMultipassCBTasks_subpass0",
+	"GenerateColumnMultipassCBTasks_subpass1",
+	"GenerateColumnMultipassCBTasks_subpass2",
+	"GenerateColumnMultipassCBTasks_subpass3",
+	"GenerateColumnMultipassCBTasks_subpass4",
+	"GenerateColumnMultipassCBTasks_subpass5",
+	"GenerateColumnMultipassCBTasks_subpass6",
 };
 
 } // namespace
 
 using namespace VoxelGeneratorMultipassCBStructs;
 
-GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_position, uint8_t p_block_size,
+GenerateColumnMultipassTask::GenerateColumnMultipassTask(Vector2i p_column_position, uint8_t p_block_size,
 		uint8_t p_subpass_index, std::shared_ptr<Internal> p_generator_internal,
 		Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority, IThreadedTask *p_caller,
 		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
@@ -51,7 +51,7 @@ GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(Vector2i p_column_pos
 	// 		Time::get_singleton()->get_ticks_usec()));
 }
 
-GenerateBlockMultipassCBTask::~GenerateBlockMultipassCBTask() {
+GenerateColumnMultipassTask::~GenerateColumnMultipassTask() {
 	ZN_ASSERT(_caller_task == nullptr);
 
 	int64_t v = --g_task_count[_subpass_index];
@@ -61,7 +61,7 @@ GenerateBlockMultipassCBTask::~GenerateBlockMultipassCBTask() {
 	// 		Time::get_singleton()->get_ticks_usec()));
 }
 
-void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
+void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(_generator != nullptr);
@@ -236,8 +236,8 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 							}
 							++(*dependency_counter);
 
-							GenerateBlockMultipassCBTask *subtask =
-									ZN_NEW(GenerateBlockMultipassCBTask(cpos, _block_size, prev_subpass_index,
+							GenerateColumnMultipassTask *subtask =
+									ZN_NEW(GenerateColumnMultipassTask(cpos, _block_size, prev_subpass_index,
 											_generator_internal, _generator, _priority, this, dependency_counter));
 							subtask->_caller_mp_task = this;
 							task_scheduler.push_main_task(subtask);
@@ -353,7 +353,7 @@ void GenerateBlockMultipassCBTask::run(ThreadedTaskContext &ctx) {
 	task_scheduler.flush();
 }
 
-void GenerateBlockMultipassCBTask::schedule_final_block_tasks(Column &column, BufferedTaskScheduler &task_scheduler) {
+void GenerateColumnMultipassTask::schedule_final_block_tasks(Column &column, BufferedTaskScheduler &task_scheduler) {
 	for (Block &block : column.blocks) {
 		if (block.final_pending_task != nullptr) {
 			ZN_ASSERT(block.final_pending_task != _caller_task);
@@ -363,7 +363,7 @@ void GenerateBlockMultipassCBTask::schedule_final_block_tasks(Column &column, Bu
 	}
 }
 
-void GenerateBlockMultipassCBTask::return_to_caller(bool success) {
+void GenerateColumnMultipassTask::return_to_caller(bool success) {
 	ZN_ASSERT(_caller_task != nullptr);
 	ZN_ASSERT(_caller_task_dependency_counter != nullptr);
 	const int counter = --(*_caller_task_dependency_counter);
