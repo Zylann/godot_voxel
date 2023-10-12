@@ -10,7 +10,7 @@
 #include "save_block_data_task.h"
 #include "voxel_engine.h"
 
-#include "../generators/multipass/generate_block_multipass_cb_task.h"
+#include "../generators/multipass/generate_column_multipass_task.h"
 #include "../generators/multipass/voxel_generator_multipass_cb.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/time.h"

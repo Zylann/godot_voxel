@@ -1,4 +1,4 @@
-#include "generate_block_multipass_cb_task.h"
+#include "generate_column_multipass_task.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data.h"
 
