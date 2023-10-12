@@ -33,7 +33,7 @@ public:
 	~GenerateColumnMultipassTask();
 
 	const char *get_debug_name() const override {
-		return "GenerateColumnMultipassCBTask";
+		return "GenerateColumnMultipassTask";
 	}
 
 	void run(ThreadedTaskContext &ctx) override;

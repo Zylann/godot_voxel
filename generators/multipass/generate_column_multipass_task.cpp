@@ -11,13 +11,13 @@ namespace zylann::voxel {
 namespace {
 std::atomic_int g_task_count[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
-	"GenerateColumnMultipassCBTasks_subpass0",
-	"GenerateColumnMultipassCBTasks_subpass1",
-	"GenerateColumnMultipassCBTasks_subpass2",
-	"GenerateColumnMultipassCBTasks_subpass3",
-	"GenerateColumnMultipassCBTasks_subpass4",
-	"GenerateColumnMultipassCBTasks_subpass5",
-	"GenerateColumnMultipassCBTasks_subpass6",
+	"GenerateColumnMultipassTasks_subpass0",
+	"GenerateColumnMultipassTasks_subpass1",
+	"GenerateColumnMultipassTasks_subpass2",
+	"GenerateColumnMultipassTasks_subpass3",
+	"GenerateColumnMultipassTasks_subpass4",
+	"GenerateColumnMultipassTasks_subpass5",
+	"GenerateColumnMultipassTasks_subpass6",
 };
 
 } // namespace
