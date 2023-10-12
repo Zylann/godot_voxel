@@ -324,13 +324,17 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelEngine::create_singleton(threads_config);
 		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 #if defined(ZN_GODOT)
-		// TODO Enhancement: threaded graphics resource building should be initialized better.
-		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-		// renderer and has not figured out how such option would be exposed). Could use `can_create_resources_async`
-		// but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not
-		// supporting async resource creation.
-		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-				RenderingServer::get_singleton()->is_low_end() == false);
+		// RenderingServer can be null with `tests=yes`.
+		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
+		if (RenderingServer::get_singleton() != nullptr) {
+			// TODO Enhancement: threaded graphics resource building should be initialized better.
+			// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
+			// renderer and has not figured out how such option would be exposed). Could use
+			// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
+			// backends, which are the only ones not supporting async resource creation.
+			VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
+					RenderingServer::get_singleton()->is_low_end() == false);
+		}
 #else
 		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
 		// different threads
