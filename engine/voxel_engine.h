@@ -254,6 +254,14 @@ public:
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
 
+	inline void debug_increment_generate_block_task_counter() {
+		++_debug_generate_block_task_count;
+	}
+
+	inline void debug_decrement_generate_block_task_counter() {
+		--_debug_generate_block_task_count;
+	}
+
 private:
 	VoxelEngine(ThreadsConfig threads_config);
 
@@ -313,6 +321,9 @@ private:
 	ComputeShader _detail_modifier_mesh_shader;
 	ComputeShader _block_modifier_sphere_shader;
 	ComputeShader _block_modifier_mesh_shader;
+
+	// There can be multiple types of generation tasks, so we count them with a common counter.
+	std::atomic_int _debug_generate_block_task_count = { 0 };
 };
 
 struct VoxelFileLockerRead {

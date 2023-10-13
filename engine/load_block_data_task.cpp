@@ -71,16 +71,18 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 			Ref<VoxelGenerator> generator = _stream_dependency->generator;
 
 			if (generator.is_valid()) {
-				GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
-				task->voxels = _voxels;
-				task->volume_id = _volume_id;
-				task->position = _position;
-				task->lod_index = _lod_index;
-				task->block_size = _block_size;
-				task->stream_dependency = _stream_dependency;
-				task->priority_dependency = _priority_dependency;
-				task->use_gpu = _generator_use_gpu;
-				task->data = _voxel_data;
+				VoxelGenerator::BlockTaskParams params;
+				params.voxels = _voxels;
+				params.volume_id = _volume_id;
+				params.block_position = _position;
+				params.lod_index = _lod_index;
+				params.block_size = _block_size;
+				params.stream_dependency = _stream_dependency;
+				params.priority_dependency = _priority_dependency;
+				params.use_gpu = _generator_use_gpu;
+				params.data = _voxel_data;
+
+				IThreadedTask *task = generator->create_block_task(params);
 
 				VoxelEngine::get_singleton().push_async_task(task);
 				_requested_generator_task = true;

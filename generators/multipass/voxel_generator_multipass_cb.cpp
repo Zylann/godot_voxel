@@ -4,6 +4,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
+#include "generate_block_multipass_cb_task.h"
 
 #include "../../util/godot/classes/time.h"
 
@@ -43,6 +44,10 @@ VoxelGenerator::Result VoxelGeneratorMultipassCB::generate_block(VoxelQueryData 
 	}
 
 	return { false };
+}
+
+IThreadedTask *VoxelGeneratorMultipassCB::create_block_task(const VoxelGenerator::BlockTaskParams &params) const {
+	return ZN_NEW(GenerateBlockMultipassCBTask(params));
 }
 
 void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &input) {
@@ -230,9 +235,9 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// TODO Could run as a task similarly to threaded update of VLT
-	// However if we do that we need to make sure block requests dont end up cancelled due to no block being found to
-	// load... the easiest way I can think of, is to just run this in the same thread that triggers the requests, and
-	// that means moving VoxelTerrain's process to a thread as well.
+	// However if we do that we need to make sure block requests dont end up cancelled due to no block being found
+	// to load... the easiest way I can think of, is to just run this in the same thread that triggers the requests,
+	// and that means moving VoxelTerrain's process to a thread as well.
 
 	std::shared_ptr<Internal> internal = get_internal();
 
@@ -253,8 +258,8 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 	const Box2i prev_load_requested_box =
 			prev_requested_box_2d.is_empty() ? prev_requested_box_2d : prev_requested_box_2d.padded(total_extent);
 
-	// println(format("L {} {} {} {} {}", load_requested_box.pos.x, load_requested_box.pos.y, load_requested_box.size.x,
-	// 		load_requested_box.size.y, Time::get_singleton()->get_ticks_usec()));
+	// println(format("L {} {} {} {} {}", load_requested_box.pos.x, load_requested_box.pos.y,
+	// load_requested_box.size.x, 		load_requested_box.size.y, Time::get_singleton()->get_ticks_usec()));
 
 	Map &map = internal->map;
 
@@ -301,8 +306,8 @@ void VoxelGeneratorMultipassCB::process_viewer_diff_internal(Box3i p_requested_b
 					for (Block &block : column.blocks) {
 						if (block.final_pending_task != nullptr) {
 							// There was a pending generate task, resume it, but it should basically return a drop.
-							// (also because we are locking the map, that task must not run until we're done removing
-							// its target column)
+							// (also because we are locking the map, that task must not run until we're done
+							// removing its target column)
 							task_scheduler.push_main_task(block.final_pending_task);
 							block.final_pending_task = nullptr;
 						}
@@ -492,9 +497,9 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 				// }
 			}
 
-			// Skipping control fields on Column since we are doing this single-threaded in isolation. However if one
-			// day we migrate this to work directly on the cache, we will have to update them (that also means it will
-			// have race conditions)
+			// Skipping control fields on Column since we are doing this single-threaded in isolation. However if
+			// one day we migrate this to work directly on the cache, we will have to update them (that also means
+			// it will have race conditions)
 		});
 
 		const int next_pass_index = get_pass_index_from_subpass(subpass_index + 1);

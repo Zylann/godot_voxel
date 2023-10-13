@@ -38,8 +38,6 @@ public:
 
 	void run(ThreadedTaskContext &ctx) override;
 
-	// TODO Base priority off the original GenerateBlockTask?
-	// We could avoid computing it by passing its cached value through ThreadedTaskContext
 	TaskPriority get_priority() override {
 		return _priority;
 	}

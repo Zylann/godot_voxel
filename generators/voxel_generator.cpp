@@ -1,5 +1,6 @@
 #include "voxel_generator.h"
 #include "../constants/voxel_string_names.h"
+#include "../engine/generate_block_task.h"
 #include "../engine/gpu/compute_shader.h"
 #include "../engine/gpu/compute_shader_parameters.h"
 #include "../shaders/shaders.h"
@@ -13,6 +14,11 @@ VoxelGenerator::VoxelGenerator() {}
 
 VoxelGenerator::Result VoxelGenerator::generate_block(VoxelQueryData &input) {
 	return Result();
+}
+
+IThreadedTask *VoxelGenerator::create_block_task(const BlockTaskParams &params) const {
+	// Default generic task
+	return ZN_NEW(GenerateBlockTask(params));
 }
 
 int VoxelGenerator::get_used_channels_mask() const {

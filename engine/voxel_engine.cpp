@@ -383,7 +383,7 @@ static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 VoxelEngine::Stats VoxelEngine::get_stats() const {
 	Stats s;
 	s.general = debug_get_pool_stats(_general_thread_pool);
-	s.generation_tasks = GenerateBlockTask::debug_get_running_count();
+	s.generation_tasks = _debug_generate_block_task_count;
 	s.meshing_tasks = MeshBlockTask::debug_get_running_count();
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();

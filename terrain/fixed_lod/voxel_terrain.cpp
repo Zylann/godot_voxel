@@ -906,19 +906,18 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		// Directly generate the block without checking the stream
 		ERR_FAIL_COND(stream_dependency->generator.is_null());
 
-		// println(format(
-		// 		"G {} {} {} {}", block_pos.x, block_pos.y, block_pos.z, Time::get_singleton()->get_ticks_usec()));
-		GenerateBlockTask *task = ZN_NEW(GenerateBlockTask);
-		task->volume_id = volume_id;
-		task->position = block_pos;
-		task->lod_index = 0;
-		task->block_size = data_block_size;
-		task->stream_dependency = stream_dependency;
-		task->use_gpu = use_gpu;
-		task->data = voxel_data;
+		VoxelGenerator::BlockTaskParams params;
+		params.volume_id = volume_id;
+		params.block_position = block_pos;
+		params.block_size = data_block_size;
+		params.stream_dependency = stream_dependency;
+		params.use_gpu = use_gpu;
+		params.data = voxel_data;
 
 		init_sparse_grid_priority_dependency(
-				task->priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
+				params.priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
+
+		IThreadedTask *task = stream_dependency->generator->create_block_task(params);
 
 		scheduler.push_main_task(task);
 	}
