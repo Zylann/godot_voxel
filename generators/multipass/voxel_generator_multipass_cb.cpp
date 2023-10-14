@@ -189,6 +189,8 @@ Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
 } // namespace
 
 void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
+	ZN_PROFILE_SCOPE();
+
 	// Note: must not access _internal from here, only use `input`
 
 	Variant v = get_script();
@@ -199,6 +201,15 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 		vt->set_pass_input(input);
 		call("_generate_pass", vt, input.pass_index);
 		// GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+
+		{
+			ZN_PROFILE_SCOPE_NAMED("Compress uniform blocks");
+			for (Block *block : input.grid) {
+				if (block != nullptr) {
+					block->voxels.compress_uniform_channels();
+				}
+			}
+		}
 	}
 }
 
