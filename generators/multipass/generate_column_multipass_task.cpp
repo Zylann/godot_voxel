@@ -333,9 +333,9 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 				// Update levels
 				main_column->subpass_index = _subpass_index;
 
-				for (Column *column : columns) {
-					column->subpass_iterations[_subpass_index]++;
-				}
+				// for (Column *column : columns) {
+				// 	column->subpass_iterations[_subpass_index]++;
+				// }
 
 				// Pass, X, Y, Z, Time
 				// println(format("P {} {} {} {} {}", int(_subpass_index), _column_position.x, 0, _column_position.y,

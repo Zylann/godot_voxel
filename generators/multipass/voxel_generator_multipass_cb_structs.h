@@ -76,15 +76,15 @@ struct Column {
 	// This is an optimization allowing to reduce chunk map queries. This is an array because it is possible
 	// for a subpass to start writing into a block that completed its previous subpass but hasn't started the next
 	// subpass.
-	FixedArray<uint8_t, MAX_SUBPASSES> subpass_iterations;
+	// FixedArray<uint8_t, MAX_SUBPASSES> subpass_iterations;
 
 	// Vertical stack of blocks. Must never be resized, except when loaded or unloaded.
 	// TODO Maybe replace with a dynamic non-resizeable array?
 	std::vector<Block> blocks;
 
-	Column() {
-		fill(subpass_iterations, uint8_t(0));
-	}
+	// Column() {
+	// 	fill(subpass_iterations, uint8_t(0));
+	// }
 };
 
 struct Map {
