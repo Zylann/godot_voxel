@@ -260,7 +260,9 @@ You may find early design information [in this issue](https://github.com/Zylann/
 
 ### World model
 
-This generator is suffixed "CB" for "Column-Based". The world this generator works on is "flat". Similar to Minecraft, generation occurs within a fixed region going from minimum to maximum altitude (specified with properties), in columns of 16x16 voxels. Then everything above is air, and everything below is either bedrock or just air too.
+![Schema of a terrain composed of columns, with one column and its neighbors highlighted as the "extent" of generation passes](images/multipass_columns.webp)
+
+This generator is suffixed "CB" for "Column-Based". The world this generator works on is "flat". Similar to Minecraft, generation occurs within a fixed region going from minimum to maximum altitude (specified with properties), in columns of 16x16 voxels. Then everything above is air, and everything below is either bedrock or just air too. The amount of neighbor columns a pass can access is called the "extent" of the pass.
 
 While the multipass column logic only works within the fixed vertical range, it will be possible to define what's outside of that range, but it has to be single pass.
 
