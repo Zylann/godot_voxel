@@ -58,7 +58,7 @@ There are several ways to deal with this:
 - Exploit procedural determinism to "guess" where trees would grow in neighbor chunks, without having to generate entire neighbor chunks
 - Split generation in multiple passes and provide access to neighbor chunks that have gone through previous passes
 
-The following describes the first method, which does not involve accessing neighbors at all, and allows to generate trees in a terrain where the base height is deterministic (2D noise heightmap for example).
+The following describes the first method, which does not involve accessing neighbors at all, and allows to generate trees in a terrain where the base height is both deterministic and easy to compute (2D noise heightmap for example).
 
 If you want to use the second method, you may check [multipass generators](generators.md#multi-pass-generation-with-voxelgeneratormultipasscb).
 
