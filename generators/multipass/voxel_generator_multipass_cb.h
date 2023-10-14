@@ -91,9 +91,9 @@ public:
 	// Pairing should send an empty previous box.
 	// Moving should send the the previous box and new box.
 	// Unpairing should send an empty box as the current box.
-	void process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box);
+	void process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box) override;
 
-	void clear_cache();
+	void clear_cache() override;
 
 	// Editor
 

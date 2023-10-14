@@ -33,8 +33,6 @@
 #include "../voxel_save_completion_tracker.h"
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
-#include "../../generators/multipass/voxel_generator_multipass_cb.h"
-
 #ifdef TOOLS_ENABLED
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #endif
@@ -162,9 +160,9 @@ void VoxelTerrain::set_generator(Ref<VoxelGenerator> p_generator) {
 		return;
 	}
 
-	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
-	if (multipass_generator.is_valid()) {
-		multipass_generator->clear_cache();
+	Ref<VoxelGenerator> prev_generator = get_generator();
+	if (prev_generator.is_valid()) {
+		prev_generator->clear_cache();
 		// TODO if we were to share this generator on multiple terrains, cache should not be entirely cleared. Instead,
 		// we should just remove the area from all paired viewers.
 	}
@@ -710,9 +708,9 @@ void VoxelTerrain::reset_map() {
 	// No need to care about refcounts, we drop everything anyways. Will pair it back on next process.
 	_paired_viewers.clear();
 
-	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
-	if (multipass_generator.is_valid()) {
-		multipass_generator->clear_cache();
+	Ref<VoxelGenerator> generator = get_generator();
+	if (generator.is_valid()) {
+		generator->clear_cache();
 	}
 }
 
@@ -1302,9 +1300,9 @@ void VoxelTerrain::process_viewer_data_box_change(
 	static thread_local std::vector<Vector3i> tls_missing_blocks;
 	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
 
-	Ref<VoxelGeneratorMultipassCB> multipass_generator = get_generator();
-	if (multipass_generator.is_valid()) {
-		multipass_generator->process_viewer_diff(viewer_id, new_data_box, prev_data_box);
+	Ref<VoxelGenerator> generator = get_generator();
+	if (generator.is_valid()) {
+		generator->process_viewer_diff(viewer_id, new_data_box, prev_data_box);
 	}
 
 	// Unview blocks that just fell out of range

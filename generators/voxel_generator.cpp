@@ -266,6 +266,14 @@ bool VoxelGenerator::generate_broad_block(VoxelQueryData &input) {
 	return false;
 }
 
+void VoxelGenerator::process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box) {
+	// Optionally implemented in subclasses
+}
+
+void VoxelGenerator::clear_cache() {
+	// Optionally implemented in subclasses
+}
+
 void VoxelGenerator::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("generate_block", "out_buffer", "origin_in_voxels", "lod"), &VoxelGenerator::_b_generate_block);

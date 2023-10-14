@@ -5,8 +5,8 @@
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
 #include "../util/godot/classes/resource.h"
+#include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
-#include "../util/math/vector3i.h"
 #include "../util/span.h"
 #include "../util/thread/mutex.h"
 
@@ -149,6 +149,20 @@ public:
 	// Usually, `generate_block` can do this anyways internally, but in some cases like GPU generation it may be used
 	// to avoid sending work to the graphics card.
 	virtual bool generate_broad_block(VoxelQueryData &input);
+
+	// Caching API
+	//
+	// Some generators might use an internal cache to optimize performance. The following methods provide some info for
+	// the generator to manage the lifetime of the cache.
+	// VoxelTerrain only at the moment.
+
+	// Must be called when a viewer gets paired, moved, or unpaired from the terrain.
+	// Pairing should send an empty previous box.
+	// Moving should send the the previous box and new box.
+	// Unpairing should send an empty box as the current box.
+	virtual void process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box);
+
+	virtual void clear_cache();
 
 	// Editor
 
