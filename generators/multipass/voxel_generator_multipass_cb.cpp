@@ -404,7 +404,10 @@ bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugCol
 #ifdef TOOLS_ENABLED
 
 void VoxelGeneratorMultipassCB::get_configuration_warnings(PackedStringArray &out_warnings) const {
-	//
+	if (get_script() == Variant()) {
+		out_warnings.append(
+				String("{0} needs a script implementing `_generate_pass`.").format(varray(get_class_static())));
+	}
 }
 
 #endif
