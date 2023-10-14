@@ -2,7 +2,7 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-Inherited by: [VoxelToolBuffer](VoxelToolBuffer.md), [VoxelToolLodTerrain](VoxelToolLodTerrain.md), [VoxelToolTerrain](VoxelToolTerrain.md)
+Inherited by: [VoxelToolBuffer](VoxelToolBuffer.md), [VoxelToolLodTerrain](VoxelToolLodTerrain.md), [VoxelToolMultipassGenerator](VoxelToolMultipassGenerator.md), [VoxelToolTerrain](VoxelToolTerrain.md)
 
 Helper class to easily access and modify voxels
 
@@ -213,4 +213,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Oct 02, 2023_
+_Generated on Oct 14, 2023_
