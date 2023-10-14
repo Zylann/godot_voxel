@@ -2261,6 +2261,12 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		return;
 	}
 
+	Ref<VoxelGenerator> generator = get_generator();
+	if (generator.is_valid() && !generator->supports_lod()) {
+		warnings.append(
+				ZN_TTR("The assigned {0} does not support LOD.").format(varray(VoxelGenerator::get_class_static())));
+	}
+
 	Ref<VoxelMesher> mesher = get_mesher();
 
 	// Material
@@ -2270,7 +2276,6 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 	}
 
 	if (get_generator_use_gpu()) {
-		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid() && !generator->supports_shaders()) {
 			warnings.append(String("`use_gpu_generation` is enabled, but {0} does not support running on the GPU.")
 									.format(varray(generator->get_class())));
@@ -2327,7 +2332,6 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 		}
 
 		// Detail textures
-		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
 			if (get_generator_use_gpu() && !generator->supports_shaders()) {
 				warnings.append(ZN_TTR("The option to use GPU when generating voxels is enabled, but the current "

@@ -48,6 +48,10 @@ public:
 	VoxelGeneratorMultipassCB();
 	~VoxelGeneratorMultipassCB();
 
+	bool supports_lod() const override {
+		return false;
+	}
+
 	Result generate_block(VoxelQueryData &input) override;
 	int get_used_channels_mask() const override;
 

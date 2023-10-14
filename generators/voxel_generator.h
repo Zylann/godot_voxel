@@ -85,7 +85,9 @@ public:
 		return false;
 	}
 
-	// TODO Have supports_lod()
+	virtual bool supports_lod() const {
+		return true;
+	}
 
 	// TODO Not sure if it's a good API regarding performance
 	virtual VoxelSingleValue generate_single(Vector3i pos, unsigned int channel);
