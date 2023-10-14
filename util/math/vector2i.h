@@ -12,6 +12,7 @@ using namespace godot;
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
 #include "funcs.h"
+#include <functional> // For std::hash
 #include <iosfwd>
 
 ZN_GODOT_NAMESPACE_BEGIN
