@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VoxelGeneratorMultipassCB" inherits="VoxelGenerator" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_generate_block_fallback" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="out_buffer" type="VoxelBuffer" />
+			<param index="1" name="origin_in_voxels" type="Vector3i" />
+			<description>
+			</description>
+		</method>
+		<method name="_generate_pass" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="voxel_tool" type="VoxelToolMultipassGenerator" />
+			<param index="1" name="pass_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_used_channels_mask" qualifiers="virtual const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_generate_test_column">
+			<return type="VoxelBuffer[]" />
+			<param index="0" name="column_position_blocks" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="get_pass_extent_blocks" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="pass_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_pass_extent_blocks">
+			<return type="void" />
+			<param index="0" name="pass_index" type="int" />
+			<param index="1" name="extent" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="column_base_y_blocks" type="int" setter="set_column_base_y_blocks" getter="get_column_base_y_blocks" default="-4">
+		</member>
+		<member name="column_height_blocks" type="int" setter="set_column_height_blocks" getter="get_column_height_blocks" default="8">
+		</member>
+		<member name="pass_count" type="int" setter="set_pass_count" getter="get_pass_count" default="1">
+		</member>
+	</members>
+	<constants>
+		<constant name="MAX_PASSES" value="4">
+		</constant>
+		<constant name="MAX_PASS_EXTENT" value="2">
+		</constant>
+	</constants>
+</class>
