@@ -251,7 +251,7 @@ A complete list of nodes [can be found here](graph_nodes.md).
 Multi-pass generation with `VoxelGeneratorMultipassCB`
 -------------------------------------------------------
 
-Sometimes you need to write a custom generator that needs to produce structures overlapping neighbor chunks, such as trees. While it is possible to make trees with a [deterministic approach](procedural_generation.md#deterministic-approach), it has limitations and is a bit harder to understand. Also, you might want to have access to an entire vertical section of the world while generating it, instead of just a 16x16x16 chunk.
+Sometimes you need to write a custom generator that needs to produce structures *made of voxels in the terrain itself* overlapping neighbor chunks, such as trees. While it is possible to make trees with a [deterministic approach](procedural_generation.md#deterministic-approach), it has limitations and is a bit harder to understand. Also, you might want to have access to an entire vertical section of the world while generating it, instead of just a 16x16x16 chunk.
 
 Contrary to other generators, `VoxelGeneratorMultipassCB` allows you to structure generation in several passes, where you can access neighbor chunks. It also works in columns, so you have access to a full vertical section of the world. Things like placing a structure across chunk borders just works.
 
