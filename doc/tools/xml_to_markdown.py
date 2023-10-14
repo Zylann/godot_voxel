@@ -308,7 +308,6 @@ def process_xml_folder(src_dir, dst_dir, verbose):
         root = xml_tree.getroot()
         class_name = root.attrib['name']
         parent_class_name = root.attrib['inherits']
-        print(class_name, "=>", parent_class_name)
         derived_classes_map.setdefault(parent_class_name, []).append(class_name)
     
     for derived_class_names in derived_classes_map.values():
