@@ -31,16 +31,10 @@ GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(const VoxelGenerator:
 		_tracker(params.tracker) {
 	//
 	VoxelEngine::get_singleton().debug_increment_generate_block_task_counter();
-
-	int64_t v = ++g_debug_generate_tasks_count;
-	ZN_PROFILE_PLOT("GenerateBlockMultipassCBTask", v);
 }
 
 GenerateBlockMultipassCBTask::~GenerateBlockMultipassCBTask() {
 	VoxelEngine::get_singleton().debug_decrement_generate_block_task_counter();
-
-	int64_t v = --g_debug_generate_tasks_count;
-	ZN_PROFILE_PLOT("GenerateBlockMultipassCBTask", v);
 	// println(format("H {} {} {} {}", position.x, position.y, position.z, Time::get_singleton()->get_ticks_usec()));
 }
 

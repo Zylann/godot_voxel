@@ -255,11 +255,24 @@ public:
 	~VoxelEngine();
 
 	inline void debug_increment_generate_block_task_counter() {
-		++_debug_generate_block_task_count;
+		// Need to conditionally do this to avoid "unused variable" warnings in non-profiling builds
+#ifdef ZN_PROFILER_ENABLED
+		int64_t v =
+#endif
+				++_debug_generate_block_task_count;
+#ifdef ZN_PROFILER_ENABLED
+		ZN_PROFILE_PLOT("GenerateBlock* tasks", v);
+#endif
 	}
 
 	inline void debug_decrement_generate_block_task_counter() {
-		--_debug_generate_block_task_count;
+#ifdef ZN_PROFILER_ENABLED
+		int64_t v =
+#endif
+				--_debug_generate_block_task_count;
+#ifdef ZN_PROFILER_ENABLED
+		ZN_PROFILE_PLOT("GenerateBlock* tasks", v);
+#endif
 	}
 
 private:

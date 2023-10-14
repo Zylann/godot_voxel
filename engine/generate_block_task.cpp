@@ -13,10 +13,6 @@
 
 namespace zylann::voxel {
 
-namespace {
-std::atomic_int g_debug_generate_tasks_count = { 0 };
-}
-
 GenerateBlockTask::GenerateBlockTask(const VoxelGenerator::BlockTaskParams &params) :
 		_voxels(params.voxels),
 		_position(params.block_position),
@@ -31,18 +27,12 @@ GenerateBlockTask::GenerateBlockTask(const VoxelGenerator::BlockTaskParams &para
 		_tracker(params.tracker) {
 	//
 	VoxelEngine::get_singleton().debug_increment_generate_block_task_counter();
-
-	int64_t v = ++g_debug_generate_tasks_count;
-	ZN_PROFILE_PLOT("GenerateBlockTasks", v);
 	// println(format(
 	// 		"G {} {} {} {}", block_pos.x, block_pos.y, block_pos.z, Time::get_singleton()->get_ticks_usec()));
 }
 
 GenerateBlockTask::~GenerateBlockTask() {
 	VoxelEngine::get_singleton().debug_decrement_generate_block_task_counter();
-
-	int64_t v = --g_debug_generate_tasks_count;
-	ZN_PROFILE_PLOT("GenerateBlockTasks", v);
 	// println(format("H {} {} {} {}", position.x, position.y, position.z, Time::get_singleton()->get_ticks_usec()));
 }
 

@@ -9,6 +9,7 @@
 namespace zylann::voxel {
 
 namespace {
+#ifdef ZN_PROFILER_ENABLED
 std::atomic_int g_task_count[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 	"GenerateColumnMultipassTasks_subpass0",
@@ -19,6 +20,7 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 	"GenerateColumnMultipassTasks_subpass5",
 	"GenerateColumnMultipassTasks_subpass6",
 };
+#endif
 
 } // namespace
 
@@ -44,8 +46,10 @@ GenerateColumnMultipassTask::GenerateColumnMultipassTask(Vector2i p_column_posit
 	_caller_task = p_caller;
 	_caller_task_dependency_counter = p_caller_dependency_count;
 
+#ifdef ZN_PROFILER_ENABLED
 	int64_t v = ++g_task_count[_subpass_index];
 	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
+#endif
 
 	// println(format("K {} {} {} {} {}", int(_subpass_index), _column_position.x, 0, _column_position.y,
 	// 		Time::get_singleton()->get_ticks_usec()));
@@ -54,8 +58,10 @@ GenerateColumnMultipassTask::GenerateColumnMultipassTask(Vector2i p_column_posit
 GenerateColumnMultipassTask::~GenerateColumnMultipassTask() {
 	ZN_ASSERT(_caller_task == nullptr);
 
+#ifdef ZN_PROFILER_ENABLED
 	int64_t v = --g_task_count[_subpass_index];
 	ZN_PROFILE_PLOT(g_profiling_task_names[_subpass_index], v);
+#endif
 
 	// println(format("J {} {} {} {} {}", int(_subpass_index), _column_position.x, 0, _column_position.y,
 	// 		Time::get_singleton()->get_ticks_usec()));
