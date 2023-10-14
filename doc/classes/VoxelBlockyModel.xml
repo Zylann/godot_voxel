@@ -58,15 +58,15 @@
 		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)">
 			Color of the model. It will be used to modulate its color when built into a voxel mesh.
 		</member>
+		<member name="culls_neighbors" type="bool" setter="set_culls_neighbors" getter="get_culls_neighbors" default="true">
+			If enabled, this voxel culls the faces of its neighbors. Disabling can be useful for denser transparent voxels, such as foliage.
+		</member>
 		<member name="random_tickable" type="bool" setter="set_random_tickable" getter="is_random_tickable" default="false">
 			If enabled, voxels having this ID in the TYPE channel will be used by [method VoxelToolTerrain.run_blocky_random_tick].
 		</member>
 		<member name="transparency_index" type="int" setter="set_transparency_index" getter="get_transparency_index" default="0">
 			Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
 			Equal indices culls the face, different indexes doesn't.
-		</member>
-		<member name="culls_neighbors" type="bool" setter="set_culls_neighbors" getter="get_culls_neighbors" default="true">
-			If enabled, this voxel culls the faces of its neighbors. Disabling can be useful for denser transparent voxels, such as foliage.
 		</member>
 		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
 			Tells if the model is transparent in the context of sides being culled by neighbor voxels.

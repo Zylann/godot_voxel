@@ -168,7 +168,7 @@
 		<signal name="mesh_block_entered">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
-				Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [method is_area_meshed]. 
+				Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [method is_area_meshed].
 			</description>
 		</signal>
 		<signal name="mesh_block_exited">
