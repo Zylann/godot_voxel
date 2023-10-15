@@ -1,6 +1,7 @@
 #include "voxel_generator_multipass_cache_viewer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../engine/voxel_engine.h"
+#include "../../util/godot/classes/font.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/profiling.h"
@@ -79,7 +80,7 @@ void VoxelGeneratorMultipassCacheViewer::update_image() {
 	if (_image.is_null() || //
 			_image->get_width() != view_rect_tiles.size.x || //
 			_image->get_height() != view_rect_tiles.size.y) {
-		_image = Image::create_empty(view_rect_tiles.size.x, view_rect_tiles.size.y, false, Image::FORMAT_RGB8);
+		_image = create_empty_image(view_rect_tiles.size.x, view_rect_tiles.size.y, false, Image::FORMAT_RGB8);
 		_image->fill(bg_color);
 	}
 
@@ -138,7 +139,7 @@ void VoxelGeneratorMultipassCacheViewer::draw() {
 	ZN_PROFILE_SCOPE();
 
 	if (_texture.is_valid()) {
-		draw_texture_rect(_texture, Rect2(Vector2(), _texture->get_size() * TILE_SIZE));
+		draw_texture_rect(_texture, Rect2(Vector2(), _texture->get_size() * TILE_SIZE), false);
 	}
 
 	if (_generator.is_valid()) {
