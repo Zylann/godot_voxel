@@ -16,10 +16,6 @@
 
 namespace zylann::voxel {
 
-namespace {
-std::atomic_int g_debug_generate_tasks_count = { 0 };
-}
-
 GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(const VoxelGenerator::BlockTaskParams &params) :
 		_block_position(params.block_position),
 		_volume_id(params.volume_id),
