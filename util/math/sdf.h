@@ -98,6 +98,72 @@ SdfAffectingArguments sdf_polynomial_smooth_subtract_side(Interval a, Interval b
 SdfAffectingArguments sdf_union_side(Interval a, Interval b);
 SdfAffectingArguments sdf_polynomial_smooth_union_side(Interval a, Interval b, real_t s);
 
+inline real_t sdf_round_cone(Vector3 p, Vector3 a, Vector3 b, real_t r1, real_t r2) {
+	// sampling independent computations (only depend on shape)
+	const Vector3 ba = b - a;
+	const real_t l2 = dot(ba, ba);
+	const real_t rr = r1 - r2;
+	const real_t a2 = l2 - rr * rr;
+	const real_t il2 = 1.0 / l2;
+
+	// sampling dependant computations
+	const Vector3 pa = p - a;
+	const real_t y = dot(pa, ba);
+	const real_t z = y - l2;
+	const real_t x2 = length_squared(pa * l2 - ba * y);
+	const real_t y2 = y * y * l2;
+	const real_t z2 = z * z * l2;
+
+	// single square root!
+	const real_t k = sign(rr) * rr * rr * x2;
+	if (sign(z) * a2 * z2 > k) {
+		return Math::sqrt(x2 + z2) * il2 - r2;
+	}
+	if (sign(y) * a2 * y2 < k) {
+		return Math::sqrt(x2 + y2) * il2 - r1;
+	}
+	return (Math::sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+}
+
+struct SdfRoundConePrecalc {
+	Vector3 a;
+	Vector3 b;
+	real_t r1;
+	real_t r2;
+
+	Vector3 ba;
+	real_t l2;
+	real_t rr;
+	real_t a2;
+	real_t il2;
+
+	void update() {
+		ba = b - a;
+		l2 = dot(ba, ba);
+		rr = r1 - r2;
+		a2 = l2 - rr * rr;
+		il2 = 1.0 / l2;
+	}
+
+	real_t operator()(Vector3 p) const {
+		const Vector3 pa = p - a;
+		const real_t y = dot(pa, ba);
+		const real_t z = y - l2;
+		const real_t x2 = length_squared(pa * l2 - ba * y);
+		const real_t y2 = y * y * l2;
+		const real_t z2 = z * z * l2;
+
+		const real_t k = sign(rr) * rr * rr * x2;
+		if (sign(z) * a2 * z2 > k) {
+			return Math::sqrt(x2 + z2) * il2 - r2;
+		}
+		if (sign(y) * a2 * y2 < k) {
+			return Math::sqrt(x2 + y2) * il2 - r1;
+		}
+		return (Math::sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
+	}
+};
+
 } // namespace zylann::math
 
 #endif // ZN_MATH_SDF_H

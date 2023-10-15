@@ -24,6 +24,7 @@ public:
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
 		if (sl != nullptr) {
+			// Locking is needed because we access `has_voxels`
 			sl->lock_read(blocks_box);
 		}
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
@@ -134,6 +135,14 @@ public:
 		}
 	}
 
+	// D action(Vector3i pos, D value)
+	template <typename F>
+	void write_box_no_lock(Box3i voxel_box, unsigned int channel, F action) {
+		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+			voxels.write_box(local_box, channel, action, voxel_offset);
+		});
+	}
+
 	// void action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
 	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
@@ -148,6 +157,16 @@ public:
 		if (_spatial_lock != nullptr) {
 			unlock_write();
 		}
+	}
+
+	// void action(Vector3i pos, D0 &value, D1 &value)
+	template <typename F>
+	void write_box_2_no_lock(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
+		_box_loop(voxel_box,
+				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+					voxels.write_box_2_template<F, uint16_t, uint16_t>(
+							local_box, channel0, channel1, action, voxel_offset);
+				});
 	}
 
 	// inline const VoxelBufferInternal *get_block(Vector3i position) const {
