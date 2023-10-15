@@ -475,7 +475,7 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 		const int extent = pass.dependency_extents;
 
 		local_box.for_each_cell_yx([extent, &columns, grid_size, grid_origin, internal, pass_index, prev_pass_index,
-										   subpass_index, &generator](Vector2i local_bpos) {
+										   &generator](Vector2i local_bpos) {
 			if (pass_index == 0 || pass_index != prev_pass_index) {
 				const Box2i nbox = Box2i(local_bpos, Vector2i(1, 1)).padded(extent);
 
