@@ -1,18 +1,18 @@
 #include "test_spatial_lock.h"
-#include "../storage/voxel_spatial_lock.h"
 #include "../util/godot/classes/time.h"
 #include "../util/math/conv.h"
 #include "../util/memory.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "../util/tasks/threaded_task_runner.h"
+#include "../util/thread/spatial_lock_3d.h"
 #include "testing.h"
 #include <fstream>
 
-namespace zylann::voxel::tests {
+namespace zylann::tests {
 
 void test_spatial_lock_misc() {
-	VoxelSpatialLock spatial_lock;
+	SpatialLock3D spatial_lock;
 
 	// Lock a box around the origin
 	const BoxBounds3i box1 = BoxBounds3i::from_min_max_included(Vector3i(-1, -1, -1), Vector3i(1, 1, 1));
@@ -28,7 +28,7 @@ void test_spatial_lock_misc() {
 	Thread thread;
 	thread.start(
 			[](void *userdata) {
-				VoxelSpatialLock &spatial_lock = *static_cast<VoxelSpatialLock *>(userdata);
+				SpatialLock3D &spatial_lock = *static_cast<SpatialLock3D *>(userdata);
 
 				// Try to lock a box overlapping the one locked by the main thread. It's for read too, it should succeed
 				const BoxBounds3i box2 = BoxBounds3i::from_min_max_included(Vector3i(0, 0, 0), Vector3i(3, 4, 5));
@@ -110,7 +110,7 @@ void test_spatial_lock_spam() {
 
 	// Data passed to each thread
 	struct Context {
-		VoxelSpatialLock *spatial_lock;
+		SpatialLock3D *spatial_lock;
 		Map *map;
 		unsigned int thread_index;
 	};
@@ -169,7 +169,7 @@ void test_spatial_lock_spam() {
 
 		static void thread_func(void *userdata) {
 			Context &ctx = *static_cast<Context *>(userdata);
-			VoxelSpatialLock &spatial_lock = *ctx.spatial_lock;
+			SpatialLock3D &spatial_lock = *ctx.spatial_lock;
 			Map &map = *ctx.map;
 
 			const uint64_t time_before = Time::get_singleton()->get_ticks_msec();
@@ -187,7 +187,7 @@ void test_spatial_lock_spam() {
 
 					if (read) {
 						ZN_PROFILE_SCOPE_NAMED("Read");
-						VoxelSpatialLockRead srlock(spatial_lock, box);
+						SpatialLock3D::Read srlock(spatial_lock, box);
 						{
 							ZN_PROFILE_SCOPE_NAMED("Work");
 							read_cells(map, box, LOCK_DURATION_MICROSECONDS, reusable_vector);
@@ -195,7 +195,7 @@ void test_spatial_lock_spam() {
 
 					} else {
 						ZN_PROFILE_SCOPE_NAMED("Write");
-						VoxelSpatialLockWrite swlock(spatial_lock, box);
+						SpatialLock3D::Write swlock(spatial_lock, box);
 						{
 							ZN_PROFILE_SCOPE_NAMED("Work");
 							modify_cells(map, box, rng, LOCK_DURATION_MICROSECONDS);
@@ -207,7 +207,7 @@ void test_spatial_lock_spam() {
 	};
 
 	Map map(Vector3i(AREA_SIZE, AREA_SIZE, AREA_SIZE));
-	VoxelSpatialLock spatial_lock;
+	SpatialLock3D spatial_lock;
 	FixedArray<Thread, 7> threads; // Excluding main thread
 	FixedArray<Context, 8> contexts;
 	const unsigned int main_thread_index = contexts.size() - 1;
@@ -240,7 +240,7 @@ void test_spatial_lock_dependent_map_chunks() {
 	static const int MAP_SIZE = 16;
 
 	struct Map {
-		VoxelSpatialLock spatial_lock;
+		SpatialLock3D spatial_lock;
 	};
 
 	struct Event {
@@ -435,4 +435,4 @@ void test_spatial_lock_dependent_map_chunks() {
 #endif
 }
 
-} // namespace zylann::voxel::tests
+} // namespace zylann::tests

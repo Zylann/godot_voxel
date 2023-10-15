@@ -137,7 +137,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 		// Blocking until available causes bottlenecks. Not always big ones, but enough to be very noticeable in the
 		// profiler.
-		// VoxelSpatialLockWrite swlock(map->spatial_lock, neighbors_box);
+		// SpatialLock3D::Write swlock(map->spatial_lock, neighbors_box);
 		if (!map.spatial_lock.try_lock_write(neighbors_box)) {
 			// Try later
 			ctx.status = ThreadedTaskContext::STATUS_POSTPONED;

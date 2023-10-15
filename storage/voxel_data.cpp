@@ -91,7 +91,7 @@ void VoxelData::reset_maps_no_settings_lock() {
 
 		// Erasing elements requires to have exclusive access to every block.
 		// That means not having any other thread holding a pointer to blocks in the map.
-		VoxelSpatialLockWrite swlock(data_lod.spatial_lock, BoxBounds3i::from_everywhere());
+		SpatialLock3D::Write swlock(data_lod.spatial_lock, BoxBounds3i::from_everywhere());
 
 		RWLockWrite wlock(data_lod.map_lock);
 
@@ -231,7 +231,7 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 	Lod &data_lod0 = _lods[0];
 	const Vector3i block_pos_lod0 = data_lod0.map.voxel_to_block(pos);
 
-	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos_lod0));
+	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i::from_position(block_pos_lod0));
 
 	bool can_generate = false;
 	std::shared_ptr<VoxelBufferInternal> voxels =
@@ -292,7 +292,7 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 	Ref<VoxelGenerator> generator = get_generator();
 
 	const Box3i blocks_box = Box3i(min_pos, dst_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
-	VoxelSpatialLockRead srlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
+	SpatialLock3D::Read srlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
 	if (is_streaming_enabled() || generator.is_null()) {
 		RWLockRead rlock(data_lod0.map_lock);
@@ -328,7 +328,7 @@ void VoxelData::paste(
 	Lod &data_lod0 = _lods[0];
 
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
-	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
+	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
 	if (create_new_blocks) {
 		RWLockWrite wlock(data_lod0.map_lock);
@@ -346,7 +346,7 @@ void VoxelData::paste_masked(Vector3i min_pos, const VoxelBufferInternal &src_bu
 	Lod &data_lod0 = _lods[0];
 
 	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
-	VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
+	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
 	if (create_new_blocks) {
 		RWLockWrite wlock(data_lod0.map_lock);
@@ -365,7 +365,7 @@ bool VoxelData::is_area_loaded(const Box3i p_voxels_box) const {
 	const Box3i block_box = voxel_box.downscaled(get_block_size());
 	const Lod &data_lod0 = _lods[0];
 	{
-		VoxelSpatialLockRead srlock(data_lod0.spatial_lock, block_box);
+		SpatialLock3D::Read srlock(data_lod0.spatial_lock, block_box);
 
 		RWLockRead rlock(data_lod0.map_lock);
 
@@ -414,7 +414,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 		const unsigned int prev_size = todo.size();
 
 		{
-			VoxelSpatialLockRead srlock(data_lod.spatial_lock, block_box);
+			SpatialLock3D::Read srlock(data_lod.spatial_lock, block_box);
 
 			RWLockRead rlock(data_lod.map_lock);
 
@@ -469,7 +469,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 			Lod &data_lod = lods[lod_index];
 
 			const Box3i block_box = voxel_box.downscaled(data_block_size << lod_index);
-			VoxelSpatialLockWrite swlock(data_lod.spatial_lock, block_box);
+			SpatialLock3D::Write swlock(data_lod.spatial_lock, block_box);
 
 			RWLockWrite wlock(data_lod.map_lock);
 
@@ -504,7 +504,7 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 
 		// Locking area for write because technically we may modify blocks
 		const Box3i blocks_box = p_voxel_box.downscaled(lod.map.get_block_size() << lod_index);
-		VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+		SpatialLock3D::Write swlock(lod.spatial_lock, blocks_box);
 
 		// Locking map for read because we won't add or remove blocks
 		RWLockRead rlock(lod.map_lock);
@@ -528,7 +528,7 @@ void VoxelData::mark_area_modified(
 
 	Lod &data_lod0 = _lods[0];
 	{
-		VoxelSpatialLockWrite swlock(data_lod0.spatial_lock, bbox);
+		SpatialLock3D::Write swlock(data_lod0.spatial_lock, bbox);
 
 		// Locking map for read because we won't add or remove blocks
 		RWLockRead rlock(data_lod0.map_lock);
@@ -665,7 +665,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 			// Maps have to be locked after the spatial lock to prevent deadlocks. They have to stay locked because
 			// data blocks are not shared pointers. It would be nice to have the spatial lock after the potential
 			// generation... perhaps data blocks need to be shared instead of voxel buffers
-			VoxelSpatialLockRead srlock(src_data_lod.spatial_lock, BoxBounds3i::from_position(src_bpos));
+			SpatialLock3D::Read srlock(src_data_lod.spatial_lock, BoxBounds3i::from_position(src_bpos));
 			RWLockRead src_data_lod_map_rlock(src_data_lod.map_lock);
 			// TODO Could take long locking this, we may generate things first and assign to the map at the end.
 			// Besides, in per-block streaming mode, it is not needed because blocks are supposed to be present
@@ -750,7 +750,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 
 void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<BlockToSave> *to_save) {
 	Lod &lod = _lods[lod_index];
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, bbox);
+	SpatialLock3D::Write swlock(lod.spatial_lock, bbox);
 	RWLockWrite wlock(lod.map_lock);
 	if (to_save == nullptr) {
 		bbox.for_each_cell_zxy([&lod](Vector3i bpos) { //
@@ -783,7 +783,7 @@ bool VoxelData::consume_block_modifications(Vector3i bpos, VoxelData::BlockToSav
 
 	// Locking for write because we are going to change state on the block.
 	// TODO Could use an atomic in this case, if it causes too much contention?
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	SpatialLock3D::Write swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 
 	// Locking for read because we won't add or remove blocks to the map
 	RWLockRead rlock(lod.map_lock);
@@ -812,7 +812,7 @@ void VoxelData::consume_all_modifications(std::vector<BlockToSave> &to_save, boo
 
 		// Locking for write because we are going to change states on blocks.
 		// TODO Could use an atomic in this case, if it causes too much contention?
-		VoxelSpatialLockWrite srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
+		SpatialLock3D::Write srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
 
 		// Locking for read because we won't add or remove blocks to the map
 		RWLockRead rlock(lod.map_lock);
@@ -857,7 +857,7 @@ void VoxelData::get_blocks_with_voxel_data(
 
 	// Locking also with spatial lock because we need to check if blocks have voxels, which is a state that could be
 	// changed by another thread (in theory)
-	VoxelSpatialLockRead srlock(data_lod.spatial_lock, p_blocks_box);
+	SpatialLock3D::Read srlock(data_lod.spatial_lock, p_blocks_box);
 
 	RWLockRead rlock(data_lod.map_lock);
 
@@ -883,7 +883,7 @@ void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsign
 	grid.reference_area_block_coords(data_lod.map, data_lod.map_lock, box_in_blocks, &data_lod.spatial_lock);
 }
 
-VoxelSpatialLock &VoxelData::get_spatial_lock(unsigned int lod_index) const {
+SpatialLock3D &VoxelData::get_spatial_lock(unsigned int lod_index) const {
 	const Lod &data_lod = _lods[lod_index];
 	return data_lod.spatial_lock;
 }
@@ -904,7 +904,7 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 		// Ideally this box shouldn't intersect more than 8 blocks if the box is cubic.
 		const Box3i mip_blocks_box = box_in_voxels.downscaled(mip_data_lod.map.get_block_size() << top_lod_index);
 
-		VoxelSpatialLockRead srlock(mip_data_lod.spatial_lock, mip_blocks_box);
+		SpatialLock3D::Read srlock(mip_data_lod.spatial_lock, mip_blocks_box);
 
 		RWLockRead rlock(mip_data_lod.map_lock);
 
@@ -934,7 +934,7 @@ void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_block
 
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much?
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+	SpatialLock3D::Write swlock(lod.spatial_lock, blocks_box);
 
 	// Locking for read because we don't add or remove blocks.
 	RWLockRead rlock(lod.map_lock);
@@ -962,7 +962,7 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much? However if we do, we need to ensure no other thread is holding
 	// a pointer to any of the blocks we could remove.
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, blocks_box);
+	SpatialLock3D::Write swlock(lod.spatial_lock, blocks_box);
 
 	// Locking for write because we are potentially going to remove blocks from the map.
 	RWLockWrite wlock(lod.map_lock);
@@ -988,7 +988,7 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 std::shared_ptr<VoxelBufferInternal> VoxelData::try_get_block_voxels(Vector3i bpos) {
 	Lod &lod = _lods[0];
 
-	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	RWLockRead rlock(lod.map_lock);
 
 	VoxelDataBlock *block = lod.map.get_block(bpos);
@@ -1006,7 +1006,7 @@ void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
 
-	VoxelSpatialLockWrite swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	SpatialLock3D::Write swlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	RWLockRead rlock(lod.map_lock);
 
 	VoxelDataBlock *block = lod.map.get_block(bpos);
@@ -1024,7 +1024,7 @@ Variant VoxelData::get_voxel_metadata(Vector3i pos) {
 
 	const Vector3i bpos = lod.map.voxel_to_block(pos);
 
-	VoxelSpatialLockRead srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
+	SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_position(bpos));
 	RWLockRead rlock(lod.map_lock);
 
 	VoxelDataBlock *block = lod.map.get_block(bpos);

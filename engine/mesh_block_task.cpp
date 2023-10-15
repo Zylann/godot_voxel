@@ -112,7 +112,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		// We are just sampling or generating data in a given area.
 
 		const Vector3i data_block_pos0 = mesh_block_pos * area_info.mesh_block_size_factor;
-		VoxelSpatialLockRead srlock(voxel_data.get_spatial_lock(lod_index),
+		SpatialLock3D::Read srlock(voxel_data.get_spatial_lock(lod_index),
 				BoxBounds3i(data_block_pos0 - Vector3i(1, 1, 1),
 						data_block_pos0 + Vector3iUtil::create(area_info.edge_size)));
 

@@ -327,8 +327,8 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 		picks.clear();
 
 		{
-			VoxelSpatialLock &spatial_lock = data.get_spatial_lock(0);
-			VoxelSpatialLockRead srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
+			SpatialLock3D &spatial_lock = data.get_spatial_lock(0);
+			SpatialLock3D::Read srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
 
 			std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
 

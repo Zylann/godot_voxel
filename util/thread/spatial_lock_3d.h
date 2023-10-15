@@ -1,21 +1,19 @@
-#ifndef VOXEL_SPATIAL_LOCKER_H
-#define VOXEL_SPATIAL_LOCKER_H
+#ifndef ZN_SPATIAL_LOCK_3D_H
+#define ZN_SPATIAL_LOCK_3D_H
 
-#include "../util/math/box_bounds_3i.h"
-#include "../util/thread/mutex.h"
-#include "../util/thread/semaphore.h"
-#include "../util/thread/short_lock.h"
-#include "../util/thread/thread.h"
+#include "../math/box_bounds_3i.h"
+#include "mutex.h"
+#include "semaphore.h"
+#include "short_lock.h"
+#include "thread.h"
 
 #include <vector>
 
 #ifdef TOOLS_ENABLED
-#define VOXEL_SPATIAL_LOCK_CHECKS
+#define ZN_SPATIAL_LOCK_3D_CHECKS
 #endif
 
-namespace zylann::voxel {
-
-// TODO Rename SpatialLock3D and move to utilities
+namespace zylann {
 
 // Locking on a large voxel data structure can be done with this, instead of putting RWLocks on every chunk or
 // every octree node. This also reduces the amount of required mutexes considerably (that matters on some platforms with
@@ -27,7 +25,7 @@ namespace zylann::voxel {
 //
 // Do not try to lock more than one box at the same time before doing your task. If another thread does so,
 // it could end up in a deadlock depending in the order it happens.
-class VoxelSpatialLock {
+class SpatialLock3D {
 public:
 	enum Mode { //
 		MODE_READ = 0,
@@ -37,14 +35,14 @@ public:
 	struct Box {
 		BoxBounds3i bounds;
 		Mode mode;
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 		Thread::ID thread_id;
 #endif
 	};
 
-	VoxelSpatialLock();
+	SpatialLock3D();
 
-	~VoxelSpatialLock() {
+	~SpatialLock3D() {
 		ZN_ASSERT_RETURN(_boxes.size() == 0);
 	}
 
@@ -52,7 +50,7 @@ public:
 		_boxes_mutex.lock();
 		if (can_lock_for_read(box)) {
 			_boxes.push_back(Box{ box, MODE_READ,
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 					Thread::get_caller_id()
 #endif
 			});
@@ -78,7 +76,7 @@ public:
 		_boxes_mutex.lock();
 		if (can_lock_for_write(box)) {
 			_boxes.push_back(Box{ box, MODE_WRITE,
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 					Thread::get_caller_id()
 #endif
 			});
@@ -105,15 +103,39 @@ public:
 		return _boxes.size();
 	}
 
+	// Scoped helpers
+
+	struct Read {
+		Read(SpatialLock3D &p_locker, const BoxBounds3i p_box) : locker(p_locker), box(p_box) {
+			locker.lock_read(box);
+		}
+		~Read() {
+			locker.unlock_read(box);
+		}
+		SpatialLock3D &locker;
+		const BoxBounds3i box;
+	};
+
+	struct Write {
+		Write(SpatialLock3D &p_locker, const BoxBounds3i p_box) : locker(p_locker), box(p_box) {
+			locker.lock_write(box);
+		}
+		~Write() {
+			locker.unlock_write(box);
+		}
+		SpatialLock3D &locker;
+		const BoxBounds3i box;
+	};
+
 private:
 	bool can_lock_for_read(const BoxBounds3i &box) {
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
 #endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
 			const Box &existing_box = _boxes[i];
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 			// Each thread can lock only one box at a time, otherwise there can be deadlocks depending on the order of
 			// locks. For example:
 			// - Thread 1 locks A
@@ -135,14 +157,14 @@ private:
 	}
 
 	bool can_lock_for_write(const BoxBounds3i &box) {
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 		const Thread::ID thread_id = Thread::get_caller_id();
 #endif
 
 		for (unsigned int i = 0; i < _boxes.size(); ++i) {
 			const Box &existing_box = _boxes[i];
 
-#ifdef VOXEL_SPATIAL_LOCK_CHECKS
+#ifdef ZN_SPATIAL_LOCK_3D_CHECKS
 			ZN_ASSERT_RETURN_V_MSG(existing_box.thread_id != thread_id, false,
 					"Locking two areas from the same threads is not allowed");
 #endif
@@ -177,38 +199,6 @@ private:
 	Semaphore _semaphore;
 };
 
-struct VoxelSpatialLockRead {
-	VoxelSpatialLockRead(VoxelSpatialLock &p_locker, const BoxBounds3i p_box) : locker(p_locker), box(p_box) {
-		locker.lock_read(box);
-	}
-	~VoxelSpatialLockRead() {
-		locker.unlock_read(box);
-	}
-	VoxelSpatialLock &locker;
-	const BoxBounds3i box;
-};
+} // namespace zylann
 
-struct VoxelSpatialLockWrite {
-	VoxelSpatialLockWrite(VoxelSpatialLock &p_locker, const BoxBounds3i p_box) : locker(p_locker), box(p_box) {
-		locker.lock_write(box);
-	}
-	~VoxelSpatialLockWrite() {
-		locker.unlock_write(box);
-	}
-	VoxelSpatialLock &locker;
-	const BoxBounds3i box;
-};
-
-struct VoxelSpatialLock_UnlockWriteOnScopeExit {
-	VoxelSpatialLock_UnlockWriteOnScopeExit(VoxelSpatialLock &p_locker, const BoxBounds3i p_box) :
-			locker(p_locker), box(p_box) {}
-	~VoxelSpatialLock_UnlockWriteOnScopeExit() {
-		locker.unlock_write(box);
-	}
-	VoxelSpatialLock &locker;
-	const BoxBounds3i box;
-};
-
-} // namespace zylann::voxel
-
-#endif // VOXEL_SPATIAL_LOCKER_H
+#endif // ZN_SPATIAL_LOCK_3D_H

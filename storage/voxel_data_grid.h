@@ -1,8 +1,8 @@
 #ifndef VOXEL_DATA_GRID_H
 #define VOXEL_DATA_GRID_H
 
+#include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
-#include "voxel_spatial_lock.h"
 
 namespace zylann::voxel {
 
@@ -14,13 +14,13 @@ public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
 	// WARNING: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
 	// box if you expect LOD0 coordinates.
-	// inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
+	// inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, SpatialLock3D *sl) {
 	// 	const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
 	// 	reference_area_block_coords(map, blocks_box, sl);
 	// }
 
 	inline void reference_area_block_coords(
-			const VoxelDataMap &map, const RWLockRead &rwl, Box3i blocks_box, VoxelSpatialLock *sl) {
+			const VoxelDataMap &map, const RWLockRead &rwl, Box3i blocks_box, SpatialLock3D *sl) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
@@ -264,7 +264,7 @@ private:
 	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
 	// For protecting voxel data against multithreaded accesses. Not owned. Lifetime must be guaranteed by the user, for
 	// example by having a std::shared_ptr<VoxelData> holding the spatial lock.
-	VoxelSpatialLock *_spatial_lock = nullptr;
+	SpatialLock3D *_spatial_lock = nullptr;
 	mutable bool _locked = false;
 };
 
