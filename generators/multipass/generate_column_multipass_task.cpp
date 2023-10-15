@@ -131,8 +131,6 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 	// TODO Cache memory
 	columns.reserve(Vector2iUtil::get_area(neighbors_box.size));
 
-	IThreadedTask *next_task = nullptr;
-
 	// Lock region we are going to process
 	{
 		ZN_PROFILE_SCOPE_NAMED("Region");
