@@ -308,6 +308,11 @@ inline T sign_nonzero(T x) {
 	return x < 0 ? -1 : 1;
 }
 
+template <typename T>
+constexpr const T sign(const T v) {
+	return v == 0 ? 0.0f : (v < 0 ? -1.0f : +1.0f);
+}
+
 // Trilinear interpolation between corner values of a unit-sized cube.
 // `v***` arguments are corner values named as `vXYZ`, where a coordinate is 0 or 1 on the cube.
 // Coordinates of `p` are in 0..1, but are not clamped so extrapolation is possible.

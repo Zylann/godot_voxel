@@ -76,6 +76,10 @@ inline Span<const Vector3> to_span(const PackedVector3Array &a) {
 	return Span<const Vector3>(a.ptr(), a.size());
 }
 
+inline Span<const float> to_span(const PackedFloat32Array &a) {
+	return Span<const float>(a.ptr(), a.size());
+}
+
 inline Span<const int32_t> to_span(const PackedInt32Array &a) {
 	return Span<const int32_t>(a.ptr(), a.size());
 }

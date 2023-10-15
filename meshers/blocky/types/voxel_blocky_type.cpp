@@ -20,7 +20,7 @@
 namespace zylann::voxel {
 
 // Making types can get quite complicated, config files sound like a better solution compared to messing around in the
-// inspector, see how Minecraft defines their models: https://minecraft.fandom.com/wiki/Tutorials/Models
+// inspector, see how Minecraft defines their models: https://minecraft.wiki/w/Tutorials/Models
 
 VoxelBlockyType::VoxelBlockyType() {
 	_name = VoxelStringNames::get_singleton().unnamed;

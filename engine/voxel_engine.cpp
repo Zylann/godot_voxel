@@ -75,6 +75,8 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	} else {
 		// Sadly, that happens. This is a problem in GDExtension...
 		ZN_PRINT_ERROR("RenderingServer singleton is null when creating VoxelEngine!");
+		// RenderingServer can also be null with `tests=yes`.
+		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
 	}
 
 	if (_rendering_device != nullptr) {

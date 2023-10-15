@@ -30,10 +30,13 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelTerrain`:
         - Added `VoxelTerrainMultiplayerSynchronizer`, which simplifies replication using Godot's high-level multiplayer API
         - Added `is_area_meshed` as an alternative to `VoxelTool.is_area_editable` for games using mesh colliders
+        - Added `do_path` to build or carve "worms" of varying radius
         - Editor: added warning when bounds are empty
     - `VoxelTool`:
         - Added `smooth_sphere`, which smoothens terrain in a spherical area using box blur. Smooth/SDF terrain only. (Thanks to Piratux for the idea and initial implementation)
         - Separated `paste` into `paste` and `paste_masked` functions. The latter performs masking using a specific channel and value.
+    - `VoxelToolTerrain`:
+        - Raycasting a terrain using `VoxelMesherBlocky` now takes collision boxes into account (thanks to Lry722)
     - `VoxelToolLodTerrain`:
         - Added support for `paste`
     - `VoxelMesherCubes`:

@@ -69,6 +69,14 @@ inline Vector3 abs(const Vector3 &v) {
 	return Vector3(Math::abs(v.x), Math::abs(v.y), Math::abs(v.z));
 }
 
+inline real_t dot(const Vector3 &a, const Vector3 &b) {
+	return a.dot(b);
+}
+
+inline real_t length_squared(const Vector3 &a) {
+	return a.length_squared();
+}
+
 } // namespace zylann::math
 
 namespace zylann {
