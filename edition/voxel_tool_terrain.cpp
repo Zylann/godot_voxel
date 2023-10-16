@@ -73,10 +73,6 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 			}
 
 			const VoxelBlockyModel::BakedData &model = baked_data.models[v];
-			if (model.empty) {
-				return false;
-			}
-
 			if ((model.box_collision_mask & collision_mask) == 0) {
 				return false;
 			}
