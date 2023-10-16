@@ -18,6 +18,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - Updated FastNoise2 to 0.10.0-alpha
     - Started an experimental type system for the blocky voxels workflow. However it is not fully functional, its API may change in the future or have parts removed.
     - Added experimental `VoxelAStarGrid3D` for grid-based pathfinding on blocky voxels 
+    - Added experimental `VoxelGeneratorMultipassCB` to implement column-based generation in multiple passes that works across chunks
     - Voxel engine processing no longer stops when the SceneTree is paused
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
