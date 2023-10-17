@@ -460,6 +460,8 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		const Vector3i block_origin = block_pos * data.get_block_size();
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
+		// For read or write? We'd have to specify as argument and trust the user... since metadata can contain
+		// reference types.
 
 #if defined(ZN_GODOT)
 		voxels_ptr->for_each_voxel_metadata_in_area(

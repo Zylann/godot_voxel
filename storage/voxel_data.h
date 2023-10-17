@@ -266,8 +266,12 @@ public:
 	// Tests the presence of edited blocks in the given area by looking up LOD mips. It can report false positives due
 	// to the broad nature of the check, but runs a lot faster than a full test. This is only usable with volumes
 	// using LOD mips (edited blocks have half-resolution counterparts all the way up to maximum LOD).
+
 	bool has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxels) const;
 
+	// Access voxels of a specific block.
+	// WARNING: you must hold the spatial lock before calling this, and until you're done working on such blocks.
+	// Can return null.
 	std::shared_ptr<VoxelBufferInternal> try_get_block_voxels(Vector3i bpos);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
