@@ -880,7 +880,7 @@ void VoxelData::get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsign
 	RWLockRead rlock(data_lod.map_lock);
 	const int bs = data_lod.map.get_block_size() << lod_index;
 	const Box3i box_in_blocks = box_in_voxels.downscaled(bs);
-	grid.reference_area_block_coords(data_lod.map, data_lod.map_lock, box_in_blocks, &data_lod.spatial_lock);
+	grid.reference_area_block_coords(data_lod.map, box_in_blocks, &data_lod.spatial_lock);
 }
 
 SpatialLock3D &VoxelData::get_spatial_lock(unsigned int lod_index) const {
