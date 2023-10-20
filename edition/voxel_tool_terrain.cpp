@@ -488,22 +488,6 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 	});
 }
 
-namespace {
-AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
-	AABB aabb(positions[0], Vector3());
-
-	for (unsigned int i = 0; i < positions.size(); ++i) {
-		const Vector3 pos = positions[i];
-		const float r = radii[i];
-		const Vector3 extentv(r, r, r);
-		aabb = aabb.expand(pos - extentv);
-		aabb = aabb.expand(pos + extentv);
-	}
-
-	return aabb;
-}
-} // namespace
-
 void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(p_positions.size() >= 2);
@@ -513,15 +497,12 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 	Span<const float> radii = to_span(p_radii);
 
 	// TODO Increase margin a bit with smooth voxels?
-	const float margin = 1.f;
+	const int margin = 1;
 
 	// Compute total bounding box
 
 	const AABB total_aabb = get_path_aabb(positions, radii).grow(margin);
-
 	const Box3i total_voxel_box(to_vec3i(math::floor(total_aabb.position)), to_vec3i(math::ceil(total_aabb.size)));
-	const VoxelBufferInternal::ChannelId channel = get_channel();
-	const VoxelTool::Mode mode = get_mode();
 
 	VoxelDataGrid grid;
 
@@ -533,19 +514,6 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 
 	// Rasterize
 
-	struct SdfRoundCone {
-		math::SdfRoundConePrecalc cone;
-		real_t sdf_scale;
-
-		inline real_t operator()(Vector3 pos) const {
-			return sdf_scale * cone(pos);
-		}
-
-		inline bool is_inside(Vector3 pos) const {
-			return cone(pos) < 0.f;
-		}
-	};
-
 	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
 		// TODO Could run this in local space so we dont need doubles
 		// TODO Apply terrain scale
@@ -555,72 +523,44 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 		const float r0 = radii[point_index - 1];
 		const float r1 = radii[point_index];
 
-		const float r0m = r0 + margin;
-		const float r1m = r1 + margin;
+		ops::DoShape2<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
+		op.block_access.grid = &grid;
+		op.shape.cone.a = p0;
+		op.shape.cone.b = p1;
+		op.shape.cone.r1 = r0;
+		op.shape.cone.r2 = r1;
+		op.shape.cone.update();
+		op.shape.sdf_scale = get_sdf_scale();
+		op.block_size_po2 = grid.get_block_size_po2();
+		op.box = op.shape.get_box().padded(margin);
+		op.mode = ops::Mode(get_mode());
+		op.texture_params = _texture_params;
+		op.blocky_value = _value;
+		op.channel = get_channel();
+		op.strength = get_sdf_strength();
 
-		const Vector3 minp( //
-				math::min(p0.x - r0m, p1.x - r1m), //
-				math::min(p0.y - r0m, p1.y - r1m), //
-				math::min(p0.z - r0m, p1.z - r1m));
+		op();
 
-		const Vector3 maxp( //
-				math::max(p0.x + r0m, p1.x + r1m), //
-				math::max(p0.y + r0m, p1.y + r1m), //
-				math::max(p0.z + r0m, p1.z + r1m));
-
-		const Box3i segment_box = Box3i::from_min_max(to_vec3i(math::floor(minp)), to_vec3i(math::ceil(maxp)));
-
-		SdfRoundCone shape;
-		shape.cone.a = p0;
-		shape.cone.b = p1;
-		shape.cone.r1 = r0;
-		shape.cone.r2 = r1;
-		shape.cone.update();
-		shape.sdf_scale = get_sdf_scale();
-
-		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
-			switch (mode) {
-				case MODE_ADD: {
-					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
-					ops::SdfOperation16bit<ops::SdfUnion, SdfRoundCone> op;
-					op.shape = shape;
-					op.op.strength = get_sdf_strength();
-					grid.write_box_no_lock(segment_box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_REMOVE: {
-					ops::SdfOperation16bit<ops::SdfSubtract, SdfRoundCone> op;
-					op.shape = shape;
-					op.op.strength = get_sdf_strength();
-					grid.write_box_no_lock(segment_box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_SET: {
-					ops::SdfOperation16bit<ops::SdfSet, SdfRoundCone> op;
-					op.shape = shape;
-					op.op.strength = get_sdf_strength();
-					grid.write_box_no_lock(segment_box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_TEXTURE_PAINT: {
-					ops::TextureBlendOp<SdfRoundCone> op;
-					op.shape = shape;
-					op.texture_params = _texture_params;
-					grid.write_box_2_no_lock(segment_box, VoxelBufferInternal::CHANNEL_INDICES,
-							VoxelBufferInternal::CHANNEL_WEIGHTS, op);
-				} break;
-
-				default:
-					ERR_PRINT("Unknown mode");
-					break;
-			}
-
-		} else {
-			ops::BlockySetOperation<uint32_t, SdfRoundCone> op;
-			op.shape = shape;
-			op.value = get_value();
-			grid.write_box_no_lock(segment_box, channel, op);
-		}
+		// Experimented with drawing a 100-point path, the cost of everything outside cone calculation was:
+		// - Non-template: 2.55 ms
+		// - Template: 1.00 ms
+		// With cone calculation:
+		// - Non-template: 5.7 ms
+		// - Template: 4.5 ms
+		// So the template version is faster, but not that much.
+		//
+		// math::SdfRoundConePrecalc cone;
+		// cone.a = p0;
+		// cone.b = p1;
+		// cone.r1 = r0;
+		// cone.r2 = r1;
+		// cone.update();
+		// uint64_t value = _value;
+		// segment_box.for_each_cell_zxy([&grid, &cone, value](Vector3i pos) {
+		// 	if (cone(pos) < 0.f) {
+		// 		grid.set_voxel_no_lock(pos, value, VoxelBufferInternal::CHANNEL_TYPE);
+		// 	}
+		// });
 	}
 
 	grid.unlock_write();

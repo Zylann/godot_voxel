@@ -28,7 +28,7 @@ public:
 			// Locking is needed because we access `has_voxels`
 			sl->lock_read(blocks_box);
 		}
-		RWLockRead rlock(rwl);
+		// RWLockRead rlock(rwl);
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,
@@ -184,6 +184,14 @@ public:
 		_blocks.clear();
 		_size_in_blocks = Vector3i();
 		_spatial_lock = nullptr;
+	}
+
+	inline VoxelBufferInternal *get_block_no_lock(Vector3i position) {
+		return get_block(position);
+	}
+
+	inline unsigned int get_block_size_po2() const {
+		return _block_size_po2;
 	}
 
 private:

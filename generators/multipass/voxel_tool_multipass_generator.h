@@ -34,6 +34,8 @@ public:
 	Vector3i get_main_area_min() const;
 	Vector3i get_main_area_max() const;
 
+	void do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii);
+
 	// Debug
 
 	// Create a standalone instance for testing purposes.

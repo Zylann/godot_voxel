@@ -12,9 +12,11 @@
 
 namespace zylann::voxel {
 
-// High-level generic voxel edition utility.
-// Ease of use comes at cost.
-// It's not a class to instantiate alone, get it from the voxel objects you want to work with
+// High-level voxel editing interface.
+// It's not a class to instantiate alone, get it from the voxel objects you want to work with.
+// There might be some overhead, so if a specific case needs optimization, it may be implemented with the underlying
+// data structure directly, or eventually added to the corresponding implementation of VoxelTool. If most
+// implementations provide the same feature, it may be added to the base class.
 class VoxelTool : public RefCounted {
 	GDCLASS(VoxelTool, RefCounted)
 public:

@@ -114,6 +114,20 @@ void paste_to_chunked_storage(const VoxelBufferInternal &src_buffer, Vector3i mi
 	}
 }
 
+AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
+	AABB aabb(positions[0], Vector3());
+
+	for (unsigned int i = 0; i < positions.size(); ++i) {
+		const Vector3 pos = positions[i];
+		const float r = radii[i];
+		const Vector3 extentv(r, r, r);
+		aabb = aabb.expand(pos - extentv);
+		aabb = aabb.expand(pos + extentv);
+	}
+
+	return aabb;
+}
+
 } // namespace zylann::voxel
 
 namespace zylann::voxel::ops {

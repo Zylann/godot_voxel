@@ -1,5 +1,6 @@
 #include "voxel_tool_multipass_generator.h"
 #include "../../edition/funcs.h"
+#include "../../util/godot/funcs.h"
 
 namespace zylann::voxel {
 
@@ -49,15 +50,19 @@ bool VoxelToolMultipassGenerator::is_area_editable(const Box3i &box) const {
 }
 
 namespace {
-VoxelBufferInternal *get_pass_input_block_w(void *ctx, Vector3i bpos) {
-	PassInput *pi = static_cast<PassInput *>(ctx);
-	const Vector3i rbpos = bpos - pi->grid_origin;
-	const Vector3i gs = pi->grid_size;
+inline VoxelBufferInternal *get_pass_input_block(PassInput &pi, const Vector3i &bpos) {
+	const Vector3i rbpos = bpos - pi.grid_origin;
+	const Vector3i gs = pi.grid_size;
 	if (rbpos.x < 0 || rbpos.y < 0 || rbpos.z < 0 || rbpos.x >= gs.x || rbpos.y >= gs.y || rbpos.z >= gs.z) {
 		return nullptr;
 	}
 	const unsigned int loc = Vector3iUtil::get_zxy_index(rbpos, gs);
-	return &pi->grid[loc]->voxels;
+	return &pi.grid[loc]->voxels;
+}
+
+VoxelBufferInternal *get_pass_input_block_w(void *ctx, Vector3i bpos) {
+	PassInput *pi = static_cast<PassInput *>(ctx);
+	return get_pass_input_block(*pi, bpos);
 }
 // Just wrapping up for const...
 const VoxelBufferInternal *get_pass_input_block_r(void *ctx, Vector3i bpos) {
@@ -158,6 +163,66 @@ Vector3i VoxelToolMultipassGenerator::get_main_area_min() const {
 
 Vector3i VoxelToolMultipassGenerator::get_main_area_max() const {
 	return (_pass_input.main_block_position + Vector3i(1, _pass_input.grid_size.y, 1)) << _block_size_po2;
+}
+
+void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
+	struct GridAccess {
+		PassInput *pass_input;
+		inline VoxelBufferInternal *operator()(Vector3i bpos) {
+			return get_pass_input_block(*pass_input, bpos);
+		}
+	};
+
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(p_positions.size() >= 2);
+	ZN_ASSERT_RETURN(p_positions.size() == p_radii.size());
+
+	Span<const Vector3> positions = to_span(p_positions);
+	Span<const float> radii = to_span(p_radii);
+
+	// TODO Increase margin a bit with smooth voxels?
+	const int margin = 1;
+
+	// Compute total bounding box
+
+	const AABB total_aabb = get_path_aabb(positions, radii).grow(margin);
+	const Box3i total_voxel_box(to_vec3i(math::floor(total_aabb.position)), to_vec3i(math::ceil(total_aabb.size)));
+	const Box3i clipped_voxel_box = total_voxel_box.clipped(_editable_voxel_box);
+
+	// Rasterize
+
+	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
+		// TODO Could run this in local space so we dont need doubles
+		// TODO Apply terrain scale
+		const Vector3 p0 = positions[point_index - 1];
+		const Vector3 p1 = positions[point_index];
+
+		const float r0 = radii[point_index - 1];
+		const float r1 = radii[point_index];
+
+		ops::DoShape2<ops::SdfRoundCone, GridAccess> op;
+		op.shape.cone.a = p0;
+		op.shape.cone.b = p1;
+		op.shape.cone.r1 = r0;
+		op.shape.cone.r2 = r1;
+		op.box = op.shape.get_box().padded(margin);
+
+		if (!op.box.intersects(clipped_voxel_box)) {
+			continue;
+		}
+
+		op.shape.cone.update();
+		op.shape.sdf_scale = get_sdf_scale();
+		op.block_access.pass_input = &_pass_input;
+		op.block_size_po2 = _block_size_po2;
+		op.mode = ops::Mode(get_mode());
+		op.texture_params = _texture_params;
+		op.blocky_value = _value;
+		op.channel = get_channel();
+		op.strength = get_sdf_strength();
+
+		op();
+	}
 }
 
 void VoxelToolMultipassGenerator::_bind_methods() {
