@@ -19,8 +19,8 @@ public:
 	// 	reference_area_block_coords(map, blocks_box, sl);
 	// }
 
-	inline void reference_area_block_coords(
-			const VoxelDataMap &map, const RWLockRead &rwl, Box3i blocks_box, SpatialLock3D *sl) {
+	// TODO This API is a bit risky, it should just be encapsulated into VoxelData maybe
+	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, SpatialLock3D *sl) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
@@ -28,7 +28,7 @@ public:
 			// Locking is needed because we access `has_voxels`
 			sl->lock_read(blocks_box);
 		}
-		RWLockRead rlock(rwl);
+		// WARNING: Assumes `map` is already locked for reading
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,
