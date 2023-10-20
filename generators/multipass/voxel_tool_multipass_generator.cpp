@@ -232,6 +232,8 @@ void VoxelToolMultipassGenerator::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_main_area_min"), &VoxelToolMultipassGenerator::get_main_area_min);
 	ClassDB::bind_method(D_METHOD("get_main_area_max"), &VoxelToolMultipassGenerator::get_main_area_max);
 
+	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelToolMultipassGenerator::do_path);
+
 	// ClassDB::bind_static_method(VoxelToolMultipassGenerator::get_class_static(),
 	// 		D_METHOD("create_offline", "grid_origin_blocks", "grid_size_blocks", "main_block_position",
 	// 				"block_size_po2"),
