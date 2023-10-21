@@ -4,6 +4,7 @@
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/camera_3d.h"
 #include "../../util/godot/classes/collision_shape_3d.h"
+#include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/multimesh.h"
 #include "../../util/godot/classes/node.h"
