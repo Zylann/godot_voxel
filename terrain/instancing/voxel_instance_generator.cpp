@@ -728,20 +728,23 @@ bool VoxelInstanceGenerator::get_random_rotation() const {
 }
 
 void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
-	ShortLockScope slock(_ptr_settings_lock);
+	{
+		ShortLockScope slock(_ptr_settings_lock);
 
-	if (_noise == noise) {
-		return;
+		if (_noise == noise) {
+			return;
+		}
+		if (_noise.is_valid()) {
+			_noise->disconnect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+		}
+		_noise = noise;
+		if (_noise.is_valid()) {
+			_noise->connect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+		}
 	}
-	if (_noise.is_valid()) {
-		_noise->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
-	}
-	_noise = noise;
-	if (_noise.is_valid()) {
-		_noise->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
-	}
+	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
 }
 
@@ -751,29 +754,32 @@ Ref<Noise> VoxelInstanceGenerator::get_noise() const {
 }
 
 void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
-	ShortLockScope slock(_ptr_settings_lock);
+	{
+		ShortLockScope slock(_ptr_settings_lock);
 
-	if (_noise_graph == func) {
-		return;
+		if (_noise_graph == func) {
+			return;
+		}
+		if (_noise_graph.is_valid()) {
+			_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		}
+
+		_noise_graph = func;
+
+		if (_noise_graph.is_valid()) {
+			// Compile on assignment because there isn't really a good place to do it...
+			func->compile(Engine::get_singleton()->is_editor_hint());
+
+			_noise_graph->connect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		}
 	}
-	if (_noise_graph.is_valid()) {
-		_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-		_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-	}
-
-	_noise_graph = func;
-
-	if (_noise_graph.is_valid()) {
-		// Compile on assignment because there isn't really a good place to do it...
-		func->compile(Engine::get_singleton()->is_editor_hint());
-
-		_noise_graph->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-		_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-	}
+	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
 }
 
