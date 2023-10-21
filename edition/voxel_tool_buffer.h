@@ -20,6 +20,7 @@ public:
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
 	void do_sphere(Vector3 center, float radius) override;
+	void do_path(PackedVector3Array positions, PackedFloat32Array radii);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

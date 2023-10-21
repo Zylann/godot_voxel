@@ -132,6 +132,20 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
 
 namespace zylann::voxel::ops {
 
+Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1) {
+	const Vector3 minp( //
+			math::min(p0.x - r0, p1.x - r1), //
+			math::min(p0.y - r0, p1.y - r1), //
+			math::min(p0.z - r0, p1.z - r1));
+
+	const Vector3 maxp( //
+			math::max(p0.x + r0, p1.x + r1), //
+			math::max(p0.y + r0, p1.y + r1), //
+			math::max(p0.z + r0, p1.z + r1));
+
+	return Box3i::from_min_max(to_vec3i(math::floor(minp)), to_vec3i(math::ceil(maxp)));
+}
+
 // Reference implementation. Correct but very slow.
 void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos,
 		float sphere_radius) {
