@@ -354,18 +354,18 @@ const VoxelInstancer::Layer &VoxelInstancer::get_layer_const(int id) const {
 
 namespace {
 Vector3 get_global_camera_position(const Node &node) {
+#ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return gd::get_3d_editor_camera_position();
-
-	} else {
-		const Viewport *viewport = node.get_viewport();
-		ZN_ASSERT_RETURN_V(viewport != nullptr, Vector3());
-		const Camera3D *camera = viewport->get_camera_3d();
-		if (camera == nullptr) {
-			return Vector3();
-		}
-		return camera->get_global_position();
 	}
+#endif
+	const Viewport *viewport = node.get_viewport();
+	ZN_ASSERT_RETURN_V(viewport != nullptr, Vector3());
+	const Camera3D *camera = viewport->get_camera_3d();
+	if (camera == nullptr) {
+		return Vector3();
+	}
+	return camera->get_global_position();
 }
 } // namespace
 
