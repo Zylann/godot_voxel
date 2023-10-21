@@ -9,7 +9,7 @@ Vector3 g_position;
 } // namespace
 
 Vector3 get_3d_editor_camera_position() {
-	if (g_camera_id.is_valid()) {
+	if (g_camera_id.is_null()) {
 		return g_position;
 	}
 	Object *obj = ObjectDB::get_instance(g_camera_id);
