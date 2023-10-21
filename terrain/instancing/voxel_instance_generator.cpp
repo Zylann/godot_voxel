@@ -88,13 +88,20 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				const uint32_t density_u32 =
 						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
 				const int size = vertices.size();
+				const float margin = block_size - block_size * 0.01f;
 				for (int i = 0; i < size; ++i) {
 					// TODO We could actually generate indexes and pick those,
 					// rather than iterating them all and rejecting
 					if (pcg0.rand() >= density_u32) {
 						continue;
 					}
-					vertex_cache.push_back(to_vec3f(vertices[i]));
+					// Ignore vertices located on the positive faces of the block. They are usually shared with the
+					// neighbor block, which causes a density bias and overlapping instances
+					const Vector3f pos = to_vec3f(vertices[i]);
+					if (pos.x > margin || pos.y > margin || pos.z > margin) {
+						continue;
+					}
+					vertex_cache.push_back(pos);
 					normal_cache.push_back(to_vec3f(normals[i]));
 				}
 			} break;
