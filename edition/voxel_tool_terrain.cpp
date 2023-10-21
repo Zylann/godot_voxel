@@ -523,7 +523,7 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 		const float r0 = radii[point_index - 1];
 		const float r1 = radii[point_index];
 
-		ops::DoShape2<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
+		ops::DoShapeChunked<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
 		op.block_access.grid = &grid;
 		op.shape.cone.a = p0;
 		op.shape.cone.b = p1;
@@ -531,7 +531,6 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 		op.shape.cone.r2 = r1;
 		op.shape.cone.update();
 		op.shape.sdf_scale = get_sdf_scale();
-		op.block_size_po2 = grid.get_block_size_po2();
 		op.box = op.shape.get_box().padded(margin);
 		op.mode = ops::Mode(get_mode());
 		op.texture_params = _texture_params;

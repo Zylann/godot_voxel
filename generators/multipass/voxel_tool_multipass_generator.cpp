@@ -168,8 +168,12 @@ Vector3i VoxelToolMultipassGenerator::get_main_area_max() const {
 void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
 	struct GridAccess {
 		PassInput *pass_input;
-		inline VoxelBufferInternal *operator()(Vector3i bpos) {
+		unsigned int block_size_po2;
+		inline VoxelBufferInternal *get_block(Vector3i bpos) {
 			return get_pass_input_block(*pass_input, bpos);
+		}
+		inline unsigned int get_block_size_po2() const {
+			return block_size_po2;
 		}
 	};
 
@@ -200,7 +204,7 @@ void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, Packed
 		const float r0 = radii[point_index - 1];
 		const float r1 = radii[point_index];
 
-		ops::DoShape2<ops::SdfRoundCone, GridAccess> op;
+		ops::DoShapeChunked<ops::SdfRoundCone, GridAccess> op;
 		op.shape.cone.a = p0;
 		op.shape.cone.b = p1;
 		op.shape.cone.r1 = r0;
@@ -214,7 +218,7 @@ void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, Packed
 		op.shape.cone.update();
 		op.shape.sdf_scale = get_sdf_scale();
 		op.block_access.pass_input = &_pass_input;
-		op.block_size_po2 = _block_size_po2;
+		op.block_access.block_size_po2 = _block_size_po2;
 		op.mode = ops::Mode(get_mode());
 		op.texture_params = _texture_params;
 		op.blocky_value = _value;

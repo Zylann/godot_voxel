@@ -169,7 +169,7 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
 
 } // namespace zylann::voxel
 
-// Library of templates for executing voxel operations.
+// Library of templates for executing per-voxel operations.
 // There is a bunch of compile-time abstraction boilerplate, which is to minimize the code to write when adding new
 // operations, and have them work with different chunked containers, different edition modes, different formats... while
 // also trying to avoid runtime per-voxel branching and checks for all these cases.
@@ -232,6 +232,7 @@ struct SdfSphere {
 	real_t radius;
 	real_t sdf_scale;
 
+	// TODO Rename get_signed_distance?
 	inline real_t operator()(Vector3 pos) const {
 		return sdf_scale * math::sdf_sphere(pos, center, radius);
 	}
@@ -241,6 +242,7 @@ struct SdfSphere {
 		return center.distance_squared_to(pos) < radius * radius;
 	}
 
+	// TODO Seems unused?
 	inline const char *name() const {
 		return "SdfSphere";
 	}
@@ -494,14 +496,17 @@ struct DoShape {
 	}
 };
 
-template <typename FBlockAccess, typename FBlockAction>
-void process_chunked_storage(Box3i voxel_box, unsigned int block_size_po2,
+template <typename TBlockAccess, typename FBlockAction>
+void process_chunked_storage(Box3i voxel_box,
 		// VoxelBufferInternal *get_block(Vector3i bpos)
-		FBlockAccess get_block_func,
+		// unsigned int get_block_size_po2()
+		TBlockAccess block_access,
 		// void(VoxelBufferInternal &vb, Box3i local_box, Vector3i origin)
 		FBlockAction op_func) {
 	//
 	const Vector3i max_pos = voxel_box.pos + voxel_box.size;
+
+	const unsigned int block_size_po2 = block_access.get_block_size_po2();
 
 	const Vector3i min_block_pos = voxel_box.pos >> block_size_po2;
 	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
@@ -510,13 +515,13 @@ void process_chunked_storage(Box3i voxel_box, unsigned int block_size_po2,
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				VoxelBufferInternal *block = get_block_func(bpos);
+				VoxelBufferInternal *block = block_access.get_block(bpos);
 				if (block == nullptr) {
 					continue;
 				}
 				const Vector3i block_origin = bpos << block_size_po2;
-				Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
-				local_box.clip(Box3i(Vector3i(), Vector3iUtil::create(1 << block_size_po2)));
+				const Box3i local_box = Box3i(voxel_box.pos - block_origin, voxel_box.size)
+												.clipped(Box3i(Vector3i(), Vector3iUtil::create(1 << block_size_po2)));
 
 				op_func(*block, local_box, block_origin);
 			}
@@ -525,27 +530,23 @@ void process_chunked_storage(Box3i voxel_box, unsigned int block_size_po2,
 }
 
 template <typename TBlockAccess, typename FOp>
-inline void write_box(
+inline void write_box_in_chunked_storage_1_channel(
 		// D process(D src, Vector3i position)
-		const FOp &op,
-		// VoxelBufferInternal *get_block(Vector3i bpos)
-		TBlockAccess &block_access, Box3i box, unsigned int block_size_po2, VoxelBufferInternal::ChannelId channel_id) {
+		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBufferInternal::ChannelId channel_id) {
 	//
-	process_chunked_storage(box, block_size_po2, block_access,
-			[&op, channel_id](VoxelBufferInternal &vb, const Box3i local_box, Vector3i origin) {
+	process_chunked_storage(
+			box, block_access, [&op, channel_id](VoxelBufferInternal &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box(local_box, channel_id, op, origin);
 			});
 }
 
 template <typename TBlockAccess, typename FOp>
-inline void write_box_2(
+inline void write_box_in_chunked_storage_2_channels(
 		// D process(D src, Vector3i position)
-		const FOp &op,
-		// VoxelBufferInternal *get_block(Vector3i bpos)
-		TBlockAccess &block_access, Box3i box, unsigned int block_size_po2, VoxelBufferInternal::ChannelId channel0_id,
+		const FOp &op, TBlockAccess &block_access, Box3i box, VoxelBufferInternal::ChannelId channel0_id,
 		VoxelBufferInternal::ChannelId channel1_id) {
 	//
-	process_chunked_storage(box, block_size_po2, block_access,
+	process_chunked_storage(box, block_access,
 			[&op, channel0_id, channel1_id](VoxelBufferInternal &vb, const Box3i local_box, Vector3i origin) {
 				vb.write_box_2_template<FOp, uint16_t, uint16_t>(local_box, channel0_id, channel1_id, op, origin);
 			});
@@ -553,22 +554,27 @@ inline void write_box_2(
 
 struct VoxelDataGridAccess {
 	VoxelDataGrid *grid = nullptr;
-	VoxelBufferInternal *operator()(const Vector3i &bpos) {
+	inline VoxelBufferInternal *get_block(const Vector3i &bpos) {
 		return grid->get_block_no_lock(bpos);
+	}
+	inline unsigned int get_block_size_po2() const {
+		return grid->get_block_size_po2();
 	}
 };
 
+// Executes an operation in a box of a chunked voxel storage.
 template <typename TShape, typename TBlockAccess>
-struct DoShape2 {
+struct DoShapeChunked {
 	TShape shape;
 	Mode mode;
-	TBlockAccess block_access; // VoxelBufferInternal *get_block(Vector3i bpos)
+	// VoxelBufferInternal *get_block(Vector3i bpos)
+	// unsigned int get_block_size_po2()
+	TBlockAccess block_access;
 	Box3i box;
 	VoxelBufferInternal::ChannelId channel;
 	TextureParams texture_params;
 	uint32_t blocky_value;
 	float strength;
-	unsigned int block_size_po2;
 
 	void operator()() {
 		ZN_PROFILE_SCOPE();
@@ -580,28 +586,28 @@ struct DoShape2 {
 					SdfOperation16bit<SdfUnion, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box(op, block_access, box, block_size_po2, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
 				} break;
 
 				case MODE_REMOVE: {
 					SdfOperation16bit<SdfSubtract, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box(op, block_access, box, block_size_po2, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
 				} break;
 
 				case MODE_SET: {
 					SdfOperation16bit<SdfSet, TShape> op;
 					op.shape = shape;
 					op.op.strength = strength;
-					write_box(op, block_access, box, block_size_po2, VoxelBufferInternal::CHANNEL_SDF);
+					write_box_in_chunked_storage_1_channel(op, block_access, box, VoxelBufferInternal::CHANNEL_SDF);
 				} break;
 
 				case MODE_TEXTURE_PAINT: {
 					TextureBlendOp<TShape> op;
 					op.shape = shape;
 					op.texture_params = texture_params;
-					write_box_2(op, block_access, box, block_size_po2, VoxelBufferInternal::CHANNEL_INDICES,
+					write_box_in_chunked_storage_2_channels(op, block_access, box, VoxelBufferInternal::CHANNEL_INDICES,
 							VoxelBufferInternal::CHANNEL_WEIGHTS);
 				} break;
 
@@ -614,7 +620,7 @@ struct DoShape2 {
 			BlockySetOperation<uint32_t, TShape> op;
 			op.shape = shape;
 			op.value = blocky_value;
-			write_box(op, block_access, box, block_size_po2, channel);
+			write_box_in_chunked_storage_1_channel(op, block_access, box, channel);
 		}
 	}
 };
