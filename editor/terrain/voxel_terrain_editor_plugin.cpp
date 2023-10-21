@@ -14,6 +14,7 @@
 #include "../../util/godot/core/keyboard.h"
 #include "../../util/godot/funcs.h"
 #include "../about_window.h"
+#include "../camera_cache.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"
 #include "voxel_terrain_editor_task_indicator.h"
 
@@ -245,6 +246,8 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
+
+	gd::set_3d_editor_camera_cache(p_camera);
 
 	if (_editor_viewer_follows_camera) {
 		VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);

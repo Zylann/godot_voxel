@@ -20,6 +20,10 @@
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_rigidbody.h"
 
+#ifdef TOOLS_ENABLED
+#include "../../editor/camera_cache.h"
+#endif
+
 // Only needed for debug purposes, otherwise RenderingServer is used directly
 #include "../../util/godot/classes/multimesh_instance_3d.h"
 
@@ -348,18 +352,33 @@ const VoxelInstancer::Layer &VoxelInstancer::get_layer_const(int id) const {
 	return it->second;
 }
 
+namespace {
+Vector3 get_global_camera_position(const Node &node) {
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return gd::get_3d_editor_camera_position();
+
+	} else {
+		const Viewport *viewport = node.get_viewport();
+		ZN_ASSERT_RETURN_V(viewport != nullptr, Vector3());
+		const Camera3D *camera = viewport->get_camera_3d();
+		if (camera == nullptr) {
+			return Vector3();
+		}
+		return camera->get_global_position();
+	}
+}
+} // namespace
+
 void VoxelInstancer::process_mesh_lods() {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
+	// Note, this form of LOD must be visual only. It supports only one camera.
+
 	// Get viewer position
-	const Viewport *viewport = get_viewport();
-	const Camera3D *camera = viewport->get_camera_3d();
-	if (camera == nullptr) {
-		return;
-	}
 	const Transform3D gtrans = get_global_transform();
-	const Vector3 cam_pos_local = (gtrans.affine_inverse() * camera->get_global_transform()).origin;
+	const Vector3 cam_pos_global = get_global_camera_position(*this);
+	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
 
 	ERR_FAIL_COND(_parent == nullptr);
 	const int block_size = 1 << _parent_mesh_block_size_po2;
