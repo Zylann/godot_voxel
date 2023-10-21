@@ -400,7 +400,7 @@ void VoxelInstancer::process_mesh_lods() {
 
 			for (unsigned int j = 0; j < lod.mesh_lod_distances.size(); ++j) {
 				MeshLodDistances &mld = lod.mesh_lod_distances[j];
-				const float lod_max_distance = (1 << j) * max_distance;
+				const float lod_max_distance = (1 << lod_index) * max_distance;
 				mld.exit_distance_squared = lod_max_distance * lod_max_distance * coeffs[j];
 				mld.enter_distance_squared = hysteresis * mld.exit_distance_squared;
 			}
