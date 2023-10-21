@@ -435,67 +435,6 @@ struct DoSphere {
 	}
 };
 
-// TODO Phase out this version of DoShape and use DoShape2 instead, which abstracts away the voxel container
-template <typename Shape_T>
-struct DoShape {
-	Shape_T shape;
-	Mode mode;
-	VoxelDataGrid blocks;
-	Box3i box;
-	VoxelBufferInternal::ChannelId channel;
-	TextureParams texture_params;
-	uint32_t blocky_value;
-	float strength;
-
-	void operator()() {
-		ZN_PROFILE_SCOPE();
-
-		if (channel == VoxelBufferInternal::CHANNEL_SDF) {
-			switch (mode) {
-				case MODE_ADD: {
-					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
-					SdfOperation16bit<SdfUnion, Shape_T> op;
-					op.shape = shape;
-					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_REMOVE: {
-					SdfOperation16bit<SdfSubtract, Shape_T> op;
-					op.shape = shape;
-					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_SET: {
-					SdfOperation16bit<SdfSet, Shape_T> op;
-					op.shape = shape;
-					op.op.strength = strength;
-					blocks.write_box(box, VoxelBufferInternal::CHANNEL_SDF, op);
-				} break;
-
-				case MODE_TEXTURE_PAINT: {
-					TextureBlendOp<Shape_T> op;
-					op.shape = shape;
-					op.texture_params = texture_params;
-					blocks.write_box_2(
-							box, VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS, op);
-				} break;
-
-				default:
-					ERR_PRINT("Unknown mode");
-					break;
-			}
-
-		} else {
-			BlockySetOperation<uint32_t, Shape_T> op;
-			op.shape = shape;
-			op.value = blocky_value;
-			blocks.write_box(box, channel, op);
-		}
-	}
-};
-
 template <typename TBlockAccess, typename FBlockAction>
 void process_chunked_storage(Box3i voxel_box,
 		// VoxelBufferInternal *get_block(Vector3i bpos)
@@ -624,8 +563,6 @@ struct DoShapeChunked {
 		}
 	}
 };
-
-typedef DoShape<SdfHemisphere> DoHemisphere;
 
 void box_blur_slow_ref(
 		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);

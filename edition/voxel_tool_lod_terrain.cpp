@@ -191,7 +191,7 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	ops::DoHemisphere op;
+	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
 	op.shape.center = center;
 	op.shape.radius = radius;
 	op.shape.flat_direction = flat_direction;
@@ -213,8 +213,15 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	VoxelData &data = _terrain->get_storage();
 
 	data.pre_generate_box(op.box);
-	data.get_blocks_grid(op.blocks, op.box, 0);
-	op();
+
+	VoxelDataGrid grid;
+	data.get_blocks_grid(grid, op.box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
 
 	_post_edit(op.box);
 }
