@@ -1,5 +1,6 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"
@@ -261,6 +262,10 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	_post_edit(box);
 }
 
+void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) {
+	ERR_PRINT("Not implemented");
+}
+
 void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
 }
@@ -364,6 +369,10 @@ void VoxelTool::_b_do_box(Vector3i begin, Vector3i end) {
 	do_box(begin, end);
 }
 
+void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radii) {
+	do_path(to_span(positions), to_span(radii));
+}
+
 void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
 }
@@ -463,6 +472,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_point", "pos"), &VoxelTool::_b_do_point);
 	ClassDB::bind_method(D_METHOD("do_sphere", "center", "radius"), &VoxelTool::_b_do_sphere);
 	ClassDB::bind_method(D_METHOD("do_box", "begin", "end"), &VoxelTool::_b_do_box);
+	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
 
 	ClassDB::bind_method(
 			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere);

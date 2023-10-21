@@ -165,7 +165,7 @@ Vector3i VoxelToolMultipassGenerator::get_main_area_max() const {
 	return (_pass_input.main_block_position + Vector3i(1, _pass_input.grid_size.y, 1)) << _block_size_po2;
 }
 
-void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
+void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	struct GridAccess {
 		PassInput *pass_input;
 		unsigned int block_size_po2;
@@ -178,11 +178,8 @@ void VoxelToolMultipassGenerator::do_path(PackedVector3Array p_positions, Packed
 	};
 
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT_RETURN(p_positions.size() >= 2);
-	ZN_ASSERT_RETURN(p_positions.size() == p_radii.size());
-
-	Span<const Vector3> positions = to_span(p_positions);
-	Span<const float> radii = to_span(p_radii);
+	ZN_ASSERT_RETURN(positions.size() >= 2);
+	ZN_ASSERT_RETURN(positions.size() == radii.size());
 
 	// TODO Increase margin a bit with smooth voxels?
 	const int margin = 1;
@@ -235,8 +232,6 @@ void VoxelToolMultipassGenerator::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_main_area_min"), &VoxelToolMultipassGenerator::get_main_area_min);
 	ClassDB::bind_method(D_METHOD("get_main_area_max"), &VoxelToolMultipassGenerator::get_main_area_max);
-
-	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelToolMultipassGenerator::do_path);
 
 	// ClassDB::bind_static_method(VoxelToolMultipassGenerator::get_class_static(),
 	// 		D_METHOD("create_offline", "grid_origin_blocks", "grid_size_blocks", "main_block_position",

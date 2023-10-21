@@ -182,16 +182,13 @@ void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels
 			});
 }
 
-void VoxelToolBuffer::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
+void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT_RETURN(p_positions.size() >= 2);
-	ZN_ASSERT_RETURN(p_positions.size() == p_radii.size());
+	ZN_ASSERT_RETURN(positions.size() >= 2);
+	ZN_ASSERT_RETURN(positions.size() == radii.size());
 
 	ERR_FAIL_COND(_buffer.is_null());
 	VoxelBufferInternal &dst = _buffer->get_buffer();
-
-	Span<const Vector3> positions = to_span(p_positions);
-	Span<const float> radii = to_span(p_radii);
 
 	// TODO Increase margin a bit with smooth voxels?
 	const int margin = 1;

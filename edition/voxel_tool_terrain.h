@@ -29,6 +29,7 @@ public:
 			uint64_t mask_value) override;
 
 	void do_sphere(Vector3 center, float radius) override;
+	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
 
 	// Specialized API
 
@@ -43,8 +44,6 @@ public:
 			bool (*callback)(void *, Vector3i, int64_t));
 
 	void for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback);
-
-	void do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii);
 
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;

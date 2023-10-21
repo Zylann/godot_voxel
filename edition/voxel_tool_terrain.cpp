@@ -494,13 +494,10 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 	});
 }
 
-void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii) {
+void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	ZN_PROFILE_SCOPE();
-	ZN_ASSERT_RETURN(p_positions.size() >= 2);
-	ZN_ASSERT_RETURN(p_positions.size() == p_radii.size());
-
-	Span<const Vector3> positions = to_span(p_positions);
-	Span<const float> radii = to_span(p_radii);
+	ZN_ASSERT_RETURN(positions.size() >= 2);
+	ZN_ASSERT_RETURN(positions.size() == radii.size());
 
 	// TODO Increase margin a bit with smooth voxels?
 	const int margin = 1;
@@ -580,7 +577,6 @@ void VoxelToolTerrain::_bind_methods() {
 			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
 	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
 			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
-	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelToolTerrain::do_path);
 }
 
 } // namespace zylann::voxel

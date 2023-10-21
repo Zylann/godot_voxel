@@ -24,6 +24,8 @@ public:
 
 	bool is_area_editable(const Box3i &box) const override;
 
+	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
+
 	// TODO Implement more methods
 
 	// Specific methods
@@ -33,8 +35,6 @@ public:
 
 	Vector3i get_main_area_min() const;
 	Vector3i get_main_area_max() const;
-
-	void do_path(PackedVector3Array p_positions, PackedFloat32Array p_radii);
 
 	// Debug
 
