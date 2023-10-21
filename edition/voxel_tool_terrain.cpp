@@ -510,59 +510,59 @@ void VoxelToolTerrain::do_path(PackedVector3Array p_positions, PackedFloat32Arra
 
 	data.get_blocks_grid(grid, total_voxel_box, 0);
 
-	grid.lock_write();
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
 
-	// Rasterize
+		// Rasterize
 
-	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
-		// TODO Could run this in local space so we dont need doubles
-		// TODO Apply terrain scale
-		const Vector3 p0 = positions[point_index - 1];
-		const Vector3 p1 = positions[point_index];
+		for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
+			// TODO Could run this in local space so we dont need doubles
+			// TODO Apply terrain scale
+			const Vector3 p0 = positions[point_index - 1];
+			const Vector3 p1 = positions[point_index];
 
-		const float r0 = radii[point_index - 1];
-		const float r1 = radii[point_index];
+			const float r0 = radii[point_index - 1];
+			const float r1 = radii[point_index];
 
-		ops::DoShapeChunked<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
-		op.block_access.grid = &grid;
-		op.shape.cone.a = p0;
-		op.shape.cone.b = p1;
-		op.shape.cone.r1 = r0;
-		op.shape.cone.r2 = r1;
-		op.shape.cone.update();
-		op.shape.sdf_scale = get_sdf_scale();
-		op.box = op.shape.get_box().padded(margin);
-		op.mode = ops::Mode(get_mode());
-		op.texture_params = _texture_params;
-		op.blocky_value = _value;
-		op.channel = get_channel();
-		op.strength = get_sdf_strength();
+			ops::DoShapeChunked<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
+			op.block_access.grid = &grid;
+			op.shape.cone.a = p0;
+			op.shape.cone.b = p1;
+			op.shape.cone.r1 = r0;
+			op.shape.cone.r2 = r1;
+			op.shape.cone.update();
+			op.shape.sdf_scale = get_sdf_scale();
+			op.box = op.shape.get_box().padded(margin);
+			op.mode = ops::Mode(get_mode());
+			op.texture_params = _texture_params;
+			op.blocky_value = _value;
+			op.channel = get_channel();
+			op.strength = get_sdf_strength();
 
-		op();
+			op();
 
-		// Experimented with drawing a 100-point path, the cost of everything outside cone calculation was:
-		// - Non-template: 2.55 ms
-		// - Template: 1.00 ms
-		// With cone calculation:
-		// - Non-template: 5.7 ms
-		// - Template: 4.5 ms
-		// So the template version is faster, but not that much.
-		//
-		// math::SdfRoundConePrecalc cone;
-		// cone.a = p0;
-		// cone.b = p1;
-		// cone.r1 = r0;
-		// cone.r2 = r1;
-		// cone.update();
-		// uint64_t value = _value;
-		// segment_box.for_each_cell_zxy([&grid, &cone, value](Vector3i pos) {
-		// 	if (cone(pos) < 0.f) {
-		// 		grid.set_voxel_no_lock(pos, value, VoxelBufferInternal::CHANNEL_TYPE);
-		// 	}
-		// });
+			// Experimented with drawing a 100-point path, the cost of everything outside cone calculation was:
+			// - Non-template: 2.55 ms
+			// - Template: 1.00 ms
+			// With cone calculation:
+			// - Non-template: 5.7 ms
+			// - Template: 4.5 ms
+			// So the template version is faster, but not that much.
+			//
+			// math::SdfRoundConePrecalc cone;
+			// cone.a = p0;
+			// cone.b = p1;
+			// cone.r1 = r0;
+			// cone.r2 = r1;
+			// cone.update();
+			// uint64_t value = _value;
+			// segment_box.for_each_cell_zxy([&grid, &cone, value](Vector3i pos) {
+			// 	if (cone(pos) < 0.f) {
+			// 		grid.set_voxel_no_lock(pos, value, VoxelBufferInternal::CHANNEL_TYPE);
+			// 	}
+			// });
+		}
 	}
-
-	grid.unlock_write();
 
 	_post_edit(total_voxel_box);
 }
