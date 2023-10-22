@@ -58,9 +58,13 @@ Sometimes it might not be enough, so this problem still has to be worked out in 
 
 ### Mesh LOD
 
-A secondary LOD system is included, which applies to meshes themselves, to some limited extent. Godot 3 does not have a LOD system (Godot 4 will), so this allows to reduce vertex count over distance from within a set of visible meshes.
+A secondary LOD system is included, which applies to meshes themselves, to some limited extent. It allows to reduce vertex count over distance from within a set of visible meshes. It only applies to `VoxelInstanceLibraryMultiMeshItem`.
 
-To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLibraryItem`:
+!!! note
+	This LOD system exists because Godot 3 didn't have one. Godot 4 added [automatic mesh LOD](https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html), which you might be able to use instead of this system. If you want to control the mesh and material used for each LOD, you may use this system.
+	While [Visibility Ranges](https://docs.godotengine.org/en/stable/tutorials/3d/visibility_ranges.html#doc-visibility-ranges) is presented as the alternative, when using `MultiMesh` it requires to unnecessarily duplicate the data and increase the number of scene objects to process.
+
+To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLibraryMultiMeshItem`:
 
 ![Screenshot of mesh LOD properties](images/mesh_lod_properties.webp)
 
@@ -74,6 +78,9 @@ If you need fewer LODs, you can assign twice the same mesh. This system is quite
 
 !!! note
     Impostor meshes are simple quads that can fake the presence of the real model over far distances. For example, this is a really fast way to render forests from afar, while being able to use detailed trees when coming closer.
+
+!!! warning
+	There is currently a performance issue occurring when `MultiMesh.mesh` is changed to a different LOD. It should be easier to fix once [this PR](https://github.com/godotengine/godot/pull/79833) is merged into Godot.
 
 
 ### Edition
