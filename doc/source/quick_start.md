@@ -91,4 +91,6 @@ It's easy to think a project needs voxels, but they are less needed than it soun
 
 - "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
 
+- "I want to make Minecraft but free and with my own blocks": Minecraft is a lot more than voxels. While the module can replicate basic functionalities, it is more general than this at the moment, so it doesn't provide a lot of features found in Minecraft out of the box. Alternatively, you could create a mod with [Minetest](https://www.minetest.net/), which is a more specialized engine.
+
 - "GridMap sucks": how large do you want your grid to be? How complex are your models? This module's blocky mesher is geared towards very large grids with simple geometry, so it has its own restrictions.
