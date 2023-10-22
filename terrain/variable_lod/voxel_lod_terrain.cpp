@@ -340,10 +340,10 @@ Ref<VoxelGenerator> VoxelLodTerrain::get_generator() const {
 }
 
 void VoxelLodTerrain::_on_gi_mode_changed() {
-	const GIMode gi_mode = get_gi_mode();
+	const GeometryInstance3D::GIMode gi_mode = get_gi_mode();
 	for (unsigned int lod_index = 0; lod_index < _update_data->state.lods.size(); ++lod_index) {
 		_mesh_maps_per_lod[lod_index].for_each_block([gi_mode](VoxelMeshBlockVLT &block) { //
-			block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+			block.set_gi_mode(gi_mode);
 		});
 	}
 }
@@ -1297,7 +1297,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 						item.mesh_instance.create();
 						item.mesh_instance.set_mesh(block->get_mesh());
-						item.mesh_instance.set_gi_mode(DirectMeshInstance::GIMode(get_gi_mode()));
+						item.mesh_instance.set_gi_mode(get_gi_mode());
 						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
 						item.mesh_instance.set_material_override(item.shader_material);
 						item.mesh_instance.set_world(*get_world_3d());
@@ -1570,8 +1570,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		block->set_transition_mask(transition_mask);
 	}
 
-	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
-			RenderingServer::ShadowCastingSetting(get_shadow_casting()));
+	block->set_mesh(mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()));
 
 	if (!ob.has_mesh_resource) {
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
@@ -1585,8 +1584,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			Ref<ArrayMesh> transition_mesh = build_mesh(to_span(mesh_data.transition_surfaces[dir]),
 					mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 
-			block->set_transition_mesh(transition_mesh, dir, DirectMeshInstance::GIMode(get_gi_mode()),
-					RenderingServer::ShadowCastingSetting(get_shadow_casting()));
+			block->set_transition_mesh(
+					transition_mesh, dir, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()));
 		}
 	}
 

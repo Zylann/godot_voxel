@@ -1,6 +1,7 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 
+#include "../../util/godot/classes/geometry_instance_3d.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/godot/classes/packed_scene.h"
@@ -37,6 +38,9 @@ public:
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
 	RenderingServer::ShadowCastingSetting get_cast_shadows_setting() const;
 
+	void set_gi_mode(GeometryInstance3D::GIMode mode);
+	GeometryInstance3D::GIMode get_gi_mode() const;
+
 	void set_collision_layer(int collision_layer);
 	int get_collision_layer() const;
 
@@ -68,6 +72,7 @@ public:
 		Ref<Material> material_override;
 
 		RenderingServer::ShadowCastingSetting shadow_casting_setting = RenderingServer::SHADOW_CASTING_SETTING_ON;
+		GeometryInstance3D::GIMode gi_mode = GeometryInstance3D::GIMode::GI_MODE_STATIC;
 
 		int collision_mask = 1;
 		int collision_layer = 1;

@@ -46,7 +46,7 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 }
 
 void VoxelMeshBlockVLT::set_mesh(
-		Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting) {
+		Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -78,7 +78,7 @@ void VoxelMeshBlockVLT::set_mesh(
 	}
 }
 
-void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
+void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	VoxelMeshBlock::set_gi_mode(mode);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &mi = _transition_mesh_instances[i];
@@ -98,7 +98,7 @@ void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode,
+void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
 		RenderingServer::ShadowCastingSetting shadow_casting) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 

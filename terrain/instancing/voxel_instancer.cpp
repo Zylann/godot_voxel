@@ -691,6 +691,7 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 		block.multimesh_instance.set_render_layer(settings.render_layer);
 		block.multimesh_instance.set_material_override(settings.material_override);
 		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
+		block.multimesh_instance.set_gi_mode(settings.gi_mode);
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		if (multimesh.is_valid()) {
 			Ref<Mesh> mesh;
@@ -1069,6 +1070,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			block.multimesh_instance.set_transform(block_global_transform);
 			block.multimesh_instance.set_material_override(settings.material_override);
 			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
+			block.multimesh_instance.set_gi_mode(settings.gi_mode);
 		}
 
 		// Update bodies

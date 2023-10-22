@@ -287,9 +287,9 @@ void VoxelTerrain::_on_stream_params_changed() {
 }
 
 void VoxelTerrain::_on_gi_mode_changed() {
-	const GIMode gi_mode = get_gi_mode();
+	const GeometryInstance3D::GIMode gi_mode = get_gi_mode();
 	_mesh_map.for_each_block([gi_mode](VoxelMeshBlockVT &block) { //
-		block.set_gi_mode(DirectMeshInstance::GIMode(gi_mode));
+		block.set_gi_mode(gi_mode);
 	});
 }
 
@@ -1730,8 +1730,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	block->set_mesh(mesh, DirectMeshInstance::GIMode(get_gi_mode()),
-			RenderingServer::ShadowCastingSetting(get_shadow_casting()));
+	block->set_mesh(mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()));
 
 	if (_material_override.is_valid()) {
 		block->set_material_override(_material_override);

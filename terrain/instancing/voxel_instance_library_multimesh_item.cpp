@@ -133,6 +133,20 @@ void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer
 	notify_listeners(CHANGE_VISUAL);
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode mode) {
+	Settings &settings = _manual_settings;
+	if (mode == settings.gi_mode) {
+		return;
+	}
+	settings.gi_mode = mode;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() const {
+	const Settings &settings = _manual_settings;
+	return settings.gi_mode;
+}
+
 RenderingServer::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
 	const Settings &settings = _manual_settings;
 	return settings.shadow_casting_setting;
@@ -168,10 +182,6 @@ TypedArray<StringName> VoxelInstanceLibraryMultiMeshItem::get_collider_group_nam
 	return serialize_group_names(_manual_settings.group_names);
 }
 
-namespace {
-static const char *CAST_SHADOW_ENUM_NAMES = "Off,On,Double-Sided,Shadows Only";
-}
-
 void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_scene.is_valid()) {
 		// This is only so we have a preview of conversion results.
@@ -192,7 +202,9 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 				Material::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_render_layer", PROPERTY_HINT_LAYERS_3D_RENDER, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES,
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM,
+				CAST_SHADOW_ENUM_HINT_STRING, PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING,
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
@@ -236,6 +248,10 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 		}
 		if (property_name == "scene_cast_shadow") {
 			r_ret = _scene_settings.shadow_casting_setting;
+			return true;
+		}
+		if (property_name == "scene_gi_mode") {
+			r_ret = _scene_settings.gi_mode;
 			return true;
 		}
 		if (property_name == "scene_collision_layer") {
@@ -320,6 +336,7 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 			settings.render_layer = mi->get_layer_mask();
 			settings.material_override = mi->get_material_override();
 			settings.shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
+			settings.gi_mode = mi->get_gi_mode();
 		}
 
 		if (physics_body != nullptr) {
@@ -389,6 +406,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 	a.push_back(settings.material_override);
 	a.push_back(settings.render_layer);
 	a.push_back(settings.shadow_casting_setting);
+	a.push_back(settings.gi_mode);
 	a.push_back(settings.collision_layer);
 	a.push_back(settings.collision_mask);
 	a.push_back(serialize_collision_shape_infos(settings.collision_shapes));
@@ -407,6 +425,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.material_override = a[ai++];
 	settings.render_layer = a[ai++];
 	settings.shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	settings.gi_mode = GeometryInstance3D::GIMode(int(a[ai++])); // ugh...
 	settings.collision_layer = a[ai++];
 	settings.collision_mask = a[ai++];
 	settings.collision_shapes.clear();
@@ -452,6 +471,9 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			D_METHOD("set_cast_shadows_setting", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting);
 	ClassDB::bind_method(
 			D_METHOD("get_cast_shadows_setting"), &VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting);
+
+	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_gi_mode);
+	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelInstanceLibraryMultiMeshItem::get_gi_mode);
 
 	ClassDB::bind_method(D_METHOD("set_collision_layer", "collision_layer"),
 			&VoxelInstanceLibraryMultiMeshItem::set_collision_layer);
@@ -502,8 +524,11 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 						 Material::get_class_static()),
 			"set_material_override", "get_material_override");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
 			"set_cast_shadows_setting", "get_cast_shadows_setting");
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING), "set_gi_mode",
+			"get_gi_mode");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer",
 			"get_collision_layer");

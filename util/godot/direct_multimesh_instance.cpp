@@ -93,6 +93,10 @@ void DirectMultiMeshInstance::set_render_layer(int render_layer) {
 	vs.instance_set_layer_mask(_multimesh_instance, render_layer);
 }
 
+void DirectMultiMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
+	set_geometry_instance_gi_mode(_multimesh_instance, mode);
+}
+
 template <typename TTransform3>
 inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
 	// dst[0] = t.basis.rows[0].x;
