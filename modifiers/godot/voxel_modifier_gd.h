@@ -50,6 +50,7 @@ private:
 	float _smoothness = 0.f;
 	bool _is_immediate_child = false;
 	void mark_as_immediate_child(bool v);
+	void update_volume();
 };
 
 // Helpers
