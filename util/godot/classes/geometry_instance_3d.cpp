@@ -1,4 +1,5 @@
 #include "geometry_instance_3d.h"
+#include "rendering_server.h"
 
 namespace zylann {
 
