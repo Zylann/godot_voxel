@@ -10,8 +10,6 @@ It can spawn two different kinds of objects:
 
 This system is primarily intented at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages, although scene instances can be used in some cases, if the available features suit your game.
 
-This feature is currently only available under `VoxelLodTerrain`.
-
 
 VoxelInstanceLibrary
 ---------------------
