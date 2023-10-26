@@ -505,7 +505,7 @@ PackedFloat32Array VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod_distance_r
 
 // This version is called when loading the resource
 void VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod_distance_ratios(PackedFloat32Array ratios) {
-	ZN_ASSERT_RETURN(ratios.size() == _mesh_lod_max_distance_ratios.size());
+	ZN_ASSERT_RETURN(ratios.size() == static_cast<int>(_mesh_lod_max_distance_ratios.size()));
 	ZN_ASSERT_RETURN(is_ascending(to_span(ratios)));
 	if (!is_in_range(to_span(ratios), MIN_DISTANCE_RATIO, MAX_DISTANCE_RATIO)) {
 		ZN_PRINT_ERROR("LOD distance ratios are not in usual range");
