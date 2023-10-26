@@ -193,12 +193,6 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 	// TODO Increase margin a bit with smooth voxels?
 	const int margin = 1;
 
-	// Compute total bounding box
-
-	const AABB total_aabb = get_path_aabb(positions, radii).grow(margin);
-	const Box3i total_voxel_box(to_vec3i(math::floor(total_aabb.position)), to_vec3i(math::ceil(total_aabb.size)));
-	const Box3i clipped_voxel_box = total_voxel_box.clipped(Box3i(Vector3i(), dst.get_size()));
-
 	// Rasterize
 
 	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
