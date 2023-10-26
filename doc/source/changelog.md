@@ -79,6 +79,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelInstancer`:
         - Fixed crash when hiding the node in the editor
         - Fixed crash when closing the scene while an instancer node is selected
+        - Fixed instances were not cleared when using the "Re-generate" menu in the editor when terrain shape changed
     - `VoxelInstanceLibrary`: 
         - Fixed `find_item_by_name` was not finding items
         - Fixed newly added items in the editor rendering badly by default when the terrain doesn't have LOD. For now they always default to LOD 0 instead of LOD 2.
