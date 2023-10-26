@@ -482,9 +482,9 @@ void VoxelInstancer::process_mesh_lods() {
 				++current_mesh_lod;
 			}
 			while (current_mesh_lod > 0 &&
-							distance_squared < math::squared(distance_ratios[current_mesh_lod - 1] * max_distance)
-					// Allow mesh LOD index to go down if count is set lower
-					|| current_mesh_lod >= extended_mesh_lod_count) {
+					(distance_squared < math::squared(distance_ratios[current_mesh_lod - 1] * max_distance)
+							// Allow mesh LOD index to go down if count is set lower
+							|| current_mesh_lod >= extended_mesh_lod_count)) {
 				// Increase detail
 				--current_mesh_lod;
 			}
