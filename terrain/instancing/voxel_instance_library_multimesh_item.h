@@ -20,13 +20,24 @@ public:
 	static const char *MANUAL_SETTINGS_GROUP_NAME;
 	static const char *SCENE_SETTINGS_GROUP_NAME;
 
+	static constexpr float MIN_DISTANCE_RATIO = 0.f;
+	// Can be higher than 1 because when used with VoxelTerrain it is based on the half-extents of the visible area,
+	// which is square, so the circular area covered by mesh lods can actually extend a bit further if desired.
+	static constexpr float MAX_DISTANCE_RATIO = 2.f;
+
 	struct CollisionShapeInfo {
 		Transform3D transform;
 		Ref<Shape3D> shape;
 	};
 
+	VoxelInstanceLibraryMultiMeshItem();
+
 	void set_mesh(Ref<Mesh> mesh, int mesh_lod_index);
 	Ref<Mesh> get_mesh(int mesh_lod_index) const;
+
+	void set_mesh_lod_distance_ratio(int mesh_lod_index, float ratio);
+	float get_mesh_lod_distance_ratio(int mesh_lod_index) const;
+
 	int get_mesh_lod_count() const;
 
 	void set_render_layer(int render_layer);
@@ -60,6 +71,9 @@ public:
 	void set_scene(Ref<PackedScene> scene);
 	Ref<PackedScene> get_scene() const;
 
+	bool get_hide_beyond_max_lod() const;
+	void set_hide_beyond_max_lod(bool enabled);
+
 	// Internal
 
 	struct Settings {
@@ -87,6 +101,10 @@ public:
 
 	inline Span<const CollisionShapeInfo> get_collision_shapes() const {
 		return to_span_const(get_multimesh_settings().collision_shapes);
+	}
+
+	inline Span<const float> get_mesh_lod_distance_ratios() const {
+		return to_span(_mesh_lod_max_distance_ratios);
 	}
 
 	Array serialize_multimesh_item_properties() const;
@@ -128,6 +146,35 @@ private:
 		set_mesh(mesh, 3);
 	}
 
+	void _b_set_mesh_lod0_distance_ratio(float ratio) {
+		set_mesh_lod_distance_ratio(0, ratio);
+	}
+	void _b_set_mesh_lod1_distance_ratio(float ratio) {
+		set_mesh_lod_distance_ratio(1, ratio);
+	}
+	void _b_set_mesh_lod2_distance_ratio(float ratio) {
+		set_mesh_lod_distance_ratio(2, ratio);
+	}
+	void _b_set_mesh_lod3_distance_ratio(float ratio) {
+		set_mesh_lod_distance_ratio(3, ratio);
+	}
+
+	float _b_get_mesh_lod0_distance_ratio() const {
+		return get_mesh_lod_distance_ratio(0);
+	}
+	float _b_get_mesh_lod1_distance_ratio() const {
+		return get_mesh_lod_distance_ratio(1);
+	}
+	float _b_get_mesh_lod2_distance_ratio() const {
+		return get_mesh_lod_distance_ratio(2);
+	}
+	float _b_get_mesh_lod3_distance_ratio() const {
+		return get_mesh_lod_distance_ratio(3);
+	}
+
+	PackedFloat32Array _b_get_mesh_lod_distance_ratios() const;
+	void _b_set_mesh_lod_distance_ratios(PackedFloat32Array ratios);
+
 	// Settings manually set in the inspector, scripts, and saved to the resource file.
 	Settings _manual_settings;
 	// Settings gathered at runtime from the `_scene` property. They are not saved to the resource file. They take
@@ -142,6 +189,9 @@ private:
 	//   into manual settings, but when Godot saves the resource, it sees the mesh has no dedicated file, so it makes a
 	//   copy of it and embeds it again in the resource.
 	Ref<PackedScene> _scene;
+	// This may be used if the terrain has no LOD or the item is on its last LOD
+	bool _hide_beyond_max_lod = false;
+	FixedArray<float, MAX_MESH_LODS> _mesh_lod_max_distance_ratios;
 };
 
 } // namespace zylann::voxel

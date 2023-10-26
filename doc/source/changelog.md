@@ -51,6 +51,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelLibraryMultiMeshItem `:
         - Added `render_layer` property (thanks to m4nu3lf)
         - Added `gi_mode` property
+        - Exposed custom distance ratios for the secondary distance-based LOD system
+        - Added option to hide instances when beyond their max distance-based LOD (only relevant for terrains with no LOD, or on the last LOD of `VoxelLodTerrain`)
         - Node groups on the template scene are now added to instance colliders if present
     - `VoxelLodTerrain`:
         - Added debug drawing for modifier bounds
