@@ -204,6 +204,7 @@ private:
 	void start_streamer();
 	void stop_streamer();
 	void reset_map();
+	void clear_mesh_map();
 
 	// void view_data_block(Vector3i bpos, uint32_t viewer_id, bool require_notification);
 	void view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision_flag);

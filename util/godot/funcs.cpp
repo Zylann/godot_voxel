@@ -49,7 +49,7 @@ inline void copy_to_template(PackedVector_T &dst, Span<const T> src) {
 	ZN_ASSERT(size_t(dst.size()) == src.size());
 #endif
 	T *dst_data = dst.ptrw();
-	//static_assert(sizeof(dst_data) == sizeof(T));
+	// static_assert(sizeof(dst_data) == sizeof(T));
 	memcpy(dst_data, src.data(), src.size() * sizeof(T));
 }
 
@@ -77,6 +77,10 @@ void copy_to(PackedFloat32Array &dst, const std::vector<float> &src) {
 	copy_to_template(dst, to_span(src));
 }
 
+void copy_to(PackedFloat32Array &dst, Span<const float> src) {
+	copy_to_template(dst, src);
+}
+
 void copy_to(PackedColorArray &dst, Span<const Color> src) {
 	copy_to_template(dst, src);
 }
@@ -91,6 +95,14 @@ void copy_to(Span<uint8_t> dst, const PackedByteArray &src) {
 	const uint8_t *src_data = src.ptr();
 	ZN_ASSERT(src_data != nullptr);
 	memcpy(dst.data(), src_data, src_size);
+}
+
+void copy_to(Span<float> dst, const PackedFloat32Array &src) {
+	const size_t src_size = src.size();
+	ZN_ASSERT(dst.size() == src_size);
+	const float *src_data = src.ptr();
+	ZN_ASSERT(src_data != nullptr);
+	memcpy(dst.data(), src_data, src_size * sizeof(float));
 }
 
 } // namespace zylann

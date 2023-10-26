@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/physics_body_3d.h"
+#include "../../util/godot/funcs.h"
 #include "voxel_instancer.h"
 
 namespace zylann::voxel {
@@ -63,7 +64,32 @@ void deserialize_group_names(const Array &src, std::vector<StringName> &dst) {
 	}
 }
 
+bool is_ascending(Span<const float> numbers) {
+	for (unsigned int i = 1; i < numbers.size(); ++i) {
+		if (numbers[i - 1] > numbers[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool is_in_range(Span<const float> numbers, float minv, float maxv) {
+	for (const float v : numbers) {
+		if (v < minv || v > maxv) {
+			return false;
+		}
+	}
+	return true;
+}
+
 } // namespace
+
+VoxelInstanceLibraryMultiMeshItem::VoxelInstanceLibraryMultiMeshItem() {
+	_mesh_lod_max_distance_ratios[0] = 0.2;
+	_mesh_lod_max_distance_ratios[1] = 0.35;
+	_mesh_lod_max_distance_ratios[2] = 0.6;
+	_mesh_lod_max_distance_ratios[3] = 1.f;
+}
 
 void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_index) {
 	Settings &settings = _manual_settings;
@@ -88,6 +114,24 @@ void VoxelInstanceLibraryMultiMeshItem::set_mesh(Ref<Mesh> mesh, int mesh_lod_in
 
 int VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_count() const {
 	return _manual_settings.mesh_lod_count;
+}
+
+// This version is called when editing in the inspector
+void VoxelInstanceLibraryMultiMeshItem::set_mesh_lod_distance_ratio(int mesh_lod_index, float ratio) {
+	ERR_FAIL_INDEX(mesh_lod_index, static_cast<int>(_mesh_lod_max_distance_ratios.size()));
+	ratio = math::clamp(ratio, MIN_DISTANCE_RATIO, MAX_DISTANCE_RATIO);
+	if (mesh_lod_index > 0) {
+		ratio = math::max(ratio, _mesh_lod_max_distance_ratios[mesh_lod_index - 1]);
+	}
+	if (mesh_lod_index + 1 < static_cast<int>(_mesh_lod_max_distance_ratios.size())) {
+		ratio = math::min(ratio, _mesh_lod_max_distance_ratios[mesh_lod_index + 1]);
+	}
+	_mesh_lod_max_distance_ratios[mesh_lod_index] = ratio;
+}
+
+float VoxelInstanceLibraryMultiMeshItem::get_mesh_lod_distance_ratio(int mesh_lod_index) const {
+	ERR_FAIL_INDEX_V(mesh_lod_index, static_cast<int>(_mesh_lod_max_distance_ratios.size()), 0.f);
+	return _mesh_lod_max_distance_ratios[mesh_lod_index];
 }
 
 Ref<Mesh> VoxelInstanceLibraryMultiMeshItem::get_mesh(int mesh_lod_index) const {
@@ -133,6 +177,20 @@ void VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting(RenderingServer
 	notify_listeners(CHANGE_VISUAL);
 }
 
+void VoxelInstanceLibraryMultiMeshItem::set_gi_mode(GeometryInstance3D::GIMode mode) {
+	Settings &settings = _manual_settings;
+	if (mode == settings.gi_mode) {
+		return;
+	}
+	settings.gi_mode = mode;
+	notify_listeners(CHANGE_VISUAL);
+}
+
+GeometryInstance3D::GIMode VoxelInstanceLibraryMultiMeshItem::get_gi_mode() const {
+	const Settings &settings = _manual_settings;
+	return settings.gi_mode;
+}
+
 RenderingServer::ShadowCastingSetting VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting() const {
 	const Settings &settings = _manual_settings;
 	return settings.shadow_casting_setting;
@@ -168,10 +226,6 @@ TypedArray<StringName> VoxelInstanceLibraryMultiMeshItem::get_collider_group_nam
 	return serialize_group_names(_manual_settings.group_names);
 }
 
-namespace {
-static const char *CAST_SHADOW_ENUM_NAMES = "Off,On,Double-Sided,Shadows Only";
-}
-
 void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_scene.is_valid()) {
 		// This is only so we have a preview of conversion results.
@@ -192,7 +246,9 @@ void VoxelInstanceLibraryMultiMeshItem::_get_property_list(List<PropertyInfo> *p
 				Material::get_class_static(), PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_render_layer", PROPERTY_HINT_LAYERS_3D_RENDER, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
-		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES,
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_cast_shadow", PROPERTY_HINT_ENUM,
+				CAST_SHADOW_ENUM_HINT_STRING, PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
+		p_list->push_back(PropertyInfo(Variant::INT, "scene_gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING,
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
 		p_list->push_back(PropertyInfo(Variant::INT, "scene_collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS, "",
 				PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY));
@@ -236,6 +292,10 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 		}
 		if (property_name == "scene_cast_shadow") {
 			r_ret = _scene_settings.shadow_casting_setting;
+			return true;
+		}
+		if (property_name == "scene_gi_mode") {
+			r_ret = _scene_settings.gi_mode;
 			return true;
 		}
 		if (property_name == "scene_collision_layer") {
@@ -320,6 +380,7 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 			settings.render_layer = mi->get_layer_mask();
 			settings.material_override = mi->get_material_override();
 			settings.shadow_casting_setting = node_to_visual_server_enum(mi->get_cast_shadows_setting());
+			settings.gi_mode = mi->get_gi_mode();
 		}
 
 		if (physics_body != nullptr) {
@@ -371,6 +432,14 @@ Ref<PackedScene> VoxelInstanceLibraryMultiMeshItem::get_scene() const {
 	return _scene;
 }
 
+bool VoxelInstanceLibraryMultiMeshItem::get_hide_beyond_max_lod() const {
+	return _hide_beyond_max_lod;
+}
+
+void VoxelInstanceLibraryMultiMeshItem::set_hide_beyond_max_lod(bool enabled) {
+	_hide_beyond_max_lod = enabled;
+}
+
 const VoxelInstanceLibraryMultiMeshItem::Settings &VoxelInstanceLibraryMultiMeshItem::get_multimesh_settings() const {
 	if (_scene.is_valid()) {
 		return _scene_settings;
@@ -389,6 +458,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 	a.push_back(settings.material_override);
 	a.push_back(settings.render_layer);
 	a.push_back(settings.shadow_casting_setting);
+	a.push_back(settings.gi_mode);
 	a.push_back(settings.collision_layer);
 	a.push_back(settings.collision_mask);
 	a.push_back(serialize_collision_shape_infos(settings.collision_shapes));
@@ -407,6 +477,7 @@ void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Ar
 	settings.material_override = a[ai++];
 	settings.render_layer = a[ai++];
 	settings.shadow_casting_setting = RenderingServer::ShadowCastingSetting(int(a[ai++])); // ugh...
+	settings.gi_mode = GeometryInstance3D::GIMode(int(a[ai++])); // ugh...
 	settings.collision_layer = a[ai++];
 	settings.collision_mask = a[ai++];
 	settings.collision_shapes.clear();
@@ -426,6 +497,22 @@ Array VoxelInstanceLibraryMultiMeshItem::_b_get_collision_shapes() const {
 	return serialize_collision_shape_infos(settings.collision_shapes);
 }
 
+PackedFloat32Array VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod_distance_ratios() const {
+	PackedFloat32Array ratios;
+	copy_to(ratios, to_span(_mesh_lod_max_distance_ratios));
+	return ratios;
+}
+
+// This version is called when loading the resource
+void VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod_distance_ratios(PackedFloat32Array ratios) {
+	ZN_ASSERT_RETURN(ratios.size() == static_cast<int>(_mesh_lod_max_distance_ratios.size()));
+	ZN_ASSERT_RETURN(is_ascending(to_span(ratios)));
+	if (!is_in_range(to_span(ratios), MIN_DISTANCE_RATIO, MAX_DISTANCE_RATIO)) {
+		ZN_PRINT_ERROR("LOD distance ratios are not in usual range");
+	}
+	copy_to(to_span(_mesh_lod_max_distance_ratios), ratios);
+}
+
 void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh", "mesh", "mesh_lod_index"), &VoxelInstanceLibraryMultiMeshItem::set_mesh);
 	ClassDB::bind_method(D_METHOD("get_mesh", "mesh_lod_index"), &VoxelInstanceLibraryMultiMeshItem::get_mesh);
@@ -440,6 +527,34 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_get_mesh_lod2"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod2);
 	ClassDB::bind_method(D_METHOD("_get_mesh_lod3"), &VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod3);
 
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod_distance_ratios"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod_distance_ratios);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod_distance_ratios"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod_distance_ratios);
+
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod0_distance_ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod0_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod1_distance_ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod1_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod2_distance_ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod2_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_get_mesh_lod3_distance_ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_get_mesh_lod3_distance_ratio);
+
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod0_distance_ratio", "ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod0_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod1_distance_ratio", "ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod1_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod2_distance_ratio", "ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod2_distance_ratio);
+	ClassDB::bind_method(D_METHOD("_set_mesh_lod3_distance_ratio", "ratio"),
+			&VoxelInstanceLibraryMultiMeshItem::_b_set_mesh_lod3_distance_ratio);
+
+	ClassDB::bind_method(D_METHOD("set_hide_beyond_max_lod", "enabled"),
+			&VoxelInstanceLibraryMultiMeshItem::set_hide_beyond_max_lod);
+	ClassDB::bind_method(
+			D_METHOD("get_hide_beyond_max_lod"), &VoxelInstanceLibraryMultiMeshItem::get_hide_beyond_max_lod);
+
 	ClassDB::bind_method(
 			D_METHOD("set_render_layer", "render_layer"), &VoxelInstanceLibraryMultiMeshItem::set_render_layer);
 	ClassDB::bind_method(D_METHOD("get_render_layer"), &VoxelInstanceLibraryMultiMeshItem::get_render_layer);
@@ -452,6 +567,9 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			D_METHOD("set_cast_shadows_setting", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_cast_shadows_setting);
 	ClassDB::bind_method(
 			D_METHOD("get_cast_shadows_setting"), &VoxelInstanceLibraryMultiMeshItem::get_cast_shadows_setting);
+
+	ClassDB::bind_method(D_METHOD("set_gi_mode", "mode"), &VoxelInstanceLibraryMultiMeshItem::set_gi_mode);
+	ClassDB::bind_method(D_METHOD("get_gi_mode"), &VoxelInstanceLibraryMultiMeshItem::get_gi_mode);
 
 	ClassDB::bind_method(D_METHOD("set_collision_layer", "collision_layer"),
 			&VoxelInstanceLibraryMultiMeshItem::set_collision_layer);
@@ -502,8 +620,11 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 						 Material::get_class_static()),
 			"set_material_override", "get_material_override");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_NAMES),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
 			"set_cast_shadows_setting", "get_cast_shadows_setting");
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING), "set_gi_mode",
+			"get_gi_mode");
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer",
 			"get_collision_layer");
@@ -511,6 +632,30 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 			"get_collision_mask");
 
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_shapes"), "set_collision_shapes", "get_collision_shapes");
+
+	ADD_GROUP("Mesh LOD settings", "");
+
+	// Only for editor and scripting
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "mesh_lod0_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"_set_mesh_lod0_distance_ratio", "_get_mesh_lod0_distance_ratio");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "mesh_lod1_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"_set_mesh_lod1_distance_ratio", "_get_mesh_lod1_distance_ratio");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "mesh_lod2_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"_set_mesh_lod2_distance_ratio", "_get_mesh_lod2_distance_ratio");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "mesh_lod3_distance_ratio", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"_set_mesh_lod3_distance_ratio", "_get_mesh_lod3_distance_ratio");
+
+	// Only for resource serialization
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "_mesh_lod_distance_ratios", PROPERTY_HINT_NONE, "",
+						 PROPERTY_USAGE_STORAGE),
+			"_set_mesh_lod_distance_ratios", "_get_mesh_lod_distance_ratios");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hide_beyond_max_lod", PROPERTY_HINT_RESOURCE_TYPE),
+			"set_hide_beyond_max_lod", "get_hide_beyond_max_lod");
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 }

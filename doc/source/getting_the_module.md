@@ -35,7 +35,7 @@ Then scroll to the bottom, you should see download links:
 In case there are multiple downloadable artifacts, the editor build will be the one with `editor` in the name.
 
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
-They are built using Godot's latest stable version branch (for example, `4.0` at time of writing), instead of `master`.
+They are built using Godot's latest stable version branch (for example, `4.0` at time of writing), instead of `master`, unless indicated otherwise.
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
 
@@ -92,6 +92,25 @@ If you cloned Godot and Voxel Tools, you can use git to update your local code.
 
 !!! note
 	Since you are pulling from two projects developped by different people, it's probable that on occasion your build won't compile, your project won't open, or your Voxel Tools won't work properly or even crash Godot. To minimize downtime, save your successful builds. Move them out of the build folder and rename them with the version number (e.g. godot-3.2+ee5ba3e.exe). This way, you can continue to use previously working builds until the Godot or Voxel developers fix whatever is broken. It is generally desired by all that code published to repositories will at least build, but stuff happens.
+
+
+C# suppport
+--------------
+
+### Module
+
+C# builds are available on Github Actions as well (as "Mono Builds"). Unfortunately, Godot 4 changed the way C# integrates by using the Nuget package manager. This made it really inconvenient for module developers to provide ready-to-use executables, and hard for users too:
+
+- When you make a project in Godot C#, it fetches the "vanilla" Godot SDK from Nuget, but it is only available for official stable versions, so you can't use CI builds of the engine that use the latest development version of Godot.
+- Modules add new classes to the API which are not present in the official SDK. It would require to create SDKs for every combination of modules you want to use and upload them to Nuget, which isn't practical.
+- You could revert to the latest official SDK available on Nuget, but to access module APIs you would have to use workarounds such as `obj.Get(string)`, `Set(string)` and `Call(string, args)` in code, which is hard to use, inefficient and terrible to maintain.
+
+To obtain a working version, you may generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_dotnet.html).
+
+
+### GDExtension and C#
+
+The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
 
 
 Export templates

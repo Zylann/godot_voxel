@@ -88,13 +88,20 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				const uint32_t density_u32 =
 						math::min(uint64_t(double(0xffffffff) * _density / MAX_DENSITY), uint64_t(0xffffffff));
 				const int size = vertices.size();
+				const float margin = block_size - block_size * 0.01f;
 				for (int i = 0; i < size; ++i) {
 					// TODO We could actually generate indexes and pick those,
 					// rather than iterating them all and rejecting
 					if (pcg0.rand() >= density_u32) {
 						continue;
 					}
-					vertex_cache.push_back(to_vec3f(vertices[i]));
+					// Ignore vertices located on the positive faces of the block. They are usually shared with the
+					// neighbor block, which causes a density bias and overlapping instances
+					const Vector3f pos = to_vec3f(vertices[i]);
+					if (pos.x > margin || pos.y > margin || pos.z > margin) {
+						continue;
+					}
+					vertex_cache.push_back(pos);
 					normal_cache.push_back(to_vec3f(normals[i]));
 				}
 			} break;
@@ -728,20 +735,23 @@ bool VoxelInstanceGenerator::get_random_rotation() const {
 }
 
 void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
-	ShortLockScope slock(_ptr_settings_lock);
+	{
+		ShortLockScope slock(_ptr_settings_lock);
 
-	if (_noise == noise) {
-		return;
+		if (_noise == noise) {
+			return;
+		}
+		if (_noise.is_valid()) {
+			_noise->disconnect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+		}
+		_noise = noise;
+		if (_noise.is_valid()) {
+			_noise->connect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+		}
 	}
-	if (_noise.is_valid()) {
-		_noise->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
-	}
-	_noise = noise;
-	if (_noise.is_valid()) {
-		_noise->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
-	}
+	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
 }
 
@@ -751,29 +761,32 @@ Ref<Noise> VoxelInstanceGenerator::get_noise() const {
 }
 
 void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
-	ShortLockScope slock(_ptr_settings_lock);
+	{
+		ShortLockScope slock(_ptr_settings_lock);
 
-	if (_noise_graph == func) {
-		return;
+		if (_noise_graph == func) {
+			return;
+		}
+		if (_noise_graph.is_valid()) {
+			_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		}
+
+		_noise_graph = func;
+
+		if (_noise_graph.is_valid()) {
+			// Compile on assignment because there isn't really a good place to do it...
+			func->compile(Engine::get_singleton()->is_editor_hint());
+
+			_noise_graph->connect(VoxelStringNames::get_singleton().changed,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+			_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
+					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+		}
 	}
-	if (_noise_graph.is_valid()) {
-		_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-		_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-	}
-
-	_noise_graph = func;
-
-	if (_noise_graph.is_valid()) {
-		// Compile on assignment because there isn't really a good place to do it...
-		func->compile(Engine::get_singleton()->is_editor_hint());
-
-		_noise_graph->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-		_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
-	}
+	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
 	emit_changed();
 }
 

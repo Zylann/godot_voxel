@@ -75,6 +75,7 @@ def get_sources(env, is_editor_build):
         "util/godot/classes/array_mesh.cpp",
         "util/godot/classes/concave_polygon_shape_3d.cpp",
         "util/godot/classes/geometry_2d.cpp",
+        "util/godot/classes/geometry_instance_3d.cpp",
         "util/godot/classes/input_event_key.cpp",
         "util/godot/classes/mesh.cpp",
         "util/godot/classes/multimesh.cpp",

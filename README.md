@@ -39,15 +39,12 @@ Documentation
 Roadmap
 ---------
 
-These are some ideas that may or may not be implemented in the future:
+Areas of interest:
 
-* Multiplayer
-* Texturing on smooth terrain
-* Authoring in editor
-* Improving LOD performance
-* Improving instancing
-* GPU offloading
-* Make GDExtension work (compiles, but GDExtension has many problems)
+* Multiplayer synchronization
+* Smooth voxel texturing
+* Level of detail with blocky voxels
+* Make GDExtension work
 
 
 Supporters

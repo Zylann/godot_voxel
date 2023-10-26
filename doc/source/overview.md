@@ -59,9 +59,6 @@ The core class for doing this is [VoxelBuffer](api/VoxelBuffer.md). This is a si
 The engine uses the first channels, while others are unused for now. Each channel can also use a configurable bit depth: 8, 16, 32 or 64 bits. This allows to tune quality and memory usage depending on your needs.
 Finally, a simple optimization is applied so that if a channel is filled with the same value, it won't allocate memory and instead store just that value. This way, areas such as the sky don't take up memory.
 
-!!! warning
-    There is a class called [Voxel](api/Voxel.md), but it is actually only used for blocky meshing. It is not a general-purpose voxel value, and will be renamed in the future to avoid confusion.
-
 
 Saving voxels to disk
 -----------------------
@@ -109,5 +106,5 @@ There are two main types of terrains supported by the engine:
 
 Both kinds of terrains can be edited in real time, and only the edited parts will be re-meshed dynamically. A helper class [VoxelTool](api/VoxelTool.md) is exposed to the script API to simplify the process of editing voxels, which can be obtained by using `get_voxel_tool()` methods. It allows to set single voxels, dig around or blend simple shapes such as spheres or boxes. The same concept of channels seen earlier is available on this API, so depending on the type of mesher you are using, you may want to edit either `TYPE`, `SDF` or `COLOR` channels.
 
-Finally, for these terrains to load, it is required to place at least one [VoxelViewer](api/VoxelViewer.md) node in the world. These may be placed typically as child of the player, or the main `Camera`. They tell the voxel engine where to load voxels, how far, and give priority to mesh updates happening near them.
+Finally, for these terrains to load, it is required to place at least one [VoxelViewer](api/VoxelViewer.md) node in the world. These may be placed typically as child of the player, or the main `Camera3D`. They tell the voxel engine where to load voxels, how far, and give priority to mesh updates happening near them.
 

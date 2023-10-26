@@ -50,6 +50,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Added `get_all_item_ids()` to allow iterating over all items of a library
     - `VoxelLibraryMultiMeshItem `:
         - Added `render_layer` property (thanks to m4nu3lf)
+        - Added `gi_mode` property
+        - Exposed custom distance ratios for the secondary distance-based LOD system
+        - Added option to hide instances when beyond their max distance-based LOD (only relevant for terrains with no LOD, or on the last LOD of `VoxelLodTerrain`)
         - Node groups on the template scene are now added to instance colliders if present
     - `VoxelLodTerrain`:
         - Added debug drawing for modifier bounds
@@ -78,6 +81,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelInstancer`:
         - Fixed crash when hiding the node in the editor
         - Fixed crash when closing the scene while an instancer node is selected
+        - Fixed instances were not cleared when using the "Re-generate" menu in the editor when terrain shape changed
     - `VoxelInstanceLibrary`: 
         - Fixed `find_item_by_name` was not finding items
         - Fixed newly added items in the editor rendering badly by default when the terrain doesn't have LOD. For now they always default to LOD 0 instead of LOD 2.
@@ -96,6 +100,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Changed the list of models to be handled by a typed array instead of individual properties. When opened in the editor, old resources will get converted. Re-save them to make the conversion persist.
     - `VoxelBlockyModel`:
         - The class was split into several subclasses for each type of geometry. When opened in the editor, old resources will get converted, but only if they are part of a `VoxelBlockyLibaray`. They won't work if they are individual resource files.
+    - `VoxelNode`:
+        - Removed `GIMode` enum, replaced with `GeometryInstance3D.GIMode`
 
 
 1.0 - 12/03/2023 - `godot4.0`

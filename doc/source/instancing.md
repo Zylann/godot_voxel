@@ -10,8 +10,6 @@ It can spawn two different kinds of objects:
 
 This system is primarily intented at natural spawning: grass, rocks, trees and other kinds of semi-random foliage. It is not suited for complex man-made structures like houses or villages, although scene instances can be used in some cases, if the available features suit your game.
 
-This feature is currently only available under `VoxelLodTerrain`.
-
 
 VoxelInstanceLibrary
 ---------------------
@@ -60,22 +58,32 @@ Sometimes it might not be enough, so this problem still has to be worked out in 
 
 ### Mesh LOD
 
-A secondary LOD system is included, which applies to meshes themselves, to some limited extent. Godot 3 does not have a LOD system (Godot 4 will), so this allows to reduce vertex count over distance from within a set of visible meshes.
+A secondary LOD system is included, which applies to meshes themselves, to some limited extent. It allows to reduce vertex count over distance from within a set of visible meshes. It only applies to `VoxelInstanceLibraryMultiMeshItem`.
 
-To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLibraryItem`:
+!!! note
+	This LOD system exists because Godot 3 didn't have one. Godot 4 added [automatic mesh LOD](https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html), which you might be able to use instead of this system. If you want to control the mesh and material used for each LOD, you may use this system.
+	While [Visibility Ranges](https://docs.godotengine.org/en/stable/tutorials/3d/visibility_ranges.html#doc-visibility-ranges) is presented as the alternative, when using `MultiMesh` it requires to unnecessarily duplicate the data and increase the number of scene objects to process.
+
+To use this, you have to fill the 3 mesh LOD properties on your `VoxelInstanceLibraryMultiMeshItem`:
 
 ![Screenshot of mesh LOD properties](images/mesh_lod_properties.webp)
 
 If only the `mesh` property is set, no LOD will be used.
 
-The distance at which a LOD will be chosen is currently hardcoded, because it depends on the `lod_index` the blocks for that item are loaded into, which in turn depends on the `lod_distance` property of the parent voxel terrain.
-
 ![Screenshot of mesh LODs with colors](images/mesh_lods.webp)
 
-If you need fewer LODs, you can assign twice the same mesh. This system is quite rigid because in Godot 4 it might be changed to only have a single slot dedicated to impostor meshes. Indeed, Godot 4 might support LOD on meshes, but it is not planned for the last LODs to become impostors, so this should still be possible to achieve.
+If you need fewer LODs, you can assign twice the same mesh.
 
 !!! note
     Impostor meshes are simple quads that can fake the presence of the real model over far distances. For example, this is a really fast way to render forests from afar, while being able to use detailed trees when coming closer.
+
+It is possible to customize the distances at which mesh LODs switch, under the `Mesh LOD settings` property group. They are defined as ratios (usually between 0 and 1) relative to the view distance of the corresponding terrain LOD (defined by `lod_index`).
+
+It is also possible to hide instances that fall beyond the maximum distance of the last LOD. This is mainly useful if the terrain has no LOD, however keep in mind that instances will still be generated, they will just not be rendered.
+
+
+!!! warning
+	There is currently a performance issue occurring when `MultiMesh.mesh` is changed to a different LOD. It should be easier to fix once [this PR](https://github.com/godotengine/godot/pull/79833) is merged into Godot.
 
 
 ### Edition
