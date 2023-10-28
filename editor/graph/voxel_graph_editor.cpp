@@ -398,15 +398,9 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 	VoxelGraphEditorNode *node_view = VoxelGraphEditorNode::create(**_graph, node_id);
 	node_view->set_name(ui_node_name);
 
-#if defined(ZN_GODOT)
 	node_view->connect("dragged", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_graph_node_dragged).bind(node_id));
 	node_view->connect(
 			"resize_request", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditor, _on_node_resize_request).bind(node_id));
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
-	ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle dragging and resizing nodes action with "
-				   "UndoRedo.");
-#endif
 
 	VoxelGraphEditorNodePreview *preview = node_view->get_preview();
 	if (preview != nullptr) {

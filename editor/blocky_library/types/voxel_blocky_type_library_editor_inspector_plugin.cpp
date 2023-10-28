@@ -18,14 +18,9 @@ void VoxelBlockyTypeLibraryEditorInspectorPlugin::_zn_parse_end(Object *p_object
 	Button *button = memnew(Button);
 	button->set_text(ZN_TTR("Inspect IDs..."));
 
-#if defined(ZN_GODOT)
 	button->connect("pressed",
 			ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeLibraryEditorInspectorPlugin, _on_inspect_ids_button_pressed)
 					.bind(library));
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
-	ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle inspecting IDMap from inspector.");
-#endif
 
 	// TODO I want to add this button at the end OF THE VoxelBlockyTypeLibrary PART OF THE INSPECTOR,
 	// NOT AT THE VERY BOTTOM... but how do I do that?

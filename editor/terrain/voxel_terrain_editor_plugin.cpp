@@ -161,16 +161,12 @@ void VoxelTerrainEditorPlugin::_zn_edit(Object *p_object) {
 
 void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	if (_node != nullptr) {
-#ifdef ZN_GODOT
 		// Using this to know when the node becomes really invalid, because ObjectID is unreliable in Godot 3.x,
 		// and we may want to keep access to the node when we select some different kinds of objects.
 		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
 		_node->disconnect(
 				"tree_entered", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered));
-#else
-// TODO GDX: Callable::bind() isn't implemented, can't use this signal
-// See https://github.com/godotengine/godot-cpp/issues/802
-#endif
+
 		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
 
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
@@ -186,15 +182,9 @@ void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
 	_node = node;
 
 	if (_node != nullptr) {
-#ifdef ZN_GODOT
 		_node->connect("tree_entered",
 				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered).bind(_node));
-#else
-// TODO GDX: Callable::bind() isn't implemented, can't use this signal
-// See https://github.com/godotengine/godot-cpp/issues/802
-// That means we can't take back the reference to the terrain if we reparented it, or switched between scene tabs, and
-// will cause errors. The user has to deselect the node and reselect it...
-#endif
+
 		// The real reason we use this signal is to invalidate the pointer when the object is destroyed.
 		// TODO Perhaps we should use an ObjectID instead?
 		_node->connect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));

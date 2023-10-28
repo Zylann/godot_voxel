@@ -715,12 +715,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-#if defined(ZN_GODOT)
 			timer->connect("timeout", ZN_GODOT_CALLABLE_MP(rigid_body, RigidBody3D, set_freeze_enabled).bind(false));
-#elif defined(ZN_GODOT_EXTENSION)
-			// TODO GDX: Callable::bind() cannot be used
-			ZN_PRINT_ERROR("Callable::bind() cannot be used in GDExtension, can't apply clipping fix to RigidBody3D");
-#endif
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);

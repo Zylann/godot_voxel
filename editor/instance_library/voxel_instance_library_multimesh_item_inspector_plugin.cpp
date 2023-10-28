@@ -27,19 +27,14 @@ void VoxelInstanceLibraryMultiMeshItemInspectorPlugin::_zn_parse_group(Object *p
 					ZN_TTR("Set properties based on an existing scene. This might copy mesh and material data if "
 						   "the scene embeds them. Properties will not update if the scene changes later."));
 			button->set_text(ZN_TTR("Update from scene..."));
-#if defined(ZN_GODOT)
+
 			// Using a bind() instead of relying on "currently edited" item in the editor plugin allows to support
 			// multiple sub-inspectors. Plugins are not instanced per-inspected-object, but custom controls are.
 			button->connect("pressed",
 					callable_mp(listener,
 							&VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed)
 							.bind(item));
-#elif defined(ZN_GODOT_EXTENSION)
-			// TODO GDX: Need to use Callable::bind() but it has no implementation
-			// See https://github.com/godotengine/godot-cpp/issues/802
-			ZN_PRINT_ERROR("Unable to setup button to update `VoxelInstanceLibraryMultiMeshItem` from a scene with "
-						   "GDExtension! Callable::bind isn't working.");
-#endif
+
 			add_custom_control(button);
 
 		} else {

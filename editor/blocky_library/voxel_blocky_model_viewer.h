@@ -38,7 +38,6 @@ private:
 	void process(float delta);
 
 	void _on_model_changed();
-	// TODO Could use bind() for the axis, but in GodotCpp (GDExtension) bind() isn't implemented...
 	void _on_rotate_x_button_pressed();
 	void _on_rotate_y_button_pressed();
 	void _on_rotate_z_button_pressed();
