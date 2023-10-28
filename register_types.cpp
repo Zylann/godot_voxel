@@ -367,69 +367,68 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelGraphEditorNodePreview::load_resources();
 
 #if defined(ZN_GODOT_EXTENSION)
-		// TODO GDX: I don't want to expose any of the following classes, but it looks like there is no way to make them
-		// functional as extensions BUT not expose them
+		// In GDExtension we have to explicitely register all classes deriving from Object even if they are not exposed
 
-		ClassDB::register_class<ZN_EditorPlugin>();
-		ClassDB::register_class<ZN_EditorImportPlugin>();
-		ClassDB::register_class<ZN_EditorInspectorPlugin>();
-		ClassDB::register_class<ZN_EditorProperty>();
-		ClassDB::register_class<ZN_Axes3DControl>();
-		ClassDB::register_class<ZN_ModelViewer>();
-		ClassDB::register_class<ZN_EditorPropertyAABBMinMax>();
+		ClassDB::register_internal_class<ZN_EditorPlugin>();
+		ClassDB::register_internal_class<ZN_EditorImportPlugin>();
+		ClassDB::register_internal_class<ZN_EditorInspectorPlugin>();
+		ClassDB::register_internal_class<ZN_EditorProperty>();
+		ClassDB::register_internal_class<ZN_Axes3DControl>();
+		ClassDB::register_internal_class<ZN_ModelViewer>();
+		ClassDB::register_internal_class<ZN_EditorPropertyAABBMinMax>();
 
-		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
-		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
-		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteViewer>();
 
-		ClassDB::register_class<VoxelAboutWindow>();
-		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+		ClassDB::register_internal_class<VoxelAboutWindow>();
+		ClassDB::register_internal_class<VoxelTerrainEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelTerrainEditorPlugin>();
+		ClassDB::register_internal_class<VoxelTerrainEditorTaskIndicator>();
 
-		ClassDB::register_class<VoxelBlockyModelViewer>();
-		ClassDB::register_class<VoxelBlockyLibraryEditorPlugin>();
-		ClassDB::register_class<VoxelBlockyModelEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyModelViewer>();
+		ClassDB::register_internal_class<VoxelBlockyLibraryEditorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyModelEditorInspectorPlugin>();
 
-		ClassDB::register_class<VoxelBlockyTypeViewer>();
-		ClassDB::register_class<VoxelBlockyTypeEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelBlockyTypeLibraryIDSDialog>();
-		ClassDB::register_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelBlockyTypeAttributeCombinationSelector>();
-		ClassDB::register_class<VoxelBlockyTypeVariantListEditor>();
+		ClassDB::register_internal_class<VoxelBlockyTypeViewer>();
+		ClassDB::register_internal_class<VoxelBlockyTypeEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTypeLibraryIDSDialog>();
+		ClassDB::register_internal_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTypeAttributeCombinationSelector>();
+		ClassDB::register_internal_class<VoxelBlockyTypeVariantListEditor>();
 
-		ClassDB::register_class<magica::VoxelVoxEditorPlugin>();
-		ClassDB::register_class<magica::VoxelVoxMeshImporter>();
-		ClassDB::register_class<magica::VoxelVoxSceneImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
+		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
 
-		ClassDB::register_class<VoxelInstancerEditorPlugin>();
-		ClassDB::register_class<VoxelInstancerStatView>();
+		ClassDB::register_internal_class<VoxelInstancerEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstancerStatView>();
 
-		ClassDB::register_class<VoxelInstanceLibraryEditorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryInspectorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
 
-		ClassDB::register_class<VoxelMeshSDFViewer>();
-		ClassDB::register_class<VoxelMeshSDFEditorPlugin>();
-		ClassDB::register_class<VoxelMeshSDFInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
+		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
 
-		ClassDB::register_class<ZN_EditorPropertyTextChangeOnSubmit>();
-		ClassDB::register_class<VoxelGraphEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelGraphFunctionInspectorPlugin>();
-		ClassDB::register_class<VoxelGraphEditorNodePreview>();
-		ClassDB::register_class<VoxelGraphEditorNode>();
-		ClassDB::register_class<VoxelGraphEditor>();
-		ClassDB::register_class<VoxelGraphEditorPlugin>();
-		ClassDB::register_class<VoxelGraphEditorShaderDialog>();
-		ClassDB::register_class<VoxelGraphEditorIODialog>();
-		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
-		ClassDB::register_class<VoxelGraphNodeDialog>();
-		ClassDB::register_class<VoxelRangeAnalysisDialog>();
+		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
+		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();
+		ClassDB::register_internal_class<VoxelGraphEditorNode>();
+		ClassDB::register_internal_class<VoxelGraphEditor>();
+		ClassDB::register_internal_class<VoxelGraphEditorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphEditorShaderDialog>();
+		ClassDB::register_internal_class<VoxelGraphEditorIODialog>();
+		ClassDB::register_internal_class<VoxelGraphNodeInspectorWrapper>();
+		ClassDB::register_internal_class<VoxelGraphNodeDialog>();
+		ClassDB::register_internal_class<VoxelRangeAnalysisDialog>();
 
-		ClassDB::register_class<VoxelGeneratorMultipassEditorPlugin>();
-		ClassDB::register_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelGeneratorMultipassCacheViewer>();
+		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorPlugin>();
+		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGeneratorMultipassCacheViewer>();
 #endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
