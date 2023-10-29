@@ -34,7 +34,9 @@ protected:
 private:
 	void init();
 
-	void set_node(VoxelNode *node);
+	void set_voxel_node(VoxelNode *node);
+	VoxelNode *get_voxel_node() const;
+
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
@@ -61,7 +63,7 @@ private:
 		MENU_ABOUT
 	};
 
-	VoxelNode *_node = nullptr;
+	ObjectID _node_object_id;
 
 	ViewerID _editor_viewer_id;
 	Vector3 _editor_camera_last_position;

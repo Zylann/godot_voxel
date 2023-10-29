@@ -43,6 +43,22 @@ void VoxelTerrainEditorPlugin::init() {
 	base_control->add_child(_about_window);
 }
 
+VoxelNode *VoxelTerrainEditorPlugin::get_voxel_node() const {
+	if (!_node_object_id.is_valid()) {
+		return nullptr;
+	}
+	Object *obj = ObjectDB::get_instance(_node_object_id);
+	if (obj == nullptr) {
+		// Could have been destroyed.
+		// _node_object_id = ObjectID();
+		return nullptr;
+	}
+	VoxelNode *instancer = Object::cast_to<VoxelNode>(obj);
+	// We don't expect Godot to re-use the same ObjectID for different objects
+	ERR_FAIL_COND_V(instancer == nullptr, nullptr);
+	return instancer;
+}
+
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
@@ -140,7 +156,9 @@ bool VoxelTerrainEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
 		return true;
 	}
-	if (_node != nullptr) {
+
+	VoxelNode *node = get_voxel_node();
+	if (node != nullptr) {
 		return is_side_handled(p_object);
 	}
 	return false;
@@ -150,47 +168,34 @@ void VoxelTerrainEditorPlugin::_zn_edit(Object *p_object) {
 	VoxelNode *node = Object::cast_to<VoxelNode>(p_object);
 
 	if (node != nullptr) {
-		set_node(node);
+		set_voxel_node(node);
 
 	} else {
 		if (!is_side_handled(p_object)) {
-			set_node(nullptr);
+			set_voxel_node(nullptr);
 		}
 	}
 }
 
-void VoxelTerrainEditorPlugin::set_node(VoxelNode *node) {
-	if (_node != nullptr) {
-		// Using this to know when the node becomes really invalid, because ObjectID is unreliable in Godot 3.x,
-		// and we may want to keep access to the node when we select some different kinds of objects.
-		// Also moving the node around in the tree triggers exit/enter so have to listen for both.
-		_node->disconnect(
-				"tree_entered", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered));
+void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
+	VoxelNode *prev_node = get_voxel_node();
 
-		_node->disconnect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
-
-		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+	if (prev_node != nullptr) {
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(prev_node);
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(false);
 		}
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(prev_node);
 		if (vt != nullptr) {
 			vt->debug_set_draw_enabled(false);
 		}
 	}
 
-	_node = node;
+	_node_object_id = node != nullptr ? node->get_instance_id() : ObjectID();
 
-	if (_node != nullptr) {
-		_node->connect("tree_entered",
-				ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_entered).bind(_node));
-
-		// The real reason we use this signal is to invalidate the pointer when the object is destroyed.
-		// TODO Perhaps we should use an ObjectID instead?
-		_node->connect("tree_exited", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_terrain_tree_exited));
-
-		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+	if (node != nullptr) {
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(node);
 
 		generate_menu_items(_menu_button, vlt != nullptr);
 
@@ -214,12 +219,14 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 	_task_indicator->set_visible(visible);
 	set_process(visible);
 
-	if (_node != nullptr) {
-		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_node);
+	VoxelNode *node = get_voxel_node();
+
+	if (node != nullptr) {
+		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(visible);
 		}
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_node);
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(node);
 		if (vt != nullptr) {
 			vt->debug_set_draw_enabled(visible);
 		}
@@ -250,15 +257,17 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	switch (id) {
-		case MENU_RESTART_STREAM:
-			ERR_FAIL_COND(_node == nullptr);
-			_node->restart_stream();
-			break;
+		case MENU_RESTART_STREAM: {
+			VoxelNode *node = get_voxel_node();
+			ERR_FAIL_COND(node == nullptr);
+			node->restart_stream();
+		} break;
 
-		case MENU_REMESH:
-			ERR_FAIL_COND(_node == nullptr);
-			_node->remesh_all_blocks();
-			break;
+		case MENU_REMESH: {
+			VoxelNode *node = get_voxel_node();
+			ERR_FAIL_COND(node == nullptr);
+			node->remesh_all_blocks();
+		} break;
 
 		case MENU_STREAM_FOLLOW_CAMERA: {
 			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
@@ -272,7 +281,8 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_OCTREE_BOUNDS: {
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			VoxelNode *node = get_voxel_node();
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_bounds = !_show_octree_bounds;
 			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
@@ -282,7 +292,8 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_OCTREE_NODES: {
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			VoxelNode *node = get_voxel_node();
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_nodes = !_show_octree_nodes;
 			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
@@ -292,7 +303,8 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_MESH_UPDATES: {
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			VoxelNode *node = get_voxel_node();
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_mesh_updates = !_show_mesh_updates;
 			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
@@ -302,7 +314,8 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_MODIFIER_BOUNDS: {
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(_node);
+			VoxelNode *node = get_voxel_node();
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_modifier_bounds = !_show_modifier_bounds;
 			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
@@ -317,31 +330,9 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	}
 }
 
-#if defined(ZN_GODOT)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Node *node) {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_entered(Object *node_o) {
-	Node *node = Object::cast_to<Node>(node_o);
-#endif
-	_node = Object::cast_to<VoxelNode>(node);
-	ERR_FAIL_COND(_node == nullptr);
-}
-
-#if defined(ZN_GODOT)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_exited() {
-#elif defined(ZN_GODOT_EXTENSION)
-void VoxelTerrainEditorPlugin::_on_terrain_tree_exited() {
-#endif
-	// If the node exited the tree because it was deleted, signals we connected should automatically disconnect.
-	_node = nullptr;
-}
-
 void VoxelTerrainEditorPlugin::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
-	ClassDB::bind_method(
-			D_METHOD("_on_terrain_tree_entered", "node"), &VoxelTerrainEditorPlugin::_on_terrain_tree_entered);
-	ClassDB::bind_method(D_METHOD("_on_terrain_tree_exited"), &VoxelTerrainEditorPlugin::_on_terrain_tree_exited);
 #endif
 }
 
