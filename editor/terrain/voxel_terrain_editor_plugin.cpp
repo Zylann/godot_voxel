@@ -53,10 +53,10 @@ VoxelNode *VoxelTerrainEditorPlugin::get_voxel_node() const {
 		// _node_object_id = ObjectID();
 		return nullptr;
 	}
-	VoxelNode *instancer = Object::cast_to<VoxelNode>(obj);
+	VoxelNode *terrain = Object::cast_to<VoxelNode>(obj);
 	// We don't expect Godot to re-use the same ObjectID for different objects
-	ERR_FAIL_COND_V(instancer == nullptr, nullptr);
-	return instancer;
+	ERR_FAIL_COND_V(terrain == nullptr, nullptr);
+	return terrain;
 }
 
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
