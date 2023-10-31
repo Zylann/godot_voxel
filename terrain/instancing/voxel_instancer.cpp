@@ -1141,7 +1141,7 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
 			block.multimesh_instance.set_gi_mode(settings.gi_mode);
 
-			if (settings.mesh_lod_count >= 1 || item->get_hide_beyond_max_lod()) {
+			if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item->get_hide_beyond_max_lod())) {
 				// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
 				// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
 				// LOD when spawning
