@@ -1,12 +1,12 @@
 #ifndef VOXEL_COMPUTE_SHADER_RESOURCE_H
 #define VOXEL_COMPUTE_SHADER_RESOURCE_H
 
+#include "../../util/containers/span.h"
 #include "../../util/godot/core/packed_byte_array.h"
 #include "../../util/godot/core/rid.h"
 #include "../../util/macros.h"
 #include "../../util/math/transform_3d.h"
 #include "../../util/math/vector3i.h"
-#include "../../util/span.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Image);
 ZN_GODOT_FORWARD_DECLARE(class Curve);

@@ -1,7 +1,7 @@
 #ifndef VOXEL_BLOCKY_LIBRARY_BASE_H
 #define VOXEL_BLOCKY_LIBRARY_BASE_H
 
-#include "../../util/dynamic_bitset.h"
+#include "../../util/containers/dynamic_bitset.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"

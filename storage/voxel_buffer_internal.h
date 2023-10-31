@@ -2,8 +2,8 @@
 #define VOXEL_BUFFER_INTERNAL_H
 
 #include "../constants/voxel_constants.h"
-#include "../util/fixed_array.h"
-#include "../util/flat_map.h"
+#include "../util/containers/fixed_array.h"
+#include "../util/containers/flat_map.h"
 #include "../util/math/box3i.h"
 #include "../util/thread/rw_lock.h"
 #include "funcs.h"

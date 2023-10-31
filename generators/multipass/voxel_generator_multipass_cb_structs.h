@@ -2,8 +2,8 @@
 #define VOXEL_GENERATOR_MULTIPASS_CB_STRUCTS_H
 
 #include "../../storage/voxel_buffer_internal.h"
+#include "../../util/containers/small_vector.h"
 #include "../../util/ref_count.h"
-#include "../../util/small_vector.h"
 #include "../../util/thread/spatial_lock_2d.h"
 
 // Data structures used internally in multipass generation.

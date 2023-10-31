@@ -2,7 +2,7 @@
 #include "../generators/graph/node_type_db.h"
 #include "../generators/graph/voxel_generator_graph.h"
 #include "../storage/voxel_buffer_internal.h"
-#include "../util/container_funcs.h"
+#include "../util/containers/container_funcs.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/noise/fast_noise_lite/fast_noise_lite.h"

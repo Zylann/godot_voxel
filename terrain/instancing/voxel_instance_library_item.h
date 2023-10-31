@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_ITEM_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "voxel_instance_generator.h"
 
 namespace zylann::voxel {

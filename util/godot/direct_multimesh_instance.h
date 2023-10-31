@@ -1,10 +1,10 @@
 #ifndef DIRECT_MULTIMESH_INSTANCE_H
 #define DIRECT_MULTIMESH_INSTANCE_H
 
+#include "../containers/span.h"
 #include "../math/color8.h"
 #include "../math/transform3f.h"
 #include "../non_copyable.h"
-#include "../span.h"
 #include "classes/geometry_instance_3d.h"
 #include "classes/multimesh.h"
 #include "classes/rendering_server.h"

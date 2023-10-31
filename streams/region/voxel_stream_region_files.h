@@ -1,7 +1,7 @@
 #ifndef VOXEL_STREAM_REGION_H
 #define VOXEL_STREAM_REGION_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/thread/mutex.h"
 #include "../file_utils.h"
 #include "../voxel_stream.h"
@@ -120,7 +120,7 @@ private:
 		bool file_exists = false;
 		RegionFile region;
 		uint64_t last_opened = 0;
-		//uint64_t last_accessed;
+		// uint64_t last_accessed;
 	};
 
 	String _directory_path;

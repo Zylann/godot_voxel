@@ -1,7 +1,7 @@
 #ifndef ZN_SHADER_MATERIAL_POOL_H
 #define ZN_SHADER_MATERIAL_POOL_H
 
-#include "../span.h"
+#include "../containers/span.h"
 #include "classes/shader_material.h"
 #include <vector>
 

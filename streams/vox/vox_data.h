@@ -1,7 +1,7 @@
 #ifndef VOX_DATA_H
 #define VOX_DATA_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/basis.h"
 #include "../../util/math/color8.h"

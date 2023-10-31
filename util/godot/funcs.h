@@ -1,9 +1,9 @@
 #ifndef VOXEL_UTILITY_GODOT_FUNCS_H
 #define VOXEL_UTILITY_GODOT_FUNCS_H
 
+#include "../containers/span.h"
 #include "../math/vector2f.h"
 #include "../math/vector3f.h"
-#include "../span.h"
 #include "core/variant.h"
 #include <cstdint>
 #include <vector>

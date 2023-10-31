@@ -1,7 +1,7 @@
 #ifndef ZN_FIXED_ARRAY_H
 #define ZN_FIXED_ARRAY_H
 
-#include "errors.h"
+#include "../errors.h"
 
 namespace zylann {
 

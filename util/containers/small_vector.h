@@ -1,7 +1,7 @@
 #ifndef ZN_SMALL_VECTOR_H
 #define ZN_SMALL_VECTOR_H
 
-#include "errors.h"
+#include "../errors.h"
 #include <memory>
 #include <new>
 #include <type_traits>

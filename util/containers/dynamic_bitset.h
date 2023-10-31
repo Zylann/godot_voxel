@@ -1,7 +1,7 @@
 #ifndef ZN_DYNAMIC_BITSET_H
 #define ZN_DYNAMIC_BITSET_H
 
-#include "errors.h"
+#include "../errors.h"
 #include <cstdint>
 #include <vector>
 

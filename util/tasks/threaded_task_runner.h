@@ -1,10 +1,10 @@
 #ifndef ZYLANN_THREADED_TASK_RUNNER_H
 #define ZYLANN_THREADED_TASK_RUNNER_H
 
-#include "../container_funcs.h"
-#include "../fixed_array.h"
+#include "../containers/container_funcs.h"
+#include "../containers/fixed_array.h"
+#include "../containers/span.h"
 #include "../profiling.h"
-#include "../span.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
 #include "../thread/thread.h"

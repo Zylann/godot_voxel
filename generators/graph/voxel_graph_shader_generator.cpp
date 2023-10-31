@@ -1,7 +1,7 @@
 #include "voxel_graph_shader_generator.h"
 #include "../../engine/gpu/compute_shader_parameters.h"
 #include "../../engine/gpu/compute_shader_resource.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/godot/core/string.h"
 #include "../../util/profiling.h"

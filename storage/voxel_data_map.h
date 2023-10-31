@@ -1,7 +1,7 @@
 #ifndef VOXEL_DATA_MAP_H
 #define VOXEL_DATA_MAP_H
 
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/profiling.h"
 #include "voxel_data_block.h"
 

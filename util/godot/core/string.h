@@ -20,7 +20,7 @@ using namespace godot;
 
 #include "../macros.h"
 
-#include "../../span.h"
+#include "../../containers/span.h"
 
 namespace zylann {
 

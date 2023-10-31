@@ -1,6 +1,6 @@
 #include "code_gen_helper.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/errors.h"
-#include "../../util/fixed_array.h"
 #include "../../util/string_funcs.h"
 
 #include <cstring>

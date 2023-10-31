@@ -1,9 +1,9 @@
 #ifndef ZYLANN_EXPRESSION_PARSER_H
 #define ZYLANN_EXPRESSION_PARSER_H
 
-#include "fixed_array.h"
+#include "containers/fixed_array.h"
+#include "containers/span.h"
 #include "memory.h"
-#include "span.h"
 #include <string_view>
 
 namespace zylann {

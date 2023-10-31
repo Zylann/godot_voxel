@@ -1,8 +1,8 @@
 #ifndef ZYLANN_VECTOR3T_H
 #define ZYLANN_VECTOR3T_H
 
+#include "../containers/span.h"
 #include "../errors.h"
-#include "../span.h"
 #include "funcs.h"
 
 namespace zylann {

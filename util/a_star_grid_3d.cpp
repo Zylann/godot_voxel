@@ -1,5 +1,5 @@
 #include "a_star_grid_3d.h"
-#include "../util/container_funcs.h"
+#include "../util/containers/container_funcs.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include <unordered_set>

@@ -4,10 +4,10 @@
 #include "../engine/gpu/compute_shader_resource.h"
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
+#include "../util/containers/span.h"
 #include "../util/godot/classes/resource.h"
 #include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
-#include "../util/span.h"
 #include "../util/thread/mutex.h"
 
 #include <memory>

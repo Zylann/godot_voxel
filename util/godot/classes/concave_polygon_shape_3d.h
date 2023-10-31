@@ -1,9 +1,9 @@
 #ifndef ZN_GODOT_CONCAVE_POLYGON_SHAPE_3D_H
 #define ZN_GODOT_CONCAVE_POLYGON_SHAPE_3D_H
 
+#include "../../containers/span.h"
 #include "../../macros.h"
 #include "../../math/vector3f.h"
-#include "../../span.h"
 
 #if defined(ZN_GODOT)
 #include <scene/resources/concave_polygon_shape_3d.h>

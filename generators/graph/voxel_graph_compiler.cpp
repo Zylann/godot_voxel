@@ -1,5 +1,5 @@
 #include "voxel_graph_compiler.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/macros.h"

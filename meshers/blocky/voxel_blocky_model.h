@@ -2,7 +2,7 @@
 #define VOXEL_BLOCKY_MODEL_H
 
 #include "../../constants/cube_tables.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/macros.h"

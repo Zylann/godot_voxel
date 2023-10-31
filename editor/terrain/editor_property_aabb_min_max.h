@@ -1,7 +1,7 @@
 #ifndef ZYLANN_EDITOR_PROPERTY_AABB_H
 #define ZYLANN_EDITOR_PROPERTY_AABB_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/editor_property.h"
 #include "../../util/godot/classes/editor_spin_slider.h"
 #include "../../util/macros.h"

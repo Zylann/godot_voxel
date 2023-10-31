@@ -1,7 +1,7 @@
 #ifndef VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 #define VOXEL_TERRAIN_EDITOR_TASK_INDICATOR_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/scroll_container.h"
 #include "../../util/godot/macros.h"
 

@@ -1,8 +1,8 @@
 #ifndef VOXEL_MEMORY_POOL_H
 #define VOXEL_MEMORY_POOL_H
 
+#include "../util/containers/fixed_array.h"
 #include "../util/dstack.h"
-#include "../util/fixed_array.h"
 #include "../util/math/funcs.h"
 #include "../util/thread/mutex.h"
 

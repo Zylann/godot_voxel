@@ -1,5 +1,5 @@
 #include "voxel_debug.h"
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_multimesh_instance.h"

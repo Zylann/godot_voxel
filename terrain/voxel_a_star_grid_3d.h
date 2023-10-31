@@ -3,7 +3,7 @@
 
 #include "../storage/voxel_data.h"
 #include "../util/a_star_grid_3d.h"
-#include "../util/dynamic_bitset.h"
+#include "../util/containers/dynamic_bitset.h"
 #include <atomic>
 
 namespace zylann::voxel {

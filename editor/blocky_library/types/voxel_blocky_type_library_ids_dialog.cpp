@@ -1,5 +1,5 @@
 #include "voxel_blocky_type_library_ids_dialog.h"
-#include "../../../util/container_funcs.h"
+#include "../../../util/containers/container_funcs.h"
 #include "../../../util/godot/classes/button.h"
 #include "../../../util/godot/classes/item_list.h"
 #include "../../../util/godot/classes/v_box_container.h"

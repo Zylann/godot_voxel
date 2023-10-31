@@ -1,7 +1,7 @@
 #ifndef ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 #define ZYLANN_TIME_SPREAD_TASK_RUNNER_H
 
-#include "../span.h"
+#include "../containers/span.h"
 #include "../thread/mutex.h"
 #include <cstdint>
 #include <queue>

@@ -5,7 +5,7 @@
 #include "../../engine/save_block_data_task.h"
 #include "../../engine/voxel_engine.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/math/conv.h"

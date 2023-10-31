@@ -1,7 +1,7 @@
 #ifndef VOXEL_UTIL_SERIALIZATION_H
 #define VOXEL_UTIL_SERIALIZATION_H
 
-#include "span.h"
+#include "containers/span.h"
 #include <cstring>
 
 namespace zylann {

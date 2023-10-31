@@ -1,11 +1,11 @@
 #ifndef VOXEL_DETAIL_RENDERING_H
 #define VOXEL_DETAIL_RENDERING_H
 
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/macros.h"
 #include "../util/math/vector3f.h"
-#include "../util/span.h"
+#include "../util/containers/span.h"
 
 //#define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 // Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens

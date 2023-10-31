@@ -3,7 +3,7 @@
 
 #include "../../constants/voxel_constants.h"
 #include "../../streams/instance_data.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"

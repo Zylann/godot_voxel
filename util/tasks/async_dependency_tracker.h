@@ -1,7 +1,7 @@
 #ifndef ZYLANN_ASYNC_DEPENDENCY_TRACKER_H
 #define ZYLANN_ASYNC_DEPENDENCY_TRACKER_H
 
-#include "../span.h"
+#include "../containers/span.h"
 #include <atomic>
 #include <vector>
 

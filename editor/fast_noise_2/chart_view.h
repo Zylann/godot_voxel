@@ -1,7 +1,7 @@
 #ifndef CHART_VIEW_H
 #define CHART_VIEW_H
 
-#include "../../util/span.h"
+#include "../../util/containers/span.h"
 
 #include "scene/gui/control.h"
 #include <vector>

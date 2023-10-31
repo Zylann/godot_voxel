@@ -1,7 +1,7 @@
 #ifndef IMAGE_RANGE_GRID_H
 #define IMAGE_RANGE_GRID_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"
 

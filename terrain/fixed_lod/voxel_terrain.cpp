@@ -11,7 +11,7 @@
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../storage/voxel_data.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/base_material_3d.h" // For property hint in release mode in GDExtension...
 #include "../../util/godot/classes/concave_polygon_shape_3d.h"
 #include "../../util/godot/classes/engine.h"

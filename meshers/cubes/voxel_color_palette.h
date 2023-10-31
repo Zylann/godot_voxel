@@ -1,7 +1,7 @@
 #ifndef VOXEL_COLOR_PALETTE_H
 #define VOXEL_COLOR_PALETTE_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/math/color8.h"
 

@@ -2,7 +2,7 @@
 #define TRANSVOXEL_H
 
 #include "../../storage/voxel_buffer_internal.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/math/color.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
