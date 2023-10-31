@@ -5,14 +5,17 @@
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/core/callable.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
+#include "../about_window.h"
 #include "voxel_instancer_stat_view.h"
 
 namespace zylann::voxel {
 
 namespace {
 enum MenuItemID { //
-	MENU_SHOW_STATS
+	MENU_SHOW_STATS,
+	MENU_ABOUT
 };
 }
 
@@ -24,10 +27,17 @@ void VoxelInstancerEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(VoxelInstancer::get_class_static());
 	{
-		menu_button->get_popup()->add_item("Show statistics", MENU_SHOW_STATS);
-		const int i = menu_button->get_popup()->get_item_index(MENU_SHOW_STATS);
-		menu_button->get_popup()->set_item_as_checkable(i, true);
-		menu_button->get_popup()->set_item_checked(i, false);
+		PopupMenu *popup = menu_button->get_popup();
+		{
+			popup->add_item(ZN_TTR("Show statistics"), MENU_SHOW_STATS);
+			const int i = menu_button->get_popup()->get_item_index(MENU_SHOW_STATS);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, false);
+		}
+		{
+			popup->add_separator();
+			popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
+		}
 	}
 	menu_button->get_popup()->connect(
 			"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelInstancerEditorPlugin, _on_menu_item_selected));
@@ -99,6 +109,10 @@ void VoxelInstancerEditorPlugin::_on_menu_item_selected(int id) {
 			const int i = _menu_button->get_popup()->get_item_index(id);
 			_menu_button->get_popup()->set_item_checked(i, active);
 		} break;
+
+		case MENU_ABOUT:
+			VoxelAboutWindow::popup_singleton();
+			break;
 	}
 }
 

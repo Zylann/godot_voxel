@@ -149,7 +149,27 @@ const ThirdParty g_third_parties[] = {
 			"reproduced without permission.\n" }
 };
 const unsigned int VOXEL_THIRD_PARTY_COUNT = ZN_ARRAY_LENGTH(g_third_parties);
+
+VoxelAboutWindow *g_window_singleton = nullptr;
+
 } // namespace
+
+void VoxelAboutWindow::create_singleton(Node &base_control) {
+	ZN_ASSERT_RETURN(g_window_singleton == nullptr);
+	g_window_singleton = memnew(VoxelAboutWindow);
+	base_control.add_child(g_window_singleton);
+}
+
+void VoxelAboutWindow::destroy_singleton() {
+	ZN_ASSERT_RETURN(g_window_singleton != nullptr);
+	memdelete(g_window_singleton);
+	g_window_singleton = nullptr;
+}
+
+void VoxelAboutWindow::popup_singleton() {
+	ZN_ASSERT_RETURN(g_window_singleton != nullptr);
+	g_window_singleton->popup_centered_ratio(0.6);
+}
 
 VoxelAboutWindow::VoxelAboutWindow() {
 	// Generated with the help of https://github.com/Zylann/godot_scene_code_converter

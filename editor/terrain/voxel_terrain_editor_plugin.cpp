@@ -39,8 +39,8 @@ void VoxelTerrainEditorPlugin::init() {
 
 	Node *base_control = get_editor_interface()->get_base_control();
 
-	_about_window = memnew(VoxelAboutWindow);
-	base_control->add_child(_about_window);
+	// This plugin actually owns the singleton
+	VoxelAboutWindow::create_singleton(*base_control);
 }
 
 VoxelNode *VoxelTerrainEditorPlugin::get_voxel_node() const {
@@ -122,7 +122,10 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 
 		case NOTIFICATION_EXIT_TREE:
 			VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+
 			remove_inspector_plugin(_inspector_plugin);
+
+			VoxelAboutWindow::destroy_singleton();
 			break;
 
 		case NOTIFICATION_PROCESS:
@@ -325,7 +328,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_ABOUT:
-			_about_window->popup_centered_ratio(0.6);
+			VoxelAboutWindow::popup_singleton();
 			break;
 	}
 }
