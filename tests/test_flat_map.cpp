@@ -1,5 +1,5 @@
 #include "test_flat_map.h"
-#include "../util/flat_map.h"
+#include "../util/containers/flat_map.h"
 #include "../util/godot/core/random_pcg.h"
 #include "testing.h"
 
