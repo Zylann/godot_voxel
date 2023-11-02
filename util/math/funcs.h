@@ -18,12 +18,12 @@ namespace zylann::math {
 // Generic math functions, only using scalar types.
 
 template <typename T>
-inline T min(const T a, const T b) {
+inline constexpr T min(const T a, const T b) {
 	return a < b ? a : b;
 }
 
 template <typename T>
-inline T max(const T a, const T b) {
+inline constexpr T max(const T a, const T b) {
 	return a > b ? a : b;
 }
 
@@ -78,7 +78,7 @@ inline double maxf(double a, double b) {
 }
 
 template <typename T>
-inline T clamp(const T x, const T min_value, const T max_value) {
+inline constexpr T clamp(const T x, const T min_value, const T max_value) {
 	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
 	// TODO Enforce T as being numeric
 	if (x < min_value) {
