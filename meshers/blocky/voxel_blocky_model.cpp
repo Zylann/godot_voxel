@@ -512,8 +512,7 @@ void VoxelBlockyModel::_bind_methods() {
 			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index);
 	ClassDB::bind_method(D_METHOD("get_transparency_index"), &VoxelBlockyModel::get_transparency_index);
 
-	ClassDB::bind_method(
-			D_METHOD("set_culls_neighbors", "culls_neighbors"), &VoxelBlockyModel::set_culls_neighbors);
+	ClassDB::bind_method(D_METHOD("set_culls_neighbors", "culls_neighbors"), &VoxelBlockyModel::set_culls_neighbors);
 	ClassDB::bind_method(D_METHOD("get_culls_neighbors"), &VoxelBlockyModel::get_culls_neighbors);
 
 	ClassDB::bind_method(D_METHOD("is_random_tickable"), &VoxelBlockyModel::is_random_tickable);
