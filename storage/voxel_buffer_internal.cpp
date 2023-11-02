@@ -123,9 +123,12 @@ uint64_t g_default_values[VoxelBufferInternal::MAX_CHANNELS] = {
 	// should be possible to cast it back to the actual type with no loss of data, as long as all bits are preserved.
 	uint16_t(snorm_to_s16(1.f)), // SDF
 
+	0, // COLOR
+
 	encode_indices_to_packed_u16(0, 1, 2, 3), // INDICES
 	encode_weights_to_packed_u16_lossy(255, 0, 0, 0), // WEIGHTS
-	0, 0, 0, 0 //
+
+	0, 0, 0 //
 };
 }
 
