@@ -1033,7 +1033,7 @@ void VoxelMesherCubes::set_material_by_index(Materials id, Ref<Material> materia
 }
 
 Ref<Material> VoxelMesherCubes::get_material_by_index(unsigned int i) const {
-	ERR_FAIL_INDEX_V(i, _materials.size(), Ref<Material>());
+	ZN_ASSERT_RETURN_V(i < _materials.size(), Ref<Material>());
 	return _materials[i];
 }
 

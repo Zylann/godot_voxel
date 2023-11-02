@@ -258,7 +258,7 @@ static bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 static bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
-	ERR_FAIL_INDEX_V(n, VoxelBufferInternal::DEPTH_COUNT, false);
+	ZN_ASSERT_RETURN_V(n < VoxelBufferInternal::DEPTH_COUNT, false);
 	d = (VoxelBufferInternal::Depth)n;
 	return true;
 }
@@ -444,7 +444,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 		const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
-	ERR_FAIL_COND_V(lod < 0, nullptr);
+	ZN_ASSERT_RETURN_V(lod < constants::MAX_LOD, nullptr);
 
 	CachedRegion *cached_region = get_region_from_cache(region_pos, lod);
 	if (cached_region != nullptr) {

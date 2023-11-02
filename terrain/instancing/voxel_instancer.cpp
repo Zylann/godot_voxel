@@ -1767,7 +1767,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 void VoxelInstancer::on_body_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.bodies.size());
+	ZN_ASSERT_RETURN(instance_index < block.bodies.size());
 
 	if (block.multimesh_instance.is_valid()) {
 		// Remove the multimesh instance
@@ -1804,7 +1804,7 @@ void VoxelInstancer::on_body_removed(
 void VoxelInstancer::on_scene_instance_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.scene_instances.size());
+	ZN_ASSERT_RETURN(instance_index < block.scene_instances.size());
 
 	// Unregister the scene instance
 	unsigned int instance_count = block.scene_instances.size();
@@ -1845,7 +1845,7 @@ void VoxelInstancer::set_mesh_lod_distance(float p_lod_distance) {
 }
 
 int VoxelInstancer::get_library_item_id_from_render_block_index(unsigned int render_block_index) const {
-	ERR_FAIL_INDEX_V(render_block_index, _blocks.size(), -1);
+	ZN_ASSERT_RETURN_V(render_block_index < _blocks.size(), -1);
 	Block &block = *_blocks[render_block_index];
 	return block.layer_id;
 }

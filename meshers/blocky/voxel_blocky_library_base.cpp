@@ -41,7 +41,7 @@ void VoxelBlockyLibraryBase::_b_bake() {
 }
 
 Ref<Material> VoxelBlockyLibraryBase::get_material_by_index(unsigned int index) const {
-	ERR_FAIL_INDEX_V(index, _indexed_materials.size(), Ref<Material>());
+	ZN_ASSERT_RETURN_V(index < _indexed_materials.size(), Ref<Material>());
 	return _indexed_materials[index];
 }
 

@@ -452,10 +452,10 @@ uint32_t VoxelGraphFunction::find_node_by_name(StringName p_name) const {
 	return _graph.find_node_by_name(p_name);
 }
 
-void VoxelGraphFunction::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
+void VoxelGraphFunction::set_node_param(uint32_t node_id, int param_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_INDEX(param_index, node->params.size());
+	ERR_FAIL_INDEX(param_index, static_cast<int>(node->params.size()));
 
 	if (node->params[param_index] != value) {
 		if (node->type_id == VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
@@ -550,24 +550,24 @@ void VoxelGraphFunction::set_expression_node_inputs(uint32_t node_id, PackedStri
 	}
 }
 
-Variant VoxelGraphFunction::get_node_param(uint32_t node_id, uint32_t param_index) const {
+Variant VoxelGraphFunction::get_node_param(uint32_t node_id, int param_index) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
-	ERR_FAIL_INDEX_V(param_index, node->params.size(), Variant());
+	ERR_FAIL_INDEX_V(param_index, static_cast<int>(node->params.size()), Variant());
 	return node->params[param_index];
 }
 
-Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, uint32_t input_index) const {
+Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, int input_index) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
-	ERR_FAIL_INDEX_V(input_index, node->default_inputs.size(), Variant());
+	ERR_FAIL_INDEX_V(input_index, static_cast<int>(node->default_inputs.size()), Variant());
 	return node->default_inputs[input_index];
 }
 
-void VoxelGraphFunction::set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value) {
+void VoxelGraphFunction::set_node_default_input(uint32_t node_id, int input_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
+	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
 	Variant &defval = node->default_inputs[input_index];
 	if (defval != value) {
 		// node->autoconnect_default_inputs = false;
@@ -1007,11 +1007,11 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 			}
 			uint32_t param_index;
 			if (type_db.try_get_param_index_from_name(type_id, param_name, param_index)) {
-				ERR_CONTINUE(param_index < 0 || param_index >= node->params.size());
+				ZN_ASSERT_CONTINUE(param_index < node->params.size());
 				node->params[param_index] = node_data[param_key];
 			}
 			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
-				ERR_CONTINUE(param_index < 0 || param_index >= node->default_inputs.size());
+				ZN_ASSERT_CONTINUE(param_index < node->default_inputs.size());
 				node->default_inputs[param_index] = node_data[param_key];
 			}
 			if (function.is_valid()) {

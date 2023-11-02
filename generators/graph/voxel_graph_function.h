@@ -148,15 +148,15 @@ public:
 	StringName get_node_name(uint32_t node_id) const;
 	uint32_t find_node_by_name(StringName p_name) const;
 
-	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
-	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
+	Variant get_node_param(uint32_t node_id, int param_index) const;
+	void set_node_param(uint32_t node_id, int param_index, Variant value);
 
 	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
 	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
-	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
-	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
+	Variant get_node_default_input(uint32_t node_id, int input_index) const;
+	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
 
 	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
 	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
