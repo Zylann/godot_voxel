@@ -44,15 +44,22 @@ public:
 		return !equals(other);
 	}
 
-	inline T *data() {
+	inline constexpr T *data() {
 		return _data;
 	}
 
-	inline const T *data() const {
+	inline constexpr const T *data() const {
 		return _data;
 	}
 
-	inline unsigned int size() const {
+#if defined(__GNUC__)
+	// Tells GCC that this function only depends on its arguments (none) and doesn't access `this`.
+	// Workarounds calls to `size()` that sometimes produce a pedantic `maybe-uninitialized` warning,
+	// despite nothing needing initialization, and `this` not even being accessed.
+	__attribute__((const))
+#endif
+	inline constexpr unsigned int
+	size() const {
 		return N;
 	}
 

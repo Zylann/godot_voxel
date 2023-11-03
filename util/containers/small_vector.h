@@ -75,7 +75,7 @@ public:
 		return _size;
 	}
 
-	inline unsigned int capacity() const {
+	inline constexpr unsigned int capacity() const {
 		return N;
 	}
 
