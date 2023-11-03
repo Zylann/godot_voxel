@@ -361,7 +361,7 @@ unsigned int VoxelTerrain::get_max_view_distance() const {
 	return _max_view_distance_voxels;
 }
 
-void VoxelTerrain::set_max_view_distance(unsigned int distance_in_voxels) {
+void VoxelTerrain::set_max_view_distance(int distance_in_voxels) {
 	ERR_FAIL_COND(distance_in_voxels < 0);
 	_max_view_distance_voxels = distance_in_voxels;
 
