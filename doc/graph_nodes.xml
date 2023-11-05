@@ -206,6 +206,7 @@
 		<input name="y" default_value="0"/>
 		<output name="out"/>
 		<parameter name="image" type="Object" default_value="null"/>
+		<parameter name="filter" type="int" default_value="0"/>
 		<description>
 			Returns the value of the red channel of an image at coordinates [code](x, y)[/code], where [code]x[/code] and [code]y[/code] are in pixels and the return value is in the range `[0..1]` (or more if the image has an HDR format). If coordinates are outside the image, they will be wrapped around. No filtering is performed. The image must have an uncompressed format.
 		</description>

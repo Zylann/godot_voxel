@@ -23,6 +23,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelGeneratorGraph`:
         - Added `Spots2D` and `Spots3D` nodes, optimized for generating "ore patches"
         - Added shader support for `FastNoiseGradient2D` and `FastNoiseGradient3D` nodes
+        - Added bilinear filter option to the `Image` node
         - Editor: reworked context menu to add nodes, similar to VisualShader. Now has search bar, tree view and node descriptions.
         - Editor: added copy/paste with Ctrl+C/Ctrl+V shortcuts
     - `VoxelGraphFunction`:
@@ -75,6 +76,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed graph not always saving when saving the scene
         - Fixed shader generator crash when a node has an unconnected input
         - Fixed cellular noise when used on GPU
+        - Fixed Image node issues when sampling at negative coordinates
     - `VoxelGraphFunction`:
         - Fixed default input values were not properly loaded
         - Fixed unexpected "missing node" error when more than one custom inputs are used
