@@ -1,7 +1,7 @@
 #include "test_curve_range.h"
-#include "../generators/graph/range_utility.h"
-#include "../util/godot/classes/curve.h"
-#include "testing.h"
+#include "../../generators/graph/range_utility.h"
+#include "../../util/godot/classes/curve.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

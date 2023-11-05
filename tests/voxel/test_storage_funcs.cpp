@@ -1,6 +1,6 @@
 #include "test_storage_funcs.h"
-#include "../storage/funcs.h"
-#include "testing.h"
+#include "../../storage/funcs.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

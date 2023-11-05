@@ -1,9 +1,9 @@
 #include "test_octree.h"
-#include "../constants/cube_tables.h"
-#include "../terrain/variable_lod/lod_octree.h"
-#include "../util/math/conv.h"
-#include "../util/profiling_clock.h"
-#include "testing.h"
+#include "../../constants/cube_tables.h"
+#include "../../terrain/variable_lod/lod_octree.h"
+#include "../../util/math/conv.h"
+#include "../../util/profiling_clock.h"
+#include "../testing.h"
 
 #include <core/string/print_string.h>
 #include <map>
@@ -161,7 +161,7 @@ void test_octree_find_in_box() {
 			diameter = diameter >> 1;
 			lods += 1;
 		}
-		//print_line(String("Lod count: {0}").format(varray(lods)));
+		// print_line(String("Lod count: {0}").format(varray(lods)));
 	}
 
 	// Build a fully populated octree with all its leaves at LOD0

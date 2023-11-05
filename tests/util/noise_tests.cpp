@@ -1,7 +1,7 @@
-#include "../util/godot/classes/image.h"
-#include "../util/math/funcs.h"
-#include "../util/noise/fast_noise_lite/fast_noise_lite.h"
-#include "tests.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/math/funcs.h"
+#include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../tests.h"
 
 namespace zylann::voxel::noise_tests {
 

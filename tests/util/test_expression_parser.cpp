@@ -1,7 +1,7 @@
 #include "test_expression_parser.h"
-#include "../util/expression_parser.h"
-#include "../util/math/funcs.h"
-#include "testing.h"
+#include "../../util/expression_parser.h"
+#include "../../util/math/funcs.h"
+#include "../testing.h"
 
 namespace zylann::tests {
 

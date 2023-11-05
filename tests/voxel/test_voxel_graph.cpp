@@ -1,17 +1,17 @@
 #include "test_voxel_graph.h"
-#include "../generators/graph/node_type_db.h"
-#include "../generators/graph/voxel_generator_graph.h"
-#include "../storage/voxel_buffer_internal.h"
-#include "../util/containers/container_funcs.h"
-#include "../util/math/conv.h"
-#include "../util/math/sdf.h"
-#include "../util/noise/fast_noise_lite/fast_noise_lite.h"
-#include "../util/string_funcs.h"
+#include "../../generators/graph/node_type_db.h"
+#include "../../generators/graph/voxel_generator_graph.h"
+#include "../../storage/voxel_buffer_internal.h"
+#include "../../util/containers/container_funcs.h"
+#include "../../util/math/conv.h"
+#include "../../util/math/sdf.h"
+#include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../../util/string_funcs.h"
+#include "../testing.h"
 #include "test_util.h"
-#include "testing.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
-#include "../util/noise/fast_noise_2.h"
+#include "../../util/noise/fast_noise_2.h"
 #endif
 
 #include <core/io/resource_loader.h>

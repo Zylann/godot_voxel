@@ -1,11 +1,11 @@
-#include "../engine/mesh_block_task.h"
-#include "../engine/render_detail_texture_gpu_task.h"
-#include "../engine/render_detail_texture_task.h"
-#include "../engine/voxel_engine.h"
-#include "../generators/graph/voxel_generator_graph.h"
-#include "../meshers/transvoxel/transvoxel_cell_iterator.h"
-#include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
-#include "testing.h"
+#include "../../engine/mesh_block_task.h"
+#include "../../engine/render_detail_texture_gpu_task.h"
+#include "../../engine/render_detail_texture_task.h"
+#include "../../engine/voxel_engine.h"
+#include "../../generators/graph/voxel_generator_graph.h"
+#include "../../meshers/transvoxel/transvoxel_cell_iterator.h"
+#include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

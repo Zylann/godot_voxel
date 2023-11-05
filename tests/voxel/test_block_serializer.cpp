@@ -1,9 +1,9 @@
 #include "test_block_serializer.h"
-#include "../storage/voxel_buffer_gd.h"
-#include "../streams/voxel_block_serializer.h"
-#include "../streams/voxel_block_serializer_gd.h"
-#include "../util/godot/classes/stream_peer.h"
-#include "testing.h"
+#include "../../storage/voxel_buffer_gd.h"
+#include "../../streams/voxel_block_serializer.h"
+#include "../../streams/voxel_block_serializer_gd.h"
+#include "../../util/godot/classes/stream_peer.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

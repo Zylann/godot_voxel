@@ -1,13 +1,13 @@
 #include "test_threaded_task_runner.h"
-#include "../util/godot/classes/os.h"
-#include "../util/godot/classes/time.h"
-#include "../util/log.h"
-#include "../util/math/vector3i.h"
-#include "../util/memory.h"
-#include "../util/profiling.h"
-#include "../util/string_funcs.h"
-#include "../util/tasks/threaded_task_runner.h"
-#include "testing.h"
+#include "../../util/godot/classes/os.h"
+#include "../../util/godot/classes/time.h"
+#include "../../util/log.h"
+#include "../../util/math/vector3i.h"
+#include "../../util/memory.h"
+#include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
+#include "../../util/tasks/threaded_task_runner.h"
+#include "../testing.h"
 
 #include <fstream>
 #include <unordered_map>

@@ -1,7 +1,7 @@
 #include "test_voxel_mesher_cubes.h"
-#include "../meshers/cubes/voxel_mesher_cubes.h"
-#include "../storage/voxel_buffer_internal.h"
-#include "testing.h"
+#include "../../meshers/cubes/voxel_mesher_cubes.h"
+#include "../../storage/voxel_buffer_internal.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

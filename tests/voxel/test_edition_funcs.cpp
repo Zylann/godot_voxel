@@ -1,12 +1,12 @@
 #include "test_edition_funcs.h"
-#include "../edition/funcs.h"
-#include "../edition/voxel_tool_terrain.h"
-#include "../meshers/blocky/voxel_blocky_library.h"
-#include "../meshers/blocky/voxel_blocky_model_cube.h"
-#include "../meshers/blocky/voxel_blocky_model_mesh.h"
-#include "../storage/voxel_data.h"
+#include "../../edition/funcs.h"
+#include "../../edition/voxel_tool_terrain.h"
+#include "../../meshers/blocky/voxel_blocky_library.h"
+#include "../../meshers/blocky/voxel_blocky_model_cube.h"
+#include "../../meshers/blocky/voxel_blocky_model_mesh.h"
+#include "../../storage/voxel_data.h"
+#include "../testing.h"
 #include "test_util.h"
-#include "testing.h"
 
 namespace zylann::voxel::tests {
 

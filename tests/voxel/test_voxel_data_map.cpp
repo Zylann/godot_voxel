@@ -1,6 +1,6 @@
 #include "test_voxel_data_map.h"
-#include "../storage/voxel_data_map.h"
-#include "testing.h"
+#include "../../storage/voxel_data_map.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

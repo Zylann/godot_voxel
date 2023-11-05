@@ -1,12 +1,12 @@
 #include "test_spatial_lock.h"
-#include "../util/godot/classes/time.h"
-#include "../util/math/conv.h"
-#include "../util/memory.h"
-#include "../util/profiling.h"
-#include "../util/string_funcs.h"
-#include "../util/tasks/threaded_task_runner.h"
-#include "../util/thread/spatial_lock_3d.h"
-#include "testing.h"
+#include "../../util/godot/classes/time.h"
+#include "../../util/math/conv.h"
+#include "../../util/memory.h"
+#include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
+#include "../../util/tasks/threaded_task_runner.h"
+#include "../../util/thread/spatial_lock_3d.h"
+#include "../testing.h"
 #include <fstream>
 
 namespace zylann::tests {

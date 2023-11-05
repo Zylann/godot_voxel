@@ -1,8 +1,8 @@
 #include "test_region_file.h"
-#include "../streams/region/region_file.h"
-#include "../streams/region/voxel_stream_region_files.h"
-#include "../util/godot/core/random_pcg.h"
-#include "testing.h"
+#include "../../streams/region/region_file.h"
+#include "../../streams/region/voxel_stream_region_files.h"
+#include "../../util/godot/core/random_pcg.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

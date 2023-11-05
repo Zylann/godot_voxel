@@ -1,8 +1,8 @@
 #include "test_voxel_buffer.h"
-#include "../storage/voxel_buffer_gd.h"
-#include "../storage/voxel_metadata_variant.h"
-#include "../streams/voxel_block_serializer.h"
-#include "testing.h"
+#include "../../storage/voxel_buffer_gd.h"
+#include "../../storage/voxel_metadata_variant.h"
+#include "../../streams/voxel_block_serializer.h"
+#include "../testing.h"
 
 namespace zylann::voxel::tests {
 

@@ -1,6 +1,6 @@
 #include "test_box3i.h"
-#include "../util/math/box3i.h"
-#include "testing.h"
+#include "../../util/math/box3i.h"
+#include "../testing.h"
 
 namespace zylann::tests {
 

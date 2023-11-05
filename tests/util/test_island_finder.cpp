@@ -1,6 +1,6 @@
 #include "test_island_finder.h"
-#include "../util/island_finder.h"
-#include "testing.h"
+#include "../../util/island_finder.h"
+#include "../testing.h"
 
 namespace zylann::tests {
 

@@ -1,5 +1,5 @@
 #include "test_mesh_sdf.h"
-#include "../edition/voxel_mesh_sdf_gd.h"
+#include "../../edition/voxel_mesh_sdf_gd.h"
 
 namespace zylann::voxel::tests {
 
