@@ -9,7 +9,7 @@
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "detail_rendering.h"
+#include "detail_rendering/detail_rendering.h"
 #include "gpu/compute_shader.h"
 #include "gpu/gpu_storage_buffer_pool.h"
 #include "gpu/gpu_task_runner.h"

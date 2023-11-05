@@ -1,6 +1,6 @@
 #include "voxel_mesher.h"
 #include "../constants/voxel_string_names.h"
-#include "../engine/detail_rendering.h"
+#include "../engine/detail_rendering/detail_rendering.h"
 #include "../generators/voxel_generator.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_buffer_gd.h"

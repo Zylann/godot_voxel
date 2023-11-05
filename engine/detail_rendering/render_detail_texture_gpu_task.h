@@ -1,12 +1,12 @@
 #ifndef VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
 #define VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
 
-#include "../util/math/vector3f.h"
-#include "../util/math/vector4f.h"
+#include "../../util/math/vector3f.h"
+#include "../../util/math/vector4f.h"
+#include "../gpu/gpu_storage_buffer_pool.h"
+#include "../gpu/gpu_task_runner.h"
+#include "../ids.h"
 #include "detail_rendering.h"
-#include "gpu/gpu_storage_buffer_pool.h"
-#include "gpu/gpu_task_runner.h"
-#include "ids.h"
 
 namespace zylann::voxel {
 

@@ -54,6 +54,7 @@ def get_sources(env, is_editor_build):
 
         "engine/*.cpp",
         "engine/gpu/*.cpp",
+        "engine/detail_rendering/*.cpp",
 
         "edition/*.cpp",
         "shaders/*.cpp",

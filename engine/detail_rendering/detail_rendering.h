@@ -1,20 +1,20 @@
 #ifndef VOXEL_DETAIL_RENDERING_H
 #define VOXEL_DETAIL_RENDERING_H
 
-#include "../util/containers/fixed_array.h"
-#include "../util/godot/classes/ref_counted.h"
-#include "../util/macros.h"
-#include "../util/math/vector3f.h"
-#include "../util/containers/span.h"
+#include "../../util/containers/fixed_array.h"
+#include "../../util/containers/span.h"
+#include "../../util/godot/classes/ref_counted.h"
+#include "../../util/macros.h"
+#include "../../util/math/vector3f.h"
 
 //#define VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 // Texture arrays are handy but the maximum amount of layers is often too low (2048 on an nVidia 1060), which happens
 // too frequently with block size 32. So instead we have to keep using 2D atlases with padding.
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
-#include "../util/godot/classes/texture_array.h"
+#include "../../util/godot/classes/texture_array.h"
 #endif
-#include "../util/godot/classes/image.h"
-#include "../util/godot/classes/texture_2d.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/classes/texture_2d.h"
 
 #include <vector>
 

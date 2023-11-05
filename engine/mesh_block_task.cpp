@@ -7,7 +7,7 @@
 #include "../util/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "render_detail_texture_task.h"
+#include "detail_rendering/render_detail_texture_task.h"
 //#include "../util/string_funcs.h" // Debug
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
 #include "generate_block_gpu_task.h"

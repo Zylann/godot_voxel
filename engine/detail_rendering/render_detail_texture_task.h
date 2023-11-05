@@ -1,13 +1,13 @@
 #ifndef VOXEL_RENDER_DETAIL_TEXTURE_TASK_H
 #define VOXEL_RENDER_DETAIL_TEXTURE_TASK_H
 
-#include "../generators/voxel_generator.h"
-#include "../meshers/voxel_mesher.h"
-#include "../util/memory.h"
-#include "../util/tasks/threaded_task.h"
+#include "../../generators/voxel_generator.h"
+#include "../../meshers/voxel_mesher.h"
+#include "../../util/memory.h"
+#include "../../util/tasks/threaded_task.h"
+#include "../ids.h"
+#include "../priority_dependency.h"
 #include "detail_rendering.h"
-#include "ids.h"
-#include "priority_dependency.h"
 
 namespace zylann::voxel {
 
