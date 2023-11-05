@@ -49,6 +49,10 @@ struct Interval {
 		return v >= min && v <= max;
 	}
 
+	inline bool contains(Interval other) const {
+		return other.min >= min && other.max <= max;
+	}
+
 	inline bool is_single_value() const {
 		return min == max;
 	}

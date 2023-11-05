@@ -1856,4 +1856,81 @@ void test_voxel_graph_function_execute() {
 	}
 }
 
+void test_voxel_graph_image() {
+	struct L {
+		static void test_range(Ref<Image> image, Box3i box, math::Interval expected_bound) {
+			ZN_ASSERT(image.is_valid());
+			Ref<VoxelGeneratorGraph> generator;
+			generator.instantiate();
+			uint32_t n_image;
+			{
+				Ref<VoxelGraphFunction> g = generator->get_main_function();
+				ZN_ASSERT(g.is_valid());
+
+				//   X --- * --- Image --- + --- Sdf
+				//               /        /
+				//        Z --- *    SdfPlane
+
+				const uint32_t n_x = g->create_node(VoxelGraphFunction::NODE_INPUT_X, Vector2());
+				const uint32_t n_z = g->create_node(VoxelGraphFunction::NODE_INPUT_Z, Vector2());
+				const uint32_t n_mul_x = g->create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2());
+				const uint32_t n_mul_z = g->create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2());
+				n_image = g->create_node(VoxelGraphFunction::NODE_IMAGE_2D, Vector2());
+				const uint32_t n_plane = g->create_node(VoxelGraphFunction::NODE_SDF_PLANE, Vector2());
+				const uint32_t n_add = g->create_node(VoxelGraphFunction::NODE_ADD, Vector2());
+				const uint32_t n_out = g->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+
+				g->set_node_param(n_image, 0, image);
+
+				g->set_node_default_input(n_mul_x, 1, 0.25f);
+				g->set_node_default_input(n_mul_z, 1, 0.25f);
+
+				g->add_connection(n_x, 0, n_mul_x, 0);
+				g->add_connection(n_z, 0, n_mul_z, 0);
+				g->add_connection(n_mul_x, 0, n_image, 0);
+				g->add_connection(n_mul_z, 0, n_image, 1);
+				g->add_connection(n_image, 0, n_add, 0);
+				g->add_connection(n_plane, 0, n_add, 1);
+				g->add_connection(n_add, 0, n_out, 0);
+			}
+
+			CompilationResult result = generator->compile(true);
+			ZN_TEST_ASSERT(result.success);
+
+			generator->debug_analyze_range(box.pos, box.pos + box.size, true);
+
+			uint32_t image_output_address;
+			ZN_TEST_ASSERT(generator->try_get_output_port_address(
+					ProgramGraph::PortLocation{ n_image, 0 }, image_output_address));
+
+			const pg::Runtime::State &state = generator->get_last_state_from_current_thread();
+			const math::Interval image_output_range = state.get_range(image_output_address);
+
+			ZN_TEST_ASSERT(expected_bound.contains(image_output_range));
+		}
+	};
+
+	{
+		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		image->fill(Color(0.5f, 0, 0));
+		L::test_range(image, Box3i(Vector3i(0, -8, 0), Vector3i(16, 16, 16)),
+				math::Interval(0.5f, 0.5f)
+						// Padding a little because images may have only 8 bits of precision
+						.padded(0.01f));
+	}
+	{
+		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		image->fill(Color(0.5f, 0, 0));
+		L::test_range(
+				image, Box3i(Vector3i(-24, -8, -8), Vector3i(16, 16, 16)), math::Interval(0.5f, 0.5f).padded(0.01f));
+	}
+	{
+		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		image->fill(Color(0.5f, 0, 0));
+		image->set_pixel(8, 8, Color(0.7f, 0, 0));
+		L::test_range(
+				image, Box3i(Vector3i(-24, -8, -8), Vector3i(16, 16, 16)), math::Interval(0.5f, 0.5f).padded(0.01f));
+	}
+}
+
 } // namespace zylann::voxel::tests
