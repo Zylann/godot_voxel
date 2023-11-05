@@ -1,6 +1,11 @@
 #include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
+#include "../generators/generate_block_task.h"
+#include "../meshers/mesh_block_task.h"
 #include "../shaders/shaders.h"
+#include "../streams/load_all_blocks_data_task.h"
+#include "../streams/load_block_data_task.h"
+#include "../streams/save_block_data_task.h"
 #include "../util/godot/classes/rd_sampler_state.h"
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
@@ -8,11 +13,6 @@
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "generate_block_task.h"
-#include "load_all_blocks_data_task.h"
-#include "load_block_data_task.h"
-#include "mesh_block_task.h"
-#include "save_block_data_task.h"
 
 namespace zylann::voxel {
 

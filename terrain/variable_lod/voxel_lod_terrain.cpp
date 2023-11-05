@@ -2,12 +2,12 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
 #include "../../engine/detail_rendering/detail_rendering.h"
-#include "../../engine/load_all_blocks_data_task.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../engine/voxel_engine_updater.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../../storage/voxel_buffer_gd.h"
+#include "../../streams/load_all_blocks_data_task.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/base_material_3d.h" // For property hint in release mode in GDExtension...
 #include "../../util/godot/classes/camera_3d.h"

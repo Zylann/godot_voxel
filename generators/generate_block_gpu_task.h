@@ -1,12 +1,12 @@
 #ifndef VOXEL_GENERATE_BLOCK_GPU_TASK_H
 #define VOXEL_GENERATE_BLOCK_GPU_TASK_H
 
+#include "../engine/gpu/gpu_storage_buffer_pool.h"
+#include "../engine/gpu/gpu_task_runner.h"
 #include "../generators/voxel_generator.h"
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
 #include "../util/tasks/threaded_task.h"
-#include "gpu/gpu_storage_buffer_pool.h"
-#include "gpu/gpu_task_runner.h"
 
 #include "../util/memory.h"
 

@@ -1,11 +1,11 @@
 #include "save_block_data_task.h"
+#include "../engine/voxel_engine.h"
+#include "../generators/generate_block_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 #include "../util/tasks/async_dependency_tracker.h"
-#include "generate_block_task.h"
-#include "voxel_engine.h"
 
 namespace zylann::voxel {
 

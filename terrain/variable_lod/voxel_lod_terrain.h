@@ -1,8 +1,8 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../../engine/mesh_block_task.h"
 #include "../../engine/voxel_engine.h"
+#include "../../meshers/mesh_block_task.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"

@@ -1,11 +1,11 @@
 #ifndef LOAD_BLOCK_DATA_TASK_H
 #define LOAD_BLOCK_DATA_TASK_H
 
+#include "../engine/ids.h"
+#include "../engine/priority_dependency.h"
+#include "../engine/streaming_dependency.h"
 #include "../util/memory.h"
 #include "../util/tasks/threaded_task.h"
-#include "ids.h"
-#include "priority_dependency.h"
-#include "streaming_dependency.h"
 
 namespace zylann::voxel {
 

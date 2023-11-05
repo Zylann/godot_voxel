@@ -1,14 +1,14 @@
 #include "generate_block_gpu_task.h"
+#include "../engine/gpu/compute_shader.h"
+#include "../engine/gpu/compute_shader_parameters.h"
+#include "../engine/voxel_engine.h"
+#include "../meshers/mesh_block_task.h"
 #include "../modifiers/voxel_modifier.h"
 #include "../util/dstack.h"
 #include "../util/godot/funcs.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "gpu/compute_shader.h"
-#include "gpu/compute_shader_parameters.h"
-#include "mesh_block_task.h"
-#include "voxel_engine.h"
 
 #include "../util/godot/classes/rendering_device.h"
 

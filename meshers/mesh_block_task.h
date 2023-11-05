@@ -2,15 +2,14 @@
 #define VOXEL_MESH_BLOCK_TASK_H
 
 #include "../constants/voxel_constants.h"
+#include "../engine/detail_rendering/detail_rendering.h"
+#include "../engine/ids.h"
+#include "../engine/meshing_dependency.h"
+#include "../engine/priority_dependency.h"
+#include "../generators/generate_block_gpu_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/threaded_task.h"
-#include "detail_rendering/detail_rendering.h"
-#include "generate_block_gpu_task.h"
-#include "ids.h"
-#include "mesh_block_task.h"
-#include "meshing_dependency.h"
-#include "priority_dependency.h"
 
 namespace zylann::voxel {
 

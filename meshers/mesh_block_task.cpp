@@ -1,4 +1,5 @@
 #include "mesh_block_task.h"
+#include "../engine/detail_rendering/render_detail_texture_task.h"
 #include "../meshers/transvoxel/voxel_mesher_transvoxel.h"
 #include "../storage/voxel_data.h"
 #include "../terrain/voxel_mesh_block.h"
@@ -7,11 +8,10 @@
 #include "../util/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "detail_rendering/render_detail_texture_task.h"
 //#include "../util/string_funcs.h" // Debug
+#include "../engine/voxel_engine.h"
+#include "../generators/generate_block_gpu_task.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
-#include "generate_block_gpu_task.h"
-#include "voxel_engine.h"
 
 namespace zylann::voxel {
 

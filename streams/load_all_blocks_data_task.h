@@ -1,10 +1,10 @@
 #ifndef LOAD_ALL_BLOCKS_DATA_TASK_H
 #define LOAD_ALL_BLOCKS_DATA_TASK_H
 
-#include "../streams/voxel_stream.h"
+#include "../engine/ids.h"
+#include "../engine/streaming_dependency.h"
 #include "../util/tasks/threaded_task.h"
-#include "ids.h"
-#include "streaming_dependency.h"
+#include "voxel_stream.h"
 
 namespace zylann::voxel {
 

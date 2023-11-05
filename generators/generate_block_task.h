@@ -1,11 +1,11 @@
 #ifndef GENERATE_BLOCK_TASK_H
 #define GENERATE_BLOCK_TASK_H
 
+#include "../engine/ids.h"
+#include "../engine/priority_dependency.h"
+#include "../engine/streaming_dependency.h"
 #include "../util/tasks/threaded_task.h"
 #include "generate_block_gpu_task.h"
-#include "ids.h"
-#include "priority_dependency.h"
-#include "streaming_dependency.h"
 
 namespace zylann {
 

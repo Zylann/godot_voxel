@@ -1,9 +1,9 @@
 #include "load_all_blocks_data_task.h"
+#include "../engine/voxel_engine.h"
 #include "../storage/voxel_data.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "voxel_engine.h"
 
 namespace zylann::voxel {
 
