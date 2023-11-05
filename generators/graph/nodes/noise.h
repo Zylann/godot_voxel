@@ -337,7 +337,7 @@ void register_noise_nodes(Span<NodeType> types) {
 	}
 	{
 		struct Params {
-			ZN_FastNoiseLiteGradient *noise;
+			const ZN_FastNoiseLiteGradient *noise;
 		};
 
 		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_GRADIENT_2D];
@@ -407,7 +407,7 @@ void register_noise_nodes(Span<NodeType> types) {
 	}
 	{
 		struct Params {
-			ZN_FastNoiseLiteGradient *noise;
+			const ZN_FastNoiseLiteGradient *noise;
 		};
 
 		NodeType &t = types[VoxelGraphFunction::NODE_FAST_NOISE_GRADIENT_3D];
