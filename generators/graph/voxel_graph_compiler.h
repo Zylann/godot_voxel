@@ -3,6 +3,7 @@
 
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"
+#include <type_traits>
 
 namespace zylann::voxel::pg {
 
@@ -42,9 +43,12 @@ public:
 		return _params[i];
 	}
 
-	// Typical use is to pass a struct containing all compile-time arguments the operation will need
+	// Stores compile-time parameters the node will need. T must be a POD struct.
 	template <typename T>
 	void set_params(T params) {
+		static_assert(std::is_standard_layout_v<T> == true);
+		static_assert(std::is_trivial_v<T> == true);
+
 		// Can be called only once per node
 		CRASH_COND(_params_added);
 		// We will need to align memory, so the struct will not be immediately stored here.
