@@ -76,7 +76,7 @@ public:
 	void set_collision_margin(float margin);
 	float get_collision_margin() const;
 
-	unsigned int get_max_view_distance() const;
+	int get_max_view_distance() const;
 	void set_max_view_distance(int distance_in_voxels);
 
 	void set_block_enter_notification_enabled(bool enable);

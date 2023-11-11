@@ -357,7 +357,7 @@ float VoxelTerrain::get_collision_margin() const {
 	return _collision_margin;
 }
 
-unsigned int VoxelTerrain::get_max_view_distance() const {
+int VoxelTerrain::get_max_view_distance() const {
 	return _max_view_distance_voxels;
 }
 
