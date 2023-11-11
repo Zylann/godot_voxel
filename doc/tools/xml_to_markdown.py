@@ -37,7 +37,13 @@ def make_arglist(args, module_class_names):
 def make_constants(items, module_class_names, current_class_name):
     s = ""
     for item in items:
-        s += "- **" + item.attrib['name'] + "** = **" + item.attrib['value'] + "**"
+        s += "- "
+
+        # In Godot docs, both constants and enum items can be referred using `[constant ClassName.ENUM_ITEM]` instead
+        # of using the `enum` tag.
+        s += make_custom_internal_anchor(item.attrib['name'])
+
+        s += "**" + item.attrib['name'] + "** = **" + item.attrib['value'] + "**"
         text = item.text.strip()
         if text != "":
             s += " --- " + make_text(item.text, module_class_names, current_class_name)

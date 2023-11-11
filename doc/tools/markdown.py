@@ -121,8 +121,8 @@ def make_enum_link(class_name, member_name, local_prefix, module_class_names):
 
 def make_constant_link(class_name, member_name, local_prefix, module_class_names):
     if class_name in module_class_names:
-        # TODO Link to specific constant not supported yet
-        link = local_prefix + class_name + ".md#constants"
+        # Note, that could either be a constant or an enum member
+        link = local_prefix + class_name + ".md#i_" + member_name
     else:
         link = get_godot_member_url(class_name, member_name, "constant")
     link_text = class_name + "." + member_name
