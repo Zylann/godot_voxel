@@ -81,7 +81,7 @@ Painting textures manually is not supported yet, but it's possible to apply proc
 Is Voxel tools for you?
 --------------------------
 
-It's easy to think a project needs voxels, but they are less needed than it sounds. Here are some reasons why you could think you need voxels, and why you might not need them:
+It's easy to think a project needs voxels, but they are less needed than it sounds. Also, just because there is a 3D grid somewhere in a game doesn't necessarily mean this module is appropriate. Here are some reasons why you might not need it:
 
 - "I need a procedurally generated world": if you don't need overhangs you can go with a heightmap approach. Heightmaps are faster and easier to work with.
 
