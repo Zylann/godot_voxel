@@ -102,6 +102,10 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                 class_name, member_name = _extract_member_and_class(bb_node.get_first_option_key(), current_class_name)
                 out += markdown.make_constant_link(class_name, member_name, local_link_prefix, module_class_names)
 
+            elif bb_node.name == 'i':
+                # Simple emphasis, usually italic
+                out += '*'
+
             else:
                 # Class lookup: assuming name convention, 
                 # otherwise we need a complete list of classes and it's a bit cumbersome to obtain
