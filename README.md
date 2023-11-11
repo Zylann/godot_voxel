@@ -6,6 +6,7 @@ A C++ module for creating volumetric worlds in Godot Engine.
 [![🚪 Windows Builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
 [![🐧 Linux Builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
 [![🐒 Mono Builds](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml/badge.svg)](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml)
+[![Documentation Status](https://readthedocs.org/projects/voxel-tools/badge/?version=latest)](https://voxel-tools.readthedocs.io/en/latest/?badge=latest)
 
 [![Discord](https://img.shields.io/discord/850070170793410582?style=flat-square&logo=discord "Discord")](https://discord.gg/pkXmESmrAR)
 
