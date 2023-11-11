@@ -189,7 +189,7 @@
 			Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 		</member>
 		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value">
-			Sets which value will be used to erase voxels when editing the [enum VoxelBuffer.CHANNEL_TYPE] channel in [enum MODE_REMOVE] mode.
+			Sets which value will be used to erase voxels when editing the [constant VoxelBuffer.CHANNEL_TYPE] channel in [constant MODE_REMOVE] mode.
 		</member>
 		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode">
 			Sets how [code]do_*[/code] functions will behave. This may vary depending on the channel.
@@ -208,15 +208,15 @@
 		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity">
 		</member>
 		<member name="value" type="int" setter="set_value" getter="get_value">
-			Sets which voxel value will be used. This is not relevant when editing [enum VoxelBuffer.CHANNEL_SDF].
+			Sets which voxel value will be used. This is not relevant when editing [constant VoxelBuffer.CHANNEL_SDF].
 		</member>
 	</members>
 	<constants>
 		<constant name="MODE_ADD" value="0" enum="Mode">
-			When editing [enum VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
+			When editing [constant VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
 		</constant>
 		<constant name="MODE_REMOVE" value="1" enum="Mode">
-			When editing [enum VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
+			When editing [constant VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
 		</constant>
 		<constant name="MODE_SET" value="2" enum="Mode">
 			Replace voxel values without any blending. Useful for blocky voxels.
