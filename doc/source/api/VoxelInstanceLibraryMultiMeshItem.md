@@ -36,7 +36,7 @@ Return                                                                          
 
 ## Constants: 
 
-- **MAX_MESH_LODS** = **4**
+- <span id="i_MAX_MESH_LODS"></span>**MAX_MESH_LODS** = **4**
 
 ## Property Descriptions
 
@@ -92,4 +92,4 @@ Sets the list of group names that will be added to collider nodes generated for 
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

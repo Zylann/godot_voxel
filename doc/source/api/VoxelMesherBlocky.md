@@ -6,7 +6,7 @@ Produces a mesh by batching models corresponding to each voxel value, similar to
 
 ## Description: 
 
-Occluded faces are removed from the result, and some degree of ambient occlusion can be baked on the edges. Values are expected to be in the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#enumerations) channel. Models are defined with a [VoxelBlockyLibrary](VoxelBlockyLibrary.md), in which model indices correspond to the voxel values. Models don't have to be cubes.
+Occluded faces are removed from the result, and some degree of ambient occlusion can be baked on the edges. Values are expected to be in the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel. Models are defined with a [VoxelBlockyLibrary](VoxelBlockyLibrary.md), in which model indices correspond to the voxel values. Models don't have to be cubes.
 
 ## Properties: 
 
@@ -29,4 +29,4 @@ Type                      | Name                                         | Defau
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_occlusion_enabled"></span> **occlusion_enabled** = true
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -42,13 +42,13 @@ Return                                                                          
 
 enum **Side**: 
 
-- **SIDE_NEGATIVE_X** = **1**
-- **SIDE_POSITIVE_X** = **0**
-- **SIDE_NEGATIVE_Y** = **2**
-- **SIDE_POSITIVE_Y** = **3**
-- **SIDE_NEGATIVE_Z** = **4**
-- **SIDE_POSITIVE_Z** = **5**
-- **SIDE_COUNT** = **6**
+- <span id="i_SIDE_NEGATIVE_X"></span>**SIDE_NEGATIVE_X** = **1**
+- <span id="i_SIDE_POSITIVE_X"></span>**SIDE_POSITIVE_X** = **0**
+- <span id="i_SIDE_NEGATIVE_Y"></span>**SIDE_NEGATIVE_Y** = **2**
+- <span id="i_SIDE_POSITIVE_Y"></span>**SIDE_POSITIVE_Y** = **3**
+- <span id="i_SIDE_NEGATIVE_Z"></span>**SIDE_NEGATIVE_Z** = **4**
+- <span id="i_SIDE_POSITIVE_Z"></span>**SIDE_POSITIVE_Z** = **5**
+- <span id="i_SIDE_COUNT"></span>**SIDE_COUNT** = **6**
 
 
 ## Property Descriptions
@@ -106,4 +106,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

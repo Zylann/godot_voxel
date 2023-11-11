@@ -60,10 +60,10 @@ Return                                                                          
 
 enum **Mode**: 
 
-- **MODE_ADD** = **0** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations), will add matter. Useful for building.
-- **MODE_REMOVE** = **1** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations), will subtract matter. Useful for digging.
-- **MODE_SET** = **2** --- Replace voxel values without any blending. Useful for blocky voxels.
-- **MODE_TEXTURE_PAINT** = **3**
+- <span id="i_MODE_ADD"></span>**MODE_ADD** = **0** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), will add matter. Useful for building.
+- <span id="i_MODE_REMOVE"></span>**MODE_REMOVE** = **1** --- When editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF), will subtract matter. Useful for digging.
+- <span id="i_MODE_SET"></span>**MODE_SET** = **2** --- Replace voxel values without any blending. Useful for blocky voxels.
+- <span id="i_MODE_TEXTURE_PAINT"></span>**MODE_TEXTURE_PAINT** = **3**
 
 
 ## Property Descriptions
@@ -74,7 +74,7 @@ Set which channel will be edited. When used on a terrain node, it will default t
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value**
 
-Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#enumerations) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#enumerations) mode.
+Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
 
@@ -101,7 +101,7 @@ This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configur
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value**
 
-Sets which voxel value will be used. This is not relevant when editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#enumerations).
+Sets which voxel value will be used. This is not relevant when editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
 
 ## Method Descriptions
 
@@ -213,4 +213,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

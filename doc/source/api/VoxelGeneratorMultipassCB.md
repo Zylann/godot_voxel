@@ -41,8 +41,8 @@ Return                                                                          
 
 ## Constants: 
 
-- **MAX_PASSES** = **4**
-- **MAX_PASS_EXTENT** = **2**
+- <span id="i_MAX_PASSES"></span>**MAX_PASSES** = **4**
+- <span id="i_MAX_PASS_EXTENT"></span>**MAX_PASS_EXTENT** = **2**
 
 ## Property Descriptions
 
@@ -96,4 +96,4 @@ Following passes are designed to access at least 1 block away. Such passes don't
 
 Increasing extent will also increase the cost of the generator, both in memory and processing time, so it should be balanced with caution.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

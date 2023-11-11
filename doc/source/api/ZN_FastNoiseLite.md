@@ -40,42 +40,42 @@ Return                                                                    | Sign
 
 enum **NoiseType**: 
 
-- **TYPE_OPEN_SIMPLEX_2** = **0**
-- **TYPE_OPEN_SIMPLEX_2S** = **1**
-- **TYPE_CELLULAR** = **2**
-- **TYPE_PERLIN** = **3**
-- **TYPE_VALUE_CUBIC** = **4**
-- **TYPE_VALUE** = **5**
+- <span id="i_TYPE_OPEN_SIMPLEX_2"></span>**TYPE_OPEN_SIMPLEX_2** = **0**
+- <span id="i_TYPE_OPEN_SIMPLEX_2S"></span>**TYPE_OPEN_SIMPLEX_2S** = **1**
+- <span id="i_TYPE_CELLULAR"></span>**TYPE_CELLULAR** = **2**
+- <span id="i_TYPE_PERLIN"></span>**TYPE_PERLIN** = **3**
+- <span id="i_TYPE_VALUE_CUBIC"></span>**TYPE_VALUE_CUBIC** = **4**
+- <span id="i_TYPE_VALUE"></span>**TYPE_VALUE** = **5**
 
 enum **FractalType**: 
 
-- **FRACTAL_NONE** = **0**
-- **FRACTAL_FBM** = **1**
-- **FRACTAL_RIDGED** = **2**
-- **FRACTAL_PING_PONG** = **3**
+- <span id="i_FRACTAL_NONE"></span>**FRACTAL_NONE** = **0**
+- <span id="i_FRACTAL_FBM"></span>**FRACTAL_FBM** = **1**
+- <span id="i_FRACTAL_RIDGED"></span>**FRACTAL_RIDGED** = **2**
+- <span id="i_FRACTAL_PING_PONG"></span>**FRACTAL_PING_PONG** = **3**
 
 enum **RotationType3D**: 
 
-- **ROTATION_3D_NONE** = **0**
-- **ROTATION_3D_IMPROVE_XY_PLANES** = **1**
-- **ROTATION_3D_IMPROVE_XZ_PLANES** = **2**
+- <span id="i_ROTATION_3D_NONE"></span>**ROTATION_3D_NONE** = **0**
+- <span id="i_ROTATION_3D_IMPROVE_XY_PLANES"></span>**ROTATION_3D_IMPROVE_XY_PLANES** = **1**
+- <span id="i_ROTATION_3D_IMPROVE_XZ_PLANES"></span>**ROTATION_3D_IMPROVE_XZ_PLANES** = **2**
 
 enum **CellularDistanceFunction**: 
 
-- **CELLULAR_DISTANCE_EUCLIDEAN** = **0**
-- **CELLULAR_DISTANCE_EUCLIDEAN_SQ** = **1**
-- **CELLULAR_DISTANCE_MANHATTAN** = **2**
-- **CELLULAR_DISTANCE_HYBRID** = **3**
+- <span id="i_CELLULAR_DISTANCE_EUCLIDEAN"></span>**CELLULAR_DISTANCE_EUCLIDEAN** = **0**
+- <span id="i_CELLULAR_DISTANCE_EUCLIDEAN_SQ"></span>**CELLULAR_DISTANCE_EUCLIDEAN_SQ** = **1**
+- <span id="i_CELLULAR_DISTANCE_MANHATTAN"></span>**CELLULAR_DISTANCE_MANHATTAN** = **2**
+- <span id="i_CELLULAR_DISTANCE_HYBRID"></span>**CELLULAR_DISTANCE_HYBRID** = **3**
 
 enum **CellularReturnType**: 
 
-- **CELLULAR_RETURN_CELL_VALUE** = **0**
-- **CELLULAR_RETURN_DISTANCE** = **1**
-- **CELLULAR_RETURN_DISTANCE_2** = **2**
-- **CELLULAR_RETURN_DISTANCE_2_ADD** = **3**
-- **CELLULAR_RETURN_DISTANCE_2_SUB** = **4**
-- **CELLULAR_RETURN_DISTANCE_2_MUL** = **5**
-- **CELLULAR_RETURN_DISTANCE_2_DIV** = **6**
+- <span id="i_CELLULAR_RETURN_CELL_VALUE"></span>**CELLULAR_RETURN_CELL_VALUE** = **0**
+- <span id="i_CELLULAR_RETURN_DISTANCE"></span>**CELLULAR_RETURN_DISTANCE** = **1**
+- <span id="i_CELLULAR_RETURN_DISTANCE_2"></span>**CELLULAR_RETURN_DISTANCE_2** = **2**
+- <span id="i_CELLULAR_RETURN_DISTANCE_2_ADD"></span>**CELLULAR_RETURN_DISTANCE_2_ADD** = **3**
+- <span id="i_CELLULAR_RETURN_DISTANCE_2_SUB"></span>**CELLULAR_RETURN_DISTANCE_2_SUB** = **4**
+- <span id="i_CELLULAR_RETURN_DISTANCE_2_MUL"></span>**CELLULAR_RETURN_DISTANCE_2_MUL** = **5**
+- <span id="i_CELLULAR_RETURN_DISTANCE_2_DIV"></span>**CELLULAR_RETURN_DISTANCE_2_DIV** = **6**
 
 
 ## Property Descriptions
@@ -136,4 +136,4 @@ enum **CellularReturnType**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_3dv"></span> **get_noise_3dv**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

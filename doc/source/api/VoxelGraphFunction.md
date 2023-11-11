@@ -66,64 +66,64 @@ Emitted after the graph finished compiling, even if compiling failed.
 
 enum **NodeTypeID**: 
 
-- **NODE_CONSTANT** = **0**
-- **NODE_INPUT_X** = **1**
-- **NODE_INPUT_Y** = **2**
-- **NODE_INPUT_Z** = **3**
-- **NODE_OUTPUT_SDF** = **4**
-- **NODE_CUSTOM_INPUT** = **54**
-- **NODE_CUSTOM_OUTPUT** = **55**
-- **NODE_ADD** = **5**
-- **NODE_SUBTRACT** = **6**
-- **NODE_MULTIPLY** = **7**
-- **NODE_DIVIDE** = **8**
-- **NODE_SIN** = **9**
-- **NODE_FLOOR** = **10**
-- **NODE_ABS** = **11**
-- **NODE_SQRT** = **12**
-- **NODE_FRACT** = **13**
-- **NODE_STEPIFY** = **14**
-- **NODE_WRAP** = **15**
-- **NODE_MIN** = **16**
-- **NODE_MAX** = **17**
-- **NODE_DISTANCE_2D** = **18**
-- **NODE_DISTANCE_3D** = **19**
-- **NODE_CLAMP** = **20**
-- **NODE_MIX** = **22**
-- **NODE_REMAP** = **23**
-- **NODE_SMOOTHSTEP** = **24**
-- **NODE_CURVE** = **25**
-- **NODE_SELECT** = **26**
-- **NODE_NOISE_2D** = **27**
-- **NODE_NOISE_3D** = **28**
-- **NODE_IMAGE_2D** = **29**
-- **NODE_SDF_PLANE** = **30**
-- **NODE_SDF_BOX** = **31**
-- **NODE_SDF_SPHERE** = **32**
-- **NODE_SDF_TORUS** = **33**
-- **NODE_SDF_PREVIEW** = **34**
-- **NODE_SDF_SPHERE_HEIGHTMAP** = **35**
-- **NODE_SDF_SMOOTH_UNION** = **36**
-- **NODE_SDF_SMOOTH_SUBTRACT** = **37**
-- **NODE_NORMALIZE_3D** = **38**
-- **NODE_FAST_NOISE_2D** = **39**
-- **NODE_FAST_NOISE_3D** = **40**
-- **NODE_FAST_NOISE_GRADIENT_2D** = **41**
-- **NODE_FAST_NOISE_GRADIENT_3D** = **42**
-- **NODE_OUTPUT_WEIGHT** = **43**
-- **NODE_FAST_NOISE_2_2D** = **45**
-- **NODE_FAST_NOISE_2_3D** = **46**
-- **NODE_OUTPUT_SINGLE_TEXTURE** = **47**
-- **NODE_EXPRESSION** = **48**
-- **NODE_POWI** = **49**
-- **NODE_POW** = **50**
-- **NODE_INPUT_SDF** = **51**
-- **NODE_COMMENT** = **52**
-- **NODE_FUNCTION** = **53**
-- **NODE_RELAY** = **56**
-- **NODE_SPOTS_2D** = **57**
-- **NODE_SPOTS_3D** = **58**
-- **NODE_TYPE_COUNT** = **59**
+- <span id="i_NODE_CONSTANT"></span>**NODE_CONSTANT** = **0**
+- <span id="i_NODE_INPUT_X"></span>**NODE_INPUT_X** = **1**
+- <span id="i_NODE_INPUT_Y"></span>**NODE_INPUT_Y** = **2**
+- <span id="i_NODE_INPUT_Z"></span>**NODE_INPUT_Z** = **3**
+- <span id="i_NODE_OUTPUT_SDF"></span>**NODE_OUTPUT_SDF** = **4**
+- <span id="i_NODE_CUSTOM_INPUT"></span>**NODE_CUSTOM_INPUT** = **54**
+- <span id="i_NODE_CUSTOM_OUTPUT"></span>**NODE_CUSTOM_OUTPUT** = **55**
+- <span id="i_NODE_ADD"></span>**NODE_ADD** = **5**
+- <span id="i_NODE_SUBTRACT"></span>**NODE_SUBTRACT** = **6**
+- <span id="i_NODE_MULTIPLY"></span>**NODE_MULTIPLY** = **7**
+- <span id="i_NODE_DIVIDE"></span>**NODE_DIVIDE** = **8**
+- <span id="i_NODE_SIN"></span>**NODE_SIN** = **9**
+- <span id="i_NODE_FLOOR"></span>**NODE_FLOOR** = **10**
+- <span id="i_NODE_ABS"></span>**NODE_ABS** = **11**
+- <span id="i_NODE_SQRT"></span>**NODE_SQRT** = **12**
+- <span id="i_NODE_FRACT"></span>**NODE_FRACT** = **13**
+- <span id="i_NODE_STEPIFY"></span>**NODE_STEPIFY** = **14**
+- <span id="i_NODE_WRAP"></span>**NODE_WRAP** = **15**
+- <span id="i_NODE_MIN"></span>**NODE_MIN** = **16**
+- <span id="i_NODE_MAX"></span>**NODE_MAX** = **17**
+- <span id="i_NODE_DISTANCE_2D"></span>**NODE_DISTANCE_2D** = **18**
+- <span id="i_NODE_DISTANCE_3D"></span>**NODE_DISTANCE_3D** = **19**
+- <span id="i_NODE_CLAMP"></span>**NODE_CLAMP** = **20**
+- <span id="i_NODE_MIX"></span>**NODE_MIX** = **22**
+- <span id="i_NODE_REMAP"></span>**NODE_REMAP** = **23**
+- <span id="i_NODE_SMOOTHSTEP"></span>**NODE_SMOOTHSTEP** = **24**
+- <span id="i_NODE_CURVE"></span>**NODE_CURVE** = **25**
+- <span id="i_NODE_SELECT"></span>**NODE_SELECT** = **26**
+- <span id="i_NODE_NOISE_2D"></span>**NODE_NOISE_2D** = **27**
+- <span id="i_NODE_NOISE_3D"></span>**NODE_NOISE_3D** = **28**
+- <span id="i_NODE_IMAGE_2D"></span>**NODE_IMAGE_2D** = **29**
+- <span id="i_NODE_SDF_PLANE"></span>**NODE_SDF_PLANE** = **30**
+- <span id="i_NODE_SDF_BOX"></span>**NODE_SDF_BOX** = **31**
+- <span id="i_NODE_SDF_SPHERE"></span>**NODE_SDF_SPHERE** = **32**
+- <span id="i_NODE_SDF_TORUS"></span>**NODE_SDF_TORUS** = **33**
+- <span id="i_NODE_SDF_PREVIEW"></span>**NODE_SDF_PREVIEW** = **34**
+- <span id="i_NODE_SDF_SPHERE_HEIGHTMAP"></span>**NODE_SDF_SPHERE_HEIGHTMAP** = **35**
+- <span id="i_NODE_SDF_SMOOTH_UNION"></span>**NODE_SDF_SMOOTH_UNION** = **36**
+- <span id="i_NODE_SDF_SMOOTH_SUBTRACT"></span>**NODE_SDF_SMOOTH_SUBTRACT** = **37**
+- <span id="i_NODE_NORMALIZE_3D"></span>**NODE_NORMALIZE_3D** = **38**
+- <span id="i_NODE_FAST_NOISE_2D"></span>**NODE_FAST_NOISE_2D** = **39**
+- <span id="i_NODE_FAST_NOISE_3D"></span>**NODE_FAST_NOISE_3D** = **40**
+- <span id="i_NODE_FAST_NOISE_GRADIENT_2D"></span>**NODE_FAST_NOISE_GRADIENT_2D** = **41**
+- <span id="i_NODE_FAST_NOISE_GRADIENT_3D"></span>**NODE_FAST_NOISE_GRADIENT_3D** = **42**
+- <span id="i_NODE_OUTPUT_WEIGHT"></span>**NODE_OUTPUT_WEIGHT** = **43**
+- <span id="i_NODE_FAST_NOISE_2_2D"></span>**NODE_FAST_NOISE_2_2D** = **45**
+- <span id="i_NODE_FAST_NOISE_2_3D"></span>**NODE_FAST_NOISE_2_3D** = **46**
+- <span id="i_NODE_OUTPUT_SINGLE_TEXTURE"></span>**NODE_OUTPUT_SINGLE_TEXTURE** = **47**
+- <span id="i_NODE_EXPRESSION"></span>**NODE_EXPRESSION** = **48**
+- <span id="i_NODE_POWI"></span>**NODE_POWI** = **49**
+- <span id="i_NODE_POW"></span>**NODE_POW** = **50**
+- <span id="i_NODE_INPUT_SDF"></span>**NODE_INPUT_SDF** = **51**
+- <span id="i_NODE_COMMENT"></span>**NODE_COMMENT** = **52**
+- <span id="i_NODE_FUNCTION"></span>**NODE_FUNCTION** = **53**
+- <span id="i_NODE_RELAY"></span>**NODE_RELAY** = **56**
+- <span id="i_NODE_SPOTS_2D"></span>**NODE_SPOTS_2D** = **57**
+- <span id="i_NODE_SPOTS_3D"></span>**NODE_SPOTS_3D** = **58**
+- <span id="i_NODE_TYPE_COUNT"></span>**NODE_TYPE_COUNT** = **59**
 
 
 ## Property Descriptions
@@ -248,4 +248,4 @@ Sets a custom name for a node.
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

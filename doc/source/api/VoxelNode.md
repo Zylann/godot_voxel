@@ -22,9 +22,9 @@ Type              | Name                           | Default
 
 enum **GIMode**: 
 
-- **GI_MODE_DISABLED** = **0**
-- **GI_MODE_BAKED** = **1**
-- **GI_MODE_DYNAMIC** = **2**
+- <span id="i_GI_MODE_DISABLED"></span>**GI_MODE_DISABLED** = **0**
+- <span id="i_GI_MODE_BAKED"></span>**GI_MODE_BAKED** = **1**
+- <span id="i_GI_MODE_DYNAMIC"></span>**GI_MODE_DYNAMIC** = **2**
 
 
 ## Property Descriptions
@@ -47,4 +47,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -76,20 +76,20 @@ Return                                                                          
 
 enum **ProcessCallback**: 
 
-- **PROCESS_CALLBACK_IDLE** = **0** --- The node will use `_process` for the part of its logic running on the main thread.
-- **PROCESS_CALLBACK_PHYSICS** = **1** --- The node will use `_physics_process` for the part of its logic running on the main thread.
-- **PROCESS_CALLBACK_DISABLED** = **2** --- The node will not update. Use with caution!
+- <span id="i_PROCESS_CALLBACK_IDLE"></span>**PROCESS_CALLBACK_IDLE** = **0** --- The node will use `_process` for the part of its logic running on the main thread.
+- <span id="i_PROCESS_CALLBACK_PHYSICS"></span>**PROCESS_CALLBACK_PHYSICS** = **1** --- The node will use `_physics_process` for the part of its logic running on the main thread.
+- <span id="i_PROCESS_CALLBACK_DISABLED"></span>**PROCESS_CALLBACK_DISABLED** = **2** --- The node will not update. Use with caution!
 
 enum **DebugDrawFlag**: 
 
-- **DEBUG_DRAW_OCTREE_NODES** = **0**
-- **DEBUG_DRAW_OCTREE_BOUNDS** = **1**
-- **DEBUG_DRAW_MESH_UPDATES** = **2**
-- **DEBUG_DRAW_EDIT_BOXES** = **3**
-- **DEBUG_DRAW_VOLUME_BOUNDS** = **4**
-- **DEBUG_DRAW_EDITED_BLOCKS** = **5**
-- **DEBUG_DRAW_MODIFIER_BOUNDS** = **6**
-- **DEBUG_DRAW_FLAGS_COUNT** = **7**
+- <span id="i_DEBUG_DRAW_OCTREE_NODES"></span>**DEBUG_DRAW_OCTREE_NODES** = **0**
+- <span id="i_DEBUG_DRAW_OCTREE_BOUNDS"></span>**DEBUG_DRAW_OCTREE_BOUNDS** = **1**
+- <span id="i_DEBUG_DRAW_MESH_UPDATES"></span>**DEBUG_DRAW_MESH_UPDATES** = **2**
+- <span id="i_DEBUG_DRAW_EDIT_BOXES"></span>**DEBUG_DRAW_EDIT_BOXES** = **3**
+- <span id="i_DEBUG_DRAW_VOLUME_BOUNDS"></span>**DEBUG_DRAW_VOLUME_BOUNDS** = **4**
+- <span id="i_DEBUG_DRAW_EDITED_BLOCKS"></span>**DEBUG_DRAW_EDITED_BLOCKS** = **5**
+- <span id="i_DEBUG_DRAW_MODIFIER_BOUNDS"></span>**DEBUG_DRAW_MODIFIER_BOUNDS** = **6**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **7**
 
 
 ## Property Descriptions
@@ -311,4 +311,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

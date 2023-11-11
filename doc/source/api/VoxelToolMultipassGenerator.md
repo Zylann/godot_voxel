@@ -30,7 +30,7 @@ Return                                                                          
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_editable_area_max"></span> **get_editable_area_max**( ) 
 
-Gets the lower corner of the total editable area, in voxels.
+Gets the upper corner of the total editable area, in voxels.
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_editable_area_min"></span> **get_editable_area_min**( ) 
 
@@ -42,6 +42,6 @@ Gets the upper corner of the total editable area, in voxels.
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_get_main_area_min"></span> **get_main_area_min**( ) 
 
-Gets the upper corner of the main editable area, in voxels.
+Gets the lower corner of the main editable area, in voxels.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -29,15 +29,15 @@ Return                                                                  | Signat
 
 enum **Materials**: 
 
-- **MATERIAL_OPAQUE** = **0**
-- **MATERIAL_TRANSPARENT** = **1**
-- **MATERIAL_COUNT** = **2**
+- <span id="i_MATERIAL_OPAQUE"></span>**MATERIAL_OPAQUE** = **0**
+- <span id="i_MATERIAL_TRANSPARENT"></span>**MATERIAL_TRANSPARENT** = **1**
+- <span id="i_MATERIAL_COUNT"></span>**MATERIAL_COUNT** = **2**
 
 enum **ColorMode**: 
 
-- **COLOR_RAW** = **0**
-- **COLOR_MESHER_PALETTE** = **1**
-- **COLOR_SHADER_PALETTE** = **2**
+- <span id="i_COLOR_RAW"></span>**COLOR_RAW** = **0**
+- <span id="i_COLOR_MESHER_PALETTE"></span>**COLOR_MESHER_PALETTE** = **1**
+- <span id="i_COLOR_SHADER_PALETTE"></span>**COLOR_SHADER_PALETTE** = **2**
 
 
 ## Property Descriptions
@@ -65,4 +65,4 @@ enum **ColorMode**:
 - [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

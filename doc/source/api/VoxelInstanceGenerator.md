@@ -38,24 +38,24 @@ Type                  | Name                                             | Defau
 
 enum **EmitMode**: 
 
-- **EMIT_FROM_VERTICES** = **0** --- Use vertices of the mesh to spawn instances. This is the fasted option, but can produce noticeable patterns.
-- **EMIT_FROM_FACES_FAST** = **1** --- Uses faces of the mesh to spawn instances. It is a balanced option with some shortcuts taken, without causing too noticeable patterns.
-- **EMIT_FROM_FACES** = **2** --- Uses faces of the mesh to spawn instances. This is the slowest option, but should produce no noticeable patterns.
-- **EMIT_MODE_COUNT** = **3**
+- <span id="i_EMIT_FROM_VERTICES"></span>**EMIT_FROM_VERTICES** = **0** --- Use vertices of the mesh to spawn instances. This is the fasted option, but can produce noticeable patterns.
+- <span id="i_EMIT_FROM_FACES_FAST"></span>**EMIT_FROM_FACES_FAST** = **1** --- Uses faces of the mesh to spawn instances. It is a balanced option with some shortcuts taken, without causing too noticeable patterns.
+- <span id="i_EMIT_FROM_FACES"></span>**EMIT_FROM_FACES** = **2** --- Uses faces of the mesh to spawn instances. This is the slowest option, but should produce no noticeable patterns.
+- <span id="i_EMIT_MODE_COUNT"></span>**EMIT_MODE_COUNT** = **3**
 
 enum **Distribution**: 
 
-- **DISTRIBUTION_LINEAR** = **0** --- Uniform distribution.
-- **DISTRIBUTION_QUADRATIC** = **1** --- Distribution with more small items, and fewer big ones.
-- **DISTRIBUTION_CUBIC** = **2** --- Distribution with even more small items, and even fewer big ones.
-- **DISTRIBUTION_QUINTIC** = **3**
-- **DISTRIBUTION_COUNT** = **4**
+- <span id="i_DISTRIBUTION_LINEAR"></span>**DISTRIBUTION_LINEAR** = **0** --- Uniform distribution.
+- <span id="i_DISTRIBUTION_QUADRATIC"></span>**DISTRIBUTION_QUADRATIC** = **1** --- Distribution with more small items, and fewer big ones.
+- <span id="i_DISTRIBUTION_CUBIC"></span>**DISTRIBUTION_CUBIC** = **2** --- Distribution with even more small items, and even fewer big ones.
+- <span id="i_DISTRIBUTION_QUINTIC"></span>**DISTRIBUTION_QUINTIC** = **3**
+- <span id="i_DISTRIBUTION_COUNT"></span>**DISTRIBUTION_COUNT** = **4**
 
 enum **Dimension**: 
 
-- **DIMENSION_2D** = **0**
-- **DIMENSION_3D** = **1**
-- **DIMENSION_COUNT** = **2**
+- <span id="i_DIMENSION_2D"></span>**DIMENSION_2D** = **0**
+- <span id="i_DIMENSION_3D"></span>**DIMENSION_3D** = **1**
+- <span id="i_DIMENSION_COUNT"></span>**DIMENSION_COUNT** = **2**
 
 
 ## Property Descriptions
@@ -144,4 +144,4 @@ If 1, they will completely align with whichever direction is considered "up".
 
 This depends on [VoxelInstancer.up_mode](VoxelInstancer.md#i_up_mode).
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

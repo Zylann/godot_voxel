@@ -47,50 +47,50 @@ Return                                                                      | Si
 
 enum **NoiseType**: 
 
-- **TYPE_OPEN_SIMPLEX_2** = **0**
-- **TYPE_SIMPLEX** = **1**
-- **TYPE_PERLIN** = **2**
-- **TYPE_VALUE** = **3**
-- **TYPE_CELLULAR** = **4**
-- **TYPE_ENCODED_NODE_TREE** = **5**
+- <span id="i_TYPE_OPEN_SIMPLEX_2"></span>**TYPE_OPEN_SIMPLEX_2** = **0**
+- <span id="i_TYPE_SIMPLEX"></span>**TYPE_SIMPLEX** = **1**
+- <span id="i_TYPE_PERLIN"></span>**TYPE_PERLIN** = **2**
+- <span id="i_TYPE_VALUE"></span>**TYPE_VALUE** = **3**
+- <span id="i_TYPE_CELLULAR"></span>**TYPE_CELLULAR** = **4**
+- <span id="i_TYPE_ENCODED_NODE_TREE"></span>**TYPE_ENCODED_NODE_TREE** = **5**
 
 enum **FractalType**: 
 
-- **FRACTAL_NONE** = **0**
-- **FRACTAL_FBM** = **1**
-- **FRACTAL_RIDGED** = **2**
-- **FRACTAL_PING_PONG** = **3**
+- <span id="i_FRACTAL_NONE"></span>**FRACTAL_NONE** = **0**
+- <span id="i_FRACTAL_FBM"></span>**FRACTAL_FBM** = **1**
+- <span id="i_FRACTAL_RIDGED"></span>**FRACTAL_RIDGED** = **2**
+- <span id="i_FRACTAL_PING_PONG"></span>**FRACTAL_PING_PONG** = **3**
 
 enum **CellularDistanceFunction**: 
 
-- **CELLULAR_DISTANCE_EUCLIDEAN** = **0**
-- **CELLULAR_DISTANCE_EUCLIDEAN_SQ** = **1**
-- **CELLULAR_DISTANCE_MANHATTAN** = **2**
-- **CELLULAR_DISTANCE_HYBRID** = **3**
-- **CELLULAR_DISTANCE_MAX_AXIS** = **4**
+- <span id="i_CELLULAR_DISTANCE_EUCLIDEAN"></span>**CELLULAR_DISTANCE_EUCLIDEAN** = **0**
+- <span id="i_CELLULAR_DISTANCE_EUCLIDEAN_SQ"></span>**CELLULAR_DISTANCE_EUCLIDEAN_SQ** = **1**
+- <span id="i_CELLULAR_DISTANCE_MANHATTAN"></span>**CELLULAR_DISTANCE_MANHATTAN** = **2**
+- <span id="i_CELLULAR_DISTANCE_HYBRID"></span>**CELLULAR_DISTANCE_HYBRID** = **3**
+- <span id="i_CELLULAR_DISTANCE_MAX_AXIS"></span>**CELLULAR_DISTANCE_MAX_AXIS** = **4**
 
 enum **CellularReturnType**: 
 
-- **CELLULAR_RETURN_INDEX_0** = **0**
-- **CELLULAR_RETURN_INDEX_0_ADD_1** = **1**
-- **CELLULAR_RETURN_INDEX_0_SUB_1** = **2**
-- **CELLULAR_RETURN_INDEX_0_MUL_1** = **3**
-- **CELLULAR_RETURN_INDEX_0_DIV_1** = **4**
+- <span id="i_CELLULAR_RETURN_INDEX_0"></span>**CELLULAR_RETURN_INDEX_0** = **0**
+- <span id="i_CELLULAR_RETURN_INDEX_0_ADD_1"></span>**CELLULAR_RETURN_INDEX_0_ADD_1** = **1**
+- <span id="i_CELLULAR_RETURN_INDEX_0_SUB_1"></span>**CELLULAR_RETURN_INDEX_0_SUB_1** = **2**
+- <span id="i_CELLULAR_RETURN_INDEX_0_MUL_1"></span>**CELLULAR_RETURN_INDEX_0_MUL_1** = **3**
+- <span id="i_CELLULAR_RETURN_INDEX_0_DIV_1"></span>**CELLULAR_RETURN_INDEX_0_DIV_1** = **4**
 
 enum **SIMDLevel**: 
 
-- **SIMD_NULL** = **0**
-- **SIMD_SCALAR** = **1**
-- **SIMD_SSE** = **2**
-- **SIMD_SSE2** = **4**
-- **SIMD_SSE3** = **8**
-- **SIMD_SSSE3** = **16**
-- **SIMD_SSE41** = **32**
-- **SIMD_SSE42** = **64**
-- **SIMD_AVX** = **128**
-- **SIMD_AVX2** = **256**
-- **SIMD_AVX512** = **512**
-- **SIMD_NEON** = **65536**
+- <span id="i_SIMD_NULL"></span>**SIMD_NULL** = **0**
+- <span id="i_SIMD_SCALAR"></span>**SIMD_SCALAR** = **1**
+- <span id="i_SIMD_SSE"></span>**SIMD_SSE** = **2**
+- <span id="i_SIMD_SSE2"></span>**SIMD_SSE2** = **4**
+- <span id="i_SIMD_SSE3"></span>**SIMD_SSE3** = **8**
+- <span id="i_SIMD_SSSE3"></span>**SIMD_SSSE3** = **16**
+- <span id="i_SIMD_SSE41"></span>**SIMD_SSE41** = **32**
+- <span id="i_SIMD_SSE42"></span>**SIMD_SSE42** = **64**
+- <span id="i_SIMD_AVX"></span>**SIMD_AVX** = **128**
+- <span id="i_SIMD_AVX2"></span>**SIMD_AVX2** = **256**
+- <span id="i_SIMD_AVX512"></span>**SIMD_AVX512** = **512**
+- <span id="i_SIMD_NEON"></span>**SIMD_NEON** = **65536**
 
 
 ## Property Descriptions
@@ -172,4 +172,4 @@ enum **SIMDLevel**:
 - [void](#)<span id="i_update_generator"></span> **update_generator**( ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

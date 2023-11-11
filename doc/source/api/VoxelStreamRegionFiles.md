@@ -57,4 +57,4 @@ Directory under which the data is saved.
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_region_size"></span> **get_region_size**( ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -26,10 +26,10 @@ Return                                                                | Signatur
 
 enum **Axis**: 
 
-- **AXIS_X** = **0**
-- **AXIS_Y** = **1**
-- **AXIS_Z** = **2**
-- **AXIS_COUNT** = **3**
+- <span id="i_AXIS_X"></span>**AXIS_X** = **0**
+- <span id="i_AXIS_Y"></span>**AXIS_Y** = **1**
+- <span id="i_AXIS_Z"></span>**AXIS_Z** = **2**
+- <span id="i_AXIS_COUNT"></span>**AXIS_COUNT** = **3**
 
 
 ## Property Descriptions
@@ -42,4 +42,4 @@ enum **Axis**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_from_vec3"></span> **from_vec3**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) v ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

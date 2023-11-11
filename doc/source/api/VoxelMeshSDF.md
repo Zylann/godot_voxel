@@ -40,11 +40,11 @@ Return                                                                    | Sign
 
 enum **BakeMode**: 
 
-- **BAKE_MODE_ACCURATE_NAIVE** = **0**
-- **BAKE_MODE_ACCURATE_PARTITIONED** = **1**
-- **BAKE_MODE_APPROX_INTERP** = **2**
-- **BAKE_MODE_APPROX_FLOODFILL** = **3**
-- **BAKE_MODE_COUNT** = **4**
+- <span id="i_BAKE_MODE_ACCURATE_NAIVE"></span>**BAKE_MODE_ACCURATE_NAIVE** = **0**
+- <span id="i_BAKE_MODE_ACCURATE_PARTITIONED"></span>**BAKE_MODE_ACCURATE_PARTITIONED** = **1**
+- <span id="i_BAKE_MODE_APPROX_INTERP"></span>**BAKE_MODE_APPROX_INTERP** = **2**
+- <span id="i_BAKE_MODE_APPROX_FLOODFILL"></span>**BAKE_MODE_APPROX_FLOODFILL** = **3**
+- <span id="i_BAKE_MODE_COUNT"></span>**BAKE_MODE_COUNT** = **4**
 
 
 ## Property Descriptions
@@ -93,4 +93,4 @@ enum **BakeMode**:
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -36,4 +36,4 @@ Minimum height where the surface will generate.
 
 Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

@@ -29,8 +29,8 @@ Return                                                                          
 
 enum **TexturingMode**: 
 
-- **TEXTURES_NONE** = **0**
-- **TEXTURES_BLEND_4_OVER_16** = **1**
+- <span id="i_TEXTURES_NONE"></span>**TEXTURES_NONE** = **0**
+- <span id="i_TEXTURES_BLEND_4_OVER_16"></span>**TEXTURES_BLEND_4_OVER_16** = **1**
 
 
 ## Property Descriptions
@@ -58,4 +58,4 @@ enum **TexturingMode**:
 - [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

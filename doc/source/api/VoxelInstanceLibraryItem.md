@@ -31,4 +31,4 @@ Type                      | Name                         | Default
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_persistent"></span> **persistent** = false
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

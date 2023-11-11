@@ -26,4 +26,4 @@ Generates a block of voxels within the specified world area.
 
 `lod`: Level of detail index to use for this block. Some generators might not support LOD, in which case it can be left 0. At LOD 0, each cell of the passed buffer spans 1 space unit. At LOD 1, 2 units. At LOD 2, 4 units, and so on.
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

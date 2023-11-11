@@ -43,4 +43,4 @@ The returned dictionary has the following structure:
 }
 ```
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

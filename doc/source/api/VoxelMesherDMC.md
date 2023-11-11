@@ -4,6 +4,8 @@ Inherits: [VoxelMesher](VoxelMesher.md)
 
 Implements isosurface generation (smooth voxels) using [Dual Marching Cubes](https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/).
 
+*Deprecated.* Use [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) instead.
+
 ## Properties: 
 
 
@@ -29,21 +31,21 @@ Return                                                                          
 
 enum **MeshMode**: 
 
-- **MESH_NORMAL** = **0**
-- **MESH_WIREFRAME** = **1**
-- **MESH_DEBUG_OCTREE** = **2**
-- **MESH_DEBUG_DUAL_GRID** = **3**
+- <span id="i_MESH_NORMAL"></span>**MESH_NORMAL** = **0**
+- <span id="i_MESH_WIREFRAME"></span>**MESH_WIREFRAME** = **1**
+- <span id="i_MESH_DEBUG_OCTREE"></span>**MESH_DEBUG_OCTREE** = **2**
+- <span id="i_MESH_DEBUG_DUAL_GRID"></span>**MESH_DEBUG_DUAL_GRID** = **3**
 
 enum **SimplifyMode**: 
 
-- **SIMPLIFY_OCTREE_BOTTOM_UP** = **0**
-- **SIMPLIFY_OCTREE_TOP_DOWN** = **1**
-- **SIMPLIFY_NONE** = **2**
+- <span id="i_SIMPLIFY_OCTREE_BOTTOM_UP"></span>**SIMPLIFY_OCTREE_BOTTOM_UP** = **0**
+- <span id="i_SIMPLIFY_OCTREE_TOP_DOWN"></span>**SIMPLIFY_OCTREE_TOP_DOWN** = **1**
+- <span id="i_SIMPLIFY_NONE"></span>**SIMPLIFY_NONE** = **2**
 
 enum **SeamMode**: 
 
-- **SEAM_NONE** = **0**
-- **SEAM_MARCHING_SQUARE_SKIRTS** = **1**
+- <span id="i_SEAM_NONE"></span>**SEAM_NONE** = **0**
+- <span id="i_SEAM_MARCHING_SQUARE_SKIRTS"></span>**SEAM_MARCHING_SQUARE_SKIRTS** = **1**
 
 
 ## Property Descriptions
@@ -71,4 +73,4 @@ enum **SeamMode**:
 - [void](#)<span id="i_set_geometric_error"></span> **set_geometric_error**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) error ) 
 
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_

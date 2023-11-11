@@ -29,7 +29,7 @@ Return                                                                          
 
 ## Constants: 
 
-- **MAX_MODELS** = **65536**
+- <span id="i_MAX_MODELS"></span>**MAX_MODELS** = **65536**
 
 ## Property Descriptions
 
@@ -49,4 +49,4 @@ Gets a list of all distinct materials found in all models of the library.
 
 Note, if at least one non-empty model has no material, there will be one `null` entry in this list to represent "The default material".
 
-_Generated on Oct 15, 2023_
+_Generated on Nov 11, 2023_
