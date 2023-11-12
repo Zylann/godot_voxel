@@ -61,10 +61,6 @@ inline Vector3 get_forward(const Transform3D &t) {
 	return -t.basis.get_column(Vector3::AXIS_Z);
 }
 
-inline Vector3 to_godot(const Vector3f v) {
-	return Vector3(v.x, v.y, v.z);
-}
-
 // template <typename T>
 // Span<const T> to_span_const(const Vector<T> &a) {
 // 	return Span<const T>(a.ptr(), 0, a.size());
