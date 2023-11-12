@@ -1,7 +1,6 @@
-#include "string_funcs.h"
-
-#include "godot/classes/os.h"
-#include "godot/core/print_string.h"
+#include "../godot/classes/os.h"
+#include "../godot/core/print_string.h"
+#include "../string_funcs.h"
 
 #ifdef ZN_DEBUG_LOG_FILE_ENABLED
 #include "thread/mutex.h"

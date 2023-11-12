@@ -1,7 +1,7 @@
 #include "vox_data.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 

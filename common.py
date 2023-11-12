@@ -99,6 +99,8 @@ def get_sources(env, is_editor_build):
         "util/godot/shader_material_pool.cpp",
         "util/godot/funcs.cpp",
 
+        "util/io/*.cpp",
+
         # Thirdparty
 
         "thirdparty/lz4/*.c",

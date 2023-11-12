@@ -2,7 +2,6 @@
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/errors.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/log.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"

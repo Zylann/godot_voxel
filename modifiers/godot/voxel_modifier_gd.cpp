@@ -1,6 +1,6 @@
 #include "voxel_modifier_gd.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/math/conv.h"
 #include "../voxel_modifier_sdf.h"
 

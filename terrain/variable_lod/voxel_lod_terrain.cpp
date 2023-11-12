@@ -22,7 +22,6 @@
 #include "../../util/godot/classes/viewport.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/log.h"
 #include "../../util/math/color.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"

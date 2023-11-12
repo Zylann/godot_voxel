@@ -10,7 +10,7 @@
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/hash_funcs.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"

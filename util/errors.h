@@ -1,7 +1,7 @@
 #ifndef ZN_ERRORS_H
 #define ZN_ERRORS_H
 
-#include "log.h"
+#include "io/log.h"
 #include "macros.h"
 
 // Abnormally terminate the program

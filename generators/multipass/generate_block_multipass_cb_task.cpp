@@ -7,7 +7,7 @@
 #include "../../streams/save_block_data_task.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"

@@ -27,7 +27,7 @@
 #include "../../util/godot/core/input_enums.h"
 #include "../../util/godot/core/mouse_button.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
