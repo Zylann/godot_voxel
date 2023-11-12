@@ -70,6 +70,10 @@ inline Error parse_utf8(String &s, Span<const char> utf8) {
 #endif
 }
 
+inline String ptr2s(const void *p) {
+	return String::num_uint64((uint64_t)p, 16);
+}
+
 } // namespace zylann
 
 // `TTR` means "tools translate", which is for editor-only localized messages.

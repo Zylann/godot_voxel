@@ -82,10 +82,6 @@ inline Span<const uint8_t> to_span(const PackedByteArray &a) {
 	return Span<const uint8_t>(a.ptr(), a.size());
 }
 
-inline String ptr2s(const void *p) {
-	return String::num_uint64((uint64_t)p, 16);
-}
-
 template <typename T>
 inline bool try_get(const Dictionary &d, String key, T &out_value) {
 #if defined(ZN_GODOT)
