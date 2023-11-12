@@ -211,9 +211,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
-		register_abstract_class<VoxelBlockyLibraryBase>();
+		ClassDB::register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
-		register_abstract_class<VoxelBlockyAttribute>();
+		ClassDB::register_abstract_class<VoxelBlockyAttribute>();
 		ClassDB::register_class<VoxelBlockyAttributeAxis>();
 		ClassDB::register_class<VoxelBlockyAttributeDirection>();
 		ClassDB::register_class<VoxelBlockyAttributeRotation>();
@@ -223,7 +223,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelColorPalette>();
 		ClassDB::register_class<VoxelInstanceLibrary>();
-		register_abstract_class<VoxelInstanceLibraryItem>();
+		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
 		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
@@ -234,28 +234,28 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<gd::VoxelBuffer>();
 
 		// Nodes
-		register_abstract_class<VoxelNode>();
+		ClassDB::register_abstract_class<VoxelNode>();
 		ClassDB::register_class<VoxelTerrain>();
 		ClassDB::register_class<VoxelLodTerrain>();
 		ClassDB::register_class<VoxelViewer>();
 		ClassDB::register_class<VoxelInstanceGenerator>();
 		ClassDB::register_class<VoxelInstancer>();
 		ClassDB::register_class<VoxelInstanceComponent>();
-		register_abstract_class<VoxelInstancerRigidBody>();
-		register_abstract_class<gd::VoxelModifier>();
+		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
+		ClassDB::register_abstract_class<gd::VoxelModifier>();
 		ClassDB::register_class<gd::VoxelModifierSphere>();
 		ClassDB::register_class<gd::VoxelModifierMesh>();
 
 		// Streams
-		register_abstract_class<VoxelStream>();
+		ClassDB::register_abstract_class<VoxelStream>();
 		ClassDB::register_class<VoxelStreamRegionFiles>();
 		ClassDB::register_class<VoxelStreamScript>();
 		ClassDB::register_class<VoxelStreamSQLite>();
 
 		// Generators
-		register_abstract_class<VoxelGenerator>();
+		ClassDB::register_abstract_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorFlat>();
-		register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
 		ClassDB::register_class<VoxelGeneratorWaves>();
 		ClassDB::register_class<VoxelGeneratorImage>();
 		ClassDB::register_class<VoxelGeneratorNoise2D>();
@@ -267,13 +267,13 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// Utilities
 		ClassDB::register_class<VoxelBoxMover>();
 		ClassDB::register_class<VoxelRaycastResult>();
-		register_abstract_class<VoxelTool>();
-		register_abstract_class<VoxelToolTerrain>();
-		register_abstract_class<VoxelToolLodTerrain>();
+		ClassDB::register_abstract_class<VoxelTool>();
+		ClassDB::register_abstract_class<VoxelToolTerrain>();
+		ClassDB::register_abstract_class<VoxelToolLodTerrain>();
 		// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
 		// And this can happen in a thread, causing crashes due to the concurrent access
-		register_abstract_class<VoxelToolBuffer>();
-		register_abstract_class<VoxelToolMultipassGenerator>();
+		ClassDB::register_abstract_class<VoxelToolBuffer>();
+		ClassDB::register_abstract_class<VoxelToolMultipassGenerator>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
@@ -288,7 +288,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelAStarGrid3D>();
 
 		// Meshers
-		register_abstract_class<VoxelMesher>();
+		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
 		ClassDB::register_class<VoxelMesherDMC>();
