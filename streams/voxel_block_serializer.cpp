@@ -4,9 +4,9 @@
 #include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file_access.h"
+#include "../util/io/serialization.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
-#include "../util/serialization.h"
 #include "../util/string_funcs.h"
 #include "compressed_data.h"
 

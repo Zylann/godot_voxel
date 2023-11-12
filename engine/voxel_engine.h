@@ -4,7 +4,7 @@
 #include "../meshers/voxel_mesher.h"
 #include "../streams/instance_data.h"
 #include "../util/containers/slot_map.h"
-#include "../util/file_locker.h"
+#include "../util/io/file_locker.h"
 #include "../util/memory.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"

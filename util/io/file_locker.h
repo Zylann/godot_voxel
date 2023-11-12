@@ -1,9 +1,9 @@
 #ifndef ZN_FILE_LOCKER_H
 #define ZN_FILE_LOCKER_H
 
-#include "errors.h"
-#include "thread/mutex.h"
-#include "thread/rw_lock.h"
+#include "../errors.h"
+#include "../thread/mutex.h"
+#include "../thread/rw_lock.h"
 
 #include <string>
 #include <unordered_map>

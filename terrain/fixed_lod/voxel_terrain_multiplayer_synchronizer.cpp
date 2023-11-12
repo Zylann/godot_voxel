@@ -6,8 +6,8 @@
 #include "../../util/godot/classes/multiplayer_peer.h"
 #include "../../util/godot/classes/scene_tree.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/io/serialization.h"
 #include "../../util/profiling.h"
-#include "../../util/serialization.h"
 #include "../../util/string_funcs.h"
 #include "voxel_terrain.h"
 
