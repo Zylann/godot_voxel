@@ -1,7 +1,7 @@
 #include "test_threaded_task_runner.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory.h"
 #include "../../util/profiling.h"
