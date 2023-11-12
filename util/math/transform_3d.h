@@ -8,4 +8,12 @@
 using namespace godot;
 #endif
 
+namespace zylann {
+
+inline Vector3 get_forward(const Transform3D &t) {
+	return -t.basis.get_column(Vector3::AXIS_Z);
+}
+
+} // namespace zylann
+
 #endif // ZN_MATH_TRANSFORM_3D_H

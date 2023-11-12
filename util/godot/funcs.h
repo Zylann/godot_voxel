@@ -57,10 +57,6 @@ void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 }
 #endif
 
-inline Vector3 get_forward(const Transform3D &t) {
-	return -t.basis.get_column(Vector3::AXIS_Z);
-}
-
 // template <typename T>
 // Span<const T> to_span_const(const Vector<T> &a) {
 // 	return Span<const T>(a.ptr(), 0, a.size());
