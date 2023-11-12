@@ -12,7 +12,6 @@
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/keyboard.h"
-#include "../../util/godot/funcs.h"
 #include "../about_window.h"
 #include "../camera_cache.h"
 #include "../graph/voxel_graph_node_inspector_wrapper.h"

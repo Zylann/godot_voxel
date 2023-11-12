@@ -1,10 +1,10 @@
-#ifndef VOXEL_UTILITY_GODOT_FUNCS_H
-#define VOXEL_UTILITY_GODOT_FUNCS_H
+#ifndef ZN_GODOT_PACKED_ARRAYS_H
+#define ZN_GODOT_PACKED_ARRAYS_H
 
-#include "../containers/span.h"
-#include "../math/vector2f.h"
-#include "../math/vector3f.h"
-#include "core/variant.h"
+#include "../../containers/span.h"
+#include "../../math/vector2f.h"
+#include "../../math/vector3f.h"
+#include "variant.h"
 #include <cstdint>
 #include <vector>
 
@@ -84,4 +84,4 @@ inline Span<const uint8_t> to_span(const PackedByteArray &a) {
 
 } // namespace zylann
 
-#endif // VOXEL_UTILITY_GODOT_FUNCS_H
+#endif // ZN_GODOT_PACKED_ARRAYS_H

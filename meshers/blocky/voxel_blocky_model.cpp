@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"

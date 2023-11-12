@@ -1,9 +1,9 @@
 #include "voxel_debug.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/godot/classes/array_mesh.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_multimesh_instance.h"
-#include "../util/godot/funcs.h"
 #include "../util/memory.h"
 
 namespace zylann {

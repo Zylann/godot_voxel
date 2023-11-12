@@ -5,7 +5,7 @@
 #include "../meshers/mesh_block_task.h"
 #include "../modifiers/voxel_modifier.h"
 #include "../util/dstack.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"

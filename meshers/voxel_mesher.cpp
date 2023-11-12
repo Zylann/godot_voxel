@@ -7,7 +7,6 @@
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/godot/classes/shader_material.h"
-#include "../util/godot/funcs.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
 
 namespace zylann::voxel {

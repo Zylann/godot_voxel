@@ -1,5 +1,4 @@
 #include "mesh_sdf.h"
-#include "../util/godot/funcs.h"
 #include "../util/math/box3i.h"
 #include "../util/math/conv.h"
 #include "../util/math/triangle.h"

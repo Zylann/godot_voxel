@@ -1,6 +1,6 @@
-#include "funcs.h"
-#include "../math/conv.h"
-#include "../profiling.h"
+#include "packed_arrays.h"
+#include "../../math/conv.h"
+#include "../../profiling.h"
 
 namespace zylann {
 

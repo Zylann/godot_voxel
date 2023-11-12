@@ -7,7 +7,6 @@
 #include "../terrain/fixed_lod/voxel_terrain.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
-#include "../util/godot/funcs.h"
 #include "../util/math/conv.h"
 #include "../util/voxel_raycast.h"
 

@@ -1,6 +1,5 @@
 #include "voxel_tool_multipass_generator.h"
 #include "../../edition/funcs.h"
-#include "../../util/godot/funcs.h"
 
 namespace zylann::voxel {
 

@@ -1,6 +1,6 @@
 #include "voxel_tool.h"
 #include "../storage/voxel_buffer_gd.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/log.h"
 #include "../util/math/color8.h"
 #include "../util/math/conv.h"

@@ -8,7 +8,6 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/godot/funcs.h"
 #include "voxel_graph_editor_node_preview.h"
 
 namespace zylann::voxel {

@@ -3,7 +3,6 @@
 #include "../generators/generate_block_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/dstack.h"
-#include "../util/godot/funcs.h"
 #include "../util/log.h"
 #include "../util/profiling.h"
 

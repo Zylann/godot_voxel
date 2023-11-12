@@ -3,7 +3,7 @@
 #include "../../storage/voxel_buffer_internal.h"
 #include "../../util/containers/span.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 // TODO GDX: String has no `operator+=`

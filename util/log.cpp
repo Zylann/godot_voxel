@@ -1,4 +1,3 @@
-#include "godot/funcs.h"
 #include "string_funcs.h"
 
 #include "godot/classes/os.h"
@@ -81,7 +80,7 @@ void print_warning(const FwdConstStdString &warning, const char *func, const cha
 }
 
 void print_error(FwdConstStdString error, const char *func, const char *file, int line) {
-	print_error(error.s.c_str(), func, file, line);
+	_err_print_error(func, file, line, error.s.c_str());
 }
 
 void print_error(const char *error, const char *func, const char *file, int line) {

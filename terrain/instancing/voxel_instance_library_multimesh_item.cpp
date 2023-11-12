@@ -4,7 +4,7 @@
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/physics_body_3d.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "voxel_instancer.h"
 
 namespace zylann::voxel {

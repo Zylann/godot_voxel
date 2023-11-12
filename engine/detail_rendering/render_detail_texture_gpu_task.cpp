@@ -1,7 +1,7 @@
 #include "render_detail_texture_gpu_task.h"
 #include "../../modifiers/voxel_modifier.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/profiling.h"
 #include "../gpu/compute_shader.h"
 #include "../gpu/compute_shader_parameters.h"

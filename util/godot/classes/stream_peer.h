@@ -4,11 +4,12 @@
 #if defined(ZN_GODOT)
 #include <core/io/stream_peer.h>
 #elif defined(ZN_GODOT_EXTENSION)
+#include "../core/packed_arrays.h"
 #include <godot_cpp/classes/stream_peer.hpp>
 using namespace godot;
 #endif
 
-#include "../funcs.h"
+#include "../../containers/span.h"
 
 namespace zylann {
 
