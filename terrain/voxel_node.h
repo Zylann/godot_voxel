@@ -32,6 +32,9 @@ public:
 	void set_shadow_casting(GeometryInstance3D::ShadowCastingSetting setting);
 	GeometryInstance3D::ShadowCastingSetting get_shadow_casting() const;
 
+	void set_render_layers_mask(int mask);
+	int get_render_layers_mask() const;
+
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
 
@@ -54,6 +57,7 @@ protected:
 
 	virtual void _on_gi_mode_changed() {}
 	virtual void _on_shadow_casting_changed() {}
+	virtual void _on_render_layers_mask_changed() {}
 
 private:
 	Ref<VoxelMesher> _b_get_mesher() {
@@ -81,6 +85,7 @@ private:
 
 	GeometryInstance3D::GIMode _gi_mode = GeometryInstance3D::GI_MODE_DISABLED;
 	GeometryInstance3D::ShadowCastingSetting _shadow_casting = GeometryInstance3D::SHADOW_CASTING_SETTING_ON;
+	int _render_layers_mask = 1;
 };
 
 } // namespace zylann::voxel

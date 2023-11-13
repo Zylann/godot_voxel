@@ -284,6 +284,13 @@ void VoxelTerrain::_on_shadow_casting_changed() {
 	});
 }
 
+void VoxelTerrain::_on_render_layers_mask_changed() {
+	const int mask = get_render_layers_mask();
+	_mesh_map.for_each_block([mask](VoxelMeshBlockVT &block) { //
+		block.set_render_layers_mask(mask);
+	});
+}
+
 Ref<VoxelMesher> VoxelTerrain::get_mesher() const {
 	return _mesher;
 }
@@ -1734,7 +1741,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	block->set_mesh(mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()));
+	block->set_mesh(
+			mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()), get_render_layers_mask());
 
 	if (_material_override.is_valid()) {
 		block->set_material_override(_material_override);

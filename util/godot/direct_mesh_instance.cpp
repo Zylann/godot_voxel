@@ -109,6 +109,12 @@ void DirectMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	set_geometry_instance_gi_mode(_mesh_instance, mode);
 }
 
+void DirectMeshInstance::set_render_layers_mask(int mask) {
+	ERR_FAIL_COND(!_mesh_instance.is_valid());
+	RenderingServer &vs = *RenderingServer::get_singleton();
+	vs.instance_set_layer_mask(_mesh_instance, mask);
+}
+
 void DirectMeshInstance::operator=(DirectMeshInstance &&src) {
 	if (_mesh_instance == src._mesh_instance) {
 		return;

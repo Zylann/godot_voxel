@@ -183,6 +183,17 @@ void VoxelNode::set_shadow_casting(GeometryInstance3D::ShadowCastingSetting sett
 	}
 }
 
+void VoxelNode::set_render_layers_mask(int mask) {
+	if (mask != _render_layers_mask) {
+		_render_layers_mask = mask;
+		_on_render_layers_mask_changed();
+	}
+}
+
+int VoxelNode::get_render_layers_mask() const {
+	return _render_layers_mask;
+}
+
 GeometryInstance3D::ShadowCastingSetting VoxelNode::get_shadow_casting() const {
 	return _shadow_casting;
 }
@@ -203,6 +214,9 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shadow_casting", "mode"), &VoxelNode::set_shadow_casting);
 	ClassDB::bind_method(D_METHOD("get_shadow_casting"), &VoxelNode::get_shadow_casting);
 
+	ClassDB::bind_method(D_METHOD("set_render_layers_mask", "mask"), &VoxelNode::set_render_layers_mask);
+	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
 			"set_stream", "get_stream");
 	ADD_PROPERTY(
@@ -214,6 +228,8 @@ void VoxelNode::_bind_methods() {
 			"get_gi_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
 			"set_shadow_casting", "get_shadow_casting");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layers_mask", PROPERTY_HINT_LAYERS_3D_RENDER),
+			"set_render_layers_mask", "get_render_layers_mask");
 }
 
 } // namespace zylann::voxel

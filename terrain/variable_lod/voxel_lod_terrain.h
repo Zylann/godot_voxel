@@ -254,6 +254,7 @@ protected:
 
 	void _on_gi_mode_changed() override;
 	void _on_shadow_casting_changed() override;
+	void _on_render_layers_mask_changed() override;
 
 private:
 	void process(float delta);
