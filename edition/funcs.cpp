@@ -146,6 +146,8 @@ Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1) {
 	return Box3i::from_min_max(to_vec3i(math::floor(minp)), to_vec3i(math::ceil(maxp)));
 }
 
+#ifdef DEBUG_ENABLED
+
 // Reference implementation. Correct but very slow.
 void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos,
 		float sphere_radius) {
@@ -203,6 +205,8 @@ void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst,
 		}
 	}
 }
+
+#endif
 
 void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos,
 		float sphere_radius) {

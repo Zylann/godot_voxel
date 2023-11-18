@@ -564,8 +564,10 @@ struct DoShapeChunked {
 	}
 };
 
+#ifdef DEBUG_ENABLED
 void box_blur_slow_ref(
 		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
+#endif
 
 void box_blur(
 		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
