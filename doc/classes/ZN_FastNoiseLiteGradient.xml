@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="ZN_FastNoiseLiteGradient" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
-		Generates coherent and fractal noise gradients using the [url=https://github.com/Auburn/FastNoise]FastNoiseLite[/url] library.
+		Generates coherent and fractal noise gradients using the [url=https://github.com/Auburn/FastNoiseLite]FastNoiseLite[/url] library.
 	</brief_description>
 	<description>
+		This is an alternate implementation of [FastNoiseLite], because Godot's integration does not expose methods to access gradients directly.
 	</description>
 	<tutorials>
 	</tutorials>
