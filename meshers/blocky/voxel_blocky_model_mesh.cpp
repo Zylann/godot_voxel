@@ -1,7 +1,9 @@
 #include "voxel_blocky_model_mesh.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
+#include "../../util/godot/classes/point_mesh.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/ortho_basis.h"
@@ -13,6 +15,13 @@
 namespace zylann::voxel {
 
 void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
+	{
+		Ref<PointMesh> point_mesh = mesh;
+		if (point_mesh.is_valid()) {
+			ZN_PRINT_ERROR(format("PointMesh is not supported by {}.", get_class_name_str<VoxelBlockyModelMesh>()));
+			return;
+		}
+	}
 	_mesh = mesh;
 	if (_mesh.is_valid()) {
 		set_surface_count(_mesh->get_surface_count());
@@ -121,6 +130,20 @@ static void rotate_mesh_arrays_ortho(PackedVector3Array &vertices, PackedVector3
 	rotate_mesh_arrays(vertices, normals, tangents, basis);
 }
 
+namespace {
+bool validate_indices(Span<const int> indices, int vertex_count) {
+	ZN_ASSERT_RETURN_V(vertex_count >= 0, false);
+	for (const int index : indices) {
+		if (index < 0 || index >= vertex_count) {
+			ZN_PRINT_ERROR(
+					format("Invalid index found in mesh indices. Maximum is {}, found {}", vertex_count - 1, index));
+			return false;
+		}
+	}
+	return true;
+}
+} // namespace
+
 static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> materials,
 		VoxelBlockyModel::BakedData &baked_data, bool bake_tangents,
 		VoxelBlockyModel::MaterialIndexer &material_indexer, unsigned int ortho_rotation) {
@@ -132,16 +155,26 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 		ERR_CONTINUE(arrays.size() == 0);
 
 		PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
-		ERR_CONTINUE_MSG(indices.size() % 3 != 0, "Mesh surface is empty or does not contain triangles");
+		ERR_CONTINUE_MSG(indices.size() == 0, "Mesh surface is empty or is missing an index buffer.");
+		ERR_CONTINUE_MSG(indices.size() % 3 != 0,
+				String("Mesh surface has an invalid number of indices. "
+					   "Expected multiple of 3 (for triangles), found {0}")
+						.format(varray(indices.size())));
 
 		PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 		PackedVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 		PackedVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
 		PackedFloat32Array tangents = arrays[Mesh::ARRAY_TANGENT];
 
+		// Godot actually allows to create an ArrayMesh with invalid indices. We require valid indices for baking, so we
+		// have to check it.
+		if (!validate_indices(to_span(indices), positions.size())) {
+			continue;
+		}
+
 		baked_data.empty = positions.size() == 0;
 
-		ZN_ASSERT_CONTINUE(normals.size() != 0);
+		ZN_ASSERT_CONTINUE_MSG(normals.size() != 0, "The mesh is missing normals, this is not supported.");
 
 		ZN_ASSERT_CONTINUE(positions.size() == normals.size());
 		// ZN_ASSERT_CONTINUE(positions.size() == uvs.size());
@@ -302,7 +335,7 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 				}
 			}
 		}
-	}
+	} // namespace zylann::voxel
 }
 
 static void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::BakedData &baked_data,
@@ -374,14 +407,17 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 
-	for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
-		const BakedData::Surface &surface = baked_data.model.surfaces[surface_index];
-		Ref<Material> material = materials[surface.material_id];
-		Ref<Material> material_override = get_material_override(surface_index);
-		if (material_override.is_valid()) {
-			material = material_override;
+	// In case of earlier failure, it's possible there are no materials at all.
+	if (materials.size() > 0) {
+		for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
+			const BakedData::Surface &surface = baked_data.model.surfaces[surface_index];
+			Ref<Material> material = materials[surface.material_id];
+			Ref<Material> material_override = get_material_override(surface_index);
+			if (material_override.is_valid()) {
+				material = material_override;
+			}
+			mesh->surface_set_material(surface_index, material);
 		}
-		mesh->surface_set_material(surface_index, material);
 	}
 
 	return mesh;
