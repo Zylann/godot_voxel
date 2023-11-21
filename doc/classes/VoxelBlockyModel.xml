@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyModel" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyModel" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Model stored in [VoxelBlockyLibrary] and used by [VoxelMesherBlocky].
 	</brief_description>
@@ -26,8 +26,8 @@
 		</method>
 		<method name="rotate_90">
 			<return type="void" />
-			<param index="0" name="_unnamed_arg0" type="int" enum="Vector3i.Axis" />
-			<param index="1" name="_unnamed_arg1" type="bool" />
+			<param index="0" name="axis" type="int" enum="Vector3i.Axis" />
+			<param index="1" name="clockwise" type="bool" />
 			<description>
 			</description>
 		</method>

@@ -10,7 +10,7 @@ def configure(env):
 
     env_vars = Variables()
 
-    env_vars.Add(BoolVariable("voxel_tests", 
+    env_vars.Add(BoolVariable("voxel_tests",
         "Build with tests for the voxel module, which will run on startup of the engine", False))
 
     env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
@@ -30,15 +30,15 @@ def get_doc_classes():
         "VoxelBlockSerializer",
         "VoxelBlockyAttribute",
         "VoxelBlockyAttributeAxis",
+        "VoxelBlockyAttributeCustom",
         "VoxelBlockyAttributeDirection",
         "VoxelBlockyAttributeRotation",
-        "VoxelBlockyAttributeCustom",
         "VoxelBlockyLibrary",
         "VoxelBlockyLibraryBase",
         "VoxelBlockyModel",
-        "VoxelBlockyModelMesh",
         "VoxelBlockyModelCube",
         "VoxelBlockyModelEmpty",
+        "VoxelBlockyModelMesh",
         "VoxelBlockyType",
         "VoxelBlockyTypeLibrary",
         "VoxelBoxMover",
@@ -77,11 +77,13 @@ def get_doc_classes():
         "VoxelModifierSphere",
         "VoxelNode",
         "VoxelRaycastResult",
+        "VoxelSaveCompletionTracker",
         "VoxelStream",
         "VoxelStreamRegionFiles",
         "VoxelStreamScript",
         "VoxelStreamSQLite",
         "VoxelTerrain",
+        "VoxelTerrainMultiplayerSynchronizer",
         "VoxelTool",
         "VoxelToolBuffer",
         "VoxelToolLodTerrain",

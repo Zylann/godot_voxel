@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelGraphFunction" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelGraphFunction" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Graph for generating or processing voxels.
 	</brief_description>
@@ -252,9 +252,9 @@
 		</constant>
 		<constant name="NODE_OUTPUT_SDF" value="4" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_CUSTOM_INPUT" value="54" enum="NodeTypeID">
+		<constant name="NODE_CUSTOM_INPUT" value="52" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_CUSTOM_OUTPUT" value="55" enum="NodeTypeID">
+		<constant name="NODE_CUSTOM_OUTPUT" value="53" enum="NodeTypeID">
 		</constant>
 		<constant name="NODE_ADD" value="5" enum="NodeTypeID">
 		</constant>
@@ -332,31 +332,27 @@
 		</constant>
 		<constant name="NODE_OUTPUT_WEIGHT" value="43" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_2D" value="45" enum="NodeTypeID">
+		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="45" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FAST_NOISE_2_3D" value="46" enum="NodeTypeID">
+		<constant name="NODE_EXPRESSION" value="46" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_OUTPUT_SINGLE_TEXTURE" value="47" enum="NodeTypeID">
+		<constant name="NODE_POWI" value="47" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_EXPRESSION" value="48" enum="NodeTypeID">
+		<constant name="NODE_POW" value="48" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_POWI" value="49" enum="NodeTypeID">
+		<constant name="NODE_INPUT_SDF" value="49" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_POW" value="50" enum="NodeTypeID">
+		<constant name="NODE_COMMENT" value="50" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_INPUT_SDF" value="51" enum="NodeTypeID">
+		<constant name="NODE_FUNCTION" value="51" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_COMMENT" value="52" enum="NodeTypeID">
+		<constant name="NODE_RELAY" value="54" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_FUNCTION" value="53" enum="NodeTypeID">
+		<constant name="NODE_SPOTS_2D" value="55" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_RELAY" value="56" enum="NodeTypeID">
+		<constant name="NODE_SPOTS_3D" value="56" enum="NodeTypeID">
 		</constant>
-		<constant name="NODE_SPOTS_2D" value="57" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_SPOTS_3D" value="58" enum="NodeTypeID">
-		</constant>
-		<constant name="NODE_TYPE_COUNT" value="59" enum="NodeTypeID">
+		<constant name="NODE_TYPE_COUNT" value="57" enum="NodeTypeID">
 		</constant>
 	</constants>
 </class>
