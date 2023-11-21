@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelTool" inherits="RefCounted" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelTool" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Helper class to easily access and modify voxels
 	</brief_description>
@@ -41,6 +41,13 @@
 			<param index="1" name="end" type="Vector3i" />
 			<description>
 				Operate on a rectangular cuboid section of the terrain. [code]begin[/code] and [code]end[/code] are inclusive. Choose operation and which voxel to use by setting [code]value[/code] and [code]mode[/code] before calling this function.
+			</description>
+		</method>
+		<method name="do_path">
+			<return type="void" />
+			<param index="0" name="points" type="PackedVector3Array" />
+			<param index="1" name="radii" type="PackedFloat32Array" />
+			<description>
 			</description>
 		</method>
 		<method name="do_point">
