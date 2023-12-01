@@ -4,7 +4,6 @@
 #include "../../constants/voxel_constants.h"
 #include "../../engine/detail_rendering/detail_rendering.h"
 #include "../../generators/voxel_generator.h"
-#include "../../storage/voxel_data.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
 #include "../voxel_mesh_map.h"
@@ -157,8 +156,7 @@ struct VoxelLodTerrainUpdateData {
 		uint32_t time_total = 0;
 	};
 
-	// Data modified by the update task
-	struct State {
+	struct OctreeStreamingState {
 		// This terrain type is a sparse grid of octrees.
 		// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 		// Not using a pointer because Map storage is stable.
@@ -168,6 +166,11 @@ struct VoxelLodTerrainUpdateData {
 		Vector3i local_viewer_pos_previous_octree_update;
 		bool had_blocked_octree_nodes_previous_update = false;
 		bool force_update_octrees_next_update = false;
+	};
+
+	// Data modified by the update task
+	struct State {
+		OctreeStreamingState octree_streaming;
 
 		FixedArray<Lod, constants::MAX_LOD> lods;
 
