@@ -11,6 +11,8 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
 
+	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
+
 	// This should be the same distance relatively to each LOD
 	const int data_block_size = data.get_block_size();
 	const int data_block_size_po2 = data.get_block_size_po2();
