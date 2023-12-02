@@ -22,9 +22,6 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 
 	const int lod_count = data.get_lod_count();
 
-	static thread_local std::vector<Box3i> tls_to_remove;
-	tls_to_remove.clear();
-
 	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 	// Instead, those blocks are unloaded by the octree forest management.
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
@@ -53,19 +50,17 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 			break;
 		}
 
-		// Eliminate pending blocks that aren't needed
-
 		if (prev_box != new_box) {
+			// Eliminate pending blocks that aren't needed
 			ZN_PROFILE_SCOPE_NAMED("Unload data");
+
 			// VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			// RWLockWrite wlock(data_lod.map_lock);
 
-			tls_to_remove.clear();
-			prev_box.difference_to_vec(new_box, tls_to_remove);
-
-			for (const Box3i bbox : tls_to_remove) {
-				data.unload_blocks(bbox, lod_index, &blocks_to_save);
-			}
+			prev_box.difference(new_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
+				// data.unview_area(box_to_remove, nullptr, nullptr, &blocks_to_save);
+				data.unload_blocks(box_to_remove, lod_index, &blocks_to_save);
+			});
 		}
 
 		{
