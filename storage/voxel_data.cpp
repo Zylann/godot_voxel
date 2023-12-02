@@ -395,8 +395,8 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	// TODO Optimize: thread_local pooling?
 	std::vector<Task> todo;
 	// We'll pack tasks per LOD so we'll have less locking to do
-	// TODO Optimize: thread_local pooling?
-	std::vector<unsigned int> count_per_lod;
+	FixedArray<unsigned int, constants::MAX_LOD> count_per_lod;
+	fill(count_per_lod, 0u);
 
 	// We could have locked all LODs for writing during the whole process.
 	// But in order to reduce the amount of locking and time being locked, we only lock them one by one for reading
@@ -436,7 +436,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 			});
 		}
 
-		count_per_lod.push_back(todo.size() - prev_size);
+		count_per_lod[lod_index] = todo.size() - prev_size;
 	}
 
 	const Vector3i block_size = Vector3iUtil::create(data_block_size);
