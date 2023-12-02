@@ -6,6 +6,7 @@
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/ref_count.h"
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
 
@@ -110,10 +111,14 @@ struct VoxelLodTerrainUpdateData {
 		RWLock map_lock;
 	};
 
+	struct LoadingDataBlock {
+		RefCount viewers;
+	};
+
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
-		std::unordered_set<Vector3i> loading_blocks;
+		std::unordered_map<Vector3i, LoadingDataBlock> loading_blocks;
 		BinaryMutex loading_blocks_mutex;
 
 		// These are relative to this LOD, in block coordinates
@@ -164,6 +169,9 @@ struct VoxelLodTerrainUpdateData {
 		std::map<Vector3i, OctreeItem> lod_octrees;
 		Box3i last_octree_region_box;
 		Vector3i local_viewer_pos_previous_octree_update;
+
+		// Tells if there were nodes that needed to split or merge but could not due to pending dependencies.
+		// This affects whether octree streaming will need to be processed again on the next update.
 		bool had_blocked_octree_nodes_previous_update = false;
 		bool force_update_octrees_next_update = false;
 	};

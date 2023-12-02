@@ -74,6 +74,7 @@ public:
 		bool max_lod_hint;
 		// Blocks with this flag set should not be ignored.
 		// This is used when data streaming is off, all blocks are loaded at once.
+		// TODO Unused?
 		bool initial_load;
 	};
 

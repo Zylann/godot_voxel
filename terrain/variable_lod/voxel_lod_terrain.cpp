@@ -1358,13 +1358,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	_stats.time_update_task = state.stats.time_total;
 }
 
-template <typename T>
-bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mutex) {
-	MutexLock lock(mutex);
-	typename std::unordered_set<T>::const_iterator it = set.find(v);
-	return it != set.end();
-}
-
 void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
@@ -1383,11 +1376,24 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		return;
 	}
 
+	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
+	RefCount viewers;
 	// Initial load will be true when we requested data without specifying specific positions,
 	// so we wouldn't know which ones to expect. This is the case of full load mode.
-	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
-	if (!ob.initial_load) {
-		if (!thread_safe_contains(lod.loading_blocks, ob.position, lod.loading_blocks_mutex)) {
+	// if (!ob.initial_load) {
+	// Actually, in full load mode, we don't care about viewers and loading blocks, since everything should be loaded
+	// up-front. Blocks can also be received due to generation caching afterward, but we don't refcount them either.
+	if (_data->is_streaming_enabled()) {
+		bool was_loading = false;
+		{
+			MutexLock lock(lod.loading_blocks_mutex);
+			auto it = lod.loading_blocks.find(ob.position);
+			if (it != lod.loading_blocks.end()) {
+				was_loading = true;
+				viewers = it->second.viewers;
+			}
+		}
+		if (!was_loading) {
 			// That block was not requested, or is no longer needed. drop it...
 			ZN_PRINT_VERBOSE(
 					format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod_index));
@@ -1411,6 +1417,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 
 	VoxelDataBlock block(ob.voxels, ob.lod_index);
 	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
+	block.viewers = viewers;
 
 	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
 		// Voxel block size is incorrect, drop it
@@ -1429,6 +1436,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	{
 		// We have to do this after adding the block to the map, otherwise there would be a small period of time where
 		// the threaded update task could request the block again needlessly
+		// TODO In full load mode, this might be unnecessary, since it's not populated
 		MutexLock lock(lod.loading_blocks_mutex);
 		lod.loading_blocks.erase(ob.position);
 	}

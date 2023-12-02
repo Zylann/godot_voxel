@@ -245,17 +245,26 @@ static void send_block_data_requests(VolumeID volume_id,
 	}
 }
 
+// This is used when the terrain has no stream and no generator: there can only be empty blocks when moving around.
 static void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
 		VoxelData &data, VoxelLodTerrainUpdateData::State &state) {
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const VoxelLodTerrainUpdateData::BlockLocation loc = blocks_to_load[i];
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[loc.lod];
+		RefCount viewers;
 		{
 			MutexLock mlock(lod.loading_blocks_mutex);
-			lod.loading_blocks.erase(loc.position);
+			auto it = lod.loading_blocks.find(loc.position);
+			if (it != lod.loading_blocks.end()) {
+				viewers = it->second.viewers;
+				lod.loading_blocks.erase(it);
+			} else {
+				ZN_PRINT_ERROR("Loading block wasn't found when consuming data requests as empty");
+			}
 		}
 		{
 			VoxelDataBlock empty_block(loc.lod);
+			empty_block.viewers = viewers;
 			data.try_set_block(loc.position, empty_block);
 		}
 	}
@@ -375,6 +384,7 @@ static void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::St
 // Generates all non-present blocks in preparation for an edit.
 // This function schedules one parallel task for every block.
 // The returned tracker may be polled to detect when it is complete.
+// Only used in full load mode, because in streaming mode blocks must be present already.
 static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const std::shared_ptr<VoxelData> data_ptr,
 		Span<const Box3i> voxel_boxes, Span<IThreadedTask *> next_tasks, VolumeID volume_id,
@@ -415,11 +425,12 @@ static std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerra
 			data.get_missing_blocks(block_box, lod_index, tls_missing);
 
 			if (tls_missing.size() > 0) {
-				MutexLock mlock(lod.loading_blocks_mutex);
+				// MutexLock mlock(lod.loading_blocks_mutex);
 				for (const Vector3i &missing_bpos : tls_missing) {
 					if (!lod.has_loading_block(missing_bpos)) {
 						todo.push_back(TaskArguments{ missing_bpos, lod_index });
-						lod.loading_blocks.insert(missing_bpos);
+						// We should not need to populate loading_blocks in full load mode
+						// lod.loading_blocks.insert(missing_bpos);
 					}
 				}
 			}

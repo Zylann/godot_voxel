@@ -26,6 +26,8 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 
 	// Ignore largest lod because it can extend a little beyond due to the view distance setting.
 	// Instead, those blocks are unloaded by the octree forest management.
+	// TODO Where?
+	//
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
 	for (int lod_index = lod_count - 2; lod_index >= 0; --lod_index) {
 		ZN_PROFILE_SCOPE();
@@ -60,7 +62,6 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 			// RWLockWrite wlock(data_lod.map_lock);
 
 			prev_box.difference(new_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
-				// data.unview_area(box_to_remove, nullptr, nullptr, &blocks_to_save);
 				data.unload_blocks(box_to_remove, lod_index, &blocks_to_save);
 			});
 		}
@@ -282,6 +283,25 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
+namespace {
+bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
+	auto it = lod.loading_blocks.find(position);
+
+	if (it == lod.loading_blocks.end()) {
+		// First viewer to request it
+		VoxelLodTerrainUpdateData::LoadingDataBlock new_loading_block;
+		new_loading_block.viewers.add();
+
+		lod.loading_blocks.insert({ position, new_loading_block });
+
+		return true;
+	}
+	// TODO Current octree logic can't reliably add to refcount only once
+	// 	it->second.viewers.add();
+	return false;
+}
+} // namespace
+
 bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const VoxelData &data,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
@@ -332,9 +352,8 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 				// Schedule loading for missing neighbors
 				MutexLock lock(lod.loading_blocks_mutex);
 				for (const Vector3i &missing_pos : tls_missing) {
-					if (!lod.has_loading_block(missing_pos)) {
+					if (add_loading_block(lod, missing_pos)) {
 						blocks_to_load.push_back({ missing_pos, lod_index });
-						lod.loading_blocks.insert(missing_pos);
 					}
 				}
 			}
@@ -408,13 +427,19 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 
 		data.get_missing_blocks(data_blocks_box, lod_index, tls_missing);
 
+		// TODO Octree logic: add refcount to data blocks that were already loaded?
+		// How do we know if it's actually the first time we check this area while blocks were already loaded?
+		// We can come here several times, with some blocks progressively loading until they are all loaded.
+		// But that means if we use `view_area`, we'll add extra refcount unwantedly.
+		// Maybe we can add state to octree nodes to check if it's the first time we request children?
+		// Another option is to do this with the sliding box logic, which is far simpler to understand.
+
 		if (tls_missing.size() > 0) {
 			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 			MutexLock mlock(lod.loading_blocks_mutex);
 			for (const Vector3i &missing_bpos : tls_missing) {
-				if (!lod.has_loading_block(missing_bpos)) {
+				if (add_loading_block(lod, missing_bpos)) {
 					blocks_to_load.push_back({ missing_bpos, lod_index });
-					lod.loading_blocks.insert(missing_bpos);
 				}
 			}
 			return false;
