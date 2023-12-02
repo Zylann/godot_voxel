@@ -5,6 +5,8 @@
 
 namespace zylann::voxel {
 
+namespace {
+
 void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> &blocks_to_save, bool can_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
@@ -283,7 +285,6 @@ inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 			mesh_block_size >= data_block_size;
 }
 
-namespace {
 bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 	auto it = lod.loading_blocks.find(position);
 
@@ -300,7 +301,6 @@ bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 	// 	it->second.viewers.add();
 	return false;
 }
-} // namespace
 
 bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const VoxelData &data,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
@@ -707,6 +707,8 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	}
 #endif
 }
+
+} // namespace
 
 void process_octree_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
 		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
