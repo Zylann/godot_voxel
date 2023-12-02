@@ -121,6 +121,7 @@ public:
 	// Every block intersecting with the box at every LOD will be checked.
 	// This function runs sequentially and should be thread-safe. May be used if blocks are immediately needed.
 	// It will block if other threads are accessing the same data.
+	// When streaming is enabled, non-loaded areas will not be touched.
 	// WARNING: this does not check if the area is editable.
 	void pre_generate_box(Box3i voxel_box);
 
