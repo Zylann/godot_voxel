@@ -316,7 +316,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	const int channel = get_channel();
 	VoxelData &data = _terrain->get_storage();
-	// TODO Optimization: is it worth a making a fast-path for this?
+	// TODO Optimization: is it worth making a fast-path for this?
 	return get_sdf_interpolated(
 			[&data, channel](Vector3i ipos) {
 				VoxelSingleValue defval;
