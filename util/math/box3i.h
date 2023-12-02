@@ -219,7 +219,7 @@ public:
 	}
 
 	// Calls a function on all side cell positions belonging to the box.
-	// This function was implemented with no particular order in mind.
+	// Cells don't follow a particular order and may not be relied on.
 	template <typename F>
 	void for_inner_outline(F f) const {
 		//     o-------o
