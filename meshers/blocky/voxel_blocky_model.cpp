@@ -470,7 +470,7 @@ void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis
 
 		const Vector3 min_pos = math::min(p0, p1);
 		const Vector3 max_pos = math::max(p0, p1);
-		aabb = AABB(to_vec3(min_pos), to_vec3(max_pos - min_pos));
+		aabb = AABB(min_pos, max_pos - min_pos);
 
 		aabb.position += Vector3(0.5, 0.5, 0.5);
 	}
