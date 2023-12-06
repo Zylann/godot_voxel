@@ -427,7 +427,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
 	// If we get an empty box at this point, something is wrong with the caller
 	ZN_ASSERT_RETURN(!data_box.is_empty());
 
-	const bool data_available = _data->has_all_blocks_in_area(data_box);
+	const bool data_available = _data->has_all_blocks_in_area(data_box, 0);
 
 	if (data_available) {
 		// Regardless of if the updater is updating the block already,

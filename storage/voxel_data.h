@@ -200,8 +200,8 @@ public:
 	// This is mainly used for debugging so it isn't optimal, don't use this if you plan to query many blocks.
 	bool has_block(Vector3i bpos, unsigned int lod_index) const;
 
-	// Tests if all blocks in a LOD0 area are loaded. If any isn't, returns false. Otherwise, returns true.
-	bool has_all_blocks_in_area(Box3i data_blocks_box) const;
+	// Tests if all blocks in an area are loaded. If any isn't, returns false. Otherwise, returns true.
+	bool has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_index) const;
 
 	// Gets the total amount of allocated blocks. This includes blocks having no voxel data.
 	unsigned int get_block_count() const;

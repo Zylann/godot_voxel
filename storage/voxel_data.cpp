@@ -575,9 +575,9 @@ bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
 	return data_lod.map.has_block(bpos);
 }
 
-bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box) const {
+bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_index) const {
 	ZN_PROFILE_SCOPE();
-	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
+	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size() << lod_index);
 	data_blocks_box = data_blocks_box.clipped(bounds_in_blocks);
 
 	const Lod &data_lod = _lods[0];
