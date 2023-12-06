@@ -178,9 +178,9 @@ void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::State &st
 		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-		for (unsigned int bi = 0; bi < lod.blocks_pending_update.size(); ++bi) {
+		for (unsigned int bi = 0; bi < lod.mesh_blocks_pending_update.size(); ++bi) {
 			ZN_PROFILE_SCOPE();
-			const Vector3i mesh_block_pos = lod.blocks_pending_update[bi];
+			const Vector3i mesh_block_pos = lod.mesh_blocks_pending_update[bi];
 
 			auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
 			// A block must have been allocated before we ask for a mesh update
@@ -239,7 +239,7 @@ void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::State &st
 			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		}
 
-		lod.blocks_pending_update.clear();
+		lod.mesh_blocks_pending_update.clear();
 	}
 }
 
@@ -396,7 +396,8 @@ void process_changed_generated_areas(VoxelLodTerrainUpdateData::State &state,
 			bbox.for_each_cell_zxy([&lod](const Vector3i bpos) {
 				auto block_it = lod.mesh_map_state.map.find(bpos);
 				if (block_it != lod.mesh_map_state.map.end()) {
-					VoxelLodTerrainUpdateTask::schedule_mesh_update(block_it->second, bpos, lod.blocks_pending_update);
+					VoxelLodTerrainUpdateTask::schedule_mesh_update(
+							block_it->second, bpos, lod.mesh_blocks_pending_update);
 				}
 			});
 		}
@@ -451,7 +452,7 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 		if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
 			// If a mesh exists here, it will need an update.
 			// If there is no mesh, it will probably get created later when we come closer to it
-			schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
+			schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.mesh_blocks_pending_update);
 		}
 	}
 }

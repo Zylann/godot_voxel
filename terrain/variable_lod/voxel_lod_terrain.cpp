@@ -678,7 +678,7 @@ void VoxelLodTerrain::stop_updater() {
 
 	for (unsigned int i = 0; i < _update_data->state.lods.size(); ++i) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[i];
-		lod.blocks_pending_update.clear();
+		lod.mesh_blocks_pending_update.clear();
 
 		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = it->second;
@@ -2120,7 +2120,7 @@ void VoxelLodTerrain::remesh_all_blocks() {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
-			VoxelLodTerrainUpdateTask::schedule_mesh_update(it->second, it->first, lod.blocks_pending_update);
+			VoxelLodTerrainUpdateTask::schedule_mesh_update(it->second, it->first, lod.mesh_blocks_pending_update);
 		}
 	}
 }

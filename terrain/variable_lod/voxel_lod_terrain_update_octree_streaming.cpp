@@ -42,6 +42,7 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 		const Vector3i viewer_block_pos_within_lod =
 				VoxelDataMap::voxel_to_block_b(math::floor_to_int(p_viewer_pos), block_size_po2);
 
+		// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 		const Box3i bounds_in_blocks = Box3i( //
 				bounds_in_voxels.pos >> block_size_po2, //
 				bounds_in_voxels.size >> block_size_po2);
@@ -82,7 +83,7 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 				mesh_box = padded_new_box;
 			}
 
-			unordered_remove_if(lod.blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
+			unordered_remove_if(lod.mesh_blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
 				if (mesh_box.contains(bpos)) {
 					return false;
 				} else {
@@ -155,7 +156,7 @@ void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 		{
 			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.blocks_pending_update, [new_box](Vector3i bpos) { //
+			unordered_remove_if(lod.mesh_blocks_pending_update, [new_box](Vector3i bpos) { //
 				return !new_box.contains(bpos);
 			});
 		}
@@ -359,7 +360,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 			}
 
 			if (surrounded) {
-				lod.blocks_pending_update.push_back(mesh_block_pos);
+				lod.mesh_blocks_pending_update.push_back(mesh_block_pos);
 				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 			}
 

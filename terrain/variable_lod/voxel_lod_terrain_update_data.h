@@ -127,7 +127,7 @@ struct VoxelLodTerrainUpdateData {
 
 		MeshMapState mesh_map_state;
 
-		std::vector<Vector3i> blocks_pending_update;
+		std::vector<Vector3i> mesh_blocks_pending_update;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
