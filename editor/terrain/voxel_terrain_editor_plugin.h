@@ -51,6 +51,7 @@ private:
 		MENU_SHOW_OCTREE_NODES,
 		MENU_SHOW_MESH_UPDATES,
 		MENU_SHOW_MODIFIER_BOUNDS,
+		MENU_SHOW_ACTIVE_MESH_BLOCKS,
 		MENU_ABOUT
 	};
 
@@ -63,6 +64,7 @@ private:
 	bool _show_octree_bounds = false;
 	bool _show_mesh_updates = false;
 	bool _show_modifier_bounds = false;
+	bool _show_active_mesh_blocks = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;

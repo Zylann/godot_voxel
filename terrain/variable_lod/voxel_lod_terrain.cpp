@@ -2704,8 +2704,8 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Octree nodes
+	// That can be expensive to draw
 	if (debug_get_draw_flag(DEBUG_DRAW_OCTREE_NODES)) {
-		// That can be expensive to draw
 		const float lod_count_f = lod_count;
 
 		for (auto it = state.octree_streaming.lod_octrees.begin(); it != state.octree_streaming.lod_octrees.end();
@@ -2727,6 +2727,29 @@ void VoxelLodTerrain::update_gizmos() {
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
 				dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 			});
+		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_ACTIVE_MESH_BLOCKS)) {
+		const float lod_count_f = lod_count;
+
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+
+			for (auto mesh_it = lod.mesh_map_state.map.begin(); mesh_it != lod.mesh_map_state.map.end(); ++mesh_it) {
+				const VoxelLodTerrainUpdateData::MeshBlockState &ms = mesh_it->second;
+				if (ms.active) {
+					const int size = mesh_block_size << lod_index;
+					const Vector3i bpos = mesh_it->first;
+					const Vector3i voxel_pos = mesh_block_size * (bpos << lod_index);
+					const Transform3D local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
+					const Transform3D t = parent_transform * local_transform;
+					// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
+					// Also this might be better with sRGB?
+					const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
+					dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
+				}
+			}
 		}
 	}
 
@@ -3071,6 +3094,7 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_GROUP("Bounds", "");

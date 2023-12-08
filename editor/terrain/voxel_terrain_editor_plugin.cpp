@@ -89,6 +89,12 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 			popup->set_item_checked(i, _show_octree_nodes);
 		}
 		{
+			popup->add_item(ZN_TTR("Show active mesh blocks"), MENU_SHOW_ACTIVE_MESH_BLOCKS);
+			const int i = popup->get_item_index(MENU_SHOW_ACTIVE_MESH_BLOCKS);
+			popup->set_item_as_checkable(i, true);
+			popup->set_item_checked(i, _show_active_mesh_blocks);
+		}
+		{
 			popup->add_item(ZN_TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
 			const int i = popup->get_item_index(MENU_SHOW_MESH_UPDATES);
 			popup->set_item_as_checkable(i, true);
@@ -205,6 +211,7 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 			vlt->debug_set_draw_enabled(true);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
+			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS, _show_active_mesh_blocks);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
 			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
@@ -302,6 +309,17 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
 			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
+		} break;
+
+		case MENU_SHOW_ACTIVE_MESH_BLOCKS: {
+			VoxelNode *node = get_voxel_node();
+			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
+			ERR_FAIL_COND(lod_terrain == nullptr);
+			_show_active_mesh_blocks = !_show_active_mesh_blocks;
+			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS, _show_active_mesh_blocks);
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_ACTIVE_MESH_BLOCKS);
+			_menu_button->get_popup()->set_item_checked(i, _show_active_mesh_blocks);
 		} break;
 
 		case MENU_SHOW_MESH_UPDATES: {
