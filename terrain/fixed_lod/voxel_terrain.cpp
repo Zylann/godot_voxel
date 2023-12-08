@@ -1330,13 +1330,14 @@ void VoxelTerrain::process_viewer_data_box_change(
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
 			// ZN_PRINT_VERBOSE(format("Unview data box {}", out_of_range_box));
-			_data->unview_area(out_of_range_box, tls_missing_blocks, tls_found_blocks_positions,
+			_data->unview_area(out_of_range_box, 0, &tls_found_blocks_positions, &tls_missing_blocks,
 					may_save ? &_blocks_to_save : nullptr);
 		});
 
 		// Remove loading blocks (those were loaded and had their refcount reach zero)
 		for (const Vector3i bpos : tls_found_blocks_positions) {
 			emit_data_block_unloaded(bpos);
+			// TODO If they were loaded, why would they be in loading blocks?
 			_loading_blocks.erase(bpos);
 		}
 
@@ -1384,7 +1385,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 		new_data_box.difference(prev_data_box, [this](Box3i box_to_load) {
 			// ZN_PRINT_VERBOSE(format("View data box {}", box_to_load));
-			_data->view_area(box_to_load, tls_missing_blocks, tls_found_blocks_positions, tls_found_blocks);
+			_data->view_area(box_to_load, 0, &tls_missing_blocks, &tls_found_blocks_positions, &tls_found_blocks);
 		});
 
 		// Schedule loading of missing blocks

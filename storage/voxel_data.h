@@ -89,6 +89,10 @@ public:
 
 	void set_full_load_completed(bool complete);
 
+	inline bool is_full_load_completed() const {
+		return _full_load_completed;
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Voxel queries.
 	// When not specified, the used LOD index is 0.
@@ -282,13 +286,20 @@ public:
 	// Increases the reference count of loaded blocks in the area.
 	// Returns positions where blocks were loaded, and where they were missing.
 	// Shallow copies of found blocks are returned (voxel data is referenced).
-	void view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks);
+	// Should only be used if refcounting is used, may fail otherwise.
+	void view_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *missing_blocks,
+			std::vector<Vector3i> *found_blocks_positions, std::vector<VoxelDataBlock> *found_blocks);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
 	// Returns positions where blocks were unloaded, and where they were missing.
 	// If `to_save` is not null and some unloaded blocks contained modifications, their data will be returned too.
-	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &removed_blocks,
+	// Should only be used if refcounting is used, may fail otherwise.
+	void unview_area(Box3i blocks_box, unsigned int lod_index,
+			// Blocks that actually got removed (some areas can have no block)
+			std::vector<Vector3i> *removed_blocks,
+			// Missing blocks are used in case the caller has a collection of loading blocks, so it can cancel them
+			std::vector<Vector3i> *missing_blocks,
+			// Blocks to save are those that had unsaved modifications
 			std::vector<BlockToSave> *to_save);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,8 +340,12 @@ private:
 		RWLockRead rlock(data_lod.map_lock);
 		const VoxelDataBlock *block = data_lod.map.get_block(block_pos);
 		if (block == nullptr) {
+			// The block is not there, so unless streaming is not enabled, we don't know if it has edits or not.
 			return nullptr;
 		}
+
+		// The block is there, so we know if it has edits or not.
+
 		// TODO Thread-safety: this checking presence of voxels is not safe.
 		// It can change while meshing takes place if a modifier is moved in the same area,
 		// because it invalidates cached data (that doesn't require locking the map, and doesn't lock a VoxelBuffer,

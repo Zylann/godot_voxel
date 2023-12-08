@@ -14,6 +14,7 @@
 #include "../../util/profiling_clock.h"
 #include "../../util/string_funcs.h"
 #include "../../util/tasks/async_dependency_tracker.h"
+#include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "voxel_lod_terrain_update_octree_streaming.h"
 
 namespace zylann::voxel {
@@ -612,7 +613,10 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	data_blocks_to_load.clear();
 
 	profiling_clock.restart();
-	process_octree_streaming(
+	// TODO Allow to choose streaming system
+	// process_octree_streaming(
+	// 		state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream, stream_enabled);
+	process_clipbox_streaming(
 			state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream, stream_enabled);
 	state.stats.time_detect_required_blocks = profiling_clock.restart();
 

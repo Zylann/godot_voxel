@@ -34,6 +34,10 @@ struct VoxelLodTerrainUpdateData {
 	struct BlockLocation {
 		Vector3i position;
 		uint8_t lod;
+
+		inline bool operator==(BlockLocation other) const {
+			return position == other.position && other.lod == lod;
+		}
 	};
 
 	// struct BlockToSave {
@@ -52,6 +56,8 @@ struct VoxelLodTerrainUpdateData {
 
 		// Distance between a viewer and the end of LOD0
 		float lod_distance = 0.f;
+		// TODO Specify LOD0 distance separately so it can be relatively larger than other LODs
+		// float lod0_distance = 0.f;
 		unsigned int view_distance_voxels = 512;
 		// bool full_load_mode = false;
 		bool run_stream_in_editor = true;
@@ -86,15 +92,25 @@ struct VoxelLodTerrainUpdateData {
 	struct MeshBlockState {
 		std::atomic<MeshState> state;
 		std::atomic<DetailTextureState> detail_texture_state;
+
+		// Refcount here to support multiple viewers, we can't do it on the main thread's mesh map since the
+		// streaming logic is in the update task
+		RefCount mesh_viewers;
+		RefCount collision_viewers;
+
 		uint8_t transition_mask;
 		bool active;
-		// bool pending_transition_update;
+
+		// Tells whether the first meshing was done since this block was added.
+		// Written by the main thread only, since the main thread receives mesh updates
+		bool loaded;
 
 		MeshBlockState() :
 				state(MESH_NEVER_UPDATED),
 				detail_texture_state(DETAIL_TEXTURE_IDLE),
 				transition_mask(0),
-				active(false) {}
+				active(false),
+				loaded(false) {}
 	};
 
 	// Version of the mesh map designed to be mainly used for the threaded update task.
@@ -105,9 +121,11 @@ struct VoxelLodTerrainUpdateData {
 		// Locked for writing when blocks get inserted or removed from the map.
 		// If you need to lock more than one Lod, always do so in increasing order, to avoid deadlocks.
 		// IMPORTANT:
-		// - The update task will add and remove blocks from this map.
+		// - Only the update task will add and remove blocks from this map.
 		// - Threads outside the update task must never add or remove blocks to the map (even with locking),
 		//   unless the task is not running in parallel.
+		// - Threads outside the update task must always lock it, unless the update task isn't running.
+		// - The update task doesn't need to lock it, unless when adding or removing blocks.
 		RWLock map_lock;
 	};
 
@@ -173,12 +191,45 @@ struct VoxelLodTerrainUpdateData {
 		// Tells if there were nodes that needed to split or merge but could not due to pending dependencies.
 		// This affects whether octree streaming will need to be processed again on the next update.
 		bool had_blocked_octree_nodes_previous_update = false;
+
 		bool force_update_octrees_next_update = false;
+	};
+
+	// Paired viewers are VoxelViewers which intersect with the boundaries of the volume
+	// struct PairedViewer {
+	// 	struct State {
+	// 		Vector3i local_position_voxels;
+	// 		Box3i data_box; // In block coordinates
+	// 		Box3i mesh_box;
+	// 		int view_distance_voxels = 0;
+	// 		bool requires_collisions = false;
+	// 		bool requires_meshes = false;
+	// 	};
+	// 	ViewerID id;
+	// 	State state;
+	// 	State prev_state;
+	// };
+
+	struct ClipboxStreamingState {
+		Vector3i viewer_pos_in_lod0_voxels_previous_update;
+		int lod_distance_in_data_chunks_previous_update = 0;
+		int lod_distance_in_mesh_chunks_previous_update = 0;
+
+		// Written by main thread when data blocks are received.
+		// Read by update thread to trigger meshing.
+		std::vector<BlockLocation> loaded_data_blocks;
+		BinaryMutex loaded_data_blocks_mutex;
+
+		// Written by main thread when mesh blocks are received (and there was previously no mesh).
+		// Read by update thread to trigger visibility changes.
+		std::vector<BlockLocation> loaded_mesh_blocks;
+		BinaryMutex loaded_mesh_blocks_mutex;
 	};
 
 	// Data modified by the update task
 	struct State {
 		OctreeStreamingState octree_streaming;
+		ClipboxStreamingState clipbox_streaming;
 
 		FixedArray<Lod, constants::MAX_LOD> lods;
 

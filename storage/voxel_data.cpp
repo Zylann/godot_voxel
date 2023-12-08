@@ -924,13 +924,15 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 	return true;
 }
 
-void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-		std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks) {
+void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *missing_blocks,
+		std::vector<Vector3i> *found_blocks_positions, std::vector<VoxelDataBlock> *found_blocks) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(lod_index < _lods.size());
+
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
-	Lod &lod = _lods[0];
+	Lod &lod = _lods[lod_index];
 
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much?
@@ -939,25 +941,31 @@ void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_block
 	// Locking for read because we don't add or remove blocks.
 	RWLockRead rlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, &found_blocks_positions, &found_blocks, &missing_blocks](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, found_blocks_positions, found_blocks, &missing_blocks](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.add();
-			found_blocks.push_back(*block);
-			found_blocks_positions.push_back(bpos);
-		} else {
-			missing_blocks.push_back(bpos);
+			if (found_blocks != nullptr) {
+				found_blocks->push_back(*block);
+			}
+			if (found_blocks_positions != nullptr) {
+				found_blocks_positions->push_back(bpos);
+			}
+		} else if (missing_blocks != nullptr) {
+			missing_blocks->push_back(bpos);
 		}
 	});
 }
 
-void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-		std::vector<Vector3i> &removed_blocks, std::vector<BlockToSave> *to_save) {
+void VoxelData::unview_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *removed_blocks,
+		std::vector<Vector3i> *missing_blocks, std::vector<BlockToSave> *to_save) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(lod_index < _lods.size());
+
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
-	Lod &lod = _lods[0];
+	Lod &lod = _lods[lod_index];
 
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much? However if we do, we need to ensure no other thread is holding
@@ -967,7 +975,7 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 	// Locking for write because we are potentially going to remove blocks from the map.
 	RWLockWrite wlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, &missing_blocks, &removed_blocks, to_save](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.remove();
@@ -977,10 +985,12 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 				} else {
 					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
 				}
-				removed_blocks.push_back(bpos);
+				if (removed_blocks != nullptr) {
+					removed_blocks->push_back(bpos);
+				}
 			}
-		} else {
-			missing_blocks.push_back(bpos);
+		} else if (missing_blocks != nullptr) {
+			missing_blocks->push_back(bpos);
 		}
 	});
 }

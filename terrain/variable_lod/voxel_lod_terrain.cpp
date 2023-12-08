@@ -851,6 +851,8 @@ void VoxelLodTerrain::reset_mesh_maps() {
 	// Reset previous state caches to force rebuilding the view area
 	state.octree_streaming.last_octree_region_box = Box3i();
 	state.octree_streaming.lod_octrees.clear();
+	state.clipbox_streaming.lod_distance_in_data_chunks_previous_update = 0;
+	state.clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = 0;
 }
 
 int VoxelLodTerrain::get_lod_count() const {
@@ -1441,6 +1443,12 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		lod.loading_blocks.erase(ob.position);
 	}
 
+	if (_data->is_streaming_enabled()) {
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+		MutexLock mlock(cs.loaded_data_blocks_mutex);
+		cs.loaded_data_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod_index });
+	}
+
 	if (_instancer != nullptr && ob.instances != nullptr) {
 		_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
 	}
@@ -1471,6 +1479,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	uint8_t transition_mask;
 	bool active;
+	bool first_load = false;
 	{
 		VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
 		RWLockRead rlock(lod.mesh_map_state.map_lock);
@@ -1497,6 +1506,17 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
 		mesh_block_state.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
 		active = mesh_block_state.active;
+
+		if (!mesh_block_state.loaded) {
+			// First mesh load (note, no mesh being present counts as load too. Before that we would not know)
+			mesh_block_state.loaded = true;
+			first_load = true;
+		}
+	}
+	if (first_load) {
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
+		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod });
 	}
 
 	// -------- Part where we invoke Godot functions ---------
