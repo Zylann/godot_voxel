@@ -620,7 +620,6 @@ void update_mesh_block_load(
 		// }
 		// The parent must exist because sliding boxes contain each other. Maybe in the future that won't always be true
 		// if a viewer has special behavior?
-		// TODO This happens, need to investigate why
 		ZN_ASSERT_RETURN_MSG(parent_mesh_it != parent_lod.mesh_map_state.map.end(),
 				"Expected parent due to subdivision rules, bug?");
 
