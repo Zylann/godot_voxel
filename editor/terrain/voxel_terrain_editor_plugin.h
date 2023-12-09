@@ -11,6 +11,7 @@
 #include "../../util/godot/classes/input_event.h"
 
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)
+ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 
@@ -40,6 +41,7 @@ private:
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
+	void _on_save_file_dialog_file_selected(String fpath);
 
 	static void _bind_methods();
 
@@ -52,6 +54,7 @@ private:
 		MENU_SHOW_MESH_UPDATES,
 		MENU_SHOW_MODIFIER_BOUNDS,
 		MENU_SHOW_ACTIVE_MESH_BLOCKS,
+		MENU_DUMP_AS_SCENE,
 		MENU_ABOUT
 	};
 
@@ -70,6 +73,7 @@ private:
 	VoxelAboutWindow *_about_window = nullptr;
 	VoxelTerrainEditorTaskIndicator *_task_indicator = nullptr;
 	Ref<VoxelTerrainEditorInspectorPlugin> _inspector_plugin;
+	EditorFileDialog *_save_file_dialog = nullptr;
 };
 
 } // namespace zylann::voxel

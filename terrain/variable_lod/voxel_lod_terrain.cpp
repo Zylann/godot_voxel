@@ -2909,19 +2909,25 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		mesh_map.for_each_block([root](const VoxelMeshBlockVLT &block) {
-			block.for_each_mesh_instance_with_transform([root, &block](const DirectMeshInstance &dmi, Transform3D t) {
-				Ref<Mesh> mesh = dmi.get_mesh();
+		// To make the scene easier to inspect
+		Node3D *lod_node = memnew(Node3D);
+		lod_node->set_name(String("LOD{0}").format(varray(lod_index)));
+		root->add_child(lod_node);
 
-				if (mesh.is_valid()) {
-					MeshInstance3D *mi = memnew(MeshInstance3D);
-					mi->set_mesh(mesh);
-					mi->set_transform(t);
-					// TODO Transition mesh visibility?
-					mi->set_visible(block.is_visible());
-					root->add_child(mi);
-				}
-			});
+		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
+			block.for_each_mesh_instance_with_transform(
+					[lod_node, &block](const DirectMeshInstance &dmi, Transform3D t) {
+						Ref<Mesh> mesh = dmi.get_mesh();
+
+						if (mesh.is_valid()) {
+							MeshInstance3D *mi = memnew(MeshInstance3D);
+							mi->set_mesh(mesh);
+							mi->set_transform(t);
+							// TODO Transition mesh visibility?
+							mi->set_visible(block.is_visible());
+							lod_node->add_child(mi);
+						}
+					});
 		});
 	}
 
@@ -2935,7 +2941,7 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	return root;
 }
 
-int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer) const {
 	Node3D *root = debug_dump_as_nodes(include_instancer);
 	ZN_ASSERT_RETURN_V(root != nullptr, ERR_BUG);
 
@@ -2951,6 +2957,10 @@ int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include
 
 	const Error save_result = save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	return save_result;
+}
+
+int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+	return static_cast<int>(debug_dump_as_scene(fpath, include_instancer));
 }
 
 bool VoxelLodTerrain::_b_is_area_meshed(AABB aabb, int lod_index) const {

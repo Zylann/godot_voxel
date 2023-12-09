@@ -115,6 +115,8 @@ VoxelStringNames::VoxelStringNames() {
 
 	_on_async_search_completed = StringName("_on_async_search_completed");
 	async_search_completed = StringName("async_search_completed");
+
+	file_selected = StringName("file_selected");
 }
 
 } // namespace zylann::voxel

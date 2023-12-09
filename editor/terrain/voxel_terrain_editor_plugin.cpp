@@ -1,10 +1,12 @@
 #include "voxel_terrain_editor_plugin.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../generators/voxel_generator.h"
 #include "../../modifiers/godot/voxel_modifier_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/camera_3d.h"
+#include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/editor_settings.h"
 #include "../../util/godot/classes/menu_button.h"
@@ -40,6 +42,14 @@ void VoxelTerrainEditorPlugin::init() {
 
 	// This plugin actually owns the singleton
 	VoxelAboutWindow::create_singleton(*base_control);
+
+	_save_file_dialog = memnew(EditorFileDialog);
+	_save_file_dialog->set_title(ZN_TTR("Save Debug Terrain Dump As Scene"));
+	_save_file_dialog->add_filter("*.scn", "Godot Scene File");
+	_save_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
+	_save_file_dialog->connect(VoxelStringNames::get_singleton().file_selected,
+			ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_save_file_dialog_file_selected));
+	base_control->add_child(_save_file_dialog);
 }
 
 VoxelNode *VoxelTerrainEditorPlugin::get_voxel_node() const {
@@ -106,6 +116,8 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 			popup->set_item_as_checkable(i, true);
 			popup->set_item_checked(i, _show_modifier_bounds);
 		}
+		popup->add_separator();
+		popup->add_item(ZN_TTR("Dump as scene... (Debug)"), MENU_DUMP_AS_SCENE);
 	}
 	popup->add_separator();
 	popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
@@ -344,15 +356,28 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_menu_button->get_popup()->set_item_checked(i, _show_modifier_bounds);
 		} break;
 
+		case MENU_DUMP_AS_SCENE:
+			_save_file_dialog->popup_centered_ratio();
+			break;
+
 		case MENU_ABOUT:
 			VoxelAboutWindow::popup_singleton();
 			break;
 	}
 }
 
+void VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected(String fpath) {
+	VoxelNode *node = get_voxel_node();
+	VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
+	ERR_FAIL_COND(lod_terrain == nullptr);
+	lod_terrain->debug_dump_as_scene(fpath, false);
+}
+
 void VoxelTerrainEditorPlugin::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
+	ClassDB::bind_method(D_METHOD("_on_save_file_dialog_file_selected", "fpath"),
+			&VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected);
 #endif
 }
 
