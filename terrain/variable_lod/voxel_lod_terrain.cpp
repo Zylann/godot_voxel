@@ -2201,6 +2201,18 @@ int VoxelLodTerrain::get_collision_update_delay() const {
 
 void VoxelLodTerrain::set_lod_fade_duration(float seconds) {
 	_lod_fade_duration = math::clamp(seconds, 0.f, 1.f);
+
+	if (_lod_fade_duration == 0.f) {
+		// Make sure all mesh blocks have a material with no fading. Otherwise, if they previously faded out and fading
+		// is turned off later, they will not be visible when shown again since the shader might still receive faded out
+		// parameters, while fading logic won't run.
+		for (unsigned int lod_index = 0; lod_index < _mesh_maps_per_lod.size(); ++lod_index) {
+			VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+			mesh_map.for_each_block([](VoxelMeshBlockVLT &mesh_block) { //
+				mesh_block.clear_fading();
+			});
+		}
+	}
 }
 
 float VoxelLodTerrain::get_lod_fade_duration() const {

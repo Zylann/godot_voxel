@@ -46,6 +46,7 @@ public:
 	void set_world(Ref<World3D> p_world);
 	void set_visible(bool visible);
 	bool update_fading(float speed);
+	void clear_fading();
 
 	void set_parent_visible(bool parent_visible);
 

@@ -331,6 +331,14 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 	return finished;
 }
 
+void VoxelMeshBlockVLT::clear_fading() {
+	fading_state = FADING_NONE;
+	fading_progress = 0.f;
+	if (_shader_material.is_valid()) {
+		_shader_material->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
