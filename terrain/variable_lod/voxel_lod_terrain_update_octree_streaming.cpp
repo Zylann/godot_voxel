@@ -661,52 +661,7 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 	state.stats.blocked_lods = blocked_octree_nodes;
 	state.octree_streaming.had_blocked_octree_nodes_previous_update = blocked_octree_nodes > 0;
 
-	// TODO Optimize: this works but it's not smart.
-	// It doesn't take too long (100 microseconds when octrees update with lod distance 60).
-	// We used to only update positions based on which blocks were added/removed in the octree update,
-	// which was faster than this. However it missed some spots, which caused annoying cracks to show up.
-	// So instead, when any block changes state in LOD N, we update all transitions in LODs N-1, N, and N+1.
-	// It is unclear yet why the old approach didn't work, maybe because it didn't properly made N-1 and N+1 update.
-	// If you find a better approach, it has to comply with the validation check below.
-	if (lods_to_update_transitions != 0) {
-		ZN_PROFILE_SCOPE_NAMED("Transition masks");
-		lods_to_update_transitions >>= 1;
-		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			if ((lods_to_update_transitions & (1 << lod_index)) == 0) {
-				continue;
-			}
-			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-			RWLockRead rlock(lod.mesh_map_state.map_lock);
-			for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
-				if (it->second.active) {
-					const uint8_t recomputed_mask =
-							VoxelLodTerrainUpdateTask::get_transition_mask(state, it->first, lod_index, lod_count);
-					if (recomputed_mask != it->second.transition_mask) {
-						it->second.transition_mask = recomputed_mask;
-						lod.mesh_blocks_to_update_transitions.push_back(
-								VoxelLodTerrainUpdateData::TransitionUpdate{ it->first, recomputed_mask });
-					}
-				}
-			}
-		}
-	}
-#if 0
-	// DEBUG: Validation check for transition mask updates.
-	{
-		ZN_PROFILE_SCOPE_NAMED("Transition checks");
-		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-			RWLockRead rlock(lod.mesh_map_state.map_lock);
-			for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
-				if (it->second.active) {
-					const uint8_t recomputed_mask =
-							VoxelLodTerrainUpdateTask::get_transition_mask(state, it->first, lod_index, lod_count);
-					CRASH_COND(recomputed_mask != it->second.transition_mask);
-				}
-			}
-		}
-	}
-#endif
+	update_transition_masks(state, lods_to_update_transitions, lod_count, false);
 }
 
 } // namespace

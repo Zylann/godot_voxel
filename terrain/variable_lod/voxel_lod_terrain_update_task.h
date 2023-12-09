@@ -84,6 +84,9 @@ private:
 	Transform3D _volume_transform;
 };
 
+void update_transition_masks(VoxelLodTerrainUpdateData::State &state, uint32_t lods_to_update_transitions,
+		unsigned int lod_count, bool use_refcounts);
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_LOD_TERRAIN_UPDATE_TASK_H

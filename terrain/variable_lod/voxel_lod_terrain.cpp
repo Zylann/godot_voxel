@@ -1279,6 +1279,9 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (block->active) {
 				Ref<ShaderMaterial> shader_material = block->get_shader_material();
 
+				// TODO Don't fade if the transition mask actually didnt change
+				// This can happen if multiple updates occur and then cancel out
+
 				// Fade stitching transitions to avoid cracks.
 				// This is done by triggering a fade-in on the block, while a copy of it fades out with the previous
 				// material settings. This causes a bit of overdraw, but LOD fading does anyways.
@@ -1296,7 +1299,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						item.local_position = block->position * mesh_block_size;
 						item.progress = 1.f;
 
-						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
+						// Wayyyy too slow, initially because of https://github.com/godotengine/godot/issues/34741
+						// but also generally slow because of how `duplicate` is implemented
 						// item.shader_material = shader_material->duplicate(false);
 						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());

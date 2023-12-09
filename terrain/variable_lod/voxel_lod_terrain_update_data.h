@@ -141,6 +141,7 @@ struct VoxelLodTerrainUpdateData {
 
 		MeshMapState mesh_map_state;
 
+		// Positions of mesh blocks that will be scheduled for update next time the update task runs.
 		std::vector<Vector3i> mesh_blocks_pending_update;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;

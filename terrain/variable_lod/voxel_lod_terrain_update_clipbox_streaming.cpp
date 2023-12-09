@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
+#include "voxel_lod_terrain_update_task.h"
 
 // #include <fstream>
 
@@ -628,7 +629,7 @@ void update_mesh_block_load(
 		if (parent_mesh_block.active) {
 			bool all_siblings_loaded = true;
 
-			// TODO This needs to be optimized
+			// TODO This needs to be optimized. Store a cache in parent?
 			for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
 				const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
 				auto sibling_it = lod.mesh_map_state.map.find(sibling_bpos);
@@ -656,6 +657,8 @@ void update_mesh_block_load(
 					const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
 					auto sibling_it = lod.mesh_map_state.map.find(sibling_bpos);
 					VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
+					// TODO Optimize: if that sibling itself subdivides, it should not need to be made visible.
+					// Maybe make `update_mesh_block_load` return that info so we can avoid scheduling activation?
 					sibling.active = true;
 					lod.mesh_blocks_to_activate.push_back(sibling_bpos);
 
@@ -673,7 +676,7 @@ void update_mesh_block_load(
 }
 
 void process_loaded_mesh_blocks_trigger_visibility_changes(
-		VoxelLodTerrainUpdateData::State &state, unsigned int lod_count) {
+		VoxelLodTerrainUpdateData::State &state, unsigned int lod_count, bool enable_transition_updates) {
 	ZN_PROFILE_SCOPE();
 
 	VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
@@ -691,6 +694,20 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 	for (const VoxelLodTerrainUpdateData::BlockLocation bloc : tls_loaded_blocks) {
 		update_mesh_block_load(state, bloc.position, bloc.lod, lod_count);
+	}
+
+	if (enable_transition_updates) {
+		uint32_t lods_to_update_transitions = 0;
+		for (const VoxelLodTerrainUpdateData::BlockLocation bloc : tls_loaded_blocks) {
+			lods_to_update_transitions |= (0b111 << bloc.lod);
+		}
+		// TODO This is quite slow (see implementation).
+		// Maybe there is a way to optimize it with the clipbox logic (updates could be grouped per new/old boxes,
+		// however it wouldn't work as-is because mesh updates take time before they actually become visible. Could also
+		// update masks incrementally somehow?).
+		// The initial reason this streaming system was added was to help with
+		// server-side performance. This feature is client-only, so it didn't need to be optimized too at the moment.
+		update_transition_masks(state, lods_to_update_transitions, lod_count, true);
 	}
 }
 
@@ -726,9 +743,9 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 		process_loaded_data_blocks_trigger_meshing(data, state, settings, bounds_in_voxels);
 	}
 
-	process_loaded_mesh_blocks_trigger_visibility_changes(state, lod_count);
-
-	// TODO Update transition masks (client side only)
+	process_loaded_mesh_blocks_trigger_visibility_changes(state, lod_count,
+			// TODO Have an option to disable transition updates, for network servers. It's a rendering feature.
+			true);
 
 	state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update = viewer_pos_in_lod0_voxels;
 }
