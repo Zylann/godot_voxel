@@ -22,10 +22,6 @@ namespace voxel {
 // Settings and states needed for the multi-threaded part of the update loop of VoxelLodTerrain.
 // See `VoxelLodTerrainUpdateTask` for more info.
 struct VoxelLodTerrainUpdateData {
-	struct OctreeItem {
-		LodOctree octree;
-	};
-
 	struct TransitionUpdate {
 		Vector3i block_position;
 		uint8_t transition_mask;
@@ -177,6 +173,10 @@ struct VoxelLodTerrainUpdateData {
 		uint32_t time_io_requests = 0;
 		uint32_t time_mesh_requests = 0;
 		uint32_t time_total = 0;
+	};
+
+	struct OctreeItem {
+		LodOctree octree;
 	};
 
 	struct OctreeStreamingState {
