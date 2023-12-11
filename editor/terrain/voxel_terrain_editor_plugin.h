@@ -48,7 +48,9 @@ private:
 	enum MenuID { //
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
+
 		MENU_STREAM_FOLLOW_CAMERA,
+		MENU_ENABLE_EDITOR_VIEWER,
 
 		MENU_SHOW_OCTREE_BOUNDS,
 		MENU_SHOW_OCTREE_NODES,
@@ -64,6 +66,7 @@ private:
 	ObjectID _node_object_id;
 
 	ViewerID _editor_viewer_id;
+	bool _editor_viewer_enabled = true;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
 	bool _show_octree_nodes = false;

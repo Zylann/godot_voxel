@@ -79,10 +79,16 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
 	{
-		popup->add_item(ZN_TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
+		popup->add_item(ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA);
 		const int i = popup->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
 		popup->set_item_as_checkable(i, true);
 		popup->set_item_checked(i, _editor_viewer_follows_camera);
+	}
+	{
+		popup->add_item(ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER);
+		const int i = popup->get_item_index(MENU_ENABLE_EDITOR_VIEWER);
+		popup->set_item_as_checkable(i, true);
+		popup->set_item_checked(i, _editor_viewer_enabled);
 	}
 	if (is_lod_terrain) {
 		popup->add_separator();
@@ -129,22 +135,31 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
 }
 
+namespace {
+ViewerID create_editor_viewer() {
+	ViewerID id = VoxelEngine::get_singleton().add_viewer();
+	VoxelEngine::get_singleton().set_viewer_distance(id, 512);
+	// No collision needed in editor, also it updates faster without
+	VoxelEngine::get_singleton().set_viewer_requires_collisions(id, false);
+	return id;
+}
+} // namespace
+
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			init();
-
-			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
-			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
-			// No collision needed in editor, also it updates faster without
-			VoxelEngine::get_singleton().set_viewer_requires_collisions(_editor_viewer_id, false);
-
+			if (_editor_viewer_enabled) {
+				_editor_viewer_id = create_editor_viewer();
+			}
 			_inspector_plugin.instantiate();
 			add_inspector_plugin(_inspector_plugin);
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
-			VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			if (_editor_viewer_enabled) {
+				VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			}
 
 			remove_inspector_plugin(_inspector_plugin);
 
@@ -157,10 +172,11 @@ void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	}
 }
 
+namespace {
 // Things the plugin doesn't directly work on, but still handles to keep things visible.
 // This is basically a hack because it's not easy to express that with EditorPlugin API.
 // The use case being, as long as we edit an object NESTED within a voxel terrain, we should keep things visible.
-static bool is_side_handled(const Object *p_object) {
+bool is_side_handled(const Object *p_object) {
 	// Handle stream too so we can leave some controls visible while we edit a stream or generator
 	const VoxelGenerator *generator = Object::cast_to<VoxelGenerator>(p_object);
 	if (generator != nullptr) {
@@ -177,6 +193,7 @@ static bool is_side_handled(const Object *p_object) {
 	}
 	return false;
 }
+} // namespace
 
 bool VoxelTerrainEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (Object::cast_to<VoxelNode>(p_object) != nullptr) {
@@ -269,13 +286,17 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	if (_editor_viewer_enabled) {
+		VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	}
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	gd::set_3d_editor_camera_cache(p_camera);
 
 	if (_editor_viewer_follows_camera) {
-		VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		if (_editor_viewer_enabled) {
+			VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		}
 		gd::VoxelEngine::get_singleton()->set_editor_camera_info(
 				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
@@ -300,12 +321,28 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		case MENU_STREAM_FOLLOW_CAMERA: {
 			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
 
-			if (_editor_viewer_follows_camera) {
+			if (_editor_viewer_follows_camera && _editor_viewer_enabled) {
 				VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 			}
 
 			const int i = _menu_button->get_popup()->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
 			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
+		} break;
+
+		case MENU_ENABLE_EDITOR_VIEWER: {
+			_editor_viewer_enabled = !_editor_viewer_enabled;
+
+			if (_editor_viewer_enabled) {
+				_editor_viewer_id = create_editor_viewer();
+				if (_editor_viewer_follows_camera) {
+					VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+				}
+			} else {
+				VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			}
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_ENABLE_EDITOR_VIEWER);
+			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_enabled);
 		} break;
 
 		case MENU_SHOW_OCTREE_BOUNDS: {
