@@ -510,10 +510,15 @@ private:
 			if (str[i] != char32_t(keyword[i])) {
 				return false;
 			}
+			++i;
 		}
 		if (i == str.size()) {
+			// All characters matched
 			return true;
 		}
+		// We matched all characters but the tested string is longer.
+		// Check if it ends with a separating character. If not, then it contains a longer name and therefore won't
+		// match.
 		++i;
 		return !is_name_char(str[i]);
 	}
