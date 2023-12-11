@@ -20,12 +20,12 @@ public:
 };
 
 // Runs a certain amount of tasks per frame such that all tasks should be completed in N seconds.
-// This has the effect of spreading the load over time and avoids CPU spikes.
-// This can be used in place of a time-slicing runner when the duration of tasks cannot be used as a cost metric.
-// This is the case of tasks that defer their workload to another system to run later. It is far from perfect though,
-// and is a last resort solution when optimization and threading are not possible.
-// Such tasks may preferably not require low latency in the game,
-// because they will likely run a bit later than a time-sliced task.
+// This has the effect of spreading the load over time and tends to smooth out CPU spikes.
+// This can be used in place of a time-slicing runner when the direct duration of tasks cannot be used as a cost metric.
+// This is the case of tasks that delegate their workload to another unreachable system to run later (I'm looking at you
+// Godot). It is far from perfect though, and is a last resort solution when optimization and threading are not
+// possible. Such tasks may preferably not require low latency in the game, because they will likely run a bit later
+// than a time-sliced task.
 class ProgressiveTaskRunner {
 public:
 	~ProgressiveTaskRunner();
