@@ -481,7 +481,7 @@ This will discard such that pixels of the two meshes will be complementary witho
 
 This technique has some limitations:
 
-- Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
+- Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See [comment on Godot proposal #692](https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429)
 
 
 ### Detail rendering
