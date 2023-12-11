@@ -110,11 +110,11 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 			// therefore causing no unload
 			pv.prev_state = pv.state;
 
-			for (unsigned int lod_index = 0; lod_index < pv.prev_state.data_box_per_lod.size(); ++lod_index) {
-				pv.prev_state.data_box_per_lod[lod_index] = Box3i();
+			for (unsigned int lod_index = 0; lod_index < pv.state.data_box_per_lod.size(); ++lod_index) {
+				pv.state.data_box_per_lod[lod_index] = Box3i();
 			}
-			for (unsigned int lod_index = 0; lod_index < pv.prev_state.mesh_box_per_lod.size(); ++lod_index) {
-				pv.prev_state.mesh_box_per_lod[lod_index] = Box3i();
+			for (unsigned int lod_index = 0; lod_index < pv.state.mesh_box_per_lod.size(); ++lod_index) {
+				pv.state.mesh_box_per_lod[lod_index] = Box3i();
 			}
 
 			unpaired_viewers_to_remove.push_back(paired_viewer_index);
