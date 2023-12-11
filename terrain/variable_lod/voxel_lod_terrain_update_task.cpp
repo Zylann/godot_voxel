@@ -629,6 +629,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	CRASH_COND(_update_data == nullptr);
 	CRASH_COND(_data == nullptr);
 	CRASH_COND(_streaming_dependency == nullptr);
+	CRASH_COND(_meshing_dependency == nullptr);
 	CRASH_COND(_shared_viewers_data == nullptr);
 #endif
 
@@ -680,8 +681,8 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	// TODO Allow to choose streaming system
 	// process_octree_streaming(
 	// 		state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream, stream_enabled);
-	process_clipbox_streaming(
-			state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream, stream_enabled);
+	process_clipbox_streaming(state, data, to_span(update_data.viewers), _volume_transform, data_blocks_to_save,
+			data_blocks_to_load, settings, stream, stream_enabled, _meshing_dependency->mesher.is_valid());
 	state.stats.time_detect_required_blocks = profiling_clock.restart();
 
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();

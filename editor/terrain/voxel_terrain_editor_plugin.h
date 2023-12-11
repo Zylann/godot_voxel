@@ -49,11 +49,14 @@ private:
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
 		MENU_STREAM_FOLLOW_CAMERA,
+
 		MENU_SHOW_OCTREE_BOUNDS,
 		MENU_SHOW_OCTREE_NODES,
 		MENU_SHOW_MESH_UPDATES,
 		MENU_SHOW_MODIFIER_BOUNDS,
 		MENU_SHOW_ACTIVE_MESH_BLOCKS,
+		MENU_SHOW_VIEWER_CLIPBOXES,
+
 		MENU_DUMP_AS_SCENE,
 		MENU_ABOUT
 	};
@@ -68,6 +71,7 @@ private:
 	bool _show_mesh_updates = false;
 	bool _show_modifier_bounds = false;
 	bool _show_active_mesh_blocks = false;
+	bool _show_viewer_clipboxes = false;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;

@@ -18,6 +18,8 @@ public:
 	unsigned int get_view_distance() const;
 	// TODO Collision distance
 
+	// TODO Have an option to run in editor, could be useful for testing?
+
 	void set_requires_visuals(bool enabled);
 	bool is_requiring_visuals() const;
 

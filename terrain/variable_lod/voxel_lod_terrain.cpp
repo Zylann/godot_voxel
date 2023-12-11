@@ -851,8 +851,10 @@ void VoxelLodTerrain::reset_mesh_maps() {
 	// Reset previous state caches to force rebuilding the view area
 	state.octree_streaming.last_octree_region_box = Box3i();
 	state.octree_streaming.lod_octrees.clear();
-	state.clipbox_streaming.lod_distance_in_data_chunks_previous_update = 0;
-	state.clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = 0;
+	// No need to care about refcounts, we drop everything anyways. Will pair it back on next process.
+	state.clipbox_streaming.paired_viewers.clear();
+	state.clipbox_streaming.loaded_data_blocks.clear();
+	state.clipbox_streaming.loaded_mesh_blocks.clear();
 }
 
 int VoxelLodTerrain::get_lod_count() const {
@@ -1151,6 +1153,16 @@ void VoxelLodTerrain::process(float delta) {
 		// Get viewer location in voxel space
 		const Vector3 viewer_pos = get_local_viewer_pos();
 
+		// Copy viewers
+		{
+			VoxelLodTerrainUpdateData &update_data = *_update_data;
+			update_data.viewers.clear();
+			VoxelEngine::get_singleton().for_each_viewer(
+					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) {
+						update_data.viewers.push_back({ id, viewer });
+					});
+		}
+
 		// TODO Optimization: pool tasks instead of allocating?
 		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
 				_meshing_dependency, VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world(),
@@ -1311,6 +1323,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
 
 						item.mesh_instance.create();
+						// TODO This can cause warnings when that block is removed later, as it will launch a
+						// FreeMeshTask, which will detect there is still more than 1 reference to the mesh
 						item.mesh_instance.set_mesh(block->get_mesh());
 						item.mesh_instance.set_gi_mode(get_gi_mode());
 						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
@@ -2789,6 +2803,23 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES)) {
+		const float lod_count_f = lod_count;
+		const int mesh_block_size = get_mesh_block_size();
+
+		for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const int lod_mesh_block_size = mesh_block_size << lod_index;
+				const Box3i box = paired_viewer.state.mesh_box_per_lod[lod_index];
+				const Transform3D lt(Basis().scaled(Vector3(box.size * lod_mesh_block_size)),
+						Vector3(box.pos * lod_mesh_block_size));
+				const Transform3D t = parent_transform * lt;
+				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
+				dr.draw_box_mm(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
+			}
+		}
+	}
+
 	// Edited blocks
 	if (debug_get_draw_flag(DEBUG_DRAW_EDITED_BLOCKS) && _edited_blocks_gizmos_lod_index < lod_count) {
 		const int data_block_size = get_data_block_size() << _edited_blocks_gizmos_lod_index;
@@ -3141,6 +3172,7 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_VIEWER_CLIPBOXES);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_GROUP("Bounds", "");

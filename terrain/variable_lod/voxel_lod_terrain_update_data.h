@@ -197,24 +197,28 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	// Paired viewers are VoxelViewers which intersect with the boundaries of the volume
-	// struct PairedViewer {
-	// 	struct State {
-	// 		Vector3i local_position_voxels;
-	// 		Box3i data_box; // In block coordinates
-	// 		Box3i mesh_box;
-	// 		int view_distance_voxels = 0;
-	// 		bool requires_collisions = false;
-	// 		bool requires_meshes = false;
-	// 	};
-	// 	ViewerID id;
-	// 	State state;
-	// 	State prev_state;
-	// };
+	struct PairedViewer {
+		struct State {
+			Vector3i local_position_voxels;
+
+			// In block coordinates
+			FixedArray<Box3i, constants::MAX_LOD> data_box_per_lod;
+			FixedArray<Box3i, constants::MAX_LOD> mesh_box_per_lod;
+
+			int view_distance_voxels = 0;
+			bool requires_collisions = false;
+			bool requires_meshes = false;
+		};
+		ViewerID id;
+		State state;
+		State prev_state;
+	};
 
 	struct ClipboxStreamingState {
-		Vector3i viewer_pos_in_lod0_voxels_previous_update;
-		int lod_distance_in_data_chunks_previous_update = 0;
-		int lod_distance_in_mesh_chunks_previous_update = 0;
+		std::vector<PairedViewer> paired_viewers;
+		// Vector3i viewer_pos_in_lod0_voxels_previous_update;
+		// int lod_distance_in_data_chunks_previous_update = 0;
+		// int lod_distance_in_mesh_chunks_previous_update = 0;
 
 		// Written by main thread when data blocks are received.
 		// Read by update thread to trigger meshing.
@@ -258,6 +262,9 @@ struct VoxelLodTerrainUpdateData {
 
 	Settings settings;
 	State state;
+
+	// Copy of all viewers, since accessing them directly in VoxelEngine is not thread safe at the moment
+	std::vector<std::pair<ViewerID, VoxelEngine::Viewer>> viewers;
 
 	// After this call, no locking is necessary, as no other thread should be using the data.
 	// However it can stall for longer, so prefer using it when doing structural changes, such as changing LOD count,

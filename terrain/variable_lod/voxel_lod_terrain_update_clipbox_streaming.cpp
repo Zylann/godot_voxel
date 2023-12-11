@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
+#include "../../util/string_funcs.h"
 #include "voxel_lod_terrain_update_task.h"
 
 // #include <fstream>
@@ -16,6 +17,34 @@ namespace zylann::voxel {
 // Alternatively, LOD updates could wait. In worst case, parent LODs will not update.
 
 namespace {
+
+// TODO Extend lowest LOD box to cover required view distance
+
+bool find_index(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, ViewerID id, unsigned int &out_index) {
+	for (unsigned int i = 0; i < viewers.size(); ++i) {
+		if (viewers[i].first == id) {
+			out_index = i;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool contains(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, ViewerID id) {
+	unsigned int _unused;
+	return find_index(viewers, id, _unused);
+}
+
+bool find_index(
+		const std::vector<VoxelLodTerrainUpdateData::PairedViewer> &viewers, ViewerID id, unsigned int &out_index) {
+	for (unsigned int i = 0; i < viewers.size(); ++i) {
+		if (viewers[i].id == id) {
+			out_index = i;
+			return true;
+		}
+	}
+	return false;
+}
 
 Box3i get_lod_box_in_chunks(
 		Vector3i viewer_pos_in_lod0_voxels, int lod_distance_in_chunks, int chunk_size_po2, int lod_index) {
@@ -46,6 +75,168 @@ Box3i get_lod_box_in_chunks(
 	return lod_box;
 }
 
+inline int round_to_next_even(int x) {
+	return x + (x & 1);
+}
+
+inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
+	return math::max(
+			// Must be even, otherwise LOD split/merge logic cannot work
+			round_to_next_even(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size), 2);
+}
+
+void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
+		const VoxelLodTerrainUpdateData::Settings &volume_settings, unsigned int lod_count,
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
+		Box3i volume_bounds_in_voxels, int data_block_size_po2, bool can_mesh,
+		// Ordered by ascending index in paired viewers list
+		std::vector<unsigned int> &unpaired_viewers_to_remove) {
+	ZN_PROFILE_SCOPE();
+
+	// Destroyed viewers
+	for (size_t paired_viewer_index = 0; paired_viewer_index < cs.paired_viewers.size(); ++paired_viewer_index) {
+		VoxelLodTerrainUpdateData::PairedViewer &pv = cs.paired_viewers[paired_viewer_index];
+
+		if (!contains(viewers, pv.id)) {
+			ZN_PRINT_VERBOSE(format("Detected destroyed viewer {} in VoxelLodTerrain", pv.id));
+
+			// Interpret removal as nullified view distance so the same code handling loading of blocks
+			// will be used to unload those viewed by this viewer.
+			// We'll actually remove unpaired viewers in a second pass.
+			pv.state.view_distance_voxels = 0;
+
+			// Also update boxes, they won't be updated since the viewer has been removed.
+			// Assign prev state, otherwise in some cases resetting boxes would make them equal to prev state,
+			// therefore causing no unload
+			pv.prev_state = pv.state;
+
+			for (unsigned int lod_index = 0; lod_index < pv.prev_state.data_box_per_lod.size(); ++lod_index) {
+				pv.prev_state.data_box_per_lod[lod_index] = Box3i();
+			}
+			for (unsigned int lod_index = 0; lod_index < pv.prev_state.mesh_box_per_lod.size(); ++lod_index) {
+				pv.prev_state.mesh_box_per_lod[lod_index] = Box3i();
+			}
+
+			unpaired_viewers_to_remove.push_back(paired_viewer_index);
+		}
+	}
+
+	// TODO Pair/Unpair viewers as they intersect volume bounds
+
+	const Transform3D world_to_local_transform = volume_transform.affine_inverse();
+
+	// Note, this does not support non-uniform scaling
+	// TODO There is probably a better way to do this
+	const float view_distance_scale = world_to_local_transform.basis.xform(Vector3(1, 0, 0)).length();
+
+	const int data_block_size = 1 << data_block_size_po2;
+
+	const int mesh_block_size = 1 << volume_settings.mesh_block_size_po2;
+	const int mesh_to_data_factor = mesh_block_size / data_block_size;
+
+	const int lod_distance_in_mesh_chunks =
+			get_lod_distance_in_mesh_chunks(volume_settings.lod_distance, mesh_block_size);
+
+	// Data chunks are driven by mesh chunks, because mesh needs data
+	const int lod_distance_in_data_chunks = lod_distance_in_mesh_chunks * mesh_to_data_factor;
+
+	// const Box3i volume_bounds_in_data_blocks = volume_bounds_in_voxels.downscaled(1 << data_block_size_po2);
+	// const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(1 << mesh_block_size_po2);
+
+	// New viewers and existing viewers.
+	// Removed viewers won't be iterated but are still paired until later.
+	for (const std::pair<ViewerID, VoxelEngine::Viewer> &viewer_and_id : viewers) {
+		const ViewerID viewer_id = viewer_and_id.first;
+		const VoxelEngine::Viewer &viewer = viewer_and_id.second;
+
+		unsigned int paired_viewer_index;
+		if (!find_index(cs.paired_viewers, viewer_id, paired_viewer_index)) {
+			// New viewer
+			VoxelLodTerrainUpdateData::PairedViewer pv;
+			pv.id = viewer_id;
+			paired_viewer_index = cs.paired_viewers.size();
+			cs.paired_viewers.push_back(pv);
+			ZN_PRINT_VERBOSE(format("Pairing viewer {} to VoxelLodTerrain", viewer_id));
+		}
+
+		VoxelLodTerrainUpdateData::PairedViewer &paired_viewer = cs.paired_viewers[paired_viewer_index];
+
+		// Move current state to be the previous state
+		paired_viewer.prev_state = paired_viewer.state;
+
+		const unsigned int view_distance_voxels =
+				static_cast<unsigned int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
+
+		const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
+
+		paired_viewer.state.view_distance_voxels =
+				math::min(view_distance_voxels, volume_settings.view_distance_voxels);
+		paired_viewer.state.local_position_voxels = math::floor_to_int(local_position);
+		paired_viewer.state.requires_collisions = viewer.require_collisions;
+		paired_viewer.state.requires_meshes = viewer.require_visuals && can_mesh;
+
+		// Viewers can request any box they like, but they must follow these rules:
+		// - Boxes of parent LODs must contain child boxes (when converted into world coordinates)
+		// - Mesh boxes that have a parent LOD must have an even size and even position, in order to support subdivision
+		// - Mesh boxes must be contained within data boxes, in order to guarantee that meshes have access to consistent
+		//   voxel blocks and their neighbors
+
+		// TODO The root LOD should not need to have even size.
+		// However if we do that, one corner case is when LOD count is changed in the editor, it might cause errors
+		// since every LOD is assumed to have an even size when handling subdivisions
+
+		// Update data and mesh boxes
+		if (paired_viewer.state.requires_collisions || paired_viewer.state.requires_meshes) {
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const int lod_mesh_block_size_po2 = volume_settings.mesh_block_size_po2 + lod_index;
+				const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
+
+				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
+
+				const Box3i new_mesh_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
+						lod_distance_in_mesh_chunks, volume_settings.mesh_block_size_po2, lod_index)
+												   .clipped(volume_bounds_in_mesh_blocks);
+
+				paired_viewer.state.mesh_box_per_lod[lod_index] = new_mesh_box;
+			}
+		} else {
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				paired_viewer.state.mesh_box_per_lod[lod_index] = Box3i();
+			}
+		}
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
+
+			// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
+			const Box3i volume_bounds_in_data_blocks = Box3i( //
+					volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
+					volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+
+			const Box3i new_data_box =
+					get_lod_box_in_chunks(paired_viewer.state.local_position_voxels, lod_distance_in_data_chunks,
+							data_block_size_po2, lod_index)
+							// To account for meshes requiring neighbor data chunks.
+							// It technically breaks the subdivision rule (where every parent block always has 8
+							// children), but it should only matter in areas where meshes must actually spawn
+							.padded(1)
+							.clipped(volume_bounds_in_data_blocks);
+
+			paired_viewer.state.data_box_per_lod[lod_index] = new_data_box;
+		}
+	}
+}
+
+void remove_unpaired_viewers(const std::vector<unsigned int> &unpaired_viewers_to_remove,
+		std::vector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers) {
+	// Iterating backward so indexes of paired viewers that need removal will not change because of the removal itself
+	for (auto it = unpaired_viewers_to_remove.rbegin(); it != unpaired_viewers_to_remove.rend(); ++it) {
+		const unsigned int vi = *it;
+		ZN_PRINT_VERBOSE(format("Unpairing viewer {} from VoxelLodTerrain", paired_viewers[vi].id));
+		paired_viewers[vi] = paired_viewers.back();
+		paired_viewers.pop_back();
+	}
+}
+
 bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 	auto it = lod.loading_blocks.find(position);
 
@@ -65,18 +256,8 @@ bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 	return false;
 }
 
-inline int round_to_next_even(int x) {
-	return x + (x & 1);
-}
-
-inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
-	return math::max(
-			// Must be even, otherwise LOD split/merge logic cannot work
-			round_to_next_even(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size), 2);
-}
-
 void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Vector3i viewer_pos_in_lod0_voxels, std::vector<VoxelData::BlockToSave> &blocks_to_save, bool can_save,
+		std::vector<VoxelData::BlockToSave> &blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, int lod_count, bool can_load) {
@@ -88,14 +269,14 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 	const Box3i bounds_in_voxels = data.get_bounds();
 
 	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
-	const int mesh_to_data_factor = mesh_block_size / data_block_size;
+	// const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
-	const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
+	// const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
 
-	// Data chunks are driven by mesh chunks, because mesh needs data
-	const int lod_distance_in_data_chunks = lod_distance_in_mesh_chunks * mesh_to_data_factor
-			// To account for the fact meshes need neighbor data chunks
-			+ 1;
+	// // Data chunks are driven by mesh chunks, because mesh needs data
+	// const int lod_distance_in_data_chunks = lod_distance_in_mesh_chunks * mesh_to_data_factor
+	// 		// To account for the fact meshes need neighbor data chunks
+	// 		+ 1;
 
 	static thread_local std::vector<Vector3i> tls_missing_blocks;
 	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
@@ -104,140 +285,145 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 	Box3i debug_parent_box;
 #endif
 
-	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-	for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
-		ZN_PROFILE_SCOPE();
-		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+	for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
+		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
+		for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
+			ZN_PROFILE_SCOPE();
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-		// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
-		// The player can edit them so changes can be propagated to lower lods.
+			// Each LOD keeps a box of loaded blocks, and only some of the blocks will get polygonized.
+			// The player can edit them so changes can be propagated to lower lods.
 
-		const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
+			const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
 
-		// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
-		const Box3i bounds_in_data_blocks = Box3i( //
-				bounds_in_voxels.pos >> lod_data_block_size_po2, //
-				bounds_in_voxels.size >> lod_data_block_size_po2);
+			// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
+			const Box3i bounds_in_data_blocks = Box3i( //
+					bounds_in_voxels.pos >> lod_data_block_size_po2, //
+					bounds_in_voxels.size >> lod_data_block_size_po2);
 
-		const Box3i new_data_box = get_lod_box_in_chunks(
-				viewer_pos_in_lod0_voxels, lod_distance_in_data_chunks, data_block_size_po2, lod_index)
-										   .clipped(bounds_in_data_blocks);
+			// const Box3i new_data_box = get_lod_box_in_chunks(
+			// 		viewer_pos_in_lod0_voxels, lod_distance_in_data_chunks, data_block_size_po2, lod_index)
+			// 								   .clipped(bounds_in_data_blocks);
+
+			const Box3i &new_data_box = paired_viewer.state.data_box_per_lod[lod_index];
+			const Box3i &prev_data_box = paired_viewer.prev_state.data_box_per_lod[lod_index];
 
 #ifdef DEV_ENABLED
-		if (lod_index + 1 != lod_count) {
-			const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
-			ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_data_box));
-		}
-		debug_parent_box = new_data_box;
+			if (lod_index + 1 != lod_count) {
+				const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
+				ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_data_box));
+			}
+			debug_parent_box = new_data_box;
 #endif
 
-		const Box3i prev_data_box = get_lod_box_in_chunks(
-				state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update,
-				state.clipbox_streaming.lod_distance_in_data_chunks_previous_update, data_block_size_po2, lod_index)
-											.clipped(bounds_in_data_blocks);
+			// const Box3i prev_data_box = get_lod_box_in_chunks(
+			// 		state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update,
+			// 		state.clipbox_streaming.lod_distance_in_data_chunks_previous_update, data_block_size_po2, lod_index)
+			// 									.clipped(bounds_in_data_blocks);
 
-		if (!new_data_box.intersects(bounds_in_data_blocks) && !prev_data_box.intersects(bounds_in_data_blocks)) {
-			// If this box doesn't intersect either now or before, there is no chance a smaller one will
-			break;
-		}
-
-		if (prev_data_box != new_data_box) {
-			// Detect blocks to load.
-			if (can_load) {
-				tls_missing_blocks.clear();
-
-				new_data_box.difference(prev_data_box, [&data, lod_index, &data_blocks_to_load](Box3i box_to_load) {
-					data.view_area(box_to_load, lod_index, &tls_missing_blocks, nullptr, nullptr);
-				});
-
-				for (const Vector3i bpos : tls_missing_blocks) {
-					if (add_loading_block(lod, bpos)) {
-						data_blocks_to_load.push_back(
-								VoxelLodTerrainUpdateData::BlockLocation{ bpos, static_cast<uint8_t>(lod_index) });
-					}
-				}
+			if (!new_data_box.intersects(bounds_in_data_blocks) && !prev_data_box.intersects(bounds_in_data_blocks)) {
+				// If this box doesn't intersect either now or before, there is no chance a smaller one will
+				break;
 			}
 
-			// Detect blocks to unload
-			{
-				tls_missing_blocks.clear();
-				tls_found_blocks_positions.clear();
+			if (prev_data_box != new_data_box) {
+				// Detect blocks to load.
+				if (can_load) {
+					tls_missing_blocks.clear();
 
-				prev_data_box.difference(new_data_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
-					data.unview_area(box_to_remove, lod_index, &tls_found_blocks_positions, &tls_missing_blocks,
-							&blocks_to_save);
-				});
+					new_data_box.difference(prev_data_box, [&data, lod_index, &data_blocks_to_load](Box3i box_to_load) {
+						data.view_area(box_to_load, lod_index, &tls_missing_blocks, nullptr, nullptr);
+					});
 
-				// Remove loading blocks (those were loaded and had their refcount reach zero)
-				for (const Vector3i bpos : tls_found_blocks_positions) {
-					// emit_data_block_unloaded(bpos);
-
-					// TODO If they were loaded, why would they be in loading blocks?
-					// Maybe to make sure they are not in here regardless
-					lod.loading_blocks.erase(bpos);
+					for (const Vector3i bpos : tls_missing_blocks) {
+						if (add_loading_block(lod, bpos)) {
+							data_blocks_to_load.push_back(
+									VoxelLodTerrainUpdateData::BlockLocation{ bpos, static_cast<uint8_t>(lod_index) });
+						}
+					}
 				}
 
-				// Remove refcount from loading blocks, and cancel loading if it reaches zero
-				for (const Vector3i bpos : tls_missing_blocks) {
-					auto loading_block_it = lod.loading_blocks.find(bpos);
-					if (loading_block_it == lod.loading_blocks.end()) {
-						ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
-						// Not expected, but fine I guess
-						return;
+				// Detect blocks to unload
+				{
+					tls_missing_blocks.clear();
+					tls_found_blocks_positions.clear();
+
+					prev_data_box.difference(new_data_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
+						data.unview_area(box_to_remove, lod_index, &tls_found_blocks_positions, &tls_missing_blocks,
+								&blocks_to_save);
+					});
+
+					// Remove loading blocks (those were loaded and had their refcount reach zero)
+					for (const Vector3i bpos : tls_found_blocks_positions) {
+						// emit_data_block_unloaded(bpos);
+
+						// TODO If they were loaded, why would they be in loading blocks?
+						// Maybe to make sure they are not in here regardless
+						lod.loading_blocks.erase(bpos);
 					}
 
-					VoxelLodTerrainUpdateData::LoadingDataBlock &loading_block = loading_block_it->second;
-					loading_block.viewers.remove();
+					// Remove refcount from loading blocks, and cancel loading if it reaches zero
+					for (const Vector3i bpos : tls_missing_blocks) {
+						auto loading_block_it = lod.loading_blocks.find(bpos);
+						if (loading_block_it == lod.loading_blocks.end()) {
+							ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
+							// Not expected, but fine I guess
+							return;
+						}
 
-					if (loading_block.viewers.get() == 0) {
-						// No longer want to load it, no data box contains it
-						lod.loading_blocks.erase(loading_block_it);
+						VoxelLodTerrainUpdateData::LoadingDataBlock &loading_block = loading_block_it->second;
+						loading_block.viewers.remove();
 
-						VoxelLodTerrainUpdateData::BlockLocation bloc{ bpos, static_cast<uint8_t>(lod_index) };
-						for (size_t i = 0; i < data_blocks_to_load.size(); ++i) {
-							if (data_blocks_to_load[i] == bloc) {
-								data_blocks_to_load[i] = data_blocks_to_load.back();
-								data_blocks_to_load.pop_back();
-								break;
+						if (loading_block.viewers.get() == 0) {
+							// No longer want to load it, no data box contains it
+							lod.loading_blocks.erase(loading_block_it);
+
+							VoxelLodTerrainUpdateData::BlockLocation bloc{ bpos, static_cast<uint8_t>(lod_index) };
+							for (size_t i = 0; i < data_blocks_to_load.size(); ++i) {
+								if (data_blocks_to_load[i] == bloc) {
+									data_blocks_to_load[i] = data_blocks_to_load.back();
+									data_blocks_to_load.pop_back();
+									break;
+								}
 							}
 						}
 					}
 				}
 			}
-		}
 
-		// TODO Why do we do this here? Sounds like it should be done in the mesh clipbox logic
-		{
-			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
-			// Cancel mesh block updates that are not within the padded region
-			// (since neighbors are always required to remesh)
+			// TODO Why do we do this here? Sounds like it should be done in the mesh clipbox logic
+			{
+				ZN_PROFILE_SCOPE_NAMED("Cancel updates");
+				// Cancel mesh block updates that are not within the padded region
+				// (since neighbors are always required to remesh)
 
-			// TODO This might break at terrain borders
-			const Box3i padded_new_box = new_data_box.padded(-1);
-			Box3i mesh_box;
-			if (mesh_block_size > data_block_size) {
-				const int factor = mesh_block_size / data_block_size;
-				mesh_box = padded_new_box.downscaled_inner(factor);
-			} else {
-				mesh_box = padded_new_box;
+				// TODO This might break at terrain borders
+				const Box3i padded_new_box = new_data_box.padded(-1);
+				Box3i mesh_box;
+				if (mesh_block_size > data_block_size) {
+					const int factor = mesh_block_size / data_block_size;
+					mesh_box = padded_new_box.downscaled_inner(factor);
+				} else {
+					mesh_box = padded_new_box;
+				}
+
+				unordered_remove_if(lod.mesh_blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
+					if (mesh_box.contains(bpos)) {
+						return false;
+					} else {
+						auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+						if (mesh_block_it != lod.mesh_map_state.map.end()) {
+							mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
+						}
+						return true;
+					}
+				});
 			}
 
-			unordered_remove_if(lod.mesh_blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
-				if (mesh_box.contains(bpos)) {
-					return false;
-				} else {
-					auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-					if (mesh_block_it != lod.mesh_map_state.map.end()) {
-						mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
-					}
-					return true;
-				}
-			});
-		}
+		} // for each lod
+	} // for each viewer
 
-	} // for each lod
-
-	state.clipbox_streaming.lod_distance_in_data_chunks_previous_update = lod_distance_in_data_chunks;
+	// state.clipbox_streaming.lod_distance_in_data_chunks_previous_update = lod_distance_in_data_chunks;
 }
 
 // TODO Copypasta from octree streaming file
@@ -298,149 +484,154 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 // 	}
 // }
 
-void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector3i viewer_pos_in_lod0_voxels,
+void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const Box3i bounds_in_voxels, int lod_count,
 		bool is_full_load_mode, bool can_load) {
 	ZN_PROFILE_SCOPE();
 
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
-	const int mesh_block_size = 1 << mesh_block_size_po2;
+	// const int mesh_block_size = 1 << mesh_block_size_po2;
 
-	const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
+	// const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
 
 #ifdef DEV_ENABLED
 	Box3i debug_parent_box;
 #endif
 
-	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-	for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
-		ZN_PROFILE_SCOPE();
-		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+	for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
+		// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
+		for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
+			ZN_PROFILE_SCOPE();
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-		const int lod_mesh_block_size_po2 = mesh_block_size_po2 + lod_index;
-		const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
-		// const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
+			const int lod_mesh_block_size_po2 = mesh_block_size_po2 + lod_index;
+			const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
+			// const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
 
-		const Box3i bounds_in_mesh_blocks = bounds_in_voxels.downscaled(lod_mesh_block_size);
+			const Box3i bounds_in_mesh_blocks = bounds_in_voxels.downscaled(lod_mesh_block_size);
 
-		const Box3i new_mesh_box = get_lod_box_in_chunks(
-				viewer_pos_in_lod0_voxels, lod_distance_in_mesh_chunks, mesh_block_size_po2, lod_index)
-										   .clipped(bounds_in_mesh_blocks);
+			// const Box3i new_mesh_box = get_lod_box_in_chunks(
+			// 		viewer_pos_in_lod0_voxels, lod_distance_in_mesh_chunks, mesh_block_size_po2, lod_index)
+			// 								   .clipped(bounds_in_mesh_blocks);
+
+			const Box3i &new_mesh_box = paired_viewer.state.mesh_box_per_lod[lod_index];
+			const Box3i &prev_mesh_box = paired_viewer.prev_state.mesh_box_per_lod[lod_index];
 
 #ifdef DEV_ENABLED
-		if (lod_index + 1 != lod_count) {
-			const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
-			ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_mesh_box));
-		}
-		debug_parent_box = new_mesh_box;
+			if (lod_index + 1 != lod_count) {
+				const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
+				ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_mesh_box));
+			}
+			debug_parent_box = new_mesh_box;
 #endif
 
-		const Box3i prev_mesh_box = get_lod_box_in_chunks(
-				state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update,
-				state.clipbox_streaming.lod_distance_in_mesh_chunks_previous_update, mesh_block_size_po2, lod_index)
-											.clipped(bounds_in_mesh_blocks);
+			// const Box3i prev_mesh_box = get_lod_box_in_chunks(
+			// 		state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update,
+			// 		state.clipbox_streaming.lod_distance_in_mesh_chunks_previous_update, mesh_block_size_po2, lod_index)
+			// 									.clipped(bounds_in_mesh_blocks);
 
-		if (!new_mesh_box.intersects(bounds_in_mesh_blocks) && !prev_mesh_box.intersects(bounds_in_mesh_blocks)) {
-			// If this box doesn't intersect either now or before, there is no chance a smaller one will
-			break;
-		}
+			if (!new_mesh_box.intersects(bounds_in_mesh_blocks) && !prev_mesh_box.intersects(bounds_in_mesh_blocks)) {
+				// If this box doesn't intersect either now or before, there is no chance a smaller one will
+				break;
+			}
 
-		if (prev_mesh_box != new_mesh_box) {
-			RWLockWrite wlock(lod.mesh_map_state.map_lock);
+			if (prev_mesh_box != new_mesh_box) {
+				RWLockWrite wlock(lod.mesh_map_state.map_lock);
 
-			// Add meshes entering range
-			if (can_load) {
-				new_mesh_box.difference(prev_mesh_box, [&lod, lod_index, is_full_load_mode](Box3i box_to_add) {
-					box_to_add.for_each_cell([&lod, is_full_load_mode](Vector3i bpos) {
-						VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
-						auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+				// Add meshes entering range
+				if (can_load) {
+					new_mesh_box.difference(prev_mesh_box, [&lod, lod_index, is_full_load_mode](Box3i box_to_add) {
+						box_to_add.for_each_cell([&lod, is_full_load_mode](Vector3i bpos) {
+							VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
+							auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
-						if (mesh_block_it == lod.mesh_map_state.map.end()) {
-							// RWLockWrite wlock(lod.mesh_map_state.map_lock);
-							mesh_block = &insert_new(lod.mesh_map_state.map, bpos);
+							if (mesh_block_it == lod.mesh_map_state.map.end()) {
+								// RWLockWrite wlock(lod.mesh_map_state.map_lock);
+								mesh_block = &insert_new(lod.mesh_map_state.map, bpos);
 
-							if (is_full_load_mode) {
-								// Everything is loaded up-front, so we directly trigger meshing instead of reacting to
-								// data chunks being loaded
-								lod.mesh_blocks_pending_update.push_back(bpos);
-								mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+								if (is_full_load_mode) {
+									// Everything is loaded up-front, so we directly trigger meshing instead of reacting
+									// to data chunks being loaded
+									lod.mesh_blocks_pending_update.push_back(bpos);
+									mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+								}
+
+							} else {
+								mesh_block = &mesh_block_it->second;
 							}
 
-						} else {
-							mesh_block = &mesh_block_it->second;
-						}
-
-						// TODO Viewer options
-						mesh_block->mesh_viewers.add();
-						mesh_block->collision_viewers.add();
+							// TODO Viewer options
+							mesh_block->mesh_viewers.add();
+							mesh_block->collision_viewers.add();
+						});
 					});
+				}
+
+				// Remove meshes out or range
+				prev_mesh_box.difference(new_mesh_box, [&lod, lod_index, lod_count, &state](Box3i out_of_range_box) {
+					out_of_range_box.for_each_cell([&lod](Vector3i bpos) {
+						auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+
+						if (mesh_block_it != lod.mesh_map_state.map.end()) {
+							VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
+
+							mesh_block.mesh_viewers.remove();
+							mesh_block.collision_viewers.remove();
+
+							if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
+								lod.mesh_map_state.map.erase(bpos);
+								lod.mesh_blocks_to_unload.push_back(bpos);
+							}
+						}
+					});
+
+					// Immediately show parent when children are removed.
+					// This is a cheap approach as the parent mesh will be available most of the time.
+					// However, at high speeds, if loading can't keep up, holes and overlaps will start happening in the
+					// opposite direction of movement.
+					const int parent_lod_index = lod_index + 1;
+					if (parent_lod_index < lod_count) {
+						// Should always work without reaching zero size because non-max LODs are always
+						// multiple of 2 due to subdivision rules
+						const Box3i parent_box = Box3i(out_of_range_box.pos >> 1, out_of_range_box.size >> 1);
+
+						VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
+
+						// Show parents when children are removed
+						parent_box.for_each_cell([&parent_lod, parent_lod_index, &state](Vector3i bpos) {
+							auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
+
+							if (mesh_it != parent_lod.mesh_map_state.map.end()) {
+								VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
+
+								if (!mesh_block.active) {
+									mesh_block.active = true;
+									parent_lod.mesh_blocks_to_activate.push_back(bpos);
+
+									// We know parent_lod_index must be > 0
+									// if (parent_lod_index > 0) {
+									// This would actually do nothing because children were removed
+									// hide_children_recursive(state, parent_lod_index, bpos);
+									// }
+								}
+							}
+						});
+					}
 				});
 			}
 
-			// Remove meshes out or range
-			prev_mesh_box.difference(new_mesh_box, [&lod, lod_index, lod_count, &state](Box3i out_of_range_box) {
-				out_of_range_box.for_each_cell([&lod](Vector3i bpos) {
-					auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-
-					if (mesh_block_it != lod.mesh_map_state.map.end()) {
-						VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
-
-						mesh_block.mesh_viewers.remove();
-						mesh_block.collision_viewers.remove();
-
-						if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
-							lod.mesh_map_state.map.erase(bpos);
-							lod.mesh_blocks_to_unload.push_back(bpos);
-						}
-					}
+			{
+				ZN_PROFILE_SCOPE_NAMED("Cancel updates");
+				// Cancel block updates that are not within the new region
+				unordered_remove_if(lod.mesh_blocks_pending_update, [new_mesh_box](Vector3i bpos) { //
+					return !new_mesh_box.contains(bpos);
 				});
-
-				// Immediately show parent when children are removed.
-				// This is a cheap approach as the parent mesh will be available most of the time.
-				// However, at high speeds, if loading can't keep up, holes and overlaps will start happening in the
-				// opposite direction of movement.
-				const int parent_lod_index = lod_index + 1;
-				if (parent_lod_index < lod_count) {
-					// Should always work without reaching zero size because non-max LODs are always
-					// multiple of 2 due to subdivision rules
-					const Box3i parent_box = Box3i(out_of_range_box.pos >> 1, out_of_range_box.size >> 1);
-
-					VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
-
-					// Show parents when children are removed
-					parent_box.for_each_cell([&parent_lod, parent_lod_index, &state](Vector3i bpos) {
-						auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
-
-						if (mesh_it != parent_lod.mesh_map_state.map.end()) {
-							VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
-
-							if (!mesh_block.active) {
-								mesh_block.active = true;
-								parent_lod.mesh_blocks_to_activate.push_back(bpos);
-
-								// We know parent_lod_index must be > 0
-								// if (parent_lod_index > 0) {
-								// This would actually do nothing because children were removed
-								// hide_children_recursive(state, parent_lod_index, bpos);
-								// }
-							}
-						}
-					});
-				}
-			});
-		}
-
-		{
-			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
-			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.mesh_blocks_pending_update, [new_mesh_box](Vector3i bpos) { //
-				return !new_mesh_box.contains(bpos);
-			});
+			}
 		}
 	}
 
-	VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
-	clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = lod_distance_in_mesh_chunks;
+	// VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
+	// clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = lod_distance_in_mesh_chunks;
 }
 
 void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodTerrainUpdateData::State &state,
@@ -713,21 +904,29 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 } // namespace
 
-void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
+void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
 		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
 		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool can_load) {
+		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool can_load, bool can_mesh) {
 	ZN_PROFILE_SCOPE();
 
-	const Vector3i viewer_pos_in_lod0_voxels = to_vec3i(viewer_pos);
 	const unsigned int lod_count = data.get_lod_count();
 	const Box3i bounds_in_voxels = data.get_bounds();
+	const unsigned int data_block_size_po2 = data.get_block_size_po2();
+	const bool streaming_enabled = data.is_streaming_enabled();
+	const bool full_load_completed = data.is_full_load_completed();
 
-	if (data.is_streaming_enabled()) {
-		process_data_blocks_sliding_box(state, data, viewer_pos_in_lod0_voxels, data_blocks_to_save, stream.is_valid(),
-				data_blocks_to_load, settings, lod_count, can_load);
+	std::vector<unsigned int> unpaired_viewers_to_remove;
+
+	process_viewers(state.clipbox_streaming, settings, lod_count, viewers, volume_transform, bounds_in_voxels,
+			data_block_size_po2, can_mesh, unpaired_viewers_to_remove);
+
+	if (streaming_enabled) {
+		process_data_blocks_sliding_box(
+				state, data, data_blocks_to_save, data_blocks_to_load, settings, lod_count, can_load);
 	} else {
-		if (data.is_full_load_completed() == false) {
+		if (full_load_completed == false) {
 			// Don't do anything until things are loaded, because we'll trigger meshing directly when mesh blocks get
 			// created. If we let this happen before, mesh blocks will get created but we won't have a way to tell when
 			// to trigger meshing per block. If we need to do that in the future though, we could diff the "fully
@@ -736,10 +935,13 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 		}
 	}
 
-	process_mesh_blocks_sliding_box(state, viewer_pos_in_lod0_voxels, settings, bounds_in_voxels, lod_count,
-			!data.is_streaming_enabled(), can_load);
+	process_mesh_blocks_sliding_box(state, settings, bounds_in_voxels, lod_count, !streaming_enabled, can_load);
 
-	if (data.is_streaming_enabled()) {
+	// Removing paired viewers after box diffs because we interpret viewer removal as boxes becoming zero-size, so we
+	// need one processing step to handle that before actually removing them
+	remove_unpaired_viewers(unpaired_viewers_to_remove, state.clipbox_streaming.paired_viewers);
+
+	if (streaming_enabled) {
 		process_loaded_data_blocks_trigger_meshing(data, state, settings, bounds_in_voxels);
 	}
 
@@ -747,7 +949,7 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 			// TODO Have an option to disable transition updates, for network servers. It's a rendering feature.
 			true);
 
-	state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update = viewer_pos_in_lod0_voxels;
+	// state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update = viewer_pos_in_lod0_voxels;
 }
 
 } // namespace zylann::voxel
