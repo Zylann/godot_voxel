@@ -32,11 +32,16 @@ public:
 	void set_network_peer_id(int id);
 	int get_network_peer_id() const;
 
+	void set_enabled_in_editor(bool enable);
+	bool is_enabled_in_editor() const;
+
 protected:
 	void _notification(int p_what);
 
 private:
 	static void _bind_methods();
+
+	void sync_all_parameters();
 
 	bool is_active() const;
 
@@ -45,6 +50,7 @@ private:
 	bool _requires_visuals = true;
 	bool _requires_collisions = true;
 	bool _requires_data_block_notifications = false;
+	bool _enabled_in_editor = false;
 	int _network_peer_id = -1;
 };
 

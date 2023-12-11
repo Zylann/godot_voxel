@@ -65,24 +65,52 @@ int VoxelViewer::get_network_peer_id() const {
 	return _network_peer_id;
 }
 
+void VoxelViewer::set_enabled_in_editor(bool enable) {
+	if (_enabled_in_editor == enable) {
+		return;
+	}
+
+	_enabled_in_editor = enable;
+
+	set_notify_transform(!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor);
+
+	if (_enabled_in_editor) {
+		if (is_inside_tree()) {
+			_viewer_id = VoxelEngine::get_singleton().add_viewer();
+			sync_all_parameters();
+		}
+
+	} else {
+		VoxelEngine::get_singleton().remove_viewer(_viewer_id);
+	}
+}
+
+bool VoxelViewer::is_enabled_in_editor() const {
+	return _enabled_in_editor;
+}
+
+void VoxelViewer::sync_all_parameters() {
+	VoxelEngine::get_singleton().set_viewer_distance(_viewer_id, _view_distance);
+	VoxelEngine::get_singleton().set_viewer_requires_visuals(_viewer_id, _requires_visuals);
+	VoxelEngine::get_singleton().set_viewer_requires_collisions(_viewer_id, _requires_collisions);
+	VoxelEngine::get_singleton().set_viewer_requires_data_block_notifications(
+			_viewer_id, _requires_data_block_notifications);
+	VoxelEngine::get_singleton().set_viewer_network_peer_id(_viewer_id, _network_peer_id);
+	const Vector3 pos = get_global_transform().origin;
+	VoxelEngine::get_singleton().set_viewer_position(_viewer_id, pos);
+}
+
 void VoxelViewer::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			if (!Engine::get_singleton()->is_editor_hint()) {
+			if (!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor) {
 				_viewer_id = VoxelEngine::get_singleton().add_viewer();
-				VoxelEngine::get_singleton().set_viewer_distance(_viewer_id, _view_distance);
-				VoxelEngine::get_singleton().set_viewer_requires_visuals(_viewer_id, _requires_visuals);
-				VoxelEngine::get_singleton().set_viewer_requires_collisions(_viewer_id, _requires_collisions);
-				VoxelEngine::get_singleton().set_viewer_requires_data_block_notifications(
-						_viewer_id, _requires_data_block_notifications);
-				VoxelEngine::get_singleton().set_viewer_network_peer_id(_viewer_id, _network_peer_id);
-				const Vector3 pos = get_global_transform().origin;
-				VoxelEngine::get_singleton().set_viewer_position(_viewer_id, pos);
+				sync_all_parameters();
 			}
 		} break;
 
 		case NOTIFICATION_EXIT_TREE:
-			if (!Engine::get_singleton()->is_editor_hint()) {
+			if (!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor) {
 				// TODO When users reparent nodes, adding/removing viewers causes some suboptimal situations.
 				// We could mitigate this use case by putting viewers into an inactive group, so they keep their ID, so
 				// when reparenting happens, they will flip on and off. From the perspective of terrain's viewer pairing
@@ -104,7 +132,7 @@ void VoxelViewer::_notification(int p_what) {
 }
 
 bool VoxelViewer::is_active() const {
-	return is_inside_tree() && !Engine::get_singleton()->is_editor_hint();
+	return is_inside_tree() && (!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor);
 }
 
 void VoxelViewer::_bind_methods() {
@@ -125,12 +153,16 @@ void VoxelViewer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_network_peer_id", "id"), &VoxelViewer::set_network_peer_id);
 	ClassDB::bind_method(D_METHOD("get_network_peer_id"), &VoxelViewer::get_network_peer_id);
 
+	ClassDB::bind_method(D_METHOD("set_enabled_in_editor", "enabled"), &VoxelViewer::set_enabled_in_editor);
+	ClassDB::bind_method(D_METHOD("is_enabled_in_editor"), &VoxelViewer::is_enabled_in_editor);
+
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "view_distance"), "set_view_distance", "get_view_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_visuals"), "set_requires_visuals", "is_requiring_visuals");
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "requires_collisions"), "set_requires_collisions", "is_requiring_collisions");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "requires_data_block_notifications"),
 			"set_requires_data_block_notifications", "is_requiring_data_block_notifications");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled_in_editor"), "set_enabled_in_editor", "is_enabled_in_editor");
 }
 
 } // namespace zylann::voxel
