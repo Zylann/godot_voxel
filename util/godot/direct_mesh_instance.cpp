@@ -105,6 +105,10 @@ Ref<Mesh> DirectMeshInstance::get_mesh() const {
 	return _mesh;
 }
 
+const Mesh *DirectMeshInstance::get_mesh_ptr() const {
+	return _mesh.ptr();
+}
+
 void DirectMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	set_geometry_instance_gi_mode(_mesh_instance, mode);
 }

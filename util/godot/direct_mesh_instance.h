@@ -32,6 +32,7 @@ public:
 	void set_render_layers_mask(int mask);
 
 	Ref<Mesh> get_mesh() const;
+	const Mesh *get_mesh_ptr() const;
 
 	// void move_to(DirectMeshInstance &dst);
 

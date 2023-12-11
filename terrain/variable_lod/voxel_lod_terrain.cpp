@@ -30,6 +30,7 @@
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
+#include "../free_mesh_task.h"
 #include "../instancing/voxel_instancer.h"
 #include "voxel_lod_terrain_update_task.h"
 
@@ -1303,8 +1304,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 									_shader_material_pool.get_cached_shader_uniforms());
 
 							item.mesh_instance.create();
-							// TODO This can cause warnings when that block is removed later, as it will launch a
-							// FreeMeshTask, which will detect there is still more than 1 reference to the mesh
 							item.mesh_instance.set_mesh(mesh_block->get_mesh());
 							item.mesh_instance.set_gi_mode(get_gi_mode());
 							item.mesh_instance.set_transform(
@@ -1389,8 +1388,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						// 		VoxelStringNames::get_singleton().u_lod_fade, Vector2(item.progress, 0.f));
 
 						item.mesh_instance.create();
-						// TODO This can cause warnings when that block is removed later, as it will launch a
-						// FreeMeshTask, which will detect there is still more than 1 reference to the mesh
 						item.mesh_instance.set_mesh(block->get_mesh());
 						item.mesh_instance.set_gi_mode(get_gi_mode());
 						item.mesh_instance.set_transform(volume_transform * Transform3D(Basis(), item.local_position));
@@ -2009,6 +2006,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			FadingOutMesh &item = _fading_out_meshes[i];
 			item.progress -= speed;
 			if (item.progress <= 0.f) {
+				FreeMeshTask::try_add_and_destroy(item.mesh_instance);
 				_shader_material_pool.recycle(item.shader_material);
 				// TODO Optimize: mesh instances destroyed here can be really slow due to materials...
 				// Profiling has shown that `RendererSceneCull::free` of a mesh instance
