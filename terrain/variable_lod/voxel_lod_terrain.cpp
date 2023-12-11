@@ -1461,7 +1461,8 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		lod.loading_blocks.erase(ob.position);
 	}
 
-	if (_data->is_streaming_enabled()) {
+	if (_data->is_streaming_enabled() &&
+			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
 		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
 		MutexLock mlock(cs.loaded_data_blocks_mutex);
 		cs.loaded_data_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod_index });
@@ -1531,7 +1532,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			first_load = true;
 		}
 	}
-	if (first_load) {
+	if (first_load && _update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
 		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
 		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
 		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod });
@@ -2180,6 +2181,19 @@ bool VoxelLodTerrain::is_area_meshed(const Box3i &box_in_voxels, unsigned int lo
 	});
 }
 
+VoxelLodTerrain::StreamingSystem VoxelLodTerrain::get_streaming_system() const {
+	return static_cast<StreamingSystem>(_update_data->settings.streaming_system);
+}
+
+void VoxelLodTerrain::set_streaming_system(StreamingSystem v) {
+	VoxelLodTerrainUpdateData::StreamingSystem system = static_cast<VoxelLodTerrainUpdateData::StreamingSystem>(v);
+	if (system == _update_data->settings.streaming_system) {
+		return;
+	}
+	_update_data->settings.streaming_system = system;
+	_on_stream_params_changed();
+}
+
 void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
 	_update_data->wait_for_end_of_task();
 	Box3i bounds_in_voxels =
@@ -2803,7 +2817,8 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
-	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES)) {
+	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES) &&
+			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
 		const float lod_count_f = lod_count;
 		const int mesh_block_size = get_mesh_block_size();
 
@@ -3135,6 +3150,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enabled"), &VoxelLodTerrain::set_generator_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelLodTerrain::get_generator_use_gpu);
 
+	ClassDB::bind_method(D_METHOD("set_streaming_system", "system"), &VoxelLodTerrain::set_streaming_system);
+	ClassDB::bind_method(D_METHOD("get_streaming_system"), &VoxelLodTerrain::get_streaming_system);
+
 	// Debug
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
@@ -3174,6 +3192,9 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VIEWER_CLIPBOXES);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
+
+	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_LEGACY_OCTREE);
+	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_CLIPBOX);
 
 	ADD_GROUP("Bounds", "");
 
@@ -3232,6 +3253,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "threaded_update_enabled"), "set_threaded_update_enabled",
 			"is_threaded_update_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "streaming_system", PROPERTY_HINT_ENUM, "Octree (legacy),Clipbox"),
+			"set_streaming_system", "get_streaming_system");
 }
 
 } // namespace zylann::voxel

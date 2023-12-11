@@ -42,6 +42,11 @@ struct VoxelLodTerrainUpdateData {
 	// 	uint8_t lod;
 	// };
 
+	enum StreamingSystem : uint8_t { //
+		STREAMING_SYSTEM_LEGACY_OCTREE = 0,
+		STREAMING_SYSTEM_CLIPBOX
+	};
+
 	// These values don't change during the update task.
 	struct Settings {
 		// Area within which voxels can exist.
@@ -55,6 +60,7 @@ struct VoxelLodTerrainUpdateData {
 		// TODO Specify LOD0 distance separately so it can be relatively larger than other LODs
 		// float lod0_distance = 0.f;
 		unsigned int view_distance_voxels = 512;
+		StreamingSystem streaming_system = STREAMING_SYSTEM_LEGACY_OCTREE;
 		// bool full_load_mode = false;
 		bool run_stream_in_editor = true;
 		// If true, try to generate blocks and store them in the data map before posting mesh requests.

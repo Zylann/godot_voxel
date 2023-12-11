@@ -190,6 +190,16 @@ public:
 
 	bool is_area_meshed(const Box3i &box_in_voxels, unsigned int lod_index) const;
 
+	enum StreamingSystem : uint8_t { //
+		STREAMING_SYSTEM_LEGACY_OCTREE = VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE,
+		STREAMING_SYSTEM_CLIPBOX = VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX
+	};
+
+	// This is temporary, to avoid breaking projects as the new system gets improved and allowing to transition
+	// progressively.
+	StreamingSystem get_streaming_system() const;
+	void set_streaming_system(StreamingSystem v);
+
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
@@ -427,5 +437,6 @@ private:
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
 VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::DebugDrawFlag)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::StreamingSystem);
 
 #endif // VOXEL_LOD_TERRAIN_HPP
