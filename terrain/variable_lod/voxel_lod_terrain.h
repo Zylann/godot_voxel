@@ -328,8 +328,6 @@ private:
 	static void _bind_methods();
 
 private:
-	friend class BuildTransitionMeshTask;
-
 	VolumeID _volume_id;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
