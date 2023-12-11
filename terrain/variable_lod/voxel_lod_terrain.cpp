@@ -1256,9 +1256,75 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_unload.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_unload[i];
-			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
-			_fading_blocks_per_lod[lod_index].erase(bpos);
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks_in_current_lod = _fading_blocks_per_lod[lod_index];
+			auto fading_block_it = fading_blocks_in_current_lod.find(bpos);
+
+			if (_lod_fade_duration > 0.f) {
+				// Trigger fading out if the block was visible.
+				// Since the mesh block is removed from the map, we have to create an independent instance.
+				// If we don't do that and the viewer moves quick enough (or has low enough LOD distance), it would
+				// cause flickering as removed meshes are not able to fade out when moving away from them (contrary to
+				// moving closer to them, because in that case they are not removed, just made invisible).
+				// Other approaches could be explored, such as marking the mesh as "pending removal" and actually
+				// removing it after a second or two, to allow fading to finish.
+
+				// TODO It may be more efficient to just move the mesh instance from the block we are about to
+				// remove, rather than creating another
+
+				const Vector3 block_center = volume_transform.xform(
+						to_vec3(bpos * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
+
+				// Don't do fading for blocks behind the camera.
+				if (camera.forward.dot(block_center - camera.position) > 0.f) {
+					const VoxelMeshBlockVLT *mesh_block = mesh_map.get_block(bpos);
+
+					if (mesh_block != nullptr && mesh_block->is_visible()) {
+						Ref<ShaderMaterial> shader_material = mesh_block->get_shader_material();
+
+						if (shader_material.is_valid()) {
+							FadingOutMesh item;
+
+							item.local_position = mesh_block->position * mesh_block_size;
+
+							if (fading_block_it != fading_blocks_in_current_lod.end()) {
+								// The block was already fading, take it from here
+								item.progress = fading_block_it->second->fading_progress;
+							} else {
+								item.progress = 1.f;
+							}
+
+							// TODO Do we actually have to instantiate a material? We could just re-use the one from the
+							// block, since it gets removed and no change occurs in that material (contrary to
+							// transition mask changes)
+							item.shader_material = _shader_material_pool.allocate();
+							ZN_ASSERT(item.shader_material.is_valid());
+							copy_shader_params(**shader_material, **item.shader_material,
+									_shader_material_pool.get_cached_shader_uniforms());
+
+							item.mesh_instance.create();
+							// TODO This can cause warnings when that block is removed later, as it will launch a
+							// FreeMeshTask, which will detect there is still more than 1 reference to the mesh
+							item.mesh_instance.set_mesh(mesh_block->get_mesh());
+							item.mesh_instance.set_gi_mode(get_gi_mode());
+							item.mesh_instance.set_transform(
+									volume_transform * Transform3D(Basis(), item.local_position));
+							item.mesh_instance.set_material_override(item.shader_material);
+							item.mesh_instance.set_world(*get_world_3d());
+							// TODO What if the terrain is hidden?
+							item.mesh_instance.set_visible(true);
+
+							_fading_out_meshes.push_back(std::move(item));
+						}
+					}
+				}
+			}
+
+			if (fading_block_it != fading_blocks_in_current_lod.end()) {
+				fading_blocks_in_current_lod.erase(fading_block_it);
+			}
+
+			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(bpos, lod_index);
