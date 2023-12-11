@@ -598,13 +598,26 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 						VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
 						// Show parents when children are removed
-						parent_box.for_each_cell([&parent_lod, parent_lod_index, &state](Vector3i bpos) {
+						parent_box.for_each_cell([&parent_lod, parent_lod_index, &lod, &state](Vector3i bpos) {
 							auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
 
 							if (mesh_it != parent_lod.mesh_map_state.map.end()) {
 								VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
 
 								if (!mesh_block.active) {
+									// Only do merging logic if child chunks were ACTUALLY removed.
+									// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
+									// child LOD, but another viewer could still reference them, so we should not merge
+									// them yet.
+									// This check assumes there is always 8 children or no children
+									const Vector3i child_bpos0 = bpos << 1;
+									auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+									if (child_mesh0_it != lod.mesh_map_state.map.end()) {
+										// Child still referenced by another viewer, don't activate parent to avoid
+										// overlap
+										return;
+									}
+
 									mesh_block.active = true;
 									parent_lod.mesh_blocks_to_activate.push_back(bpos);
 
