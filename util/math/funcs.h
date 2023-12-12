@@ -11,7 +11,7 @@ using namespace godot;
 #endif
 
 #include "constants.h"
-#include <float.h> // for `_isnan`
+#include <cmath>
 
 namespace zylann::math {
 
@@ -347,79 +347,20 @@ inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T
 	return v;
 }
 
-// Math::is_nan exists in Godot core, but not in GDExtension...
-inline bool is_nan(double p_val) {
-#ifdef _MSC_VER
-	return _isnan(p_val);
-#elif defined(__GNUC__) && __GNUC__ < 6
-	union {
-		uint64_t u;
-		double f;
-	} ieee754;
-	ieee754.f = p_val;
-	// (unsigned)(0x7ff0000000000001 >> 32) : 0x7ff00000
-	return ((((unsigned)(ieee754.u >> 32) & 0x7fffffff) + ((unsigned)ieee754.u != 0)) > 0x7ff00000);
-#else
-	return isnan(p_val);
-#endif
-}
-
-// Math::is_nan exists in Godot core, but not in GDExtension...
 inline bool is_nan(float p_val) {
-#ifdef _MSC_VER
-	return _isnan(p_val);
-#elif defined(__GNUC__) && __GNUC__ < 6
-	union {
-		uint32_t u;
-		float f;
-	} ieee754;
-	ieee754.f = p_val;
-	// -----------------------------------
-	// (single-precision floating-point)
-	// NaN : s111 1111 1xxx xxxx xxxx xxxx xxxx xxxx
-	//     : (> 0x7f800000)
-	// where,
-	//   s : sign
-	//   x : non-zero number
-	// -----------------------------------
-	return ((ieee754.u & 0x7fffffff) > 0x7f800000);
-#else
-	return isnan(p_val);
-#endif
+	return std::isnan(p_val);
 }
 
-// Math::is_inf exists in Godot core, but not in GDExtension...
-inline bool is_inf(double p_val) {
-#ifdef _MSC_VER
-	return !_finite(p_val);
-// use an inline implementation of isinf as a workaround for problematic libstdc++ versions from gcc 5.x era
-#elif defined(__GNUC__) && __GNUC__ < 6
-	union {
-		uint64_t u;
-		double f;
-	} ieee754;
-	ieee754.f = p_val;
-	return ((unsigned)(ieee754.u >> 32) & 0x7fffffff) == 0x7ff00000 && ((unsigned)ieee754.u == 0);
-#else
-	return isinf(p_val);
-#endif
+inline bool is_nan(double p_val) {
+	return std::isnan(p_val);
 }
 
-// Math::is_inf exists in Godot core, but not in GDExtension...
 inline bool is_inf(float p_val) {
-#ifdef _MSC_VER
-	return !_finite(p_val);
-// use an inline implementation of isinf as a workaround for problematic libstdc++ versions from gcc 5.x era
-#elif defined(__GNUC__) && __GNUC__ < 6
-	union {
-		uint32_t u;
-		float f;
-	} ieee754;
-	ieee754.f = p_val;
-	return (ieee754.u & 0x7fffffff) == 0x7f800000;
-#else
-	return isinf(p_val);
-#endif
+	return std::isinf(p_val);
+}
+
+inline bool is_inf(double p_val) {
+	return std::isinf(p_val);
 }
 
 inline double deg_to_rad(double p_y) {
