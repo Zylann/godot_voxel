@@ -164,13 +164,21 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		// Move current state to be the previous state
 		paired_viewer.prev_state = paired_viewer.state;
 
-		const unsigned int view_distance_voxels =
-				static_cast<unsigned int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
+		const int view_distance_voxels =
+				static_cast<int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
+		paired_viewer.state.view_distance_voxels =
+				math::min(view_distance_voxels, static_cast<int>(volume_settings.view_distance_voxels));
+
+		// The last LOD should extend at least up to view distance. It must also be at least the distance specified by
+		// "lod distance"
+		const int last_lod_mesh_block_size = mesh_block_size << (lod_count - 1);
+		const int last_lod_distance_in_mesh_chunks =
+				math::max(math::ceildiv(paired_viewer.state.view_distance_voxels, last_lod_mesh_block_size),
+						lod_distance_in_mesh_chunks);
+		const int last_lod_distance_in_data_chunks = last_lod_mesh_block_size * mesh_to_data_factor;
 
 		const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
-		paired_viewer.state.view_distance_voxels =
-				math::min(view_distance_voxels, volume_settings.view_distance_voxels);
 		paired_viewer.state.local_position_voxels = math::floor_to_int(local_position);
 		paired_viewer.state.requires_collisions = viewer.require_collisions;
 		paired_viewer.state.requires_meshes = viewer.require_visuals && can_mesh;
@@ -193,8 +201,11 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
 
-				const Box3i new_mesh_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
-						lod_distance_in_mesh_chunks, volume_settings.mesh_block_size_po2, lod_index)
+				const int ld =
+						(lod_index == (lod_count - 1) ? last_lod_distance_in_mesh_chunks : lod_distance_in_mesh_chunks);
+
+				const Box3i new_mesh_box = get_lod_box_in_chunks(
+						paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index)
 												   .clipped(volume_bounds_in_mesh_blocks);
 
 				paired_viewer.state.mesh_box_per_lod[lod_index] = new_mesh_box;
@@ -211,6 +222,9 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 			const Box3i volume_bounds_in_data_blocks = Box3i( //
 					volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
 					volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+
+			const int ld =
+					(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
 
 			const Box3i new_data_box =
 					get_lod_box_in_chunks(paired_viewer.state.local_position_voxels, lod_distance_in_data_chunks,
