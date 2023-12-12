@@ -72,17 +72,23 @@ void VoxelViewer::set_enabled_in_editor(bool enable) {
 
 	_enabled_in_editor = enable;
 
-	set_notify_transform(!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor);
+#ifdef TOOLS_ENABLED
+	// This setting only has an effect when in the editor.
+	// Note, `is_editor_hint` is not supposed to change during execution.
+	if (Engine::get_singleton()->is_editor_hint()) {
+		set_notify_transform(_enabled_in_editor);
 
-	if (_enabled_in_editor) {
 		if (is_inside_tree()) {
-			_viewer_id = VoxelEngine::get_singleton().add_viewer();
-			sync_all_parameters();
-		}
+			if (_enabled_in_editor) {
+				_viewer_id = VoxelEngine::get_singleton().add_viewer();
+				sync_all_parameters();
 
-	} else {
-		VoxelEngine::get_singleton().remove_viewer(_viewer_id);
+			} else {
+				VoxelEngine::get_singleton().remove_viewer(_viewer_id);
+			}
+		}
 	}
+#endif
 }
 
 bool VoxelViewer::is_enabled_in_editor() const {
