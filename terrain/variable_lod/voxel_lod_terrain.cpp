@@ -516,7 +516,8 @@ bool VoxelLodTerrain::is_threaded_update_enabled() const {
 	return _threaded_update_enabled;
 }
 
-void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading) {
+void VoxelLodTerrain::set_mesh_block_active(
+		VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index) {
 	if (block.active == active) {
 		return;
 	}
@@ -531,7 +532,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 		if (block.fading_state != VoxelMeshBlockVLT::FADING_NONE) {
 			block.fading_state = VoxelMeshBlockVLT::FADING_NONE;
 
-			_fading_blocks_per_lod[block.lod_index].erase(block.position);
+			_fading_blocks_per_lod[lod_index].erase(block.position);
 
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
@@ -566,7 +567,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 	if (block.fading_state != fading_state) {
 		if (block.fading_state == VoxelMeshBlockVLT::FADING_NONE) {
-			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
 			// Must not have duplicates
 			ERR_FAIL_COND(fading_blocks.find(block.position) != fading_blocks.end());
 			fading_blocks.insert({ block.position, &block });
@@ -1224,7 +1225,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// Don't start fading on blocks behind the camera
 				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
 			}
-			set_mesh_block_active(*block, true, with_fading);
+			set_mesh_block_active(*block, true, with_fading, lod_index);
 			activated_blocks.insert(block);
 		}
 
@@ -1243,7 +1244,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// Don't start fading on blocks behind the camera
 				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
 			}
-			set_mesh_block_active(*block, false, with_fading);
+			set_mesh_block_active(*block, false, with_fading, lod_index);
 		}
 
 		lod.mesh_blocks_to_activate.clear();
@@ -1744,7 +1745,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			// We could do this on many other levels (like propagating to children when a normalmap is assigned),
 			// but if we have to, it means the calculation is too expensive anyways,
 			// so it's usually better to tune it in the first place.
-			try_apply_parent_detail_texture_to_block(*block, ob.position);
+			try_apply_parent_detail_texture_to_block(*block, ob.position, ob.lod);
 		}
 	}
 
@@ -1775,9 +1776,9 @@ void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextur
 	apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod_index);
 }
 
-static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, ShaderMaterial &material,
-		unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block, Vector3i parent_bpos,
-		const DetailRenderingSettings &detail_texture_settings) {
+static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index,
+		ShaderMaterial &material, unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block,
+		Vector3i parent_bpos, const DetailRenderingSettings &detail_texture_settings) {
 	//
 	Ref<ShaderMaterial> parent_material = parent_block.get_shader_material();
 	ZN_ASSERT_RETURN(parent_material.is_valid());
@@ -1792,7 +1793,7 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 	material.set_shader_parameter(sn.u_voxel_normalmap_atlas, normalmap_atlas_texture);
 	material.set_shader_parameter(sn.u_voxel_cell_lookup, cell_lookup_texture);
 
-	const int cell_size = 1 << block.lod_index;
+	const int cell_size = 1 << lod_index;
 	material.set_shader_parameter(sn.u_voxel_cell_size, cell_size);
 
 	material.set_shader_parameter(sn.u_voxel_block_size, mesh_block_size);
@@ -1809,7 +1810,7 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
 
-	const unsigned int parent_lod_index = block.lod_index + 1;
+	const unsigned int parent_lod_index = lod_index + 1;
 	const unsigned int tile_size =
 			get_detail_texture_tile_resolution_for_lod(detail_texture_settings, parent_lod_index);
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
@@ -1817,19 +1818,20 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 	block.detail_texture_fallback_level = fallback_level;
 }
 
-void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
+void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(
+		VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
 
 	Ref<ShaderMaterial> material = block.get_shader_material();
 	if (!material.is_valid()) {
 		return;
 	}
-	if (block.lod_index == get_lod_count()) {
+	if (lod_index == get_lod_count()) {
 		return;
 	}
 
 	// Only looking up one level for now
-	const unsigned int parent_lod_index = block.lod_index + 1;
+	const unsigned int parent_lod_index = lod_index + 1;
 	const VoxelMeshMap<VoxelMeshBlockVLT> &parent_map = _mesh_maps_per_lod[parent_lod_index];
 	const Vector3i parent_bpos = bpos >> 1;
 	const VoxelMeshBlockVLT *parent_block = parent_map.get_block(parent_bpos);
@@ -1837,7 +1839,7 @@ void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT
 		return;
 	}
 
-	zylann::voxel::try_apply_parent_detail_texture_to_block(block, bpos, **material, get_mesh_block_size(),
+	zylann::voxel::try_apply_parent_detail_texture_to_block(block, bpos, lod_index, **material, get_mesh_block_size(),
 			*parent_block, parent_bpos, _update_data->settings.detail_texture_settings);
 }
 
@@ -2572,7 +2574,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
 				d["position"] = block->position;
-				d["lod"] = block->lod_index;
+				d["lod"] = lod_index;
 				hits.append(d);
 			}
 		}
@@ -2630,8 +2632,8 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 		{
 			const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 			RWLockRead rlock(lod.mesh_map_state.map_lock);
-			recomputed_transition_mask = VoxelLodTerrainUpdateTask::get_transition_mask(
-					_update_data->state, bpos, block->lod_index, lod_count);
+			recomputed_transition_mask =
+					VoxelLodTerrainUpdateTask::get_transition_mask(_update_data->state, bpos, lod_index, lod_count);
 			auto it = lod.mesh_map_state.map.find(bpos);
 			if (it != lod.mesh_map_state.map.end()) {
 				mesh_state = it->second.state;

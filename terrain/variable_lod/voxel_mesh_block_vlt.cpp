@@ -10,7 +10,6 @@ namespace zylann::voxel {
 VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index) :
 		VoxelMeshBlock(bpos) {
 	_position_in_voxels = bpos * (size << p_lod_index);
-	lod_index = p_lod_index;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<SpatialMaterial> debug_material;

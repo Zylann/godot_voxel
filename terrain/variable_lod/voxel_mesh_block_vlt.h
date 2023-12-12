@@ -18,8 +18,6 @@ public:
 		FADING_OUT
 	};
 
-	uint8_t lod_index = 0;
-
 	FadingState fading_state = FADING_NONE;
 	float fading_progress = 0.f;
 	// Voxel LOD works by splitting a block into up to 8 higher-resolution blocks.

@@ -278,7 +278,7 @@ private:
 	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
 	void apply_detail_texture_update_to_block(
 			VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index);
-	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos);
+	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -289,7 +289,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading);
+	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
 
 	void _on_stream_params_changed();
 
