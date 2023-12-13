@@ -16,9 +16,13 @@ namespace zylann::voxel {
 // LOD0. If an edit happens at LOD0 and sibling chunks are present, they can be used to produce the parent LOD.
 // Alternatively, LOD updates could wait. In worst case, parent LODs will not update.
 
-namespace {
+// TODO Octree streaming was polling constantly, but clipbox isn't. So if a task is dropped due to being too far away,
+// it might cause a chunk hole or blocked lods, because it won't be requested again...
+// Either we should handle "dropped" responses and retrigger if still needed (as we did before), or we could track every
+// loading tasks with a shared boolean owned by both the task and the requester, which the requester sets to false if
+// it's not needed anymore, and otherwise doesn't get cancelled.
 
-// TODO Extend lowest LOD box to cover required view distance
+namespace {
 
 bool find_index(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, ViewerID id, unsigned int &out_index) {
 	for (unsigned int i = 0; i < viewers.size(); ++i) {
@@ -195,6 +199,8 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 		// Update data and mesh boxes
 		if (paired_viewer.state.requires_collisions || paired_viewer.state.requires_meshes) {
+			// Meshes are required
+
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 				const int lod_mesh_block_size_po2 = volume_settings.mesh_block_size_po2 + lod_index;
 				const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
@@ -204,38 +210,94 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 				const int ld =
 						(lod_index == (lod_count - 1) ? last_lod_distance_in_mesh_chunks : lod_distance_in_mesh_chunks);
 
-				const Box3i new_mesh_box = get_lod_box_in_chunks(
-						paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index)
-												   .clipped(volume_bounds_in_mesh_blocks);
+				Box3i new_mesh_box = get_lod_box_in_chunks(
+						paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
+
+				if (lod_index > 0) {
+					// Must be even to respect subdivision rule
+					const int min_pad = 2;
+					const Box3i &child_box = paired_viewer.state.mesh_box_per_lod[lod_index - 1];
+					// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
+					// zero when converted to the parent LOD's coordinate system.
+					Box3i min_box = Box3i(child_box.pos >> 1, child_box.size >> 1)
+											// Enforce neighboring rule by padding boxes outwards by a minimum amount,
+											// so there is at least N chunks in the current LOD between LOD+1 and LOD-1
+											.padded(min_pad)
+											// Ensure subdivision rule
+											.downscaled(2)
+											.scaled(2);
+
+					// Usually this won't modify the box, except some cases where lod distance is small
+					new_mesh_box.merge_with(min_box);
+				}
+
+				// Clip last
+				new_mesh_box.clip(volume_bounds_in_mesh_blocks);
 
 				paired_viewer.state.mesh_box_per_lod[lod_index] = new_mesh_box;
 			}
+
+			// TODO We should have a flag server side to force data boxes to be based on mesh boxes, even though the
+			// server might not actually need meshes. That would help the server to provide data chunks to clients,
+			// which need them for visual meshes
+
+			// Data boxes must be based on mesh boxes so the right data chunks are loaded to make the corresponding
+			// meshes (also including the tweaks we do to mesh boxes to enforce the neighboring rule)
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
+
+				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
+				const Box3i volume_bounds_in_data_blocks = Box3i( //
+						volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
+						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+
+				// const int ld =
+				// 		(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
+
+				// const Box3i new_data_box =
+				// 		get_lod_box_in_chunks(paired_viewer.state.local_position_voxels, lod_distance_in_data_chunks,
+				// 				data_block_size_po2, lod_index)
+				// 				// To account for meshes requiring neighbor data chunks.
+				// 				// It technically breaks the subdivision rule (where every parent block always has 8
+				// 				// children), but it should only matter in areas where meshes must actually spawn
+				// 				.padded(1)
+				// 				.clipped(volume_bounds_in_data_blocks);
+
+				const Box3i &mesh_box = paired_viewer.state.mesh_box_per_lod[lod_index];
+
+				const Box3i data_box =
+						Box3i(mesh_box.pos * mesh_to_data_factor, mesh_box.size * mesh_to_data_factor)
+								// To account for meshes requiring neighbor data chunks.
+								// It technically breaks the subdivision rule (where every parent block always has 8
+								// children), but it should only matter in areas where meshes must actually spawn
+								.padded(1)
+								.clipped(volume_bounds_in_data_blocks);
+
+				paired_viewer.state.data_box_per_lod[lod_index] = data_box;
+			}
+
 		} else {
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 				paired_viewer.state.mesh_box_per_lod[lod_index] = Box3i();
 			}
-		}
-		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-			const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
 
-			// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
-			const Box3i volume_bounds_in_data_blocks = Box3i( //
-					volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
-					volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
 
-			const int ld =
-					(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
+				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
+				const Box3i volume_bounds_in_data_blocks = Box3i( //
+						volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
+						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
-			const Box3i new_data_box =
-					get_lod_box_in_chunks(paired_viewer.state.local_position_voxels, lod_distance_in_data_chunks,
-							data_block_size_po2, lod_index)
-							// To account for meshes requiring neighbor data chunks.
-							// It technically breaks the subdivision rule (where every parent block always has 8
-							// children), but it should only matter in areas where meshes must actually spawn
-							.padded(1)
-							.clipped(volume_bounds_in_data_blocks);
+				const int ld =
+						(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
 
-			paired_viewer.state.data_box_per_lod[lod_index] = new_data_box;
+				const Box3i new_data_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
+						lod_distance_in_data_chunks, data_block_size_po2, lod_index)
+												   .clipped(volume_bounds_in_data_blocks);
+
+				paired_viewer.state.data_box_per_lod[lod_index] = new_data_box;
+			}
 		}
 	}
 }
@@ -852,8 +914,8 @@ void update_mesh_block_load(
 				const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
 				auto sibling_it = lod.mesh_map_state.map.find(sibling_bpos);
 				if (sibling_it == lod.mesh_map_state.map.end()) {
-					// Finding this would be weird due to subdivision rules. We don't expect a sibling to be missing,
-					// because every mesh block always has 8 children.
+					// Finding this in the mesh map would be weird due to subdivision rules. We don't expect a sibling
+					// to be missing, because every mesh block always has 8 children.
 					ZN_PRINT_ERROR("Didn't expect missing sibling");
 					all_siblings_loaded = false;
 					break;

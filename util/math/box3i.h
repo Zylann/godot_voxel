@@ -290,6 +290,10 @@ public:
 		return Box3i::from_min_max(math::ceildiv(pos, step_size), math::floordiv(pos + size, step_size));
 	}
 
+	inline Box3i scaled(int scale) const {
+		return Box3i(pos * scale, size * scale);
+	}
+
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {
 		int max_pos = pos + size;
 		int lim_max_pos = lim_pos + lim_size;
