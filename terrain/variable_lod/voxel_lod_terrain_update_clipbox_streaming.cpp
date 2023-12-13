@@ -72,7 +72,11 @@ Box3i get_lod_box_in_chunks(
 	ZN_ASSERT_RETURN_V(lod_distance_in_chunks >= 0, Box3i());
 	ZN_ASSERT_RETURN_V(lod_distance_in_chunks < 100, Box3i());
 
-	const int bias = ((1 << lod_index) - 1) << chunk_size_po2;
+	// const int bias = ((1 << lod_index) - 1) << chunk_size_po2;
+
+	// Offset by 1 chunk, since area size is even, so it centers the area
+	const int bias = 1 << (lod_index + chunk_size_po2);
+
 	const Vector3i vposi2 = viewer_pos_in_lod0_voxels + Vector3i(bias, bias, bias);
 	const Vector3i cpos = (vposi2 >> (chunk_size_po2 + lod_index + 1)) * 2;
 	const Box3i lod_box = Box3i(cpos, Vector3i(0, 0, 0)).padded(lod_distance_in_chunks);
