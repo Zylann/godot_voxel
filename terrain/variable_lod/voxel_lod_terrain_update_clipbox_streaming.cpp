@@ -94,7 +94,7 @@ Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
 }
 
 Box3i enforce_neighboring_rule(Box3i box, const Box3i &child_lod_box, bool make_even) {
-	const Box3i min_box = get_minimal_box_for_parent_lod(box, make_even);
+	const Box3i min_box = get_minimal_box_for_parent_lod(child_lod_box, make_even);
 	box.merge_with(min_box);
 	return box;
 }
