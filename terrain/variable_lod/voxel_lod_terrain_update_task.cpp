@@ -119,11 +119,13 @@ void send_block_data_requests(VolumeID volume_id, Span<const VoxelLodTerrainUpda
 	}
 }
 
-// This is used when the terrain has no stream and no generator: there can only be empty blocks when moving around.
+// This is used when streaming is enabled, yet the terrain has no stream and no generator (There can only be empty
+// blocks when moving around), or generating is configured to happen on the fly during meshing.
 void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::BlockLocation> blocks_to_load,
-		VoxelData &data, VoxelLodTerrainUpdateData::State &state) {
-	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
-		const VoxelLodTerrainUpdateData::BlockLocation loc = blocks_to_load[i];
+		VoxelData &data, VoxelLodTerrainUpdateData::State &state, const VoxelLodTerrainUpdateData::Settings &settings) {
+	ZN_ASSERT_RETURN(data.is_streaming_enabled());
+
+	for (const VoxelLodTerrainUpdateData::BlockLocation &loc : blocks_to_load) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[loc.lod];
 		RefCount viewers;
 		{
@@ -137,9 +139,21 @@ void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::Bl
 			}
 		}
 		{
+			// The block is considered "loaded" as we know there is nothing to load from a save file,
+			// and generating can be done on the fly if present, so this is represented by assigning a data block with
+			// no voxels attached.
 			VoxelDataBlock empty_block(loc.lod);
 			empty_block.viewers = viewers;
 			data.try_set_block(loc.position, empty_block);
+		}
+	}
+
+	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		// Since streaming is enabled, the system must be told this block is now "loaded", because it doesn't use
+		// polling to know when things are loaded
+		MutexLock mlock(state.clipbox_streaming.loaded_data_blocks_mutex);
+		for (const VoxelLodTerrainUpdateData::BlockLocation &loc : blocks_to_load) {
+			state.clipbox_streaming.loaded_data_blocks.push_back(loc);
 		}
 	}
 }
@@ -642,7 +656,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	ProfilingClock profiling_clock;
 	ProfilingClock profiling_clock_total;
 
-	// TODO This is not a good name, "streaming" has several meanings
+	// TODO This is not a good name, "streaming" has several meanings. Rename "can_load"?
 	const bool stream_enabled = (stream.is_valid() || generator.is_valid()) &&
 			(Engine::get_singleton()->is_editor_hint() == false || settings.run_stream_in_editor);
 
@@ -699,16 +713,20 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 		if (stream_enabled) {
 			const unsigned int data_block_size = data.get_block_size();
 
-			if (stream.is_null() && !settings.cache_generated_blocks) {
-				// TODO Optimization: not ideal because a bit delayed. It requires a second update cycle for meshes to
-				// get requested. We could instead set those empty blocks right away instead of putting them in that
-				// list, but it's simpler code for now.
-				apply_block_data_requests_as_empty(to_span(data_blocks_to_load), data, state);
+			// This part would still "work" without that check because `data_blocks_to_load` would be empty,
+			// but I added this for expliciteness
+			if (data.is_streaming_enabled()) {
+				if (stream.is_null() && !settings.cache_generated_blocks) {
+					// TODO Optimization: not ideal because a bit delayed. It requires a second update cycle for meshes
+					// to get requested. We could instead set those empty blocks right away instead of putting them in
+					// that list, but it's simpler code for now.
+					apply_block_data_requests_as_empty(to_span(data_blocks_to_load), data, state, settings);
 
-			} else {
-				send_block_data_requests(_volume_id, to_span(data_blocks_to_load), _streaming_dependency, _data,
-						_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings,
-						task_scheduler);
+				} else {
+					send_block_data_requests(_volume_id, to_span(data_blocks_to_load), _streaming_dependency, _data,
+							_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings,
+							task_scheduler);
+				}
 			}
 
 			send_block_save_requests(

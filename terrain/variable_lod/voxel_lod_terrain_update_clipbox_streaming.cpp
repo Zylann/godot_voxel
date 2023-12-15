@@ -580,13 +580,15 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 
 void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const Box3i bounds_in_voxels, int lod_count,
-		bool is_full_load_mode, bool can_load) {
+		bool is_full_load_mode, bool can_load, const VoxelData &data, int data_block_size) {
 	ZN_PROFILE_SCOPE();
 
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
-	// const int mesh_block_size = 1 << mesh_block_size_po2;
 
 	// const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
+
+	const int mesh_block_size = 1 << mesh_block_size_po2;
+	const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
 #ifdef DEV_ENABLED
 	Box3i debug_parent_box;
@@ -634,31 +636,64 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 
 				// Add meshes entering range
 				if (can_load) {
-					new_mesh_box.difference(prev_mesh_box, [&lod, lod_index, is_full_load_mode](Box3i box_to_add) {
-						box_to_add.for_each_cell([&lod, is_full_load_mode](Vector3i bpos) {
-							VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
-							auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+					new_mesh_box.difference(prev_mesh_box,
+							[&lod, lod_index, is_full_load_mode, mesh_to_data_factor, &data](Box3i box_to_add) {
+								box_to_add.for_each_cell([&lod, is_full_load_mode, mesh_to_data_factor, &data,
+																 lod_index](Vector3i bpos) {
+									VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
+									auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
-							if (mesh_block_it == lod.mesh_map_state.map.end()) {
-								// RWLockWrite wlock(lod.mesh_map_state.map_lock);
-								mesh_block = &insert_new(lod.mesh_map_state.map, bpos);
+									if (mesh_block_it == lod.mesh_map_state.map.end()) {
+										// RWLockWrite wlock(lod.mesh_map_state.map_lock);
+										mesh_block = &insert_new(lod.mesh_map_state.map, bpos);
 
-								if (is_full_load_mode) {
-									// Everything is loaded up-front, so we directly trigger meshing instead of reacting
-									// to data chunks being loaded
-									lod.mesh_blocks_pending_update.push_back(bpos);
-									mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-								}
+										if (is_full_load_mode) {
+											// Everything is loaded up-front, so we directly trigger meshing instead of
+											// reacting to data chunks being loaded
+											lod.mesh_blocks_pending_update.push_back(bpos);
+											mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+										}
 
-							} else {
-								mesh_block = &mesh_block_it->second;
-							}
+									} else {
+										mesh_block = &mesh_block_it->second;
+									}
 
-							// TODO Viewer options
-							mesh_block->mesh_viewers.add();
-							mesh_block->collision_viewers.add();
-						});
-					});
+									// TODO Viewer options
+									mesh_block->mesh_viewers.add();
+									mesh_block->collision_viewers.add();
+
+									// Trigger meshing if data is already available.
+									// This is needed because then there won't be any "data loaded" event to react to.
+									// Before that, meshes were updated only when a data block was loaded or modified,
+									// so changing block size or viewer flags did not make meshes appear. Having two
+									// viewer regions meet also caused problems.
+									// TODO This tends to suggest that data blocks should be allocated from here
+									// instead, however it would couple mesh loading to data loading, forcing to
+									// duplicate the data code path in case of viewers that don't need meshes.
+									// try_schedule_mesh_update(*block);
+									// Alternative: in data diff, put every found block into a list which we'll also
+									// run through in `process_loaded_data_blocks_trigger_meshing`?
+									if (!is_full_load_mode && !mesh_block->loaded &&
+											// Is an update already pending?
+											mesh_block->state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT &&
+											mesh_block->state != VoxelLodTerrainUpdateData::MESH_UPDATE_SENT) {
+										//
+										const Box3i data_box = Box3i(
+												bpos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor))
+																	   .padded(1);
+
+										// If we get an empty box at this point, something is wrong with the caller
+										ZN_ASSERT_RETURN(!data_box.is_empty());
+
+										const bool data_available = data.has_all_blocks_in_area(data_box, lod_index);
+
+										if (data_available) {
+											lod.mesh_blocks_pending_update.push_back(bpos);
+											mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+										}
+									}
+								});
+							});
 				}
 
 				// Remove meshes out or range
@@ -769,6 +804,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 	const int data_to_mesh_shift = mesh_block_size_po2 - data.get_block_size_po2();
 
 	for (VoxelLodTerrainUpdateData::BlockLocation bloc : tls_loaded_blocks) {
+		// ZN_PROFILE_SCOPE_NAMED("Block");
 		// Multiple mesh blocks may be interested because of neighbor dependencies.
 
 		// We could group loaded blocks by LOD so we could compute a few things less times?
@@ -1042,7 +1078,8 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 		}
 	}
 
-	process_mesh_blocks_sliding_box(state, settings, bounds_in_voxels, lod_count, !streaming_enabled, can_load);
+	process_mesh_blocks_sliding_box(
+			state, settings, bounds_in_voxels, lod_count, !streaming_enabled, can_load, data, 1 << data_block_size_po2);
 
 	// Removing paired viewers after box diffs because we interpret viewer removal as boxes becoming zero-size, so we
 	// need one processing step to handle that before actually removing them
