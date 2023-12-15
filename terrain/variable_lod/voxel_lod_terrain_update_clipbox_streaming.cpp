@@ -74,6 +74,31 @@ Box3i get_base_box_in_chunks(Vector3i viewer_position_voxels, int distance_voxel
 	return Box3i::from_min_max(minp, maxp);
 }
 
+// Gets the smallest box a parent LOD must have in order to keep respecting the neighboring rule
+Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
+	// Must be even to respect subdivision rule
+	const int min_pad = 2;
+	// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
+	// zero when converted to the parent LOD's coordinate system.
+	Box3i min_box = Box3i(child_lod_box.pos >> 1, child_lod_box.size >> 1)
+							// Enforce neighboring rule by padding boxes outwards by a minimum amount,
+							// so there is at least N chunks in the current LOD between LOD+1 and LOD-1
+							.padded(min_pad);
+
+	if (make_even) {
+		// Make sure it stays even
+		min_box = min_box.downscaled(2).scaled(2);
+	}
+
+	return min_box;
+}
+
+Box3i enforce_neighboring_rule(Box3i box, const Box3i &child_lod_box, bool make_even) {
+	const Box3i min_box = get_minimal_box_for_parent_lod(box, make_even);
+	box.merge_with(min_box);
+	return box;
+}
+
 inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
 	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size, 1);
 }
@@ -202,33 +227,17 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 				// Box3i new_mesh_box = get_lod_box_in_chunks(
 				// 		paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
 
+				// Make min and max coordinates even in child LODs, to respect subdivision rule.
+				// Root LOD doesn't need to respect that.
+				const bool even_coordinates_required = lod_index != lod_count - 1;
+
 				Box3i new_mesh_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
 						// Making sure that distance is a multiple of chunk size, for consistent box size
-						ld * lod_mesh_block_size, lod_mesh_block_size,
-						// Make min and max coordinates even in child LODs, to respect subdivision rule.
-						// Root LOD doesn't need to respect that,
-						lod_index != lod_count - 1);
+						ld * lod_mesh_block_size, lod_mesh_block_size, even_coordinates_required);
 
 				if (lod_index > 0) {
-					// Post-process the box to enforce neighboring rule
-
-					// Must be even to respect subdivision rule
-					const int min_pad = 2;
 					const Box3i &child_box = paired_viewer.state.mesh_box_per_lod[lod_index - 1];
-					// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
-					// zero when converted to the parent LOD's coordinate system.
-					Box3i min_box = Box3i(child_box.pos >> 1, child_box.size >> 1)
-											// Enforce neighboring rule by padding boxes outwards by a minimum amount,
-											// so there is at least N chunks in the current LOD between LOD+1 and LOD-1
-											.padded(min_pad);
-
-					if (lod_index != lod_count - 1) {
-						// Make sure it stays even
-						min_box = min_box.downscaled(2).scaled(2);
-					}
-
-					// Usually this won't modify the box, except in cases where lod distance is small
-					new_mesh_box.merge_with(min_box);
+					new_mesh_box = enforce_neighboring_rule(new_mesh_box, child_box, even_coordinates_required);
 				}
 
 				// Clip last
