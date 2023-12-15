@@ -50,47 +50,32 @@ bool find_index(
 	return false;
 }
 
-Box3i get_lod_box_in_chunks(
-		Vector3i viewer_pos_in_lod0_voxels, int lod_distance_in_chunks, int chunk_size_po2, int lod_index) {
-	// If we only divide positions, the resulting boxes will be biased towards certain axes, causing more details to
-	// appear in certain directions on average. To counteract this, we introduce another bias so boxes cover the same
-	// area around the viewer, on average.
-	// This can be visualized in a graphing calculator with the following formulas:
-	// 1) y = floor(x)
-	// 2) y = floor(x / 2) * 2
-	// 3) y = floor((x + 0.5) / 2) * 2
-	// Formula 2) is biased towards positive values.
-	// Formula 3) is tweaked to eliminate the bias.
-	//
-	// I found this by trial and error, so maybe there is an even better solution to this
+Box3i get_base_box_in_chunks(Vector3i viewer_position_voxels, int distance_voxels, int chunk_size, bool make_even) {
+	// Get min and max positions
+	Vector3i minp = viewer_position_voxels - Vector3iUtil::create(distance_voxels);
+	Vector3i maxp = viewer_position_voxels +
+			Vector3iUtil::create(distance_voxels
+					// When distance is a multiple of chunk size, we should be able to get a consistent box size,
+					// however without that +1 there are still very specific coordinates that makes the box shrink due
+					// to rounding
+					+ 1);
 
-	// TODO This only works well if lod_distance_in_chunks is even. Any way to fix this?
-	// If it is odd, LODs will not align such that each cell matches 8 cells of the child LOD.
-	if ((lod_distance_in_chunks & 1) != 0) {
-		ZN_PRINT_ERROR("Odd lod distance chunks is unsupported");
+	// Convert to chunk coordinates
+	minp = math::floordiv(minp, chunk_size);
+	maxp = math::ceildiv(maxp, chunk_size);
+
+	if (make_even) {
+		// Round to be even outwards (partly required for subdivision rule)
+		// TODO Maybe there is a more clever way to do this
+		minp = math::floordiv(minp, 2) * 2;
+		maxp = math::ceildiv(maxp, 2) * 2;
 	}
-	ZN_ASSERT_RETURN_V(lod_distance_in_chunks >= 0, Box3i());
-	ZN_ASSERT_RETURN_V(lod_distance_in_chunks < 100, Box3i());
 
-	// const int bias = ((1 << lod_index) - 1) << chunk_size_po2;
-
-	// Offset by 1 chunk, since area size is even, so it centers the area
-	const int bias = 1 << (lod_index + chunk_size_po2);
-
-	const Vector3i vposi2 = viewer_pos_in_lod0_voxels + Vector3i(bias, bias, bias);
-	const Vector3i cpos = (vposi2 >> (chunk_size_po2 + lod_index + 1)) * 2;
-	const Box3i lod_box = Box3i(cpos, Vector3i(0, 0, 0)).padded(lod_distance_in_chunks);
-	return lod_box;
-}
-
-inline int round_to_next_even(int x) {
-	return x + (x & 1);
+	return Box3i::from_min_max(minp, maxp);
 }
 
 inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
-	return math::max(
-			// Must be even, otherwise LOD split/merge logic cannot work
-			round_to_next_even(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size), 2);
+	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size, 1);
 }
 
 void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
@@ -214,10 +199,19 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 				const int ld =
 						(lod_index == (lod_count - 1) ? last_lod_distance_in_mesh_chunks : lod_distance_in_mesh_chunks);
 
-				Box3i new_mesh_box = get_lod_box_in_chunks(
-						paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
+				// Box3i new_mesh_box = get_lod_box_in_chunks(
+				// 		paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
+
+				Box3i new_mesh_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
+						// Making sure that distance is a multiple of chunk size, for consistent box size
+						ld * lod_mesh_block_size, lod_mesh_block_size,
+						// Make min and max coordinates even in child LODs, to respect subdivision rule.
+						// Root LOD doesn't need to respect that,
+						lod_index != lod_count - 1);
 
 				if (lod_index > 0) {
+					// Post-process the box to enforce neighboring rule
+
 					// Must be even to respect subdivision rule
 					const int min_pad = 2;
 					const Box3i &child_box = paired_viewer.state.mesh_box_per_lod[lod_index - 1];
@@ -226,12 +220,14 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 					Box3i min_box = Box3i(child_box.pos >> 1, child_box.size >> 1)
 											// Enforce neighboring rule by padding boxes outwards by a minimum amount,
 											// so there is at least N chunks in the current LOD between LOD+1 and LOD-1
-											.padded(min_pad)
-											// Ensure subdivision rule
-											.downscaled(2)
-											.scaled(2);
+											.padded(min_pad);
 
-					// Usually this won't modify the box, except some cases where lod distance is small
+					if (lod_index != lod_count - 1) {
+						// Make sure it stays even
+						min_box = min_box.downscaled(2).scaled(2);
+					}
+
+					// Usually this won't modify the box, except in cases where lod distance is small
 					new_mesh_box.merge_with(min_box);
 				}
 
@@ -286,7 +282,8 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 			}
 
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
-				const unsigned int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
+				const int lod_data_block_size_po2 = data_block_size_po2 + lod_index;
+				const int lod_data_block_size = 1 << lod_data_block_size_po2;
 
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 				const Box3i volume_bounds_in_data_blocks = Box3i( //
@@ -296,9 +293,17 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 				const int ld =
 						(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
 
-				const Box3i new_data_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
-						lod_distance_in_data_chunks, data_block_size_po2, lod_index)
+				const Box3i new_data_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
+						// Making sure that distance is a multiple of chunk size, for consistent box size
+						ld * lod_data_block_size, lod_data_block_size,
+						// Make min and max coordinates even in child LODs, to respect subdivision rule.
+						// Root LOD doesn't need to respect that,
+						lod_index != lod_count - 1)
 												   .clipped(volume_bounds_in_data_blocks);
+
+				// const Box3i new_data_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
+				// 		lod_distance_in_data_chunks, data_block_size_po2, lod_index)
+				// 								   .clipped(volume_bounds_in_data_blocks);
 
 				paired_viewer.state.data_box_per_lod[lod_index] = new_data_box;
 			}
