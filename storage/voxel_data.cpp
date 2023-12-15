@@ -580,7 +580,7 @@ bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_i
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size() << lod_index);
 	data_blocks_box = data_blocks_box.clipped(bounds_in_blocks);
 
-	const Lod &data_lod = _lods[0];
+	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
 
 	return data_blocks_box.all_cells_match([&data_lod](Vector3i bpos) { //
