@@ -543,15 +543,15 @@ VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 	return block;
 }
 
-inline Vector3i get_child_position_from_first_sibling(Vector3i first_sibling_position, unsigned int child_index) {
+inline Vector3i get_relative_child_position(unsigned int child_index) {
 	return Vector3i( //
-			first_sibling_position.x + (child_index & 1), //
-			first_sibling_position.y + ((child_index & 2) >> 1), //
-			first_sibling_position.z + ((child_index & 4) >> 2));
+			(child_index & 1), //
+			((child_index & 2) >> 1), //
+			((child_index & 4) >> 2));
 }
 
 inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_index) {
-	return get_child_position_from_first_sibling(parent_position * 2, child_index);
+	return parent_position * 2 + get_relative_child_position(child_index);
 }
 
 // void hide_children_recursive(
