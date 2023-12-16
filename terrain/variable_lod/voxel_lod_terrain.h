@@ -57,6 +57,9 @@ public:
 	void set_lod_distance(float p_lod_distance);
 	float get_lod_distance() const;
 
+	void set_secondary_lod_distance(float p_lod_distance);
+	float get_secondary_lod_distance() const;
+
 	void set_lod_count(int p_lod_count);
 	int get_lod_count() const;
 
@@ -261,6 +264,8 @@ public:
 	inline std::shared_ptr<VoxelData> get_storage_shared() const {
 		return _data;
 	}
+
+	void get_lod_distances(Span<float> distances);
 
 protected:
 	void _notification(int p_what);

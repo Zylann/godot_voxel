@@ -86,7 +86,7 @@ public:
 
 	void set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2);
 	void set_data_block_size_po2(unsigned int p_data_block_size_po2);
-	void set_mesh_lod_distance(float p_lod_distance);
+	void update_mesh_lod_distances_from_parent();
 
 	int get_library_item_id_from_render_block_index(unsigned render_block_index) const;
 
@@ -261,7 +261,7 @@ private:
 	VoxelNode *_parent = nullptr;
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
-	float _mesh_lod_distance = 0.f;
+	FixedArray<float, MAX_LOD> _mesh_lod_distances;
 	// Vector3 _mesh_lod_last_update_camera_position;
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;

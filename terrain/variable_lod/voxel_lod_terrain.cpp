@@ -179,6 +179,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	set_lod_count(4);
 
 	set_lod_distance(48.f);
+	set_secondary_lod_distance(48.f);
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
@@ -748,12 +749,60 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	if (_instancer != nullptr) {
-		_instancer->set_mesh_lod_distance(lod_distance);
+		_instancer->update_mesh_lod_distances_from_parent();
 	}
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
 	return _update_data->settings.lod_distance;
+}
+
+void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
+	if (p_lod_distance == _update_data->settings.secondary_lod_distance) {
+		return;
+	}
+
+	_update_data->wait_for_end_of_task();
+
+	// Distance must be greater than a threshold,
+	// otherwise lods will decimate too fast and it will look messy
+	const float secondary_lod_distance =
+			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
+	_update_data->settings.secondary_lod_distance = secondary_lod_distance;
+	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+
+	if (_instancer != nullptr) {
+		_instancer->update_mesh_lod_distances_from_parent();
+	}
+}
+
+float VoxelLodTerrain::get_secondary_lod_distance() const {
+	return _update_data->settings.secondary_lod_distance;
+}
+
+void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
+	// Get the distances in local coordinates where each LOD ends (not accounting for max view distance extension).
+	// Note that due to chunking adjustments, this may not be fully accurate. Actual chunks can appear further away.
+	// Initially used for VoxelInstancer.
+
+	ZN_ASSERT_RETURN(distances.size() > 0);
+
+	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
+	const int lod_count = math::min(get_lod_count(), static_cast<int>(distances.size()));
+
+	distances[0] = settings.lod_distance;
+
+	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
+		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
+			distances[lod_index] = settings.lod_distance;
+		}
+
+	} else {
+		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
+			distances[lod_index] = settings.lod_distance + settings.secondary_lod_distance * (1 << lod_index);
+		}
+	}
 }
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
@@ -2264,6 +2313,9 @@ void VoxelLodTerrain::set_streaming_system(StreamingSystem v) {
 	}
 	_update_data->settings.streaming_system = system;
 	_on_stream_params_changed();
+#ifdef TOOLS_ENABLED
+	notify_property_list_changed();
+#endif
 }
 
 void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
@@ -3144,6 +3196,10 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_lod_distance", "lod_distance"), &VoxelLodTerrain::set_lod_distance);
 	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
 
+	ClassDB::bind_method(
+			D_METHOD("set_secondary_lod_distance", "lod_distance"), &VoxelLodTerrain::set_secondary_lod_distance);
+	ClassDB::bind_method(D_METHOD("get_secondary_lod_distance"), &VoxelLodTerrain::get_secondary_lod_distance);
+
 	// Misc
 
 	ClassDB::bind_method(D_METHOD("voxel_to_data_block_position", "voxel_position", "lod_index"),
@@ -3277,6 +3333,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "secondary_lod_distance"), "set_secondary_lod_distance",
+			"get_secondary_lod_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");

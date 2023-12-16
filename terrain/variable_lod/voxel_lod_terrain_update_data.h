@@ -61,10 +61,10 @@ struct VoxelLodTerrainUpdateData {
 		// Box3i bounds_in_voxels;
 		// unsigned int lod_count = 0;
 
-		// Distance between a viewer and the end of LOD0
+		// Distance between a viewer and the end of LOD0. May not be respected exactly, it can be rounded up
 		float lod_distance = 0.f;
-		// TODO Specify LOD0 distance separately so it can be relatively larger than other LODs
-		// float lod0_distance = 0.f;
+		// Distance between the end of LOD0 and the end of LOD1, carried over to other LODs
+		float secondary_lod_distance = 0.f;
 		unsigned int view_distance_voxels = 512;
 		StreamingSystem streaming_system = STREAMING_SYSTEM_LEGACY_OCTREE;
 		// bool full_load_mode = false;

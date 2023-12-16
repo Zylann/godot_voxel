@@ -373,7 +373,7 @@ void VoxelTerrain::set_max_view_distance(int distance_in_voxels) {
 	_max_view_distance_voxels = distance_in_voxels;
 
 	if (_instancer != nullptr) {
-		_instancer->set_mesh_lod_distance(_max_view_distance_voxels);
+		_instancer->update_mesh_lod_distances_from_parent();
 	}
 }
 

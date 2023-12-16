@@ -102,6 +102,26 @@ inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mes
 	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size, 1);
 }
 
+// Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
+int get_relative_lod_distance_in_chunks(int lod_index, int lod_count, int lod0_distance_in_chunks,
+		int lodn_distance_in_chunks, int lod_chunk_size, int max_view_distance_voxels) {
+	int ld;
+	if (lod_index == 0) {
+		// First LOD uses dedicated distance
+		ld = lod0_distance_in_chunks;
+	} else {
+		// Following LODs use another distance.
+		// The returned distance is relative to chunks of the current LOD so we divide LOD0 distance rather than
+		// multiplying LODN distance
+		ld = (lod0_distance_in_chunks >> lod_index) + lodn_distance_in_chunks;
+	}
+	if (lod_index == lod_count - 1) {
+		// Last LOD may extend all the way to max view distance if possible
+		ld = math::max(ld, math::ceildiv(max_view_distance_voxels, lod_chunk_size));
+	}
+	return ld;
+}
+
 void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		const VoxelLodTerrainUpdateData::Settings &volume_settings, unsigned int lod_count,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
@@ -151,11 +171,14 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 	const int mesh_block_size = 1 << volume_settings.mesh_block_size_po2;
 	const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
-	const int lod_distance_in_mesh_chunks =
+	const int lod0_distance_in_mesh_chunks =
 			get_lod_distance_in_mesh_chunks(volume_settings.lod_distance, mesh_block_size);
+	const int lodn_distance_in_mesh_chunks =
+			get_lod_distance_in_mesh_chunks(volume_settings.secondary_lod_distance, mesh_block_size);
 
 	// Data chunks are driven by mesh chunks, because mesh needs data
-	const int lod_distance_in_data_chunks = lod_distance_in_mesh_chunks * mesh_to_data_factor;
+	const int lod0_distance_in_data_chunks = lod0_distance_in_mesh_chunks * mesh_to_data_factor;
+	const int lodn_distance_in_data_chunks = lodn_distance_in_mesh_chunks * mesh_to_data_factor;
 
 	// const Box3i volume_bounds_in_data_blocks = volume_bounds_in_voxels.downscaled(1 << data_block_size_po2);
 	// const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(1 << mesh_block_size_po2);
@@ -188,11 +211,11 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 		// The last LOD should extend at least up to view distance. It must also be at least the distance specified by
 		// "lod distance"
-		const int last_lod_mesh_block_size = mesh_block_size << (lod_count - 1);
-		const int last_lod_distance_in_mesh_chunks =
-				math::max(math::ceildiv(paired_viewer.state.view_distance_voxels, last_lod_mesh_block_size),
-						lod_distance_in_mesh_chunks);
-		const int last_lod_distance_in_data_chunks = last_lod_mesh_block_size * mesh_to_data_factor;
+		// const int last_lod_mesh_block_size = mesh_block_size << (lod_count - 1);
+		// const int last_lod_distance_in_mesh_chunks =
+		// 		math::max(math::ceildiv(paired_viewer.state.view_distance_voxels, last_lod_mesh_block_size),
+		// 				lod_distance_in_mesh_chunks);
+		// const int last_lod_distance_in_data_chunks = last_lod_mesh_block_size * mesh_to_data_factor;
 
 		const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
@@ -220,15 +243,15 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
 
-				const int ld =
-						(lod_index == (lod_count - 1) ? last_lod_distance_in_mesh_chunks : lod_distance_in_mesh_chunks);
+				const int ld = get_relative_lod_distance_in_chunks(lod_index, lod_count, lod0_distance_in_mesh_chunks,
+						lodn_distance_in_mesh_chunks, lod_mesh_block_size, paired_viewer.state.view_distance_voxels);
 
 				// Box3i new_mesh_box = get_lod_box_in_chunks(
 				// 		paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
 
 				// Make min and max coordinates even in child LODs, to respect subdivision rule.
 				// Root LOD doesn't need to respect that.
-				const bool even_coordinates_required = lod_index != lod_count - 1;
+				const bool even_coordinates_required = (lod_index != lod_count - 1);
 
 				Box3i new_mesh_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
 						// Making sure that distance is a multiple of chunk size, for consistent box size
@@ -298,8 +321,8 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 						volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
 						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
-				const int ld =
-						(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
+				const int ld = get_relative_lod_distance_in_chunks(lod_index, lod_count, lod0_distance_in_data_chunks,
+						lodn_distance_in_data_chunks, lod_data_block_size, paired_viewer.state.view_distance_voxels);
 
 				const Box3i new_data_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
 						// Making sure that distance is a multiple of chunk size, for consistent box size

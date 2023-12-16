@@ -44,6 +44,7 @@ VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
 	_generator_results = make_shared_instance<VoxelInstancerGeneratorTaskOutputQueue>();
+	fill(_mesh_lod_distances, 0.f);
 }
 
 VoxelInstancer::~VoxelInstancer() {
@@ -128,7 +129,7 @@ void VoxelInstancer::_notification(int p_what) {
 				_parent = vlt;
 				_parent_data_block_size_po2 = vlt->get_data_block_size_pow2();
 				_parent_mesh_block_size_po2 = vlt->get_mesh_block_size_pow2();
-				_mesh_lod_distance = vlt->get_lod_distance();
+				update_mesh_lod_distances_from_parent();
 				vlt->set_instancer(this);
 			} else {
 				VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(get_parent());
@@ -136,7 +137,7 @@ void VoxelInstancer::_notification(int p_what) {
 					_parent = vt;
 					_parent_data_block_size_po2 = vt->get_data_block_size_pow2();
 					_parent_mesh_block_size_po2 = vt->get_mesh_block_size_pow2();
-					_mesh_lod_distance = vt->get_max_view_distance();
+					update_mesh_lod_distances_from_parent();
 					vt->set_instancer(this);
 				}
 			}
@@ -203,7 +204,7 @@ void VoxelInstancer::_notification(int p_what) {
 
 void VoxelInstancer::process() {
 	process_generator_results();
-	if (_parent != nullptr && _library.is_valid() && _mesh_lod_distance > 0.f) {
+	if (_parent != nullptr && _library.is_valid() && _mesh_lod_distances[0] > 0.f) {
 		process_mesh_lods();
 	}
 #ifdef TOOLS_ENABLED
@@ -393,6 +394,21 @@ void VoxelInstancer::update_mesh_from_mesh_lod(Block &block,
 	}
 }
 
+void VoxelInstancer::update_mesh_lod_distances_from_parent() {
+	ZN_ASSERT_RETURN(_parent != nullptr);
+
+	VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_parent);
+	if (vlt != nullptr) {
+		vlt->get_lod_distances(to_span(_mesh_lod_distances));
+		return;
+	}
+
+	VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_parent);
+	if (vt != nullptr) {
+		_mesh_lod_distances[0] = vt->get_max_view_distance();
+	}
+}
+
 void VoxelInstancer::process_mesh_lods() {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
@@ -456,7 +472,7 @@ void VoxelInstancer::process_mesh_lods() {
 			const int lod_index = item->get_lod_index();
 
 			Span<const float> distance_ratios = item->get_mesh_lod_distance_ratios();
-			const float max_distance = _mesh_lod_distance * (1 << lod_index);
+			const float max_distance = _mesh_lod_distances[lod_index];
 
 			// #ifdef DEBUG_ENABLED
 			// 		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS);
@@ -1838,10 +1854,6 @@ void VoxelInstancer::set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2)
 
 void VoxelInstancer::set_data_block_size_po2(unsigned int p_data_block_size_po2) {
 	_parent_data_block_size_po2 = p_data_block_size_po2;
-}
-
-void VoxelInstancer::set_mesh_lod_distance(float p_lod_distance) {
-	_mesh_lod_distance = p_lod_distance;
 }
 
 int VoxelInstancer::get_library_item_id_from_render_block_index(unsigned int render_block_index) const {
