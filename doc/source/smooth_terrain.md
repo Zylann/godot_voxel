@@ -388,29 +388,39 @@ When going from LOD `i` to `i+1`, voxels and blocks double in size, covering mor
 
 ### Octrees
 
-LOD is implemented using a *grid of octrees*. Each octree may then be subdivided into chunks of variable size, where the smallest size will be LOD 0.
+LOD is implemented using multiple parented grids, each with blocks twice the size of their children. Blocks of the root grid (lowest LOD) can be thought of an octree: it may be subdivided into 8 smaller blocks in the child grid, which themselves can be subdivided in 8 more etc, until reaching LOD0, maximum level of detail.
 
-Subdivision occurs as the viewer gets closer. The threshold upon which it happens is controlled with the `lod_distance` property. It represents how far LOD 0 will spread around the viewer. It also affects how far other LODs will go, so it controls quality overall.
+Subdivision occurs as the viewer gets closer. The threshold upon which it happens is controlled with the `lod_distance` property. It represents how far LOD0 will spread around the viewer. It may also affect how far other LODs will go, so it controls quality overall.
 
-Similarly to `VoxelTerrain`, as the viewer moves around, octrees are loaded in front and those getting too far are unloaded. This allows to keep support for "infinite" terrain, without having to setup a single octree with unnecessary depth levels.
+Similarly to `VoxelTerrain`, as the viewer moves around, blocks of every grid are loaded in front and those getting too far are unloaded. This allows to keep support for "infinite" terrain, without having to setup a single octree with unnecessary depth levels. So in a sense, there are multiple "octrees".
 
-In the editor, gizmos are showing the *grid of octrees*. Block bounds can be shown by checking the `Terrain -> Show octree nodes` menu.
-
-The size of the grid around the viewer depends on two factors:
+The size of the largest grid around the viewer depends on two factors:
 
 - The `view_distance` parameter of `VoxelLodTerrain`
 - The `view_distance` parameter on `VoxelViewer`.
 
+The final view distance is calculated as the minimum of both, clipped with bounds of the terrain.
+
+
+#### Streaming systems
+
+There are currently multiple systems handling how LOD blocks are loaded around viewers. This is the case for legacy reasons. Each has different behavior and features. It can be selected under the Advanced category of `VoxelLodTerrain`, as `streaming_system`.
+
+- `Octree`: original system. Uses explicit octree data structures which are traversed regularly, loading blocks in a spherical pattern. Has got more testing. However, it only supports one viewer. If multiple viewers are in the scene, it will pick one but there is no guarantee which. Due to regular traversal, it might not be well-suited for large amount of blocks (large `lod_distance`).
+- `Clipbox`: Loads blocks in concentric boxes and updates only differences as viewers move, similarly to `VoxelTerrain`. It was added to bring support for multiple viewers and address some shortcomings of the Octree system, in regards to multiplayer. It might load blocks in a less precise pattern than octrees, due to having to conform to boxes. The name is made up, and was chosen in reference to "clipmaps" from heightmap terrains, which look similar.
+
+In the editor, debug drawing "gizmos" can be shown in the `Terrain` menu. Some will only show anything depending on the selected streaming system.
+
 
 ### Number of LODs
 
-Increasing the number of LODs allows the terrain to have larger octrees, which in turns allows to increase view distance. It does not actually make `LOD0` sharper, it goes the other way around (if you expected otherwise, maybe you need to tweak your generator to produce larger shapes, reduce voxel size or change the scales of your game which might be too small).
-You might notice the grid of octrees changes size if you change LOD count: this is because it rounds to the current `view_distance`.
+Increasing the number of LODs allows the terrain to have larger blocks, which in turns allows to increase view distance. It does not actually make `LOD0` sharper, it goes the other way around, adding terrain further away (if you expected otherwise, maybe you need to tweak your generator to produce larger shapes, reduce voxel size or change the scales of your game which might be too small).
+You might notice the grid changes size if you change LOD count: this is because it rounds to the current `view_distance`.
 
-Reducing the number of LODs reduces the size of octrees, however it also means there will be much more of them to fill the grid up to `view_distance`. Make sure to keep a good sweetspot between LOD count and `view_distance` so that the density of octrees is not too high.
+Reducing the number of LODs reduces the size of the biggest blocks, however it also means there will be much more of them to fill the grid up to `view_distance`. Make sure to keep a good sweetspot between LOD count and `view_distance` so that the density of blocks is not too high.
 
 If you are not making an infinite terrain, you may give it fixed bounds with the `bounds` property, as well as a very large view distance so it stays in view.
-`bounds` will be rounded to octree size: for example, with 4 LODs and mesh block size of 16, LOD0 blocks will be 16, LOD1 will be 32, LOD2 will be 64... and LOD3 (the biggest) will be 128. Since the current implementation keeps at minimum 8 octrees around the origin, optimal bounds for this setup would be 256.
+`bounds` will be rounded to octree size: for example, with 4 LODs and mesh block size of 16, LOD0 blocks will be 16, LOD1 will be 32, LOD2 will be 64... and LOD3 (the biggest) will be 128. Since the current implementation keeps at minimum 8 blocks around the origin, optimal bounds for this setup would be 256.
 
 ![Screenshot of fixed bounds LOD terrain](images/fixed_bounds_octrees.webp)
 
@@ -430,7 +440,7 @@ For example, if your generator contains a sphere and Perlin noise, you may chang
 Godot also allows you to scale non-uniformly, but it's not recommended (might cause collision issues too).
 
 
-### Full load mode
+### Full load mode (aka turning off data streaming)
 
 LOD applies both to meshes and to voxel data, keeping memory usage relatively constant. Depending on your settings, distant voxels will not load full-resolution data. Only full-resolution voxels can be edited, so that means you can only modify terrain in a limited distance around the viewer.
 
