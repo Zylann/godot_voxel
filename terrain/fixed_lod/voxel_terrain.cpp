@@ -907,7 +907,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
-				stream_dependency, priority_dependency, true, use_gpu, voxel_data));
+				stream_dependency, priority_dependency, true, use_gpu, voxel_data, TaskCancellationToken()));
 
 		scheduler.push_io_task(task);
 

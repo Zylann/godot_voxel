@@ -83,17 +83,18 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 				mesh_box = padded_new_box;
 			}
 
-			unordered_remove_if(lod.mesh_blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
-				if (mesh_box.contains(bpos)) {
-					return false;
-				} else {
-					auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-					if (mesh_block_it != lod.mesh_map_state.map.end()) {
-						mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
-					}
-					return true;
-				}
-			});
+			unordered_remove_if(lod.mesh_blocks_pending_update,
+					[&lod, mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtl) {
+						if (mesh_box.contains(mtl.position)) {
+							return false;
+						} else {
+							auto mesh_block_it = lod.mesh_map_state.map.find(mtl.position);
+							if (mesh_block_it != lod.mesh_map_state.map.end()) {
+								mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
+							}
+							return true;
+						}
+					});
 		}
 
 		lod.last_viewer_data_block_pos = viewer_block_pos_within_lod;
@@ -156,9 +157,10 @@ void process_unload_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 		{
 			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.mesh_blocks_pending_update, [new_box](Vector3i bpos) { //
-				return !new_box.contains(bpos);
-			});
+			unordered_remove_if(
+					lod.mesh_blocks_pending_update, [new_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) { //
+						return !new_box.contains(mtu.position);
+					});
 		}
 
 		lod.last_viewer_mesh_block_pos = viewer_block_pos_within_lod;
@@ -305,7 +307,7 @@ bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 
 bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const VoxelData &data,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	// ZN_PROFILE_SCOPE();
 
@@ -354,13 +356,14 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 				MutexLock lock(lod.loading_blocks_mutex);
 				for (const Vector3i &missing_pos : tls_missing) {
 					if (add_loading_block(lod, missing_pos)) {
-						blocks_to_load.push_back({ missing_pos, lod_index });
+						blocks_to_load.push_back({ missing_pos, lod_index, TaskCancellationToken() });
 					}
 				}
 			}
 
 			if (surrounded) {
-				lod.mesh_blocks_pending_update.push_back(mesh_block_pos);
+				lod.mesh_blocks_pending_update.push_back(
+						VoxelLodTerrainUpdateData::MeshToUpdate{ mesh_block_pos, TaskCancellationToken() });
 				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 			}
 
@@ -406,7 +409,7 @@ VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 
 bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelData &data, const Vector3i &p_mesh_block_pos,
-		uint8_t lod_index, std::vector<VoxelLodTerrainUpdateData::BlockLocation> &blocks_to_load) {
+		uint8_t lod_index, std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
 	//
 
 	if (data.is_streaming_enabled()) {
@@ -440,7 +443,7 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 			MutexLock mlock(lod.loading_blocks_mutex);
 			for (const Vector3i &missing_bpos : tls_missing) {
 				if (add_loading_block(lod, missing_bpos)) {
-					blocks_to_load.push_back({ missing_bpos, lod_index });
+					blocks_to_load.push_back({ missing_bpos, lod_index, TaskCancellationToken() });
 				}
 			}
 			return false;
@@ -465,7 +468,7 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 
 void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelData &data, Vector3 p_viewer_pos,
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load) {
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load) {
 	//
 	ZN_PROFILE_SCOPE();
 
@@ -501,7 +504,7 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			VoxelLodTerrainUpdateData::State &state;
 			const VoxelLodTerrainUpdateData::Settings &settings;
 			VoxelData &data;
-			std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load;
+			std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
 			float lod_distance_octree_space;
@@ -668,7 +671,7 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 void process_octree_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
 		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool stream_enabled) {
 	ZN_PROFILE_SCOPE();
 

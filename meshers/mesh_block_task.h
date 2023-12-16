@@ -9,6 +9,7 @@
 #include "../generators/generate_block_gpu_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/classes/array_mesh.h"
+#include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"
 
 namespace zylann::voxel {
@@ -55,6 +56,7 @@ public:
 	std::shared_ptr<VoxelData> data;
 	DetailRenderingSettings detail_texture_settings;
 	Ref<VoxelGenerator> detail_texture_generator_override;
+	TaskCancellationToken cancellation_token;
 
 private:
 	void gather_voxels_gpu(zylann::ThreadedTaskContext &ctx);

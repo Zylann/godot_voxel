@@ -680,6 +680,12 @@ void VoxelLodTerrain::stop_updater() {
 
 	for (unsigned int i = 0; i < _update_data->state.lods.size(); ++i) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[i];
+
+		for (VoxelLodTerrainUpdateData::MeshToUpdate &mtu : lod.mesh_blocks_pending_update) {
+			if (mtu.cancellation_token.is_valid()) {
+				mtu.cancellation_token.cancel();
+			}
+		}
 		lod.mesh_blocks_pending_update.clear();
 
 		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {

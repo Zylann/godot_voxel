@@ -493,6 +493,9 @@ TaskPriority MeshBlockTask::get_priority() {
 }
 
 bool MeshBlockTask::is_cancelled() {
+	if (cancellation_token.is_valid()) {
+		return cancellation_token.is_cancelled();
+	}
 	return !meshing_dependency->valid || _too_far;
 }
 

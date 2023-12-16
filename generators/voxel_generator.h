@@ -8,6 +8,7 @@
 #include "../util/godot/classes/resource.h"
 #include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
+#include "../util/tasks/cancellation_token.h"
 #include "../util/thread/mutex.h"
 
 #include <memory>
@@ -71,6 +72,7 @@ public:
 		std::shared_ptr<VoxelData> data; // Just for modifiers
 		std::shared_ptr<AsyncDependencyTracker> tracker; // For async edits
 		std::shared_ptr<VoxelBufferInternal> voxels; // Optionally re-use a voxel buffer for the result
+		TaskCancellationToken cancellation_token; // For explicit cancellation
 	};
 
 	// Creates a threaded task that will use the generator asynchronously to generate a block that will be returned to

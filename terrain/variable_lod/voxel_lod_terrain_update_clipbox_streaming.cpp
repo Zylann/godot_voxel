@@ -331,29 +331,31 @@ void remove_unpaired_viewers(const std::vector<unsigned int> &unpaired_viewers_t
 	}
 }
 
-bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
+void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, uint8_t lod_index,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
 	auto it = lod.loading_blocks.find(position);
 
 	if (it == lod.loading_blocks.end()) {
 		// First viewer to request it
 		VoxelLodTerrainUpdateData::LoadingDataBlock new_loading_block;
 		new_loading_block.viewers.add();
+		new_loading_block.cancellation_token = TaskCancellationToken::create();
 
 		lod.loading_blocks.insert({ position, new_loading_block });
 
-		return true;
+		blocks_to_load.push_back(
+				VoxelLodTerrainUpdateData::BlockToLoad{ position, lod_index, new_loading_block.cancellation_token });
 
 	} else {
+		// Already loaded
 		it->second.viewers.add();
 	}
-
-	return false;
 }
 
 void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		std::vector<VoxelData::BlockToSave> &blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, int lod_count, bool can_load) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
@@ -430,10 +432,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 					});
 
 					for (const Vector3i bpos : tls_missing_blocks) {
-						if (add_loading_block(lod, bpos)) {
-							data_blocks_to_load.push_back(
-									VoxelLodTerrainUpdateData::BlockLocation{ bpos, static_cast<uint8_t>(lod_index) });
-						}
+						add_loading_block(lod, bpos, lod_index, data_blocks_to_load);
 					}
 				}
 
@@ -470,13 +469,22 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 
 						if (loading_block.viewers.get() == 0) {
 							// No longer want to load it, no data box contains it
+
+							if (loading_block.cancellation_token.is_valid()) {
+								// Cancel loading task if still in queue
+								loading_block.cancellation_token.cancel();
+							}
+
 							lod.loading_blocks.erase(loading_block_it);
 
+							// Also remove from blocks about to be added to the loading queue
 							VoxelLodTerrainUpdateData::BlockLocation bloc{ bpos, static_cast<uint8_t>(lod_index) };
 							for (size_t i = 0; i < data_blocks_to_load.size(); ++i) {
-								if (data_blocks_to_load[i] == bloc) {
+								if (data_blocks_to_load[i].loc == bloc) {
 									data_blocks_to_load[i] = data_blocks_to_load.back();
 									data_blocks_to_load.pop_back();
+									// We don't touch the cancellation token since tasks haven't been spawned yet for
+									// these
 									break;
 								}
 							}
@@ -501,17 +509,18 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 					mesh_box = padded_new_box;
 				}
 
-				unordered_remove_if(lod.mesh_blocks_pending_update, [&lod, mesh_box](Vector3i bpos) {
-					if (mesh_box.contains(bpos)) {
-						return false;
-					} else {
-						auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-						if (mesh_block_it != lod.mesh_map_state.map.end()) {
-							mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
-						}
-						return true;
-					}
-				});
+				unordered_remove_if(lod.mesh_blocks_pending_update,
+						[&lod, mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) {
+							if (mesh_box.contains(mtu.position)) {
+								return false;
+							} else {
+								auto mesh_block_it = lod.mesh_map_state.map.find(mtu.position);
+								if (mesh_block_it != lod.mesh_map_state.map.end()) {
+									mesh_block_it->second.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
+								}
+								return true;
+							}
+						});
 			}
 
 		} // for each lod
@@ -577,6 +586,14 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 // 		}
 // 	}
 // }
+
+inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block) {
+	TaskCancellationToken cancellation_token = TaskCancellationToken::create();
+	update_list.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, cancellation_token });
+	mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+	mesh_block.cancellation_token = cancellation_token;
+}
 
 void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const Box3i bounds_in_voxels, int lod_count,
@@ -650,8 +667,7 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 										if (is_full_load_mode) {
 											// Everything is loaded up-front, so we directly trigger meshing instead of
 											// reacting to data chunks being loaded
-											lod.mesh_blocks_pending_update.push_back(bpos);
-											mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+											schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block);
 										}
 
 									} else {
@@ -688,8 +704,7 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 										const bool data_available = data.has_all_blocks_in_area(data_box, lod_index);
 
 										if (data_available) {
-											lod.mesh_blocks_pending_update.push_back(bpos);
-											mesh_block->state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+											schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block);
 										}
 									}
 								});
@@ -708,7 +723,13 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 							mesh_block.collision_viewers.remove();
 
 							if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
-								lod.mesh_map_state.map.erase(bpos);
+								// No viewer needs this mesh anymore
+
+								if (mesh_block.cancellation_token.is_valid()) {
+									mesh_block.cancellation_token.cancel();
+								}
+
+								lod.mesh_map_state.map.erase(mesh_block_it);
 								lod.mesh_blocks_to_unload.push_back(bpos);
 							}
 						}
@@ -765,9 +786,10 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 			{
 				ZN_PROFILE_SCOPE_NAMED("Cancel updates");
 				// Cancel block updates that are not within the new region
-				unordered_remove_if(lod.mesh_blocks_pending_update, [new_mesh_box](Vector3i bpos) { //
-					return !new_mesh_box.contains(bpos);
-				});
+				unordered_remove_if(lod.mesh_blocks_pending_update,
+						[new_mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) { //
+							return !new_mesh_box.contains(mtu.position);
+						});
 			}
 		}
 	}
@@ -860,8 +882,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 			// }
 
 			if (data_available) {
-				lod.mesh_blocks_pending_update.push_back(mesh_block_pos);
-				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+				schedule_mesh_load(lod.mesh_blocks_pending_update, mesh_block_pos, mesh_block);
 				// We assume data blocks won't unload after this, until data is gathered, because unloading
 				// runs before this logic.
 			}
@@ -1050,7 +1071,7 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
 		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
-		std::vector<VoxelLodTerrainUpdateData::BlockLocation> &data_blocks_to_load,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool can_load, bool can_mesh) {
 	ZN_PROFILE_SCOPE();
 

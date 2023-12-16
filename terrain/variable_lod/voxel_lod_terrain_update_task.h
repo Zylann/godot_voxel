@@ -55,12 +55,13 @@ public:
 
 	// To use on loaded blocks
 	static inline void schedule_mesh_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
-			std::vector<Vector3i> &blocks_pending_update) {
+			std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update) {
 		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
 			if (block.active) {
 				// Schedule an update
 				block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-				blocks_pending_update.push_back(bpos);
+				blocks_pending_update.push_back(
+						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken() });
 			} else {
 				// Just mark it as needing update, so the visibility system will schedule its update when needed
 				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;

@@ -7,6 +7,7 @@
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/ref_count.h"
+#include "../../util/tasks/cancellation_token.h"
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
 
@@ -34,6 +35,11 @@ struct VoxelLodTerrainUpdateData {
 		inline bool operator==(BlockLocation other) const {
 			return position == other.position && other.lod == lod;
 		}
+	};
+
+	struct BlockToLoad {
+		BlockLocation loc;
+		TaskCancellationToken cancellation_token;
 	};
 
 	// struct BlockToSave {
@@ -100,6 +106,10 @@ struct VoxelLodTerrainUpdateData {
 		RefCount mesh_viewers;
 		RefCount collision_viewers;
 
+		// Cancelled when this mesh block is removed, so if tasks are still queued to do work for that block, they
+		// will be cancelled
+		TaskCancellationToken cancellation_token;
+
 		uint8_t transition_mask;
 		bool active;
 
@@ -133,6 +143,12 @@ struct VoxelLodTerrainUpdateData {
 
 	struct LoadingDataBlock {
 		RefCount viewers;
+		TaskCancellationToken cancellation_token;
+	};
+
+	struct MeshToUpdate {
+		Vector3i position;
+		TaskCancellationToken cancellation_token;
 	};
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
@@ -148,7 +164,7 @@ struct VoxelLodTerrainUpdateData {
 		MeshMapState mesh_map_state;
 
 		// Positions of mesh blocks that will be scheduled for update next time the update task runs.
-		std::vector<Vector3i> mesh_blocks_pending_update;
+		std::vector<MeshToUpdate> mesh_blocks_pending_update;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
