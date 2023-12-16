@@ -76,8 +76,7 @@ Box3i get_base_box_in_chunks(Vector3i viewer_position_voxels, int distance_voxel
 
 // Gets the smallest box a parent LOD must have in order to keep respecting the neighboring rule
 Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
-	// Must be even to respect subdivision rule
-	const int min_pad = 2;
+	const int min_pad = 1;
 	// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
 	// zero when converted to the parent LOD's coordinate system.
 	Box3i min_box = Box3i(child_lod_box.pos >> 1, child_lod_box.size >> 1)
@@ -86,7 +85,7 @@ Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
 							.padded(min_pad);
 
 	if (make_even) {
-		// Make sure it stays even
+		// Make sure it stays even to respect subdivision rule, rounding outwards
 		min_box = min_box.downscaled(2).scaled(2);
 	}
 
