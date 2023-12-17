@@ -71,6 +71,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 - Fixes
     - Fixed editor not shrinking properly on narrow screens with a terrain selected. Stats appearing in bottom panel will use a scrollbar if the area is too small.
+    - `VoxelBoxMover`: Workaround floating point error with stair climbing, which could cause characters to fall through the step (depends on gameplay code inducing errors when converting the returned motion)
     - `VoxelGeneratorGraph`:
         - Fixed crash if a graph contains a node with both used and unused outputs, and gets compiled with `debug=false`
         - Fixed error when adding Constant nodes
@@ -90,6 +91,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed newly added items in the editor rendering badly by default when the terrain doesn't have LOD. For now they always default to LOD 0 instead of LOD 2.
     - `VoxelTerrain`: Fixed crash when the terrain tries to update while it has no mesher assigned
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
+    - `VoxelMesherBlocky`: Fixed materials "wrapping around" when more than 256 are used. Raised limit to 65536.
     - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata
     - `VoxelToolLodTerrain`: 
