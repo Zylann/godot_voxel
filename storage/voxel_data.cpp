@@ -238,26 +238,30 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 			try_get_voxel_buffer_with_lock(data_lod0, block_pos_lod0, can_generate);
 
 	if (voxels == nullptr) {
-		if (_streaming_enabled && !can_generate) {
+		// Several reasons voxels aren't in memory
+
+		if ((_streaming_enabled && !can_generate) || (!_streaming_enabled && !_full_load_completed)) {
+			// We don't know what's actually in the block, it's not loaded. Can't edit.
 			return false;
 		}
+		// The block is either loaded, or streaming is off (everything is loaded), so either way the block we want to
+		// edit is known
+
+		voxels = make_shared_instance<VoxelBufferInternal>();
+		voxels->create(Vector3iUtil::create(get_block_size()));
+
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid()) {
-			voxels = make_shared_instance<VoxelBufferInternal>();
-			voxels->create(Vector3iUtil::create(get_block_size()));
 			VoxelGenerator::VoxelQueryData q{ *voxels, block_pos_lod0 << get_block_size_po2(), 0 };
 			generator->generate_block(q);
 
 			_modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size()));
-
-			RWLockWrite wlock(data_lod0.map_lock);
-			if (data_lod0.map.has_block(block_pos_lod0)) {
-				// A block was loaded by another thread, cancel our edit.
-				return false;
-			}
-
-			data_lod0.map.set_block_buffer(block_pos_lod0, voxels, true);
 		}
+
+		RWLockWrite wlock(data_lod0.map_lock);
+		// No other thread can modify this area while we were generating, since we hold a spatial lock.
+
+		data_lod0.map.set_block_buffer(block_pos_lod0, voxels, true);
 	}
 
 	voxels->set_voxel(value, data_lod0.map.to_local(pos), channel_index);
@@ -666,21 +670,30 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 			// data blocks are not shared pointers. It would be nice to have the spatial lock after the potential
 			// generation... perhaps data blocks need to be shared instead of voxel buffers
 			SpatialLock3D::Read srlock(src_data_lod.spatial_lock, BoxBounds3i::from_position(src_bpos));
-			RWLockRead src_data_lod_map_rlock(src_data_lod.map_lock);
+
 			// TODO Could take long locking this, we may generate things first and assign to the map at the end.
 			// Besides, in per-block streaming mode, it is not needed because blocks are supposed to be present
-			RWLockRead wlock(dst_data_lod.map_lock);
+			SpatialLock3D::Write swlock(dst_data_lod.spatial_lock, BoxBounds3i::from_position(dst_bpos));
 
-			VoxelDataBlock *src_block = src_data_lod.map.get_block(src_bpos);
-			VoxelDataBlock *dst_block = dst_data_lod.map.get_block(dst_bpos);
+			VoxelDataBlock *src_block;
+			VoxelDataBlock *dst_block;
+			{
+				RWLockRead rlock(src_data_lod.map_lock);
+				src_block = src_data_lod.map.get_block(src_bpos);
+			}
+			{
+				RWLockRead rlock(dst_data_lod.map_lock);
+				dst_block = dst_data_lod.map.get_block(dst_bpos);
+			}
 
 			ZN_ASSERT(src_block != nullptr);
 			src_block->set_needs_lodding(false);
 
-			if (dst_block == nullptr) {
-				if (!streaming_enabled) {
-					// TODO Doing this on the main thread can be very demanding and cause a stall.
-					// We should find a way to make it asynchronous, not need mips, or not edit outside viewers area.
+			struct L {
+				static std::shared_ptr<VoxelBufferInternal> generate_voxels(Vector3i dst_bpos, uint8_t dst_lod_index,
+						int data_block_size, int data_block_size_po2, Ref<VoxelGenerator> generator,
+						const VoxelModifierStack &modifiers) {
+					//
 					std::shared_ptr<VoxelBufferInternal> voxels = make_shared_instance<VoxelBufferInternal>();
 					voxels->create(Vector3iUtil::create(data_block_size));
 					VoxelGenerator::VoxelQueryData q{ //
@@ -692,10 +705,24 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 						ZN_PROFILE_SCOPE_NAMED("Generate");
 						generator->generate_block(q);
 					}
-					_modifiers.apply(
+					modifiers.apply(
 							q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << dst_lod_index));
 
-					dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);
+					return voxels;
+				}
+			};
+
+			if (dst_block == nullptr) {
+				if (!streaming_enabled) {
+					// TODO Doing this on the main thread can be very demanding and cause a stall.
+					// We should find a way to make it asynchronous, not need mips, or not edit outside viewers area.
+					std::shared_ptr<VoxelBufferInternal> voxels = L::generate_voxels(
+							dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers);
+
+					{
+						RWLockWrite wlock(dst_data_lod.map_lock);
+						dst_block = dst_data_lod.map.set_block_buffer(dst_bpos, voxels, true);
+					}
 
 				} else {
 					ZN_PRINT_ERROR(format(
@@ -713,6 +740,14 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 
 			if (out_updated_blocks != nullptr) {
 				out_updated_blocks->push_back(BlockLocation{ dst_bpos, dst_lod_index });
+			}
+
+			if (!dst_block->has_voxels()) {
+				// The destination block is loaded but wasn't caching voxels. We'll need to generate them in order to
+				// update it.
+				std::shared_ptr<VoxelBufferInternal> voxels = L::generate_voxels(
+						dst_bpos, dst_lod_index, data_block_size, data_block_size_po2, generator, _modifiers);
+				dst_block->set_voxels(voxels);
 			}
 
 			dst_block->set_modified(true);
