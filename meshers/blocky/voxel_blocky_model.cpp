@@ -16,6 +16,25 @@
 
 namespace zylann::voxel {
 
+unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Material> &p_material) {
+	for (size_t i = 0; i < materials.size(); ++i) {
+		const Ref<Material> &material = materials[i];
+		if (material == p_material) {
+			return i;
+		}
+	}
+#ifdef TOOLS_ENABLED
+	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
+		ZN_PRINT_ERROR(format("Maximum material count reached ({}), try reduce your number of materials by re-using "
+							  "them or using atlases.",
+				VoxelBlockyLibraryBase::MAX_MATERIALS));
+	}
+#endif
+	const unsigned int ret = materials.size();
+	materials.push_back(p_material);
+	return ret;
+}
+
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
 
 bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {

@@ -64,6 +64,7 @@ void VoxelBlockyLibraryBase::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "bake_tangents"), "set_bake_tangents", "get_bake_tangents");
 
 	BIND_CONSTANT(MAX_MODELS);
+	BIND_CONSTANT(MAX_MATERIALS);
 }
 
 template <typename F>
