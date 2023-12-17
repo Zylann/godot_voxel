@@ -272,6 +272,11 @@ void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_ma
 
 void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
+#ifdef TOOLS_ENABLED
+	if (Vector3iUtil::is_empty_size(dst->get_size())) {
+		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be copied.");
+	}
+#endif
 	copy(pos, dst->get_buffer(), channel_mask);
 }
 
