@@ -93,6 +93,7 @@ static void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
 	copy_param(src, dst, sn.u_voxel_virtual_texture_fade);
 	copy_param(src, dst, sn.u_transition_mask);
 	copy_param(src, dst, sn.u_lod_fade);
+	copy_param(src, dst, sn.u_voxel_lod_info);
 }
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
@@ -195,6 +196,10 @@ Ref<Material> VoxelLodTerrain::get_material() const {
 	return _material;
 }
 
+inline int encode_lod_info_for_shader_uniform(int lod_index, int lod_count) {
+	return lod_index | (lod_count << 8);
+}
+
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 	if (_material == p_material) {
 		return;
@@ -225,18 +230,32 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 
 	update_shader_material_pool_template();
 
+	{
+		// Detect presence of lod_index usage in the shader
+		Span<const StringName> uniforms = _shader_material_pool.get_cached_shader_uniforms();
+		_material_uses_lod_info = contains(uniforms, VoxelStringNames::get_singleton().u_voxel_lod_info);
+	}
+
+	// TODO Update when shader changes?
+	// TODO Update when material changes?
+
 	// Update existing meshes
 	if (shader_material.is_valid() && _shader_material_pool.get_template().is_valid()) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
 
-			map.for_each_block([this](VoxelMeshBlockVLT &block) { //
+			map.for_each_block([this, lod_index, lod_count](VoxelMeshBlockVLT &block) { //
 				Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
 				Ref<ShaderMaterial> prev_material = block.get_shader_material();
 				if (prev_material.is_valid()) {
 					ZN_ASSERT_RETURN(sm.is_valid());
 					// Each block can have specific shader parameters so we have to keep them
 					copy_vlt_block_params(**prev_material, **sm);
+				}
+				// Do after copy, because otherwise it would be overwritten by default value
+				if (_material_uses_lod_info) {
+					sm->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_lod_info,
+							encode_lod_info_for_shader_uniform(lod_index, lod_count));
 				}
 				block.set_shader_material(sm);
 			});
@@ -1736,6 +1755,13 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			// material copies will never be seen in the inspector
 			// See https://github.com/godotengine/godot/issues/34741
 			Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
+
+			if (sm.is_valid() && _material_uses_lod_info) {
+				// This is mainly for debugging purposes
+				const int lod_count = get_lod_count();
+				sm->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_lod_info,
+						encode_lod_info_for_shader_uniform(ob.lod, lod_count));
+			}
 
 			// Set individual shader material, because each block can have dynamic parameters,
 			// used to smooth seams without re-uploading meshes and allow to implement LOD fading

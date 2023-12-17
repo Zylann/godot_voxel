@@ -351,7 +351,7 @@ You may also make shading hard-edged in your shader for better results.
 Shader API reference
 ----------------------
 
-If you use a `ShaderMaterial` on a voxel node, the module may exploit some uniform (shader parameter) names to provide extra information. Some are necessary for features to work.
+If you use a `ShaderMaterial` on a voxel node, the module will recognize some uniform names (shader parameters) to provide extra information. Some are necessary for features to work.
 
 Parameter name                          | Type         | Description
 ----------------------------------------|--------------|------------------------------
@@ -365,6 +365,7 @@ Parameter name                          | Type         | Description
 `u_voxel_virtual_texture_fade`          | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in detail textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no detail textures.
 `u_voxel_virtual_texture_offset_scale`  | `vec4`       | Used in LOD terrains where normalmaps are enabled. Contains a transformation to apply when sampling `u_voxel_cell_lookup` and `u_voxel_normalmap_atlas`. `x`, `y` and `z` contain an offset, and `w` contain a scale. This is relevant when textures for the current mesh aren't ready yet, so it falls back on a parent LOD: parent meshes are larger, so we need to sample a sub-region.
 `u_transition_mask`                     | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
+`u_voxel_lod_info`                      | `int`        | Will be assigned to a combination of the LOD index of the block and the total number of LODs. Layout: `000000 000000 cccccccc iiiiiiii` where `c` is LOD count and `i` is LOD index. Mainly intented for debugging.
 
 
 Level of detail (LOD)
