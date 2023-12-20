@@ -29,7 +29,7 @@ bool VoxelTerrainEditorInspectorPlugin::_zn_parse_property(Object *p_object, con
 		return false;
 	}
 	// Replace default AABB editor with this one
-	EditorPropertyAABBMinMax *ed = memnew(EditorPropertyAABBMinMax);
+	ZN_EditorPropertyAABBMinMax *ed = memnew(ZN_EditorPropertyAABBMinMax);
 	ed->setup(-constants::MAX_VOLUME_EXTENT, constants::MAX_VOLUME_EXTENT, 1, true);
 	add_property_editor(p_path, ed);
 	return true;

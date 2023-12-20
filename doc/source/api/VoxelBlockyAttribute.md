@@ -2,6 +2,8 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
+Inherited by: [VoxelBlockyAttributeAxis](VoxelBlockyAttributeAxis.md), [VoxelBlockyAttributeCustom](VoxelBlockyAttributeCustom.md), [VoxelBlockyAttributeDirection](VoxelBlockyAttributeDirection.md), [VoxelBlockyAttributeRotation](VoxelBlockyAttributeRotation.md)
+
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
@@ -19,7 +21,7 @@ Return                                                                          
 
 ## Constants: 
 
-- **MAX_VALUES** = **256**
+- <span id="i_MAX_VALUES"></span>**MAX_VALUES** = **256**
 
 ## Method Descriptions
 
@@ -35,4 +37,4 @@ Return                                                                          
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_rotation"></span> **is_rotation**( ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

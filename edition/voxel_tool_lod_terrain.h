@@ -22,7 +22,7 @@ public:
 	bool is_area_editable(const Box3i &box) const override;
 	Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) override;
 	void do_sphere(Vector3 center, float radius) override;
-	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const override;
+	void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) override;
 
 	// Specialized API

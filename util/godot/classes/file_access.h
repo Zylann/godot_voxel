@@ -3,14 +3,15 @@
 
 #if defined(ZN_GODOT)
 #include <core/io/file_access.h>
+
 #elif defined(ZN_GODOT_EXTENSION)
+#include "../core/packed_arrays.h"
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/global_constants.hpp> // For `Error`
 using namespace godot;
 #endif
 
-#include "../../span.h"
-#include "../funcs.h"
+#include "../../containers/span.h"
 
 namespace zylann {
 

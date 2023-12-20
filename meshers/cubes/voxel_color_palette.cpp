@@ -1,5 +1,5 @@
 #include "voxel_color_palette.h"
-#include "../../util/span.h"
+#include "../../util/containers/span.h"
 
 namespace zylann::voxel {
 

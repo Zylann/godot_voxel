@@ -100,9 +100,11 @@ void register_image_nodes(Span<NodeType> types) {
 	using namespace math;
 
 	{
+		enum Filter : uint32_t { FILTER_NEAREST = 0, FILTER_BILINEAR };
 		struct Params {
 			const Image *image;
 			const ImageRangeGrid *image_range_grid;
+			Filter filter;
 		};
 		NodeType &t = types[VoxelGraphFunction::NODE_IMAGE_2D];
 		t.name = "Image";
@@ -111,6 +113,12 @@ void register_image_nodes(Span<NodeType> types) {
 		t.inputs.push_back(NodeType::Port("y", 0.f, VoxelGraphFunction::AUTO_CONNECT_Z));
 		t.outputs.push_back(NodeType::Port("out"));
 		t.params.push_back(NodeType::Param("image", Image::get_class_static(), nullptr));
+
+		t.params.push_back(NodeType::Param("filter", Variant::INT, FILTER_NEAREST));
+		NodeType::Param &filter_param = t.params.back();
+		filter_param.enum_items.push_back("Nearest");
+		filter_param.enum_items.push_back("Bilinear");
+
 		t.compile_func = [](CompileContext &ctx) {
 			Ref<Image> image = ctx.get_param(0);
 			if (image.is_null()) {
@@ -127,6 +135,7 @@ void register_image_nodes(Span<NodeType> types) {
 			Params p;
 			p.image = *image;
 			p.image_range_grid = im_range;
+			p.filter = static_cast<Filter>(static_cast<int>(ctx.get_param(1)));
 			ctx.set_params(p);
 			ctx.add_memdelete_cleanup(im_range);
 		};
@@ -135,18 +144,27 @@ void register_image_nodes(Span<NodeType> types) {
 			const Runtime::Buffer &x = ctx.get_input(0);
 			const Runtime::Buffer &y = ctx.get_input(1);
 			Runtime::Buffer &out = ctx.get_output(0);
-			// TODO Allow to use bilinear filtering?
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
-			for (uint32_t i = 0; i < out.size; ++i) {
-				out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
+			if (p.filter == FILTER_NEAREST) {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
+				}
+			} else {
+				for (uint32_t i = 0; i < out.size; ++i) {
+					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i]);
+				}
 			}
 		};
 		t.range_analysis_func = [](Runtime::RangeAnalysisContext &ctx) {
 			const Interval x = ctx.get_input(0);
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
-			ctx.set_output(0, p.image_range_grid->get_range(x, y));
+			if (p.filter == FILTER_NEAREST) {
+				ctx.set_output(0, p.image_range_grid->get_range(x, y));
+			} else {
+				ctx.set_output(0, p.image_range_grid->get_range({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
+			}
 		};
 	}
 	{

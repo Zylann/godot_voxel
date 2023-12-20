@@ -1,7 +1,7 @@
 #ifndef VOXEL_INSTANCE_LIBRARY_ITEM_H
 #define VOXEL_INSTANCE_LIBRARY_ITEM_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "voxel_instance_generator.h"
 
 namespace zylann::voxel {
@@ -40,6 +40,10 @@ public:
 
 	void add_listener(IListener *listener, int id);
 	void remove_listener(IListener *listener, int id);
+
+#ifdef TOOLS_ENABLED
+	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
+#endif
 
 protected:
 	void notify_listeners(ChangeType change);

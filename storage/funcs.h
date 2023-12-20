@@ -2,8 +2,8 @@
 #define VOXEL_STORAGE_FUNCS_H
 
 #include "../constants/voxel_constants.h"
+#include "../util/containers/span.h"
 #include "../util/math/vector3i.h"
-#include "../util/span.h"
 #include <stdint.h>
 
 namespace zylann::voxel {
@@ -95,31 +95,31 @@ void fill_3d_region_zxy(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector
 // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#fundamentals-fixedconv
 // Converts an int8 value into a float in the range [-1..1], which includes an exact value for 0.
 // -128 is one value of the int8 which will not have a corresponding result, it will be clamped to -1.
-inline float s8_to_snorm(int8_t v) {
+inline constexpr float s8_to_snorm(int8_t v) {
 	return math::max(v / 127.f, -1.f);
 }
-inline float s8_to_snorm_noclamp(int8_t v) {
+inline constexpr float s8_to_snorm_noclamp(int8_t v) {
 	return v / 127.f;
 }
 
 // Converts a float value in the range [-1..1] to an int8.
 // The float will be clamped if it lies outside of the expected range.
-inline int8_t snorm_to_s8(float v) {
+inline constexpr int8_t snorm_to_s8(float v) {
 	return math::clamp(v, -1.f, 1.f) * 127;
 }
 
 // Converts an int8 value into a float in the range [-1..1], which includes an exact value for 0.
 // -32767 is one value of the int16 which will not have a corresponding result, it will be clamped to -1.
-inline float s16_to_snorm(int16_t v) {
+inline constexpr float s16_to_snorm(int16_t v) {
 	return math::max(v / 32767.f, -1.f);
 }
-inline float s16_to_snorm_noclamp(int16_t v) {
+inline constexpr float s16_to_snorm_noclamp(int16_t v) {
 	return v / 32767.f;
 }
 
 // Converts a float value in the range [-1..1] to an int16.
 // The float will be clamped if it lies outside of the expected range.
-inline int16_t snorm_to_s16(float v) {
+inline constexpr int16_t snorm_to_s16(float v) {
 	return math::clamp(v, -1.f, 1.f) * 32767;
 }
 
@@ -177,12 +177,12 @@ inline FixedArray<uint8_t, 4> decode_indices_from_packed_u16(uint16_t packed_ind
 	return indices;
 }
 
-inline uint16_t encode_indices_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+inline constexpr uint16_t encode_indices_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 	return (a & 0xf) | ((b & 0xf) << 4) | ((c & 0xf) << 8) | ((d & 0xf) << 12);
 }
 
 // Encodes from 0..255 to 0..15 values packed in 16 bits. Lower 4 bits of input values will not be preserved.
-inline uint16_t encode_weights_to_packed_u16_lossy(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
+inline constexpr uint16_t encode_weights_to_packed_u16_lossy(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
 }
 

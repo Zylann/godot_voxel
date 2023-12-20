@@ -2,7 +2,6 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-
 Limited list of colors that can be indexed quickly.
 
 ## Description: 
@@ -31,7 +30,7 @@ Return                                                                    | Sign
 
 ## Constants: 
 
-- **MAX_COLORS** = **256**
+- <span id="i_MAX_COLORS"></span>**MAX_COLORS** = **256**
 
 ## Property Descriptions
 
@@ -49,4 +48,4 @@ Return                                                                    | Sign
 - [void](#)<span id="i_set_color"></span> **set_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index, [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

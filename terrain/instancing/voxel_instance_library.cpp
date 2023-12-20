@@ -2,6 +2,7 @@
 #include "voxel_instancer.h"
 #include <algorithm>
 #ifdef ZN_GODOT_EXTENSION
+#include "../../util/godot/core/array.h"
 #include "../../util/string_funcs.h"
 #endif
 
@@ -117,6 +118,21 @@ void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 	ERR_FAIL_COND(it == _listeners.end());
 	_listeners.erase(it);
 }
+
+#ifdef TOOLS_ENABLED
+
+void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warnings) const {
+	for (auto it = _items.begin(); it != _items.end(); ++it) {
+		Ref<VoxelInstanceLibraryItem> item = it->second;
+		ZN_ASSERT_CONTINUE(item.is_valid());
+		get_resource_configuration_warnings(**item, warnings,
+				[&it]() { //
+					return String("Item {0} (\"{1}\"): ").format(varray(it->first, it->second->get_item_name()));
+				});
+	}
+}
+
+#endif
 
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	const String property_name = p_name;

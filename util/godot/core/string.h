@@ -20,7 +20,7 @@ using namespace godot;
 
 #include "../macros.h"
 
-#include "../../span.h"
+#include "../../containers/span.h"
 
 namespace zylann {
 
@@ -49,6 +49,11 @@ String join_comma_separated(Span<const T> items) {
 
 #endif
 
+// Exists in core but isn't exposed to GDExtension
+inline bool is_resource_file(const String &path) {
+	return path.begins_with("res://") && path.find("::") == -1;
+}
+
 inline std::string to_std_string(const String &godot_string) {
 	const CharString cs = godot_string.utf8();
 	std::string s = cs.get_data();
@@ -63,6 +68,10 @@ inline Error parse_utf8(String &s, Span<const char> utf8) {
 	// The Godot API doesn't return anything, impossible to tell if parsing succeeded.
 	return OK;
 #endif
+}
+
+inline String ptr2s(const void *p) {
+	return String::num_uint64((uint64_t)p, 16);
 }
 
 } // namespace zylann

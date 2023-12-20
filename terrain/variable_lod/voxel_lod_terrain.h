@@ -1,8 +1,8 @@
 #ifndef VOXEL_LOD_TERRAIN_HPP
 #define VOXEL_LOD_TERRAIN_HPP
 
-#include "../../engine/mesh_block_task.h"
 #include "../../engine/voxel_engine.h"
+#include "../../meshers/mesh_block_task.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
@@ -254,6 +254,7 @@ protected:
 
 	void _on_gi_mode_changed() override;
 	void _on_shadow_casting_changed() override;
+	void _on_render_layers_mask_changed() override;
 
 private:
 	void process(float delta);

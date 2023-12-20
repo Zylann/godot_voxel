@@ -51,12 +51,16 @@ Handling block boundaries with voxel structures
 ---------------------------------------------------
 
 In Minecraft-style terrain, a very common problem that arises once base terrain is generated, is how to plant trees in it, because such structures would be voxels too.
-In that specific case, there are a number of caveats when doing that with this engine, which mainly revolve around the following limitation:
+In that specific case, there are a number of caveats when doing that with generators, which mainly revolve about the fact they process chunks one by one, and not the entire world at once.
 
-When generating blocks of 16x16x16 voxels, you cannot access voxels outside of this area.
-The engine generates blocks using multiple threads in a single pass, so accessing neighbors would severely affect performance, could break determinism, and accessing terrain directly would be unsafe.
+There are several ways to deal with this:
 
-The following describes a method which does not involve accessing neighbors at all, and allows to generate trees in a terrain where the base height is deterministic (2D noise heightmap for example).
+- Exploit procedural determinism to "guess" where trees would grow in neighbor chunks, without having to generate entire neighbor chunks
+- Split generation in multiple passes and provide access to neighbor chunks that have gone through previous passes
+
+The following describes the first method, which does not involve accessing neighbors at all, and allows to generate trees in a terrain where the base height is both deterministic and easy to compute (2D noise heightmap for example).
+
+If you want to use the second method, you may check [multipass generators](generators.md#multi-pass-generation-with-voxelgeneratormultipasscb).
 
 ### Deterministic approach
 
@@ -203,127 +207,7 @@ This approach is also used in Voronoi noise (also known as cellular noise in Fas
 
 Of course this method has its limitations: if our terrain is more than just a heightmap, includes floating islands, complex carvings or 3D noise structures, it can make the process of finding altitude more complicated. At worse, generating neighbor columns of voxels or entire blocks would become necessary just to find the highest voxel, which would make it too slow.
 
-To counter this, we could maybe cache generated blocks...
+To counter this, you can check [multipass generators](generators.md#multi-pass-generation-with-voxelgeneratormultipasscb).
 
-### Caching approach
 
-There is another approach to this problem, which can also be implemented with today's API limitations. But as we will see, it is actually more complex than it looks because of threading problems:
-
-The idea is, if generating a block requires to know its neighbors, then a generator can just generate them as well, at least only what is required.
-Here, we will consider a case where each block can affect its neighbors in a 1-block radius, but depending on the case that dependency can extend further in each axis.
-
-#### Implementation
-
-!!! warning
-    code in this article hasn't been tested and might not work as-is. It is only here to give an idea of what would be involved.
-
-A generator can have a member variable containing partially-generated blocks:
-
-```gdscript
-class GeneratingBlock:
-    var voxels : VoxelBuffer
-
-    func _init():
-        voxels = VoxelBuffer.new()
-        voxels.create(16, 16, 16)
-
-# [Vector3i] => GeneratingBlock
-# Stores blocks that have been partially generated but not directly requested.
-# These blocks have not finished generating, so they are not yet in the terrain.
-# When a block is fully generated, we can remove it from here since we will not need it again.
-var _generating_blocks := {}
-# Since VoxelGenerators are invoked from multiple threads,
-# we have to protect member variables against concurrent access.
-var _generating_blocks_mutex := Mutex.new()
-```
-
-As you can see, as soon as we consider actual access to neighbors, we also have to deal with multi-threading, so mutexes become necessary.
-
-When a generator is asked to generate a given block, it can look into `_generating_blocks` first if that block has already started generating, due to neighbors themselves generating in different threads. Indeed, if a block can affect its neighbors when it generates, then the opposite can happen too. Keep this in mind!
-
-Then we will also check each neighbor we want to access. For each position missing a block, we will partially generate them (only base ground for example) and store them in `_generating_blocks`.
-
-Now, once we have the current block and its neighbors, we can generate base terrain AND trees for our current block AND its neighbors. The important part is that the current block will then contain ALL trees that intersect with it. Neighbors will not have them all because they won't have neighbor's neighbor trees (that's why we consider them partial).
-The code would have to take care of different local offsets when pasting trees since each block has a different origin in the world.
-
-Once we are done, if the current block was in `_generating_blocks` at the start, we can remove it, since there should be nothing else affecting it. We will leave the 8 neighbors partially generated, if any, for other threads to start from in case they are requested.
-
-```gdscript
-var block_position := Vector3i(
-    origin_in_voxels.x >> 4,
-    origin_in_voxels.y >> 4,
-    origin_in_voxels.z >> 4) # floored division by 16
-
-_generating_blocks_mutex.lock()
-
-# [Vector3i] => GeneratingBlock
-# Subset of blocks in the world, the central one being the current one
-var blocks := {}
-
-for nz in range(-1, 2):
-    for nx in range(-1, 2):
-        var block_position := current_block_position + Vector3i(nx, 0, nz)
-        if _generating_blocks.has(block_position):
-            blocks[block_position] = _generating_blocks[block_position]
-        else:
-            var block = GeneratingBlock.new()
-            generate_base_ground(block)
-            _generating_blocks[block_position] = block
-            _blocks[block_position] = block
-
-for block_position in blocks:
-    var block = blocks[block_position]
-    # Generate trees using some function, which also takes the map of the subset of blocks,
-    # since it may be able to modify more than one block if trees overlap.
-    # Following this process, the central block will have trees originating from it,
-    # but also trees originating from ALL its neighbors.
-    generate_trees(block, blocks)
-
-var central_block : GeneratingBlock = _generating_blocks[current_block_position]
-_generating_blocks.erase(current_block_position)
-
-_generating_blocks_mutex.unlock()
-
-out_voxels.copy_from(central_block.voxels)
-```
-
-#### Caveats
-
-The catch is, for all this to be done consistently, *we have to keep generating blocks locked with `Mutex` for the whole duration of the current block's generation*. If we don't do this, other threads could start messing with the same data and bad things could happen.
-This is what makes this method potentially very slow.
-
-In the code shown earlier, `_generating_blocks_mutex` is naively locked for the entire generation process, which will slow down generation down to one thread, while other threads will be stuck waiting.
-
-Generating 1 block requires partially generating 8 others. We could consider locking `_generating_blocks` and indivdual `GeneratingBlock` separately, since threads could be working on sets of blocks that are not touching each other. 
-But in the case they touch each other, each thread will want to lock 8 mutexes. But this can cause deadlocks, where two threads wait each other indefinitely.
-
-Let's say 2 threads want both to lock block A and B at different times:
-
-- Thread 1 locks block A
-- Thread 2 locks block B
-- Thread 1 locks block B: already locked, so it has to wait
-- Thread 2 locks block A: already locked, so it has to wait
-- Now both threads are stuck waiting forever.
-
-On top of this, if the dependency distance needs to be larger than 1 block, it can very quickly become a lot more expensive. 1-block dependency requires to check 26 neighbors. 2-block dependency requires 124 neighbors. 3-block dependency requires 342 neighbors...
-
-### Multi-pass generation
-
-Multi-pass generation is another approach loosely inspired by the previously described "caching" method, but aiming to solve its shortcomings directly in the engine, and make the task simpler for the user.
-
-Ideas are the following:
-
-- Split world generation into multiple passes, each with their own dependency ranges, in which case accessing neighbor voxels from a previous pass would become possible;
-- Instead of waiting for their dependencies, threads would be allowed to pause their task and continue them later, allowing to do other work in the meantime.
-- Store partially-generated blocks in such a way that the user API is simplified, and eventually allowing to save partially-generated blocks so they don't have to be recomputed again next time the game is started
-- Use a spatial lock instead of individual mutexes, to avoid deadlocks
-
-However, it isn't available in the engine at the moment:
-
-- It is complex to implement properly. In order to be efficient and avoid too many block lookups, the way the world streams has to account for a "pyramid" of dependencies between passes, and threads have to properly synchronize generating blocks without getting stuck.
-- In some cases, an entire column of blocks is required (like Minecraft chunks), which implies there is a limit in height. The engine allows infinite height and uses cubic blocks, so that would require limits and changes just for this.
-- It requires to break compatibility, because more features would have to be injected into generators to make them work in passes.
-- It would only work efficiently with a specific terrain type. It is data-heavy. `VoxelLodTerrain` wouldn't work with it, so any design changes must not impact games that don't need it, otherwise it would bloat the engine.
-
-This may be investigated in the future, as this kind of problem also occurs with other features such as light baking (which is also specific to this kind of terrain, unfortunately). At time of writing, some prerequisites have been implemented (task postponing and spatial lock), but it will take time until it gets properly integrated to the engine.
 

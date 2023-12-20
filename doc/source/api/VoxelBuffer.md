@@ -2,12 +2,11 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
 3D grid storing voxel data.
 
 ## Description: 
 
-This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See enum Depth for more information.
+This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
 
 Arbitrary metadata can also be stored, either for the whole buffer, or per-voxel, at higher cost. This metadata can get saved and loaded along voxels, however you must make sure the data is serializable (i.e it should not contain nodes or arbitrary objects).
 
@@ -54,34 +53,34 @@ Return                                                                          
 
 enum **ChannelId**: 
 
-- **CHANNEL_TYPE** = **0** --- Channel used to store voxel types. Used by [VoxelMesherBlocky].
-- **CHANNEL_SDF** = **1** --- Channel used to store SDF data (signed distance field). Used by [VoxelMesherTransvoxel] and other smooth meshers. Values should preferably be accessed as floats. Negative values are below the isosurface (inside matter), and positive values are above the surface (outside matter).
-- **CHANNEL_COLOR** = **2** --- Channel used to store color data. Used by [VoxelMesherCubes].
-- **CHANNEL_INDICES** = **3**
-- **CHANNEL_WEIGHTS** = **4**
-- **CHANNEL_DATA5** = **5** --- Free channel. Not used by the engine yet.
-- **CHANNEL_DATA6** = **6** --- Free channel. Not used by the engine yet.
-- **CHANNEL_DATA7** = **7** --- Free channel. Not used by the engine yet.
-- **MAX_CHANNELS** = **8** --- Maximum number of channels a [VoxelBuffer] can have.
+- <span id="i_CHANNEL_TYPE"></span>**CHANNEL_TYPE** = **0** --- Channel used to store voxel types. Used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
+- <span id="i_CHANNEL_SDF"></span>**CHANNEL_SDF** = **1** --- Channel used to store SDF data (signed distance field). Used by [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) and other smooth meshers. Values should preferably be accessed as floats. Negative values are below the isosurface (inside matter), and positive values are above the surface (outside matter).
+- <span id="i_CHANNEL_COLOR"></span>**CHANNEL_COLOR** = **2** --- Channel used to store color data. Used by [VoxelMesherCubes](VoxelMesherCubes.md).
+- <span id="i_CHANNEL_INDICES"></span>**CHANNEL_INDICES** = **3** --- Channel used to store material indices. Used with smooth voxels.
+- <span id="i_CHANNEL_WEIGHTS"></span>**CHANNEL_WEIGHTS** = **4** --- Channel used to store material weights, when more than one index can be stored per voxel. Used with smooth voxels.
+- <span id="i_CHANNEL_DATA5"></span>**CHANNEL_DATA5** = **5** --- Free channel. Not used by the engine yet.
+- <span id="i_CHANNEL_DATA6"></span>**CHANNEL_DATA6** = **6** --- Free channel. Not used by the engine yet.
+- <span id="i_CHANNEL_DATA7"></span>**CHANNEL_DATA7** = **7** --- Free channel. Not used by the engine yet.
+- <span id="i_MAX_CHANNELS"></span>**MAX_CHANNELS** = **8** --- Maximum number of channels a [VoxelBuffer](VoxelBuffer.md) can have.
 
 enum **Depth**: 
 
-- **DEPTH_8_BIT** = **0** --- Voxels will be stored with 8 bits. Raw values will range from 0 to 255, and float values will be normalized between -1 and 1 (but will still take 255 possible values). Values outside the range will be clamped. If you use this for smooth voxels, you may take care of scaling SDF data with a small number like 0.1 to reduce precision artifacts.
-- **DEPTH_16_BIT** = **1** --- Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535, and float values will be normalized between -1 and 1 (but will still take 65535 possible values). Values outside the range will be clamped.
-- **DEPTH_32_BIT** = **2** --- Voxels will be stored with 32 bits. Raw values will range from 0 to 4,294,967,295, and float values will use regular IEEE 754 representation (`float`).
-- **DEPTH_64_BIT** = **3** --- Voxels will be stored with 64 bits. Raw values will range from 0 to 18,446,744,073,709,551,615, and float values will use regular IEEE 754 representation (`double`).
-- **DEPTH_COUNT** = **4** --- How many depth configuration there are.
+- <span id="i_DEPTH_8_BIT"></span>**DEPTH_8_BIT** = **0** --- Voxels will be stored with 8 bits. Raw values will range from 0 to 255, and float values will be normalized between -1 and 1 (but will still take 255 possible values). Values outside the range will be clamped. If you use this for smooth voxels, you may take care of scaling SDF data with a small number like 0.1 to reduce precision artifacts.
+- <span id="i_DEPTH_16_BIT"></span>**DEPTH_16_BIT** = **1** --- Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535, and float values will be normalized between -1 and 1 (but will still take 65535 possible values). Values outside the range will be clamped.
+- <span id="i_DEPTH_32_BIT"></span>**DEPTH_32_BIT** = **2** --- Voxels will be stored with 32 bits. Raw values will range from 0 to 4,294,967,295, and float values will use regular IEEE 754 representation (`float`).
+- <span id="i_DEPTH_64_BIT"></span>**DEPTH_64_BIT** = **3** --- Voxels will be stored with 64 bits. Raw values will range from 0 to 18,446,744,073,709,551,615, and float values will use regular IEEE 754 representation (`double`).
+- <span id="i_DEPTH_COUNT"></span>**DEPTH_COUNT** = **4** --- How many depth configuration there are.
 
 enum **Compression**: 
 
-- **COMPRESSION_NONE** = **0** --- The channel is not compressed. Every value is stored individually inside an array in memory.
-- **COMPRESSION_UNIFORM** = **1** --- All voxels of the channel have the same value, so they are stored as one single value, to save space.
-- **COMPRESSION_COUNT** = **2** --- How many compression modes there are.
+- <span id="i_COMPRESSION_NONE"></span>**COMPRESSION_NONE** = **0** --- The channel is not compressed. Every value is stored individually inside an array in memory.
+- <span id="i_COMPRESSION_UNIFORM"></span>**COMPRESSION_UNIFORM** = **1** --- All voxels of the channel have the same value, so they are stored as one single value, to save space.
+- <span id="i_COMPRESSION_COUNT"></span>**COMPRESSION_COUNT** = **2** --- How many compression modes there are.
 
 
 ## Constants: 
 
-- **MAX_SIZE** = **65535**
+- <span id="i_MAX_SIZE"></span>**MAX_SIZE** = **65535**
 
 ## Method Descriptions
 
@@ -212,11 +211,11 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 
 - [void](#)<span id="i_set_channel_depth"></span> **set_channel_depth**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) depth ) 
 
-Changes the bit depth of a given channel. This controls the range of values a channel can hold. See enum VoxelBuffer.Depth for more information.
+Changes the bit depth of a given channel. This controls the range of values a channel can hold. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
 
 - [void](#)<span id="i_set_voxel"></span> **set_voxel**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
-Sets the raw value of a voxel. If you use smooth voxels, you may prefer using method set_voxel_f.
+Sets the raw value of a voxel. If you use smooth voxels, you may prefer using [VoxelBuffer.set_voxel_f](VoxelBuffer.md#i_set_voxel_f).
 
 - [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) x, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) y, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) z, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
@@ -231,4 +230,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

@@ -12,9 +12,11 @@
 
 namespace zylann::voxel {
 
-// High-level generic voxel edition utility.
-// Ease of use comes at cost.
-// It's not a class to instantiate alone, get it from the voxel objects you want to work with
+// High-level voxel editing interface.
+// It's not a class to instantiate alone, get it from the voxel objects you want to work with.
+// There might be some overhead, so if a specific case needs optimization, it may be implemented with the underlying
+// data structure directly, or eventually added to the corresponding implementation of VoxelTool. If most
+// implementations provide the same feature, it may be added to the base class.
 class VoxelTool : public RefCounted {
 	GDCLASS(VoxelTool, RefCounted)
 public:
@@ -66,10 +68,12 @@ public:
 	virtual void do_point(Vector3i pos);
 	virtual void do_sphere(Vector3 center, float radius);
 	virtual void do_box(Vector3i begin, Vector3i end);
+	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
 
 	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
 
-	virtual void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
+	virtual void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const;
+	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
 	virtual void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask);
 	virtual void paste_masked(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
 			uint64_t mask_value);
@@ -107,6 +111,7 @@ private:
 	void _b_do_point(Vector3i pos);
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
+	void _b_do_path(PackedVector3Array positions, PackedFloat32Array radii);
 	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
 	void _b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask);
 	void _b_paste_masked(

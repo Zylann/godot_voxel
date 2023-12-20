@@ -12,13 +12,6 @@ ImageRangeGrid::~ImageRangeGrid() {
 }
 
 void ImageRangeGrid::clear() {
-	for (int i = 0; i < _lod_count; ++i) {
-		Lod &lod = _lods[i];
-		if (lod.data != nullptr) {
-			memdelete_arr(lod.data);
-			lod.data = nullptr;
-		}
-	}
 	_pixels_x = 0;
 	_pixels_y = 0;
 	_lod_base = 0;
@@ -39,7 +32,8 @@ void ImageRangeGrid::generate(const Image &im) {
 		Lod &lod = _lods[0];
 		lod.size_x = (im.get_width() - 1) / chunk_size + 1;
 		lod.size_y = (im.get_height() - 1) / chunk_size + 1;
-		lod.data = memnew_arr(Interval, lod.size_x * lod.size_y);
+		lod.data.resize(lod.size_x * lod.size_y);
+		lod.data.shrink_to_fit();
 
 		for (int cy = 0; cy < lod.size_y; ++cy) {
 			for (int cx = 0; cx < lod.size_x; ++cx) {
@@ -67,12 +61,12 @@ void ImageRangeGrid::generate(const Image &im) {
 		}
 
 		Lod &lod = _lods[lod_index];
-		CRASH_COND(lod.data != nullptr);
 
 		lod.size_x = max(prev_lod.size_x >> 1, 1);
 		lod.size_y = max(prev_lod.size_y >> 1, 1);
 
-		lod.data = memnew_arr(Interval, lod.size_x * lod.size_y);
+		lod.data.resize(lod.size_x * lod.size_y);
+		lod.data.shrink_to_fit();
 
 		int dst_i = 0;
 
@@ -163,9 +157,14 @@ Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
 
 	// Accumulate overlapping chunks
 	Interval r;
+	{
+		const unsigned int loc = math::wrap(x_min, lod.size_x) + math::wrap(y_min, lod.size_y) * lod.size_x;
+		r = lod.data[loc];
+	}
 	for (int y = y_min; y <= y_max; ++y) {
 		for (int x = x_min; x <= x_max; ++x) {
-			r.add_interval(lod.data[(x % lod.size_x) + (y % lod.size_y) * lod.size_x]);
+			const unsigned int loc = math::wrap(x, lod.size_x) + math::wrap(y, lod.size_y) * lod.size_x;
+			r.add_interval(lod.data[loc]);
 		}
 	}
 

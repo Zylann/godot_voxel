@@ -59,19 +59,19 @@ void VoxelBuffer::copy_channel_from_area(
 	_buffer->copy_from(other->get_buffer(), src_min, src_max, dst_min, channel);
 }
 
-void VoxelBuffer::fill(uint64_t defval, unsigned int channel_index) {
+void VoxelBuffer::fill(uint64_t defval, int channel_index) {
 	ZN_DSTACK();
 	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
 	_buffer->fill(defval, channel_index);
 }
 
-void VoxelBuffer::fill_f(real_t value, unsigned int channel) {
+void VoxelBuffer::fill_f(real_t value, int channel) {
 	ZN_DSTACK();
 	ERR_FAIL_INDEX(channel, MAX_CHANNELS);
 	_buffer->fill_f(value, channel);
 }
 
-bool VoxelBuffer::is_uniform(unsigned int channel_index) const {
+bool VoxelBuffer::is_uniform(int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, true);
 	return _buffer->is_uniform(channel_index);
 }
@@ -80,7 +80,7 @@ void VoxelBuffer::compress_uniform_channels() {
 	_buffer->compress_uniform_channels();
 }
 
-VoxelBuffer::Compression VoxelBuffer::get_channel_compression(unsigned int channel_index) const {
+VoxelBuffer::Compression VoxelBuffer::get_channel_compression(int channel_index) const {
 	ERR_FAIL_INDEX_V(channel_index, MAX_CHANNELS, VoxelBuffer::COMPRESSION_NONE);
 	return VoxelBuffer::Compression(_buffer->get_channel_compression(channel_index));
 }

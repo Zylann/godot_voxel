@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string_funcs.h"
@@ -16,6 +15,25 @@
 #include "voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
+
+unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Material> &p_material) {
+	for (size_t i = 0; i < materials.size(); ++i) {
+		const Ref<Material> &material = materials[i];
+		if (material == p_material) {
+			return i;
+		}
+	}
+#ifdef TOOLS_ENABLED
+	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
+		ZN_PRINT_ERROR(format("Maximum material count reached ({}), try reduce your number of materials by re-using "
+							  "them or using atlases.",
+				VoxelBlockyLibraryBase::MAX_MATERIALS));
+	}
+#endif
+	const unsigned int ret = materials.size();
+	materials.push_back(p_material);
+	return ret;
+}
 
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
 
@@ -188,6 +206,10 @@ void VoxelBlockyModel::set_transparency_index(int i) {
 	_transparency_index = math::clamp(i, 0, 255);
 }
 
+void VoxelBlockyModel::set_culls_neighbors(bool cn) {
+	_culls_neighbors = cn;
+}
+
 void VoxelBlockyModel::set_surface_count(unsigned int new_count) {
 	if (new_count != _surface_count) {
 		_surface_count = new_count;
@@ -207,6 +229,7 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 
 	// baked_data.contributes_to_ao is set by the side culling phase
 	baked_data.transparency_index = _transparency_index;
+	baked_data.culls_neighbors = _culls_neighbors;
 	baked_data.color = _color;
 	baked_data.is_random_tickable = _random_tickable;
 	baked_data.box_collision_mask = _collision_mask;
@@ -308,6 +331,7 @@ void VoxelBlockyModel::copy_base_properties_from(const VoxelBlockyModel &src) {
 	_surface_params = src._surface_params;
 	// _surface_count = src._surface_count;
 	_transparency_index = src._transparency_index;
+	_culls_neighbors = src._culls_neighbors;
 	_random_tickable = src._random_tickable;
 	_color = src._color;
 	_collision_aabbs = src._collision_aabbs;
@@ -465,7 +489,7 @@ void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis
 
 		const Vector3 min_pos = math::min(p0, p1);
 		const Vector3 max_pos = math::max(p0, p1);
-		aabb = AABB(to_vec3(min_pos), to_vec3(max_pos - min_pos));
+		aabb = AABB(min_pos, max_pos - min_pos);
 
 		aabb.position += Vector3(0.5, 0.5, 0.5);
 	}
@@ -506,6 +530,9 @@ void VoxelBlockyModel::_bind_methods() {
 			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index);
 	ClassDB::bind_method(D_METHOD("get_transparency_index"), &VoxelBlockyModel::get_transparency_index);
 
+	ClassDB::bind_method(D_METHOD("set_culls_neighbors", "culls_neighbors"), &VoxelBlockyModel::set_culls_neighbors);
+	ClassDB::bind_method(D_METHOD("get_culls_neighbors"), &VoxelBlockyModel::get_culls_neighbors);
+
 	ClassDB::bind_method(D_METHOD("is_random_tickable"), &VoxelBlockyModel::is_random_tickable);
 	ClassDB::bind_method(D_METHOD("set_random_tickable"), &VoxelBlockyModel::set_random_tickable);
 
@@ -521,7 +548,7 @@ void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelBlockyModel::get_collision_mask);
 
 	// Bound for editor purposes
-	ClassDB::bind_method(D_METHOD("rotate_90"), &VoxelBlockyModel::_b_rotate_90);
+	ClassDB::bind_method(D_METHOD("rotate_90", "axis", "clockwise"), &VoxelBlockyModel::_b_rotate_90);
 
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
@@ -529,6 +556,7 @@ void VoxelBlockyModel::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
 			"set_transparent", "is_transparent");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "culls_neighbors"), "set_culls_neighbors", "get_culls_neighbors");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
 
 	ADD_GROUP("Box collision", "");

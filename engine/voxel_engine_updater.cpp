@@ -1,5 +1,5 @@
 #include "voxel_engine_updater.h"
-#include "../util/log.h"
+#include "../util/io/log.h"
 #include "voxel_engine.h"
 
 // Needed for doing `Node *root = SceneTree::get_root()`, Window* is forward-declared

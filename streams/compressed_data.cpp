@@ -1,7 +1,7 @@
 #include "compressed_data.h"
 #include "../thirdparty/lz4/lz4.h"
+#include "../util/io/serialization.h"
 #include "../util/profiling.h"
-#include "../util/serialization.h"
 #include "../util/string_funcs.h"
 
 #include <limits>

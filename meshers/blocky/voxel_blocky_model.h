@@ -2,7 +2,7 @@
 #define VOXEL_BLOCKY_MODEL_H
 
 #include "../../constants/cube_tables.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/macros.h"
@@ -89,6 +89,7 @@ public:
 		Model model;
 		Color color;
 		uint8_t transparency_index;
+		bool culls_neighbors;
 		bool contributes_to_ao;
 		bool empty;
 		bool is_random_tickable;
@@ -139,6 +140,11 @@ public:
 		return _transparency_index;
 	}
 
+	void set_culls_neighbors(bool cn);
+	bool get_culls_neighbors() const {
+		return _culls_neighbors;
+	}
+
 	void set_collision_mask(uint32_t mask);
 	inline uint32_t get_collision_mask() const {
 		return _collision_mask;
@@ -159,17 +165,7 @@ public:
 	struct MaterialIndexer {
 		std::vector<Ref<Material>> &materials;
 
-		unsigned int get_or_create_index(const Ref<Material> &p_material) {
-			for (size_t i = 0; i < materials.size(); ++i) {
-				const Ref<Material> &material = materials[i];
-				if (material == p_material) {
-					return i;
-				}
-			}
-			const unsigned int ret = materials.size();
-			materials.push_back(p_material);
-			return ret;
-		}
+		unsigned int get_or_create_index(const Ref<Material> &p_material);
 	};
 
 	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const;
@@ -241,6 +237,9 @@ private:
 	// If two neighboring voxels are supposed to occlude their shared face,
 	// this index decides wether or not it should happen. Equal indexes culls the face, different indexes doesn't.
 	uint8_t _transparency_index = 0;
+	// If enabled, this voxel culls the faces of its neighbors. Disabling
+	// can be useful for denser transparent voxels, such as foliage.
+	bool _culls_neighbors = true;
 	bool _random_tickable = false;
 
 	Color _color;

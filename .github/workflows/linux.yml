@@ -31,6 +31,10 @@ jobs:
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.0"
+            # TODO Had to downgrade to less warnings because Godot 4.0 raises warnings in GCC 13.
+            # To fix this we would have to cherry-pick 41890ff9c3028d3b05d993f8f7ec42c346824304 to the 4.0 branch.
+            # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
+            warnings: all
 
           # Just to check if building works in Godot master
           - name: Editor debug build (master)
@@ -41,6 +45,7 @@ jobs:
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "master"
+            warnings: extra
 
           - name: Editor debug build
             precision: single
@@ -50,6 +55,7 @@ jobs:
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.1"
+            warnings: extra
 
           - name: Editor build
             precision: single
@@ -59,6 +65,17 @@ jobs:
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.1"
+            warnings: extra
+
+          - name: Template build
+            precision: single
+            target: template_release
+            dev_build: no
+            #dev_mode: no
+            production: yes
+            executable_name: godot.linuxbsd.template_release.x86_64
+            godot_base_branch: "4.1"
+            warnings: extra
 
           - name: Editor build with 64-bit floats
             precision: double
@@ -68,6 +85,7 @@ jobs:
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
             godot_base_branch: "4.1"
+            warnings: extra
 
     steps:
       # Clone Godot
@@ -152,7 +170,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons -j2 verbose=yes warnings=extra werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons -j2 verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
       - uses: actions/upload-artifact@v3

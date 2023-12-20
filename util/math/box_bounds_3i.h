@@ -11,6 +11,8 @@ struct BoxBounds3i {
 	Vector3i min_pos;
 	Vector3i max_pos; // Exclusive
 
+	BoxBounds3i() {}
+
 	BoxBounds3i(Vector3i p_min, Vector3i p_max) : min_pos(p_min), max_pos(p_max) {}
 
 	BoxBounds3i(Box3i box) : min_pos(box.pos), max_pos(box.pos + box.size) {}
@@ -45,6 +47,14 @@ struct BoxBounds3i {
 
 	inline bool operator==(const BoxBounds3i &other) const {
 		return min_pos == other.min_pos && max_pos == other.max_pos;
+	}
+
+	inline bool is_empty() const {
+		return min_pos.x >= max_pos.x || min_pos.y >= max_pos.y || min_pos.z >= max_pos.z;
+	}
+
+	inline Vector3i get_size() const {
+		return max_pos - min_pos;
 	}
 };
 

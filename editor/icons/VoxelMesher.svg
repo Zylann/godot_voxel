@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="16"
+   viewBox="0 0 16 16"
+   width="16"
+   version="1.1"
+   id="svg249"
+   sodipodi:docname="VoxelMesher.svg"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs253" />
+  <sodipodi:namedview
+     id="namedview251"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="true"
+     inkscape:zoom="26.15625"
+     inkscape:cx="0.51612903"
+     inkscape:cy="9.9402628"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg249" />
+  <g
+     fill-opacity="0.996078"
+     fill-rule="evenodd"
+     transform="translate(0,-1036.4)"
+     id="g247"
+     style="display:none">
+    <path
+       d="M 8,1 1,4 v 8 l 7,3 7,-3 V 4 Z"
+       fill="#fb6d6d"
+       transform="translate(0,1036.4)"
+       id="path241" />
+    <path
+       d="m 8,1051.4 -7,-3 v -8 l 7,3 z"
+       fill="#fc9c9c"
+       id="path243" />
+    <path
+       d="m 1,1040.4 7,3 7,-3 -7,-3 z"
+       fill="#fdcbcb"
+       id="path245" />
+  </g>
+  <path
+     style="fill:none;stroke:#fa9393;stroke-width:1.19526;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     d="M 8.2978391,7.1893858 8.1683872,14.103012 14.090813,11.436328 14.058454,4.5556237 Z"
+     id="path7508" />
+  <path
+     style="fill:none;stroke:#fa9393;stroke-width:1.19528;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     d="M 14.123177,4.6379287 8.2169315,14.168855"
+     id="path7510" />
+  <ellipse
+     style="opacity:1;fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="11.676422"
+     cx="2.4378376" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-6"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="13.833073"
+     cx="8.1165771" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-2"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="11.265036"
+     cx="13.966658" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-5"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="4.7826214"
+     cx="13.966659" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-3"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="7.0016022"
+     cx="8.2879181" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-0"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="4.7327561"
+     cx="2.3888829" />
+  <ellipse
+     style="fill:#fa9393;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.913806;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.996078"
+     id="path17382-52"
+     ry="1.1842874"
+     rx="1.199389"
+     cy="2.0899248"
+     cx="8.2634401" />
+</svg>

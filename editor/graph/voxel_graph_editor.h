@@ -87,6 +87,10 @@ private:
 	void update_functions();
 	void set_preview_transform(Vector2f offset, float scale);
 
+	void copy_selected_nodes_to_clipboard();
+	void paste_clipboard();
+	void create_node_gui_input_connections(int node_id);
+
 	void _on_graph_edit_gui_input(Ref<InputEvent> event);
 	void _on_graph_edit_connection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
 	void _on_graph_edit_disconnection_request(String from_node_name, int from_slot, String to_node_name, int to_slot);
@@ -115,6 +119,8 @@ private:
 	void _on_node_dialog_file_selected(String fpath);
 	void _on_node_resize_request(Vector2 new_size, int node_id);
 	void _on_graph_node_preview_gui_input(Ref<InputEvent> event);
+	void _on_graph_edit_copy_nodes_request();
+	void _on_graph_edit_paste_nodes_request();
 
 	void _check_nothing_selected();
 
@@ -157,6 +163,12 @@ private:
 	PreviewAxes _preview_axes = PREVIEW_AXES_XY;
 	Vector2f _preview_offset;
 	float _preview_scale = 1.f;
+
+	struct Clipboard {
+		Ref<pg::VoxelGraphFunction> graph;
+	};
+
+	Clipboard _clipboard;
 };
 
 } // namespace zylann::voxel

@@ -1,7 +1,7 @@
 #ifndef ZN_SHORT_LOCK
 #define ZN_SHORT_LOCK
 
-//#define ZN_SHORT_LOCK_IS_MUTEX
+// #define ZN_SHORT_LOCK_IS_MUTEX
 
 #ifdef ZN_SHORT_LOCK_IS_MUTEX
 #include "mutex.h"

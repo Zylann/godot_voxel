@@ -1,10 +1,11 @@
 #include "voxel_graph_function.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/godot/core/callable.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
+#include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "node_type_db.h"
 
@@ -13,6 +14,7 @@
 namespace zylann::voxel::pg {
 
 const char *VoxelGraphFunction::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
+const char *VoxelGraphFunction::SIGNAL_COMPILED = "compiled";
 
 void VoxelGraphFunction::clear() {
 	unregister_subresources();
@@ -57,7 +59,7 @@ ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction
 }
 
 // Automatically chooses inputs and outputs based on a graph.
-void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
+void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
 		std::vector<VoxelGraphFunction::Port> &outputs) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
@@ -246,6 +248,44 @@ void update_function(
 	}
 }
 
+ProgramGraph::Node *duplicate_node(
+		ProgramGraph &dst_graph, const ProgramGraph::Node &src_node, bool duplicate_resources, uint32_t id) {
+	ProgramGraph::Node *dst_node = dst_graph.create_node(src_node.type_id, id);
+	ZN_ASSERT(dst_node != nullptr);
+	dst_node->name = src_node.name;
+
+	dst_node->inputs.resize(src_node.inputs.size());
+	for (unsigned int i = 0; i < src_node.inputs.size(); ++i) {
+		const ProgramGraph::Port &src_input = src_node.inputs[i];
+		ProgramGraph::Port &dst_input = dst_node->inputs[i];
+		dst_input.dynamic_name = src_input.dynamic_name;
+		// Should this be copied?
+		// dst_input.autoconnect_hint = src_input.autoconnect_hint;
+	}
+
+	dst_node->outputs.resize(src_node.outputs.size());
+
+	dst_node->default_inputs = src_node.default_inputs;
+	dst_node->params = src_node.params;
+	dst_node->gui_position = src_node.gui_position;
+	dst_node->gui_size = src_node.gui_size;
+	dst_node->autoconnect_default_inputs = src_node.autoconnect_default_inputs;
+
+	if (duplicate_resources) {
+		for (Variant &param_value : dst_node->params) {
+			Ref<Resource> res = param_value;
+			if (res.is_valid()) {
+				// If the resource has a path, keep it shared
+				if (!is_resource_file(res->get_path())) {
+					param_value = res->duplicate();
+				}
+			}
+		}
+	}
+
+	return dst_node;
+}
+
 uint32_t VoxelGraphFunction::create_node(NodeTypeID type_id, Vector2 position, uint32_t id) {
 	ERR_FAIL_COND_V(!NodeTypeDB::get_singleton().is_valid_type_id(type_id), ProgramGraph::NULL_ID);
 	ProgramGraph::Node *node = create_node_internal(_graph, type_id, position, id, true);
@@ -371,7 +411,7 @@ void VoxelGraphFunction::get_connections(std::vector<ProgramGraph::Connection> &
 bool VoxelGraphFunction::try_get_connection_to(
 		ProgramGraph::PortLocation dst, ProgramGraph::PortLocation &out_src) const {
 	const ProgramGraph::Node &node = _graph.get_node(dst.node_id);
-	CRASH_COND(dst.port_index >= node.inputs.size());
+	ZN_ASSERT_RETURN_V(dst.port_index < node.inputs.size(), false);
 	const ProgramGraph::Port &port = node.inputs[dst.port_index];
 	if (port.connections.size() == 0) {
 		return false;
@@ -412,10 +452,10 @@ uint32_t VoxelGraphFunction::find_node_by_name(StringName p_name) const {
 	return _graph.find_node_by_name(p_name);
 }
 
-void VoxelGraphFunction::set_node_param(uint32_t node_id, uint32_t param_index, Variant value) {
+void VoxelGraphFunction::set_node_param(uint32_t node_id, int param_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_INDEX(param_index, node->params.size());
+	ERR_FAIL_INDEX(param_index, static_cast<int>(node->params.size()));
 
 	if (node->params[param_index] != value) {
 		if (node->type_id == VoxelGraphFunction::NODE_FUNCTION && param_index == 0) {
@@ -510,24 +550,24 @@ void VoxelGraphFunction::set_expression_node_inputs(uint32_t node_id, PackedStri
 	}
 }
 
-Variant VoxelGraphFunction::get_node_param(uint32_t node_id, uint32_t param_index) const {
+Variant VoxelGraphFunction::get_node_param(uint32_t node_id, int param_index) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
-	ERR_FAIL_INDEX_V(param_index, node->params.size(), Variant());
+	ERR_FAIL_INDEX_V(param_index, static_cast<int>(node->params.size()), Variant());
 	return node->params[param_index];
 }
 
-Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, uint32_t input_index) const {
+Variant VoxelGraphFunction::get_node_default_input(uint32_t node_id, int input_index) const {
 	const ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND_V(node == nullptr, Variant());
-	ERR_FAIL_INDEX_V(input_index, node->default_inputs.size(), Variant());
+	ERR_FAIL_INDEX_V(input_index, static_cast<int>(node->default_inputs.size()), Variant());
 	return node->default_inputs[input_index];
 }
 
-void VoxelGraphFunction::set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value) {
+void VoxelGraphFunction::set_node_default_input(uint32_t node_id, int input_index, Variant value) {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
-	ERR_FAIL_INDEX(input_index, node->default_inputs.size());
+	ERR_FAIL_INDEX(input_index, static_cast<int>(node->default_inputs.size()));
 	Variant &defval = node->default_inputs[input_index];
 	if (defval != value) {
 		// node->autoconnect_default_inputs = false;
@@ -610,7 +650,15 @@ unsigned int VoxelGraphFunction::get_nodes_count() const {
 
 #ifdef TOOLS_ENABLED
 
-void VoxelGraphFunction::get_configuration_warnings(PackedStringArray &out_warnings) const {}
+void VoxelGraphFunction::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	if (_last_compiling_result.success == false) {
+		if (_last_compiling_result.message.is_empty()) {
+			out_warnings.append("The graph isn't compiled.");
+		} else {
+			out_warnings.append(String("Compiling failed: {0}").format(_last_compiling_result.message));
+		}
+	}
+}
 
 uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -883,14 +931,20 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 		ERR_FAIL_COND_V(node == nullptr, false);
 		// TODO Graphs made in older versions must have autoconnect always off
 
+		const Variant vname = node_data.get("name", Variant());
+		if (vname != Variant()) {
+			node->name = vname;
+		}
+
 		node->gui_size = node_data.get("gui_size", Vector2());
 
+		Ref<VoxelGraphFunction> function;
 		if (type_id == VoxelGraphFunction::NODE_FUNCTION) {
 			const NodeType &ntype = type_db.get_type(type_id);
 			ZN_ASSERT(ntype.params.size() >= 1);
 			// The function reference is always the first parameter
 			const String func_key = ntype.params[0].name;
-			Ref<VoxelGraphFunction> function = node_data[func_key];
+			function = node_data[func_key];
 			if (function.is_null()) {
 				ERR_PRINT(String("Unable to load external function referenced in {0} {}")
 								  .format(varray(VoxelGraphFunction::get_class_static(), resource_path)));
@@ -953,16 +1007,20 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 			}
 			uint32_t param_index;
 			if (type_db.try_get_param_index_from_name(type_id, param_name, param_index)) {
-				ERR_CONTINUE(param_index < 0 || param_index >= node->params.size());
+				ZN_ASSERT_CONTINUE(param_index < node->params.size());
 				node->params[param_index] = node_data[param_key];
 			}
 			if (type_db.try_get_input_index_from_name(type_id, param_name, param_index)) {
-				ERR_CONTINUE(param_index < 0 || param_index >= node->default_inputs.size());
+				ZN_ASSERT_CONTINUE(param_index < node->default_inputs.size());
 				node->default_inputs[param_index] = node_data[param_key];
 			}
-			const Variant vname = node_data.get("name", Variant());
-			if (vname != Variant()) {
-				node->name = vname;
+			if (function.is_valid()) {
+				Span<const VoxelGraphFunction::Port> input_defs = function->get_input_definitions();
+				for (unsigned int i = 0; i < input_defs.size(); ++i) {
+					if (input_defs[i].name == param_name) {
+						node->default_inputs[i] = node_data[param_key];
+					}
+				}
 			}
 		}
 	}
@@ -986,6 +1044,9 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 
 bool VoxelGraphFunction::load_graph_from_variant_data(Dictionary data) {
 	clear();
+
+	// Unfortunately we can't compile on load, because input/output information are separate properties and they can be
+	// set by Godot in any order... we would need a post-load callback for when all properties have been assigned.
 
 	if (zylann::voxel::pg::load_graph_from_variant_data(_graph, data, get_path())) {
 		register_subresources();
@@ -1191,7 +1252,11 @@ bool VoxelGraphFunction::contains_reference_to_function(const VoxelGraphFunction
 }
 
 void VoxelGraphFunction::auto_pick_inputs_and_outputs() {
-	zylann::voxel::pg::auto_pick_input_and_outputs(_graph, _inputs, _outputs);
+	zylann::voxel::pg::auto_pick_inputs_and_outputs(_graph, _inputs, _outputs);
+}
+
+bool VoxelGraphFunction::is_automatic_io_setup_enabled() const {
+	return _automatic_io_setup_enabled;
 }
 
 bool find_port_by_name(Span<const VoxelGraphFunction::Port> ports, const String &name, unsigned int &out_index) {
@@ -1248,6 +1313,129 @@ void VoxelGraphFunction::update_function_nodes(std::vector<ProgramGraph::Connect
 	});
 }
 
+pg::CompilationResult VoxelGraphFunction::compile(bool debug) {
+	std::shared_ptr<CompiledGraph> compiled_graph = make_shared_instance<CompiledGraph>();
+
+	if (_automatic_io_setup_enabled) {
+		auto_pick_inputs_and_outputs();
+	}
+
+	pg::CompilationResult result = compiled_graph->runtime.compile(*this, debug);
+	_last_compiling_result = result;
+
+	if (!result.success) {
+		// This is only to propagate the update of configuration warnings...
+		// We should not use `changed` for this, because it causes infinite compilation cycles in the editor (the editor
+		// thinks the graph was changed [by the user] and tries to auto-recompile)
+		emit_signal(VoxelStringNames::get_singleton().compiled);
+
+		return result;
+	}
+
+	{
+		MutexLock lock(_compiled_graph_mutex);
+		_compiled_graph = compiled_graph;
+	}
+
+	emit_signal(VoxelStringNames::get_singleton().compiled);
+	return result;
+}
+
+std::shared_ptr<VoxelGraphFunction::CompiledGraph> VoxelGraphFunction::get_compiled_graph() const {
+	MutexLock lock(_compiled_graph_mutex);
+	return _compiled_graph;
+}
+
+VoxelGraphFunction::RuntimeCache &VoxelGraphFunction::get_runtime_cache_tls() {
+	static thread_local RuntimeCache tls_cache;
+	return tls_cache;
+}
+
+bool VoxelGraphFunction::is_compiled() const {
+	MutexLock lock(_compiled_graph_mutex);
+	return _compiled_graph != nullptr;
+}
+
+void VoxelGraphFunction::execute(Span<Span<float>> inputs, Span<Span<float>> outputs) {
+	ZN_PROFILE_SCOPE();
+
+	if (inputs.size() == 0) {
+		return;
+	}
+	if (outputs.size() == 0) {
+		return;
+	}
+
+	const unsigned int total_buffer_size = inputs[0].size();
+
+#ifdef DEBUG_ENABLED
+	for (Span<float> &s : inputs) {
+		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+	}
+	for (Span<float> &s : outputs) {
+		ZN_ASSERT_RETURN(s.size() == total_buffer_size);
+	}
+	ZN_ASSERT_RETURN(_compiled_graph->runtime.get_output_count() >= outputs.size());
+#endif
+
+	std::shared_ptr<CompiledGraph> compiled_graph = get_compiled_graph();
+
+	if (_compiled_graph == nullptr) {
+		return;
+	}
+
+	// Note, we may not use I/O definitions, but ONLY the CompiledGraph, because the graph and I/O definitions can be
+	// modified by another thread while this function runs.
+
+	// TODO If some outputs are not provided, optimize with an execution map
+
+	// If the input length is too big, run multiple passes so we don't allocate too much memory, which might help
+	// reducing space occupied in CPU cache
+	const unsigned int max_buffer_size = 256;
+	const unsigned int chunk_count = math::ceildiv(total_buffer_size, max_buffer_size);
+	const unsigned int chunk_size = math::min(total_buffer_size, max_buffer_size);
+
+	RuntimeCache &cache = get_runtime_cache_tls();
+
+	cache.input_chunks.resize(inputs.size());
+
+	_compiled_graph->runtime.prepare_state(cache.state, chunk_size,
+			// since we generate arbitrary series, outer group optimization cannot apply.
+			false);
+
+	for (unsigned int chunk_index = 0; chunk_index < chunk_count; ++chunk_index) {
+		const unsigned buffer_begin = chunk_index * chunk_size;
+		const unsigned buffer_chunk_size = math::min(chunk_size, total_buffer_size - buffer_begin);
+
+		if (buffer_chunk_size != chunk_size) {
+			// When there is more than one chunk, the last chunk may need to be smaller to get to the right count.
+			// All chunks before have the same size.
+			_compiled_graph->runtime.prepare_state(cache.state, buffer_chunk_size, false);
+		}
+
+		for (unsigned int input_index = 0; input_index < inputs.size(); ++input_index) {
+			cache.input_chunks[input_index] = inputs[input_index].sub(buffer_begin, buffer_chunk_size);
+		}
+
+		_compiled_graph->runtime.generate_set(cache.state, to_span(cache.input_chunks), false, nullptr);
+
+		// Copy outputs
+		for (unsigned int output_index = 0; output_index < outputs.size(); ++output_index) {
+			Span<float> output = outputs[output_index].sub(buffer_begin, buffer_chunk_size);
+			const pg::Runtime::OutputInfo &oi = _compiled_graph->runtime.get_output_info(output_index);
+			const pg::Runtime::Buffer &b = cache.state.get_buffer(oi.buffer_address);
+			if (b.data == nullptr) {
+				for (float &dst : output) {
+					dst = b.constant_value;
+				}
+			} else {
+				ZN_ASSERT_CONTINUE(b.size >= output.size());
+				Span<float>(b.data, output.size()).copy_to(output);
+			}
+		}
+	}
+}
+
 // Binding land
 
 int VoxelGraphFunction::_b_get_node_type_count() const {
@@ -1286,15 +1474,79 @@ void VoxelGraphFunction::_b_set_node_name(int node_id, String node_name) {
 	set_node_name(node_id, node_name);
 }
 
-PackedInt32Array to_godot_int32_array(const std::vector<uint32_t> &vec) {
-	PackedInt32Array a;
-	a.resize(vec.size());
-	// Using pointer access because in GDExtension builds writing into a packed array has different syntax
-	int32_t *p = a.ptrw();
-	for (unsigned int i = 0; i < vec.size(); ++i) {
-		p[i] = vec[i];
+void VoxelGraphFunction::duplicate_subgraph(Span<const uint32_t> original_node_ids,
+		const Span<const uint32_t> dst_node_ids, VoxelGraphFunction &dst_graph, Vector2 gui_offset) const {
+	ZN_ASSERT_RETURN(!has_duplicate(original_node_ids));
+
+	const bool use_pre_generated_ids = dst_node_ids.size() != 0;
+	if (use_pre_generated_ids) {
+		ZN_ASSERT_RETURN(dst_node_ids.size() == original_node_ids.size());
+		ZN_ASSERT_RETURN(!has_duplicate(dst_node_ids));
+		for (const uint32_t id : dst_node_ids) {
+			ZN_ASSERT_RETURN(!dst_graph.has_node(id));
+		}
 	}
-	return a;
+
+	// index of original node in `node_ids` => copied node ID
+	std::vector<uint32_t> original_to_copied_node_ids;
+	original_to_copied_node_ids.reserve(original_node_ids.size());
+
+	// Copy nodes
+	for (unsigned int original_node_index = 0; original_node_index < original_node_ids.size(); ++original_node_index) {
+		const uint32_t original_node_id = original_node_ids[original_node_index];
+		const ProgramGraph::Node *original_node = _graph.try_get_node(original_node_id);
+		ZN_ASSERT_CONTINUE(original_node != nullptr);
+
+		const uint32_t copied_node_id =
+				(use_pre_generated_ids ? dst_node_ids[original_node_index] : ProgramGraph::NULL_ID);
+
+		ProgramGraph::Node *copied_node = duplicate_node(dst_graph._graph, *original_node, true, copied_node_id);
+		copied_node->gui_position += gui_offset;
+		original_to_copied_node_ids.push_back(copied_node->id);
+
+		for (Variant v : copied_node->params) {
+			Ref<Resource> resource = v;
+			if (resource.is_valid()) {
+				dst_graph.register_subresource(**resource);
+			}
+		}
+	}
+
+	// Copy connections
+	unsigned int original_node_index = 0;
+	for (const uint32_t node_id : original_node_ids) {
+		const ProgramGraph::Node *original_src_node = _graph.try_get_node(node_id);
+
+		for (const ProgramGraph::Port &port : original_src_node->inputs) {
+			unsigned int dst_port_index = 0;
+
+			for (const ProgramGraph::PortLocation loc : port.connections) {
+				size_t copied_src_node_index;
+
+				// Only copy connections between nodes that are in the copied subset
+				if (find(original_node_ids, loc.node_id, copied_src_node_index)) {
+					const uint32_t copied_src_node_id = original_to_copied_node_ids[copied_src_node_index];
+					const uint32_t copied_dst_node_id = original_to_copied_node_ids[original_node_index];
+
+					dst_graph.add_connection(copied_src_node_id, loc.port_index, copied_dst_node_id, dst_port_index);
+				}
+
+				++dst_port_index;
+			}
+		}
+
+		// We don't need to iterate output ports, since we only care about connections between nodes
+		// of the copied sub-graph, so connections we found from input ports would be found too from output ports.
+
+		++original_node_index;
+	}
+}
+
+void VoxelGraphFunction::paste_graph(
+		const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset) {
+	PackedInt32Array src_node_ids = src_graph.get_node_ids();
+	src_graph.duplicate_subgraph(
+			to_span(src_node_ids).reinterpret_cast_to<const uint32_t>(), dst_node_ids, *this, gui_offset);
 }
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports) {
@@ -1381,6 +1633,12 @@ void VoxelGraphFunction::_b_set_output_definitions(Array data) {
 #endif
 }
 
+void VoxelGraphFunction::_b_paste_graph_with_pre_generated_ids(
+		Ref<VoxelGraphFunction> graph, PackedInt32Array dst_node_ids, Vector2 gui_offset) {
+	ZN_ASSERT_RETURN(graph.is_valid());
+	paste_graph(**graph, to_span(dst_node_ids).reinterpret_cast_to<const uint32_t>(), gui_offset);
+}
+
 void VoxelGraphFunction::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear"), &VoxelGraphFunction::clear);
 	ClassDB::bind_method(D_METHOD("create_node", "type_id", "position", "id"), &VoxelGraphFunction::create_node,
@@ -1435,6 +1693,9 @@ void VoxelGraphFunction::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_set_output_definitions", "data"), &VoxelGraphFunction::_b_set_output_definitions);
 	ClassDB::bind_method(D_METHOD("_get_output_definitions"), &VoxelGraphFunction::_b_get_output_definitions);
 
+	ClassDB::bind_method(D_METHOD("paste_graph_with_pre_generated_ids", "graph", "node_ids", "gui_offset"),
+			&VoxelGraphFunction::_b_paste_graph_with_pre_generated_ids);
+
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGraphFunction::_on_subresource_changed);
 #endif
@@ -1449,6 +1710,7 @@ void VoxelGraphFunction::_bind_methods() {
 			PropertyInfo(Variant::ARRAY, "output_definitions"), "_set_output_definitions", "_get_output_definitions");
 
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_NAME_CHANGED, PropertyInfo(Variant::INT, "node_id")));
+	ADD_SIGNAL(MethodInfo(SIGNAL_COMPILED));
 
 	BIND_ENUM_CONSTANT(NODE_CONSTANT);
 	BIND_ENUM_CONSTANT(NODE_INPUT_X);

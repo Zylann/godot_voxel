@@ -2,6 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
+Inherited by: [VoxelMesherBlocky](VoxelMesherBlocky.md), [VoxelMesherCubes](VoxelMesherCubes.md), [VoxelMesherDMC](VoxelMesherDMC.md), [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md)
 
 Base class for all meshing algorithms.
 
@@ -33,4 +34,4 @@ Gets by how much voxels must be padded before their lower corner in order for th
 
 Gets by how much voxels must be padded after their upper corner in order for the mesher to work.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

@@ -1,4 +1,4 @@
-Instance block format
+Instance block format v1
 =======================
 
 This page describes the binary format used by the module to save instances to files or databases.

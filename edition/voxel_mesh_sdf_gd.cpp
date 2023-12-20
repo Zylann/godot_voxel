@@ -4,7 +4,8 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/dstack.h"
 #include "../util/godot/core/array.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/core/dictionary.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/color.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
@@ -171,7 +172,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			vbgd.instantiate();
 			shared_data.buffer.move_to(vbgd->get_buffer());
 			obj.call_deferred(
-					"_on_bake_async_completed", vbgd, to_godot(shared_data.min_pos), to_godot(shared_data.max_pos));
+					"_on_bake_async_completed", vbgd, to_vec3(shared_data.min_pos), to_vec3(shared_data.max_pos));
 		}
 	};
 
@@ -346,7 +347,7 @@ Ref<gd::VoxelBuffer> VoxelMeshSDF::get_voxel_buffer() const {
 }
 
 AABB VoxelMeshSDF::get_aabb() const {
-	return AABB(to_godot(_min_pos), to_godot(_max_pos - _min_pos));
+	return AABB(to_vec3(_min_pos), to_vec3(_max_pos - _min_pos));
 }
 
 std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
@@ -392,14 +393,14 @@ Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 	const mesh_sdf::Triangle &ct1 = triangles[cr.cell1.closest_triangle_index];
 
 	result.resize(8);
-	result[0] = to_godot(cr.cell0.mesh_pos);
-	result[1] = to_godot(ct0.v1);
-	result[2] = to_godot(ct0.v2);
-	result[3] = to_godot(ct0.v3);
-	result[4] = to_godot(cr.cell1.mesh_pos);
-	result[5] = to_godot(ct1.v1);
-	result[6] = to_godot(ct1.v2);
-	result[7] = to_godot(ct1.v3);
+	result[0] = to_vec3(cr.cell0.mesh_pos);
+	result[1] = to_vec3(ct0.v1);
+	result[2] = to_vec3(ct0.v2);
+	result[3] = to_vec3(ct0.v3);
+	result[4] = to_vec3(cr.cell1.mesh_pos);
+	result[5] = to_vec3(ct1.v1);
+	result[6] = to_vec3(ct1.v2);
+	result[7] = to_vec3(ct1.v3);
 	return result;
 }
 
@@ -421,8 +422,8 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 	memcpy(sdf_f32.ptrw(), channel.data(), channel.size() * sizeof(float));
 	d["sdf_f32"] = sdf_f32;
 
-	d["min_pos"] = to_godot(_min_pos);
-	d["max_pos"] = to_godot(_max_pos);
+	d["min_pos"] = to_vec3(_min_pos);
+	d["max_pos"] = to_vec3(_max_pos);
 
 	return d;
 }

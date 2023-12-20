@@ -90,13 +90,8 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 		// buttons to (hopefully) come back where they were
 		ed.resource_picker->set_edited_resource(model);
 		ed.resource_picker->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-#if defined(ZN_GODOT)
 		ed.resource_picker->connect("resource_changed",
 				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_changed).bind(editor_index));
-#elif defined(ZN_GODOT_EXTENSION)
-		// TODO GDX: `Callable::bind()` isn't implemented in GodotCpp
-		ZN_PRINT_ERROR("`Callable::bind()` isn't working in GodotCpp! Can't handle selecting variant models");
-#endif
 		ed.resource_picker->connect("resource_selected",
 				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_picker_selected));
 

@@ -1,8 +1,8 @@
 #ifndef VOXEL_FAST_NOISE_2_H
 #define VOXEL_FAST_NOISE_2_H
 
+#include "../containers/span.h"
 #include "../math/interval.h"
-#include "../span.h"
 #include "FastNoise/FastNoise.h"
 #include <core/io/resource.h>
 
@@ -43,7 +43,7 @@ public:
 		// Special type overriding most options with a tree made in Auburn's NoiseTool
 		TYPE_ENCODED_NODE_TREE
 		// TODO Implement NoiseTool graph editor inside Godot?
-		//TYPE_NODE_TREE,
+		// TYPE_NODE_TREE,
 	};
 
 	static constexpr const char *NOISE_TYPE_HINT_STRING = "OpenSimplex2,Simplex,Perlin,Value,Cellular,EncodedNodeTree";

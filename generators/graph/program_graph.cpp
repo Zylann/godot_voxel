@@ -1,9 +1,8 @@
 #include "program_graph.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/errors.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/memory.h"
 #include "../../util/string_funcs.h"
 

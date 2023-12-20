@@ -24,6 +24,11 @@ struct ThreadedTaskContext {
 	const uint8_t thread_index;
 	// May be set by the task to signal its status after run
 	Status status;
+	// Cached priority of the current task.
+	const TaskPriority task_priority;
+
+	// To allow scheduling tasks from within tasks, without having to pass it in or use a global
+	// ThreadedTaskRunner &runner;
 };
 
 // Interface for a task that will run in `ThreadedTaskRunner`.

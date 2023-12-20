@@ -1,5 +1,5 @@
 #include "voxel_modifier_sdf.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/memory.h"
 
 namespace zylann::voxel {

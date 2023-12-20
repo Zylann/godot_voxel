@@ -36,19 +36,23 @@ Before each example, you may do the following:
 	
 1.1) Under the `materials` section, create a new `StandardMaterial3D` in the first slot. Click that material, and in the "Vertex Color" category, enable "Use as Albedo" (`vertex_color_as_albedo`). This will give the blocks better shading.
 
-1.1) Click on the `Generator` property: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
+1.2) Click on the `Generator` property: create a new `VoxelGeneratorNoise2D`. Then click on it and set its `Channel` parameter to `TYPE`. Also make sure the `noise` property is assigned to a noise resource.
 
-1.2) Click on the `Mesher` property: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. Set `voxel_count` to `2`. A list of two voxels types appear. In the first slot, create a new `VoxelBlockyModel` (this will be "air"). In the second slot, create another `VoxelBlockyModel`. In that second one, set its `geometry_type` to `Cube` (this will be "solid").
+1.3) Click on the `Mesher` property: create a new `VoxelMesherBlocky`. In the `library` property, create a new `VoxelBlockyLibrary`. In the `models` property, create a new item of type `VoxelBlockyModelEmpty` (this will be "air"). Create another item of type `VoxelBlockyModelCube` (this will be a solid cube).
 
-1.3) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
+1.4) Select the terrain node again, and in the `Terrain` menu on top of the viewport, click `Re-generate`. At this point you should start to see a terrain made of cubes appear in the editor viewport.
 
-2) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+2) The terrain is not setup to appear in-game yet. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
 3) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
-4) Play the scene: you should see the terrain appear!
+4) Make sure your scene contains an environment and a light, so you can see the terrain in-game (by default the default lighting you see in editor will not apply in game, leaving everything unlit and grey). 
 
-![Screenshot of blocky terrain from the quick start guide](images/default-terrain.jpg)
+![Screenshot of the preview environment menu](images/add_environment_to_scene.webp)
+
+5) Play the scene: you should see the terrain appear!
+
+![Screenshot of blocky terrain from the quick start guide](images/quickstart_blocky_terrain_result.webp)
 
 You can modify the shape of the terrain by changing noise parameters under the generator. 
 
@@ -57,31 +61,33 @@ You can modify the shape of the terrain by changing noise parameters under the g
 
 ### Large smooth heightmap with overhangs using `VoxelLODTerrain`
 
-1) Add a `VoxelLODTerrain` node, and adjust the following settings in the inspector:
+1) Add a `VoxelLodTerrain` node, and adjust the following settings in the inspector:
 
 1.1) `Generator`: create a new `VoxelGeneratorNoise`. Then click on it and set its `Channel` parameter to `SDF`. Also make sure the `noise` property is assigned to a noise resource.
 
 1.2) `Mesher`: create a new `VoxelMesherTransvoxel`.
 
-2) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
+2) At this point you should start to see a smooth, spongy terrain appear in the editor viewport. You might need to look around and zoom out a bit. If you can't see anything, you can force a reload by reopening the scene, or using the menu `Terrain -> Re-generate`.
 
-3) The terrain is not setup to appear in-game yet, so there is some extra setup needed. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
+3) The terrain is not setup to appear in-game yet. Add a `Camera3D` node, and elevate it so it's above the terrain. You may also want to angle it a bit downward to see more of the landscape.
 
 4) Add a `VoxelViewer` node under the camera. When the game runs, this node will tell the voxel engine where to generate voxels, as the camera moves around.
 
-5) Play the scene: you should see the terrain appear!
+5) Make sure your scene contains an environment and a light, so you can see the terrain in-game (by default the default lighting you see in editor will not apply in game, leaving everything unlit and grey). 
 
-![Screenshot of smooth terrain from the quick start guide](images/noise-terrain-default.jpg)
+6) Play the scene: you should see the terrain appear!
+
+![Screenshot of smooth terrain from the quick start guide](images/quickstart_smooth_lod_terrain_result.webp)
 
 You can modify the shape of the terrain by changing noise parameters under the generator. 
 
-Painting textures manually is not supported yet, but it's possible to apply procedural textures using a shader.
+Painting textures from voxel data is possible, but it's also common to use procedural texturing using a shader.
 
 
 Is Voxel tools for you?
 --------------------------
 
-It's easy to think a project needs voxels, but they are less needed than it sounds. Here are some reasons why you could think you need voxels, and why you might not need them:
+It's easy to think a project needs voxels, but they are less needed than it sounds. Also, just because there is a 3D grid somewhere in a game doesn't necessarily mean this module is appropriate. Here are some reasons why you might not need it:
 
 - "I need a procedurally generated world": if you don't need overhangs you can go with a heightmap approach. Heightmaps are faster and easier to work with.
 
@@ -90,5 +96,7 @@ It's easy to think a project needs voxels, but they are less needed than it soun
 - "I need a terrain with overhangs and caves": do you need it to be editable by players? If not, then you can model the terrain in any 3D modeller and optimize it up-front. You can mix heightmaps + 3D models. You might rely on voxels to make the authoring process easier, but in the exported game you will only need the meshes and static colliders.
 
 - "I need to make a planet": you can make more efficient planets by stitching 6 spherified heightmaps together. Take a cube where each face is a heightmap, then puff that cube to turn it into a sphere.
+
+- "I want to make Minecraft but free and with my own blocks": Minecraft is a lot more than voxels. While the module can replicate basic functionalities, it is more general than this at the moment, so it doesn't provide a lot of features found in Minecraft out of the box. Alternatively, you could create a mod with [Minetest](https://www.minetest.net/), which is a more specialized engine.
 
 - "GridMap sucks": how large do you want your grid to be? How complex are your models? This module's blocky mesher is geared towards very large grids with simple geometry, so it has its own restrictions.

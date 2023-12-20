@@ -82,7 +82,10 @@ The best format to use to export your meshes is OBJ. Godot imports this format b
 You can choose to export materials from here too, but it is recommended to do it in Godot because it allows you to re-use them.
 
 !!! note
-	A second material can be used in each model. This is useful if a given mesh needs both transparent and opaque parts. This works as usual, by having a mesh with two surfaces. However, face culling will still use properties of the model regardless. For example, if a model has opaque sides and is transparent in the middle, it may be defined as a non-transparent block, so when placed next to other opaque blocks, geometry of its sides will be culled. See (Transparency)[#transparency] section for more info.
+	A second material can be used in each model. This is useful if a given mesh needs both transparent and opaque parts. This works as usual, by having a mesh with two surfaces. However, face culling will still use properties of the model regardless. For example, if a model has opaque sides and is transparent in the middle, it may be defined as a non-transparent block, so when placed next to other opaque blocks, geometry of its sides will be culled. See [Transparency](#transparency) section for more info.
+
+!!! warning
+	If your voxels use mesh-based physics (GodotPhysics, Jolt...) and you export your game with "Export as dedicated server" in the resources tab of an export preset, make sure meshes you used in `VoxelBlockyModelMesh` are **not** stripped. Mesh data is required at runtime to generate colliders. If you don't do this, models using a mesh will not generate any mesh-based collision.
 
 ### Usage of voxel model IDs
 
@@ -124,6 +127,16 @@ Here, glass has `transparency_index=2`, and leaves have `transparency_index=1`:
 
 ![Screenshot of transparency index being exploited](images/transparency_index_example2.webp)
 
+`VoxelBlockyModel` also has a `culls_neighbors` property. This is enabled by default and prevents unnecessary rendering of neighboring voxel sides. However, for some transparent voxels it may be more desirable to always render neighboring voxel sides. For example, foliage can be made to look denser if all of the inner voxel sides
+are visible.
+
+Here is a group of leaves with `culls_neighbors=true` (the default):
+
+![Screenshot of leaves with culls_neighbors set to true](images/culls_neighbors_enabled.webp)
+
+Here is that same group of leaves with `culls_neighbors=false`. The sides in-between the voxels are rendered, making the group of leaves look less hollow.
+
+![Screenshot of leaves with culls_neighbors set to false](images/culls_neighbors_disabled.webp)
 
 ### Random tick
 

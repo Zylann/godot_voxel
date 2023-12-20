@@ -13,90 +13,11 @@ import xml.etree.ElementTree as ET
 from time import gmtime, strftime
 import os
 import markdown
+import bbcode_to_markdown
 
 
-# Assumes text is dedented
-def format_regular_text(text, module_class_names):
-    # Doubling line endings otherwise Mkdocs doesn't give us enough space
-    text = text.replace('\n', '\n\n').replace('[code]', '`').replace('[/code]', '`')
-    s = ""
-    while True:
-        i = text.find('[')
-        if i == -1:
-            s += text
-            break
-        s += text[:i]
-        text = text[i + 1:]
-        i = text.find(']')
-        # There must be a closing bracket
-        assert i != -1
-        cmd = text[:i]
-        text = text[i + 1:]
-
-        if cmd.startswith('url='):
-            # [url=xxx]text[/url]
-            url = cmd[len('url='):]
-            i = text.find('[/url]')
-            assert i != -1
-            link_text = text[:i]
-            s += markdown.make_link(link_text, url)
-            text = text[i + len('[/url]'):]
-
-        elif cmd.find(' ') == -1:
-            # [typename]
-            s += markdown.make_type(cmd, '', module_class_names)
-        else:
-            # TODO Enhancement: members and shit
-            s += cmd
-    return s
-
-
-# Removes all indentation found in common with all lines
-def dedent(text):
-    lines = text.splitlines()
-    min_count = 99
-    for line in lines:
-        if line.strip() == "":
-            continue
-        count = 0
-        for c in line:
-            if c == '\t':
-                count += 1
-            else:
-                break
-        min_count = min(count, min_count)
-    dedented_lines = []
-    for line in lines:
-        dedented_lines.append(line[min_count:])
-    return "\n".join(dedented_lines)
-
-
-def make_text(text, module_class_names):
-    text = dedent(text)
-    s = ""
-    while True:
-        i = text.find("[codeblock]")
-        if i == -1:
-            s += format_regular_text(text, module_class_names)
-            break
-        s += format_regular_text(text[:i], module_class_names)
-        text = text[i + len("[codeblock]"):]
-        s += "```gdscript"
-        i = text.find("[/codeblock]")
-        # There must be a closing tag
-        assert i != -1
-        s += re.sub(r'^\s\s', '', text[:i])
-        text = text[i + len("[/codeblock]"):]
-        s += "\n```"
-    return s.strip()
-
-
-def make_single_line_text(text):
-    s = text.strip()
-    s = re.sub(r'\s\s+', r' ', s)
-    s = s.replace("[code]", '`')
-    s = s.replace("[/code]", '`')
-    return s
+def make_text(text, module_class_names, current_class_name):
+    return bbcode_to_markdown.format_text(text, module_class_names, current_class_name, '')
 
 
 # `args` is a list of XML elements
@@ -113,13 +34,19 @@ def make_arglist(args, module_class_names):
 
 
 # `items` is a list of XML elements
-def make_constants(items):
+def make_constants(items, module_class_names, current_class_name):
     s = ""
     for item in items:
-        s += "- **" + item.attrib['name'] + "** = **" + item.attrib['value'] + "**"
+        s += "- "
+
+        # In Godot docs, both constants and enum items can be referred using `[constant ClassName.ENUM_ITEM]` instead
+        # of using the `enum` tag.
+        s += make_custom_internal_anchor(item.attrib['name'])
+
+        s += "**" + item.attrib['name'] + "** = **" + item.attrib['value'] + "**"
         text = item.text.strip()
         if text != "":
-            s += " --- " + make_single_line_text(item.text)
+            s += " --- " + make_text(item.text, module_class_names, current_class_name)
         s += "\n"
     return s
 
@@ -134,32 +61,40 @@ def make_custom_internal_anchor(name):
     return '<span id="i_' + name + '"></span>'
 
 
-# `f_xml` is the path to the source XML file.
+# `xml_tree` is the XML tree obtained with `ET.parse(filepath)`
 # `f_out` is the path to the destination file. Use '-' for to print to stdout.
 # `module_class_names` is a list of strings. Each string is a class name.
-def process_xml(f_xml, f_out, module_class_names):
+# `derived_classes_map` is a dictionary where keys are class names, and values are list of derived class names.
+def process_xml(xml_tree, f_out, module_class_names, derived_classes_map):
     #print("Parsing", f_xml)
 
-    # Parse XML
-    tree = ET.parse(f_xml)
-    root = tree.getroot()
+    root = xml_tree.getroot()
     if root.tag != "class":
         print("Error: No class found. Not a valid Godot class XML file!\n")
         sys.exit(1)
 
+    current_class_name = root.attrib['name']
+
     # Header
-    out = "# " + root.attrib['name'] + "\n\n"
+    out = "# " + current_class_name + "\n\n"
     out += "Inherits: " + markdown.make_type(root.attrib['inherits'], '', module_class_names) + "\n\n"
+
+    derived_class_names = derived_classes_map.get(current_class_name, [])
+    if len(derived_class_names) > 0:
+        links = []
+        for cname in derived_class_names:
+            links.append(markdown.make_type(cname, '', module_class_names))
+        out += "Inherited by: " + ', '.join(links) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
         out += ("!!! warning\n    This class is marked as experimental. "
             "It is subject to likely change or possible removal in future versions. Use at your own discretion.")
+        out += "\n"
 
-    out += "\n"
-    out += make_text(root.find('brief_description').text, module_class_names) + "\n\n"
+    out += make_text(root.find('brief_description').text, module_class_names, current_class_name) + "\n\n"
 
-    text = make_text(root.find('description').text, module_class_names)
-    if text != "":
+    text = make_text(root.find('description').text, module_class_names, current_class_name)
+    if text.strip() != "":
         out += "## Description: \n\n" + text + "\n\n"
 
     # Tutorials
@@ -242,7 +177,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
                 desc = signal.find('description')
                 if desc is not None:
-                    text = make_text(desc.text, module_class_names)
+                    text = make_text(desc.text, module_class_names, current_class_name)
                     if text != "":
                         out += text
                         out += "\n\n"
@@ -273,7 +208,7 @@ def process_xml(f_xml, f_out, module_class_names):
 
             for enum_name, enum_items in enums.items():
                 out += "enum **" + enum_name + "**: \n\n"
-                out += make_constants(enum_items)
+                out += make_constants(enum_items, module_class_names, current_class_name)
                 out += "\n"
             
             out += "\n"
@@ -281,7 +216,7 @@ def process_xml(f_xml, f_out, module_class_names):
         # Constants
         if len(constants) > 0:
             out += "## Constants: \n\n"
-            out += make_constants(constants)
+            out += make_constants(constants, module_class_names, current_class_name)
             out += "\n"
     
     # Property descriptions
@@ -296,8 +231,8 @@ def process_xml(f_xml, f_out, module_class_names):
             out += "\n\n"
 
             if member.text is not None:
-                text = make_text(member.text, module_class_names)
-                if text != "":
+                text = make_text(member.text, module_class_names, current_class_name)
+                if text.strip() != "":
                     out += text
                     out += "\n"
 
@@ -321,8 +256,8 @@ def process_xml(f_xml, f_out, module_class_names):
 
             desc = method.find('description')
             if desc is not None:
-                text = make_text(desc.text, module_class_names)
-                if text != "":
+                text = make_text(desc.text, module_class_names, current_class_name)
+                if text.strip() != "":
                     out += text
                     out += "\n"
             
@@ -360,11 +295,36 @@ def process_xml_folder(src_dir, dst_dir, verbose):
     for xml_file in xml_files:
         class_names.append(xml_file.stem)
     
-    for src in xml_files:
-        dest = dst_dir / (src.stem + ".md")
+    # Parse all XML files
+    class_xml_trees = {}
+    for src_filepath in xml_files:
+        xml_tree = ET.parse(src_filepath)
+
+        root = xml_tree.getroot()
+        if root.tag != "class":
+            print("Error: No class found in ", src_filepath, "!\n")
+            continue
+
+        class_xml_trees[src_filepath] = xml_tree
+
+    # Build a map of derived classes
+    # class_name => [derived class names]
+    derived_classes_map = {}
+    for filename, xml_tree in class_xml_trees.items():
+        root = xml_tree.getroot()
+        class_name = root.attrib['name']
+        parent_class_name = root.attrib['inherits']
+        derived_classes_map.setdefault(parent_class_name, []).append(class_name)
+    
+    for derived_class_names in derived_classes_map.values():
+        derived_class_names.sort()
+
+    # Generate Markdown files
+    for src_filepath, xml_tree in class_xml_trees.items():
+        dest = dst_dir / (src_filepath.stem + ".md")
         if verbose:
-            print("Converting ", src, dest)
-        process_xml(src, dest, class_names)
+            print("Converting ", src_filepath, dest)
+        process_xml(xml_tree, dest, class_names, derived_classes_map)
         count += 1
         doc_files.append(dest)
 
@@ -394,5 +354,6 @@ if __name__ == "__main__":
     else: 
         outfile = sys.argv[2]
 
-    process_xml(infile, outfile, [])
+    xml_tree = ET.parse(infile)
+    process_xml(xml_tree, outfile, [], {})
 

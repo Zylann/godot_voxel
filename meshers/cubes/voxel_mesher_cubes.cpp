@@ -5,8 +5,8 @@
 #include "../../util/godot/classes/geometry_2d.h"
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/shader_material.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -1033,7 +1033,7 @@ void VoxelMesherCubes::set_material_by_index(Materials id, Ref<Material> materia
 }
 
 Ref<Material> VoxelMesherCubes::get_material_by_index(unsigned int i) const {
-	ERR_FAIL_INDEX_V(i, _materials.size(), Ref<Material>());
+	ZN_ASSERT_RETURN_V(i < _materials.size(), Ref<Material>());
 	return _materials[i];
 }
 

@@ -1,7 +1,7 @@
 #ifndef VOXEL_VOLUME_ID_H
 #define VOXEL_VOLUME_ID_H
 
-#include "../util/slot_map.h"
+#include "../util/containers/slot_map.h"
 #include <iosfwd>
 
 namespace zylann::voxel {

@@ -113,16 +113,16 @@ public:
 	void copy_channel_from_area(
 			Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel);
 
-	void fill(uint64_t defval, unsigned int channel_index = 0);
-	void fill_f(real_t value, unsigned int channel = 0);
+	void fill(uint64_t defval, int channel_index = 0);
+	void fill_f(real_t value, int channel = 0);
 	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index) {
 		_buffer->fill_area(defval, min, max, channel_index);
 	}
 
-	bool is_uniform(unsigned int channel_index) const;
+	bool is_uniform(int channel_index) const;
 
 	void compress_uniform_channels();
-	Compression get_channel_compression(unsigned int channel_index) const;
+	Compression get_channel_compression(int channel_index) const;
 
 	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 

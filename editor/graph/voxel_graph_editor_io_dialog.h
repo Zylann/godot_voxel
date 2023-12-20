@@ -64,6 +64,7 @@ private:
 	PortsUI _outputs_ui;
 	Button *_auto_generate_button = nullptr;
 	EditorUndoRedoManager *_undo_redo = nullptr;
+	bool _reshow_on_undo_redo = true;
 };
 
 } // namespace zylann::voxel

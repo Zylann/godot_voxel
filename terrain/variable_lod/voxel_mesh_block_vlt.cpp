@@ -45,8 +45,8 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 }
 
-void VoxelMeshBlockVLT::set_mesh(
-		Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting) {
+void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -58,6 +58,7 @@ void VoxelMeshBlockVLT::set_mesh(
 			_mesh_instance.create();
 			_mesh_instance.set_gi_mode(gi_mode);
 			_mesh_instance.set_cast_shadows_setting(shadow_casting);
+			_mesh_instance.set_render_layers_mask(render_layers_mask);
 			set_mesh_instance_visible(_mesh_instance, _visible && _parent_visible);
 		}
 
@@ -78,7 +79,7 @@ void VoxelMeshBlockVLT::set_mesh(
 	}
 }
 
-void VoxelMeshBlockVLT::set_gi_mode(DirectMeshInstance::GIMode mode) {
+void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	VoxelMeshBlock::set_gi_mode(mode);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &mi = _transition_mesh_instances[i];
@@ -98,8 +99,18 @@ void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, DirectMeshInstance::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting) {
+void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
+	VoxelMeshBlock::set_render_layers_mask(mask);
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		if (mi.is_valid()) {
+			mi.set_render_layers_mask(mask);
+		}
+	}
+}
+
+void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -108,6 +119,7 @@ void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, D
 			mesh_instance.create();
 			mesh_instance.set_gi_mode(gi_mode);
 			mesh_instance.set_cast_shadows_setting(shadow_casting);
+			mesh_instance.set_render_layers_mask(render_layers_mask);
 			set_mesh_instance_visible(mesh_instance, _visible && _parent_visible && _is_transition_visible(side));
 		}
 

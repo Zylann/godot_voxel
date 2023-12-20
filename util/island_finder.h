@@ -1,8 +1,8 @@
 #ifndef ISLAND_FINDER_H
 #define ISLAND_FINDER_H
 
+#include "containers/span.h"
 #include "math/box3i.h"
-#include "span.h"
 
 namespace zylann {
 

@@ -129,7 +129,7 @@ public:
 
 	const Node *get_child(const Node *node, unsigned int i) const {
 		ERR_FAIL_COND_V(node == nullptr, nullptr);
-		ERR_FAIL_INDEX_V(i, 8, nullptr);
+		ZN_ASSERT_RETURN_V(i < 8, nullptr);
 		return get_node(node->first_child + i);
 	}
 

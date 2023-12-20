@@ -2,7 +2,6 @@
 
 Inherits: [VoxelTool](VoxelTool.md)
 
-
 Implementation of [VoxelTool](VoxelTool.md) specialized for uses on [VoxelTerrain](VoxelTerrain.md).
 
 ## Description: 
@@ -36,8 +35,8 @@ IMPORTANT: inserting new or removing metadata from inside this function is not a
 
 - [void](#)<span id="i_run_blocky_random_tick"></span> **run_blocky_random_tick**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) voxel_count, [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) batch_count=16 ) 
 
-Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky](VoxelMesherBlocky.md). Only voxels where member Voxel.random_tickable is `true` will be picked.
+Picks random voxels within the specified area and executes a function on them. This only works for terrains using [VoxelMesherBlocky](VoxelMesherBlocky.md). Only voxels where [Voxel.random_tickable](https://docs.godotengine.org/en/stable/classes/class_voxel.html#class-voxel-property-random-tickable) is `true` will be picked.
 
 The given callback takes two arguments: voxel position (Vector3i), voxel value (int).
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

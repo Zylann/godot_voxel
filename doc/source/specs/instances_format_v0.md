@@ -1,4 +1,4 @@
-Instance block format
+Instance block format v0
 =======================
 
 !!! warning

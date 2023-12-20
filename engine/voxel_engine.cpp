@@ -1,18 +1,18 @@
 #include "voxel_engine.h"
 #include "../constants/voxel_constants.h"
+#include "../generators/generate_block_task.h"
+#include "../meshers/mesh_block_task.h"
 #include "../shaders/shaders.h"
+#include "../streams/load_all_blocks_data_task.h"
+#include "../streams/load_block_data_task.h"
+#include "../streams/save_block_data_task.h"
 #include "../util/godot/classes/rd_sampler_state.h"
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/godot/classes/rendering_server.h"
-#include "../util/log.h"
+#include "../util/io/log.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "generate_block_task.h"
-#include "load_all_blocks_data_task.h"
-#include "load_block_data_task.h"
-#include "mesh_block_task.h"
-#include "save_block_data_task.h"
 
 namespace zylann::voxel {
 
@@ -75,6 +75,8 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 	} else {
 		// Sadly, that happens. This is a problem in GDExtension...
 		ZN_PRINT_ERROR("RenderingServer singleton is null when creating VoxelEngine!");
+		// RenderingServer can also be null with `tests=yes`.
+		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
 	}
 
 	if (_rendering_device != nullptr) {
@@ -315,6 +317,7 @@ void VoxelEngine::process() {
 	ZN_PROFILE_PLOT("Static memory usage", int64_t(OS::get_singleton()->get_static_memory_usage()));
 	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
+	ZN_PROFILE_PLOT("Threaded tasks", int64_t(_general_thread_pool.get_debug_remaining_tasks()));
 
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
@@ -382,7 +385,7 @@ static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 VoxelEngine::Stats VoxelEngine::get_stats() const {
 	Stats s;
 	s.general = debug_get_pool_stats(_general_thread_pool);
-	s.generation_tasks = GenerateBlockTask::debug_get_running_count();
+	s.generation_tasks = _debug_generate_block_task_count;
 	s.meshing_tasks = MeshBlockTask::debug_get_running_count();
 	s.streaming_tasks = LoadBlockDataTask::debug_get_running_count() + SaveBlockDataTask::debug_get_running_count();
 	s.main_thread_tasks = _time_spread_task_runner.get_pending_count() + _progressive_task_runner.get_pending_count();

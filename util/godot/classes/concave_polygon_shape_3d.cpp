@@ -112,19 +112,22 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> pos
 	return shape;
 }
 
+// This variant may use a lower index count so a subset of the mesh is used to create the collision shape.
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arrays, unsigned int index_count) {
 	ZN_PROFILE_SCOPE();
 
 	Ref<ConcavePolygonShape3D> shape;
 
 	if (surface_arrays.size() == 0) {
+		// Empty
 		return shape;
 	}
 	ZN_ASSERT(surface_arrays.size() == Mesh::ARRAY_MAX);
 
 	PackedInt32Array indices = surface_arrays[Mesh::ARRAY_INDEX];
-	ERR_FAIL_COND_V(index_count < 0 || index_count > static_cast<unsigned int>(indices.size()), shape);
+	ERR_FAIL_COND_V(index_count > static_cast<unsigned int>(indices.size()), shape);
 	if (indices.size() < 3) {
+		// Empty
 		return shape;
 	}
 

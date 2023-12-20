@@ -11,10 +11,7 @@ class VoxelInstancerRigidBody : public RigidBody3D {
 	GDCLASS(VoxelInstancerRigidBody, RigidBody3D);
 
 public:
-	VoxelInstancerRigidBody() {
-		set_freeze_mode(RigidBody3D::FREEZE_MODE_STATIC);
-		set_freeze_enabled(true);
-	}
+	VoxelInstancerRigidBody();
 
 	void set_data_block_position(Vector3i data_block_position) {
 		_data_block_position = data_block_position;
@@ -37,29 +34,17 @@ public:
 		queue_free();
 	}
 
+	int get_library_item_id() const;
+
 	// Note, for this the body must switch to convex shapes
 	// void detach_and_become_rigidbody() {
 	// 	//...
 	// }
 
 protected:
-	// When compiling with GodotCpp, `_bind_methods` is not optional
-	static void _bind_methods() {}
+	static void _bind_methods();
 
-	void _notification(int p_what) {
-		switch (p_what) {
-			// TODO Optimization: this is also called when we quit the game or destroy the world
-			// which can make things a bit slow, but I don't know if it can easily be avoided
-			case NOTIFICATION_UNPARENTED:
-				// The user could queue_free() that node in game,
-				// so we have to notify the instancer to remove the multimesh instance and pointer
-				if (_parent != nullptr) {
-					_parent->on_body_removed(_data_block_position, _render_block_index, _instance_index);
-					_parent = nullptr;
-				}
-				break;
-		}
-	}
+	void _notification(int p_what);
 
 private:
 	VoxelInstancer *_parent = nullptr;

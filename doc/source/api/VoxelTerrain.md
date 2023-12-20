@@ -2,7 +2,6 @@
 
 Inherits: [VoxelNode](VoxelNode.md)
 
-
 Voxel volume using constant level of detail.
 
 ## Properties: 
@@ -38,6 +37,7 @@ Return                                                                          
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)                      | [get_viewer_network_peer_ids_in_area](#i_get_viewer_network_peer_ids_in_area) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) const 
 [VoxelTool](VoxelTool.md)                                                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                      
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [has_data_block](#i_has_data_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position ) const                                                                                                                                  
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [is_area_meshed](#i_is_area_meshed) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels ) const                                                                                                                                          
 [void](#)                                                                                                           | [save_block](#i_save_block) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position )                                                                                                                                                      
 [VoxelSaveCompletionTracker](https://docs.godotengine.org/en/stable/classes/class_voxelsavecompletiontracker.html)  | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                                          
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                                              | [try_set_block_data](#i_try_set_block_data) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels )                                                                                                
@@ -48,9 +48,7 @@ Return                                                                          
 
 - block_loaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
-Emitted when a new data block is loaded from stream.
-
-Note: it might be not visible yet.
+Emitted when a new data block is loaded from stream. This can happen before the mesh or collider becomes available.
 
 - block_unloaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
@@ -58,7 +56,11 @@ Emitted when a data block is unloaded due to being outside view distance.
 
 - mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
+Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](VoxelTerrain.md#i_is_area_meshed).
+
 - mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+
+Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](VoxelTerrain.md#signals).
 
 ## Property Descriptions
 
@@ -135,7 +137,7 @@ Gets debug information about how much time is spent processing the terrain.
 
 The returned dictionary has the following structure:
 
-```gdscript
+```
 {
 	"time_detect_required_blocks": int,
 	"time_request_blocks_to_load": int,
@@ -147,7 +149,6 @@ The returned dictionary has the following structure:
 	"dropped_block_meshs": int,
 	"updated_blocks": int
 }
-
 ```
 
 - [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)<span id="i_get_viewer_network_peer_ids_in_area"></span> **get_viewer_network_peer_ids_in_area**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) 
@@ -161,6 +162,14 @@ You can keep it in a member variable to avoid creating one again, as long as the
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_has_data_block"></span> **has_data_block**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_position ) 
 
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_meshed"></span> **is_area_meshed**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels ) 
+
+Returns true if the area has been processed by meshing. It does not mean the area actually contains a mesh.
+
+Returns false if the area has not been processed by meshing (therefore it is unknown whethere there should be a mesh here or not).
+
+When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
 
 - [void](#)<span id="i_save_block"></span> **save_block**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
@@ -188,4 +197,4 @@ Note 3: saving is asynchronous and won't block the game. the save may complete o
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

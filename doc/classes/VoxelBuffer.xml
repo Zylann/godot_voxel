@@ -286,8 +286,10 @@
 			Channel used to store color data. Used by [VoxelMesherCubes].
 		</constant>
 		<constant name="CHANNEL_INDICES" value="3" enum="ChannelId">
+			Channel used to store material indices. Used with smooth voxels.
 		</constant>
 		<constant name="CHANNEL_WEIGHTS" value="4" enum="ChannelId">
+			Channel used to store material weights, when more than one index can be stored per voxel. Used with smooth voxels.
 		</constant>
 		<constant name="CHANNEL_DATA5" value="5" enum="ChannelId">
 			Free channel. Not used by the engine yet.

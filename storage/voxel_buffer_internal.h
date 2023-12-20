@@ -2,8 +2,8 @@
 #define VOXEL_BUFFER_INTERNAL_H
 
 #include "../constants/voxel_constants.h"
-#include "../util/fixed_array.h"
-#include "../util/flat_map.h"
+#include "../util/containers/fixed_array.h"
+#include "../util/containers/flat_map.h"
 #include "../util/math/box3i.h"
 #include "../util/thread/rw_lock.h"
 #include "funcs.h"
@@ -290,8 +290,8 @@ public:
 
 	// void action_func(Vector3i pos, Data0_T &inout_v0, Data1_T &inout_v1)
 	template <typename F, typename Data0_T, typename Data1_T>
-	void write_box_2_template(
-			const Box3i &box, unsigned int channel_index0, unsigned channel_index1, F action_func, Vector3i offset) {
+	void write_box_2_template(const Box3i &box, unsigned int channel_index0, unsigned int channel_index1, F action_func,
+			Vector3i offset) {
 		decompress_channel(channel_index0);
 		decompress_channel(channel_index1);
 		Channel &channel0 = _channels[channel_index0];

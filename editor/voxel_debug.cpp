@@ -1,9 +1,9 @@
 #include "voxel_debug.h"
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
 #include "../util/godot/classes/array_mesh.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_multimesh_instance.h"
-#include "../util/godot/funcs.h"
 #include "../util/memory.h"
 
 namespace zylann {
@@ -166,14 +166,16 @@ void DebugRenderer::set_world(World3D *world) {
 }
 
 void DebugRenderer::begin() {
-	CRASH_COND(_inside_block);
-	CRASH_COND(_world == nullptr);
+	ZN_ASSERT_RETURN(_inside_block == false);
+	ZN_ASSERT_RETURN(_world != nullptr);
 	_current = 0;
 	_inside_block = true;
 	_mm_renderer.begin();
 }
 
 void DebugRenderer::draw_box(const Transform3D &t, DebugColors::ColorID color) {
+	ZN_ASSERT_RETURN(_world != nullptr);
+
 	// Pick an existing item, or create one
 	DebugRendererItem *item;
 	if (_current >= _items.size()) {
@@ -196,7 +198,8 @@ void DebugRenderer::draw_box_mm(const Transform3D &t, Color8 color) {
 }
 
 void DebugRenderer::end() {
-	CRASH_COND(!_inside_block);
+	ZN_ASSERT_RETURN(_inside_block);
+
 	// Hide exceeding items
 	for (unsigned int i = _current; i < _items.size(); ++i) {
 		DebugRendererItem *item = _items[i];

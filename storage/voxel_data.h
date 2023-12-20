@@ -5,8 +5,8 @@
 #include "../modifiers/voxel_modifier_stack.h"
 #include "../streams/voxel_stream.h"
 #include "../util/thread/mutex.h"
+#include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
-#include "voxel_spatial_lock.h"
 
 namespace zylann::voxel {
 
@@ -142,10 +142,11 @@ public:
 	bool try_set_block(Vector3i block_position, const VoxelDataBlock &block);
 
 	// Sets all the data of a block.
-	// If the block already exists, `action_when_exists` is called.
+	// If the block doesn't exist, it is added and the function returns true.
+	// If the block already exists, `action_when_exists` is called and the function returns false.
 	// `void action_when_exists(VoxelDataBlock &existing_block, const VoxelDataBlock &incoming_block)`
 	template <typename F>
-	void try_set_block(Vector3i block_position, const VoxelDataBlock &block, F action_when_exists) {
+	bool try_set_block(Vector3i block_position, const VoxelDataBlock &block, F action_when_exists) {
 		Lod &lod = _lods[block.get_lod_index()];
 #ifdef DEBUG_ENABLED
 		if (block.has_voxels()) {
@@ -156,26 +157,40 @@ public:
 		VoxelDataBlock *existing_block = lod.map.get_block(block_position);
 		if (existing_block != nullptr) {
 			action_when_exists(*existing_block, block);
+			return false;
 		} else {
 			lod.map.set_block(block_position, block);
+			return true;
 		}
 	}
 
-	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
-	void for_each_block(F op) const {
+	void for_each_block_position(F op) const {
 		const unsigned int lod_count = get_lod_count();
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const Lod &lod = _lods[lod_index];
 			RWLockRead rlock(lod.map_lock);
-			lod.map.for_each_block(op);
+			lod.map.for_each_block_position(op);
 		}
 	}
 
 	// void op(Vector3i bpos, const VoxelDataBlock &block)
+	// template <typename F>
+	// void for_each_block_r(F op) const {
+	// 	const unsigned int lod_count = get_lod_count();
+	// 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+	// 		const Lod &lod = _lods[lod_index];
+	// 		SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
+	// 		RWLockRead rlock(lod.map_lock);
+	// 		lod.map.for_each_block(op);
+	// 	}
+	// }
+
+	// void op(Vector3i bpos, const VoxelDataBlock &block)
 	template <typename F>
-	void for_each_block_at_lod(F op, unsigned int lod_index) const {
+	void for_each_block_at_lod_r(F op, unsigned int lod_index) const {
 		const Lod &lod = _lods[lod_index];
+		SpatialLock3D::Read srlock(lod.spatial_lock, BoxBounds3i::from_everywhere());
 		RWLockRead rlock(lod.map_lock);
 		lod.map.for_each_block(op);
 	}
@@ -211,7 +226,7 @@ public:
 
 	// Unloads data blocks at specified positions of LOD0. If some of them were modified and `to_save` is not null,
 	// their data will be returned for the caller to save.
-	void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
+	// void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
 
 	// If the block at the specified LOD0 position exists and is modified, marks it as non-modified and returns a copy
 	// of its data to save. Returns true if there is something to save.
@@ -242,17 +257,21 @@ public:
 
 	// Gets blocks with voxels at the given LOD and indexes them in a grid. This will query every location
 	// intersecting the box at the specified LOD, so if the area is large, you may want to do a broad check first.
-	// WARNING: data isn't locked, you have to keep a shared reference to VoxelData in order to use VoxelSpatialLock.
+	// WARNING: data isn't locked, you have to keep a shared reference to VoxelData in order to use SpatialLock3D.
 	void get_blocks_grid(VoxelDataGrid &grid, Box3i box_in_voxels, unsigned int lod_index) const;
 
 	// TODO Areas that use this accessor might as well move their logic in this class
-	VoxelSpatialLock &get_spatial_lock(unsigned int lod_index) const;
+	SpatialLock3D &get_spatial_lock(unsigned int lod_index) const;
 
 	// Tests the presence of edited blocks in the given area by looking up LOD mips. It can report false positives due
 	// to the broad nature of the check, but runs a lot faster than a full test. This is only usable with volumes
 	// using LOD mips (edited blocks have half-resolution counterparts all the way up to maximum LOD).
+
 	bool has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxels) const;
 
+	// Access voxels of a specific block.
+	// WARNING: you must hold the spatial lock before calling this, and until you're done working on such blocks.
+	// Can return null.
 	std::shared_ptr<VoxelBufferInternal> try_get_block_voxels(Vector3i bpos);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -266,9 +285,9 @@ public:
 			std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
-	// Returns positions where blocks were found, and where they were missing.
+	// Returns positions where blocks were unloaded, and where they were missing.
 	// If `to_save` is not null and some unloaded blocks contained modifications, their data will be returned too.
-	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &found_blocks,
+	void unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks, std::vector<Vector3i> &removed_blocks,
 			std::vector<BlockToSave> *to_save);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,7 +317,7 @@ private:
 		RWLock map_lock;
 		// This should be used when reading or writing voxels/metadata in blocks. It uses block coordinates as
 		// spatial unit.
-		mutable VoxelSpatialLock spatial_lock;
+		mutable SpatialLock3D spatial_lock;
 	};
 
 	static void pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,

@@ -1,5 +1,5 @@
-#ifndef VOXEL_VIEWER_REF_COUNT_H
-#define VOXEL_VIEWER_REF_COUNT_H
+#ifndef ZN_REF_COUNT_H
+#define ZN_REF_COUNT_H
 
 #include "errors.h"
 
@@ -31,4 +31,4 @@ private:
 
 } // namespace zylann
 
-#endif // VOXEL_VIEWER_REF_COUNT_H
+#endif // ZN_REF_COUNT_H

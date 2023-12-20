@@ -1,6 +1,6 @@
 #include "voxel_generator_heightmap.h"
-#include "../../util/fixed_array.h"
-#include "../../util/span.h"
+#include "../../util/containers/span.h"
+#include "../../util/containers/fixed_array.h"
 
 namespace zylann::voxel {
 

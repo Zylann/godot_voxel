@@ -73,6 +73,15 @@
 			<description>
 			</description>
 		</method>
+		<method name="is_area_meshed" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="area_in_voxels" type="AABB" />
+			<description>
+				Returns true if the area has been processed by meshing. It does not mean the area actually contains a mesh.
+				Returns false if the area has not been processed by meshing (therefore it is unknown whethere there should be a mesh here or not).
+				When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
+			</description>
+		</method>
 		<method name="save_block">
 			<return type="void" />
 			<param index="0" name="position" type="Vector3i" />
@@ -147,8 +156,7 @@
 		<signal name="block_loaded">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
-				Emitted when a new data block is loaded from stream.
-				Note: it might be not visible yet.
+				Emitted when a new data block is loaded from stream. This can happen before the mesh or collider becomes available.
 			</description>
 		</signal>
 		<signal name="block_unloaded">
@@ -160,11 +168,13 @@
 		<signal name="mesh_block_entered">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
+				Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [method is_area_meshed].
 			</description>
 		</signal>
 		<signal name="mesh_block_exited">
 			<param index="0" name="position" type="Vector3i" />
 			<description>
+				Emitted when a mesh block gets unloaded. It is the counterpart of [signal mesh_block_entered].
 			</description>
 		</signal>
 	</signals>

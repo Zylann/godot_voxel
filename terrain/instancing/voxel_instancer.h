@@ -3,7 +3,7 @@
 
 #include "../../constants/voxel_constants.h"
 #include "../../streams/instance_data.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
@@ -87,6 +87,8 @@ public:
 	void set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2);
 	void set_data_block_size_po2(unsigned int p_data_block_size_po2);
 	void set_mesh_lod_distance(float p_lod_distance);
+
+	int get_library_item_id_from_render_block_index(unsigned render_block_index) const;
 
 	// Debug
 
@@ -176,15 +178,21 @@ private:
 	static void remove_floating_scene_instances(Block &block, const Transform3D &parent_transform, Box3i p_voxel_box,
 			const VoxelTool &voxel_tool, int block_size_po2);
 
+	static void update_mesh_from_mesh_lod(Block &block, const VoxelInstanceLibraryMultiMeshItem::Settings &settings,
+			bool hide_beyond_max_lod, bool instancer_is_visible);
+
 	Dictionary _b_debug_get_instance_counts() const;
 
 	static void _bind_methods();
 
 	// TODO Rename RenderBlock?
 	struct Block {
-		uint16_t layer_id;
+		uint16_t layer_id = 0;
+		// Distance-based LOD index.
+		// Can be one index higher than max mesh lod count in case it should hide beyond last LOD
 		uint8_t current_mesh_lod = 0;
-		uint8_t lod_index;
+		// LOD index corresponding to the terrain's ground chunk system
+		uint8_t lod_index = 0;
 		// If true, the block is waiting to be populated asynchronously. We create blocks in this state so when async
 		// generation completes, we can check if the block is still present.
 		bool pending_instances = false;
@@ -235,7 +243,7 @@ private:
 		// Can't use Godot's `HashMap` because it lacks move semantics.
 		std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
 
-		FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
+		// FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};
 
 	UpMode _up_mode = UP_MODE_POSITIVE_Y;
@@ -254,6 +262,9 @@ private:
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	float _mesh_lod_distance = 0.f;
+	// Vector3 _mesh_lod_last_update_camera_position;
+	// float _mesh_lod_update_camera_threshold_distance = 8.f;
+	unsigned int _mesh_lod_time_sliced_block_index = 0;
 
 	std::shared_ptr<VoxelInstancerGeneratorTaskOutputQueue> _generator_results;
 

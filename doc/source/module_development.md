@@ -292,7 +292,7 @@ print_line(String("Hello {0}, my age is {1}").format(varray(name, age)));
 Non-Godot:
 
 ```cpp
-#include "util/log.h"
+#include "util/io/log.h"
 #include "util/string_funcs.h"
 
 println(format("Hello {}, my age is {}", name, age));

@@ -1,5 +1,4 @@
 #include "graph_edit.h"
-#include "../core/version.h"
 
 namespace zylann {
 
@@ -11,7 +10,7 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 	for (const GraphEdit::Connection &src_con : connections_list) {
 		GodotGraphEditConnection dst_con;
 
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 		dst_con.from = src_con.from;
 		dst_con.to = src_con.to;
 #else
@@ -28,15 +27,15 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 	Array list = self.get_connection_list();
 	const int count = list.size();
 
-	// #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
-	// 	const String from_key = "from";
-	// 	const String to_key = "from";
-	// #else
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
+	const String from_key = "from";
+	const String to_key = "to";
+#else
 	const String from_key = "from_node";
-	const String to_key = "from_node";
-	// #endif
+	const String to_key = "to_node";
+#endif
 	const String from_port_key = "from_port";
-	const String to_port_key = "from_port";
+	const String to_port_key = "to_port";
 
 	for (int i = 0; i < count; ++i) {
 		Dictionary d = list[i];
@@ -51,42 +50,24 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 }
 
 Vector2 get_graph_edit_scroll_offset(const GraphEdit &self) {
-#if defined(ZN_GODOT)
-
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 	return self.get_scroll_ofs();
-#else
-	return self.get_scroll_offset();
-#endif
-
 #else
 	return self.get_scroll_offset();
 #endif
 }
 
 bool is_graph_edit_using_snapping(const GraphEdit &self) {
-#if defined(ZN_GODOT)
-
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 	return self.is_using_snap();
-#else
-	return self.is_snapping_enabled();
-#endif
-
 #else
 	return self.is_snapping_enabled();
 #endif
 }
 
 int get_graph_edit_snapping_distance(const GraphEdit &self) {
-#if defined(ZN_GODOT)
-
-#if VERSION_MAJOR == 4 && VERSION_MINOR <= 1
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 1
 	return self.get_snap();
-#else
-	return self.get_snapping_distance();
-#endif
-
 #else
 	return self.get_snapping_distance();
 #endif

@@ -2,7 +2,6 @@
 
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
-
 Singleton holding common settings and handling voxel processing tasks in background threads.
 
 ## Methods: 
@@ -21,7 +20,7 @@ Gets debug information about shared voxel processing.
 
 The returned dictionary has the following structure:
 
-```gdscript
+```
 {
 	"thread_pools": {
 		"general": {
@@ -42,7 +41,6 @@ The returned dictionary has the following structure:
 		"block_count": int
 	}
 }
-
 ```
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

@@ -3,6 +3,7 @@
 
 #include "../../engine/ids.h"
 #include "../../engine/priority_dependency.h"
+#include "../../storage/voxel_data.h"
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_lod_terrain_update_data.h"
 

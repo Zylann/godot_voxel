@@ -1,6 +1,6 @@
 #include "voxel_blocky_type_library.h"
 #include "../../../constants/voxel_string_names.h"
-#include "../../../util/container_funcs.h"
+#include "../../../util/containers/container_funcs.h"
 #include "../../../util/godot/classes/json.h"
 #include "../../../util/godot/classes/object.h"
 #include "../../../util/godot/classes/time.h"
@@ -173,7 +173,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		}
 		const StringName type1_name = type1->get_unique_name();
 		for (unsigned int j = i + 1; j < _types.size(); ++j) {
-			const Ref<VoxelBlockyType> &type2 = _types[i];
+			const Ref<VoxelBlockyType> &type2 = _types[j];
 			if (type2.is_null()) {
 				continue;
 			}
@@ -260,7 +260,7 @@ static bool parse_attribute_value(
 
 	} else if (vv.get_type() == Variant::INT) {
 		const int raw_value = vv;
-		ERR_FAIL_COND_V_MSG(raw_value >= 0, false, "Attribute integer value cannot be negative.");
+		ERR_FAIL_COND_V_MSG(raw_value < 0, false, "Attribute integer value cannot be negative.");
 		out_attrib_value = raw_value;
 
 	} else if (vv.get_type() == Variant::BOOL) {
@@ -510,10 +510,15 @@ private:
 			if (str[i] != char32_t(keyword[i])) {
 				return false;
 			}
+			++i;
 		}
 		if (i == str.size()) {
+			// All characters matched
 			return true;
 		}
+		// We matched all characters but the tested string is longer.
+		// Check if it ends with a separating character. If not, then it contains a longer name and therefore won't
+		// match.
 		++i;
 		return !is_name_char(str[i]);
 	}
@@ -587,8 +592,13 @@ bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id
 
 		result = tokenizer.get(token);
 		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+		ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::EQUALS, false);
+
+		result = tokenizer.get(token);
+		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+
 		if (token.type == VoxelIDToken::INTEGER) {
-			ZN_ASSERT_RETURN_V(token.integer_value >= VoxelBlockyAttribute::MAX_VALUES, false);
+			ZN_ASSERT_RETURN_V(token.integer_value < VoxelBlockyAttribute::MAX_VALUES, false);
 			out_id.variant_key.attribute_values[attribute_index] = token.integer_value;
 
 		} else if (token.type == VoxelIDToken::BOOLEAN) {

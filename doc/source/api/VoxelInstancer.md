@@ -2,7 +2,6 @@
 
 Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
-
 Spawns items on top of voxel surfaces.
 
 ## Description: 
@@ -36,19 +35,19 @@ Return                                                                          
 
 enum **UpMode**: 
 
-- **UP_MODE_POSITIVE_Y** = **0**
-- **UP_MODE_SPHERE** = **1**
+- <span id="i_UP_MODE_POSITIVE_Y"></span>**UP_MODE_POSITIVE_Y** = **0**
+- <span id="i_UP_MODE_SPHERE"></span>**UP_MODE_SPHERE** = **1**
 
 enum **DebugDrawFlag**: 
 
-- **DEBUG_DRAW_ALL_BLOCKS** = **0**
-- **DEBUG_DRAW_EDITED_BLOCKS** = **1**
-- **DEBUG_DRAW_FLAGS_COUNT** = **2**
+- <span id="i_DEBUG_DRAW_ALL_BLOCKS"></span>**DEBUG_DRAW_ALL_BLOCKS** = **0**
+- <span id="i_DEBUG_DRAW_EDITED_BLOCKS"></span>**DEBUG_DRAW_EDITED_BLOCKS** = **1**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **2**
 
 
 ## Constants: 
 
-- **MAX_LOD** = **8**
+- <span id="i_MAX_LOD"></span>**MAX_LOD** = **8**
 
 ## Property Descriptions
 
@@ -81,4 +80,4 @@ enum **DebugDrawFlag**:
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

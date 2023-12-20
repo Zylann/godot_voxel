@@ -8,8 +8,8 @@
 using namespace godot;
 #endif
 
+#include "../../containers/span.h"
 #include "../../math/vector2i.h"
-#include "../../span.h"
 #include <vector>
 
 namespace zylann {

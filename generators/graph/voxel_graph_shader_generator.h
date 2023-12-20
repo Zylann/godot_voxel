@@ -2,9 +2,9 @@
 #define VOXEL_GRAPH_SHADER_GENERATOR_H
 
 #include "../../engine/gpu/compute_shader_resource.h"
+#include "../../util/containers/span.h"
 #include "../../util/errors.h"
 #include "../../util/godot/core/variant.h"
-#include "../../util/span.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"

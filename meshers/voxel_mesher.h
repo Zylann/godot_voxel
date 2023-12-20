@@ -2,11 +2,11 @@
 #define VOXEL_MESHER_H
 
 #include "../constants/cube_tables.h"
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
+#include "../util/containers/span.h"
 #include "../util/godot/classes/image.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
-#include "../util/span.h"
 #include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
@@ -51,7 +51,7 @@ public:
 	struct Output {
 		struct Surface {
 			Array arrays;
-			uint8_t material_index = 0;
+			uint16_t material_index = 0;
 		};
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;

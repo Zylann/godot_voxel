@@ -2,7 +2,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../terrain/voxel_node.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/button.h"
 #include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/editor_selection.h"

@@ -2,7 +2,7 @@
 #define REGION_FILE_H
 
 #include "../../storage/voxel_buffer_internal.h"
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"

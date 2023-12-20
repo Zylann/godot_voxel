@@ -4,54 +4,44 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 
 
-
 ## Description: 
 
 Low-level utility to save and load the data within a [VoxelBuffer](VoxelBuffer.md). This can be useful to send data over the network, or to store it in a file.
 
 
-
 To store into a file allocating a PackedByteArray:
 
-```gdscript
+```
 # `voxels` is an existing `VoxelBuffer`
 var data := VoxelBlockSerializer.serialize_to_byte_array(voxels, true)
 file.store_32(len(data))
 file.store_buffer(data)
-
 ```
-
 To read it back:
 
-```gdscript
+```
 var size := file.get_32()
 var data := file.get_buffer(size)
 VoxelBlockSerializer.deserialize_from_byte_array(data, voxels, true)
-
 ```
-
-
 
 To store into a file by re-using a StreamPeerBuffer:
 
-```gdscript
+```
 # Note, buffer can be re-used if you do this often
 var stream_peer_buffer := StreamPeerBuffer.new()
 var written_size = VoxelBlockSerializer.serialize_to_stream_peer(stream_peer_buffer, voxels, true)
 file.store_32(written_size)
 file.store_buffer(stream_peer_buffer.data_array)
-
 ```
-
 To read it back:
 
-```gdscript
+```
 var size := file.get_32()
 var stream_peer_buffer := StreamPeerBuffer.new()
 # Unfortunately Godot will always allocate memory with this API, can't avoid that
 stream_peer_buffer.data_array = file.get_buffer(size)
 VoxelBlockSerializer.deserialize_from_stream_peer(stream_peer_buffer, voxels, size, true)
-
 ```
 
 ## Methods: 
@@ -83,4 +73,4 @@ Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [PackedByteArray](http
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

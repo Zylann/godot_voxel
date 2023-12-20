@@ -2,12 +2,11 @@
 
 Inherits: [Object](https://docs.godotengine.org/en/stable/classes/class_object.html)
 
-
 Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md).
 
 ## Description: 
 
-Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md). See method VoxelTerrain._on_data_block_entered.
+Information sent by a terrain when one of its data blocks enters the area of a [VoxelViewer](VoxelViewer.md). See [VoxelTerrain._on_data_block_entered](VoxelTerrain.md#i__on_data_block_entered).
 
 Instances of this class must not be stored, as they will become invalid after the call they come from.
 
@@ -45,4 +44,4 @@ Gets the position of the data block, in data block coordinates (voxel coordinate
 
 Gets access to the voxels in the block.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

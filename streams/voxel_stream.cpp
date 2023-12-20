@@ -3,7 +3,7 @@
 #include "../util/godot/core/string.h"
 #include "../util/string_funcs.h"
 
-using namespace zylann::voxel;
+namespace zylann::voxel {
 
 VoxelStream::VoxelStream() {}
 
@@ -135,3 +135,5 @@ void VoxelStream::_bind_methods() {
 	BIND_ENUM_CONSTANT(RESULT_BLOCK_FOUND);
 	BIND_ENUM_CONSTANT(RESULT_BLOCK_NOT_FOUND);
 }
+
+} // namespace zylann::voxel

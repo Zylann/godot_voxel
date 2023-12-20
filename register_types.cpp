@@ -12,6 +12,7 @@
 #include "engine/voxel_engine_gd.h"
 #include "generators/graph/node_type_db.h"
 #include "generators/graph/voxel_generator_graph.h"
+#include "generators/multipass/voxel_generator_multipass_cb.h"
 #include "generators/simple/voxel_generator_flat.h"
 #include "generators/simple/voxel_generator_heightmap.h"
 #include "generators/simple/voxel_generator_image.h"
@@ -49,7 +50,9 @@
 #include "terrain/instancing/voxel_instance_component.h"
 #include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
+#include "terrain/instancing/voxel_instancer_rigidbody.h"
 #include "terrain/variable_lod/voxel_lod_terrain.h"
+#include "terrain/voxel_a_star_grid_3d.h"
 #include "terrain/voxel_mesh_block.h"
 #include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
@@ -89,6 +92,7 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_editor_plugin.h"
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
+#include "editor/multipass/voxel_generator_multipass_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
@@ -128,6 +132,7 @@
 #include "editor/instance_library/voxel_instance_library_multimesh_item_inspector_plugin.h"
 #include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
+#include "editor/multipass/voxel_generator_multipass_cache_viewer.h"
 #include "editor/terrain/editor_property_aabb_min_max.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
 #endif
@@ -188,6 +193,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace voxel;
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+#ifdef ZN_DEBUG_LOG_FILE_ENABLED
+		open_log_file();
+#endif
+
 		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
 		// This class is used as a singleton so it's not really abstract.
 		// Should I use `register_abstract_class` anyways?
@@ -202,9 +211,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
-		register_abstract_class<VoxelBlockyLibraryBase>();
+		ClassDB::register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
-		register_abstract_class<VoxelBlockyAttribute>();
+		ClassDB::register_abstract_class<VoxelBlockyAttribute>();
 		ClassDB::register_class<VoxelBlockyAttributeAxis>();
 		ClassDB::register_class<VoxelBlockyAttributeDirection>();
 		ClassDB::register_class<VoxelBlockyAttributeRotation>();
@@ -214,7 +223,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		ClassDB::register_class<VoxelColorPalette>();
 		ClassDB::register_class<VoxelInstanceLibrary>();
-		register_abstract_class<VoxelInstanceLibraryItem>();
+		ClassDB::register_abstract_class<VoxelInstanceLibraryItem>();
 		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItem>();
 		ClassDB::register_class<VoxelInstanceLibrarySceneItem>();
 		ClassDB::register_class<VoxelDataBlockEnterInfo>();
@@ -225,43 +234,46 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<gd::VoxelBuffer>();
 
 		// Nodes
-		register_abstract_class<VoxelNode>();
+		ClassDB::register_abstract_class<VoxelNode>();
 		ClassDB::register_class<VoxelTerrain>();
 		ClassDB::register_class<VoxelLodTerrain>();
 		ClassDB::register_class<VoxelViewer>();
 		ClassDB::register_class<VoxelInstanceGenerator>();
 		ClassDB::register_class<VoxelInstancer>();
 		ClassDB::register_class<VoxelInstanceComponent>();
-		register_abstract_class<gd::VoxelModifier>();
+		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
+		ClassDB::register_abstract_class<gd::VoxelModifier>();
 		ClassDB::register_class<gd::VoxelModifierSphere>();
 		ClassDB::register_class<gd::VoxelModifierMesh>();
 
 		// Streams
-		register_abstract_class<VoxelStream>();
+		ClassDB::register_abstract_class<VoxelStream>();
 		ClassDB::register_class<VoxelStreamRegionFiles>();
 		ClassDB::register_class<VoxelStreamScript>();
 		ClassDB::register_class<VoxelStreamSQLite>();
 
 		// Generators
-		register_abstract_class<VoxelGenerator>();
+		ClassDB::register_abstract_class<VoxelGenerator>();
 		ClassDB::register_class<VoxelGeneratorFlat>();
-		register_abstract_class<VoxelGeneratorHeightmap>();
+		ClassDB::register_abstract_class<VoxelGeneratorHeightmap>();
 		ClassDB::register_class<VoxelGeneratorWaves>();
 		ClassDB::register_class<VoxelGeneratorImage>();
 		ClassDB::register_class<VoxelGeneratorNoise2D>();
 		ClassDB::register_class<VoxelGeneratorNoise>();
 		ClassDB::register_class<VoxelGeneratorGraph>();
 		ClassDB::register_class<VoxelGeneratorScript>();
+		ClassDB::register_class<VoxelGeneratorMultipassCB>();
 
 		// Utilities
 		ClassDB::register_class<VoxelBoxMover>();
 		ClassDB::register_class<VoxelRaycastResult>();
-		register_abstract_class<VoxelTool>();
-		register_abstract_class<VoxelToolTerrain>();
-		register_abstract_class<VoxelToolLodTerrain>();
+		ClassDB::register_abstract_class<VoxelTool>();
+		ClassDB::register_abstract_class<VoxelToolTerrain>();
+		ClassDB::register_abstract_class<VoxelToolLodTerrain>();
 		// I had to bind this one despite it being useless as-is because otherwise Godot lazily initializes its class.
 		// And this can happen in a thread, causing crashes due to the concurrent access
-		register_abstract_class<VoxelToolBuffer>();
+		ClassDB::register_abstract_class<VoxelToolBuffer>();
+		ClassDB::register_abstract_class<VoxelToolMultipassGenerator>();
 		ClassDB::register_class<gd::VoxelBlockSerializer>();
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
@@ -273,9 +285,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 #endif
 		ClassDB::register_class<VoxelMeshSDF>();
 		ClassDB::register_class<VoxelTerrainMultiplayerSynchronizer>();
+		ClassDB::register_class<VoxelAStarGrid3D>();
 
 		// Meshers
-		register_abstract_class<VoxelMesher>();
+		ClassDB::register_abstract_class<VoxelMesher>();
 		ClassDB::register_class<VoxelMesherBlocky>();
 		ClassDB::register_class<VoxelMesherTransvoxel>();
 		ClassDB::register_class<VoxelMesherDMC>();
@@ -320,13 +333,17 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelEngine::create_singleton(threads_config);
 		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 #if defined(ZN_GODOT)
-		// TODO Enhancement: threaded graphics resource building should be initialized better.
-		// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
-		// renderer and has not figured out how such option would be exposed). Could use `can_create_resources_async`
-		// but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL backends, which are the only ones not
-		// supporting async resource creation.
-		VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-				RenderingServer::get_singleton()->is_low_end() == false);
+		// RenderingServer can be null with `tests=yes`.
+		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved
+		if (RenderingServer::get_singleton() != nullptr) {
+			// TODO Enhancement: threaded graphics resource building should be initialized better.
+			// Pick this from the current renderer + user option (at time of writing, Godot 4 has only one
+			// renderer and has not figured out how such option would be exposed). Could use
+			// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
+			// backends, which are the only ones not supporting async resource creation.
+			VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
+					RenderingServer::get_singleton()->is_low_end() == false);
+		}
 #else
 		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
 		// different threads
@@ -350,66 +367,69 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelGraphEditorNodePreview::load_resources();
 
 #if defined(ZN_GODOT_EXTENSION)
-		// TODO GDX: I don't want to expose any of the following classes, but it looks like there is no way to make them
-		// functional as extensions BUT not expose them
+		// In GDExtension we have to explicitely register all classes deriving from Object even if they are not exposed
 
-		ClassDB::register_class<ZN_EditorPlugin>();
-		ClassDB::register_class<ZN_EditorImportPlugin>();
-		ClassDB::register_class<ZN_EditorInspectorPlugin>();
-		ClassDB::register_class<ZN_EditorProperty>();
-		ClassDB::register_class<ZN_Axes3DControl>();
-		ClassDB::register_class<ZN_ModelViewer>();
-		ClassDB::register_class<EditorPropertyAABBMinMax>();
+		ClassDB::register_internal_class<ZN_EditorPlugin>();
+		ClassDB::register_internal_class<ZN_EditorImportPlugin>();
+		ClassDB::register_internal_class<ZN_EditorInspectorPlugin>();
+		ClassDB::register_internal_class<ZN_EditorProperty>();
+		ClassDB::register_internal_class<ZN_Axes3DControl>();
+		ClassDB::register_internal_class<ZN_ModelViewer>();
+		ClassDB::register_internal_class<ZN_EditorPropertyAABBMinMax>();
 
-		ClassDB::register_class<ZN_FastNoiseLiteEditorPlugin>();
-		ClassDB::register_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
-		ClassDB::register_class<ZN_FastNoiseLiteViewer>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorPlugin>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
+		ClassDB::register_internal_class<ZN_FastNoiseLiteViewer>();
 
-		ClassDB::register_class<VoxelAboutWindow>();
-		ClassDB::register_class<VoxelTerrainEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorPlugin>();
-		ClassDB::register_class<VoxelTerrainEditorTaskIndicator>();
+		ClassDB::register_internal_class<VoxelAboutWindow>();
+		ClassDB::register_internal_class<VoxelTerrainEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelTerrainEditorPlugin>();
+		ClassDB::register_internal_class<VoxelTerrainEditorTaskIndicator>();
 
-		ClassDB::register_class<VoxelBlockyModelViewer>();
-		ClassDB::register_class<VoxelBlockyLibraryEditorPlugin>();
-		ClassDB::register_class<VoxelBlockyModelEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyModelViewer>();
+		ClassDB::register_internal_class<VoxelBlockyLibraryEditorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyModelEditorInspectorPlugin>();
 
-		ClassDB::register_class<VoxelBlockyTypeViewer>();
-		ClassDB::register_class<VoxelBlockyTypeEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelBlockyTypeLibraryIDSDialog>();
-		ClassDB::register_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelBlockyTypeAttributeCombinationSelector>();
-		ClassDB::register_class<VoxelBlockyTypeVariantListEditor>();
+		ClassDB::register_internal_class<VoxelBlockyTypeViewer>();
+		ClassDB::register_internal_class<VoxelBlockyTypeEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTypeLibraryIDSDialog>();
+		ClassDB::register_internal_class<VoxelBlockyTypeLibraryEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelBlockyTypeAttributeCombinationSelector>();
+		ClassDB::register_internal_class<VoxelBlockyTypeVariantListEditor>();
 
-		ClassDB::register_class<magica::VoxelVoxEditorPlugin>();
-		ClassDB::register_class<magica::VoxelVoxMeshImporter>();
-		ClassDB::register_class<magica::VoxelVoxSceneImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxEditorPlugin>();
+		ClassDB::register_internal_class<magica::VoxelVoxMeshImporter>();
+		ClassDB::register_internal_class<magica::VoxelVoxSceneImporter>();
 
-		ClassDB::register_class<VoxelInstancerEditorPlugin>();
-		ClassDB::register_class<VoxelInstancerStatView>();
+		ClassDB::register_internal_class<VoxelInstancerEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstancerStatView>();
 
-		ClassDB::register_class<VoxelInstanceLibraryEditorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryInspectorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
-		ClassDB::register_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
+		ClassDB::register_internal_class<VoxelInstanceLibraryMultiMeshItemInspectorPlugin>();
 
-		ClassDB::register_class<VoxelMeshSDFViewer>();
-		ClassDB::register_class<VoxelMeshSDFEditorPlugin>();
-		ClassDB::register_class<VoxelMeshSDFInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFViewer>();
+		ClassDB::register_internal_class<VoxelMeshSDFEditorPlugin>();
+		ClassDB::register_internal_class<VoxelMeshSDFInspectorPlugin>();
 
-		ClassDB::register_class<ZN_EditorPropertyTextChangeOnSubmit>();
-		ClassDB::register_class<VoxelGraphEditorInspectorPlugin>();
-		ClassDB::register_class<VoxelGraphFunctionInspectorPlugin>();
-		ClassDB::register_class<VoxelGraphEditorNodePreview>();
-		ClassDB::register_class<VoxelGraphEditorNode>();
-		ClassDB::register_class<VoxelGraphEditor>();
-		ClassDB::register_class<VoxelGraphEditorPlugin>();
-		ClassDB::register_class<VoxelGraphEditorShaderDialog>();
-		ClassDB::register_class<VoxelGraphEditorIODialog>();
-		ClassDB::register_class<VoxelGraphNodeInspectorWrapper>();
-		ClassDB::register_class<VoxelGraphNodeDialog>();
-		ClassDB::register_class<VoxelRangeAnalysisDialog>();
-#endif
+		ClassDB::register_internal_class<ZN_EditorPropertyTextChangeOnSubmit>();
+		ClassDB::register_internal_class<VoxelGraphEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphFunctionInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphEditorNodePreview>();
+		ClassDB::register_internal_class<VoxelGraphEditorNode>();
+		ClassDB::register_internal_class<VoxelGraphEditor>();
+		ClassDB::register_internal_class<VoxelGraphEditorPlugin>();
+		ClassDB::register_internal_class<VoxelGraphEditorShaderDialog>();
+		ClassDB::register_internal_class<VoxelGraphEditorIODialog>();
+		ClassDB::register_internal_class<VoxelGraphNodeInspectorWrapper>();
+		ClassDB::register_internal_class<VoxelGraphNodeDialog>();
+		ClassDB::register_internal_class<VoxelRangeAnalysisDialog>();
+
+		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorPlugin>();
+		ClassDB::register_internal_class<VoxelGeneratorMultipassEditorInspectorPlugin>();
+		ClassDB::register_internal_class<VoxelGeneratorMultipassCacheViewer>();
+#endif // ZN_GODOT_EXTENSION
 
 		EditorPlugins::add_by_type<VoxelGraphEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelTerrainEditorPlugin>();
@@ -420,6 +440,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelBlockyLibraryEditorPlugin>();
+		EditorPlugins::add_by_type<VoxelGeneratorMultipassEditorPlugin>();
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 		EditorPlugins::add_by_type<FastNoise2EditorPlugin>();
 #endif
@@ -469,6 +490,10 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks
 		VoxelMemoryPool::destroy_singleton();
+
+#ifdef ZN_DEBUG_LOG_FILE_ENABLED
+		close_log_file();
+#endif
 	}
 
 #ifdef TOOLS_ENABLED

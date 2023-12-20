@@ -1,5 +1,6 @@
 #include "voxel_block_serializer_gd.h"
 #include "../util/godot/classes/stream_peer.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "voxel_block_serializer.h"
 
 namespace zylann::voxel::gd {

@@ -1,8 +1,8 @@
 #include "instance_data.h"
 #include "../constants/voxel_constants.h"
+#include "../util/io/serialization.h"
 #include "../util/math/basis.h"
 #include "../util/math/funcs.h"
-#include "../util/serialization.h"
 #include "../util/string_funcs.h"
 
 namespace zylann::voxel {
@@ -14,7 +14,7 @@ enum FormatVersion {
 	// Now using little-endian.
 	INSTANCE_BLOCK_FORMAT_VERSION_1 = 1
 };
-} //namespace
+} // namespace
 
 const float InstanceBlockData::POSITION_RANGE_MINIMUM = 0.01f;
 

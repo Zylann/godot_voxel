@@ -34,6 +34,7 @@ nav:
   - 'Scripting API':
     # <generated_class_list>
     - api/FastNoise2.md
+    - api/VoxelAStarGrid3D.md
     - api/VoxelBlockSerializer.md
     - api/VoxelBlockyAttribute.md
     - api/VoxelBlockyAttributeAxis.md
@@ -58,6 +59,7 @@ nav:
     - api/VoxelGeneratorGraph.md
     - api/VoxelGeneratorHeightmap.md
     - api/VoxelGeneratorImage.md
+    - api/VoxelGeneratorMultipassCB.md
     - api/VoxelGeneratorNoise.md
     - api/VoxelGeneratorNoise2D.md
     - api/VoxelGeneratorScript.md
@@ -70,6 +72,7 @@ nav:
     - api/VoxelInstanceLibraryMultiMeshItem.md
     - api/VoxelInstanceLibrarySceneItem.md
     - api/VoxelInstancer.md
+    - api/VoxelInstancerRigidBody.md
     - api/VoxelLodTerrain.md
     - api/VoxelMeshSDF.md
     - api/VoxelMesher.md
@@ -90,6 +93,7 @@ nav:
     - api/VoxelTool.md
     - api/VoxelToolBuffer.md
     - api/VoxelToolLodTerrain.md
+    - api/VoxelToolMultipassGenerator.md
     - api/VoxelToolTerrain.md
     - api/VoxelViewer.md
     - api/VoxelVoxLoader.md

@@ -181,4 +181,90 @@ void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels
 			});
 }
 
+void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> radii) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(positions.size() >= 2);
+	ZN_ASSERT_RETURN(positions.size() == radii.size());
+
+	ERR_FAIL_COND(_buffer.is_null());
+	VoxelBufferInternal &dst = _buffer->get_buffer();
+
+	// TODO Increase margin a bit with smooth voxels?
+	const int margin = 1;
+
+	// Rasterize
+
+	for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
+		// TODO Could run this in local space so we dont need doubles
+		// TODO Apply terrain scale
+		const Vector3 p0 = positions[point_index - 1];
+		const Vector3 p1 = positions[point_index];
+
+		const float r0 = radii[point_index - 1];
+		const float r1 = radii[point_index];
+
+		const Box3i segment_box = ops::get_round_cone_int_bounds(p0, p1, r0, r1).padded(margin);
+		if (!Box3i(Vector3i(), dst.get_size()).intersects(segment_box)) {
+			continue;
+		}
+
+		math::SdfRoundConePrecalc cone;
+		cone.a = p0;
+		cone.b = p1;
+		cone.r1 = r0;
+		cone.r2 = r1;
+		cone.update();
+
+		ops::SdfRoundCone shape;
+		shape.cone = cone;
+		shape.sdf_scale = get_sdf_scale();
+
+		const Box3i local_box = segment_box.clipped(Box3i(Vector3i(), dst.get_size()));
+
+		if (get_channel() == VoxelBufferInternal::CHANNEL_SDF) {
+			switch (get_mode()) {
+				case MODE_ADD: {
+					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
+					ops::SdfOperation16bit<ops::SdfUnion, ops::SdfRoundCone> op;
+					op.shape = shape;
+					op.op.strength = get_sdf_strength();
+					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+				} break;
+
+				case MODE_REMOVE: {
+					ops::SdfOperation16bit<ops::SdfSubtract, ops::SdfRoundCone> op;
+					op.shape = shape;
+					op.op.strength = get_sdf_strength();
+					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+				} break;
+
+				case MODE_SET: {
+					ops::SdfOperation16bit<ops::SdfSet, ops::SdfRoundCone> op;
+					op.shape = shape;
+					op.op.strength = get_sdf_strength();
+					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+				} break;
+
+				case MODE_TEXTURE_PAINT: {
+					ops::TextureBlendOp<ops::SdfRoundCone> op;
+					op.shape = shape;
+					op.texture_params = _texture_params;
+					dst.write_box_2_template<ops::TextureBlendOp<ops::SdfRoundCone>, uint16_t, uint16_t>(local_box,
+							VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS, op, Vector3i());
+				} break;
+
+				default:
+					ERR_PRINT("Unknown mode");
+					break;
+			}
+
+		} else {
+			ops::BlockySetOperation<uint32_t, ops::SdfRoundCone> op;
+			op.shape = shape;
+			op.value = get_value();
+			dst.write_box(local_box, get_channel(), op, Vector3i());
+		}
+	}
+}
+
 } // namespace zylann::voxel

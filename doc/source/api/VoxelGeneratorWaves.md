@@ -2,7 +2,6 @@
 
 Inherits: [VoxelGeneratorHeightmap](VoxelGeneratorHeightmap.md)
 
-
 Voxel generator producing a wavy terrain pattern.
 
 ## Properties: 
@@ -22,4 +21,4 @@ Type       | Name                                 | Default
 - [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_pattern_size"></span> **pattern_size** = Vector2(30, 30)
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

@@ -3,13 +3,13 @@
 
 #include "../meshers/voxel_mesher.h"
 #include "../streams/instance_data.h"
-#include "../util/file_locker.h"
+#include "../util/containers/slot_map.h"
+#include "../util/io/file_locker.h"
 #include "../util/memory.h"
-#include "../util/slot_map.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
-#include "detail_rendering.h"
+#include "detail_rendering/detail_rendering.h"
 #include "gpu/compute_shader.h"
 #include "gpu/gpu_storage_buffer_pool.h"
 #include "gpu/gpu_task_runner.h"
@@ -44,7 +44,7 @@ public:
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
 		// surfaces, which would fit here without allocating.
-		std::vector<uint8_t> mesh_material_indices;
+		std::vector<uint16_t> mesh_material_indices;
 		// In mesh block coordinates
 		Vector3i position;
 		// TODO Rename lod_index
@@ -254,6 +254,27 @@ public:
 	// TODO Should be private, but can't because `memdelete<T>` would be unable to call it otherwise...
 	~VoxelEngine();
 
+	inline void debug_increment_generate_block_task_counter() {
+		// Need to conditionally do this to avoid "unused variable" warnings in non-profiling builds
+#ifdef ZN_PROFILER_ENABLED
+		int64_t v =
+#endif
+				++_debug_generate_block_task_count;
+#ifdef ZN_PROFILER_ENABLED
+		ZN_PROFILE_PLOT("GenerateBlock* tasks", v);
+#endif
+	}
+
+	inline void debug_decrement_generate_block_task_counter() {
+#ifdef ZN_PROFILER_ENABLED
+		int64_t v =
+#endif
+				--_debug_generate_block_task_count;
+#ifdef ZN_PROFILER_ENABLED
+		ZN_PROFILE_PLOT("GenerateBlock* tasks", v);
+#endif
+	}
+
 private:
 	VoxelEngine(ThreadsConfig threads_config);
 
@@ -313,6 +334,9 @@ private:
 	ComputeShader _detail_modifier_mesh_shader;
 	ComputeShader _block_modifier_sphere_shader;
 	ComputeShader _block_modifier_mesh_shader;
+
+	// There can be multiple types of generation tasks, so we count them with a common counter.
+	std::atomic_int _debug_generate_block_task_count = { 0 };
 };
 
 struct VoxelFileLockerRead {

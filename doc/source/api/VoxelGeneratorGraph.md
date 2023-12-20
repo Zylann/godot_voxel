@@ -2,7 +2,6 @@
 
 Inherits: [VoxelGenerator](VoxelGenerator.md)
 
-
 Graph-based voxel generator.
 
 ## Description: 
@@ -67,7 +66,7 @@ If enabled, when generating blocks for a terrain, the generator will attempt to 
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_subdivision"></span> **use_subdivision** = true
 
-If enabled, member subdivision_size will be used.
+If enabled, [VoxelGeneratorGraph.subdivision_size](VoxelGeneratorGraph.md#i_subdivision_size) will be used.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_use_xz_caching"></span> **use_xz_caching** = true
 
@@ -103,24 +102,20 @@ Compiles the graph so it can be used to generate blocks.
 
 If it succeeds, the returned result is a dictionary with the following layout:
 
-```gdscript
+```
 {
 	"success": true
 }
-
 ```
-
 If it fails, the returned result may contain a message and the ID of a graph node that could be the cause:
 
-```gdscript
+```
 {
 	"success": false,
 	"node_id": int,
 	"message": String
 }
-
 ```
-
 The node ID will be -1 if the error is not about a particular node.
 
 - [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_debug_analyze_range"></span> **debug_analyze_range**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) min_pos, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) max_pos ) 
@@ -135,4 +130,4 @@ The node ID will be -1 if the error is not about a particular node.
 - [VoxelGraphFunction](VoxelGraphFunction.md)<span id="i_get_main_function"></span> **get_main_function**( ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

@@ -92,7 +92,12 @@ Transvoxel uses special meshes to stitch blocks of different level of detail. Ho
 Create and setup a `ShaderMaterial` on your terrain, and integrate this snippet to it:
 
 ```glsl
-// This is recognized and assigned automatically by the voxel engine
+// This uniform is assigned internally by the voxel engine.
+// Layout: 00000000 00000000 0000000 00xxyyzz
+// Where:
+// - xx are respectively -x and x transitions,
+// - yy are respectively -y and y transitions,
+// - zz are respectively -z and z transitions,
 uniform int u_transition_mask;
 
 float get_transvoxel_secondary_factor(int idata) {
@@ -352,16 +357,16 @@ If you use a `ShaderMaterial` on a voxel node, the module may exploit some unifo
 
 Parameter name                          | Type         | Description
 ----------------------------------------|--------------|------------------------------
-`u_lod_fade`                            | `vec2`       | Information for progressive fading between levels of detail. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading-experimental)
+`u_lod_fade`                            | `vec2`       | Information for progressive fading between levels of detail. `x` is fading progress: it will go from 0.0 to 1.0 during the transition. `y` is fading direction: `1.0` means fade in, `0.0` means fade out. Only available with `VoxelLodTerrain`. See [Lod fading](#lod-fading)
 `u_block_local_transform`               | `mat4`       | Transform of the rendered block, local to the whole volume, as they may be rendered with multiple meshes. Useful if the volume is moving, to fix triplanar mapping. Only available with `VoxelLodTerrain` at the moment.
-`u_voxel_cell_lookup`                   | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using detail texturing of [normalmaps](#distance-normals).
-`u_voxel_normalmap_atlas`               | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using detail texturing of [normalmaps](#distance-normals).
+`u_voxel_cell_lookup`                   | `usampler2D` | 3D `RG8` texture where each pixel contains a cell index packed in bytes of `R` and part of `G` (`r + ((g & 0x3f) << 8)`), and an axis index in 2 bits of `G` (`g >> 6`). The position to use for indexing this texture is relative to the origin of the mesh. The texture is 2D and square, so coordinates may be computed knowing the size of the mesh in voxels. Will only be assigned in meshes using detail texturing of [normalmaps](#detail-rendering).
+`u_voxel_normalmap_atlas`               | `sampler2D`  | Texture atlas where each tile contains a model-space normalmap (it is not relative to surface, unlike common normalmaps). Coordinates may be computed from `u_voxel_cell_lookup` and `u_voxel_virtual_texture_tile_size`. UV orientation is similar to triplanar mapping, but the axes are known from the information in `u_voxel_cell_lookup`. Will only be assigned in meshes using detail texturing of [normalmaps](#detail-rendering).
 `u_voxel_virtual_texture_tile_size`     | `int`        | Resolution in pixels of each tile in `u_voxel_normalmap_atlas`.
-`u_voxel_cell_size`                     | `float`      | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#distance-normals).
+`u_voxel_cell_size`                     | `float`      | Size of one cubic cell in the mesh, in model space units. Will be > 0 in voxel meshes having [normalmaps](#detail-rendering).
 `u_voxel_block_size`                    | `int`        | Size of the cubic block of voxels that the mesh represents, in voxels.
 `u_voxel_virtual_texture_fade`          | `float`      | When LOD fading is enabled, this will be a value between 0 and 1 for how much to mix in detail textures such as `u_voxel_normalmap_atlas`. They take time to update so this allows them to appear smoothly. The value is 1 if fading is not enabled, or 0 if the mesh has no detail textures.
 `u_voxel_virtual_texture_offset_scale`  | `vec4`       | Used in LOD terrains where normalmaps are enabled. Contains a transformation to apply when sampling `u_voxel_cell_lookup` and `u_voxel_normalmap_atlas`. `x`, `y` and `z` contain an offset, and `w` contain a scale. This is relevant when textures for the current mesh aren't ready yet, so it falls back on a parent LOD: parent meshes are larger, so we need to sample a sub-region.
-`u_transition_mask`                     | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
+`u_transition_mask`                     | `int`        | When using `VoxelMesherTransvoxel`, this is a bitmask storing informations about neighboring meshes of different levels of detail. If one of the 6 sides of the mesh has a lower-resolution neighbor, the corresponding bit will be `1`. Side indices are in order `-X`, `X`, `-Y`, `Y`, `-Z`, `Z` and are stored in the first byte. Layout: `00000000 00000000 00000000 00xxyyzz`. See [smooth stitches in vertex shaders](#smooth-stitches-in-vertex-shader).
 
 
 Level of detail (LOD)
@@ -481,7 +486,7 @@ This will discard such that pixels of the two meshes will be complementary witho
 
 This technique has some limitations:
 
-- Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429
+- Shadow maps still create self-shadowing in cases the faded meshes are far enough from each other. While both meshes are rendered to cross-fade, one of them will eventually project shadows on the other. This creates a lot of noisy patches. Turning off shadows from one of them does not fix the other, and turning shadows off will make them pop. I haven't found a solution yet. See [comment on Godot proposal #692](https://github.com/godotengine/godot-proposals/issues/692#issuecomment-782331429)
 
 
 ### Detail rendering

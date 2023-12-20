@@ -2,6 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
+Inherited by: [VoxelInstanceLibraryMultiMeshItem](VoxelInstanceLibraryMultiMeshItem.md), [VoxelInstanceLibrarySceneItem](VoxelInstanceLibrarySceneItem.md)
 
 Settings for a model that can be used by [VoxelInstancer](VoxelInstancer.md)
 
@@ -30,4 +31,4 @@ Type                      | Name                         | Default
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_persistent"></span> **persistent** = false
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

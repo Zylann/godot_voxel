@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCKY_ATTRIBUTE_H
 #define VOXEL_BLOCKY_ATTRIBUTE_H
 
+#include "../../../util/containers/span.h"
 #include "../../../util/godot/classes/resource.h"
-#include "../../../util/span.h"
 #include <vector>
 
 namespace zylann::voxel {

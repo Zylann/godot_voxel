@@ -164,15 +164,15 @@ int VoxelNode::get_used_channels_mask() const {
 	return 0;
 }
 
-void VoxelNode::set_gi_mode(VoxelNode::GIMode mode) {
-	ERR_FAIL_INDEX(mode, _GI_MODE_COUNT);
+void VoxelNode::set_gi_mode(GeometryInstance3D::GIMode mode) {
+	ERR_FAIL_INDEX(mode, GI_MODE_COUNT);
 	if (mode != _gi_mode) {
 		_gi_mode = mode;
 		_on_gi_mode_changed();
 	}
 }
 
-VoxelNode::GIMode VoxelNode::get_gi_mode() const {
+GeometryInstance3D::GIMode VoxelNode::get_gi_mode() const {
 	return _gi_mode;
 }
 
@@ -181,6 +181,17 @@ void VoxelNode::set_shadow_casting(GeometryInstance3D::ShadowCastingSetting sett
 		_shadow_casting = setting;
 		_on_shadow_casting_changed();
 	}
+}
+
+void VoxelNode::set_render_layers_mask(int mask) {
+	if (mask != _render_layers_mask) {
+		_render_layers_mask = mask;
+		_on_render_layers_mask_changed();
+	}
+}
+
+int VoxelNode::get_render_layers_mask() const {
+	return _render_layers_mask;
 }
 
 GeometryInstance3D::ShadowCastingSetting VoxelNode::get_shadow_casting() const {
@@ -203,6 +214,9 @@ void VoxelNode::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shadow_casting", "mode"), &VoxelNode::set_shadow_casting);
 	ClassDB::bind_method(D_METHOD("get_shadow_casting"), &VoxelNode::get_shadow_casting);
 
+	ClassDB::bind_method(D_METHOD("set_render_layers_mask", "mask"), &VoxelNode::set_render_layers_mask);
+	ClassDB::bind_method(D_METHOD("get_render_layers_mask"), &VoxelNode::get_render_layers_mask);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, VoxelStream::get_class_static()),
 			"set_stream", "get_stream");
 	ADD_PROPERTY(
@@ -210,14 +224,12 @@ void VoxelNode::_bind_methods() {
 			"set_generator", "get_generator");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
 			"set_mesher", "get_mesher");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, "Disabled,Baked,Dynamic"), "set_gi_mode",
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING), "set_gi_mode",
 			"get_gi_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, "Off,On,Double-Sided,Shadows Only"),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
 			"set_shadow_casting", "get_shadow_casting");
-
-	BIND_ENUM_CONSTANT(GI_MODE_DISABLED);
-	BIND_ENUM_CONSTANT(GI_MODE_BAKED);
-	BIND_ENUM_CONSTANT(GI_MODE_DYNAMIC);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layers_mask", PROPERTY_HINT_LAYERS_3D_RENDER),
+			"set_render_layers_mask", "get_render_layers_mask");
 }
 
 } // namespace zylann::voxel

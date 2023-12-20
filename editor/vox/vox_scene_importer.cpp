@@ -9,7 +9,6 @@
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/standard_material_3d.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/funcs.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 

@@ -59,7 +59,7 @@ Generates a blobby terrain with overhangs using 3D fractal noise. A gradient is 
 ![Screenshot of 3D noise generator](images/generator_noise3d.webp)
 
 
-Node-graph generators (VoxelGraphs)
+Node-graph generators with `VoxelGeneratorGraph`
 ------------------------------------
 
 Basic generators may often not be suited to make a whole game from, but you don't necessarily need to program one. C++ is a very fast language to program a generator but it can be a tedious workflow, especially when prototyping. If you need smooth terrain, a graph-based generator is available, which offers a very customizable approach to make procedural volumes.
@@ -208,18 +208,9 @@ A `VoxelGraphFunction` can be created in the inspector and edited just like a `V
 
 To be usable in other graphs, functions should have inputs and outputs. Inputs can be added to the function by creating nodes `InputX`, `InputY`, `InputZ`, `InputSDF` or `CustomInput`. Outputs can be added by creating nodes `OutputX`, `OutputY`, `OutputZ`, `CustomOutput` etc.
 
-However, an extra step is necessary to expose those inputs and outputs to external users of the function. To expose them, select the graph (or click in the background if opened already), go to the inspector, and click `Edit input/outputs`.
-
-![Screenshot of the function input/output editor dialog](images/function_io_dialog.webp)
-
-Currently, defining manually exposed inputs and outputs isn't supported, but is planned. You may instead click on `Auto-generate`, which will find nodes automatically and expose them as inputs and outputs. This also defines the order in which they will be exposed.
-
 Non-custom inputs and outputs such as `InputX` or `OutputX` are *special* nodes, and are identified by their type. They are recognized by the engine for specific purposes. You can have multiple nodes with the same type, but they will always refer to the same input of the function.
 
 Custom inputs and outputs *are identified by their name*. If you add 2 `CustomInput` nodes and give them the same name, they will get their data from the same input. It is recommended to give a name to custom input and output nodes. Empty names still count as a name (so multiple `CustomInput` without names will refer to the same unnamed input).
-
-Multiple special inputs or inputs with the same type is not allowed.
-Multiple custom inputs or outputs with the same name is not allowed.
 
 
 ### Exposing parameters
@@ -246,6 +237,140 @@ Inspecting a function "instance" (and sub-instances...) may be desirable, but it
 ### VoxelGeneratorGraph nodes
 
 A complete list of nodes [can be found here](graph_nodes.md).
+
+
+Multi-pass generation with `VoxelGeneratorMultipassCB`
+-------------------------------------------------------
+
+Sometimes you need to write a custom generator that needs to produce structures *made of voxels in the terrain itself* overlapping neighbor chunks, such as trees. While it is possible to make trees with a [deterministic approach](procedural_generation.md#deterministic-approach), it has limitations and is a bit harder to understand. Also, you might want to have access to an entire vertical section of the world while generating it, instead of just a 16x16x16 chunk.
+
+Contrary to other generators, `VoxelGeneratorMultipassCB` allows you to structure generation in several passes, where you can access neighbor chunks. It also works in columns, so you have access to a full vertical section of the world. Things like placing a structure across chunk borders just works.
+
+You may find early design information [in this issue](https://github.com/Zylann/godot_voxel/issues/545).
+
+
+### World model
+
+![Schema of a terrain composed of columns, with one column and its neighbors highlighted as the "extent" of generation passes](images/multipass_columns.webp)
+
+This generator is suffixed "CB" for "Column-Based". The world this generator works on is "flat". Similar to Minecraft, generation occurs within a fixed region going from minimum to maximum altitude (specified with properties), in columns of 16x16 voxels. Then everything above is air, and everything below is either bedrock or just air too. The amount of neighbor columns a pass can access is called the "extent" of the pass.
+
+While the multipass column logic only works within the fixed vertical range, it will be possible to define what's outside of that range, but it has to be single pass.
+
+In sections below, "column" will refer to a stack of blocks within the fixed region.
+
+!!! note
+    Fixed column height is a design choice to make the generator simpler to implement, and should cover the majority of terrains. However, this is only a limitation of the generator. `VoxelTerrain` remains unlimited vertically, so players can still build higher than the area handled by the terrain generator.
+
+
+### API
+
+This generator is implemented using a script, similar to `VoxelGeneratorScript`. The difference is this function:
+
+```
+extends VoxelGeneratorMultipassCB
+
+func _generate_pass(voxel_tool: VoxelToolMultipassGenerator, pass_index: int):
+	var min_pos := voxel_tool.get_main_area_min()
+	var max_pos := voxel_tool.get_main_area_max()
+
+    if pass_index == 0:
+        # Base terrain
+		for gz in range(min_pos.z, max_pos.z):
+			for gx in range(min_pos.x, max_pos.x):
+                # Do things with `voxel_tool`
+                # ...
+
+    elif pass_index == 1:
+        # Trees
+        # ...
+```
+
+Unlike `VoxelGeneratorScript` where `_generate_block` is called once for every 16x16x16 block of the terrain, `_generate_pass` is called multiple times *for every column of blocks*, once for every pass. Subsequent calls can access and modify voxels left by previous passes.
+
+Columns may be designated in two different ways in this process:
+
+- "Main" column: this is the column being processed by `_generate_pass`. The available area passed with `voxel_tool` will be centered on that column. Usually, if you plant trees, their trunk should only be planted in the main column, to keep results consistent.
+- "Neighbor" columns: these are around the main column, which also means they will be "seen" by more than one column processing during the same pass.
+
+!!! note
+    Accessing neighbors doesn't mean this generator has access to *voxels of the terrain players have access to*. Internally, the generator has its own separate representation of the world, and only stores blocks that are generating. Columns don't interact with the game, and the game can't interact with them.
+
+!!! note
+    Just like `VoxelGeneratorScript`, `run_stream_in_editor` will turn off if you have a script attached to the generator. This is because modifying scripts while another thread is running them in the editor can lead to unpredictable behavior and crashes.
+
+
+### Column inter-dependencies
+
+Inter-dependency is a core concept that makes this generator different from the others. It is a direct result of the fact each column can access its neighbors while generating. It is intuitive to do so, but it creates side-effects.
+
+#### "Completing" a pass
+
+Let's say we define 2 passes:
+
+- Pass 1: base terrain. Just combinations of Perlin noise and shapes, where it is not necessary to access neighbors.
+- Pass 2: trees. They could have various shapes and overlap across chunks, and could check if they fit or of they have access to sunlight. That pass will access up to 1 chunk away.
+
+With just these two passes, generating one *final* column requires to process a bunch of other columns:
+
+```
+a a a a a   a = pass 1 partially affected by b
+a b b b a   b = pass 2 incomplete, partially affected by itself
+a b B b a   B = pass 2 complete
+a b b b a
+a a a a a
+```
+
+The reason is that in order to *completely finish* Pass 2 on a specific column, we can't just run it once on that column. We must also do it *on all neighbors that can reach that column*.
+
+![Schema showing a 3x3 grid of chunks. Each chunk gets processed, bringing more trees overlapping other chunks. Once all chunks have generated trees, the middle one can be considered complete.](images/multipass_tree_inter_dependency.webp)
+
+With 3 passes, even more columns have to be partially generated:
+
+```
+a a a a a a a a a    a = pass 1 partially affected by b
+a b b b b b b b a    b = pass 2 incomplete, partially affected by itself
+a b B B B B B b a    B = pass 2 complete, partially affected by c
+a b B c c c B b a    c = pass 3 incomplete, partially affected by itself
+a b B c C c B b a    C = pass 3 complete
+a b B c c c B b a
+a b B B B B B b a
+a b b b b b b b a
+a a a a a a a a a
+```
+
+The generator does not do all this work from scratch everytime it needs to generate a column.
+Since columns will have to be re-accessed many times, they are cached in an internal map. Columns get unloaded when far enough from any viewer. This map can be previewed in the editor, when the terrain is present in the edited scene:
+
+![Screenshot of the inspector showing the generator, in which the cache of columns is shown](images/multipass_cache_viewer.webp)
+
+Each pass can be seen as concentric rectangular areas extending *beyond the view distance of the viewer* (note, you won't see those passes if your terrain has `run_stream_in_editor` disabled).
+Passes that can access neighbors use two shades of color, where the brighter shade means all neighbors have run the same pass.
+
+
+#### Determinism
+
+A key feature of generators is to be deterministic. Generating the same column again must always give the same result, as long as parameters are the same (position, seed...). However, with multipass, a few factors can break determinism.
+
+Column passes are executed in parallel, using multiple threads. Also, players can cause columns to generate from any direction. That means *the order in which columns generate is unpredictable*.
+
+Consider neighbor columns `A` and `B`. `A` could generate a tree overlapping into `B`. But `B` can also generate a tree overlapping into `A`. As a result, if the neighbor tree has already been planted, you have to make sure not to erase parts of its trunk, or even leaves if they are different.
+
+In this case:
+
+- The result might no longer be deterministic, although you could decide it's ok if the differences are acceptable. In some cases results could be the same regardless of order.
+- Structure generation can be bothered a bit, notably placement checks or trees growing through other structures. You might have to place voxels by choosing which voxel types or areas you can overwrite yourself.
+
+
+### Limitations
+
+- This kind of generator only works with `VoxelTerrain`, because it is very data-heavy: it is too expensive to run on the fly and directly produce LODs, like simpler single-pass generators can. If LOD has to be supported with a terrain using this generator, it will likely have to work differently and update slower, because it is required to generate the highest level of detail everywhere (i.e Distant Horizons mod in Minecraft).
+- It is generally more expensive than single-pass generators, and consumes more memory because it needs to cache partially-generated columns in a radius around every player, *beyond their view distances*. It does this to improve performance (which otherwise would be orders of magnitude worse). With a lot of passes or high extents, the amount of memory consumed by this cache could even exceed visible chunks.
+- Column height is limited for practical reasons. Multipass cubic chunks were experimented with during development of `VoxelGeneratorMultipassCB`, and they were significantly more expensive, and harder to work with in some cases, because of the inability to access a full vertical section (which would have to be infinite).
+- The reachable distance outside the main column is limited. It can be increased, but it gets expensive quickly. If you need to reach further to place very big structures spanning dozens of chunks across, you might have to think of a different approach. For example, generating a "blueprint" up-front (or deterministically), and rasterizing parts of it progressively when they intersect the column.
+- The same instance of generator cannot be shared between multiple terrains. If you need the same generator on two terrains, make a copy.
+- Implementation isn't ideal. `VoxelTerrain` is very generic and works with infinite cubic chunks, while this generator needed different constraints to work well. As a result, there is some overhead that could be avoided if the terrain was entirely rewritten and dedicated to this kind of column structure. It wasn't done because it would become less configurable, break compatibility and take time to develop. 
+- Currently, the column cache isn't saved, contrary to what was described in [issue 545](https://github.com/Zylann/godot_voxel/issues/545). So if the game restarts, some columns and their neighbors can be asked to generate again if blocks weren't saved in a `VoxelStream`. This can be mitigated by saving generated blocks with `VoxelStream.save_generator_output`. In general, don't expect `VoxelGenerator` to be called only once for a given chunk, because it might be called again in corner cases. Generators should be deterministic and not have race conditions.
 
 
 Modifiers

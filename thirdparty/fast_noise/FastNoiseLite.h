@@ -1484,6 +1484,12 @@ public:
         return value * 9.046026385208288f;
     }
 
+// <Zylann> GCC raises warnings when integer overflows occur, which are needed for hashing here.
+// Same fix as in Godot e41e2a110373a251cd0664f077ada6f344e5c8fd
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggressive-loop-optimizations"
+#endif
 
     // Cellular Noise
 
@@ -1771,6 +1777,10 @@ public:
         }
     }
 
+// <Zylann>
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
     // Perlin Noise
 

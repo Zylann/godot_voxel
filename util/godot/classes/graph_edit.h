@@ -9,6 +9,7 @@ using namespace godot;
 #endif
 
 #include "../core/string_name.h"
+#include "../core/version.h"
 #include <vector>
 
 namespace zylann {

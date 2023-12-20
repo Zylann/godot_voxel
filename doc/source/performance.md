@@ -136,7 +136,7 @@ Besides, certain platforms (such as consoles or mobile systems) might not allow 
 
 #### Spatial lock (17/06/2023)
 
-Later on, `RWLocks` were removed from `VoxelBuffer`. They were replaced with `VoxelSpatialLock`.
+Later on, `RWLocks` were removed from `VoxelBuffer`. They were replaced with `SpatialLock3D`.
 
 A spatial lock is just a list of boxes protected by a mutex. If you want to read voxels in a specific area, try adding that box to the list, and remove it once you're done. If you want to also write voxels, tag that box as "write mode".
 The spatial lock will block locking attempts if an existing box in "write mode" is intersecting yours, while allowing multiple "read mode" boxes to overlap. It essentially acts the same as `RWLock`, except only one short-duration mutex is used to protect the list, and there is no need for thousands of them to exist.

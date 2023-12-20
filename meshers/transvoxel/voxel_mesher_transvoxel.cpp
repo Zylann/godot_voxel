@@ -9,7 +9,7 @@
 #include "../../util/godot/classes/rendering_server.h"
 #include "../../util/godot/classes/shader.h"
 #include "../../util/godot/classes/shader_material.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
@@ -299,8 +299,11 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 
 	output.primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 	output.mesh_flags = //
-			(RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT) |
-			(RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+			(RenderingServer::ARRAY_CUSTOM_RGBA_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM0_SHIFT);
+
+	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
+		output.mesh_flags |= (RenderingServer::ARRAY_CUSTOM_RG_FLOAT << Mesh::ARRAY_FORMAT_CUSTOM1_SHIFT);
+	}
 }
 
 // Only exists for testing

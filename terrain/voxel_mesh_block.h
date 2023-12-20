@@ -3,12 +3,12 @@
 
 #include "../constants/cube_tables.h"
 #include "../meshers/voxel_mesher.h"
-#include "../util/fixed_array.h"
+#include "../util/containers/fixed_array.h"
+#include "../util/containers/span.h"
 #include "../util/godot/classes/world_3d.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 #include "../util/ref_count.h"
-#include "../util/span.h"
 
 #include <atomic>
 
@@ -35,19 +35,23 @@ public:
 
 	// Visuals
 
-	void set_mesh(
-			Ref<Mesh> mesh, DirectMeshInstance::GIMode gi_mode, RenderingServer::ShadowCastingSetting shadow_casting);
+	void set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
+			RenderingServer::ShadowCastingSetting shadow_setting, int render_layers_mask);
 	Ref<Mesh> get_mesh() const;
 	bool has_mesh() const;
 	void drop_mesh();
 
 	// Note, GIMode is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
-	void set_gi_mode(DirectMeshInstance::GIMode mode);
+	void set_gi_mode(GeometryInstance3D::GIMode mode);
 
 	// Note, ShadowCastingSetting is not stored per block, it is a shared option so we provide it in several functions.
 	// Call this function only if the mesh block already exists and has not changed mesh
 	void set_shadow_casting(RenderingServer::ShadowCastingSetting setting);
+
+	// Note, render layers is not stored per block, it is a shared option so we provide it in several functions.
+	// Call this function only if the mesh block already exists and has not changed mesh
+	void set_render_layers_mask(int mask);
 
 	// Collisions
 

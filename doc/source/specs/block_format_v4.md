@@ -1,4 +1,4 @@
-Voxel block format
+Voxel block format v4
 ====================
 
 Version: 4

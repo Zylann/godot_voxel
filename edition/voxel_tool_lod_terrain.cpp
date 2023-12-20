@@ -191,7 +191,7 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	ops::DoHemisphere op;
+	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
 	op.shape.center = center;
 	op.shape.radius = radius;
 	op.shape.flat_direction = flat_direction;
@@ -213,8 +213,15 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	VoxelData &data = _terrain->get_storage();
 
 	data.pre_generate_box(op.box);
-	data.get_blocks_grid(op.blocks, op.box, 0);
-	op();
+
+	VoxelDataGrid grid;
+	data.get_blocks_grid(grid, op.box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
 
 	_post_edit(op.box);
 }
@@ -276,13 +283,12 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
 void VoxelToolLodTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) {
@@ -709,12 +715,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-#if defined(ZN_GODOT)
 			timer->connect("timeout", ZN_GODOT_CALLABLE_MP(rigid_body, RigidBody3D, set_freeze_enabled).bind(false));
-#elif defined(ZN_GODOT_EXTENSION)
-			// TODO GDX: Callable::bind() cannot be used
-			ZN_PRINT_ERROR("Callable::bind() cannot be used in GDExtension, can't apply clipping fix to RigidBody3D");
-#endif
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);
@@ -767,7 +768,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(mesh_sdf.is_null());
-	ERR_FAIL_COND(mesh_sdf->is_baked());
+	ERR_FAIL_COND(!mesh_sdf->is_baked());
 	Ref<gd::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
 	ERR_FAIL_COND(buffer_ref.is_null());
 	const VoxelBufferInternal &buffer = buffer_ref->get_buffer();

@@ -43,6 +43,13 @@
 				Operate on a rectangular cuboid section of the terrain. [code]begin[/code] and [code]end[/code] are inclusive. Choose operation and which voxel to use by setting [code]value[/code] and [code]mode[/code] before calling this function.
 			</description>
 		</method>
+		<method name="do_path">
+			<return type="void" />
+			<param index="0" name="points" type="PackedVector3Array" />
+			<param index="1" name="radii" type="PackedFloat32Array" />
+			<description>
+			</description>
+		</method>
 		<method name="do_point">
 			<return type="void" />
 			<param index="0" name="pos" type="Vector3i" />
@@ -120,8 +127,9 @@
 			<param index="3" name="collision_mask" type="int" default="4294967295" />
 			<description>
 				Runs a voxel-based raycast to find the first hit from an origin and a direction.
+				Returns a result object if a voxel got hit, otherwise returns [code]null[/code].
 				This is useful when colliders cannot be relied upon. It might also be faster (at least at short range), and is more precise to find which voxel is hit. It internally uses the DDA algorithm.
-				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
+				[code]collision_mask[/code] is currently only used with blocky voxels. It is combined with [member VoxelBlockyModel.collision_mask] to decide which voxel types the ray can collide with.
 			</description>
 		</method>
 		<method name="set_voxel">
@@ -188,7 +196,7 @@
 			Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 		</member>
 		<member name="eraser_value" type="int" setter="set_eraser_value" getter="get_eraser_value">
-			Sets which value will be used to erase voxels when editing the [enum VoxelBuffer.CHANNEL_TYPE] channel in [enum MODE_REMOVE] mode.
+			Sets which value will be used to erase voxels when editing the [constant VoxelBuffer.CHANNEL_TYPE] channel in [constant MODE_REMOVE] mode.
 		</member>
 		<member name="mode" type="int" setter="set_mode" getter="get_mode" enum="VoxelTool.Mode">
 			Sets how [code]do_*[/code] functions will behave. This may vary depending on the channel.
@@ -207,15 +215,15 @@
 		<member name="texture_opacity" type="float" setter="set_texture_opacity" getter="get_texture_opacity">
 		</member>
 		<member name="value" type="int" setter="set_value" getter="get_value">
-			Sets which voxel value will be used. This is not relevant when editing [enum VoxelBuffer.CHANNEL_SDF].
+			Sets which voxel value will be used. This is not relevant when editing [constant VoxelBuffer.CHANNEL_SDF].
 		</member>
 	</members>
 	<constants>
 		<constant name="MODE_ADD" value="0" enum="Mode">
-			When editing [enum VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
+			When editing [constant VoxelBuffer.CHANNEL_SDF], will add matter. Useful for building.
 		</constant>
 		<constant name="MODE_REMOVE" value="1" enum="Mode">
-			When editing [enum VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
+			When editing [constant VoxelBuffer.CHANNEL_SDF], will subtract matter. Useful for digging.
 		</constant>
 		<constant name="MODE_SET" value="2" enum="Mode">
 			Replace voxel values without any blending. Useful for blocky voxels.

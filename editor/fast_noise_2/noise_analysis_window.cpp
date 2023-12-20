@@ -1,5 +1,5 @@
 #include "noise_analysis_window.h"
-#include "../../util/godot/funcs.h"
+#include "../../util/godot/core/packed_arrays.h"
 #include "chart_view.h"
 
 #include <editor/editor_scale.h>
@@ -173,7 +173,7 @@ std::vector<Vector3> &get_tls_precomputed_unit_vectors_3d() {
 	static thread_local std::vector<Vector3> tls_precomputed_unit_vectors_3d;
 	return tls_precomputed_unit_vectors_3d;
 }
-} //namespace
+} // namespace
 
 void NoiseAnalysisWindow::_on_calculate_button_pressed() {
 	ERR_FAIL_COND(_noise.is_null());

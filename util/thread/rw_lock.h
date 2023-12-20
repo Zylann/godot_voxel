@@ -12,7 +12,8 @@ namespace zylann {
 
 class RWLock {
 public:
-	// Lock the rwlock, block if locked by someone else
+	// Lock the rwlock, block if locked for write by another thread.
+	// WARNING: cannot be locked twice by the same thread, it is undefined behavior.
 	void read_lock() const {
 #ifdef ZN_PROFILE_RWLOCK
 		ZN_PROFILE_SCOPE();

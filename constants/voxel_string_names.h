@@ -67,6 +67,12 @@ public:
 	StringName source;
 	StringName _dummy_function;
 	StringName grab_focus;
+
+	StringName font;
+	StringName font_size;
+	StringName font_color;
+	StringName Label;
+	StringName Editor;
 #endif
 
 	StringName _rpc_receive_blocks;
@@ -91,6 +97,11 @@ public:
 
 	FixedArray<StringName, math::ORTHO_ROTATION_COUNT> ortho_rotation_names;
 	String ortho_rotation_enum_hint_string;
+
+	StringName compiled;
+
+	StringName _on_async_search_completed;
+	StringName async_search_completed;
 };
 
 } // namespace zylann::voxel

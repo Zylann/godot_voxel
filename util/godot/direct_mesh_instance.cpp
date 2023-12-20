@@ -105,32 +105,14 @@ Ref<Mesh> DirectMeshInstance::get_mesh() const {
 	return _mesh;
 }
 
-void DirectMeshInstance::set_gi_mode(GIMode mode) {
+void DirectMeshInstance::set_gi_mode(GeometryInstance3D::GIMode mode) {
+	set_geometry_instance_gi_mode(_mesh_instance, mode);
+}
+
+void DirectMeshInstance::set_render_layers_mask(int mask) {
 	ERR_FAIL_COND(!_mesh_instance.is_valid());
 	RenderingServer &vs = *RenderingServer::get_singleton();
-
-	bool baked_light;
-	bool dynamic_gi;
-
-	switch (mode) {
-		case GI_MODE_DISABLED:
-			baked_light = false;
-			dynamic_gi = false;
-			break;
-		case GI_MODE_BAKED:
-			baked_light = true;
-			dynamic_gi = false;
-			break;
-		case GI_MODE_DYNAMIC:
-			baked_light = false;
-			dynamic_gi = true;
-			break;
-		default:
-			CRASH_NOW_MSG("Unexpected GIMode");
-	}
-
-	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_BAKED_LIGHT, baked_light);
-	vs.instance_geometry_set_flag(_mesh_instance, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, dynamic_gi);
+	vs.instance_set_layer_mask(_mesh_instance, mask);
 }
 
 void DirectMeshInstance::operator=(DirectMeshInstance &&src) {

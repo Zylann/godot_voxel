@@ -147,6 +147,15 @@ inline Vector3i rotate_z_90_cw(Vector3i v) {
 
 Vector3i rotate_90(Vector3i v, Axis axis, bool clockwise);
 
+inline int manhattan_distance(const Vector3i &a, const Vector3i &b) {
+	return Math::abs(a.x - b.x) + Math::abs(a.y - b.y) + Math::abs(a.z - b.z);
+}
+
+inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
+	// In Chebyshev metric, points on the surface of a cube are all equidistant to its center
+	return math::max(math::max(Math::abs(a.x - b.x), Math::abs(a.y - b.y)), Math::abs(a.z - b.z));
+}
+
 } // namespace math
 
 std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);

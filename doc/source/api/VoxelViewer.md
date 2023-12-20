@@ -2,7 +2,6 @@
 
 Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)
 
-
 Attach this as a child node of characters, so the voxel world will know where to load blocks around them.
 
 If no viewer is present in the world, nothing will generate.
@@ -56,4 +55,4 @@ How far should voxels generate around this viewer.
 - [void](#)<span id="i_set_network_peer_id"></span> **set_network_peer_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

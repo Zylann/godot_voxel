@@ -1,5 +1,5 @@
 #include "threaded_task_runner.h"
-#include "../container_funcs.h"
+#include "../dstack.h"
 #include "../godot/classes/time.h"
 #include "../profiling.h"
 #include "../string_funcs.h"
@@ -66,6 +66,31 @@ void ThreadedTaskRunner::destroy_all_threads() {
 	}
 }
 
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+
+void ThreadedTaskRunner::debug_add_owned_task(IThreadedTask *task) {
+	std::string s;
+	dstack::Info info;
+	info.to_string(s);
+	println(format("Own {} t {}", uint64_t(task), Thread::get_caller_id()));
+	MutexLock mlock(_debug_owned_tasks_mutex);
+	auto p = _debug_owned_tasks.insert({ task, s });
+	if (p.second == false) {
+		flush_log_file();
+		ZN_CRASH();
+	}
+}
+
+void ThreadedTaskRunner::debug_remove_owned_task(IThreadedTask *task) {
+	{
+		MutexLock mlock(_debug_owned_tasks_mutex);
+		ZN_ASSERT(_debug_owned_tasks.erase(task) == 1);
+	}
+	println(format("Unowned {}", uint64_t(task)));
+}
+
+#endif // ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+
 void ThreadedTaskRunner::set_name(const char *name) {
 	_name = name;
 }
@@ -96,6 +121,10 @@ void ThreadedTaskRunner::enqueue(IThreadedTask *task, bool serial) {
 		MutexLock lock(_staged_tasks_mutex);
 		_staged_tasks.push_back(t);
 		++_debug_received_tasks;
+
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+		debug_add_owned_task(task);
+#endif
 	}
 	// TODO Do I need to post a certain amount of times?
 	// I feel like this causes the semaphore to be passed too many times when tasks become empty
@@ -118,6 +147,10 @@ void ThreadedTaskRunner::enqueue(Span<IThreadedTask *> new_tasks, bool serial) {
 			t.task = new_task;
 			t.is_serial = serial;
 			_staged_tasks[dst_begin + i] = t;
+
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+			debug_add_owned_task(new_task);
+#endif
 		}
 		_debug_received_tasks += new_tasks.size();
 	}
@@ -240,6 +273,8 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 						}
 
 						tasks.push_back(item);
+						// We don't just pop the last item because of serial task handling. But ordered removal should
+						// be fast enough since serial tasks aren't common.
 						_tasks.erase(_tasks.begin() + i);
 						break;
 					}
@@ -306,9 +341,14 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 				if (!item.task->is_cancelled()) {
 					ThreadedTaskContext ctx{ uint8_t(data.index),
 						// By default, if the task does not set this status, it will be considered complete after run
-						ThreadedTaskContext::STATUS_COMPLETE };
+						ThreadedTaskContext::STATUS_COMPLETE, item.cached_priority };
 					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+					if (ctx.status == ThreadedTaskContext::STATUS_TAKEN_OUT) {
+						debug_remove_owned_task(item.task);
+					}
+#endif
 					item.status = ctx.status;
 					data.debug_running_task_name = nullptr;
 				}

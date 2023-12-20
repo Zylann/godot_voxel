@@ -8,7 +8,7 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="distance" type="float" setter="" getter="get_distance" default="-4.31602e+08">
+		<member name="distance" type="float" setter="" getter="get_distance" default="0.0">
 		</member>
 		<member name="position" type="Vector3i" setter="" getter="get_position" default="Vector3i(0, 0, 0)">
 			Integer position of the voxel that was hit.

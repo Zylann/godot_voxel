@@ -1,8 +1,8 @@
 #ifndef VOXEL_BLOCK_SERIALIZER_H
 #define VOXEL_BLOCK_SERIALIZER_H
 
+#include "../util/containers/span.h"
 #include "../util/godot/macros.h"
-#include "../util/span.h"
 
 #include <cstdint>
 #include <vector>

@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 import sys
 import textwrap
 import bbcode
+import bbcode_to_markdown
 import markdown
 from pathlib import Path
 
@@ -87,84 +88,6 @@ def parse_nodes_xml(src_fpath):
     return nodes
 
 
-def format_doc_bbcodes_for_markdown(text, multiline, module_class_names):
-    bb_nodes = bbcode.parse(text)
-
-    in_codeblock = False
-    url = None
-
-    out = ""
-    for bb_node in bb_nodes:
-        if isinstance(bb_node, bbcode.NodeText):
-            node_text = bb_node.text
-
-            if not multiline:
-                # Replace newlines.
-                if in_codeblock:
-                    # So far that's for displaying a list of things in descriptions that are shown in a table,
-                    # so let's remove newlines and use commas.
-                    node_text = ' ' + ', '.join(node_text.strip().splitlines())
-                else:
-                    node_text = ' '.join(node_text.splitlines())
-
-            if url != None:
-                out += markdown.make_link(node_text, url)
-                url = None
-
-            else:
-                out += node_text
-
-        elif isinstance(bb_node, bbcode.NodeTag):
-            if bb_node.name == 'codeblock':
-                if multiline:
-                    out += '```'
-                else:
-                    out += '`'
-                in_codeblock = bb_node.is_opening()
-
-            elif bb_node.name == 'graph_node':
-                out += "`{0}`".format(bb_node.get_first_option_key())
-            
-            elif bb_node.name == 'code':
-                out += '`'
-
-            elif bb_node.name == 'url':
-                url = bb_node.value
-
-            else:
-                # Class lookup: assuming name convention, 
-                # otherwise we need a complete list of classes and it's a bit cumbersome to obtain
-                if bb_node.name[0].isupper():
-                    out += markdown.make_type(bb_node.name, 'api/', module_class_names)
-
-                else:
-                    # Error fallback
-                    print("Unhandled BBCode in Markdown translation:", bb_node.to_string())
-                    print(text)
-                    out += bb_node.to_string()
-
-    return out
-
-
-def format_text_for_markdown_table(text, module_class_names):
-    lines = text.splitlines()
-
-    for i in range(0, len(lines)):
-        lines[i] = lines[i].strip()
-
-    # Newlines aren't supported, but what to replace them with depends on BBCode
-    text = '\n'.join(lines)
-
-    text = format_doc_bbcodes_for_markdown(text, False, module_class_names)
-
-    return text
-
-
-def format_text_for_markdown(text, module_class_names):
-    text = textwrap.dedent(text)
-    return format_doc_bbcodes_for_markdown(text, True, module_class_names)
-
-
 def get_nodes_by_category_dict(nodes_list):
     default_category_name = "Other"
     nodes_per_category = {}
@@ -196,7 +119,7 @@ def write_markdown_table_from_nodes(nodes, module_class_names):
         table_rows = [["Node name", "Description"]]
 
         for node in nodes_per_category[category_name]:
-            desc = format_text_for_markdown_table(node.description, module_class_names)
+            desc = bbcode_to_markdown.format_text_for_table(node.description, module_class_names, None, 'api/')
             table_rows.append([node.name, desc])
 
         out += markdown.make_table(table_rows)
@@ -241,7 +164,7 @@ def write_markdown_listing_from_nodes(nodes, module_class_names):
             
             out += "\n"
             desc = strip_leading_and_trailing_empty_lines(node.description)
-            out += format_text_for_markdown(desc, module_class_names)
+            out += bbcode_to_markdown.format_text(desc, module_class_names, None, 'api/')
             out += "\n\n"
     
     return out
@@ -349,8 +272,8 @@ if __name__ == "__main__":
     md = write_markdown_listing_from_nodes(nodes, module_class_names)
     with open(md_fpath, "w") as f:
         f.write("# VoxelGeneratorGraph nodes\n\n")
-        f.write(format_text_for_markdown(
+        f.write(bbcode_to_markdown.format_text(
             "This page lists all nodes that can be used in [VoxelGeneratorGraph] and [VoxelGraphFunction].\n\n", 
-            module_class_names))
+            module_class_names, None, 'api/'))
         f.write(md)
 

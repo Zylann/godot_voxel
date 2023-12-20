@@ -2,6 +2,7 @@
 #define DIRECT_MESH_INSTANCE_H
 
 #include "../non_copyable.h"
+#include "classes/geometry_instance_3d.h"
 #include "classes/mesh.h"
 #include "classes/rendering_server.h"
 #include "macros.h"
@@ -27,16 +28,8 @@ public:
 	void set_visible(bool visible);
 	void set_cast_shadows_setting(RenderingServer::ShadowCastingSetting mode);
 	void set_shader_instance_parameter(StringName key, Variant value);
-
-	// Convenience
-	enum GIMode { //
-		GI_MODE_DISABLED = 0,
-		GI_MODE_BAKED,
-		GI_MODE_DYNAMIC,
-		_GI_MODE_COUNT
-	};
-
-	void set_gi_mode(GIMode mode);
+	void set_gi_mode(GeometryInstance3D::GIMode mode);
+	void set_render_layers_mask(int mask);
 
 	Ref<Mesh> get_mesh() const;
 

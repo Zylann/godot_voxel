@@ -1,14 +1,16 @@
 #include "../../edition/voxel_tool.h"
-#include "../../engine/save_block_data_task.h"
-#include "../../util/container_funcs.h"
+#include "../../streams/save_block_data_task.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/camera_3d.h"
 #include "../../util/godot/classes/collision_shape_3d.h"
+#include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/multimesh.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/godot/classes/resource_saver.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/godot/classes/viewport.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
@@ -19,6 +21,10 @@
 #include "voxel_instance_component.h"
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_rigidbody.h"
+
+#ifdef TOOLS_ENABLED
+#include "../../editor/camera_cache.h"
+#endif
 
 // Only needed for debug purposes, otherwise RenderingServer is used directly
 #include "../../util/godot/classes/multimesh_instance_3d.h"
@@ -201,7 +207,7 @@ void VoxelInstancer::process() {
 		process_mesh_lods();
 	}
 #ifdef TOOLS_ENABLED
-	if (_gizmos_enabled) {
+	if (_gizmos_enabled && is_visible_in_tree()) {
 		process_gizmos();
 	}
 #endif
@@ -348,98 +354,161 @@ const VoxelInstancer::Layer &VoxelInstancer::get_layer_const(int id) const {
 	return it->second;
 }
 
+namespace {
+Vector3 get_global_camera_position(const Node &node) {
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint()) {
+		return gd::get_3d_editor_camera_position();
+	}
+#endif
+	const Viewport *viewport = node.get_viewport();
+	ZN_ASSERT_RETURN_V(viewport != nullptr, Vector3());
+	const Camera3D *camera = viewport->get_camera_3d();
+	if (camera == nullptr) {
+		return Vector3();
+	}
+	return camera->get_global_position();
+}
+
+} // namespace
+
+void VoxelInstancer::update_mesh_from_mesh_lod(Block &block,
+		const VoxelInstanceLibraryMultiMeshItem::Settings &settings, bool hide_beyond_max_lod,
+		bool instancer_is_visible) {
+	if (hide_beyond_max_lod && block.current_mesh_lod == settings.mesh_lod_count) {
+		// Godot doesn't like null meshes, so we have to implement a different code path
+
+		// Can be invalid if there is currently no instance in this block
+		if (block.multimesh_instance.is_valid()) {
+			block.multimesh_instance.set_visible(false);
+		}
+
+	} else {
+		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
+		if (multimesh.is_valid()) {
+			block.multimesh_instance.set_visible(instancer_is_visible);
+			ZN_PROFILE_SCOPE();
+			multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
+		}
+	}
+}
+
 void VoxelInstancer::process_mesh_lods() {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
 
+	// Note, this form of LOD must be visual only. It supports only one camera.
+
 	// Get viewer position
-	const Viewport *viewport = get_viewport();
-	const Camera3D *camera = viewport->get_camera_3d();
-	if (camera == nullptr) {
-		return;
-	}
 	const Transform3D gtrans = get_global_transform();
-	const Vector3 cam_pos_local = (gtrans.affine_inverse() * camera->get_global_transform()).origin;
+	const Vector3 cam_pos_global = get_global_camera_position(*this);
+	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
 
 	ERR_FAIL_COND(_parent == nullptr);
 	const int block_size = 1 << _parent_mesh_block_size_po2;
 
-	{
-		// Hardcoded LOD thresholds for now.
-		// Can't really use pixel density because view distances are controlled by the main surface LOD octree
-		FixedArray<float, 4> coeffs;
-		coeffs[0] = 0;
-		coeffs[1] = 0.1;
-		coeffs[2] = 0.25;
-		coeffs[3] = 0.5;
-		const float hysteresis = 1.05;
+	const float hysteresis = 1.05;
 
-		const float max_distance = _mesh_lod_distance;
+	const uint64_t mesh_lod_update_time_budget_microseconds = 500;
+	const uint64_t time_up_time = Time::get_singleton()->get_ticks_usec() + mesh_lod_update_time_budget_microseconds;
 
-		for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
-			Lod &lod = _lods[lod_index];
+	const bool instancer_is_visible = is_visible_in_tree();
 
-			for (unsigned int j = 0; j < lod.mesh_lod_distances.size(); ++j) {
-				MeshLodDistances &mld = lod.mesh_lod_distances[j];
-				const float lod_max_distance = (1 << j) * max_distance;
-				mld.exit_distance_squared = lod_max_distance * lod_max_distance * coeffs[j];
-				mld.enter_distance_squared = hysteresis * mld.exit_distance_squared;
+	// const unsigned int initial_mesh_lod_time_sliced_block_index = _mesh_lod_time_sliced_block_index;
+
+	while (_mesh_lod_time_sliced_block_index < _blocks.size()) {
+		// Iterate a portion of blocks, then check timing budget once after that
+		const unsigned int desired_portion_size = 64;
+		const unsigned int portion_end = math::min(
+				_mesh_lod_time_sliced_block_index + desired_portion_size, static_cast<unsigned int>(_blocks.size()));
+		Span<UniquePtr<Block>> blocks_portion = to_span_from_position_and_size(
+				_blocks, _mesh_lod_time_sliced_block_index, portion_end - _mesh_lod_time_sliced_block_index);
+		_mesh_lod_time_sliced_block_index = portion_end;
+
+		for (UniquePtr<Block> &block_ptr : blocks_portion) {
+			Block &block = *block_ptr;
+			// Early exit for empty blocks (we only do this for multimeshes so no need to check other things)
+			if (!block.multimesh_instance.is_valid()) {
+				continue;
 			}
+
+			const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+			ERR_CONTINUE(item_base == nullptr);
+			// TODO Optimization: would be nice to not need this cast by iterating only the same item types
+			const VoxelInstanceLibraryMultiMeshItem *item =
+					Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+			if (item == nullptr) {
+				// Not a multimesh item
+				continue;
+			}
+			const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+			const bool hide_beyond_max_lod = item->get_hide_beyond_max_lod();
+			const unsigned int extended_mesh_lod_count = settings.mesh_lod_count + (hide_beyond_max_lod ? 1 : 0);
+			// Note, "hide beyond max lod" counts as having an extra LOD where the mesh is hidden. So an item can have
+			// only one mesh setup, yet be considered having LOD
+			if (extended_mesh_lod_count <= 1) {
+				// This block has no LOD
+				// TODO Optimization: would be nice to not need this conditional by iterating only item types that
+				// define lods
+				continue;
+			}
+
+			const int lod_index = item->get_lod_index();
+
+			Span<const float> distance_ratios = item->get_mesh_lod_distance_ratios();
+			const float max_distance = _mesh_lod_distance * (1 << lod_index);
+
+			// #ifdef DEBUG_ENABLED
+			// 		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS);
+			// #endif
+
+			// const Lod &lod = _lods[lod_index];
+
+			const int lod_block_size = block_size << lod_index;
+			const int hs = lod_block_size >> 1;
+			const Vector3 block_center_local(block.grid_position * lod_block_size + Vector3i(hs, hs, hs));
+			const float distance_squared = cam_pos_local.distance_squared_to(block_center_local);
+
+			// Compute current mesh LOD index (note, block.current_mesh_lod can totally be out of range due to eventual
+			// config changes, or even as a way to force an update. This will bring it back in range)
+			unsigned int current_mesh_lod = block.current_mesh_lod;
+			while (current_mesh_lod + 1 < extended_mesh_lod_count &&
+					distance_squared > math::squared(distance_ratios[current_mesh_lod] *
+											   max_distance
+											   // Exit distance is slightly higher so it has less chance to oscillate
+											   // often when near the threshold
+											   * hysteresis)) {
+				// Decrease detail
+				++current_mesh_lod;
+			}
+			while (current_mesh_lod > 0 &&
+					(distance_squared < math::squared(distance_ratios[current_mesh_lod - 1] * max_distance)
+							// Allow mesh LOD index to go down if count is set lower
+							|| current_mesh_lod >= extended_mesh_lod_count)) {
+				// Increase detail
+				--current_mesh_lod;
+			}
+
+			// Apply if it changed
+			if (block.current_mesh_lod != current_mesh_lod) {
+				block.current_mesh_lod = current_mesh_lod;
+				update_mesh_from_mesh_lod(block, settings, hide_beyond_max_lod, instancer_is_visible);
+			}
+		}
+
+		if (Time::get_singleton()->get_ticks_usec() > time_up_time) {
+			break;
 		}
 	}
 
-	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-		Block &block = **it;
+	// const int64_t updated_blocks_count = _mesh_lod_time_sliced_block_index -
+	// initial_mesh_lod_time_sliced_block_index; const float updated_blocks_ratio = _blocks.size() != 0 ?
+	// updated_blocks_count / float(_blocks.size()) : 0; ZN_PROFILE_PLOT("Updated Instancer Blocks Mesh LOD",
+	// updated_blocks_ratio);
 
-		const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
-		ERR_CONTINUE(item_base == nullptr);
-		// TODO Optimization: would be nice to not need this cast by iterating only the same item types
-		const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
-		if (item == nullptr) {
-			// Not a multimesh item
-			continue;
-		}
-		const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
-		const int mesh_lod_count = settings.mesh_lod_count;
-		if (mesh_lod_count <= 1) {
-			// This block has no LOD
-			// TODO Optimization: would be nice to not need this conditional by iterating only item types that define
-			// lods
-			continue;
-		}
-
-		const int lod_index = item->get_lod_index();
-
-#ifdef DEBUG_ENABLED
-		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS);
-#endif
-
-		const Lod &lod = _lods[lod_index];
-
-		const int lod_block_size = block_size << lod_index;
-		const int hs = lod_block_size >> 1;
-		const Vector3 block_center_local(block.grid_position * lod_block_size + Vector3i(hs, hs, hs));
-		const float distance_squared = cam_pos_local.distance_squared_to(block_center_local);
-
-		if (block.current_mesh_lod + 1 < mesh_lod_count &&
-				distance_squared > lod.mesh_lod_distances[block.current_mesh_lod].enter_distance_squared) {
-			// Decrease detail
-			++block.current_mesh_lod;
-			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-			if (multimesh.is_valid()) {
-				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
-			}
-		}
-
-		if (block.current_mesh_lod > 0 &&
-				distance_squared < lod.mesh_lod_distances[block.current_mesh_lod].exit_distance_squared) {
-			// Increase detail
-			--block.current_mesh_lod;
-			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-			if (multimesh.is_valid()) {
-				multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
-			}
-		}
+	// Keep restarting the update every frame for now
+	if (_mesh_lod_time_sliced_block_index >= _blocks.size()) {
+		_mesh_lod_time_sliced_block_index = 0;
 	}
 }
 
@@ -448,11 +517,29 @@ void VoxelInstancer::update_visibility() {
 	if (!is_inside_tree()) {
 		return;
 	}
-	const bool visible = is_visible_in_tree();
+	const bool instancer_is_visible = is_visible_in_tree();
+
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block &block = **it;
+
 		if (block.multimesh_instance.is_valid()) {
-			block.multimesh_instance.set_visible(visible);
+			bool visible_with_lod = true;
+			{
+				const VoxelInstanceLibraryItem *item_base = _library->get_item_const(block.layer_id);
+				ERR_CONTINUE(item_base == nullptr);
+				// TODO Optimization: would be nice to not need this cast by iterating only the same item types
+				const VoxelInstanceLibraryMultiMeshItem *item =
+						Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(item_base);
+				if (item != nullptr) {
+					const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+					const bool hide_beyond_max_lod = item->get_hide_beyond_max_lod();
+					if (hide_beyond_max_lod) {
+						visible_with_lod = block.current_mesh_lod < settings.mesh_lod_count;
+					}
+				}
+			}
+
+			block.multimesh_instance.set_visible(instancer_is_visible && visible_with_lod);
 		}
 	}
 }
@@ -655,10 +742,16 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 void VoxelInstancer::update_layer_meshes(int layer_id) {
 	Ref<VoxelInstanceLibraryItem> item_base = _library->get_item(layer_id);
 	ERR_FAIL_COND(item_base.is_null());
+	// This method is expected to run on a multimesh layer
 	VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(*item_base);
 	ERR_FAIL_COND(item == nullptr);
 
+	const bool hide_beyond_max_lod = item->get_hide_beyond_max_lod();
+
+	const bool instancer_is_visible = is_inside_tree() && is_visible_in_tree();
+
 	const VoxelInstanceLibraryMultiMeshItem::Settings &settings = item->get_multimesh_settings();
+	const unsigned int extended_mesh_lod_count = settings.mesh_lod_count + (hide_beyond_max_lod ? 1 : 0);
 
 	for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
 		Block &block = **it;
@@ -668,16 +761,10 @@ void VoxelInstancer::update_layer_meshes(int layer_id) {
 		block.multimesh_instance.set_render_layer(settings.render_layer);
 		block.multimesh_instance.set_material_override(settings.material_override);
 		block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
-		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
-		if (multimesh.is_valid()) {
-			Ref<Mesh> mesh;
-			if (settings.mesh_lod_count <= 1) {
-				mesh = settings.mesh_lods[0];
-			} else {
-				mesh = settings.mesh_lods[block.current_mesh_lod];
-			}
-			multimesh->set_mesh(mesh);
-		}
+		block.multimesh_instance.set_gi_mode(settings.gi_mode);
+
+		block.current_mesh_lod = math::min(static_cast<unsigned int>(block.current_mesh_lod), extended_mesh_lod_count);
+		update_mesh_from_mesh_lod(block, settings, hide_beyond_max_lod, instancer_is_visible);
 	}
 }
 
@@ -759,6 +846,8 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			ERR_PRINT("Unknown change");
 			break;
 	}
+
+	update_configuration_warnings();
 }
 
 void VoxelInstancer::add_layer(int layer_id, int lod_index) {
@@ -993,10 +1082,12 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 		block_index = create_block(layer, layer_id, grid_position, false);
 	}
 #ifdef DEBUG_ENABLED
-	ERR_FAIL_COND(block_index < 0 || block_index >= int(_blocks.size()));
+	ERR_FAIL_COND(block_index < 0 || block_index >= static_cast<int>(_blocks.size()));
 	ERR_FAIL_COND(_blocks[block_index] == nullptr);
 #endif
 	Block &block = *_blocks[block_index];
+
+	// TODO Split in two functions?
 
 	// Update multimesh
 	const VoxelInstanceLibraryMultiMeshItem *item = Object::cast_to<VoxelInstanceLibraryMultiMeshItem>(&item_base);
@@ -1026,8 +1117,11 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
 			// `multimesh_set_buffer` BY DOWNLOADING BACK THE BUFFER FROM THE GRAPHICS CARD which can incur a very harsh
 			// performance penalty
+			// TODO If we could use custom AABBs, we would not need this reordering
 			if (settings.mesh_lod_count > 0) {
-				multimesh->set_mesh(settings.mesh_lods[settings.mesh_lod_count - 1]);
+				if (block.current_mesh_lod < settings.mesh_lod_count) {
+					multimesh->set_mesh(settings.mesh_lods[block.current_mesh_lod]);
+				}
 			}
 
 			// TODO Waiting for Godot to expose the method on the resource object
@@ -1036,7 +1130,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 
 			if (!block.multimesh_instance.is_valid()) {
 				block.multimesh_instance.create();
-				block.multimesh_instance.set_visible(is_visible());
+				block.multimesh_instance.set_visible(is_visible() &&
+						!(item->get_hide_beyond_max_lod() && block.current_mesh_lod == settings.mesh_lod_count));
 			}
 			block.multimesh_instance.set_multimesh(multimesh);
 			block.multimesh_instance.set_render_layer(settings.render_layer);
@@ -1044,6 +1139,15 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 			block.multimesh_instance.set_transform(block_global_transform);
 			block.multimesh_instance.set_material_override(settings.material_override);
 			block.multimesh_instance.set_cast_shadows_setting(settings.shadow_casting_setting);
+			block.multimesh_instance.set_gi_mode(settings.gi_mode);
+
+			if (settings.mesh_lod_count > 1 || (settings.mesh_lod_count == 1 && item->get_hide_beyond_max_lod())) {
+				// Hide for now, let the LOD system show/hide and assign the right mesh when it runs. We do this because
+				// the LOD system doesn't necessarily update every blocks every frame, which would flicker at their full
+				// LOD when spawning
+				block.current_mesh_lod = settings.mesh_lod_count;
+				block.multimesh_instance.set_visible(false);
+			}
 		}
 
 		// Update bodies
@@ -1077,6 +1181,8 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 					body->set_instance_index(instance_index);
 					body->set_render_block_index(block_index);
 					body->set_data_block_position(math::floor_to_int(body_transform.origin) >> data_block_size_po2);
+					body->set_collision_layer(settings.collision_layer);
+					body->set_collision_mask(settings.collision_mask);
 
 					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
 						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
@@ -1084,6 +1190,10 @@ void VoxelInstancer::update_block_from_transforms(int block_index, Span<const Tr
 						cs->set_shape(shape_info.shape);
 						cs->set_transform(shape_info.transform);
 						body->add_child(cs);
+					}
+
+					for (const StringName &group_name : settings.group_names) {
+						body->add_to_group(group_name);
 					}
 
 					add_child(body);
@@ -1657,7 +1767,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 void VoxelInstancer::on_body_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.bodies.size());
+	ZN_ASSERT_RETURN(instance_index < block.bodies.size());
 
 	if (block.multimesh_instance.is_valid()) {
 		// Remove the multimesh instance
@@ -1666,7 +1776,7 @@ void VoxelInstancer::on_body_removed(
 		ERR_FAIL_COND(multimesh.is_null());
 
 		int visible_count = get_visible_instance_count(**multimesh);
-		ERR_FAIL_COND(int(instance_index) >= visible_count);
+		ERR_FAIL_COND(static_cast<int>(instance_index) >= visible_count);
 
 		--visible_count;
 		// TODO Optimize: This is terrible in MT mode! Think about keeping a local copy...
@@ -1694,7 +1804,7 @@ void VoxelInstancer::on_body_removed(
 void VoxelInstancer::on_scene_instance_removed(
 		Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index) {
 	Block &block = *_blocks[render_block_index];
-	ERR_FAIL_INDEX(instance_index, block.scene_instances.size());
+	ZN_ASSERT_RETURN(instance_index < block.scene_instances.size());
 
 	// Unregister the scene instance
 	unsigned int instance_count = block.scene_instances.size();
@@ -1732,6 +1842,12 @@ void VoxelInstancer::set_data_block_size_po2(unsigned int p_data_block_size_po2)
 
 void VoxelInstancer::set_mesh_lod_distance(float p_lod_distance) {
 	_mesh_lod_distance = p_lod_distance;
+}
+
+int VoxelInstancer::get_library_item_id_from_render_block_index(unsigned int render_block_index) const {
+	ZN_ASSERT_RETURN_V(render_block_index < _blocks.size(), -1);
+	Block &block = *_blocks[render_block_index];
+	return block.layer_id;
 }
 
 int VoxelInstancer::debug_get_block_count() const {
@@ -1910,10 +2026,13 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 								.format(varray(VoxelInstanceLibrary::get_class_static())));
 	} else if (_library->get_item_count() == 0) {
 		warnings.append(ZN_TTR("The assigned library is empty. Add items to it so they can be spawned."));
+
+	} else {
+		get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
 	}
 }
 
-#endif
+#endif // TOOLS_ENABLED
 
 void VoxelInstancer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_library", "library"), &VoxelInstancer::set_library);

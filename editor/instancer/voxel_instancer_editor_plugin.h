@@ -27,10 +27,16 @@ private:
 	bool toggle_stat_view();
 	void _on_menu_item_selected(int id);
 
+	VoxelInstancer *get_instancer();
+
 	static void _bind_methods();
 
 	MenuButton *_menu_button = nullptr;
-	VoxelInstancer *_node = nullptr;
+	// Using an ObjectID for referencing, necause it's a neverending struggle to keep checking pointer validity.
+	// When closing a scene while the node is selected, Godot will call `make_visible(false)` and `edit(null)` AFTER
+	// having deleted all the nodes, which means this plugin will be left with a dangling pointer when it's time to
+	// turn off the node's debug drawing feature...
+	ObjectID _instancer_object_id = ObjectID();
 	VoxelInstancerStatView *_stat_view = nullptr;
 };
 

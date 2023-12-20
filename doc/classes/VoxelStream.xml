@@ -8,12 +8,13 @@
 	<tutorials>
 	</tutorials>
 	<methods>
-		<method name="emerge_block">
+		<method name="emerge_block" is_deprecated="true">
 			<return type="int" enum="VoxelStream.ResultCode" />
 			<param index="0" name="out_buffer" type="VoxelBuffer" />
 			<param index="1" name="origin_in_voxels" type="Vector3" />
 			<param index="2" name="lod" type="int" />
 			<description>
+				[i]Deprecated.[/i] Use [method load_voxel_block] instead.
 			</description>
 		</method>
 		<method name="get_block_size" qualifiers="const">
@@ -26,13 +27,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="immerge_block">
+		<method name="immerge_block" is_deprecated="true">
 			<return type="void" />
 			<param index="0" name="buffer" type="VoxelBuffer" />
 			<param index="1" name="origin_in_voxels" type="Vector3" />
 			<param index="2" name="lod" type="int" />
 			<description>
-				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
+				[i]Deprecated.[/i] Use [method save_voxel_block] instead.
 			</description>
 		</method>
 		<method name="load_voxel_block">
@@ -49,6 +50,7 @@
 			<param index="1" name="origin_in_voxels" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
+				[code]buffer[/code]: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 			</description>
 		</method>
 	</methods>

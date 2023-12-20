@@ -1,8 +1,8 @@
 #include "voxel_blocky_attribute.h"
 #include "../../../constants/voxel_string_names.h"
-#include "../../../util/container_funcs.h"
+#include "../../../util/containers/container_funcs.h"
 #include "../../../util/godot/core/array.h"
-#include "../../../util/log.h"
+#include "../../../util/io/log.h"
 #include "../../../util/math/funcs.h"
 #include "../../../util/math/ortho_basis.h"
 

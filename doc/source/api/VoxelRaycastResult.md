@@ -2,8 +2,7 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
-Result of a raycast performed with method VoxelTool.raycast
+Result of a raycast performed with [VoxelTool.raycast](VoxelTool.md#i_raycast)
 
 ## Properties: 
 
@@ -28,4 +27,4 @@ Integer position of the voxel that was hit.
 
 Integer position of the previous voxel along the ray before the final hit.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

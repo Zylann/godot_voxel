@@ -7,7 +7,7 @@
 #include <godot_cpp/variant/typed_array.hpp>
 #endif
 
-#include "../../span.h"
+#include "../../containers/span.h"
 
 namespace zylann {
 

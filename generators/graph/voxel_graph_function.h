@@ -2,7 +2,10 @@
 #define VOXEL_GRAPH_FUNCTION_H
 
 #include "../../util/godot/classes/resource.h"
+#include "../../util/thread/mutex.h"
 #include "program_graph.h"
+#include "voxel_graph_runtime.h"
+#include <memory>
 
 namespace zylann::voxel::pg {
 
@@ -15,6 +18,7 @@ class VoxelGraphFunction : public Resource {
 	GDCLASS(VoxelGraphFunction, Resource)
 public:
 	static const char *SIGNAL_NODE_NAME_CHANGED;
+	static const char *SIGNAL_COMPILED;
 
 	// Node indexes within the DB.
 	// Don't use these in saved data,
@@ -144,15 +148,15 @@ public:
 	StringName get_node_name(uint32_t node_id) const;
 	uint32_t find_node_by_name(StringName p_name) const;
 
-	Variant get_node_param(uint32_t node_id, uint32_t param_index) const;
-	void set_node_param(uint32_t node_id, uint32_t param_index, Variant value);
+	Variant get_node_param(uint32_t node_id, int param_index) const;
+	void set_node_param(uint32_t node_id, int param_index, Variant value);
 
 	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
 	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
 	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
-	Variant get_node_default_input(uint32_t node_id, uint32_t input_index) const;
-	void set_node_default_input(uint32_t node_id, uint32_t input_index, Variant value);
+	Variant get_node_default_input(uint32_t node_id, int input_index) const;
+	void set_node_default_input(uint32_t node_id, int input_index, Variant value);
 
 	bool get_node_default_inputs_autoconnect(uint32_t node_id) const;
 	void set_node_default_inputs_autoconnect(uint32_t node_id, bool enabled);
@@ -179,6 +183,10 @@ public:
 	// Gets a hash that attempts to only change if the output of the graph is different.
 	// This is computed from the editable graph data, not the compiled result.
 	uint64_t get_output_graph_hash() const;
+
+	bool can_load_default_graph() const {
+		return _can_load_default_graph;
+	}
 #endif
 
 	// Internal
@@ -213,16 +221,44 @@ public:
 	bool contains_reference_to_function(const VoxelGraphFunction &p_func, int max_recursion = 16) const;
 	void auto_pick_inputs_and_outputs();
 
+	bool is_automatic_io_setup_enabled() const;
+
 	bool get_node_input_index_by_name(uint32_t node_id, String input_name, unsigned int &out_input_index) const;
 	bool get_node_param_index_by_name(uint32_t node_id, String param_name, unsigned int &out_param_index) const;
 
 	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
 
-#ifdef TOOLS_ENABLED
-	bool can_load_default_graph() const {
-		return _can_load_default_graph;
-	}
-#endif
+	// Copies nodes into another graph, and connections between them only.
+	// Resources in node parameters will be duplicated if they don't have a file path.
+	// If `dst_node_ids` is provided with non-zero size, defines the IDs of copied nodes. Otherwise, they are
+	// generated.
+	void duplicate_subgraph(Span<const uint32_t> src_node_ids, Span<const uint32_t> dst_node_ids,
+			VoxelGraphFunction &dst_graph, Vector2 gui_offset) const;
+
+	void paste_graph(const VoxelGraphFunction &src_graph, Span<const uint32_t> dst_node_ids, Vector2 gui_offset);
+
+	// Compiling and running
+
+	pg::CompilationResult compile(bool debug);
+	void execute(Span<Span<float>> inputs, Span<Span<float>> outputs);
+
+	bool is_compiled() const;
+
+	struct CompiledGraph {
+		// This is read-only once it is compiled! Multiple threads can read it at the same time.
+		// In order to recompile the graph, a new instance is created.
+		pg::Runtime runtime;
+	};
+
+	std::shared_ptr<CompiledGraph> get_compiled_graph() const;
+
+	// Per-thread re-used memory for runtime executions
+	struct RuntimeCache {
+		pg::Runtime::State state;
+		std::vector<Span<float>> input_chunks;
+	};
+
+	static RuntimeCache &get_runtime_cache_tls();
 
 private:
 	void register_subresource(Resource &resource);
@@ -245,27 +281,44 @@ private:
 	Array _b_get_output_definitions() const;
 	void _b_set_output_definitions(Array data);
 
+	void _b_paste_graph_with_pre_generated_ids(
+			Ref<VoxelGraphFunction> graph, PackedInt32Array dst_node_ids, Vector2 gui_offset);
+
 	static void _bind_methods();
 
 	ProgramGraph _graph;
+	// If enabled, inputs and outputs will be automatically setup from nodes of the graph when compiling.
+	// However this doesn't give fine control over the order I/Os appear in, so it may be disabled if that's desired.
+	bool _automatic_io_setup_enabled = true;
 	std::vector<Port> _inputs;
 	std::vector<Port> _outputs;
 #ifdef TOOLS_ENABLED
-	// Godot doesn't make a difference between a resource newly created in the inspector and an empty one or one created
-	// from script... It is necessary to know that in order to load a "hello world" graph in the editor when creating a
-	// new graph. True by default after being created, but will become false if cleared (which means it's not a brand
-	// new instance).
+	// Godot doesn't make a difference between a resource newly created in the inspector, an existing empty one, or one
+	// created from script... It is necessary to know that in order to load a "hello world" graph in the editor when
+	// creating a new graph in the editor. True by default after being created, but will become false if cleared (which
+	// means it's not a brand new instance).
 	bool _can_load_default_graph = true;
 #endif
+	pg::CompilationResult _last_compiling_result;
+
+	// Compiled part.
+	// Must never be mutated after being assigned.
+	// This can be accessed by multiple threads so it needs to be protected.
+	std::shared_ptr<CompiledGraph> _compiled_graph = nullptr;
+	Mutex _compiled_graph_mutex;
 };
 
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
 		uint32_t id, bool create_default_instances);
 
-void auto_pick_input_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
+void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
 		std::vector<VoxelGraphFunction::Port> &outputs);
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
+
+// Duplicates a node into the target graph (can be a different graph). Connections are not copied.
+ProgramGraph::Node *duplicate_node(ProgramGraph &dst_graph, const ProgramGraph::Node &src_node,
+		bool duplicate_resources, uint32_t id = ProgramGraph::NULL_ID);
 
 #ifdef TOOLS_ENABLED
 

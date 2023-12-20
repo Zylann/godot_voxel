@@ -2,6 +2,7 @@
 #define ZN_TRIANGLE_H
 
 #include "vector2f.h"
+#include "vector3.h"
 #include "vector3d.h"
 #include "vector3f.h"
 
@@ -20,6 +21,16 @@ inline bool is_point_in_triangle(const Vector2f &s, const Vector2f &a, const Vec
 	}
 
 	return (cross(cn, an) > 0) == orientation;
+}
+
+// Heron's formula is overly represented on SO but uses 4 square roots. This uses only one.
+// A parallelogram's area is found with the magnitude of the cross product of two adjacent side vectors,
+// so a triangle's area is half of it
+inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
+	const Vector3 p01 = p1 - p0;
+	const Vector3 p02 = p2 - p0;
+	const Vector3 c = p01.cross(p02);
+	return 0.5 * c.length();
 }
 
 struct TriangleIntersectionResult {
@@ -69,7 +80,7 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 	const float t = f * math::dot(e2, q);
 
 	if (t > 0.00001f) { // ray intersection
-		//r_res = p_from + p_dir * t;
+		// r_res = p_from + p_dir * t;
 		return { TriangleIntersectionResult::INTERSECTION, t };
 
 	} else { // This means that there is a line intersection but not a ray intersection.
@@ -109,7 +120,7 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3d &p_from
 	const double t = f * math::dot(e2, q);
 
 	if (t > 0.000000001) { // ray intersection
-		//r_res = p_from + p_dir * t;
+		// r_res = p_from + p_dir * t;
 		return { TriangleIntersectionResult::INTERSECTION, t };
 
 	} else { // This means that there is a line intersection but not a ray intersection.
@@ -162,7 +173,7 @@ struct BakedIntersectionTriangleForFixedDirection {
 		const float t = f * math::dot(e2, q);
 
 		if (t > 0.00001f) { // ray intersection
-			//r_res = p_from + p_dir * t;
+			// r_res = p_from + p_dir * t;
 			return { TriangleIntersectionResult::INTERSECTION, t };
 
 		} else { // This means that there is a line intersection but not a ray intersection.

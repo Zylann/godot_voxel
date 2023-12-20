@@ -1,8 +1,8 @@
 #ifndef VOXEL_DATA_GRID_H
 #define VOXEL_DATA_GRID_H
 
+#include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
-#include "voxel_spatial_lock.h"
 
 namespace zylann::voxel {
 
@@ -14,18 +14,21 @@ public:
 	// Rebuilds the grid and caches blocks intersecting the specified voxel box.
 	// WARNING: the given box is in voxels RELATIVE to the passed map. It that map is not LOD0, you may downscale the
 	// box if you expect LOD0 coordinates.
-	inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, VoxelSpatialLock *sl) {
-		const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
-		reference_area_block_coords(map, blocks_box, sl);
-	}
+	// inline void reference_area(const VoxelDataMap &map, Box3i voxel_box, SpatialLock3D *sl) {
+	// 	const Box3i blocks_box = voxel_box.downscaled(map.get_block_size());
+	// 	reference_area_block_coords(map, blocks_box, sl);
+	// }
 
-	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, VoxelSpatialLock *sl) {
+	// TODO This API is a bit risky, it should just be encapsulated into VoxelData maybe
+	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, SpatialLock3D *sl) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
 		_offset_in_blocks = blocks_box.pos;
 		if (sl != nullptr) {
+			// Locking is needed because we access `has_voxels`
 			sl->lock_read(blocks_box);
 		}
+		// WARNING: Assumes `map` is already locked for reading
 		blocks_box.for_each_cell_zxy([&map, this](const Vector3i pos) {
 			const VoxelDataBlock *block = map.get_block(pos);
 			// TODO Might need to invoke the generator at some level for present blocks without voxels,
@@ -134,6 +137,14 @@ public:
 		}
 	}
 
+	// D action(Vector3i pos, D value)
+	template <typename F>
+	void write_box_no_lock(Box3i voxel_box, unsigned int channel, F action) {
+		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+			voxels.write_box(local_box, channel, action, voxel_offset);
+		});
+	}
+
 	// void action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
 	void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
@@ -150,6 +161,16 @@ public:
 		}
 	}
 
+	// void action(Vector3i pos, D0 &value, D1 &value)
+	template <typename F>
+	void write_box_2_no_lock(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
+		_box_loop(voxel_box,
+				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+					voxels.write_box_2_template<F, uint16_t, uint16_t>(
+							local_box, channel0, channel1, action, voxel_offset);
+				});
+	}
+
 	// inline const VoxelBufferInternal *get_block(Vector3i position) const {
 	// 	ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
 	// 	position -= _offset_in_blocks;
@@ -163,6 +184,14 @@ public:
 		_blocks.clear();
 		_size_in_blocks = Vector3i();
 		_spatial_lock = nullptr;
+	}
+
+	inline VoxelBufferInternal *get_block_no_lock(Vector3i position) {
+		return get_block(position);
+	}
+
+	inline unsigned int get_block_size_po2() const {
+		return _block_size_po2;
 	}
 
 private:
@@ -243,7 +272,7 @@ private:
 	unsigned int _block_size = 1 << constants::DEFAULT_BLOCK_SIZE_PO2;
 	// For protecting voxel data against multithreaded accesses. Not owned. Lifetime must be guaranteed by the user, for
 	// example by having a std::shared_ptr<VoxelData> holding the spatial lock.
-	VoxelSpatialLock *_spatial_lock = nullptr;
+	SpatialLock3D *_spatial_lock = nullptr;
 	mutable bool _locked = false;
 };
 

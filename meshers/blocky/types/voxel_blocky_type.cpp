@@ -1,13 +1,12 @@
 #include "voxel_blocky_type.h"
 #include "../../../constants/voxel_string_names.h"
-#include "../../../util/container_funcs.h"
+#include "../../../util/containers/container_funcs.h"
 #include "../../../util/godot/classes/engine.h"
 #include "../../../util/godot/classes/ref_counted.h"
 #include "../../../util/godot/core/array.h"
 #include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
-#include "../../../util/godot/funcs.h"
 #ifdef ZN_GODOT_EXTENSION
 // For `MAKE_RESOURCE_TYPE_HINT`
 #include "../../../util/godot/classes/object.h"
@@ -20,7 +19,7 @@
 namespace zylann::voxel {
 
 // Making types can get quite complicated, config files sound like a better solution compared to messing around in the
-// inspector, see how Minecraft defines their models: https://minecraft.fandom.com/wiki/Tutorials/Models
+// inspector, see how Minecraft defines their models: https://minecraft.wiki/w/Tutorials/Models
 
 VoxelBlockyType::VoxelBlockyType() {
 	_name = VoxelStringNames::get_singleton().unnamed;

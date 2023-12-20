@@ -1,4 +1,4 @@
-Block format
+Voxel block format v1
 ====================
 
 !!! warning

@@ -1,7 +1,7 @@
 #include "voxel_generator_graph.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../storage/voxel_buffer_internal.h"
-#include "../../util/container_funcs.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/image.h"
@@ -10,7 +10,7 @@
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/hash_funcs.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
@@ -831,6 +831,7 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 		}
 	}
 
+	// TODO This bypasses VoxelGraphFunction's compiling method, we should probably use it now
 	// Core compilation
 	pg::Runtime &runtime = r->runtime;
 	const pg::CompilationResult result = runtime.compile(**_main_function, debug);

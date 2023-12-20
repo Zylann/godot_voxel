@@ -1,20 +1,19 @@
 #ifndef ZYLANN_EDITOR_PROPERTY_AABB_H
 #define ZYLANN_EDITOR_PROPERTY_AABB_H
 
-#include "../../util/fixed_array.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/editor_property.h"
 #include "../../util/godot/classes/editor_spin_slider.h"
 #include "../../util/macros.h"
 
 namespace zylann {
 
-// TODO Prefix with `ZN_`
 // Alternative to the default AABB editor which presents it as a minimum and maximum point
-class EditorPropertyAABBMinMax : public ZN_EditorProperty {
-	GDCLASS(EditorPropertyAABBMinMax, ZN_EditorProperty);
+class ZN_EditorPropertyAABBMinMax : public ZN_EditorProperty {
+	GDCLASS(ZN_EditorPropertyAABBMinMax, ZN_EditorProperty);
 
 public:
-	EditorPropertyAABBMinMax();
+	ZN_EditorPropertyAABBMinMax();
 
 	void setup(double p_min, double p_max, double p_step, bool p_no_slider, const String &p_suffix = String());
 

@@ -5,7 +5,7 @@
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/log.h"
+#include "../../util/io/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -258,7 +258,7 @@ static bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 static bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
-	ERR_FAIL_INDEX_V(n, VoxelBufferInternal::DEPTH_COUNT, false);
+	ZN_ASSERT_RETURN_V(n < VoxelBufferInternal::DEPTH_COUNT, false);
 	d = (VoxelBufferInternal::Depth)n;
 	return true;
 }
@@ -444,7 +444,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 		const Vector3i region_pos, unsigned int lod, bool create_if_not_found) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(!_meta_loaded, nullptr);
-	ERR_FAIL_COND_V(lod < 0, nullptr);
+	ZN_ASSERT_RETURN_V(lod < constants::MAX_LOD, nullptr);
 
 	CachedRegion *cached_region = get_region_from_cache(region_pos, lod);
 	if (cached_region != nullptr) {
@@ -922,7 +922,7 @@ void VoxelStreamRegionFiles::_bind_methods() {
 	ADD_GROUP("Dimensions", "");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "region_size_po2"), "set_region_size_po2", "get_region_size_po2");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "block_size_po2"), "set_block_size_po2", "get_region_size_po2");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "block_size_po2"), "set_block_size_po2", "get_block_size_po2");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "sector_size"), "set_sector_size", "get_sector_size");
 }
 

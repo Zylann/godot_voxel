@@ -26,18 +26,14 @@ public:
 	virtual void set_generator(Ref<VoxelGenerator> generator);
 	virtual Ref<VoxelGenerator> get_generator() const;
 
-	enum GIMode { //
-		GI_MODE_DISABLED = 0,
-		GI_MODE_BAKED,
-		GI_MODE_DYNAMIC,
-		_GI_MODE_COUNT
-	};
-
-	void set_gi_mode(GIMode mode);
-	GIMode get_gi_mode() const;
+	void set_gi_mode(GeometryInstance3D::GIMode mode);
+	GeometryInstance3D::GIMode get_gi_mode() const;
 
 	void set_shadow_casting(GeometryInstance3D::ShadowCastingSetting setting);
 	GeometryInstance3D::ShadowCastingSetting get_shadow_casting() const;
+
+	void set_render_layers_mask(int mask);
+	int get_render_layers_mask() const;
 
 	virtual void restart_stream();
 	virtual void remesh_all_blocks();
@@ -61,6 +57,7 @@ protected:
 
 	virtual void _on_gi_mode_changed() {}
 	virtual void _on_shadow_casting_changed() {}
+	virtual void _on_render_layers_mask_changed() {}
 
 private:
 	Ref<VoxelMesher> _b_get_mesher() {
@@ -86,12 +83,11 @@ private:
 
 	static void _bind_methods();
 
-	GIMode _gi_mode = GI_MODE_DISABLED;
+	GeometryInstance3D::GIMode _gi_mode = GeometryInstance3D::GI_MODE_DISABLED;
 	GeometryInstance3D::ShadowCastingSetting _shadow_casting = GeometryInstance3D::SHADOW_CASTING_SETTING_ON;
+	int _render_layers_mask = 1;
 };
 
 } // namespace zylann::voxel
-
-VARIANT_ENUM_CAST(zylann::voxel::VoxelNode::GIMode);
 
 #endif // VOXEL_NODE_H

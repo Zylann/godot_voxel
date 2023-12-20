@@ -189,7 +189,7 @@ bool NodeTypeDB::try_get_type_id_from_name(const String &name, VoxelGraphFunctio
 }
 
 bool NodeTypeDB::try_get_param_index_from_name(uint32_t type_id, const String &name, uint32_t &out_param_index) const {
-	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
+	ZN_ASSERT_RETURN_V(type_id < _types.size(), false);
 	const NodeType &t = _types[type_id];
 	auto it = t.param_name_to_index.find(name);
 	if (it == t.param_name_to_index.end()) {
@@ -200,7 +200,7 @@ bool NodeTypeDB::try_get_param_index_from_name(uint32_t type_id, const String &n
 }
 
 bool NodeTypeDB::try_get_input_index_from_name(uint32_t type_id, const String &name, uint32_t &out_input_index) const {
-	ERR_FAIL_INDEX_V(type_id, _types.size(), false);
+	ZN_ASSERT_RETURN_V(type_id < _types.size(), false);
 	const NodeType &t = _types[type_id];
 	auto it = t.input_name_to_index.find(name);
 	if (it == t.input_name_to_index.end()) {

@@ -2,18 +2,28 @@
 #define VOXEL_GENERATOR_H
 
 #include "../engine/gpu/compute_shader_resource.h"
+#include "../engine/ids.h"
+#include "../engine/priority_dependency.h"
+#include "../util/containers/span.h"
 #include "../util/godot/classes/resource.h"
+#include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
-#include "../util/math/vector3i.h"
-#include "../util/span.h"
 #include "../util/thread/mutex.h"
+
 #include <memory>
 
-namespace zylann::voxel {
+namespace zylann {
+
+class IThreadedTask;
+class AsyncDependencyTracker;
+
+namespace voxel {
 
 class VoxelBufferInternal;
 class ComputeShader;
 struct ComputeShaderParameters;
+struct StreamingDependency;
+class VoxelData;
 
 namespace gd {
 class VoxelBuffer;
@@ -49,12 +59,34 @@ public:
 
 	virtual Result generate_block(VoxelQueryData &input);
 
+	struct BlockTaskParams {
+		Vector3i block_position;
+		VolumeID volume_id;
+		uint8_t lod_index = 0;
+		uint8_t block_size = 0;
+		bool drop_beyond_max_distance = true;
+		bool use_gpu = false; // This is a hint, if not supported it will just keep using CPU
+		PriorityDependency priority_dependency;
+		std::shared_ptr<StreamingDependency> stream_dependency; // For saving generator output
+		std::shared_ptr<VoxelData> data; // Just for modifiers
+		std::shared_ptr<AsyncDependencyTracker> tracker; // For async edits
+		std::shared_ptr<VoxelBufferInternal> voxels; // Optionally re-use a voxel buffer for the result
+	};
+
+	// Creates a threaded task that will use the generator asynchronously to generate a block that will be returned to
+	// the requesting volume.
+	virtual IThreadedTask *create_block_task(const BlockTaskParams &params) const;
+
 	virtual bool supports_single_generation() const {
 		return false;
 	}
 
 	virtual bool supports_series_generation() const {
 		return false;
+	}
+
+	virtual bool supports_lod() const {
+		return true;
 	}
 
 	// TODO Not sure if it's a good API regarding performance
@@ -120,6 +152,20 @@ public:
 	// to avoid sending work to the graphics card.
 	virtual bool generate_broad_block(VoxelQueryData &input);
 
+	// Caching API
+	//
+	// Some generators might use an internal cache to optimize performance. The following methods provide some info for
+	// the generator to manage the lifetime of the cache.
+	// VoxelTerrain only at the moment.
+
+	// Must be called when a viewer gets paired, moved, or unpaired from the terrain.
+	// Pairing should send an empty previous box.
+	// Moving should send the the previous box and new box.
+	// Unpairing should send an empty box as the current box.
+	virtual void process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box);
+
+	virtual void clear_cache();
+
 	// Editor
 
 #ifdef TOOLS_ENABLED
@@ -139,6 +185,7 @@ protected:
 	Mutex _shader_mutex;
 };
 
-} // namespace zylann::voxel
+} // namespace voxel
+} // namespace zylann
 
 #endif // VOXEL_GENERATOR_H

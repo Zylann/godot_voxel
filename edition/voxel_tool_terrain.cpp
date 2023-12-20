@@ -59,6 +59,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		const VoxelData &data;
 		const VoxelBlockyLibraryBase::BakedData &baked_data;
 		const uint32_t collision_mask;
+		const Vector3 p_from;
+		const Vector3 p_to;
 
 		bool operator()(const VoxelRaycastState &rs) const {
 			VoxelSingleValue defval;
@@ -70,20 +72,14 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 			}
 
 			const VoxelBlockyModel::BakedData &model = baked_data.models[v];
-			if (model.empty) {
-				return false;
-			}
-
 			if ((model.box_collision_mask & collision_mask) == 0) {
 				return false;
 			}
 
-			if (model.transparency_index == 0) {
-				return true;
-			}
-
-			if (model.transparency_index > 0 && model.box_collision_aabbs.size() > 0) {
-				return true;
+			for (const AABB &aabb : model.box_collision_aabbs) {
+				if (AABB(aabb.position + rs.hit_position, aabb.size).intersects_segment(p_from, p_to)) {
+					return true;
+				}
 			}
 
 			return false;
@@ -110,7 +106,8 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		if (library_ref.is_null()) {
 			return res;
 		}
-		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask };
+		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask,
+			local_pos, local_pos + local_dir * max_distance };
 		float hit_distance;
 		float hit_distance_prev;
 		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
@@ -149,13 +146,12 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	return res;
 }
 
-void VoxelToolTerrain::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const {
+void VoxelToolTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	_terrain->get_storage().copy(pos, dst->get_buffer(), channels_mask);
+	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
 void VoxelToolTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
@@ -211,7 +207,7 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
 
-	ops::DoHemisphere op;
+	ops::DoShapeChunked<ops::SdfHemisphere, ops::VoxelDataGridAccess> op;
 	op.shape.center = center;
 	op.shape.radius = radius;
 	op.shape.flat_direction = flat_direction;
@@ -232,8 +228,14 @@ void VoxelToolTerrain::do_hemisphere(Vector3 center, float radius, Vector3 flat_
 
 	VoxelData &data = _terrain->get_storage();
 
-	data.get_blocks_grid(op.blocks, op.box, 0);
-	op();
+	VoxelDataGrid grid;
+	data.get_blocks_grid(grid, op.box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
 
 	_post_edit(op.box);
 }
@@ -326,8 +328,8 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 		picks.clear();
 
 		{
-			VoxelSpatialLock &spatial_lock = data.get_spatial_lock(0);
-			VoxelSpatialLockRead srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
+			SpatialLock3D &spatial_lock = data.get_spatial_lock(0);
+			SpatialLock3D::Read srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
 
 			std::shared_ptr<VoxelBufferInternal> voxels_ptr = data.try_get_block_voxels(block_pos);
 
@@ -463,6 +465,8 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		const Vector3i block_origin = block_pos * data.get_block_size();
 		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
+		// For read or write? We'd have to specify as argument and trust the user... since metadata can contain
+		// reference types.
 
 #if defined(ZN_GODOT)
 		voxels_ptr->for_each_voxel_metadata_in_area(
@@ -487,6 +491,82 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					   "Callables");
 #endif
 	});
+}
+
+void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> radii) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(positions.size() >= 2);
+	ZN_ASSERT_RETURN(positions.size() == radii.size());
+
+	// TODO Increase margin a bit with smooth voxels?
+	const int margin = 1;
+
+	// Compute total bounding box
+
+	const AABB total_aabb = get_path_aabb(positions, radii).grow(margin);
+	const Box3i total_voxel_box(to_vec3i(math::floor(total_aabb.position)), to_vec3i(math::ceil(total_aabb.size)));
+
+	VoxelDataGrid grid;
+
+	VoxelData &data = _terrain->get_storage();
+
+	data.get_blocks_grid(grid, total_voxel_box, 0);
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+
+		// Rasterize
+
+		for (unsigned int point_index = 1; point_index < positions.size(); ++point_index) {
+			// TODO Could run this in local space so we dont need doubles
+			// TODO Apply terrain scale
+			const Vector3 p0 = positions[point_index - 1];
+			const Vector3 p1 = positions[point_index];
+
+			const float r0 = radii[point_index - 1];
+			const float r1 = radii[point_index];
+
+			ops::DoShapeChunked<ops::SdfRoundCone, ops::VoxelDataGridAccess> op;
+			op.block_access.grid = &grid;
+			op.shape.cone.a = p0;
+			op.shape.cone.b = p1;
+			op.shape.cone.r1 = r0;
+			op.shape.cone.r2 = r1;
+			op.shape.cone.update();
+			op.shape.sdf_scale = get_sdf_scale();
+			op.box = op.shape.get_box().padded(margin);
+			op.mode = ops::Mode(get_mode());
+			op.texture_params = _texture_params;
+			op.blocky_value = _value;
+			op.channel = get_channel();
+			op.strength = get_sdf_strength();
+
+			op();
+
+			// Experimented with drawing a 100-point path, the cost of everything outside cone calculation was:
+			// - Non-template: 2.55 ms
+			// - Template: 1.00 ms
+			// With cone calculation:
+			// - Non-template: 5.7 ms
+			// - Template: 4.5 ms
+			// So the template version is faster, but not that much.
+			//
+			// math::SdfRoundConePrecalc cone;
+			// cone.a = p0;
+			// cone.b = p1;
+			// cone.r1 = r0;
+			// cone.r2 = r1;
+			// cone.update();
+			// uint64_t value = _value;
+			// segment_box.for_each_cell_zxy([&grid, &cone, value](Vector3i pos) {
+			// 	if (cone(pos) < 0.f) {
+			// 		grid.set_voxel_no_lock(pos, value, VoxelBufferInternal::CHANNEL_TYPE);
+			// 	}
+			// });
+		}
+	}
+
+	_post_edit(total_voxel_box);
 }
 
 void VoxelToolTerrain::_bind_methods() {

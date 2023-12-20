@@ -1,12 +1,12 @@
 #include "voxel_block_serializer.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../storage/voxel_memory_pool.h"
-#include "../util/container_funcs.h"
+#include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file_access.h"
+#include "../util/io/serialization.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
-#include "../util/serialization.h"
 #include "../util/string_funcs.h"
 #include "compressed_data.h"
 
@@ -494,8 +494,8 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 		const uint8_t compression_value = fmt & 0xf;
 		const uint8_t depth_value = (fmt >> 4) & 0xf;
 
-		ERR_FAIL_INDEX_V(compression_value, 2, false);
-		ERR_FAIL_INDEX_V(depth_value, 4, false);
+		ZN_ASSERT_RETURN_V(compression_value < 2, false);
+		ZN_ASSERT_RETURN_V(depth_value < 4, false);
 
 		const unsigned int voxel_size = 1 << depth_value;
 

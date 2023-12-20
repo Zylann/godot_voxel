@@ -2,9 +2,11 @@
 #define VOXEL_INSTANCE_GENERATOR_H
 
 //#include "../../storage/voxel_buffer.h"
+#include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/classes/noise.h"
 #include "../../util/math/transform3f.h"
 #include "../../util/math/vector3i.h"
+#include "../../util/thread/short_lock.h"
 
 #include <limits>
 #include <vector>
@@ -108,6 +110,9 @@ public:
 	void set_noise(Ref<Noise> noise);
 	Ref<Noise> get_noise() const;
 
+	void set_noise_graph(Ref<pg::VoxelGraphFunction> func);
+	Ref<pg::VoxelGraphFunction> get_noise_graph() const;
+
 	void set_noise_dimension(Dimension dim);
 	Dimension get_noise_dimension() const;
 
@@ -122,8 +127,13 @@ public:
 		return int(x) | (int(y) << 1) | (int(z) << 2);
 	}
 
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(PackedStringArray &warnings) const;
+#endif
+
 private:
 	void _on_noise_changed();
+	void _on_noise_graph_changed();
 
 	static void _bind_methods();
 
@@ -144,9 +154,26 @@ private:
 	Dimension _noise_dimension = DIMENSION_3D;
 	float _noise_on_scale = 0.f;
 
+	// TODO Protect noise and noise graph members from multithreaded access
+
+	// Required inputs:
+	// - X
+	// - Y
+	// - Z
+	// Possible outputs:
+	// - Density
+	Ref<pg::VoxelGraphFunction> _noise_graph;
+	// TODO Sampling mode:
+	// - Per vertex: recommended if many items with high density need it (will be shared among them)
+	// - Per instance: recommended if items with low density need it
+
 	// Stored separately for editor
 	float _min_slope_degrees = 0.f;
 	float _max_slope_degrees = 180.f;
+
+	// Used when accessing pointer settings, since this generator can be used in a thread while the editor thread can
+	// modify settings.
+	mutable ShortLock _ptr_settings_lock;
 };
 
 } // namespace zylann::voxel

@@ -2,6 +2,7 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
+Inherited by: [VoxelBlockyModelCube](VoxelBlockyModelCube.md), [VoxelBlockyModelEmpty](VoxelBlockyModelEmpty.md), [VoxelBlockyModelMesh](VoxelBlockyModelMesh.md)
 
 Model stored in [VoxelBlockyLibrary](VoxelBlockyLibrary.md) and used by [VoxelMesherBlocky](VoxelMesherBlocky.md).
 
@@ -19,6 +20,7 @@ Type      | Name                                         | Default
 `AABB[]`  | [collision_aabbs](#i_collision_aabbs)        | []                
 `int`     | [collision_mask](#i_collision_mask)          | 1                 
 `Color`   | [color](#i_color)                            | Color(1, 1, 1, 1) 
+`bool`    | [culls_neighbors](#i_culls_neighbors)        | true              
 `bool`    | [random_tickable](#i_random_tickable)        | false             
 `int`     | [transparency_index](#i_transparency_index)  | 0                 
 `bool`    | [transparent](#i_transparent)                | false             
@@ -40,13 +42,13 @@ Return                                                                          
 
 enum **Side**: 
 
-- **SIDE_NEGATIVE_X** = **1**
-- **SIDE_POSITIVE_X** = **0**
-- **SIDE_NEGATIVE_Y** = **2**
-- **SIDE_POSITIVE_Y** = **3**
-- **SIDE_NEGATIVE_Z** = **4**
-- **SIDE_POSITIVE_Z** = **5**
-- **SIDE_COUNT** = **6**
+- <span id="i_SIDE_NEGATIVE_X"></span>**SIDE_NEGATIVE_X** = **1**
+- <span id="i_SIDE_POSITIVE_X"></span>**SIDE_POSITIVE_X** = **0**
+- <span id="i_SIDE_NEGATIVE_Y"></span>**SIDE_NEGATIVE_Y** = **2**
+- <span id="i_SIDE_POSITIVE_Y"></span>**SIDE_POSITIVE_Y** = **3**
+- <span id="i_SIDE_NEGATIVE_Z"></span>**SIDE_NEGATIVE_Z** = **4**
+- <span id="i_SIDE_POSITIVE_Z"></span>**SIDE_POSITIVE_Z** = **5**
+- <span id="i_SIDE_COUNT"></span>**SIDE_COUNT** = **6**
 
 
 ## Property Descriptions
@@ -63,9 +65,13 @@ Collision mask used for box-based collision [VoxelBoxMover](VoxelBoxMover.md) an
 
 Color of the model. It will be used to modulate its color when built into a voxel mesh.
 
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_culls_neighbors"></span> **culls_neighbors** = true
+
+If enabled, this voxel culls the faces of its neighbors. Disabling can be useful for denser transparent voxels, such as foliage.
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_random_tickable"></span> **random_tickable** = false
 
-If enabled, voxels having this ID in the TYPE channel will be used by method VoxelToolTerrain.run_blocky_random_tick.
+If enabled, voxels having this ID in the TYPE channel will be used by [VoxelToolTerrain.run_blocky_random_tick](VoxelToolTerrain.md#i_run_blocky_random_tick).
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_transparency_index"></span> **transparency_index** = 0
 
@@ -77,7 +83,7 @@ Equal indices culls the face, different indexes doesn't.
 
 Tells if the model is transparent in the context of sides being culled by neighbor voxels.
 
-This is a legacy property, member transparency_index may be used instead.
+This is a legacy property, [VoxelBlockyModel.transparency_index](VoxelBlockyModel.md#i_transparency_index) may be used instead.
 
 ## Method Descriptions
 
@@ -100,4 +106,4 @@ Sets a material override for a specific surface of the model. It allows to use t
 
 Enables or disables mesh-based collision on a specific surface. It allows a model to have solid parts and others where players can pass through.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

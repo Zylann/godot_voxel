@@ -42,6 +42,7 @@ def get_sources(env, is_editor_build):
         "generators/*.cpp",
         "generators/graph/*.cpp",
         "generators/simple/*.cpp",
+        "generators/multipass/*.cpp",
 
         "modifiers/*.cpp",
         "modifiers/godot/*.cpp",
@@ -53,6 +54,7 @@ def get_sources(env, is_editor_build):
 
         "engine/*.cpp",
         "engine/gpu/*.cpp",
+        "engine/detail_rendering/*.cpp",
 
         "edition/*.cpp",
         "shaders/*.cpp",
@@ -62,16 +64,20 @@ def get_sources(env, is_editor_build):
         # Utility
 
         "util/*.cpp",
+        "util/containers/*.cpp",
         "util/math/*.cpp",
         "util/noise/fast_noise_lite/*.cpp",
         "util/noise/gd_noise_range.cpp",
         "util/thread/thread.cpp",
+        "util/thread/spatial_lock_2d.cpp",
+        "util/thread/spatial_lock_3d.cpp",
         "util/tasks/*.cpp",
         "util/tasks/godot/*.cpp",
 
         "util/godot/classes/array_mesh.cpp",
         "util/godot/classes/concave_polygon_shape_3d.cpp",
         "util/godot/classes/geometry_2d.cpp",
+        "util/godot/classes/geometry_instance_3d.cpp",
         "util/godot/classes/input_event_key.cpp",
         "util/godot/classes/mesh.cpp",
         "util/godot/classes/multimesh.cpp",
@@ -85,12 +91,14 @@ def get_sources(env, is_editor_build):
 
         "util/godot/core/string.cpp",
         "util/godot/core/variant.cpp",
+        "util/godot/core/packed_arrays.cpp",
 
         "util/godot/direct_mesh_instance.cpp",
         "util/godot/direct_multimesh_instance.cpp",
         "util/godot/direct_static_body.cpp",
         "util/godot/shader_material_pool.cpp",
-        "util/godot/funcs.cpp",
+
+        "util/io/*.cpp",
 
         # Thirdparty
 
@@ -111,6 +119,7 @@ def get_sources(env, is_editor_build):
             "editor/graph/*.cpp",
             "editor/blocky_library/*.cpp",
             "editor/blocky_library/types/*.cpp",
+            "editor/multipass/*.cpp",
 
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_import_plugin.cpp",
@@ -118,6 +127,7 @@ def get_sources(env, is_editor_build):
             "util/godot/classes/editor_property.cpp",
             "util/godot/classes/editor_settings.cpp",
             "util/godot/classes/graph_edit.cpp", # Not editor-only, but only used in editor for now
+            "util/godot/classes/graph_node.cpp" # Not editor-only, but only used in editor for now
         ]
 
     def process_glob_paths(p_sources):

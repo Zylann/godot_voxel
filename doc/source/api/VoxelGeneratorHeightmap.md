@@ -2,6 +2,7 @@
 
 Inherits: [VoxelGenerator](VoxelGenerator.md)
 
+Inherited by: [VoxelGeneratorImage](VoxelGeneratorImage.md), [VoxelGeneratorNoise2D](VoxelGeneratorNoise2D.md), [VoxelGeneratorWaves](VoxelGeneratorWaves.md)
 
 
 
@@ -35,4 +36,4 @@ Minimum height where the surface will generate.
 
 Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

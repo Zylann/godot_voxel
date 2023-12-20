@@ -6,6 +6,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../util/profiling.h"
+#include "generate_block_task.h"
 
 namespace zylann::voxel {
 
@@ -15,6 +16,11 @@ VoxelGenerator::Result VoxelGenerator::generate_block(VoxelQueryData &input) {
 	return Result();
 }
 
+IThreadedTask *VoxelGenerator::create_block_task(const BlockTaskParams &params) const {
+	// Default generic task
+	return ZN_NEW(GenerateBlockTask(params));
+}
+
 int VoxelGenerator::get_used_channels_mask() const {
 	return 0;
 }
@@ -22,7 +28,7 @@ int VoxelGenerator::get_used_channels_mask() const {
 VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int channel) {
 	VoxelSingleValue v;
 	v.i = 0;
-	ZN_ASSERT_RETURN_V(channel >= 0 && channel < VoxelBufferInternal::MAX_CHANNELS, v);
+	ZN_ASSERT_RETURN_V(channel < VoxelBufferInternal::MAX_CHANNELS, v);
 	// Default slow implementation
 	// TODO Optimize: a small part of the slowness is caused by the allocator.
 	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
@@ -233,7 +239,7 @@ void VoxelGenerator::compile_shaders() {
 		MutexLock mlock(_shader_mutex);
 
 		_detail_rendering_shader = detail_render_shader;
-		_detail_rendering_shader_parameters = block_params;
+		_detail_rendering_shader_parameters = detail_params;
 
 		_block_rendering_shader = block_render_shader;
 		_block_rendering_shader_parameters = block_params;
@@ -258,6 +264,14 @@ bool VoxelGenerator::generate_broad_block(VoxelQueryData &input) {
 	// By default, generators don't support this separately and just do it inside `generate_block`.
 	// However if a generator supports GPU, it is recommended to implement it.
 	return false;
+}
+
+void VoxelGenerator::process_viewer_diff(ViewerID viewer_id, Box3i p_requested_box, Box3i p_prev_requested_box) {
+	// Optionally implemented in subclasses
+}
+
+void VoxelGenerator::clear_cache() {
+	// Optionally implemented in subclasses
 }
 
 void VoxelGenerator::_bind_methods() {

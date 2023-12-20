@@ -1,7 +1,7 @@
 #ifndef ZN_GODOT_MESH_H
 #define ZN_GODOT_MESH_H
 
-#include "../../span.h"
+#include "../../containers/span.h"
 
 #if defined(ZN_GODOT)
 #include <scene/resources/mesh.h>

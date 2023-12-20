@@ -1,5 +1,5 @@
 #include "array_mesh.h"
-#include "../funcs.h"
+#include "../core/packed_arrays.h"
 
 #include <map>
 #include <unordered_map>

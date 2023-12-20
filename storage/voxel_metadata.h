@@ -3,7 +3,7 @@
 
 #include "../util/memory.h"
 //#include "../util/non_copyable.h"
-#include "../util/span.h"
+#include "../util/containers/span.h"
 #include <cstdint>
 
 namespace zylann::voxel {
@@ -130,6 +130,6 @@ private:
 	FixedArray<ConstructorFunc, VoxelMetadata::CUSTOM_TYPES_MAX_COUNT> _constructors;
 };
 
-} //namespace zylann::voxel
+} // namespace zylann::voxel
 
 #endif // VOXEL_METADATA_H

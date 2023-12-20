@@ -5,7 +5,7 @@
 #include "../../util/godot/core/rid.h"
 #include "../../util/godot/macros.h"
 #include "../../util/macros.h"
-#include "../../util/span.h"
+#include "../../util/containers/span.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/semaphore.h"
 #include "../../util/thread/thread.h"

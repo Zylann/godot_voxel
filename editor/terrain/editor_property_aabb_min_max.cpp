@@ -7,7 +7,7 @@
 
 namespace zylann {
 
-EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
+ZN_EditorPropertyAABBMinMax::ZN_EditorPropertyAABBMinMax() {
 	GridContainer *grid = memnew(GridContainer);
 	grid->set_columns(4);
 	add_child(grid);
@@ -27,7 +27,7 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 		EditorSpinSlider *sb = memnew(EditorSpinSlider);
 		sb->set_flat(true);
 		sb->set_h_size_flags(SIZE_EXPAND_FILL);
-		sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, EditorPropertyAABBMinMax, _on_value_changed));
+		sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyAABBMinMax, _on_value_changed));
 		_spinboxes[i] = sb;
 
 		add_focusable(sb);
@@ -45,13 +45,13 @@ EditorPropertyAABBMinMax::EditorPropertyAABBMinMax() {
 	set_bottom_editor(grid);
 }
 
-void EditorPropertyAABBMinMax::_zn_set_read_only(bool p_read_only) {
+void ZN_EditorPropertyAABBMinMax::_zn_set_read_only(bool p_read_only) {
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		_spinboxes[i]->set_read_only(p_read_only);
 	}
 };
 
-void EditorPropertyAABBMinMax::_on_value_changed(double val) {
+void ZN_EditorPropertyAABBMinMax::_on_value_changed(double val) {
 	if (_ignore_value_change) {
 		return;
 	}
@@ -67,7 +67,7 @@ void EditorPropertyAABBMinMax::_on_value_changed(double val) {
 	emit_changed(get_edited_property(), p, "");
 }
 
-void EditorPropertyAABBMinMax::_zn_update_property() {
+void ZN_EditorPropertyAABBMinMax::_zn_update_property() {
 	const AABB val = get_edited_object()->get(get_edited_property());
 
 	_ignore_value_change = true;
@@ -82,7 +82,7 @@ void EditorPropertyAABBMinMax::_zn_update_property() {
 	_ignore_value_change = false;
 }
 
-void EditorPropertyAABBMinMax::_notification(int p_what) {
+void ZN_EditorPropertyAABBMinMax::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 		case NOTIFICATION_THEME_CHANGED: {
@@ -94,7 +94,7 @@ void EditorPropertyAABBMinMax::_notification(int p_what) {
 	}
 }
 
-void EditorPropertyAABBMinMax::setup(
+void ZN_EditorPropertyAABBMinMax::setup(
 		double p_min, double p_max, double p_step, bool p_no_slider, const String &p_suffix) {
 	for (unsigned int i = 0; i < _spinboxes.size(); i++) {
 		_spinboxes[i]->set_min(p_min);
@@ -107,9 +107,9 @@ void EditorPropertyAABBMinMax::setup(
 	}
 }
 
-void EditorPropertyAABBMinMax::_bind_methods() {
+void ZN_EditorPropertyAABBMinMax::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_value_changed"), &EditorPropertyAABBMinMax::_on_value_changed);
+	ClassDB::bind_method(D_METHOD("_on_value_changed"), &ZN_EditorPropertyAABBMinMax::_on_value_changed);
 #endif
 }
 

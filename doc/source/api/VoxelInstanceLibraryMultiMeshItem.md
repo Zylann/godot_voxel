@@ -4,7 +4,6 @@ Inherits: [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)
 
 
 
-
 ## Properties: 
 
 
@@ -26,16 +25,18 @@ Type           | Name                                       | Default
 ## Methods: 
 
 
-Return                                                                  | Signature                                                                                                                                                                                     
------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)  | [get_mesh](#i_get_mesh) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) const                                                                         
-[void](#)                                                               | [set_mesh](#i_set_mesh) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index )  
-[void](#)                                                               | [setup_from_template](#i_setup_from_template) ( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node )                                                                 
+Return                                                                                  | Signature                                                                                                                                                                                     
+--------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html)  | [get_collider_group_names](#i_get_collider_group_names) ( ) const                                                                                                                             
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)                  | [get_mesh](#i_get_mesh) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) const                                                                         
+[void](#)                                                                               | [set_collider_group_names](#i_set_collider_group_names) ( [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html) names )                                      
+[void](#)                                                                               | [set_mesh](#i_set_mesh) ( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index )  
+[void](#)                                                                               | [setup_from_template](#i_setup_from_template) ( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node )                                                                 
 <p></p>
 
 ## Constants: 
 
-- **MAX_MESH_LODS** = **4**
+- <span id="i_MAX_MESH_LODS"></span>**MAX_MESH_LODS** = **4**
 
 ## Property Descriptions
 
@@ -74,8 +75,16 @@ Return                                                                  | Signat
 
 ## Method Descriptions
 
+- [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html)<span id="i_get_collider_group_names"></span> **get_collider_group_names**( ) 
+
+Gets the list of group names that are added to collider nodes.
+
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_get_mesh"></span> **get_mesh**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) 
 
+
+- [void](#)<span id="i_set_collider_group_names"></span> **set_collider_group_names**( [StringName[]](https://docs.godotengine.org/en/stable/classes/class_stringname[].html) names ) 
+
+Sets the list of group names that will be added to collider nodes generated for each instance.
 
 - [void](#)<span id="i_set_mesh"></span> **set_mesh**( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mesh_lod_index ) 
 
@@ -83,4 +92,4 @@ Return                                                                  | Signat
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

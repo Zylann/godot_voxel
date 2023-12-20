@@ -32,6 +32,13 @@ inline Vector3 to_vec3(const Vector3i v) {
 	return Vector3(v.x, v.y, v.z);
 }
 
+// Make `to_vec3` calls fail if no explicit overload is found.
+// To avoid Godot from silently converting Vector3 to Vector3i due to the compiler matching that function overload when
+// accidentally passing a `Vector3` to `to_vec3`. Our style is to have explicit vector conversions, but when mistakes
+// occur, it clashes with Godot's style, creating bugs that are hard to spot.
+template <typename T>
+inline Vector3 to_vec3(T v) = delete;
+
 // Godot => ZN
 
 inline Vector2f to_vec2f(Vector2 v) {

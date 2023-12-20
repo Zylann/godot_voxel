@@ -154,11 +154,11 @@ private:
 	// the "new version 1" after the next edit. All clients having ever joined the server would have to be aware
 	// of the revert before they start getting blocks with the server,
 	// or need to be told which version is the "generated" one.
-	//uint32_t _version;
+	// uint32_t _version;
 
 	// Tells if it's worth requesting a more precise version of the data.
 	// Will be `true` if it's not worth it.
-	//bool _max_lod_hint = false;
+	// bool _max_lod_hint = false;
 };
 
 } // namespace zylann::voxel

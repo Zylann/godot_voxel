@@ -1,7 +1,7 @@
 #include "voxel_modifier_mesh.h"
 #include "../edition/funcs.h"
 #include "../engine/voxel_engine.h"
-#include "../util/godot/funcs.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
 

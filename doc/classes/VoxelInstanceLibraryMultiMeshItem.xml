@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="VoxelInstanceLibraryMultiMeshItem" inherits="VoxelInstanceLibraryItem" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
+		Instancer model using [MultiMesh] to render.
 	</brief_description>
 	<description>
+		This model is suited for rendering very large amounts of simple instances, such as grass and rocks.
 	</description>
 	<tutorials>
 	</tutorials>
 	<methods>
+		<method name="get_collider_group_names" qualifiers="const">
+			<return type="StringName[]" />
+			<description>
+				Gets the list of group names that are added to collider nodes.
+			</description>
+		</method>
 		<method name="get_mesh" qualifiers="const">
 			<return type="Mesh" />
 			<param index="0" name="mesh_lod_index" type="int" />
 			<description>
+			</description>
+		</method>
+		<method name="set_collider_group_names">
+			<return type="void" />
+			<param index="0" name="names" type="StringName[]" />
+			<description>
+				Sets the list of group names that will be added to collider nodes generated for each instance.
 			</description>
 		</method>
 		<method name="set_mesh">
@@ -28,6 +43,8 @@
 		</method>
 	</methods>
 	<members>
+		<member name="_mesh_lod_distance_ratios" type="PackedFloat32Array" setter="_set_mesh_lod_distance_ratios" getter="_get_mesh_lod_distance_ratios" default="PackedFloat32Array(0.2, 0.35, 0.6, 1)">
+		</member>
 		<member name="cast_shadow" type="int" setter="set_cast_shadows_setting" getter="get_cast_shadows_setting" enum="RenderingServer.ShadowCastingSetting" default="1">
 		</member>
 		<member name="collision_layer" type="int" setter="set_collision_layer" getter="get_collision_layer" default="1">
@@ -36,15 +53,27 @@
 		</member>
 		<member name="collision_shapes" type="Array" setter="set_collision_shapes" getter="get_collision_shapes" default="[]">
 		</member>
+		<member name="gi_mode" type="int" setter="set_gi_mode" getter="get_gi_mode" enum="GeometryInstance3D.GIMode" default="1">
+		</member>
+		<member name="hide_beyond_max_lod" type="bool" setter="set_hide_beyond_max_lod" getter="get_hide_beyond_max_lod" default="false">
+		</member>
 		<member name="material_override" type="Material" setter="set_material_override" getter="get_material_override">
 		</member>
 		<member name="mesh" type="Mesh" setter="_set_mesh_lod0" getter="_get_mesh_lod0">
 		</member>
+		<member name="mesh_lod0_distance_ratio" type="float" setter="_set_mesh_lod0_distance_ratio" getter="_get_mesh_lod0_distance_ratio" default="0.2">
+		</member>
 		<member name="mesh_lod1" type="Mesh" setter="_set_mesh_lod1" getter="_get_mesh_lod1">
+		</member>
+		<member name="mesh_lod1_distance_ratio" type="float" setter="_set_mesh_lod1_distance_ratio" getter="_get_mesh_lod1_distance_ratio" default="0.35">
 		</member>
 		<member name="mesh_lod2" type="Mesh" setter="_set_mesh_lod2" getter="_get_mesh_lod2">
 		</member>
+		<member name="mesh_lod2_distance_ratio" type="float" setter="_set_mesh_lod2_distance_ratio" getter="_get_mesh_lod2_distance_ratio" default="0.6">
+		</member>
 		<member name="mesh_lod3" type="Mesh" setter="_set_mesh_lod3" getter="_get_mesh_lod3">
+		</member>
+		<member name="mesh_lod3_distance_ratio" type="float" setter="_set_mesh_lod3_distance_ratio" getter="_get_mesh_lod3_distance_ratio" default="1.0">
 		</member>
 		<member name="render_layer" type="int" setter="set_render_layer" getter="get_render_layer" default="1">
 		</member>

@@ -2,7 +2,6 @@
 
 Inherits: [VoxelBlockyModel](VoxelBlockyModel.md)
 
-
 Generates a cube model with specific tiles on its sides.
 
 ## Properties: 
@@ -46,4 +45,4 @@ If you are not using an atlas and every side uses the same full texture, use (1,
 - [void](#)<span id="i_set_tile"></span> **set_tile**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) side, [Vector2i](https://docs.godotengine.org/en/stable/classes/class_vector2i.html) position ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

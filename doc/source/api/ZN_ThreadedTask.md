@@ -2,7 +2,8 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
+!!! warning
+    This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
 
 ## Methods: 
@@ -30,4 +31,4 @@ Return                                                                  | Signat
 - [void](#)<span id="i__run"></span> **_run**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) thread_index ) 
 
 
-_Generated on Jul 23, 2023_
+_Generated on Nov 11, 2023_

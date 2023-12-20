@@ -1,5 +1,5 @@
 #include "dstack.h"
-#include "fixed_array.h"
+#include "containers/fixed_array.h"
 #include "string_funcs.h"
 
 #include <string>
