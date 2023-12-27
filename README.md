@@ -18,6 +18,7 @@ Features
 ---------------------------
 
 - Realtime 3D terrain editable in-game (Unlike a heightmap based terrain, this allows for overhangs, tunnels, and user creation/destruction)
+- Polygon-based: voxels are transformed into chunked meshes to be rendered
 - Godot physics integration + alternate fast Minecraft-like collisions
 - Infinite terrains made by paging chunks in and out
 - Voxel data is streamed from a variety of sources, which includes the ability to write your own generators
