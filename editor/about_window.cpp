@@ -1,4 +1,5 @@
 #include "about_window.h"
+#include "../constants/version.gen.h"
 #include "../util/godot/classes/button.h"
 #include "../util/godot/classes/h_box_container.h"
 #include "../util/godot/classes/h_split_container.h"
@@ -205,6 +206,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"[b]Author:[/b] Marc Gilleron\n"
 						"[b]Repository:[/b] [url]https://github.com/Zylann/godot_voxel[/url]\n"
 						"[b]Issue tracker:[/b] [url]https://github.com/Zylann/godot_voxel/issues[/url]\n"
+						"[b]Git hash:[/b] {git_hash}\n"
 						"\n"
 						"[b]Gold supporters:[/b]\n"
 						"Aaron Franke (aaronfranke)\n"
@@ -238,13 +240,23 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"SummitCollie";
 	{
 		Dictionary d;
-		// TODO Take version from somewhere unique
-		d["version"] = "1.1";
+
+		String version_string =
+				String("{0}.{1}.{2}").format(varray(VOXEL_VERSION_MAJOR, VOXEL_VERSION_MINOR, VOXEL_VERSION_PATCH));
+		if (VOXEL_VERSION_STATUS[0] != '\0') {
+			version_string += ".";
+			version_string += VOXEL_VERSION_STATUS;
+		}
+
+		d["version"] = version_string;
+		d["git_hash"] = VOXEL_VERSION_GIT_HASH;
+
 		about_text = about_text.format(d);
 	}
 	RichTextLabel *rich_text_label = memnew(RichTextLabel);
 	rich_text_label->set_use_bbcode(true);
 	rich_text_label->set_text(about_text);
+	rich_text_label->set_selection_enabled(true);
 	rich_text_label->connect(
 			"meta_clicked", ZN_GODOT_CALLABLE_MP(this, VoxelAboutWindow, _on_about_rich_text_label_meta_clicked));
 

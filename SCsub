@@ -7,6 +7,9 @@ Import("env")
 Import("env_modules")
 
 import common
+import voxel_version
+
+voxel_version.generate_version_header()
 
 # Note, support for FastNoise2 requires C++17, and only works on x86.
 FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
@@ -78,11 +81,11 @@ if FAST_NOISE_2_SRC:
 # Tracy library
 # Expects Tracy to be inside the `thirdparty` folder of Godot (not this module)
 
-# env.Append(CPPDEFINES="TRACY_ENABLE")
-# env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
-# voxel_files += [
-# 	"#thirdparty/tracy/TracyClient.cpp"
-# ]
+env.Append(CPPDEFINES="TRACY_ENABLE")
+env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
+voxel_files += [
+	"#thirdparty/tracy/TracyClient.cpp"
+]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
