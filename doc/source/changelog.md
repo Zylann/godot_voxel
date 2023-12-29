@@ -92,6 +92,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
     - `VoxelTerrain`: Fixed crash when the terrain tries to update while it has no mesher assigned
     - `VoxelLodTerrain`: Fixed error spam when re-generating or destroying the terrain
     - `VoxelMesherBlocky`: Fixed materials "wrapping around" when more than 256 are used. Raised limit to 65536.
+    - `VoxelMesherTransvoxel`: Removed rare degenerate/microscopic triangles, which caused errors with Jolt Physics. However, doing those checks makes meshing about 15% slower (untextured).
     - `VoxelStreamRegionFiles`: Fixed `block_size_po2` wasn't working correctly
     - `VoxelToolTerrain`: Fixed terrain was not marked as modified when setting voxel metadata
     - `VoxelToolLodTerrain`: 
