@@ -11,6 +11,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
 1.x - ongoing development - `master`
 --------------------------------------
 
+Primarily developped with Godot 4.2
+
+
+1.1 - 29/12/2023 - `1.1`
+---------------------------------
+
+Primarily developped with Godot 4.1
+
 - General
     - Added shadow casting setting to both terrain types
     - Added editor shortcut to re-generate the selected terrain
