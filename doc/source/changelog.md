@@ -13,6 +13,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
 
 Primarily developped with Godot 4.2.
 
+- Fixes
+    - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
+
 
 1.1 - 29/12/2023 - `1.1`
 ---------------------------------

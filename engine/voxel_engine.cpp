@@ -11,6 +11,7 @@
 #include "../util/godot/classes/rendering_server.h"
 #include "../util/io/log.h"
 #include "../util/macros.h"
+#include "../util/math/conv.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 
@@ -65,6 +66,8 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 
 	// Init world
 	_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
+	// Give initial capacity to make invalidation less likely
+	_world.shared_priority_dependency->viewers.resize(64);
 
 	ZN_PRINT_VERBOSE(format("Size of LoadBlockDataTask: {}", sizeof(LoadBlockDataTask)));
 	ZN_PRINT_VERBOSE(format("Size of SaveBlockDataTask: {}", sizeof(SaveBlockDataTask)));
@@ -332,29 +335,47 @@ void VoxelEngine::process() {
 	_progressive_task_runner.process();
 
 	// Update viewer dependencies
-	{
-		const size_t viewer_count = _world.viewers.count();
-		if (_world.shared_priority_dependency->viewers.size() != viewer_count) {
-			// TODO We can avoid the invalidation by using an atomic size or memory barrier?
-			_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
-			_world.shared_priority_dependency->viewers.resize(viewer_count);
-		}
-		size_t i = 0;
-		unsigned int max_distance = 0;
-		_world.viewers.for_each_value([&i, &max_distance, this](Viewer &viewer) {
-			_world.shared_priority_dependency->viewers[i] = viewer.world_position;
-			if (viewer.view_distance > max_distance) {
-				max_distance = viewer.view_distance;
-			}
-			++i;
-		});
-		// Cancel distance is increased because of two reasons:
-		// - Some volumes use a cubic area which has higher distances on their corners
-		// - Hysteresis is needed to reduce ping-pong
-		_world.shared_priority_dependency->highest_view_distance = max_distance * 2;
-	}
+	sync_viewers_task_priority_data();
 
 	ZN_PROFILE_PLOT("Pending GPU tasks", int64_t(_gpu_task_runner.get_pending_task_count()));
+}
+
+void VoxelEngine::sync_viewers_task_priority_data() {
+	const unsigned int viewer_count = _world.viewers.count();
+
+	if (viewer_count > _world.shared_priority_dependency->viewers.size()) {
+		// Invalidate, build a new one. Will be referenced by next tasks onwards.
+
+		// One edge case of this is when there is a stockpile of existing tasks lasting for a long time (for example if
+		// the user has an extremely slow generator). Priority of those tasks will no longer be updated dynamically, so
+		// it's possible that some chunks will load at an odd pace. To workaround this, we can minimize the times this
+		// invalidation occurs by preallocating enough elements. Exceeding this capacity will make the issue come back,
+		// but it should be rare. Eventually, if a game requires using a lot of viewers, we may find a different
+		// strategy that doesn't involve iterating them all?
+
+		// TODO We can avoid the invalidation by using an atomic size or memory barrier?
+		_world.shared_priority_dependency = make_shared_instance<PriorityDependency::ViewersData>();
+		_world.shared_priority_dependency->viewers.resize(viewer_count);
+	}
+
+	PriorityDependency::ViewersData &dep = *_world.shared_priority_dependency;
+
+	size_t i = 0;
+	unsigned int max_distance = 0;
+	_world.viewers.for_each_value([&i, &max_distance, &dep](Viewer &viewer) {
+		dep.viewers[i] = to_vec3f(viewer.world_position);
+		if (viewer.view_distance > max_distance) {
+			max_distance = viewer.view_distance;
+		}
+		++i;
+	});
+
+	dep.viewers_count = viewer_count;
+
+	// Cancel distance is increased because of two reasons:
+	// - Some volumes use a cubic area which has higher distances on their corners
+	// - Hysteresis is needed to reduce ping-pong
+	dep.highest_view_distance = max_distance * 2;
 }
 
 static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {

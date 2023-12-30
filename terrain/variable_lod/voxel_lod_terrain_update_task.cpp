@@ -157,7 +157,7 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 	const Vector3i voxel_pos = get_block_center(block_position, data_block_size, lod);
 	const float block_radius = (data_block_size << lod) / 2;
 	dep.shared = shared_viewers_data;
-	dep.world_position = volume_transform.xform(voxel_pos);
+	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos));
 	const float transformed_block_radius =
 			volume_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 
