@@ -6,7 +6,7 @@ namespace zylann::voxel {
 
 TaskPriority PriorityDependency::evaluate(uint8_t lod_index, uint8_t band2_priority, float *out_closest_distance_sq) {
 	TaskPriority priority;
-	ERR_FAIL_COND_V(shared == nullptr, priority);
+	ZN_ASSERT_RETURN_V(shared != nullptr, priority);
 
 	const std::vector<Vector3f> &viewer_positions = shared->viewers;
 	const unsigned int viewer_count = shared->viewers_count;
