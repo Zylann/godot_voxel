@@ -8,10 +8,10 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
 
-1.x - ongoing development - `master`
+1.2.dev - ongoing development - `master`
 --------------------------------------
 
-Primarily developped with Godot 4.2
+Primarily developped with Godot 4.2.
 
 
 1.1 - 29/12/2023 - `1.1`
