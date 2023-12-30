@@ -3,6 +3,7 @@
 
 #include "../util/math/vector3f.h"
 #include "../util/tasks/task_priority.h"
+#include <atomic>
 #include <memory>
 #include <vector>
 
