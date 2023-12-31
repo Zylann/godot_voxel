@@ -2,7 +2,11 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Generates coherent and fractal noise using the [FastNoiseLite](https://github.com/Auburn/FastNoise) library.
+Generates coherent and fractal noise using the [FastNoiseLite](https://github.com/Auburn/FastNoiseLite) library.
+
+## Description: 
+
+This is an alternative implementation of [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html), based on the same library. Some differences include different default values, and use of period instead of frequency in fractal parameters. It is also used in the voxel module in order to bypass the overhead of Godot calls in GDExtension builds.
 
 ## Properties: 
 
@@ -136,4 +140,4 @@ enum **CellularReturnType**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_3dv"></span> **get_noise_3dv**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) position ) 
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

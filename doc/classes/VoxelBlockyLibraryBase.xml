@@ -31,5 +31,7 @@
 	<constants>
 		<constant name="MAX_MODELS" value="65536">
 		</constant>
+		<constant name="MAX_MATERIALS" value="65536">
+		</constant>
 	</constants>
 </class>

@@ -58,4 +58,4 @@ enum **TexturingMode**:
 - [ArrayMesh](https://docs.godotengine.org/en/stable/classes/class_arraymesh.html)<span id="i_build_transition_mesh"></span> **build_transition_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) direction ) 
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

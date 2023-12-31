@@ -85,11 +85,13 @@ nav:
     - api/VoxelModifierSphere.md
     - api/VoxelNode.md
     - api/VoxelRaycastResult.md
+    - api/VoxelSaveCompletionTracker.md
     - api/VoxelStream.md
     - api/VoxelStreamRegionFiles.md
     - api/VoxelStreamSQLite.md
     - api/VoxelStreamScript.md
     - api/VoxelTerrain.md
+    - api/VoxelTerrainMultiplayerSynchronizer.md
     - api/VoxelTool.md
     - api/VoxelToolBuffer.md
     - api/VoxelToolLodTerrain.md
@@ -99,6 +101,7 @@ nav:
     - api/VoxelVoxLoader.md
     - api/ZN_FastNoiseLite.md
     - api/ZN_FastNoiseLiteGradient.md
+    - api/ZN_SpotNoise.md
     - api/ZN_ThreadedTask.md
     # </generated_class_list>
   - 'Serialization formats':
