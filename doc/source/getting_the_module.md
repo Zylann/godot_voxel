@@ -99,7 +99,7 @@ C# builds are available on Github Actions as well (as "Mono Builds"). Unfortunat
 To obtain a working version, you may generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_dotnet.html).
 
 
-### GDExtension and C#
+### GDExtension and `C#`
 
 The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
 
