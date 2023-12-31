@@ -59,6 +59,7 @@
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
+#include "util/noise/spot_noise_gd.h"
 #include "util/string_funcs.h"
 #include "util/tasks/async_dependency_tracker.h"
 #include "util/tasks/godot/threaded_task_gd.h"
@@ -93,6 +94,7 @@
 #include "editor/instancer/voxel_instancer_editor_plugin.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_editor_plugin.h"
 #include "editor/multipass/voxel_generator_multipass_editor_plugin.h"
+#include "editor/spot_noise/spot_noise_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
 #include "editor/voxel_debug.h"
@@ -133,9 +135,11 @@
 #include "editor/instancer/voxel_instancer_stat_view.h"
 #include "editor/mesh_sdf/voxel_mesh_sdf_viewer.h"
 #include "editor/multipass/voxel_generator_multipass_cache_viewer.h"
+#include "editor/spot_noise/spot_noise_editor_inspector_plugin.h"
+#include "editor/spot_noise/spot_noise_viewer.h"
 #include "editor/terrain/editor_property_aabb_min_max.h"
 #include "editor/terrain/voxel_terrain_editor_task_indicator.h"
-#endif
+#endif // ZN_GODOT_EXTENSION
 
 #endif // TOOLS_ENABLED
 
@@ -278,6 +282,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
+		ClassDB::register_class<ZN_SpotNoise>();
 		ClassDB::register_class<ZN_ThreadedTask>();
 		// See SCsub
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
@@ -381,6 +386,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_internal_class<ZN_FastNoiseLiteEditorInspectorPlugin>();
 		ClassDB::register_internal_class<ZN_FastNoiseLiteViewer>();
 
+		ClassDB::register_internal_class<ZN_SpotNoiseEditorPlugin>();
+		ClassDB::register_internal_class<ZN_SpotNoiseEditorInspectorPlugin>();
+		ClassDB::register_internal_class<ZN_SpotNoiseViewer>();
+
 		ClassDB::register_internal_class<VoxelAboutWindow>();
 		ClassDB::register_internal_class<VoxelTerrainEditorInspectorPlugin>();
 		ClassDB::register_internal_class<VoxelTerrainEditorPlugin>();
@@ -436,6 +445,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		EditorPlugins::add_by_type<VoxelInstanceLibraryEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelInstanceLibraryMultiMeshItemEditorPlugin>();
 		EditorPlugins::add_by_type<ZN_FastNoiseLiteEditorPlugin>();
+		EditorPlugins::add_by_type<ZN_SpotNoiseEditorPlugin>();
 		EditorPlugins::add_by_type<magica::VoxelVoxEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelInstancerEditorPlugin>();
 		EditorPlugins::add_by_type<VoxelMeshSDFEditorPlugin>();

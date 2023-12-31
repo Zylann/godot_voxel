@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ZN_SpotNoise" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Specialization of cellular noise intented for cheap "ore patch" generation or deterministic point scattering.
+	</brief_description>
+	<description>
+		Divides space into a grid where each cell contains a circular "spot". Noise evaluation returns 1 when the position is inside a spot, 0 otherwise. 
+		Limitation: high jitter can make spots clip with cell borders. This is expected. If you need higher quality (but slower) results, you may use another noise library such as [FastNoiseLite].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_noise_2d" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_2dv" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_3d" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="x" type="float" />
+			<param index="1" name="y" type="float" />
+			<param index="2" name="z" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_noise_3dv" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="pos" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spot_positions_in_area_2d" qualifiers="const">
+			<return type="PackedVector2Array" />
+			<param index="0" name="rect" type="Rect2" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spot_positions_in_area_3d" qualifiers="const">
+			<return type="PackedVector3Array" />
+			<param index="0" name="aabb" type="AABB" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="cell_size" type="float" setter="set_cell_size" getter="get_cell_size" default="32.0">
+		</member>
+		<member name="jitter" type="float" setter="set_jitter" getter="get_jitter" default="0.9">
+		</member>
+		<member name="seed" type="int" setter="set_seed" getter="get_seed" default="1337">
+		</member>
+		<member name="spot_radius" type="float" setter="set_spot_radius" getter="get_spot_radius" default="3.0">
+		</member>
+	</members>
+</class>

@@ -70,6 +70,18 @@ inline vec3 hash_to_vec3(int h) {
 	return to_vec3f(ivec3(h, h >> 10, h >> 20) & 0x3ff) / 1024.0;
 }
 
+inline Vector2f get_spot_position_2d_norm(Vector2i cell_position, float jitter, int seed) {
+	int h = hash2(cell_position, seed);
+	vec2 h2 = hash_to_vec2(h);
+	return math::lerp(vec2(0.5), h2, jitter);
+}
+
+inline Vector3f get_spot_position_3d_norm(Vector3i cell_position, float jitter, int seed) {
+	int h = hash3(cell_position, seed);
+	vec3 h3 = hash_to_vec3(h);
+	return math::lerp(vec3(0.5), h3, jitter);
+}
+
 inline float spot_noise_2d(vec2 pos, float cell_size, float spot_size, float jitter, int seed) {
 	vec2 cell_origin_norm = math::floor(pos / cell_size);
 	ivec2 cell_origin_norm_i = to_vec2i(cell_origin_norm);

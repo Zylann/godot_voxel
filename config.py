@@ -93,6 +93,7 @@ def get_doc_classes():
         "VoxelVoxLoader",
         "ZN_FastNoiseLite",
         "ZN_FastNoiseLiteGradient",
+        "ZN_SpotNoise",
         "ZN_ThreadedTask",
     ]
 
