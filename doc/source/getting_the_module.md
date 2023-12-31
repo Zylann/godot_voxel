@@ -8,10 +8,10 @@ Precompiled builds
 
 ### Release builds
 
-Builds are provided at [https://github.com/Zylann/godot_voxel/releases](https://github.com/Zylann/godot_voxel/releases)
+Builds are provided at [https://github.com/Zylann/godot_voxel/releases](https://github.com/Zylann/godot_voxel/releases).
 The project follows a continuous development cycle, so "releases" are merely snapshots of development versions. Because Github requires an account to download latest development versions from Github Actions, releases are published for convenience.
 
-Because the plugin is primarily developped as a module, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
+The plugin is primarily developped as a module, so it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
 
 The engine is massive and targets a lot of platforms, while our module is small in comparison and we don't have dedicated build containers, so not all combinations of editors and export templates are available. You can develop your game and test it with the editor on main desktop platforms, but if a combination of platforms/options isn't provided, you will have to build them yourself.
 
@@ -43,7 +43,7 @@ They are built using Godot's latest stable version branch (for example, `4.2` at
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
 !!! note
-	Mono builds (C# support) are also done at [https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml), however they no longer work out of the box. For more information, see [C# support](#c-suppport).
+	Mono builds (C# support) [are also done](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml), however they no longer work out of the box. For more information, see [C# support](#c-suppport).
 
 
 Building yourself
