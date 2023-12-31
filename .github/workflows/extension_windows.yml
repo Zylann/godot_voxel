@@ -23,13 +23,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Editor build
+          - name: master Editor
             target: editor
             dev_build: no
             #cache_action: actions/cache@v3
             executable_name: libvoxel.windows.editor.x86_64.dll
 
-          - name: Release build
+          - name: master Release
             target: template_release
             dev_build: no
             #cache_action: actions/cache@v3

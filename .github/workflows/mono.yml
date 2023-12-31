@@ -7,7 +7,7 @@ on:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.1"
+  GODOT_BASE_BRANCH: "4.2"
   SCONS_CACHE_LIMIT: 4096
 
 jobs:

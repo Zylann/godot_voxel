@@ -17,8 +17,9 @@ jobs:
     strategy:
       matrix:
         include:
-          # Just to check if building still works in that version
-          - name: Editor debug build (4.0)
+          # --- Check past and future Godot versions ---
+
+          - name: 4.0 Editor Debug
             precision: single
             target: editor
             dev_build: yes
@@ -31,8 +32,17 @@ jobs:
             # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
             warnings: all
 
-          # Just to check if building works in Godot master
-          - name: Editor debug build (master)
+          - name: 4.1 Editor Debug
+            precision: single
+            target: editor
+            dev_build: yes
+            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
+            production: no
+            executable_name: godot.linuxbsd.editor.dev.x86_64
+            godot_base_branch: "4.1"
+            warnings: extra
+          
+          - name: master Editor Debug
             precision: single
             target: editor
             dev_build: yes
@@ -42,44 +52,36 @@ jobs:
             godot_base_branch: "master"
             warnings: extra
 
-          - name: Editor debug build
-            precision: single
-            target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
-            production: no
-            executable_name: godot.linuxbsd.editor.dev.x86_64
-            godot_base_branch: "4.1"
-            warnings: extra
+          # --- Builds with artifacts ---
 
-          - name: Editor build
+          - name: 4.2 Editor
             precision: single
             target: editor
             dev_build: no
             #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
             warnings: extra
 
-          - name: Template build
+          - name: 4.2 Template
             precision: single
             target: template_release
             dev_build: no
             #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
             warnings: extra
 
-          - name: Editor build with 64-bit floats
+          - name: 4.2 Editor Float64
             precision: double
             target: editor
             dev_build: no
             #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
             warnings: extra
 
     steps:
