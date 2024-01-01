@@ -465,6 +465,9 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	// so changing block size or viewer flags did not make meshes appear.
 	try_schedule_mesh_update(*block);
 
+	// TODO this logic schedules a mesh update even if there is a mesh already. It hides the fact that mixing up
+	// viewers with collisions and viewers without will not actually create colliders/meshes individually.
+
 	// TODO viewers with varying flags during the game is not supported at the moment.
 	// They have to be re-created, which may cause world re-load...
 }
