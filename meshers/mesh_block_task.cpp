@@ -432,7 +432,7 @@ void MeshBlockTask::build_mesh() {
 
 	if (transvoxel_mesher.is_valid() && detail_texture_settings.enabled && !mesh_is_empty &&
 			lod_index >= detail_texture_settings.begin_lod_index && require_detail_texture) {
-		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
+		ZN_PROFILE_SCOPE_NAMED("Schedule detail render");
 
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
 		Span<const transvoxel::CellInfo> cell_infos = VoxelMesherTransvoxel::get_cell_info_from_current_thread();
