@@ -21,4 +21,4 @@ Type       | Name                                 | Default
 - [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html)<span id="i_pattern_size"></span> **pattern_size** = Vector2(30, 30)
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

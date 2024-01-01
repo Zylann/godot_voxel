@@ -70,13 +70,13 @@ private:
 	VoxelBufferInternal _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
-	std::vector<uint8_t> _mesh_material_indices; // Indexed by mesh surface
+	std::vector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
 	std::shared_ptr<DetailTextureOutput> _detail_textures;
 	std::vector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		std::vector<uint8_t> &surface_indices);
+		std::vector<uint16_t> &mesh_material_indices);
 
 } // namespace zylann::voxel
 

@@ -17,4 +17,4 @@ Return                                                                | Signatur
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_from_file"></span> **load_from_file**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 ) 
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

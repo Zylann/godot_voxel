@@ -16,6 +16,25 @@
 
 namespace zylann::voxel {
 
+unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Material> &p_material) {
+	for (size_t i = 0; i < materials.size(); ++i) {
+		const Ref<Material> &material = materials[i];
+		if (material == p_material) {
+			return i;
+		}
+	}
+#ifdef TOOLS_ENABLED
+	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
+		ZN_PRINT_ERROR(format("Maximum material count reached ({}), try reduce your number of materials by re-using "
+							  "them or using atlases.",
+				VoxelBlockyLibraryBase::MAX_MATERIALS));
+	}
+#endif
+	const unsigned int ret = materials.size();
+	materials.push_back(p_material);
+	return ret;
+}
+
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
 
 bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
@@ -470,7 +489,7 @@ void VoxelBlockyModel::rotate_collision_boxes_ortho(math::OrthoBasis ortho_basis
 
 		const Vector3 min_pos = math::min(p0, p1);
 		const Vector3 max_pos = math::max(p0, p1);
-		aabb = AABB(to_vec3(min_pos), to_vec3(max_pos - min_pos));
+		aabb = AABB(min_pos, max_pos - min_pos);
 
 		aabb.position += Vector3(0.5, 0.5, 0.5);
 	}

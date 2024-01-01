@@ -51,7 +51,7 @@ public:
 	struct Output {
 		struct Surface {
 			Array arrays;
-			uint8_t material_index = 0;
+			uint16_t material_index = 0;
 		};
 		std::vector<Surface> surfaces;
 		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;

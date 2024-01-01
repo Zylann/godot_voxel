@@ -165,17 +165,7 @@ public:
 	struct MaterialIndexer {
 		std::vector<Ref<Material>> &materials;
 
-		unsigned int get_or_create_index(const Ref<Material> &p_material) {
-			for (size_t i = 0; i < materials.size(); ++i) {
-				const Ref<Material> &material = materials[i];
-				if (material == p_material) {
-					return i;
-				}
-			}
-			const unsigned int ret = materials.size();
-			materials.push_back(p_material);
-			return ret;
-		}
+		unsigned int get_or_create_index(const Ref<Material> &p_material);
 	};
 
 	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const;

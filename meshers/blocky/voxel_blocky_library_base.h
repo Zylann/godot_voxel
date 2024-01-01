@@ -16,8 +16,14 @@ class VoxelBlockyLibraryBase : public Resource {
 
 public:
 	// Limit based on maximum supported by VoxelMesherBlocky
-	static const unsigned int MAX_MODELS = 65536;
-	static const uint32_t NULL_INDEX = 0xFFFFFFFF;
+	static constexpr unsigned int MAX_MODELS = 65536;
+
+	// Materials must be kept to a minimum. 256 is already a lot, but that only affects performance. This limit is
+	// the one beyond which the code stops working. Could still be increased in theory (requires some code changes to
+	// use uint32_t instead of uint16_t), but there is no practical sense doing so.
+	static constexpr unsigned int MAX_MATERIALS = 65536;
+
+	static constexpr uint32_t NULL_INDEX = 0xFFFFFFFF;
 
 	struct BakedData {
 		// 2D array: { X : pattern A, Y : pattern B } => Does A occlude B

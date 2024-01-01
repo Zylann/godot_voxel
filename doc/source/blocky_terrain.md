@@ -82,7 +82,7 @@ The best format to use to export your meshes is OBJ. Godot imports this format b
 You can choose to export materials from here too, but it is recommended to do it in Godot because it allows you to re-use them.
 
 !!! note
-	A second material can be used in each model. This is useful if a given mesh needs both transparent and opaque parts. This works as usual, by having a mesh with two surfaces. However, face culling will still use properties of the model regardless. For example, if a model has opaque sides and is transparent in the middle, it may be defined as a non-transparent block, so when placed next to other opaque blocks, geometry of its sides will be culled. See [#transparency](Transparency) section for more info.
+	A second material can be used in each model. This is useful if a given mesh needs both transparent and opaque parts. This works as usual, by having a mesh with two surfaces. However, face culling will still use properties of the model regardless. For example, if a model has opaque sides and is transparent in the middle, it may be defined as a non-transparent block, so when placed next to other opaque blocks, geometry of its sides will be culled. See [Transparency](#transparency) section for more info.
 
 !!! warning
 	If your voxels use mesh-based physics (GodotPhysics, Jolt...) and you export your game with "Export as dedicated server" in the resources tab of an export preset, make sure meshes you used in `VoxelBlockyModelMesh` are **not** stripped. Mesh data is required at runtime to generate colliders. If you don't do this, models using a mesh will not generate any mesh-based collision.

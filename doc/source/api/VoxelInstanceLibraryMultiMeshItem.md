@@ -2,24 +2,35 @@
 
 Inherits: [VoxelInstanceLibraryItem](VoxelInstanceLibraryItem.md)
 
+Instancer model using [MultiMesh](https://docs.godotengine.org/en/stable/classes/class_multimesh.html) to render.
 
+## Description: 
+
+This model is suited for rendering very large amounts of simple instances, such as grass and rocks.
 
 ## Properties: 
 
 
-Type           | Name                                       | Default 
--------------- | ------------------------------------------ | --------
-`int`          | [cast_shadow](#i_cast_shadow)              | 1       
-`int`          | [collision_layer](#i_collision_layer)      | 1       
-`int`          | [collision_mask](#i_collision_mask)        | 1       
-`Array`        | [collision_shapes](#i_collision_shapes)    | []      
-`Material`     | [material_override](#i_material_override)  |         
-`Mesh`         | [mesh](#i_mesh)                            |         
-`Mesh`         | [mesh_lod1](#i_mesh_lod1)                  |         
-`Mesh`         | [mesh_lod2](#i_mesh_lod2)                  |         
-`Mesh`         | [mesh_lod3](#i_mesh_lod3)                  |         
-`int`          | [render_layer](#i_render_layer)            | 1       
-`PackedScene`  | [scene](#i_scene)                          |         
+Type                  | Name                                                       | Default                               
+--------------------- | ---------------------------------------------------------- | --------------------------------------
+`PackedFloat32Array`  | [_mesh_lod_distance_ratios](#i__mesh_lod_distance_ratios)  | PackedFloat32Array(0.2, 0.35, 0.6, 1) 
+`int`                 | [cast_shadow](#i_cast_shadow)                              | 1                                     
+`int`                 | [collision_layer](#i_collision_layer)                      | 1                                     
+`int`                 | [collision_mask](#i_collision_mask)                        | 1                                     
+`Array`               | [collision_shapes](#i_collision_shapes)                    | []                                    
+`int`                 | [gi_mode](#i_gi_mode)                                      | 1                                     
+`bool`                | [hide_beyond_max_lod](#i_hide_beyond_max_lod)              | false                                 
+`Material`            | [material_override](#i_material_override)                  |                                       
+`Mesh`                | [mesh](#i_mesh)                                            |                                       
+`float`               | [mesh_lod0_distance_ratio](#i_mesh_lod0_distance_ratio)    | 0.2                                   
+`Mesh`                | [mesh_lod1](#i_mesh_lod1)                                  |                                       
+`float`               | [mesh_lod1_distance_ratio](#i_mesh_lod1_distance_ratio)    | 0.35                                  
+`Mesh`                | [mesh_lod2](#i_mesh_lod2)                                  |                                       
+`float`               | [mesh_lod2_distance_ratio](#i_mesh_lod2_distance_ratio)    | 0.6                                   
+`Mesh`                | [mesh_lod3](#i_mesh_lod3)                                  |                                       
+`float`               | [mesh_lod3_distance_ratio](#i_mesh_lod3_distance_ratio)    | 1.0                                   
+`int`                 | [render_layer](#i_render_layer)                            | 1                                     
+`PackedScene`         | [scene](#i_scene)                                          |                                       
 <p></p>
 
 ## Methods: 
@@ -40,6 +51,9 @@ Return                                                                          
 
 ## Property Descriptions
 
+- [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html)<span id="i__mesh_lod_distance_ratios"></span> **_mesh_lod_distance_ratios** = PackedFloat32Array(0.2, 0.35, 0.6, 1)
+
+
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cast_shadow"></span> **cast_shadow** = 1
 
 
@@ -52,19 +66,37 @@ Return                                                                          
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_collision_shapes"></span> **collision_shapes** = []
 
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 1
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_hide_beyond_max_lod"></span> **hide_beyond_max_lod** = false
+
+
 - [Material](https://docs.godotengine.org/en/stable/classes/class_material.html)<span id="i_material_override"></span> **material_override**
 
 
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh"></span> **mesh**
 
 
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_mesh_lod0_distance_ratio"></span> **mesh_lod0_distance_ratio** = 0.2
+
+
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh_lod1"></span> **mesh_lod1**
+
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_mesh_lod1_distance_ratio"></span> **mesh_lod1_distance_ratio** = 0.35
 
 
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh_lod2"></span> **mesh_lod2**
 
 
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_mesh_lod2_distance_ratio"></span> **mesh_lod2_distance_ratio** = 0.6
+
+
 - [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh_lod3"></span> **mesh_lod3**
+
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_mesh_lod3_distance_ratio"></span> **mesh_lod3_distance_ratio** = 1.0
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_render_layer"></span> **render_layer** = 1
@@ -92,4 +124,4 @@ Sets the list of group names that will be added to collider nodes generated for 
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

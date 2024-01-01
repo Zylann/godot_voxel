@@ -10,9 +10,9 @@ namespace zylann::voxel {
 
 // Had to resort to this in Godot4 because deleting meshes is particularly expensive,
 // because of the Vulkan allocator used by the renderer.
-// It is a deferred cost, so had to use a different type of task.
-// What this task actually does is just to hold a reference on a mesh a bit longer, assuming that mesh is no longer
-// used. Then the execution of the task releases that reference.
+// It is a deferred cost (it is not spent at the exact time the Mesh object is destroyed, it happens later), so had to
+// use a different type of task to load-balance it. What this task actually does is just to hold a reference on a mesh a
+// bit longer, assuming that mesh is no longer used. Then the execution of the task releases that reference.
 class FreeMeshTask : public IProgressiveTask {
 public:
 	static inline void try_add_and_destroy(DirectMeshInstance &mi) {

@@ -51,6 +51,7 @@ void DirectStaticBody::set_transform(Transform3D transform) {
 }
 
 void DirectStaticBody::add_shape(Ref<Shape3D> shape) {
+	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer3D::get_singleton()->body_add_shape(_body, shape->get_rid(), Transform3D(), false);
 	// No use case for multishape yet

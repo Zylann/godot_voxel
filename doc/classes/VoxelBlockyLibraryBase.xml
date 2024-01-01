@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="VoxelBlockyLibraryBase" inherits="Resource" version="4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+<class name="VoxelBlockyLibraryBase" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
 	<brief_description>
 		Contains a list of models that can be used by [VoxelMesherBlocky].
 	</brief_description>
@@ -30,6 +30,8 @@
 	</members>
 	<constants>
 		<constant name="MAX_MODELS" value="65536">
+		</constant>
+		<constant name="MAX_MATERIALS" value="65536">
 		</constant>
 	</constants>
 </class>

@@ -23,6 +23,21 @@ inline bool is_point_in_triangle(const Vector2f &s, const Vector2f &a, const Vec
 	return (cross(cn, an) > 0) == orientation;
 }
 
+inline float get_triangle_area_squared_x2(Vector3f p0, Vector3f p1, Vector3f p2) {
+	const Vector3f p01 = p1 - p0;
+	const Vector3f p02 = p2 - p0;
+	const Vector3f c = math::cross(p01, p02);
+	return math::length_squared(c);
+}
+
+inline float is_triangle_degenerate_approx(Vector3f p0, Vector3f p1, Vector3f p2, float epsilon_squared) {
+	return get_triangle_area_squared_x2(p0, p1, p2) < epsilon_squared;
+}
+
+// inline float is_triangle_degenerate(Vector3f p0, Vector3f p1, Vector3f p2) {
+// 	return p0 == p1 || p1 == p2 || p2 == p0;
+// }
+
 // Heron's formula is overly represented on SO but uses 4 square roots. This uses only one.
 // A parallelogram's area is found with the magnitude of the cross product of two adjacent side vectors,
 // so a triangle's area is half of it

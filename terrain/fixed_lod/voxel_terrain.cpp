@@ -878,7 +878,7 @@ static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector
 	const Vector3i voxel_pos = get_block_center(block_position, block_size);
 	const float block_radius = block_size / 2;
 	dep.shared = shared_viewers_data;
-	dep.world_position = volume_transform.xform(voxel_pos);
+	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos));
 	const float transformed_block_radius =
 			volume_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 
@@ -1706,7 +1706,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
-	std::vector<uint8_t> material_indices;
+	std::vector<uint16_t> material_indices;
 	if (ob.has_mesh_resource) {
 		// The mesh was already built as part of the threaded task
 		mesh = ob.mesh;

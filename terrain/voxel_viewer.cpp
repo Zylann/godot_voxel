@@ -112,6 +112,7 @@ void VoxelViewer::_notification(int p_what) {
 			if (!Engine::get_singleton()->is_editor_hint() || _enabled_in_editor) {
 				_viewer_id = VoxelEngine::get_singleton().add_viewer();
 				sync_all_parameters();
+				// VoxelEngine::get_singleton().sync_viewers_task_priority_data();
 			}
 		} break;
 

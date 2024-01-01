@@ -510,10 +510,15 @@ private:
 			if (str[i] != char32_t(keyword[i])) {
 				return false;
 			}
+			++i;
 		}
 		if (i == str.size()) {
+			// All characters matched
 			return true;
 		}
+		// We matched all characters but the tested string is longer.
+		// Check if it ends with a separating character. If not, then it contains a longer name and therefore won't
+		// match.
 		++i;
 		return !is_name_char(str[i]);
 	}
@@ -587,8 +592,13 @@ bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id
 
 		result = tokenizer.get(token);
 		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+		ZN_ASSERT_RETURN_V(token.type == VoxelIDToken::EQUALS, false);
+
+		result = tokenizer.get(token);
+		ZN_ASSERT_RETURN_V(result == VoxelIDTokenizer::TOKEN, false);
+
 		if (token.type == VoxelIDToken::INTEGER) {
-			ZN_ASSERT_RETURN_V(token.integer_value >= VoxelBlockyAttribute::MAX_VALUES, false);
+			ZN_ASSERT_RETURN_V(token.integer_value < VoxelBlockyAttribute::MAX_VALUES, false);
 			out_id.variant_key.attribute_values[attribute_index] = token.integer_value;
 
 		} else if (token.type == VoxelIDToken::BOOLEAN) {

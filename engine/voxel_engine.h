@@ -44,7 +44,7 @@ public:
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
 		// surfaces, which would fit here without allocating.
-		std::vector<uint8_t> mesh_material_indices;
+		std::vector<uint16_t> mesh_material_indices;
 		// In mesh block coordinates
 		Vector3i position;
 		// TODO Rename lod_index
@@ -150,6 +150,7 @@ public:
 	void set_viewer_network_peer_id(ViewerID viewer_id, int peer_id);
 	int get_viewer_network_peer_id(ViewerID viewer_id) const;
 	bool viewer_exists(ViewerID viewer_id) const;
+	void sync_viewers_task_priority_data();
 
 	template <typename F>
 	inline void for_each_viewer(F f) const {
