@@ -17,6 +17,7 @@ Primarily developped with Godot 4.2.
 
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
+    - Fixed `"plugins_list.has(p_plugin)" is true` errors in the editor, at the cost of slight behavior changes. This was caused by existing workarounds to prevent UIs from hiding unexpectedly, which were modified to avoid the error, but are still needed unfortunately.
 
 
 1.1 - 29/12/2023 - `1.1`
