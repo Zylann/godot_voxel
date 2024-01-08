@@ -27,9 +27,6 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 	static thread_local std::vector<Box3i> tls_modified_voxel_areas_lod0;
 	// static thread_local std::vector<VoxelData::BlockLocation> tls_updated_block_locations;
 
-	const int data_block_size = data.get_block_size();
-	const int data_to_mesh_factor = mesh_block_size / data_block_size;
-
 	tls_modified_lod0_blocks.clear();
 	tls_modified_voxel_areas_lod0.clear();
 
