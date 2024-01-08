@@ -168,17 +168,28 @@ struct VoxelLodTerrainUpdateData {
 		bool force_update_octrees_next_update = false;
 	};
 
+	struct EditNotificationInputs {
+		// Entry point for notifying data changes, which will cause data LODs and mesh updates.
+		// Contains blocks that were edited and need their LOD counterparts to be updated.
+		// Scheduling is only done at LOD0 because it is the only editable LOD.
+
+		// Used specifically for lodding voxels
+		std::vector<Vector3i> edited_blocks_lod0;
+		// Used specifically to update meshes
+		// TODO Maybe we could use only that? The reason we have edited blocks separately is because edits might affect
+		// only specific blocks and not the full area
+		std::vector<Box3i> edited_voxel_areas_lod0;
+
+		BinaryMutex mutex;
+	};
+
 	// Data modified by the update task
 	struct State {
 		OctreeStreamingState octree_streaming;
 
 		FixedArray<Lod, constants::MAX_LOD> lods;
 
-		// This is the entry point for notifying data changes, which will cause mesh updates.
-		// Contains blocks that were edited and need their LOD counterparts to be updated.
-		// Scheduling is only done at LOD0 because it is the only editable LOD.
-		std::vector<Vector3i> blocks_pending_lodding_lod0;
-		BinaryMutex blocks_pending_lodding_lod0_mutex;
+		EditNotificationInputs edit_notifications;
 
 		std::vector<AsyncEdit> pending_async_edits;
 		BinaryMutex pending_async_edits_mutex;
