@@ -258,10 +258,10 @@ void for_each_node(Node *parent, F action) {
 
 void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 	// We could be editing the graph standalone with no terrain loaded
-	VoxelNode *node = _voxel_node.get();
-	if (node != nullptr) {
+	VoxelNode *terrain_node = _voxel_node.get();
+	if (terrain_node != nullptr) {
 		// Re-generate the selected terrain.
-		node->restart_stream();
+		terrain_node->restart_stream();
 
 	} else {
 		// The node is not selected, but it might be in the tree
