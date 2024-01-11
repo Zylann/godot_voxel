@@ -405,7 +405,7 @@ void VoxelInstancer::process_mesh_lods() {
 	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
 
 	ERR_FAIL_COND(_parent == nullptr);
-	const int block_size = 1 << _parent_mesh_block_size_po2;
+	const unsigned int block_size = 1 << _parent_mesh_block_size_po2;
 
 	const float hysteresis = 1.05;
 

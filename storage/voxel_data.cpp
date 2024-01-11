@@ -613,7 +613,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
 	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
-	const int data_block_size = get_block_size();
+	const unsigned int data_block_size = get_block_size();
 	const int data_block_size_po2 = get_block_size_po2();
 	const unsigned int lod_count = get_lod_count();
 	const bool streaming_enabled = is_streaming_enabled();
