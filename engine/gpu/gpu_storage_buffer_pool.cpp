@@ -73,16 +73,15 @@ unsigned int GPUStorageBufferPool::get_pool_index_from_size(uint32_t p_size) con
 	return it - _pool_sizes.begin();
 }
 
-GPUStorageBuffer GPUStorageBufferPool::allocate(const PackedByteArray &pba, unsigned int post_barrier) {
-	return allocate(pba.size(), &pba, post_barrier);
+GPUStorageBuffer GPUStorageBufferPool::allocate(const PackedByteArray &pba) {
+	return allocate(pba.size(), &pba);
 }
 
-GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, unsigned int post_barrier) {
-	return allocate(p_size, nullptr, post_barrier);
+GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size) {
+	return allocate(p_size, nullptr);
 }
 
-GPUStorageBuffer GPUStorageBufferPool::allocate(
-		uint32_t p_size, const PackedByteArray *pba, unsigned int post_barrier) {
+GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByteArray *pba) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_V(p_size > 0, GPUStorageBuffer());
 
@@ -106,7 +105,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(
 		b.rid = rd.storage_buffer_create(capacity);
 		ZN_ASSERT_RETURN_V(b.rid.is_valid(), GPUStorageBuffer());
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, pba->size(), *pba, post_barrier);
+			update_storage_buffer(rd, b.rid, 0, pba->size(), *pba);
 		}
 		b.size = capacity;
 
@@ -115,7 +114,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(
 		ZN_ASSERT(b.is_valid());
 		pool.buffers.pop_back();
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, p_size, *pba, post_barrier);
+			update_storage_buffer(rd, b.rid, 0, p_size, *pba);
 		}
 	}
 
