@@ -4,6 +4,7 @@
 #include "../../engine/ids.h"
 #include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/godot/macros.h"
+#include "../../util/godot/object_weak_ref.h"
 #include "voxel_terrain_editor_inspector_plugin.h"
 
 // When compiling with GodotCpp, it isn't possible to forward-declare these, due to how virtual methods are implemented.
@@ -35,7 +36,6 @@ private:
 	void init();
 
 	void set_voxel_node(VoxelNode *node);
-	VoxelNode *get_voxel_node() const;
 
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
@@ -54,7 +54,7 @@ private:
 		MENU_ABOUT
 	};
 
-	ObjectID _node_object_id;
+	ObjectWeakRef<VoxelNode> _terrain_node;
 
 	ViewerID _editor_viewer_id;
 	Vector3 _editor_camera_last_position;

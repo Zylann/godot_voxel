@@ -135,7 +135,7 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 				}
 			}
 		}
-		_voxel_node = voxel_node;
+		_voxel_node.set(voxel_node);
 		_graph_editor->set_voxel_node(voxel_node);
 	}
 
@@ -160,7 +160,7 @@ void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 		make_bottom_panel_item_visible(_graph_editor);
 
 	} else {
-		_voxel_node = nullptr;
+		_voxel_node.set(nullptr);
 		_graph_editor->set_voxel_node(nullptr);
 
 		const bool pinned = _graph_editor_window != nullptr || _graph_editor->is_pinned_hint();
@@ -258,9 +258,10 @@ void for_each_node(Node *parent, F action) {
 
 void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 	// We could be editing the graph standalone with no terrain loaded
-	if (_voxel_node != nullptr) {
+	VoxelNode *node = _voxel_node.get();
+	if (node != nullptr) {
 		// Re-generate the selected terrain.
-		_voxel_node->restart_stream();
+		node->restart_stream();
 
 	} else {
 		// The node is not selected, but it might be in the tree

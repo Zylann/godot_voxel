@@ -3,6 +3,7 @@
 
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/classes/editor_plugin.h"
+#include "../../util/godot/object_weak_ref.h"
 #include "../../util/macros.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
@@ -52,7 +53,7 @@ private:
 	VoxelGraphEditorIODialog *_io_dialog = nullptr;
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
-	VoxelNode *_voxel_node = nullptr;
+	ObjectWeakRef<VoxelNode> _voxel_node;
 	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
 	// Workaround for a new Godot 4 behavior:
 	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first, and `make_visible(false)`.

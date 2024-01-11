@@ -274,13 +274,13 @@ EditorUndoRedoManager *VoxelGraphEditor::get_undo_redo() const {
 }
 
 void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
-	_voxel_node = node;
-	if (_voxel_node == nullptr) {
+	_terrain_node.set(node);
+	if (node == nullptr) {
 		ZN_PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
 		ZN_PRINT_VERBOSE(format("Reference node for VoxelGraph gizmos: {}", String(node->get_path())));
-		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
+		_debug_renderer.set_world(node->get_world_3d().ptr());
 	}
 }
 
@@ -1035,11 +1035,13 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 		return;
 	}
 
-	if (_voxel_node == nullptr) {
+	VoxelNode *terrain_node = _terrain_node.get();
+
+	if (terrain_node == nullptr) {
 		return;
 	}
 
-	const Transform3D parent_transform = _voxel_node->get_global_transform();
+	const Transform3D parent_transform = terrain_node->get_global_transform();
 	const AABB aabb = _range_analysis_dialog->get_aabb();
 	_debug_renderer.begin();
 	_debug_renderer.draw_box(parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position),

@@ -42,22 +42,6 @@ void VoxelTerrainEditorPlugin::init() {
 	VoxelAboutWindow::create_singleton(*base_control);
 }
 
-VoxelNode *VoxelTerrainEditorPlugin::get_voxel_node() const {
-	if (!_node_object_id.is_valid()) {
-		return nullptr;
-	}
-	Object *obj = ObjectDB::get_instance(_node_object_id);
-	if (obj == nullptr) {
-		// Could have been destroyed.
-		// _node_object_id = ObjectID();
-		return nullptr;
-	}
-	VoxelNode *terrain = Object::cast_to<VoxelNode>(obj);
-	// We don't expect Godot to re-use the same ObjectID for different objects
-	ERR_FAIL_COND_V(terrain == nullptr, nullptr);
-	return terrain;
-}
-
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
@@ -143,7 +127,7 @@ void VoxelTerrainEditorPlugin::_zn_edit(Object *p_object) {
 }
 
 void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
-	VoxelNode *prev_node = get_voxel_node();
+	VoxelNode *prev_node = _terrain_node.get();
 
 	if (prev_node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(prev_node);
@@ -156,7 +140,7 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 		}
 	}
 
-	_node_object_id = node != nullptr ? node->get_instance_id() : ObjectID();
+	_terrain_node.set(node);
 
 	if (node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
@@ -184,7 +168,7 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 	_task_indicator->set_visible(visible);
 	set_process(visible);
 
-	VoxelNode *node = get_voxel_node();
+	VoxelNode *node = _terrain_node.get();
 
 	if (node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
@@ -223,13 +207,13 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 	switch (id) {
 		case MENU_RESTART_STREAM: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			ERR_FAIL_COND(node == nullptr);
 			node->restart_stream();
 		} break;
 
 		case MENU_REMESH: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			ERR_FAIL_COND(node == nullptr);
 			node->remesh_all_blocks();
 		} break;
@@ -246,7 +230,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_OCTREE_BOUNDS: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_bounds = !_show_octree_bounds;
@@ -257,7 +241,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_OCTREE_NODES: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_octree_nodes = !_show_octree_nodes;
@@ -268,7 +252,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_MESH_UPDATES: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_mesh_updates = !_show_mesh_updates;
@@ -279,7 +263,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		} break;
 
 		case MENU_SHOW_MODIFIER_BOUNDS: {
-			VoxelNode *node = get_voxel_node();
+			VoxelNode *node = _terrain_node.get();
 			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
 			ERR_FAIL_COND(lod_terrain == nullptr);
 			_show_modifier_bounds = !_show_modifier_bounds;
