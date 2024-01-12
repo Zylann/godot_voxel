@@ -142,7 +142,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button = memnew(Button);
 		_pin_button->set_flat(true);
 		_pin_button->set_toggle_mode(true);
-		_pin_button->set_tooltip_text(ZN_TTR("Pin VoxelGraphEditor"));
+		_pin_button->set_tooltip_text(ZN_TTR("Keep visible regardless of selection"));
 		toolbar->add_child(_pin_button);
 
 		_popout_button = memnew(Button);
