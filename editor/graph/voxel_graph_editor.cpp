@@ -130,6 +130,11 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_compile_result_label->hide();
 		toolbar->add_child(_compile_result_label);
 
+		_no_graph_open_label = memnew(Label);
+		_no_graph_open_label->set_text("[No graph open]");
+		_no_graph_open_label->set_modulate(Color(1, 1, 0));
+		toolbar->add_child(_no_graph_open_label);
+
 		Control *spacer = memnew(Control);
 		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		toolbar->add_child(spacer);
@@ -257,6 +262,8 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 	if (_graph.is_valid()) {
 		update_functions();
 	}
+
+	_no_graph_open_label->set_visible(!_graph.is_valid());
 
 	// schedule_preview_update();
 }
