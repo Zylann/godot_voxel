@@ -134,6 +134,7 @@ private:
 	// PopupMenu *_context_menu = nullptr;
 	Label *_profile_label = nullptr;
 	Label *_compile_result_label = nullptr;
+	Label *_no_graph_open_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
 	// Not owned.
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
