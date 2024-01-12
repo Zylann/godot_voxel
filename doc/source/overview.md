@@ -52,7 +52,7 @@ Even if it needs lots of memory, we still have to store voxel data at some point
 The core class for doing this is [VoxelBuffer](api/VoxelBuffer.md). This is a simple grid data structure with configurable format. You might not have to use this class often, but its storage concept is useful to know in order to use other APIs like [VoxelTool](api/VoxelTool.md). Voxels can hold various kinds of values, so this object uses multiple channels, each of them being one type of information:
 
 - `TYPE`: The type of voxel, mainly used to associate the voxel with a type of model like in Minecraft. This is very similar to tile IDs seen in tilemaps or gridmaps.
-- `SDF`: The Signed Distance Field value, used for smooth voxels. It tells how far from the surface the voxel is. This can be understood like a density of matter, where values towards `-1` means "matter", and values towards `1` means "air".
+- `SDF`: The Signed Distance Field value, used for smooth voxels. It tells how far from the surface the voxel is. This can be understood like a density of matter, where negative values mean "matter" (distance below surface), and positive values mean "air" (distance above surface).
 - `COLOR`: Color information. It can either be compressed RGBA, or an index into a palette of colors.
 - And others.
 
