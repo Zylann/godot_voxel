@@ -38,7 +38,7 @@ Types of generators include:
 - [VoxelGeneratorNoise](api/VoxelGeneratorNoise.md): generates a "spongy" world using 3D noise to form large caves and overhangs, modified so that most of the terrain is downwards and becomes only air above some altitude
 - [VoxelGeneratorFlat](api/VoxelGeneratorFlat.md): generates a simple flat plane.
 - [VoxelGeneratorGraph](api/VoxelGeneratorGraph.md): allows to combine all sorts of operations using a graph (like a 3D VisualShader) to produce the volume with more flexibility than the other simple generators
-- [VoxelGeneratorScript](api/VoxelGeneratorScript.md): allows to implement the generation logic with a script. Will likely be slower than the other options, unless you use C# or GDNative.
+- [VoxelGeneratorScript](api/VoxelGeneratorScript.md): allows to implement the generation logic with a script. Will likely be slower than the other options, unless you use C# or GDExtension.
 - And some others
 
 
