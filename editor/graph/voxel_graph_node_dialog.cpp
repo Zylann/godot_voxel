@@ -436,7 +436,7 @@ void VoxelGraphNodeDialog::_notification(int p_what) {
 
 	} else if (p_what == NOTIFICATION_THEME_CHANGED) {
 		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-		_filter_line_edit->set_right_icon(_filter_line_edit->get_theme_icon(sn.Search, sn.EditorIcons));
+		_filter_line_edit->set_right_icon(get_theme_icon(sn.Search, sn.EditorIcons));
 
 		const Ref<Font> mono_font = get_theme_font(sn.source, sn.EditorFonts);
 		if (mono_font.is_valid()) {

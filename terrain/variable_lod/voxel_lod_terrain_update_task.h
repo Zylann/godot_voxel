@@ -63,7 +63,7 @@ public:
 				blocks_pending_update.push_back(
 						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken() });
 			} else {
-				// Just mark it as needing update, so the visibility system will schedule its update when needed
+				// Just mark it as needing update, so the visibility system will schedule its update when needed.
 				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
 			}
 		}

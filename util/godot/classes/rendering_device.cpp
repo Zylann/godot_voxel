@@ -164,12 +164,28 @@ RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state) {
 #endif
 }
 
-Error update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
-		const PackedByteArray &pba, unsigned int post_barrier) {
+Error update_storage_buffer(
+		RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size, const PackedByteArray &pba) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
+
+	// Godot versions up to 4.2 required to pass barrier options.
+	// At some point in development of 4.3, a render graph was added, which removed the need for this parameter.
+	// https://github.com/godotengine/godot/pull/84976
+
 #if defined(ZN_GODOT)
-	return rd.buffer_update(rid, offset, size, pba.ptr(), post_barrier);
+	return rd.buffer_update(rid, offset, size, pba.ptr(), RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
 #elif defined(ZN_GODOT_EXTENSION)
-	return rd.buffer_update(rid, offset, size, pba, post_barrier);
+	return rd.buffer_update(rid, offset, size, pba, RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
+#endif
+
+#else // Godot 4.3 and later
+
+#if defined(ZN_GODOT)
+	return rd.buffer_update(rid, offset, size, pba.ptr());
+#elif defined(ZN_GODOT_EXTENSION)
+	return rd.buffer_update(rid, offset, size, pba);
+#endif
+
 #endif
 }
 

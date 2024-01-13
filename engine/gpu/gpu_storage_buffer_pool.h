@@ -31,14 +31,13 @@ public:
 
 	void clear();
 	void set_rendering_device(RenderingDevice *rd);
-	GPUStorageBuffer allocate(
-			const PackedByteArray &pba, unsigned int post_barrier = RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
-	GPUStorageBuffer allocate(uint32_t p_size, unsigned int post_barrier = RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
+	GPUStorageBuffer allocate(const PackedByteArray &pba);
+	GPUStorageBuffer allocate(uint32_t p_size);
 	void recycle(GPUStorageBuffer b);
 	void debug_print() const;
 
 private:
-	GPUStorageBuffer allocate(uint32_t p_size, const PackedByteArray *pba, unsigned int post_barrier);
+	GPUStorageBuffer allocate(uint32_t p_size, const PackedByteArray *pba);
 
 	unsigned int get_pool_index_from_size(uint32_t p_size) const;
 

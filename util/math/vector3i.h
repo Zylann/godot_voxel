@@ -179,7 +179,8 @@ inline Vector3i operator>>(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(b >= 0);
 #endif
-	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
+	using namespace zylann::math;
+	return Vector3i(arithmetic_rshift(a.x, b), arithmetic_rshift(a.y, b), arithmetic_rshift(a.z, b));
 }
 
 inline Vector3i operator&(const Vector3i &a, uint32_t b) {

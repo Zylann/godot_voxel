@@ -44,7 +44,7 @@ TaskPriority PriorityDependency::evaluate(uint8_t lod_index, uint8_t band2_prior
 
 	// Closer is higher priority. Decreases over distance.
 	// Scaled by LOD because we segment priority by LOD too in band 1.
-	priority.band0 = math::max(TaskPriority::BAND_MAX - (distance >> (4 + lod_index)), 0);
+	priority.band0 = math::max(TaskPriority::BAND_MAX - math::arithmetic_rshift(distance, 4 + lod_index), 0);
 	// Note: in the past, making lower LOD indices (aka closer detailed ones) have higher priority made cracks between
 	// meshes more likely to appear somehow, so for a while I had it inverted. But that priority makes sense so I
 	// changed it back. Will see later if that really causes any issue.

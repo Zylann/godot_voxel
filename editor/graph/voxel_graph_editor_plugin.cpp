@@ -12,6 +12,7 @@
 #include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
+#include "../../util/string_funcs.h"
 #include "editor_property_text_change_on_submit.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_editor_inspector_plugin.h"
@@ -59,6 +60,8 @@ bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (p_object == nullptr) {
 		return false;
 	}
+	// We have to handle both resources for now, because we automatically make the generator behave like a graph,
+	// even though the graph is actually an internal property ("main function"). It saves clicks from the user.
 	const VoxelGeneratorGraph *generator_ptr = Object::cast_to<VoxelGeneratorGraph>(p_object);
 	if (generator_ptr != nullptr) {
 		return true;
@@ -67,16 +70,17 @@ bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 	if (graph_ptr != nullptr) {
 		return true;
 	}
-	const VoxelGraphNodeInspectorWrapper *wrapper = Object::cast_to<VoxelGraphNodeInspectorWrapper>(p_object);
-	if (wrapper != nullptr) {
-		return true;
-	}
+	// In the past we would also handle `VoxelGraphNodeInspectorWrapper` for when we inspect nodes of the graph, but
+	// Godot does not actually allow a plugin to handle multiple resources simultaneously. Instead, we do something
+	// different.
+	// See https://github.com/godotengine/godot/issues/73650
 	return false;
 }
 
 void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
-	// Workaround...
+	// Workaround for when we inspect nodes of the graph...
 	if (p_object == nullptr && _ignore_edit_null) {
+		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", get_class_name_str<VoxelGraphEditorPlugin>()));
 		return;
 	}
 
@@ -131,7 +135,7 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 				}
 			}
 		}
-		_voxel_node = voxel_node;
+		_voxel_node.set(voxel_node);
 		_graph_editor->set_voxel_node(voxel_node);
 	}
 
@@ -141,6 +145,12 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 }
 
 void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
+	// Workaround for when we inspect nodes of the graph...
+	if (_ignore_make_visible) {
+		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", get_class_name_str<VoxelGraphEditorPlugin>(), visible));
+		return;
+	}
+
 	if (_graph_editor_window != nullptr) {
 		return;
 	}
@@ -150,7 +160,7 @@ void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 		make_bottom_panel_item_visible(_graph_editor);
 
 	} else {
-		_voxel_node = nullptr;
+		_voxel_node.set(nullptr);
 		_graph_editor->set_voxel_node(nullptr);
 
 		const bool pinned = _graph_editor_window != nullptr || _graph_editor->is_pinned_hint();
@@ -182,23 +192,28 @@ void VoxelGraphEditorPlugin::_hide_deferred() {
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_node_selected(uint32_t node_id) {
+	// Nodes are not Godot objects so we have to create a proxy.
 	// We have to make a new wrapper every time because it has to target the same node for a given time.
 	Ref<VoxelGraphNodeInspectorWrapper> wrapper;
 	wrapper.instantiate();
 	wrapper->setup(node_id, _graph_editor);
 	// Workaround the new behavior that Godot will call `edit(nullptr)` first when editing another object, even if that
-	// object is also handled by the plugin. `edit(nullptr)` would cause the UI to be cleaned up when a GraphNode is
-	// emitting its `selected` signal, causing destruction of that GraphNode.
+	// object is also handled by the plugin, and even if `inspector_only` is `true`. `edit(nullptr)` would cause the UI
+	// to be cleaned up when a GraphNode is emitting its `selected` signal, causing destruction of that GraphNode.
 	_ignore_edit_null = true;
+	_ignore_make_visible = true;
 	// Note: it's neither explicit nor documented, but the reference will stay alive due to EditorHistory::_add_object.
 	// Specifying `inspector_only=true` because that's what other plugins do when they can edit "sub-objects"
-	get_editor_interface()->inspect_object(*wrapper);
+	get_editor_interface()->inspect_object(*wrapper, String(), true);
 	_ignore_edit_null = false;
+	_ignore_make_visible = false;
 	_node_wrappers.push_back(wrapper);
 	// TODO Absurd situation here...
-	// `inspect_object()` gets to a point where Godot hides ALL plugins for some reason...
-	// And all this, to have the graph editor rebuilt and shown again, because it DOES also handle that resource type
-	// -_- https://github.com/godotengine/godot/issues/40166
+	// Even though we pass `inspector_only=true`, `inspect_object()` gets to a point where Godot calls
+	// `make_visible(false)` on ALL plugins for some reason... and also calls `edit(null)` on our plugin.
+	// I don't understand what's the point of that parameter then... so we have to ignore these calls, which works for
+	// now luckily, because they are not using `call_deferred`.
+	// https://github.com/godotengine/godot/issues/40166
 }
 
 void VoxelGraphEditorPlugin::inspect_graph_or_generator(const VoxelGraphEditor &graph_editor) {
@@ -219,10 +234,11 @@ void VoxelGraphEditorPlugin::inspect_graph_or_generator(const VoxelGraphEditor &
 }
 
 void VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected() {
-	// The inspector is a glorious singleton, so when we select nodes to edit their properties, it prevents
-	// from accessing the graph resource itself, to save it for example.
-	// I'd like to embed properties inside the nodes themselves, but it's a bit more work (and a waste of space),
-	// so for now I make it so deselecting all nodes in the graph (like clicking in the background) selects the graph.
+	// The inspector is unfortunately designed like a singleton, so when we select nodes to edit their properties, it
+	// prevents from still having access to the graph resource itself, to save it for example. I'd like to embed
+	// properties inside the nodes themselves, but it's a bit more work (and a waste of space), and Godot doesn't expose
+	// EditorInspector which would have allowed having a secondary inspector in the graph editor. So for now I make it
+	// so deselecting all nodes in the graph (like clicking in the background) selects the graph.
 	inspect_graph_or_generator(*_graph_editor);
 }
 
@@ -242,9 +258,10 @@ void for_each_node(Node *parent, F action) {
 
 void VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested() {
 	// We could be editing the graph standalone with no terrain loaded
-	if (_voxel_node != nullptr) {
+	VoxelNode *terrain_node = _voxel_node.get();
+	if (terrain_node != nullptr) {
 		// Re-generate the selected terrain.
-		_voxel_node->restart_stream();
+		terrain_node->restart_stream();
 
 	} else {
 		// The node is not selected, but it might be in the tree

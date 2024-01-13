@@ -539,13 +539,14 @@ void VoxelData::mark_area_modified(
 
 		bbox.for_each_cell([&data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
-			// We can get null blocks due to the added padding...
-			// ERR_FAIL_COND(block == nullptr);
+
+			// TODO Not finding a block or allocated voxels could indicate an error elsewhere, but is it worth printing?
 			if (block == nullptr) {
+				ZN_PRINT_VERBOSE("Modifying area without data blocks?");
 				return;
 			}
-			// We can get blocks without voxels in them due to the added padding...
 			if (!block->has_voxels()) {
+				ZN_PRINT_VERBOSE("Modifying area without allocated voxels?");
 				return;
 			}
 
@@ -612,7 +613,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
 	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
-	const int data_block_size = get_block_size();
+	const unsigned int data_block_size = get_block_size();
 	const int data_block_size_po2 = get_block_size_po2();
 	const unsigned int lod_count = get_lod_count();
 	const bool streaming_enabled = is_streaming_enabled();
