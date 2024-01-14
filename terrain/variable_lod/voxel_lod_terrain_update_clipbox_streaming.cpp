@@ -739,6 +739,13 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 					mesh_block.active = true;
 					parent_lod.mesh_blocks_to_activate.push_back(bpos);
 
+					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs)
+					if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
+						mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+						lod.mesh_blocks_pending_update.push_back(
+								VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken() });
+					}
+
 					// We know parent_lod_index must be > 0
 					// if (parent_lod_index > 0) {
 					// This would actually do nothing because children were removed
