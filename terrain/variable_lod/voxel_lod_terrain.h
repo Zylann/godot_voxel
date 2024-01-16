@@ -231,6 +231,10 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+#ifdef TOOLS_ENABLED
+	void debug_set_draw_flags(uint32_t mask);
+#endif
+
 	Node3D *debug_dump_as_nodes(bool include_instancer) const;
 	Error debug_dump_as_scene(String fpath, bool include_instancer) const;
 

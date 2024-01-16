@@ -2864,6 +2864,12 @@ bool VoxelLodTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 }
 
 #ifdef TOOLS_ENABLED
+void VoxelLodTerrain::debug_set_draw_flags(uint32_t mask) {
+	_debug_draw_flags = mask;
+}
+#endif
+
+#ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
 	ZN_PROFILE_SCOPE();

@@ -21,7 +21,10 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
+	_lod_terrain_debug_draw_flags = (1 << VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS);
+	fill<int8_t>(_menu_id_to_lod_terrain_debug_flag_index, -1);
+}
 
 // TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
 // See https://github.com/godotengine/godot-cpp/issues/1179
@@ -52,6 +55,22 @@ void VoxelTerrainEditorPlugin::init() {
 	base_control->add_child(_save_file_dialog);
 }
 
+namespace {
+void add_checkable_item(PopupMenu *popup, String text, int id, bool checked) {
+	popup->add_item(text, id);
+	const int i = popup->get_item_index(id);
+	popup->set_item_as_checkable(i, true);
+	popup->set_item_checked(i, checked);
+}
+
+} // namespace
+
+void VoxelTerrainEditorPlugin::add_lod_terrain_debug_draw_option(
+		PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index) {
+	add_checkable_item(popup, text, menu_id, (_lod_terrain_debug_draw_flags & (1 << debug_flag_index)) != 0);
+	_menu_id_to_lod_terrain_debug_flag_index[menu_id] = debug_flag_index;
+}
+
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
@@ -62,56 +81,27 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
-	{
-		popup->add_item(ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA);
-		const int i = popup->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
-		popup->set_item_as_checkable(i, true);
-		popup->set_item_checked(i, _editor_viewer_follows_camera);
-	}
-	{
-		popup->add_item(ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER);
-		const int i = popup->get_item_index(MENU_ENABLE_EDITOR_VIEWER);
-		popup->set_item_as_checkable(i, true);
-		popup->set_item_checked(i, _editor_viewer_enabled);
-	}
+
+	add_checkable_item(
+			popup, ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA, _editor_viewer_follows_camera);
+	add_checkable_item(popup, ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER, _editor_viewer_enabled);
+
 	if (is_lod_terrain) {
 		popup->add_separator();
-		{
-			popup->add_item(ZN_TTR("Show octree bounds"), MENU_SHOW_OCTREE_BOUNDS);
-			const int i = popup->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_octree_bounds);
-		}
-		{
-			popup->add_item(ZN_TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
-			const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_octree_nodes);
-		}
-		{
-			popup->add_item(ZN_TTR("Show active mesh blocks"), MENU_SHOW_ACTIVE_MESH_BLOCKS);
-			const int i = popup->get_item_index(MENU_SHOW_ACTIVE_MESH_BLOCKS);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_active_mesh_blocks);
-		}
-		{
-			popup->add_item(ZN_TTR("Show viewer clipboxes"), MENU_SHOW_VIEWER_CLIPBOXES);
-			const int i = popup->get_item_index(MENU_SHOW_VIEWER_CLIPBOXES);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_viewer_clipboxes);
-		}
-		{
-			popup->add_item(ZN_TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
-			const int i = popup->get_item_index(MENU_SHOW_MESH_UPDATES);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_mesh_updates);
-		}
-		{
-			popup->add_item(ZN_TTR("Show modifier bounds"), MENU_SHOW_MODIFIER_BOUNDS);
-			const int i = popup->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_modifier_bounds);
-		}
+
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree bounds"), //
+				MENU_SHOW_OCTREE_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree nodes"), //
+				MENU_SHOW_OCTREE_NODES, VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active mesh blocks"), //
+				MENU_SHOW_ACTIVE_MESH_BLOCKS, VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show viewer clipboxes"), //
+				MENU_SHOW_VIEWER_CLIPBOXES, VoxelLodTerrain::DEBUG_DRAW_VIEWER_CLIPBOXES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show mesh updates"), //
+				MENU_SHOW_MESH_UPDATES, VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show modifier bounds"), //
+				MENU_SHOW_MODIFIER_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS);
+
 		popup->add_separator();
 		popup->add_item(ZN_TTR("Dump as scene... (Debug)"), MENU_DUMP_AS_SCENE);
 	}
@@ -189,13 +179,7 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(true);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS, _show_active_mesh_blocks);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VIEWER_CLIPBOXES, _show_viewer_clipboxes);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
+			vlt->debug_set_draw_flags(_lod_terrain_debug_draw_flags);
 
 		} else if (vt != nullptr) {
 			vt->debug_set_draw_enabled(true);
@@ -290,72 +274,6 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_enabled);
 		} break;
 
-		case MENU_SHOW_OCTREE_BOUNDS: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_octree_bounds = !_show_octree_bounds;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
-			_menu_button->get_popup()->set_item_checked(i, _show_octree_bounds);
-		} break;
-
-		case MENU_SHOW_OCTREE_NODES: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_octree_nodes = !_show_octree_nodes;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
-			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
-		} break;
-
-		case MENU_SHOW_ACTIVE_MESH_BLOCKS: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_active_mesh_blocks = !_show_active_mesh_blocks;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS, _show_active_mesh_blocks);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_ACTIVE_MESH_BLOCKS);
-			_menu_button->get_popup()->set_item_checked(i, _show_active_mesh_blocks);
-		} break;
-
-		case MENU_SHOW_VIEWER_CLIPBOXES: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_viewer_clipboxes = !_show_viewer_clipboxes;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VIEWER_CLIPBOXES, _show_viewer_clipboxes);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_VIEWER_CLIPBOXES);
-			_menu_button->get_popup()->set_item_checked(i, _show_viewer_clipboxes);
-		} break;
-
-		case MENU_SHOW_MESH_UPDATES: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_mesh_updates = !_show_mesh_updates;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MESH_UPDATES);
-			_menu_button->get_popup()->set_item_checked(i, _show_mesh_updates);
-		} break;
-
-		case MENU_SHOW_MODIFIER_BOUNDS: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_modifier_bounds = !_show_modifier_bounds;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
-			_menu_button->get_popup()->set_item_checked(i, _show_modifier_bounds);
-		} break;
-
 		case MENU_DUMP_AS_SCENE:
 			_save_file_dialog->popup_centered_ratio();
 			break;
@@ -363,6 +281,25 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		case MENU_ABOUT:
 			VoxelAboutWindow::popup_singleton();
 			break;
+
+		default: {
+			ZN_ASSERT_RETURN(id >= 0 && id < MENU_COUNT);
+
+			// VoxelLodTerrain debug draw option?
+			int flag_index = _menu_id_to_lod_terrain_debug_flag_index[id];
+			if (flag_index != -1) {
+				VoxelNode *node = _terrain_node.get();
+				VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
+				ERR_FAIL_COND(lod_terrain == nullptr);
+
+				_lod_terrain_debug_draw_flags = _lod_terrain_debug_draw_flags ^ (1 << flag_index);
+				const bool enabled = (_lod_terrain_debug_draw_flags & (1 << flag_index)) != 0;
+				lod_terrain->debug_set_draw_flag(static_cast<VoxelLodTerrain::DebugDrawFlag>(flag_index), enabled);
+
+				const int i = _menu_button->get_popup()->get_item_index(id);
+				_menu_button->get_popup()->set_item_checked(i, enabled);
+			}
+		}
 	}
 }
 

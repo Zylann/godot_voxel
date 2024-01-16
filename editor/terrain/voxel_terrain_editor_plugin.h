@@ -2,6 +2,7 @@
 #define VOXEL_TERRAIN_EDITOR_PLUGIN_H
 
 #include "../../engine/ids.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/godot/macros.h"
 #include "../../util/godot/object_weak_ref.h"
@@ -35,6 +36,8 @@ protected:
 
 private:
 	void init();
+	void add_lod_terrain_debug_draw_option(
+			PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index);
 
 	void set_voxel_node(VoxelNode *node);
 
@@ -60,7 +63,9 @@ private:
 		MENU_SHOW_VIEWER_CLIPBOXES,
 
 		MENU_DUMP_AS_SCENE,
-		MENU_ABOUT
+		MENU_ABOUT,
+
+		MENU_COUNT
 	};
 
 	ObjectWeakRef<VoxelNode> _terrain_node;
@@ -69,12 +74,9 @@ private:
 	bool _editor_viewer_enabled = true;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
-	bool _show_octree_nodes = false;
-	bool _show_octree_bounds = false;
-	bool _show_mesh_updates = false;
-	bool _show_modifier_bounds = false;
-	bool _show_active_mesh_blocks = false;
-	bool _show_viewer_clipboxes = false;
+
+	uint16_t _lod_terrain_debug_draw_flags = 0;
+	FixedArray<int8_t, MENU_COUNT> _menu_id_to_lod_terrain_debug_flag_index;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
