@@ -671,7 +671,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
 
-			if (is_mesh_empty(**mesh)) {
+			if (zylann::is_mesh_empty(**mesh)) {
 				continue;
 			}
 

@@ -1763,6 +1763,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	block->set_visible(true);
+	block->set_collision_enabled(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?

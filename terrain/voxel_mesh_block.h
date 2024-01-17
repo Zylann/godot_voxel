@@ -53,6 +53,9 @@ public:
 	// Call this function only if the mesh block already exists and has not changed mesh
 	void set_render_layers_mask(int mask);
 
+	void set_visible(bool visible);
+	bool is_visible() const;
+
 	// Collisions
 
 	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin);
@@ -62,10 +65,10 @@ public:
 	void drop_collision();
 	// TODO Collision layer and mask
 
-	// State
+	void set_collision_enabled(bool enable);
+	bool is_collision_enabled() const;
 
-	void set_visible(bool visible);
-	bool is_visible() const;
+	// State
 
 	void set_parent_visible(bool parent_visible);
 	void set_parent_transform(const Transform3D &parent_transform);
@@ -89,6 +92,7 @@ protected:
 
 	// Must match default value of `active`
 	bool _visible = false;
+	bool _collision_enabled = false;
 
 	bool _parent_visible = true;
 };

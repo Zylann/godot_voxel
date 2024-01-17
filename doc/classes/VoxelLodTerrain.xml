@@ -63,8 +63,9 @@
 					"loaded": bool,
 					"meshed": bool,
 					"mesh_state": int,
-					"visible"] = visible,
-					"active": bool
+					"visible": bool,
+					"visual_active": bool,
+					"collision_active": bool
 				}
 				[/codeblock]
 			</description>

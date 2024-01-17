@@ -298,7 +298,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
+	void set_mesh_block_visual_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
 
 	void _on_stream_params_changed();
 

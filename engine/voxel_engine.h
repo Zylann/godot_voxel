@@ -49,8 +49,11 @@ public:
 		Vector3i position;
 		// TODO Rename lod_index
 		uint8_t lod;
-		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
+		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread if
+		// it is needed.
 		bool has_mesh_resource;
+		// Tells if the meshing task was required to build a rendering mesh if possible.
+		bool visual_was_required;
 		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
 		// starting from the mesh task, and it might complete earlier or later than the mesh.
 		std::shared_ptr<DetailTextureOutput> detail_textures;

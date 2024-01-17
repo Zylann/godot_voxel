@@ -200,8 +200,10 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 
 				auto block_it = lod.mesh_map_state.map.find(bpos);
 				if (block_it != lod.mesh_map_state.map.end()) {
-					lod.mesh_blocks_to_deactivate.push_back(bpos);
-					block_it->second.active = false;
+					lod.mesh_blocks_to_deactivate_visuals.push_back(bpos);
+					lod.mesh_blocks_to_deactivate_collision.push_back(bpos);
+					block_it->second.visual_active = false;
+					block_it->second.collision_active = false;
 				}
 			}
 		};
@@ -363,7 +365,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 
 			if (surrounded) {
 				lod.mesh_blocks_pending_update.push_back(
-						VoxelLodTerrainUpdateData::MeshToUpdate{ mesh_block_pos, TaskCancellationToken() });
+						VoxelLodTerrainUpdateData::MeshToUpdate{ mesh_block_pos, TaskCancellationToken(), true });
 				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 			}
 
@@ -459,6 +461,8 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 		// we could defer additions to the end of octree fitting.
 		RWLockWrite wlock(lod.mesh_map_state.map_lock);
 		mesh_block = &insert_new(lod.mesh_map_state.map, p_mesh_block_pos);
+		mesh_block->mesh_viewers.add();
+		mesh_block->collision_viewers.add();
 	} else {
 		mesh_block = &mesh_block_it->second;
 	}
@@ -521,8 +525,10 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				CRASH_COND(mesh_block_it->second.state != VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
 
 				// self->set_mesh_block_active(*block, true);
-				lod.mesh_blocks_to_activate.push_back(bpos);
-				mesh_block_it->second.active = true;
+				lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+				lod.mesh_blocks_to_activate_collision.push_back(bpos);
+				mesh_block_it->second.visual_active = true;
+				mesh_block_it->second.collision_active = true;
 				lods_to_update_transitions |= (0b111 << lod_index);
 			}
 
@@ -533,8 +539,10 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 
 				if (mesh_block_it != lod.mesh_map_state.map.end()) {
 					// self->set_mesh_block_active(*block, false);
-					mesh_block_it->second.active = false;
-					lod.mesh_blocks_to_deactivate.push_back(bpos);
+					mesh_block_it->second.visual_active = false;
+					mesh_block_it->second.collision_active = false;
+					lod.mesh_blocks_to_deactivate_visuals.push_back(bpos);
+					lod.mesh_blocks_to_deactivate_collision.push_back(bpos);
 					lods_to_update_transitions |= (0b111 << lod_index);
 				}
 			}
@@ -551,8 +559,10 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 				if (mesh_block_it != lod.mesh_map_state.map.end() &&
 						mesh_block_it->second.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE) {
 					// self->set_mesh_block_active(*block, true);
-					mesh_block_it->second.active = true;
-					lod.mesh_blocks_to_activate.push_back(bpos);
+					mesh_block_it->second.visual_active = true;
+					mesh_block_it->second.collision_active = true;
+					lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+					lod.mesh_blocks_to_activate_collision.push_back(bpos);
 					lods_to_update_transitions |= (0b111 << lod_index);
 				}
 			}

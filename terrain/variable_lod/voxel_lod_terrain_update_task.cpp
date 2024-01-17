@@ -221,6 +221,7 @@ void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::State &st
 			task->lod_hint = true;
 			task->meshing_dependency = meshing_dependency;
 			task->data = data_ptr;
+			task->require_visual = mesh_to_update.require_visual;
 			task->collision_hint = settings.collision_enabled;
 			task->detail_texture_settings = settings.detail_texture_settings;
 			task->detail_texture_generator_override = settings.detail_texture_generator_override;
@@ -257,6 +258,7 @@ void send_mesh_requests(VolumeID volume_id, VoxelLodTerrainUpdateData::State &st
 			task_scheduler.push_main_task(task);
 
 			mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
+			mesh_block.update_list_index = -1;
 		}
 
 		lod.mesh_blocks_pending_update.clear();
@@ -417,8 +419,8 @@ void process_changed_generated_areas(VoxelLodTerrainUpdateData::State &state,
 			bbox.for_each_cell_zxy([&lod](const Vector3i bpos) {
 				auto block_it = lod.mesh_map_state.map.find(bpos);
 				if (block_it != lod.mesh_map_state.map.end()) {
-					VoxelLodTerrainUpdateTask::schedule_mesh_update(
-							block_it->second, bpos, lod.mesh_blocks_pending_update);
+					VoxelLodTerrainUpdateTask::schedule_mesh_update(block_it->second, bpos,
+							lod.mesh_blocks_pending_update, block_it->second.mesh_viewers.get() > 0);
 				}
 			});
 		}
@@ -486,7 +488,8 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 				if (mesh_block_it != lod.mesh_map_state.map.end()) {
 					// If a mesh block state exists here, it will need an update.
 					// If there is none, it will probably get created later when we come closer to it
-					schedule_mesh_update(mesh_block_it->second, mesh_block_pos, lod.mesh_blocks_pending_update);
+					schedule_mesh_update(mesh_block_it->second, mesh_block_pos, lod.mesh_blocks_pending_update,
+							mesh_block_it->second.mesh_viewers.get() > 0);
 				}
 			});
 		}
@@ -531,7 +534,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(const VoxelLodTerrainUpda
 
 		auto nblock_it = lod.mesh_map_state.map.find(npos);
 
-		if (nblock_it != lod.mesh_map_state.map.end() && nblock_it->second.active) {
+		if (nblock_it != lod.mesh_map_state.map.end() && nblock_it->second.visual_active) {
 			visible_neighbors_of_same_lod |= (1 << dir);
 		}
 	}
@@ -563,7 +566,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(const VoxelLodTerrainUpda
 				auto lower_neighbor_block_it = lower_lod.mesh_map_state.map.find(lower_neighbor_pos);
 
 				if (lower_neighbor_block_it != lower_lod.mesh_map_state.map.end() &&
-						lower_neighbor_block_it->second.active) {
+						lower_neighbor_block_it->second.visual_active) {
 					// The block has a visible neighbor of lower LOD
 					transition_mask |= dir_mask;
 					continue;
@@ -587,7 +590,7 @@ uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(const VoxelLodTerrainUpda
 				auto upper_neighbor_block_it = upper_lod.mesh_map_state.map.find(upper_neighbor_pos);
 
 				if (upper_neighbor_block_it == upper_lod.mesh_map_state.map.end() ||
-						upper_neighbor_block_it->second.active == false) {
+						upper_neighbor_block_it->second.visual_active == false) {
 					// The block has no visible neighbor yet. World border? Assume lower LOD.
 					transition_mask |= dir_mask;
 				}
@@ -630,7 +633,7 @@ void update_transition_masks(VoxelLodTerrainUpdateData::State &state, uint32_t l
 			for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
 				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = it->second;
 
-				if (mesh_block.active && (!use_refcounts || mesh_block.mesh_viewers.get() > 0)) {
+				if (mesh_block.visual_active && (!use_refcounts || mesh_block.mesh_viewers.get() > 0)) {
 					const uint8_t recomputed_mask =
 							VoxelLodTerrainUpdateTask::get_transition_mask(state, it->first, lod_index, lod_count);
 
@@ -704,8 +707,10 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 		const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 		CRASH_COND(lod.mesh_blocks_to_unload.size() != 0);
 		CRASH_COND(lod.mesh_blocks_to_update_transitions.size() != 0);
-		CRASH_COND(lod.mesh_blocks_to_activate.size() != 0);
-		CRASH_COND(lod.mesh_blocks_to_deactivate.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_activate_visuals.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_deactivate_visuals.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_activate_collision.size() != 0);
+		CRASH_COND(lod.mesh_blocks_to_deactivate_collision.size() != 0);
 	}
 #endif
 

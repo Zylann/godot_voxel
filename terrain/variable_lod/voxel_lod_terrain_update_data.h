@@ -110,19 +110,32 @@ struct VoxelLodTerrainUpdateData {
 		// will be cancelled
 		TaskCancellationToken cancellation_token;
 
+		// Index within the list of meshes to update during one update of the terrain. Used to avoid putting the same
+		// mesh more than once in the list, while allowing to change options after it's been added to the list. Not
+		// relevant outside of the update.
+		int update_list_index;
+
 		uint8_t transition_mask;
-		bool active;
+		bool visual_active;
+		bool collision_active;
 
 		// Tells whether the first meshing was done since this block was added.
 		// Written by the main thread only, since the main thread receives mesh updates
-		bool loaded;
+		bool visual_loaded;
+		bool collision_loaded;
+
+		// bool pending_update_has_visuals;
+		// bool pending_update_has_collision;
 
 		MeshBlockState() :
 				state(MESH_NEVER_UPDATED),
 				detail_texture_state(DETAIL_TEXTURE_IDLE),
+				update_list_index(-1),
 				transition_mask(0),
-				active(false),
-				loaded(false) {}
+				visual_active(false),
+				collision_active(false),
+				visual_loaded(false),
+				collision_loaded(false) {}
 	};
 
 	// Version of the mesh map designed to be mainly used for the threaded update task.
@@ -149,6 +162,7 @@ struct VoxelLodTerrainUpdateData {
 	struct MeshToUpdate {
 		Vector3i position;
 		TaskCancellationToken cancellation_token;
+		bool require_visual = false;
 	};
 
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
@@ -168,11 +182,14 @@ struct VoxelLodTerrainUpdateData {
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
-		// Deferred outputs to main thread
+		// Deferred outputs to main thread. Should only be read once the task is finished, so no need to lock.
 		std::vector<Vector3i> mesh_blocks_to_unload;
 		std::vector<TransitionUpdate> mesh_blocks_to_update_transitions;
-		std::vector<Vector3i> mesh_blocks_to_activate;
-		std::vector<Vector3i> mesh_blocks_to_deactivate;
+		std::vector<Vector3i> mesh_blocks_to_activate_visuals;
+		std::vector<Vector3i> mesh_blocks_to_deactivate_visuals;
+		std::vector<Vector3i> mesh_blocks_to_activate_collision;
+		std::vector<Vector3i> mesh_blocks_to_deactivate_collision;
+		std::vector<Vector3i> mesh_blocks_to_drop_visual;
 
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();
@@ -236,6 +253,13 @@ struct VoxelLodTerrainUpdateData {
 		State prev_state;
 	};
 
+	struct LoadedMeshBlockEvent {
+		Vector3i position;
+		uint8_t lod_index;
+		bool visual;
+		bool collision;
+	};
+
 	struct ClipboxStreamingState {
 		std::vector<PairedViewer> paired_viewers;
 		// Vector3i viewer_pos_in_lod0_voxels_previous_update;
@@ -249,7 +273,7 @@ struct VoxelLodTerrainUpdateData {
 
 		// Written by main thread when mesh blocks are received (and there was previously no mesh).
 		// Read by update thread to trigger visibility changes.
-		std::vector<BlockLocation> loaded_mesh_blocks;
+		std::vector<LoadedMeshBlockEvent> loaded_mesh_blocks;
 		BinaryMutex loaded_mesh_blocks_mutex;
 	};
 

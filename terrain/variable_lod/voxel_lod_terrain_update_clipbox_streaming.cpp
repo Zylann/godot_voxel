@@ -515,6 +515,12 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 				}
 			}
 
+			// Turned this off because I don't remember why I added it. Keeping it in case a bug occurs that could
+			// highlight why it was there.
+			// Was originally added in 17c6b1f557c5abc447cb62c200afcff1298fadff
+			// Perhaps that's in case there was updates pending in the list before we get here, so there needs to be
+			// some way of cancelling them? But with clipbox logic and multiple viewers, that no longer works
+#if 0
 			// TODO Why do we do this here? Sounds like it should be done in the mesh clipbox logic
 			{
 				ZN_PROFILE_SCOPE_NAMED("Cancel updates");
@@ -544,6 +550,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 							}
 						});
 			}
+#endif
 
 		} // for each lod
 	} // for each viewer
@@ -610,16 +617,30 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 // }
 
 inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block) {
-	TaskCancellationToken cancellation_token = TaskCancellationToken::create();
-	update_list.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, cancellation_token });
-	mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-	mesh_block.cancellation_token = cancellation_token;
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, bool require_visual) {
+	if (mesh_block.update_list_index != -1) {
+		// Update settings before the task is scheduled
+		VoxelLodTerrainUpdateData::MeshToUpdate &u = update_list[mesh_block.update_list_index];
+		u.require_visual |= require_visual;
+	} else {
+		TaskCancellationToken cancellation_token = TaskCancellationToken::create();
+		mesh_block.update_list_index = update_list.size();
+		update_list.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, cancellation_token, require_visual });
+		mesh_block.cancellation_token = cancellation_token;
+		// TODO `MESH_UPDATE_NOT_SENT` is now redundant with `update_list_index`
+		mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+	}
+
+	// mesh_block.pending_update_has_visuals = require_visual;
 }
 
 void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data) {
-	box_to_add.for_each_cell([&lod, is_full_load_mode, mesh_to_data_factor, &voxel_data, lod_index](Vector3i bpos) {
+		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data, bool require_visuals) {
+	box_to_add.for_each_cell([&lod, //
+									 is_full_load_mode, //
+									 mesh_to_data_factor, //
+									 &voxel_data, lod_index, //
+									 require_visuals](Vector3i bpos) {
 		VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
@@ -627,18 +648,71 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 			// RWLockWrite wlock(lod.mesh_map_state.map_lock);
 			mesh_block = &insert_new(lod.mesh_map_state.map, bpos);
 
-			if (is_full_load_mode) {
-				// Everything is loaded up-front, so we directly trigger meshing instead of
-				// reacting to data chunks being loaded
-				schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block);
-			}
+			// if (is_full_load_mode) {
+			// 	// Everything is loaded up-front, so we directly trigger meshing instead of
+			// 	// reacting to data chunks being loaded
+			// 	schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block, require_visuals);
+			// }
 
 		} else {
 			mesh_block = &mesh_block_it->second;
 		}
 
-		mesh_block->mesh_viewers.add();
+		bool first_visuals = false;
+		if (require_visuals) {
+			first_visuals = mesh_block->mesh_viewers.get() == 0;
+			mesh_block->mesh_viewers.add();
+		}
+
+		bool first_collision = mesh_block->collision_viewers.get() == 0;
 		mesh_block->collision_viewers.add();
+
+		if (first_visuals || first_collision) {
+			// TODO Optimize: don't schedule again if an update has been sent to the task system with the same options.
+			// Currently we only avoid that for requests in the list before they get sent to the task system.
+			// This could be a problem if many viewers with increasingly different options are spawned in the same area
+			// at consecutive frames.
+
+			// TODO Optimize: don't trigger tasks with options we already scheduled calculations for.
+			// For example, in case there is no task in the update list, but the last scheduled ones did compute
+			// collision but not visual, if a viewer requests visuals then the scheduled task must only compute
+			// visuals. Recomputing collision is unnecessary because the mesh won't have changed in this scenario.
+			// (Voxel changes trigger an update of each refcounted option and use a different code path).
+			// We would still remesh (and so generate unedited voxel data in some cases) though, and to avoid that we'd
+			// need to keep a cache mesh data ourselves. The issue is that Godot is also caching mesh data in ArrayMesh
+			// (but for different reasons so it's not reliable), so it would come at a noticeable memory cost.
+
+			if (is_full_load_mode) {
+				// Everything is loaded up-front, so we have to directly trigger meshing instead of
+				// reacting to data chunks being loaded
+				schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block, require_visuals);
+
+			} else {
+				// (Re-)Trigger meshing if data is already available.
+				// This is needed especially in streaming mode because then there won't be any "data loaded" event to
+				// react to if data is already there. Before that, meshes were updated only when a data block was loaded
+				// or modified, so changing block size or viewer flags did not make meshes appear. Having two viewer
+				// regions meet also caused problems.
+
+				const Box3i data_box =
+						Box3i(bpos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor)).padded(1);
+
+				// If we get an empty box at this point, something is wrong with the caller
+				ZN_ASSERT_RETURN(!data_box.is_empty());
+
+				const bool data_available = voxel_data.has_all_blocks_in_area(data_box, lod_index);
+
+				if (data_available) {
+					schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block, require_visuals);
+				}
+				// Else, we'll react to when data is loaded
+			}
+		}
+
+#if 0
+		// TODO Trigger a mesh update with visuals if that's the first viewer with visuals.
+		// Disregard the fact a mesh update is already pending when that happens, unless it was triggered with
+		// the same flags.
 
 		// Trigger meshing if data is already available.
 		// This is needed because then there won't be any "data loaded" event to react to.
@@ -653,9 +727,7 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 		// Alternative: in data diff, put every found block into a list which we'll also
 		// run through in `process_loaded_data_blocks_trigger_meshing`?
 		//
-		// TODO This also triggers meshing even if there is already a mesh when a viewer comes in.
-		// It hides the fact we don't have a task to just generate the collider in scenarios with mixed viewer flags.
-		if (!is_full_load_mode && !mesh_block->loaded &&
+		if (!is_full_load_mode && (!mesh_block->loaded || first_visuals) &&
 				// Is an update already pending?
 				mesh_block->state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT &&
 				mesh_block->state != VoxelLodTerrainUpdateData::MESH_UPDATE_SENT) {
@@ -669,21 +741,24 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 			const bool data_available = voxel_data.has_all_blocks_in_area(data_box, lod_index);
 
 			if (data_available) {
-				schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block);
+				schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block, first_visuals);
 			}
 		}
+#endif
 	});
 }
 
 void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state) {
-	out_of_range_box.for_each_cell([&lod](Vector3i bpos) {
+		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state, bool visual_flag) {
+	out_of_range_box.for_each_cell([&lod, visual_flag](Vector3i bpos) {
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
 		if (mesh_block_it != lod.mesh_map_state.map.end()) {
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
 
-			mesh_block.mesh_viewers.remove();
+			if (visual_flag) {
+				mesh_block.mesh_viewers.remove();
+			}
 			mesh_block.collision_viewers.remove();
 
 			if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
@@ -693,12 +768,21 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 					mesh_block.cancellation_token.cancel();
 				}
 
+				if (mesh_block.update_list_index != -1) {
+					unordered_remove(lod.mesh_blocks_pending_update, mesh_block.update_list_index);
+					mesh_block.update_list_index = -1;
+				}
+
 				// TODO What if a viewer causes unload, then another one updates afterward and would have kept the mesh
 				// loaded? That will trigger a reload, but if mesh load is fast, what if the main thread unloads the new
 				// mesh due to the old momentary unload? Very edge case, but keeping a note in case something weird
 				// happens in practice.
 				lod.mesh_map_state.map.erase(mesh_block_it);
 				lod.mesh_blocks_to_unload.push_back(bpos);
+
+			} else if (mesh_block.mesh_viewers.get() == 0) {
+				// Unload graphics to save memory
+				lod.mesh_blocks_to_drop_visual.push_back(bpos);
 			}
 		}
 	});
@@ -716,41 +800,60 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 		VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
 		// Show parents when children are removed
-		parent_box.for_each_cell([&parent_lod, parent_lod_index, &lod, &state](Vector3i bpos) {
+		parent_box.for_each_cell([&parent_lod, parent_lod_index, &lod, &state, visual_flag](Vector3i bpos) {
 			auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
 
 			if (mesh_it != parent_lod.mesh_map_state.map.end()) {
 				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
 
-				if (!mesh_block.active) {
-					// Only do merging logic if child chunks were ACTUALLY removed.
-					// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
-					// child LOD, but another viewer could still reference them, so we should not merge
-					// them yet.
-					// This check assumes there is always 8 children or no children
+				bool activated = false;
+
+				if (visual_flag) {
+					if (!mesh_block.visual_active) {
+						// Only do merging logic if child chunks were ACTUALLY removed.
+						// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
+						// child LOD, but another viewer could still reference them, so we should not merge
+						// them yet.
+						// This check assumes there is always 8 children or no children
+						const Vector3i child_bpos0 = bpos << 1;
+						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+						if (child_mesh0_it != lod.mesh_map_state.map.end() &&
+								child_mesh0_it->second.mesh_viewers.get() > 0) {
+							// Child still referenced by another viewer, don't activate parent to avoid overlap
+							return;
+						}
+
+						mesh_block.visual_active = true;
+						parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+						activated = true;
+
+						// We know parent_lod_index must be > 0
+						// if (parent_lod_index > 0) {
+						// This would actually do nothing because children were removed
+						// hide_children_recursive(state, parent_lod_index, bpos);
+						// }
+					}
+				}
+				if (!mesh_block.collision_active) {
 					const Vector3i child_bpos0 = bpos << 1;
 					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-					if (child_mesh0_it != lod.mesh_map_state.map.end()) {
-						// Child still referenced by another viewer, don't activate parent to avoid
-						// overlap
+					if (child_mesh0_it != lod.mesh_map_state.map.end() &&
+							child_mesh0_it->second.collision_viewers.get() > 0) {
 						return;
 					}
+					mesh_block.collision_active = true;
+					parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
+					activated = true;
+				}
 
-					mesh_block.active = true;
-					parent_lod.mesh_blocks_to_activate.push_back(bpos);
-
+				if (activated) {
 					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs)
 					if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
 						mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-						lod.mesh_blocks_pending_update.push_back(
-								VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken() });
+						mesh_block.update_list_index = lod.mesh_blocks_pending_update.size();
+						lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
+								bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
 					}
-
-					// We know parent_lod_index must be > 0
-					// if (parent_lod_index > 0) {
-					// This would actually do nothing because children were removed
-					// hide_children_recursive(state, parent_lod_index, bpos);
-					// }
 				}
 			}
 		});
@@ -766,6 +869,9 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 #ifdef DEV_ENABLED
 	Box3i debug_parent_box;
 #endif
+
+	// TODO Optimize: when a viewer doesn't need visuals, we only need to build meshes for collisions up to a certain
+	// LOD (collision max LOD property). That would be an optimization for servers, NPCs and player hosts
 
 	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
 	for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
@@ -812,7 +918,8 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 				new_mesh_box.difference_to_vec(prev_mesh_box, new_mesh_boxes);
 
 				for (const Box3i &box_to_add : new_mesh_boxes) {
-					view_mesh_box(box_to_add, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data);
+					view_mesh_box(box_to_add, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data,
+							paired_viewer.state.requires_meshes);
 				}
 			}
 
@@ -822,19 +929,48 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 				prev_mesh_box.difference_to_vec(new_mesh_box, old_mesh_boxes);
 
 				for (const Box3i &out_of_range_box : old_mesh_boxes) {
-					unview_mesh_box(out_of_range_box, lod, lod_index, lod_count, state);
+					unview_mesh_box(out_of_range_box, lod, lod_index, lod_count, state,
+							paired_viewer.prev_state.requires_meshes);
 				}
 			}
 		}
 
+		// WIP to handle viewer flags changes (however I can't think of a use case at the moment, outside of temporary
+		// editor stuff)
+		/*
+		// Blocks that remained within range of the viewer may need some changes too if viewer flags were
+		// modified. This operates on a DISTINCT set of blocks than the one above.
 		{
-			ZN_PROFILE_SCOPE_NAMED("Cancel updates");
-			// Cancel block updates that are not within the new region
-			unordered_remove_if(lod.mesh_blocks_pending_update,
-					[new_mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) { //
-						return !new_mesh_box.contains(mtu.position);
-					});
+			if (paired_viewer.state.requires_collisions != paired_viewer.prev_state.requires_collisions) {
+				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
+				if (paired_viewer.state.requires_collisions) {
+					// Add refcount to just collisions
+					view_mesh_box(box, lod, lod_index, is_full_load_mode, false, true, mesh_to_data_factor, data);
+				} else {
+					// Remove refcount to just collisions
+					unview_mesh_box(box, lod, lod_index, lod_count, false, true, state);
+				}
+			}
+
+			if (paired_viewer.state.requires_meshes != paired_viewer.prev_state.requires_meshes) {
+				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
+				if (paired_viewer.state.requires_meshes) {
+					view_mesh_box(box, lod, lod_index, is_full_load_mode, true, false, mesh_to_data_factor, data);
+				} else {
+					unview_mesh_box(box, lod, lod_index, lod_count, true, false, state);
+				}
+			}
 		}
+		*/
+
+		// {
+		// 	ZN_PROFILE_SCOPE_NAMED("Cancel updates");
+		// 	// Cancel block updates that are not within the new region
+		// 	unordered_remove_if(lod.mesh_blocks_pending_update,
+		// 			[new_mesh_box](const VoxelLodTerrainUpdateData::MeshToUpdate &mtu) { //
+		// 				return !new_mesh_box.contains(mtu.position);
+		// 			});
+		// }
 	}
 }
 
@@ -923,6 +1059,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
 			const VoxelLodTerrainUpdateData::MeshState mesh_state = mesh_block.state;
 
+			// TODO Check if there is more flags to compute with the mesh (collider? rendering?)
 			if (mesh_state != VoxelLodTerrainUpdateData::MESH_NEED_UPDATE &&
 					mesh_state != VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED) {
 				// Already updated or updating
@@ -943,7 +1080,8 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 			// }
 
 			if (data_available) {
-				schedule_mesh_load(lod.mesh_blocks_pending_update, mesh_block_pos, mesh_block);
+				schedule_mesh_load(
+						lod.mesh_blocks_pending_update, mesh_block_pos, mesh_block, mesh_block.mesh_viewers.get() > 0);
 				// We assume data blocks won't unload after this, until data is gathered, because unloading
 				// runs before this logic.
 			}
@@ -989,10 +1127,81 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 // 	ofs.close();
 // }
 
-// Activates mesh blocks when loaded. Activates higher LODs and hides lower LODs when possible.
+enum MeshBlockFeatureIndex { //
+	MESH_VISUAL = 0,
+	MESH_COLLIDER = 1
+};
+
+bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+	switch (i) {
+		case MESH_VISUAL:
+			return ms.visual_loaded;
+		case MESH_COLLIDER:
+			return ms.collision_loaded;
+		default:
+			ZN_CRASH();
+			return false;
+	}
+}
+
+bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+	switch (i) {
+		case MESH_VISUAL:
+			return ms.visual_active;
+		case MESH_COLLIDER:
+			return ms.collision_active;
+		default:
+			ZN_CRASH();
+			return false;
+	}
+}
+
+void set_active(VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, MeshBlockFeatureIndex feature_index,
+		VoxelLodTerrainUpdateData::Lod &lod, const Vector3i bpos) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			if (!mesh_block.visual_active) {
+				mesh_block.visual_active = true;
+				lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+			}
+			break;
+		case MESH_COLLIDER:
+			if (!mesh_block.collision_active) {
+				mesh_block.collision_active = true;
+				lod.mesh_blocks_to_activate_collision.push_back(bpos);
+			}
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+void set_inactive(VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, MeshBlockFeatureIndex feature_index,
+		VoxelLodTerrainUpdateData::Lod &lod, const Vector3i bpos) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			if (mesh_block.visual_active) {
+				mesh_block.visual_active = false;
+				lod.mesh_blocks_to_deactivate_visuals.push_back(bpos);
+			}
+			break;
+		case MESH_COLLIDER:
+			if (mesh_block.collision_active) {
+				mesh_block.collision_active = false;
+				lod.mesh_blocks_to_deactivate_collision.push_back(bpos);
+			}
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+// Activates mesh blocks when they are loaded. Activates higher LODs and hides lower LODs when possible.
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
-void update_mesh_block_load(
-		VoxelLodTerrainUpdateData::State &state, Vector3i bpos, unsigned int lod_index, unsigned int lod_count) {
+void update_mesh_block_load(VoxelLodTerrainUpdateData::State &state, Vector3i bpos, unsigned int lod_index,
+		unsigned int lod_count, MeshBlockFeatureIndex feature_index) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto mesh_it = lod.mesh_map_state.map.find(bpos);
 
@@ -1000,27 +1209,26 @@ void update_mesh_block_load(
 		return;
 	}
 	VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
-	if (!mesh_block.loaded) {
+
+	if (!is_loaded(mesh_block, feature_index)) {
 		return;
 	}
 
-	// The mesh is loaded
+	// The mesh is loaded in specified flags
 
 	const unsigned int parent_lod_index = lod_index + 1;
 	if (parent_lod_index == lod_count) {
 		// Root
 		// We don't need to bother about subdivison rules here (no need to check siblings) because there is no parent
 
-		if (!mesh_block.active) {
-			mesh_block.active = true;
-			lod.mesh_blocks_to_activate.push_back(bpos);
-		}
+		// TODO Don't activate a block if it is already subdivided
+		set_active(mesh_block, feature_index, lod, bpos);
 
 		if (lod_index > 0) {
 			const unsigned int child_lod_index = lod_index - 1;
 			for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 				const Vector3i child_bpos = get_child_position(bpos, child_index);
-				update_mesh_block_load(state, child_bpos, child_lod_index, lod_count);
+				update_mesh_block_load(state, child_bpos, child_lod_index, lod_count, feature_index);
 			}
 		}
 
@@ -1042,9 +1250,10 @@ void update_mesh_block_load(
 
 		VoxelLodTerrainUpdateData::MeshBlockState &parent_mesh_block = parent_mesh_it->second;
 
-		if (parent_mesh_block.active) {
+		if (is_active(parent_mesh_block, feature_index)) {
 			bool all_siblings_loaded = true;
 
+			// Test if all siblings are loaded
 			// TODO This needs to be optimized. Store a cache in parent?
 			for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
 				const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
@@ -1057,7 +1266,7 @@ void update_mesh_block_load(
 					break;
 				}
 				const VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
-				if (!sibling.loaded) {
+				if (!is_loaded(sibling, feature_index)) {
 					all_siblings_loaded = false;
 					break;
 				}
@@ -1065,8 +1274,7 @@ void update_mesh_block_load(
 
 			if (all_siblings_loaded) {
 				// Hide parent
-				parent_mesh_block.active = false;
-				parent_lod.mesh_blocks_to_deactivate.push_back(parent_bpos);
+				set_inactive(parent_mesh_block, feature_index, parent_lod, parent_bpos);
 
 				// Show siblings
 				for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
@@ -1075,14 +1283,13 @@ void update_mesh_block_load(
 					VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
 					// TODO Optimize: if that sibling itself subdivides, it should not need to be made visible.
 					// Maybe make `update_mesh_block_load` return that info so we can avoid scheduling activation?
-					sibling.active = true;
-					lod.mesh_blocks_to_activate.push_back(sibling_bpos);
+					set_active(sibling, feature_index, lod, sibling_bpos);
 
 					if (lod_index > 0) {
 						const unsigned int child_lod_index = lod_index - 1;
 						for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 							const Vector3i child_bpos = get_child_position(sibling_bpos, sibling_index);
-							update_mesh_block_load(state, child_bpos, child_lod_index, lod_count);
+							update_mesh_block_load(state, child_bpos, child_lod_index, lod_count, feature_index);
 						}
 					}
 				}
@@ -1099,7 +1306,7 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 	// Get list of mesh blocks that were loaded since the last update
 	// TODO Use the same pool buffer as data blocks?
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> tls_loaded_blocks;
+	static thread_local std::vector<VoxelLodTerrainUpdateData::LoadedMeshBlockEvent> tls_loaded_blocks;
 	tls_loaded_blocks.clear();
 	{
 		// If this has contention, we can afford trying to lock and skip if it fails
@@ -1108,14 +1315,21 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 		clipbox_streaming.loaded_mesh_blocks.clear();
 	}
 
-	for (const VoxelLodTerrainUpdateData::BlockLocation bloc : tls_loaded_blocks) {
-		update_mesh_block_load(state, bloc.position, bloc.lod, lod_count);
+	for (const VoxelLodTerrainUpdateData::LoadedMeshBlockEvent event : tls_loaded_blocks) {
+		// TODO This isn't optimal. Cost of doing this is doubled if we want both visual and collision.
+		if (event.visual) {
+			update_mesh_block_load(state, event.position, event.lod_index, lod_count, MESH_VISUAL);
+		}
+		// TODO We should not need to run this at LODs that have no collision
+		if (event.collision) {
+			update_mesh_block_load(state, event.position, event.lod_index, lod_count, MESH_COLLIDER);
+		}
 	}
 
 	if (enable_transition_updates) {
 		uint32_t lods_to_update_transitions = 0;
-		for (const VoxelLodTerrainUpdateData::BlockLocation bloc : tls_loaded_blocks) {
-			lods_to_update_transitions |= (0b111 << bloc.lod);
+		for (const VoxelLodTerrainUpdateData::LoadedMeshBlockEvent event : tls_loaded_blocks) {
+			lods_to_update_transitions |= (0b111 << event.lod_index);
 		}
 		// TODO This is quite slow (see implementation).
 		// Maybe there is a way to optimize it with the clipbox logic (updates could be grouped per new/old boxes,
