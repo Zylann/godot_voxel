@@ -1366,6 +1366,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			}
 			block->drop_visuals();
 			remove_shader_material_from_block(*block, _shader_material_pool);
+			// Also update the state in the threaded representation
+			auto it = lod.mesh_map_state.map.find(bpos);
+			if (it != lod.mesh_map_state.map.end()) {
+				it->second.visual_loaded = false;
+			}
 		}
 		lod.mesh_blocks_to_drop_visual.clear();
 
@@ -1678,6 +1683,8 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	bool collision_active;
 	bool first_collision_load = false;
 	bool first_visual_load = false;
+	bool visual_expected = false;
+	bool collision_expected = false;
 	{
 		VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
 		RWLockRead rlock(lod.mesh_map_state.map_lock);
@@ -1707,21 +1714,23 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		visual_active = mesh_block_state.visual_active;
 		collision_active = mesh_block_state.collision_active;
 
-		if (ob.visual_was_required) {
-			if (!mesh_block_state.visual_loaded) {
-				// First mesh load (note, no mesh being present counts as load too. Before that we would not know)
-				mesh_block_state.visual_loaded = true;
-				first_visual_load = true;
-			}
+		visual_expected = mesh_block_state.mesh_viewers.get() > 0;
+		collision_expected = mesh_block_state.collision_viewers.get() > 0;
+
+		if (visual_expected && ob.visual_was_required) {
+			// Mark visuals loaded for the streaming system to subdivide LODs.
+			// First mesh load? (note, no mesh being present counts as load too. Before that we would not know)
+			first_visual_load = (mesh_block_state.visual_loaded.exchange(true) == false);
 		}
-		if (!mesh_block_state.collision_loaded) {
-			// First mesh load (note, no mesh being present counts as load too. Before that we would not know)
-			mesh_block_state.collision_loaded = true;
-			first_collision_load = true;
+		if (collision_expected) {
+			// Mark collisions loaded for the streaming system to subdivide LODs.
+			// First mesh load? (note, no mesh being present counts as load too. Before that we would not know)
+			first_collision_load = (mesh_block_state.collision_loaded.exchange(true) == false);
 		}
 	}
 	if ((first_visual_load || first_collision_load) &&
 			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		// Notify streaming system so it can subdivide LODs as they load
 		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
 		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
 		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
@@ -1737,7 +1746,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
-	if (ob.visual_was_required) {
+	if (ob.visual_was_required && visual_expected) {
 		if (ob.has_mesh_resource) {
 			// The mesh was already built as part of the threaded task
 			mesh = ob.mesh;
@@ -1797,7 +1806,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	}
 #endif
 
-	if (ob.visual_was_required) {
+	if (ob.visual_was_required && visual_expected) {
 		// We consider a block having a "rendering" mesh as having loaded visuals.
 		if (!block->has_mesh()) {
 			// Setup visuals
@@ -1864,7 +1873,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		has_collision = ob.lod < _collision_lod_count;
 	}
 
-	if (has_collision) {
+	if (has_collision && collision_expected) {
 		const uint64_t now = get_ticks_msec();
 
 		if (_collision_update_delay == 0 ||
@@ -1889,9 +1898,11 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
+	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
+	// position
 	block->set_parent_transform(get_global_transform());
 
-	if (ob.detail_textures != nullptr) {
+	if (ob.detail_textures != nullptr && visual_expected) {
 		if (ob.detail_textures->valid) {
 			apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod);
 		} else {

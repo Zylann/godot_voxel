@@ -6,7 +6,7 @@
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
-#include "../../util/ref_count.h"
+#include "../../util/safe_ref_count.h"
 #include "../../util/tasks/cancellation_token.h"
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
@@ -102,17 +102,21 @@ struct VoxelLodTerrainUpdateData {
 		std::atomic<DetailTextureState> detail_texture_state;
 
 		// Refcount here to support multiple viewers, we can't do it on the main thread's mesh map since the
-		// streaming logic is in the update task
-		RefCount mesh_viewers;
-		RefCount collision_viewers;
+		// streaming logic is in the update task.
+		// TODO Optimize: this could almost not need to be atomic.
+		// This is an atomic refcount only because the main thread needs to read it when receiving mesh updates. It
+		// could be made non-atomic if mesh updates were handled in the threaded update, but that has a more
+		// implications than making this atomic for now.
+		SafeRefCount mesh_viewers;
+		SafeRefCount collision_viewers;
 
 		// Cancelled when this mesh block is removed, so if tasks are still queued to do work for that block, they
 		// will be cancelled
 		TaskCancellationToken cancellation_token;
 
 		// Index within the list of meshes to update during one update of the terrain. Used to avoid putting the same
-		// mesh more than once in the list, while allowing to change options after it's been added to the list. Not
-		// relevant outside of the update.
+		// mesh more than once in the list, while allowing to change options after it's been added to the list. Should
+		// reset to -1 after each update (since the list is consumed)
 		int update_list_index;
 
 		uint8_t transition_mask;
@@ -120,9 +124,10 @@ struct VoxelLodTerrainUpdateData {
 		bool collision_active;
 
 		// Tells whether the first meshing was done since this block was added.
-		// Written by the main thread only, since the main thread receives mesh updates
-		bool visual_loaded;
-		bool collision_loaded;
+		// Written by the main thread only, when it receives mesh updates or when it unloads resources.
+		// Read by threaded update to decide when to subdivide LODs.
+		std::atomic_bool visual_loaded;
+		std::atomic_bool collision_loaded;
 
 		// bool pending_update_has_visuals;
 		// bool pending_update_has_collision;
@@ -183,6 +188,7 @@ struct VoxelLodTerrainUpdateData {
 		int last_view_distance_mesh_blocks = 0;
 
 		// Deferred outputs to main thread. Should only be read once the task is finished, so no need to lock.
+		// TODO These output actions are not particularly serialized, that might cause issues (havent so far).
 		std::vector<Vector3i> mesh_blocks_to_unload;
 		std::vector<TransitionUpdate> mesh_blocks_to_update_transitions;
 		std::vector<Vector3i> mesh_blocks_to_activate_visuals;

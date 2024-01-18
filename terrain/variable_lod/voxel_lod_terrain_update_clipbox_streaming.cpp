@@ -783,6 +783,7 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 			} else if (mesh_block.mesh_viewers.get() == 0) {
 				// Unload graphics to save memory
 				lod.mesh_blocks_to_drop_visual.push_back(bpos);
+				// Note, `visuals_loaded` will remain true until they are actually unloaded.
 			}
 		}
 	});
