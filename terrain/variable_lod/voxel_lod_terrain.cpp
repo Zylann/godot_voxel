@@ -579,17 +579,10 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box, bool update_mesh) {
 	ZN_PROFILE_SCOPE();
-	// TODO Better decoupling is needed here.
-	// In the past this padding was necessary for mesh blocks because visuals depend on neighbor voxels.
-	// So when editing voxels at the boundary of two mesh blocks, both must update.
-	// However on data blocks it doesn't make sense, neighbors are not affected (at least for now).
-	// this can cause false positive errors as if we were editing a block that's not loaded (coming up as null).
-	// For now, this is worked around by ignoring cases where blocks are null,
-	// But it might mip more lods than necessary when editing on borders.
-	const Box3i box = p_box.padded(1);
 	{
-		MutexLock lock(_update_data->state.blocks_pending_lodding_lod0_mutex);
-		_data->mark_area_modified(box, &_update_data->state.blocks_pending_lodding_lod0, update_mesh);
+		MutexLock lock(_update_data->state.edit_notifications.mutex);
+		_data->mark_area_modified(p_box, &_update_data->state.edit_notifications.edited_blocks_lod0, update_mesh);
+		_update_data->state.edit_notifications.edited_voxel_areas_lod0.push_back(p_box);
 	}
 
 #ifdef TOOLS_ENABLED

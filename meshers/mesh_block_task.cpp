@@ -466,7 +466,8 @@ void MeshBlockTask::build_mesh() {
 		nm_task->output_textures = detail_textures;
 		nm_task->detail_texture_settings = detail_texture_settings;
 		nm_task->priority_dependency = priority_dependency;
-		nm_task->use_gpu = detail_texture_use_gpu;
+		nm_task->use_gpu =
+				(detail_texture_use_gpu && nm_task->generator.is_valid() && nm_task->generator->supports_shaders());
 
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}

@@ -62,8 +62,8 @@ void ImageRangeGrid::generate(const Image &im) {
 
 		Lod &lod = _lods[lod_index];
 
-		lod.size_x = max(prev_lod.size_x >> 1, 1);
-		lod.size_y = max(prev_lod.size_y >> 1, 1);
+		lod.size_x = max(arithmetic_rshift(prev_lod.size_x, 1), 1);
+		lod.size_y = max(arithmetic_rshift(prev_lod.size_y, 1), 1);
 
 		lod.data.resize(lod.size_x * lod.size_y);
 		lod.data.shrink_to_fit();
@@ -148,10 +148,10 @@ Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
 	CRASH_COND(lod_index >= _lod_count);
 
 	const int absolute_lod = _lod_base + lod_index;
-	const int x_min = pixel_min_x >> absolute_lod;
-	const int x_max = pixel_max_x >> absolute_lod;
-	const int y_min = pixel_min_y >> absolute_lod;
-	const int y_max = pixel_max_y >> absolute_lod;
+	const int x_min = arithmetic_rshift(pixel_min_x, absolute_lod);
+	const int x_max = arithmetic_rshift(pixel_max_x, absolute_lod);
+	const int y_min = arithmetic_rshift(pixel_min_y, absolute_lod);
+	const int y_max = arithmetic_rshift(pixel_max_y, absolute_lod);
 
 	const Lod &lod = _lods[lod_index];
 

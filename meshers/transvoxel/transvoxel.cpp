@@ -2,6 +2,7 @@
 #include "../../constants/cube_tables.h"
 #include "../../util/godot/core/sort_array.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
@@ -677,18 +678,62 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 				} // for each cell vertex
 
+				uint32_t effective_triangle_count = triangle_count;
+
 				for (int t = 0; t < triangle_count; ++t) {
 					const int t0 = t * 3;
+
 					const int i0 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0)];
 					const int i1 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0 + 1)];
 					const int i2 = cell_vertex_indices[regular_cell_data.get_vertex_index(t0 + 2)];
+
+					{
+						// Transvoxel paper:
+						// It is possible to generate triangles having zero area when one or more of the corner sample
+						// values for a cell is zero. For example, when we triangulate a cell for which one corner
+						// sample value is zero and the seven remaining corner sample values are negative, then we
+						// generate the single triangle of equivalence class #1 (see Table 3.2). However, all three
+						// vertices lie exactly at the corner having zero sample value. Such triangles are eliminated
+						// after a simple area calculation indicates that they are degenerate.
+						//
+						// Not fixing this used to work fine actually, but Jolt physics integration makes this
+						// problematic. Jolt checks for degenerate triangles, but instead of just skipping them, it
+						// throws errors. Also, the fact Godot enforces passing a de-indexed mesh through the
+						// Physics3DServer requires Jolt to re-index it. This is not only a waste of time, but also,
+						// Jolt eliminates vertices at the same location or below a hardcoded threshold in the process.
+						// This in turn causes further issues, as degenerate or microscopic triangles cause the
+						// same errors, instead of just being ignored. So a workaround is to actively remove those
+						// triangles here, at the cost of extra CPU work.
+						//
+						// Note, this workaround means there can be unused vertices in the final mesh.
+						// Another workaround could have been to alter the SDF to never have 0, but that would not
+						// cover the case of triangles that are too thin.
+						//
+						// Profiling results, in average time per chunk (16^3).
+						// With it: 75 us
+						// Without it: 65 us
+						// So fixing the 0.5% of meshes with at least 1 degenerate/superthin triangle isn't negligible
+						// unfortunately.
+						//
+						// About Jolt re-indexing meshes, see PR (abandoned?):
+						// https://github.com/godotengine/godot/pull/72868
+						//
+						const Vector3f p0 = output.vertices[i0];
+						const Vector3f p1 = output.vertices[i1];
+						const Vector3f p2 = output.vertices[i2];
+						if (math::is_triangle_degenerate_approx(p0, p1, p2, 0.000001f)) {
+							--effective_triangle_count;
+							continue;
+						}
+					}
+
 					output.indices.push_back(i0);
 					output.indices.push_back(i1);
 					output.indices.push_back(i2);
 				}
 
 				if (cell_info != nullptr) {
-					cell_info->push_back(CellInfo{ pos - min_pos, triangle_count });
+					cell_info->push_back(CellInfo{ pos - min_pos, effective_triangle_count });
 				}
 
 			} // x
@@ -1302,7 +1347,13 @@ std::vector<uint16_t> &get_tls_weights_backing_buffer_u16() {
 // It must be done on the whole buffer to ensure consistency (and not after early cell rejection),
 // otherwise it can create gaps in the final mesh.
 //
-// Not used anymore for now, but if we get this problem again we may have to investigate
+// Not used anymore for now, but if we get this problem again we may have to investigate.
+//
+// 2023/12/28 update:
+// Jolt physics really doesn't like degenerate meshes and throws errors, unlike GodotPhysics and Bullet. Entire meshes
+// can be like that because there could be a voxel buffer filled with > 0 SDF, except one which is zero, and since zero
+// is considered "inside", case 223 triggers and produces a bunch of vertices at the exact same position.
+// Fixed for now by eliminating triangles.
 //
 /*template <typename Sdf_T>
 Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {

@@ -18,15 +18,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Editor build
+          - name: 4.2 Editor
             target: editor
             executable_name: godot.macos.editor.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
 
-          - name: Release build
+          - name: 4.2 Template
             target: template_release
             executable_name: godot.macos.template_release.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
 
     steps:
       # Clone Godot

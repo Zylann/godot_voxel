@@ -1,6 +1,7 @@
 #include "rendering_device.h"
 #include "../../dstack.h"
 #include "../../profiling.h"
+#include "../core/version.h"
 #include "rd_sampler_state.h"
 #include "rd_shader_source.h"
 #include "rd_texture_format.h"
@@ -52,17 +53,26 @@ RID shader_create_from_spirv(RenderingDevice &rd, RDShaderSPIRV &p_spirv, String
 	Vector<RenderingDevice::ShaderStageSPIRVData> stage_data;
 	for (int i = 0; i < RD::SHADER_STAGE_MAX; i++) {
 		RenderingDevice::ShaderStage stage = RenderingDevice::ShaderStage(i);
-		RenderingDevice::ShaderStageSPIRVData sd;
-		sd.shader_stage = stage;
+
 		String error = p_spirv.get_stage_compile_error(stage);
 		ERR_FAIL_COND_V_MSG(!error.is_empty(), RID(),
 				"Can't create a shader from an errored bytecode. Check errors in source bytecode.");
-		sd.spir_v = p_spirv.get_stage_bytecode(stage);
-		if (sd.spir_v.is_empty()) {
+
+		PackedByteArray bytecode = p_spirv.get_stage_bytecode(stage);
+		if (bytecode.is_empty()) {
 			continue;
 		}
+
+		RenderingDevice::ShaderStageSPIRVData sd;
+		sd.shader_stage = stage;
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
+		sd.spir_v = bytecode;
+#else
+		sd.spirv = bytecode;
+#endif
 		stage_data.push_back(sd);
 	}
+
 	return rd.shader_create_from_spirv(stage_data, name);
 
 #elif defined(ZN_GODOT_EXTENSION)
@@ -154,12 +164,28 @@ RID sampler_create(RenderingDevice &rd, const RDSamplerState &sampler_state) {
 #endif
 }
 
-Error update_storage_buffer(RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size,
-		const PackedByteArray &pba, unsigned int post_barrier) {
+Error update_storage_buffer(
+		RenderingDevice &rd, RID rid, unsigned int offset, unsigned int size, const PackedByteArray &pba) {
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
+
+	// Godot versions up to 4.2 required to pass barrier options.
+	// At some point in development of 4.3, a render graph was added, which removed the need for this parameter.
+	// https://github.com/godotengine/godot/pull/84976
+
 #if defined(ZN_GODOT)
-	return rd.buffer_update(rid, offset, size, pba.ptr(), post_barrier);
+	return rd.buffer_update(rid, offset, size, pba.ptr(), RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
 #elif defined(ZN_GODOT_EXTENSION)
-	return rd.buffer_update(rid, offset, size, pba, post_barrier);
+	return rd.buffer_update(rid, offset, size, pba, RenderingDevice::BARRIER_MASK_ALL_BARRIERS);
+#endif
+
+#else // Godot 4.3 and later
+
+#if defined(ZN_GODOT)
+	return rd.buffer_update(rid, offset, size, pba.ptr());
+#elif defined(ZN_GODOT_EXTENSION)
+	return rd.buffer_update(rid, offset, size, pba);
+#endif
+
 #endif
 }
 

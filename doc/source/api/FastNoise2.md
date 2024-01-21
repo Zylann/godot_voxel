@@ -2,7 +2,15 @@
 
 Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html)
 
-Wrapper for the FastNoise2 library.
+Wrapper for the [FastNoise2](https://github.com/Auburn/FastNoise2) library.
+
+## Description: 
+
+Generates coherent noise with support for SIMD processing, which can speed up generation significantly compared to scalar implementations like [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html).
+
+It uses a node-based structure internally for configuration, which is however not editable from within Godot at the moment. Instead, simplified properties are exposed. It possible to edit noise graphs with an external Noise Tool, which can export an encoded node tree as a base64 string.
+
+The current integration uses FastNoise2 version 0.10.0-alpha. If you use encoded node trees made with the Noise Tool, it must match that version.
 
 ## Properties: 
 
@@ -79,18 +87,18 @@ enum **CellularReturnType**:
 
 enum **SIMDLevel**: 
 
-- <span id="i_SIMD_NULL"></span>**SIMD_NULL** = **0**
-- <span id="i_SIMD_SCALAR"></span>**SIMD_SCALAR** = **1**
-- <span id="i_SIMD_SSE"></span>**SIMD_SSE** = **2**
-- <span id="i_SIMD_SSE2"></span>**SIMD_SSE2** = **4**
-- <span id="i_SIMD_SSE3"></span>**SIMD_SSE3** = **8**
-- <span id="i_SIMD_SSSE3"></span>**SIMD_SSSE3** = **16**
-- <span id="i_SIMD_SSE41"></span>**SIMD_SSE41** = **32**
-- <span id="i_SIMD_SSE42"></span>**SIMD_SSE42** = **64**
-- <span id="i_SIMD_AVX"></span>**SIMD_AVX** = **128**
-- <span id="i_SIMD_AVX2"></span>**SIMD_AVX2** = **256**
-- <span id="i_SIMD_AVX512"></span>**SIMD_AVX512** = **512**
-- <span id="i_SIMD_NEON"></span>**SIMD_NEON** = **65536**
+- <span id="i_SIMD_NULL"></span>**SIMD_NULL** = **0** --- Undefined level.
+- <span id="i_SIMD_SCALAR"></span>**SIMD_SCALAR** = **1** --- Single numbers. Slowest level.
+- <span id="i_SIMD_SSE"></span>**SIMD_SSE** = **2** --- x86 CPU processing 4 floats in one instruction.
+- <span id="i_SIMD_SSE2"></span>**SIMD_SSE2** = **4** --- x86 CPU Processing 4 floats in one instruction, with more instructions supported than SSE.
+- <span id="i_SIMD_SSE3"></span>**SIMD_SSE3** = **8** --- x86 CPU Processing 4 floats in one instruction, with more instructions supported than SSE3.
+- <span id="i_SIMD_SSSE3"></span>**SIMD_SSSE3** = **16** --- x86 CPU Processing 4 floats in one instruction, with more instructions supported than SSE4.
+- <span id="i_SIMD_SSE41"></span>**SIMD_SSE41** = **32** --- x86 CPU Processing 4 floats in one instruction, with more instructions supported than SSE41.
+- <span id="i_SIMD_SSE42"></span>**SIMD_SSE42** = **64** --- x86 CPU Processing 4 floats in one instruction, with more instructions supported than SSE42.
+- <span id="i_SIMD_AVX"></span>**SIMD_AVX** = **128** --- x86 CPU Processing 8 floats in one instruction.
+- <span id="i_SIMD_AVX2"></span>**SIMD_AVX2** = **256** --- x86 CPU Processing 8 floats in one instruction, with more instructions supported than AVX.
+- <span id="i_SIMD_AVX512"></span>**SIMD_AVX512** = **512** --- x86 CPU Processing 16 floats in one instruction.
+- <span id="i_SIMD_NEON"></span>**SIMD_NEON** = **65536** --- ARM CPU processing 4 floats in one instruction.
 
 
 ## Property Descriptions
@@ -159,17 +167,26 @@ enum **SIMDLevel**:
 
 - [void](#)<span id="i_generate_image"></span> **generate_image**( [Image](https://docs.godotengine.org/en/stable/classes/class_image.html) image, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) tileable ) 
 
+Fills a greyscale image with noise values.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_2d_single"></span> **get_noise_2d_single**( [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) pos ) 
 
+Generates a single value of 2D noise.
+
+Note that generating values one by one will not benefit from SIMD performance as much as generating multiple values at once.
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_noise_3d_single"></span> **get_noise_3d_single**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) pos ) 
 
+Generates a single value of 3D noise.
+
+Note that generating values one by one will not benefit from SIMD performance as much as generating multiple values at once.
 
 - [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_get_simd_level_name"></span> **get_simd_level_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) level ) 
 
+Gets which SIMD level was detected by the library. This gives an indication of performance on the current CPU, as different models can have different SIMD instructions available.
 
 - [void](#)<span id="i_update_generator"></span> **update_generator**( ) 
 
+This method must be called after you change properties, so they can take effect.
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

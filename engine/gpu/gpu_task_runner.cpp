@@ -44,6 +44,7 @@ void GPUTaskRunner::stop() {
 }
 
 void GPUTaskRunner::push(IGPUTask *task) {
+	ZN_ASSERT_RETURN(task != nullptr);
 	MutexLock mlock(_mutex);
 	_shared_tasks.push_back(task);
 	_semaphore.post();

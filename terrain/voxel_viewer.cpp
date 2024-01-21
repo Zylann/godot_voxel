@@ -78,6 +78,8 @@ void VoxelViewer::_notification(int p_what) {
 				VoxelEngine::get_singleton().set_viewer_network_peer_id(_viewer_id, _network_peer_id);
 				const Vector3 pos = get_global_transform().origin;
 				VoxelEngine::get_singleton().set_viewer_position(_viewer_id, pos);
+
+				// VoxelEngine::get_singleton().sync_viewers_task_priority_data();
 			}
 		} break;
 

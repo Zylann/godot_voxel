@@ -24,36 +24,66 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 	ZN_PROFILE_SCOPE();
 
 	static thread_local std::vector<Vector3i> tls_modified_lod0_blocks;
-	static thread_local std::vector<VoxelData::BlockLocation> tls_updated_block_locations;
+	static thread_local std::vector<Box3i> tls_modified_voxel_areas_lod0;
+	// static thread_local std::vector<VoxelData::BlockLocation> tls_updated_block_locations;
 
-	const int data_block_size = data.get_block_size();
-	const int data_to_mesh_factor = mesh_block_size / data_block_size;
+	tls_modified_lod0_blocks.clear();
+	tls_modified_voxel_areas_lod0.clear();
 
+	// Consume inputs
 	{
-		MutexLock lock(state.blocks_pending_lodding_lod0_mutex);
-		// Not sure if could just use `=`? What would std::vector do with capacity?
-		tls_modified_lod0_blocks.resize(state.blocks_pending_lodding_lod0.size());
-		memcpy(tls_modified_lod0_blocks.data(), state.blocks_pending_lodding_lod0.data(),
-				state.blocks_pending_lodding_lod0.size() * sizeof(Vector3i));
+		MutexLock lock(state.edit_notifications.mutex);
 
-		state.blocks_pending_lodding_lod0.clear();
+		// Not sure if could just use `=`? What would std::vector do with capacity?
+		append_array(tls_modified_lod0_blocks, state.edit_notifications.edited_blocks_lod0);
+		append_array(tls_modified_voxel_areas_lod0, state.edit_notifications.edited_voxel_areas_lod0);
+
+		state.edit_notifications.edited_blocks_lod0.clear();
+		state.edit_notifications.edited_voxel_areas_lod0.clear();
 	}
 
-	tls_updated_block_locations.clear();
-	data.update_lods(to_span(tls_modified_lod0_blocks), &tls_updated_block_locations);
+	// Update all data LODs
+	// tls_updated_block_locations.clear();
+	data.update_lods(to_span(tls_modified_lod0_blocks), nullptr);
 
-	// Schedule mesh updates at every affected LOD
-	for (const VoxelData::BlockLocation loc : tls_updated_block_locations) {
-		const Vector3i mesh_block_pos = math::floordiv(loc.position, data_to_mesh_factor);
-		VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[loc.lod_index];
+	// Update affected meshes.
+	// TODO Optimize: trigger mesh updates at LOD0 earlier? There is a bit of latency due to doing all the mipping work
+	// first, and we know the edit happens before mipping anyways
+	const unsigned int lod_count = data.get_lod_count();
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-		auto mesh_block_it = dst_lod.mesh_map_state.map.find(mesh_block_pos);
-		if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
-			// If a mesh exists here, it will need an update.
-			// If there is no mesh, it will probably get created later when we come closer to it
-			schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
+		for (const Box3i voxel_box : tls_modified_voxel_areas_lod0) {
+			// Padding is required for edits near chunk borders, which can affect multiple meshes despite only affecting
+			// one data block
+			const Box3i padded_voxel_box = voxel_box.padded(1);
+			const Box3i mesh_block_box = padded_voxel_box.downscaled(mesh_block_size);
+
+			mesh_block_box.for_each_cell([&lod](Vector3i mesh_block_pos) {
+				auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
+				if (mesh_block_it != lod.mesh_map_state.map.end()) {
+					// If a mesh block state exists here, it will need an update.
+					// If there is none, it will probably get created later when we come closer to it
+					schedule_mesh_update(mesh_block_it->second, mesh_block_pos, lod.blocks_pending_update);
+				}
+			});
 		}
 	}
+
+	// -- Old logic based solely on updated data blocks, however doesn't account for padding (would have to force-edit
+	// around to simulate that, which isn't great).
+	// Schedule mesh updates at every affected LOD
+	// for (const VoxelData::BlockLocation loc : tls_updated_block_locations) {
+	// 	const Vector3i mesh_block_pos = math::floordiv(loc.position, data_to_mesh_factor);
+	// 	VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[loc.lod_index];
+	//
+	// 	auto mesh_block_it = dst_lod.mesh_map_state.map.find(mesh_block_pos);
+	// 	if (mesh_block_it != dst_lod.mesh_map_state.map.end()) {
+	// 		// If a mesh block state exists here, it will need an update.
+	// 		// If there is none, it will probably get created later when we come closer to it
+	// 		schedule_mesh_update(mesh_block_it->second, mesh_block_pos, dst_lod.blocks_pending_update);
+	// 	}
+	// }
 }
 
 uint8_t VoxelLodTerrainUpdateTask::get_transition_mask(const VoxelLodTerrainUpdateData::State &state,
@@ -157,7 +187,7 @@ static void init_sparse_octree_priority_dependency(PriorityDependency &dep, Vect
 	const Vector3i voxel_pos = get_block_center(block_position, data_block_size, lod);
 	const float block_radius = (data_block_size << lod) / 2;
 	dep.shared = shared_viewers_data;
-	dep.world_position = volume_transform.xform(voxel_pos);
+	dep.world_position = to_vec3f(volume_transform.xform(voxel_pos));
 	const float transformed_block_radius =
 			volume_transform.basis.xform(Vector3(block_radius, block_radius, block_radius)).length();
 

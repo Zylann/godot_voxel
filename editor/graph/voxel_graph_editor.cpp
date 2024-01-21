@@ -130,6 +130,11 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_compile_result_label->hide();
 		toolbar->add_child(_compile_result_label);
 
+		_no_graph_open_label = memnew(Label);
+		_no_graph_open_label->set_text("[No graph open]");
+		_no_graph_open_label->set_modulate(Color(1, 1, 0));
+		toolbar->add_child(_no_graph_open_label);
+
 		Control *spacer = memnew(Control);
 		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		toolbar->add_child(spacer);
@@ -137,7 +142,7 @@ VoxelGraphEditor::VoxelGraphEditor() {
 		_pin_button = memnew(Button);
 		_pin_button->set_flat(true);
 		_pin_button->set_toggle_mode(true);
-		_pin_button->set_tooltip_text(ZN_TTR("Pin VoxelGraphEditor"));
+		_pin_button->set_tooltip_text(ZN_TTR("Keep visible regardless of selection"));
 		toolbar->add_child(_pin_button);
 
 		_popout_button = memnew(Button);
@@ -258,6 +263,8 @@ void VoxelGraphEditor::set_graph(Ref<VoxelGraphFunction> graph) {
 		update_functions();
 	}
 
+	_no_graph_open_label->set_visible(!_graph.is_valid());
+
 	// schedule_preview_update();
 }
 
@@ -274,13 +281,13 @@ EditorUndoRedoManager *VoxelGraphEditor::get_undo_redo() const {
 }
 
 void VoxelGraphEditor::set_voxel_node(VoxelNode *node) {
-	_voxel_node = node;
-	if (_voxel_node == nullptr) {
+	_terrain_node.set(node);
+	if (node == nullptr) {
 		ZN_PRINT_VERBOSE("Reference node for VoxelGraph gizmos: null");
 		_debug_renderer.set_world(nullptr);
 	} else {
 		ZN_PRINT_VERBOSE(format("Reference node for VoxelGraph gizmos: {}", String(node->get_path())));
-		_debug_renderer.set_world(_voxel_node->get_world_3d().ptr());
+		_debug_renderer.set_world(node->get_world_3d().ptr());
 	}
 }
 
@@ -1035,11 +1042,13 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 		return;
 	}
 
-	if (_voxel_node == nullptr) {
+	VoxelNode *terrain_node = _terrain_node.get();
+
+	if (terrain_node == nullptr) {
 		return;
 	}
 
-	const Transform3D parent_transform = _voxel_node->get_global_transform();
+	const Transform3D parent_transform = terrain_node->get_global_transform();
 	const AABB aabb = _range_analysis_dialog->get_aabb();
 	_debug_renderer.begin();
 	_debug_renderer.draw_box(parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position),

@@ -3,6 +3,7 @@
 
 #include "../../generators/graph/voxel_graph_function.h"
 #include "../../util/godot/classes/editor_plugin.h"
+#include "../../util/godot/object_weak_ref.h"
 #include "../../util/macros.h"
 #include "voxel_graph_node_inspector_wrapper.h"
 
@@ -52,17 +53,18 @@ private:
 	VoxelGraphEditorIODialog *_io_dialog = nullptr;
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
-	VoxelNode *_voxel_node = nullptr;
+	ObjectWeakRef<VoxelNode> _voxel_node;
 	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
 	// Workaround for a new Godot 4 behavior:
-	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first.
-	// But this plugin handles both the graph resource, and nodes in it. When a node is selected, it tells Godot to
-	// inspect an associated object, so the inspector can be used to edit properties of the node.
-	// But with the new `edit(nullptr)` behavior, the plugin cleans up its UI, which destroys the UI GraphNode you
+	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first, and `make_visible(false)`.
+	// But this plugin needs to allow inspecting nodes of the graph. When a node is selected, it tells Godot to
+	// inspect an associated object.
+	// But with the new `edit(nullptr)` behavior, the plugin would clean up its UI, which destroys the UI GraphNode you
 	// selected, leading to nasty crashes and errors...
 	// Since this boils down to the plugin triggering a change in inspected object, we set a boolean to IGNORE
 	// `edit(nullptr)` calls.
 	bool _ignore_edit_null = false;
+	bool _ignore_make_visible = false;
 };
 
 } // namespace zylann::voxel
