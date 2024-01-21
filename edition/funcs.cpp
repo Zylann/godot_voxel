@@ -411,4 +411,45 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 	}
 }
 
+void do_surface(const VoxelBufferInternal &src, VoxelBufferInternal &dst, float strength, Vector3f sphere_pos,
+		float sphere_radius, bool is_mode_add) {
+	ZN_PROFILE_SCOPE();
+
+	const Vector3i dst_size = src.get_size();
+
+	ZN_ASSERT_RETURN(dst_size.x >= 0);
+	ZN_ASSERT_RETURN(dst_size.y >= 0);
+	ZN_ASSERT_RETURN(dst_size.z >= 0);
+
+	dst.create(dst_size);
+
+	const float sphere_radius_s = sphere_radius * sphere_radius;
+
+	if (is_mode_add) {
+		strength *= -1;
+	}
+
+	Vector3i dst_pos;
+	for (dst_pos.z = 0; dst_pos.z < dst_size.z; ++dst_pos.z) {
+		for (dst_pos.x = 0; dst_pos.x < dst_size.x; ++dst_pos.x) {
+			for (dst_pos.y = 0; dst_pos.y < dst_size.y; ++dst_pos.y) {
+				const float src_sd = src.get_voxel_f(dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+
+				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(dst_pos));
+				if (sphere_ds > sphere_radius_s) {
+					// Outside of brush
+					dst.set_voxel_f(src_sd, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+					continue;
+				}
+
+				float distance = std::sqrt(sphere_ds);
+				float sd_offset = (sphere_radius - distance) / sphere_radius;
+				sd_offset *= strength;
+
+				dst.set_voxel_f(src_sd + sd_offset, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+			}
+		}
+	}
+}
+
 } // namespace zylann::voxel::ops

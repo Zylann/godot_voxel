@@ -37,6 +37,7 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16_weights](#i_color_to_u16_weights) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                             
 [void](#)                                                                       | [copy](#i_copy) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                      
 [void](#)                                                                       | [do_box](#i_do_box) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end )                                                                                                                                                                                                                              
+[void](#)                                                                       | [do_path](#i_do_path) ( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii )                                                                                                                                                                                 
 [void](#)                                                                       | [do_point](#i_do_point) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                
 [void](#)                                                                       | [do_sphere](#i_do_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                                                            
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_voxel](#i_get_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                              
@@ -51,6 +52,7 @@ Return                                                                          
 [void](#)                                                                       | [set_voxel_f](#i_set_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v )                                                                                                                                                                                                                              
 [void](#)                                                                       | [set_voxel_metadata](#i_set_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta )                                                                                                                                                                                                         
 [void](#)                                                                       | [smooth_sphere](#i_smooth_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius )                                                                                                                    
+[void](#)                                                                       | [do_surface](#i_do_surface) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength )                                                                                                                    
 [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)  | [u16_indices_to_vec4i](#i_u16_indices_to_vec4i) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                 
 [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)        | [u16_weights_to_color](#i_u16_weights_to_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                 
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [vec4i_to_u16_indices](#i_vec4i_to_u16_indices) ( [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                       
@@ -124,6 +126,9 @@ Copies voxels in a box and stores them in the passed buffer.
 - [void](#)<span id="i_do_box"></span> **do_box**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end ) 
 
 Operate on a rectangular cuboid section of the terrain. `begin` and `end` are inclusive. Choose operation and which voxel to use by setting `value` and `mode` before calling this function.
+
+- [void](#)<span id="i_do_path"></span> **do_path**( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii ) 
+
 
 - [void](#)<span id="i_do_point"></span> **do_point**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
@@ -201,6 +206,20 @@ Note 1: This is currently implemented only for terrain that uses SDF data (smoot
 
 Note 2: Beware of using high `sphere_radius` and high `blur_radius` as the performance can drop quickly if this is called 60 times a second.
 
+- [void](#)<span id="i_do_surface"></span> **do_surface**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength ) 
+
+Adds/removes (depending on `mode`) a value to/from all voxels within a sphere. Added/removed value will be equal to `strength` at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
+
+`sphere_center` is position in the terrain that will be smoothed out.
+
+`sphere_radius` radius of a sphere from the `center` where voxel values will be affected. Should be greater than zero.
+
+`strength` value that controls maximal value that will be added/removed to/from voxels. Should be in range [0, 1]. Suggested to keep value same as `sdf_scale`.
+
+Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+
+Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
+
 - [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)<span id="i_u16_indices_to_vec4i"></span> **u16_indices_to_vec4i**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
 
 Decodes raw voxel integer data from the INDICES channel into a 4-integer vector.
@@ -213,4 +232,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_
