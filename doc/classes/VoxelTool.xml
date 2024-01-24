@@ -169,7 +169,7 @@
 				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
 			</description>
 		</method>
-		<method name="do_surface">
+		<method name="grow_sphere">
 			<return type="void" />
 			<param index="0" name="sphere_center" type="Vector3" />
 			<param index="1" name="sphere_radius" type="float" />

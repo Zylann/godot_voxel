@@ -411,17 +411,15 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 	}
 }
 
-void do_surface(const VoxelBufferInternal &src, VoxelBufferInternal &dst, float strength, Vector3f sphere_pos,
+void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos,
 		float sphere_radius, bool is_mode_add) {
 	ZN_PROFILE_SCOPE();
 
-	const Vector3i dst_size = src.get_size();
+	const Vector3i src_size = src.get_size();
 
-	ZN_ASSERT_RETURN(dst_size.x >= 0);
-	ZN_ASSERT_RETURN(dst_size.y >= 0);
-	ZN_ASSERT_RETURN(dst_size.z >= 0);
-
-	dst.create(dst_size);
+	ZN_ASSERT_RETURN(src_size.x >= 0);
+	ZN_ASSERT_RETURN(src_size.y >= 0);
+	ZN_ASSERT_RETURN(src_size.z >= 0);
 
 	const float sphere_radius_s = sphere_radius * sphere_radius;
 
@@ -429,16 +427,15 @@ void do_surface(const VoxelBufferInternal &src, VoxelBufferInternal &dst, float 
 		strength *= -1;
 	}
 
-	Vector3i dst_pos;
-	for (dst_pos.z = 0; dst_pos.z < dst_size.z; ++dst_pos.z) {
-		for (dst_pos.x = 0; dst_pos.x < dst_size.x; ++dst_pos.x) {
-			for (dst_pos.y = 0; dst_pos.y < dst_size.y; ++dst_pos.y) {
-				const float src_sd = src.get_voxel_f(dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+	Vector3i src_pos;
+	for (src_pos.z = 0; src_pos.z < src_size.z; ++src_pos.z) {
+		for (src_pos.x = 0; src_pos.x < src_size.x; ++src_pos.x) {
+			for (src_pos.y = 0; src_pos.y < src_size.y; ++src_pos.y) {
+				const float src_sd = src.get_voxel_f(src_pos, VoxelBufferInternal::CHANNEL_SDF);
 
-				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(dst_pos));
+				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(src_pos));
 				if (sphere_ds > sphere_radius_s) {
 					// Outside of brush
-					dst.set_voxel_f(src_sd, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
 					continue;
 				}
 
@@ -446,7 +443,7 @@ void do_surface(const VoxelBufferInternal &src, VoxelBufferInternal &dst, float 
 				float sd_offset = (sphere_radius - distance) / sphere_radius;
 				sd_offset *= strength;
 
-				dst.set_voxel_f(src_sd + sd_offset, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+				src.set_voxel_f(src_sd + sd_offset, src_pos, VoxelBufferInternal::CHANNEL_SDF);
 			}
 		}
 	}
