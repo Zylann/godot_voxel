@@ -4,11 +4,11 @@
 #include "../../util/godot/classes/image_texture.h"
 #include "../../util/godot/classes/popup_menu.h"
 #include "../../util/godot/classes/texture_rect.h"
+#include "../../util/godot/editor_scale.h"
 #include "../../util/noise/fast_noise_2.h"
 #include "noise_analysis_window.h"
 
 #include <core/core_string_names.h>
-#include <editor/editor_scale.h>
 
 namespace zylann {
 

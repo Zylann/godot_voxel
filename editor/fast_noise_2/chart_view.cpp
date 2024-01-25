@@ -1,7 +1,7 @@
 #include "chart_view.h"
+#include "../../util/godot/editor_scale.h"
 #include "../../util/math/funcs.h"
 
-#include <editor/editor_scale.h>
 #include <scene/2d/line_2d.h>
 
 namespace zylann {
