@@ -119,6 +119,7 @@
 		<member name="area_edit_notification_enabled" type="bool" setter="set_area_edit_notification_enabled" getter="is_area_edit_notification_enabled" default="false">
 		</member>
 		<member name="automatic_loading_enabled" type="bool" setter="set_automatic_loading_enabled" getter="is_automatic_loading_enabled" default="true">
+			If turned off, the terrain will no longer automatically load blocks around viewers locally. This may be used in multiplayer scenarios, when the terrain is client-side, because blocks will be sent by the server instead.
 		</member>
 		<member name="block_enter_notification_enabled" type="bool" setter="set_block_enter_notification_enabled" getter="is_block_enter_notification_enabled" default="false">
 		</member>
