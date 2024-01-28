@@ -195,6 +195,12 @@ struct Vector3iHasher {
 		uint32_t hash = zylann::hash_djb2_one_32(v.x);
 		hash = zylann::hash_djb2_one_32(v.y, hash);
 		return zylann::hash_djb2_one_32(v.z, hash);
+
+		// What Godot uses. Turns out to be slower?
+		// uint32_t h = zylann::hash_murmur3_one_32(v.x);
+		// h = zylann::hash_murmur3_one_32(v.y, h);
+		// h = zylann::hash_murmur3_one_32(v.z, h);
+		// return zylann::hash_fmix32(h);
 	}
 };
 
