@@ -756,6 +756,8 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 
 void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
 		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state, bool visual_flag) {
+	ZN_PROFILE_SCOPE();
+
 	out_of_range_box.for_each_cell([&lod, visual_flag](Vector3i bpos) {
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
@@ -1308,7 +1310,7 @@ void update_mesh_block_load(VoxelLodTerrainUpdateData::State &state, Vector3i bp
 }
 
 void process_loaded_mesh_blocks_trigger_visibility_changes(
-		VoxelLodTerrainUpdateData::State &state, unsigned int lod_count, bool enable_transition_updates) {
+		VoxelLodTerrainUpdateData::State &state, unsigned int lod_count) {
 	ZN_PROFILE_SCOPE();
 
 	VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
@@ -1335,17 +1337,21 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 		}
 	}
 
-	if (enable_transition_updates) {
+	{
 		uint32_t lods_to_update_transitions = 0;
-		for (const VoxelLodTerrainUpdateData::LoadedMeshBlockEvent event : tls_loaded_blocks) {
-			lods_to_update_transitions |= (0b111 << event.lod_index);
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+			// Only update transition masks when visuals change, this is a rendering feature
+			if (lod.mesh_blocks_to_activate_visuals.size() > 0 || lod.mesh_blocks_to_deactivate_visuals.size() > 0) {
+				lods_to_update_transitions |= (0b111 << lod_index);
+			}
 		}
 		// TODO This is quite slow (see implementation).
 		// Maybe there is a way to optimize it with the clipbox logic (updates could be grouped per new/old boxes,
-		// however it wouldn't work as-is because mesh updates take time before they actually become visible. Could also
-		// update masks incrementally somehow?).
-		// The initial reason this streaming system was added was to help with
-		// server-side performance. This feature is client-only, so it didn't need to be optimized too at the moment.
+		// however it wouldn't work as-is because mesh updates take time before they actually become visible. Could
+		// also update masks incrementally somehow?). The initial reason this streaming system was added was to help
+		// with server-side performance. This feature is client-only, so it didn't need to be optimized too at the
+		// moment.
 		update_transition_masks(state, lods_to_update_transitions, lod_count, true);
 	}
 }
@@ -1394,9 +1400,7 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 		process_loaded_data_blocks_trigger_meshing(data, state, settings, bounds_in_voxels);
 	}
 
-	process_loaded_mesh_blocks_trigger_visibility_changes(state, lod_count,
-			// TODO Have an option to disable transition updates, for network servers. It's a rendering feature.
-			true);
+	process_loaded_mesh_blocks_trigger_visibility_changes(state, lod_count);
 
 	// state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update = viewer_pos_in_lod0_voxels;
 }
