@@ -582,9 +582,16 @@ bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
 
 bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_index) const {
 	ZN_PROFILE_SCOPE();
+	// TODO get_bounds locks a mutex, it may be better for all callers to prefer the unbound version and clip
+	// themselves, especially when doing this many times
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size() << lod_index);
 	data_blocks_box = data_blocks_box.clipped(bounds_in_blocks);
 
+	return has_all_blocks_in_area_unbound(data_blocks_box, lod_index);
+}
+
+bool VoxelData::has_all_blocks_in_area_unbound(Box3i data_blocks_box, unsigned int lod_index) const {
+	// ZN_PROFILE_SCOPE();
 	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
 

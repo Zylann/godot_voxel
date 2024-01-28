@@ -636,11 +636,16 @@ inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpda
 
 void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
 		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data, bool require_visuals) {
+	ZN_PROFILE_SCOPE();
+
+	const Box3i bounds_in_data_blocks = voxel_data.get_bounds().downscaled(voxel_data.get_block_size() << lod_index);
+
 	box_to_add.for_each_cell([&lod, //
 									 is_full_load_mode, //
 									 mesh_to_data_factor, //
 									 &voxel_data, lod_index, //
-									 require_visuals](Vector3i bpos) {
+									 require_visuals, //
+									 bounds_in_data_blocks](Vector3i bpos) {
 		VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
@@ -694,13 +699,14 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 				// or modified, so changing block size or viewer flags did not make meshes appear. Having two viewer
 				// regions meet also caused problems.
 
-				const Box3i data_box =
-						Box3i(bpos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor)).padded(1);
+				const Box3i data_box = Box3i(bpos * mesh_to_data_factor, Vector3iUtil::create(mesh_to_data_factor))
+											   .padded(1)
+											   .clipped(bounds_in_data_blocks);
 
 				// If we get an empty box at this point, something is wrong with the caller
 				ZN_ASSERT_RETURN(!data_box.is_empty());
 
-				const bool data_available = voxel_data.has_all_blocks_in_area(data_box, lod_index);
+				const bool data_available = voxel_data.has_all_blocks_in_area_unbound(data_box, lod_index);
 
 				if (data_available) {
 					schedule_mesh_load(lod.mesh_blocks_pending_update, bpos, *mesh_block, require_visuals);
@@ -1043,6 +1049,8 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 
 		data_neighboring.for_each_cell([data_to_mesh_shift, &checked_mesh_blocks, &lod, &data, lod_index,
 											   &bounds_in_data_blocks](Vector3i data_bpos) {
+			// ZN_PROFILE_SCOPE_NAMED("Cell");
+
 			const Vector3i mesh_block_pos = data_bpos >> data_to_mesh_shift;
 			if (!checked_mesh_blocks.insert(mesh_block_pos).second) {
 				// Already checked
@@ -1073,7 +1081,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 					Vector3iUtil::create((1 << data_to_mesh_shift) + 2))
 										   .clipped(bounds_in_data_blocks);
 			// TODO Do a single grid query up-front, they will overlap so we do redundant lookups!
-			data_available = data.has_all_blocks_in_area(data_box, lod_index);
+			data_available = data.has_all_blocks_in_area_unbound(data_box, lod_index);
 			// } else {
 			// 	if (!data.is_full_load_completed()) {
 			// 		ZN_PRINT_ERROR("This function should not run until full load has completed");

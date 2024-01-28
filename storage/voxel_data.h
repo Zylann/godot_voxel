@@ -205,7 +205,12 @@ public:
 	bool has_block(Vector3i bpos, unsigned int lod_index) const;
 
 	// Tests if all blocks in an area are loaded. If any isn't, returns false. Otherwise, returns true.
+	// Accounts for data boundaries, but is slower as a result.
 	bool has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_index) const;
+
+	// Tests if all blocks in an area are loaded. If any isn't, returns false. Otherwise, returns true.
+	// Doesn't account for data boundaries, so if the given box overlaps outside, it will return false.
+	bool has_all_blocks_in_area_unbound(Box3i data_blocks_box, unsigned int lod_index) const;
 
 	// Gets the total amount of allocated blocks. This includes blocks having no voxel data.
 	unsigned int get_block_count() const;
