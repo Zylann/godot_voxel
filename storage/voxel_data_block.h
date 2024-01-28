@@ -15,7 +15,17 @@ class VoxelDataBlock {
 public:
 	RefCount viewers;
 
-	VoxelDataBlock() {}
+	enum NeighborIndex { //
+		NEIGHBOR_POSITIVE_X = 0,
+		NEIGHBOR_POSITIVE_Y,
+		NEIGHBOR_POSITIVE_Z
+	};
+
+	FixedArray<VoxelDataBlock *, 3> neighbors;
+
+	VoxelDataBlock() {
+		fill(neighbors, (VoxelDataBlock *)nullptr);
+	}
 
 	VoxelDataBlock(unsigned int p_lod_index) : _lod_index(p_lod_index) {}
 

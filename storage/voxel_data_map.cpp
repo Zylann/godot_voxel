@@ -63,6 +63,7 @@ VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
 #endif
 	VoxelDataBlock &map_block = _blocks_map[bpos];
 	map_block = VoxelDataBlock(buffer, _lod_index);
+	set_neighbor_pointers(map_block, bpos);
 	return &map_block;
 }
 
@@ -129,6 +130,7 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 		VoxelDataBlock &map_block = _blocks_map[bpos];
 		map_block = VoxelDataBlock(buffer, _lod_index);
 		block = &map_block;
+		set_neighbor_pointers(map_block, bpos);
 
 	} else if (overwrite) {
 		block->set_voxels(buffer);
@@ -142,11 +144,49 @@ VoxelDataBlock *VoxelDataMap::set_block_buffer(
 	return block;
 }
 
+void VoxelDataMap::set_neighbor_pointers(VoxelDataBlock &block, Vector3i bpos) {
+	block.neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_X] = get_block(Vector3i(bpos.x + 1, bpos.y, bpos.z));
+	block.neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Y] = get_block(Vector3i(bpos.x, bpos.y + 1, bpos.z));
+	block.neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Z] = get_block(Vector3i(bpos.x, bpos.y, bpos.z + 1));
+
+	VoxelDataBlock *nblockx = get_block(Vector3i(bpos.x - 1, bpos.y, bpos.z));
+	VoxelDataBlock *nblocky = get_block(Vector3i(bpos.x, bpos.y - 1, bpos.z));
+	VoxelDataBlock *nblockz = get_block(Vector3i(bpos.x, bpos.y, bpos.z - 1));
+
+	if (nblockx != nullptr) {
+		nblockx->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_X] = &block;
+	}
+	if (nblocky != nullptr) {
+		nblocky->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Y] = &block;
+	}
+	if (nblockz != nullptr) {
+		nblockz->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Z] = &block;
+	}
+}
+
+void VoxelDataMap::unset_neighbor_pointers(VoxelDataBlock &block, Vector3i bpos) {
+	VoxelDataBlock *nblockx = get_block(Vector3i(bpos.x - 1, bpos.y, bpos.z));
+	VoxelDataBlock *nblocky = get_block(Vector3i(bpos.x, bpos.y - 1, bpos.z));
+	VoxelDataBlock *nblockz = get_block(Vector3i(bpos.x, bpos.y, bpos.z - 1));
+
+	if (nblockx != nullptr) {
+		nblockx->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_X] = nullptr;
+	}
+	if (nblocky != nullptr) {
+		nblocky->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Y] = nullptr;
+	}
+	if (nblockz != nullptr) {
+		nblockz->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Z] = nullptr;
+	}
+}
+
 void VoxelDataMap::set_block(Vector3i bpos, const VoxelDataBlock &block) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(block.get_lod_index() == _lod_index);
 #endif
-	_blocks_map[bpos] = block;
+	VoxelDataBlock &dst = _blocks_map[bpos];
+	dst = block;
+	set_neighbor_pointers(dst, bpos);
 }
 
 VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
@@ -156,6 +196,7 @@ VoxelDataBlock *VoxelDataMap::set_empty_block(Vector3i bpos, bool overwrite) {
 		VoxelDataBlock &map_block = _blocks_map[bpos];
 		map_block = VoxelDataBlock(_lod_index);
 		block = &map_block;
+		set_neighbor_pointers(map_block, bpos);
 
 	} else if (overwrite) {
 		block->clear_voxels();

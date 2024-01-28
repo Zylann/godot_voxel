@@ -94,6 +94,7 @@ public:
 		auto it = _blocks_map.find(bpos);
 		if (it != _blocks_map.end()) {
 			pre_delete(it->second);
+			unset_neighbor_pointers(it->second, bpos);
 			_blocks_map.erase(it);
 		}
 	}
@@ -187,6 +188,8 @@ private:
 	// void set_block(Vector3i bpos, VoxelDataBlock *block);
 	VoxelDataBlock *get_or_create_block_at_voxel_pos(Vector3i pos);
 	VoxelDataBlock *create_default_block(Vector3i bpos);
+	void set_neighbor_pointers(VoxelDataBlock &block, Vector3i bpos);
+	void unset_neighbor_pointers(VoxelDataBlock &block, Vector3i bpos);
 
 	// void set_block_size_pow2(unsigned int p);
 

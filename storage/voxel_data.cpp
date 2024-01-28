@@ -595,9 +595,45 @@ bool VoxelData::has_all_blocks_in_area_unbound(Box3i data_blocks_box, unsigned i
 	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
 
-	return data_blocks_box.all_cells_match([&data_lod](Vector3i bpos) { //
+	const Vector3i end = data_blocks_box.pos + data_blocks_box.size;
+	Vector3i pos;
+
+	const VoxelDataBlock *blockz = data_lod.map.get_block(data_blocks_box.pos);
+	// std::vector<const VoxelDataBlock *> check_blocks2;
+
+	for (pos.z = data_blocks_box.pos.z; pos.z < end.z;
+			++pos.z, blockz = blockz->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Z]) {
+		const VoxelDataBlock *blocky = blockz;
+
+		for (pos.y = data_blocks_box.pos.y; pos.y < end.y;
+				++pos.y, blocky = blocky->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_Y]) {
+			const VoxelDataBlock *blockx = blocky;
+
+			for (pos.x = data_blocks_box.pos.x; pos.x < end.x;
+					++pos.x, blockx = blockx->neighbors[VoxelDataBlock::NEIGHBOR_POSITIVE_X]) {
+				// check_blocks2.push_back(blockx);
+				if (blockx == nullptr) {
+					return false;
+				}
+			}
+		}
+	}
+
+	// Debug check
+	/*
+	// std::vector<const VoxelDataBlock *> check_blocks;
+	const bool checked = data_blocks_box.all_cells_match([&data_lod, &check_blocks](Vector3i bpos) { //
+		// check_blocks.push_back(data_lod.map.get_block(bpos));
 		return data_lod.map.has_block(bpos);
 	});
+	ZN_ASSERT(checked == true);
+	*/
+
+	return true;
+
+	// return data_blocks_box.all_cells_match([&data_lod](Vector3i bpos) { //
+	// 	return data_lod.map.has_block(bpos);
+	// });
 }
 
 unsigned int VoxelData::get_block_count() const {
@@ -906,6 +942,22 @@ void VoxelData::get_blocks_with_voxel_data(
 
 	unsigned int index = 0;
 
+	// TODO Use neighbor pointers
+	// In case blocks are null, re-query?
+	// Sounds like complexity will overweight the benefit, compared to using BrickMap
+	// block = block0
+	// for(x = begin_x;;):
+	// 	if block != null:
+	// 		foo(block)
+	// 		++x;
+	// 		if x == end_x:
+	// 			break
+	// 		block = block.next
+	// 	else:
+	// 		++x;
+	// 		if x == end_x:
+	// 			break
+	// 		block = lookup(neighbor of block)
 	p_blocks_box.for_each_cell_zxy([&index, &data_lod, &out_blocks](Vector3i data_block_pos) {
 		const VoxelDataBlock *nblock = data_lod.map.get_block(data_block_pos);
 		// The block can actually be null on some occasions. Not sure yet if it's that bad
