@@ -1396,6 +1396,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						to_vec3(bpos * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
 
 				// Don't do fading for blocks behind the camera.
+				// TODO The block can extend by its size to be visible by the camera, even more if the camera is moving
+				// backwards. Perhaps we should take this into account.
 				if (camera.forward.dot(block_center - camera.position) > 0.f) {
 					const VoxelMeshBlockVLT *mesh_block = mesh_map.get_block(bpos);
 
@@ -1408,8 +1410,22 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 							item.local_position = mesh_block->position * mesh_block_size;
 
 							if (fading_block_it != fading_blocks_in_current_lod.end()) {
-								// The block was already fading, take it from here
-								item.progress = fading_block_it->second->fading_progress;
+								if (fading_block_it->second->fading_state == VoxelMeshBlockVLT::FADING_OUT) {
+									// The block was already fading out, take it from here
+									item.progress = fading_block_it->second->fading_progress;
+								} else {
+									// The block was fading in: don't reverse from here.
+									// When a mesh is fading in, there is usually one or multiple others fading out,
+									// resulting in an proper opaque cross-fade. If we reverse fading of this mesh, we
+									// end up with two fading-out meshes: with discard-based fragment shaders, that
+									// means their pixels won't complement each other, causing a noticeable "noisy
+									// hole". So instead we fast-forward to full alpha and then fade out, complementing
+									// the eventually fading-in mesh that causes this (even though there might be
+									// another spurious fading-out mesh, it's better than seeing a hole).
+									// That situation occurs often with transition updates because they are at LOD
+									// borders.
+									item.progress = 1.f;
+								}
 							} else {
 								item.progress = 1.f;
 							}
@@ -1530,7 +1546,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		lod.mesh_blocks_to_unload.clear();
 		lod.mesh_blocks_to_update_transitions.clear();
-	}
+
+	} // for each lod
 
 	// Remove completed async edits
 	unordered_remove_if(state.running_async_edits, [this](VoxelLodTerrainUpdateData::RunningAsyncEdit &e) {

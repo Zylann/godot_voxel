@@ -19,6 +19,7 @@ public:
 	};
 
 	FadingState fading_state = FADING_NONE;
+	// 1.f when fully opaque, 0.f when fully transparent
 	float fading_progress = 0.f;
 	// Voxel LOD works by splitting a block into up to 8 higher-resolution blocks.
 	// The parent block and its children can be called a "LOD group".
