@@ -453,8 +453,11 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 						data.view_area(box_to_load, lod_index, &tls_missing_blocks, nullptr, nullptr);
 					});
 
-					for (const Vector3i bpos : tls_missing_blocks) {
-						add_loading_block(lod, bpos, lod_index, data_blocks_to_load);
+					{
+						ZN_PROFILE_SCOPE_NAMED("Add loading blocks");
+						for (const Vector3i bpos : tls_missing_blocks) {
+							add_loading_block(lod, bpos, lod_index, data_blocks_to_load);
+						}
 					}
 				}
 
@@ -618,6 +621,8 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 
 inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, bool require_visual) {
+	// ZN_PROFILE_SCOPE();
+
 	if (mesh_block.update_list_index != -1) {
 		// Update settings before the task is scheduled
 		VoxelLodTerrainUpdateData::MeshToUpdate &u = update_list[mesh_block.update_list_index];

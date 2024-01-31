@@ -125,8 +125,10 @@ void send_block_data_requests(VolumeID volume_id, Span<const VoxelLodTerrainUpda
 
 // This is used when streaming is enabled, yet the terrain has no stream and no generator (There can only be empty
 // blocks when moving around), or generating is configured to happen on the fly during meshing.
+// So we have to simulate a VoxelStream that returns empty blocks immediately.
 void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load,
 		VoxelData &data, VoxelLodTerrainUpdateData::State &state, const VoxelLodTerrainUpdateData::Settings &settings) {
+	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(data.is_streaming_enabled());
 
 	for (const VoxelLodTerrainUpdateData::BlockToLoad &btl : blocks_to_load) {
