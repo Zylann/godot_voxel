@@ -3082,6 +3082,33 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS)) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+			const int lod_block_size = mesh_block_size << lod_index;
+
+			mesh_map.for_each_block(
+					[lod_index, lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+						Color8 color;
+						if (block.visual_active && block.is_collision_enabled()) {
+							color = Color8(255, 255, 0, 255);
+						} else if (block.visual_active) {
+							color = Color8(0, 255, 0, 255);
+						} else if (block.is_collision_enabled()) {
+							color = Color8(255, 0, 0, 255);
+						} else {
+							return;
+						}
+						const Vector3i voxel_pos = block.position * lod_block_size;
+						const Transform3D local_transform(
+								Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+						const Transform3D t = parent_transform * local_transform;
+						dr.draw_box_mm(t, color);
+					});
+		}
+	}
+
 	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES) &&
 			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
 		const float lod_count_f = lod_count;
@@ -3460,6 +3487,7 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VIEWER_CLIPBOXES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_LEGACY_OCTREE);

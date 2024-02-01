@@ -101,6 +101,9 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 				MENU_SHOW_MESH_UPDATES, VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES);
 		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show modifier bounds"), //
 				MENU_SHOW_MODIFIER_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active visual and collision blocks"), //
+				MENU_SHOW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS,
+				VoxelLodTerrain::DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
 
 		popup->add_separator();
 		popup->add_item(ZN_TTR("Dump as scene... (Debug)"), MENU_DUMP_AS_SCENE);
