@@ -221,7 +221,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 		paired_viewer.state.local_position_voxels = math::floor_to_int(local_position);
 		paired_viewer.state.requires_collisions = viewer.require_collisions;
-		paired_viewer.state.requires_meshes = viewer.require_visuals && can_mesh;
+		paired_viewer.state.requires_visuals = viewer.require_visuals && can_mesh;
 
 		// Viewers can request any box they like, but they must follow these rules:
 		// - Boxes of parent LODs must contain child boxes (when converted into world coordinates)
@@ -234,7 +234,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		// since every LOD is assumed to have an even size when handling subdivisions
 
 		// Update data and mesh boxes
-		if (paired_viewer.state.requires_collisions || paired_viewer.state.requires_meshes) {
+		if (paired_viewer.state.requires_collisions || paired_viewer.state.requires_visuals) {
 			// Meshes are required
 
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
@@ -933,7 +933,7 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 
 				for (const Box3i &box_to_add : new_mesh_boxes) {
 					view_mesh_box(box_to_add, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data,
-							paired_viewer.state.requires_meshes);
+							paired_viewer.state.requires_visuals);
 				}
 			}
 
@@ -944,7 +944,7 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 
 				for (const Box3i &out_of_range_box : old_mesh_boxes) {
 					unview_mesh_box(out_of_range_box, lod, lod_index, lod_count, state,
-							paired_viewer.prev_state.requires_meshes);
+							paired_viewer.prev_state.requires_visuals);
 				}
 			}
 		}
