@@ -3094,6 +3094,34 @@ void VoxelLodTerrain::update_gizmos() {
 		}
 	}
 
+	if (debug_get_draw_flag(DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS)) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+			const int lod_block_size = mesh_block_size << lod_index;
+
+			mesh_map.for_each_block(
+					[lod_index, lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+						Color8 color;
+						if (block.has_mesh() && block.has_collision_shape()) {
+							color = Color8(255, 255, 0, 255);
+						} else if (block.has_mesh()) {
+							color = Color8(0, 255, 0, 255);
+						} else if (block.has_collision_shape()) {
+							color = Color8(255, 0, 0, 255);
+						} else {
+							// Zombie block? A block with no visual and no collision should not persist in the map
+							color = Color8(0, 0, 0, 255);
+						}
+						const Vector3i voxel_pos = block.position * lod_block_size;
+						const Transform3D local_transform(
+								Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+						const Transform3D t = parent_transform * local_transform;
+						dr.draw_box_mm(t, color);
+					});
+		}
+	}
+
 	if (debug_get_draw_flag(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS)) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -3498,6 +3526,7 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VIEWER_CLIPBOXES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 

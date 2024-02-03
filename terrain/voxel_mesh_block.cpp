@@ -165,6 +165,10 @@ void VoxelMeshBlock::set_collision_shape(Ref<Shape3D> shape, bool debug_collisio
 	_static_body.set_shape_enabled(0, _collision_enabled);
 }
 
+bool VoxelMeshBlock::has_collision_shape() const {
+	return _static_body.is_valid();
+}
+
 void VoxelMeshBlock::set_collision_layer(int layer) {
 	if (_static_body.is_valid()) {
 		_static_body.set_collision_layer(layer);
