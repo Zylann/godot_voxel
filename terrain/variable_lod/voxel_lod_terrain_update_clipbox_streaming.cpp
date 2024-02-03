@@ -868,15 +868,13 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 						// This check assumes there is always 8 children or no children
 						const Vector3i child_bpos0 = bpos << 1;
 						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-						if (child_mesh0_it != lod.mesh_map_state.map.end() &&
-								child_mesh0_it->second.mesh_viewers.get() > 0) {
-							// Child still referenced by another viewer, don't activate parent to avoid overlap
-							return;
-						}
 
-						mesh_block.visual_active = true;
-						parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
-						activated = true;
+						if (child_mesh0_it == lod.mesh_map_state.map.end() ||
+								child_mesh0_it->second.mesh_viewers.get() == 0) {
+							mesh_block.visual_active = true;
+							parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+							activated = true;
+						}
 
 						// We know parent_lod_index must be > 0
 						// if (parent_lod_index > 0) {
@@ -889,13 +887,13 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 					if (!mesh_block.collision_active) {
 						const Vector3i child_bpos0 = bpos << 1;
 						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-						if (child_mesh0_it != lod.mesh_map_state.map.end() &&
-								child_mesh0_it->second.collision_viewers.get() > 0) {
-							return;
+
+						if (child_mesh0_it == lod.mesh_map_state.map.end() ||
+								child_mesh0_it->second.collision_viewers.get() == 0) {
+							mesh_block.collision_active = true;
+							parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
+							activated = true;
 						}
-						mesh_block.collision_active = true;
-						parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
-						activated = true;
 					}
 				}
 
