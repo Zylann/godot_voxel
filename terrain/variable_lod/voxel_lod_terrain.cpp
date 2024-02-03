@@ -1371,8 +1371,20 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			if (it != lod.mesh_map_state.map.end()) {
 				it->second.visual_loaded = false;
 			}
+			// TODO When moving out of a region that already has collision-only viewers (causing the present visual-only
+			// unload), we may want to fade visuals the same way we do when the whole block is removed?
 		}
 		lod.mesh_blocks_to_drop_visual.clear();
+
+		for (const Vector3i bpos : lod.mesh_blocks_to_drop_collision) {
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
+			if (block == nullptr) {
+				continue;
+			}
+			block->drop_collision();
+			block->set_collision_enabled(false);
+		}
+		lod.mesh_blocks_to_drop_collision.clear();
 
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_unload.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_unload[i];

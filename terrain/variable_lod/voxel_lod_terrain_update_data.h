@@ -196,6 +196,7 @@ struct VoxelLodTerrainUpdateData {
 		std::vector<Vector3i> mesh_blocks_to_activate_collision;
 		std::vector<Vector3i> mesh_blocks_to_deactivate_collision;
 		std::vector<Vector3i> mesh_blocks_to_drop_visual;
+		std::vector<Vector3i> mesh_blocks_to_drop_collision;
 
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();

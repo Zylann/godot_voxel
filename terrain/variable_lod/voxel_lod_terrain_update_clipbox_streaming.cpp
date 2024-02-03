@@ -220,7 +220,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
 		paired_viewer.state.local_position_voxels = math::floor_to_int(local_position);
-		paired_viewer.state.requires_collisions = viewer.require_collisions;
+		paired_viewer.state.requires_collisions = viewer.require_collisions && can_mesh;
 		paired_viewer.state.requires_visuals = viewer.require_visuals && can_mesh;
 
 		// Viewers can request any box they like, but they must follow these rules:
@@ -640,7 +640,8 @@ inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpda
 }
 
 void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data, bool require_visuals) {
+		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data, bool require_visuals,
+		bool require_collisions) {
 	ZN_PROFILE_SCOPE();
 
 	const Box3i bounds_in_data_blocks = voxel_data.get_bounds().downscaled(voxel_data.get_block_size() << lod_index);
@@ -650,6 +651,7 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 									 mesh_to_data_factor, //
 									 &voxel_data, lod_index, //
 									 require_visuals, //
+									 require_collisions, //
 									 bounds_in_data_blocks](Vector3i bpos) {
 		VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
@@ -674,8 +676,11 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 			mesh_block->mesh_viewers.add();
 		}
 
-		bool first_collision = mesh_block->collision_viewers.get() == 0;
-		mesh_block->collision_viewers.add();
+		bool first_collision = false;
+		if (require_collisions) {
+			first_collision = mesh_block->collision_viewers.get() == 0;
+			mesh_block->collision_viewers.add();
+		}
 
 		if (first_visuals || first_collision) {
 			// TODO Optimize: don't schedule again if an update has been sent to the task system with the same options.
@@ -760,21 +765,31 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 }
 
 void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state, bool visual_flag) {
+		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state, bool visual_flag, bool collision_flag) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(collision_flag || visual_flag);
 
-	out_of_range_box.for_each_cell([&lod, visual_flag](Vector3i bpos) {
+	out_of_range_box.for_each_cell([&lod, visual_flag, collision_flag](Vector3i bpos) {
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
 		if (mesh_block_it != lod.mesh_map_state.map.end()) {
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
 
+			bool visual_needed;
 			if (visual_flag) {
-				mesh_block.mesh_viewers.remove();
+				visual_needed = (mesh_block.mesh_viewers.remove() > 1); // Note, remove() returns the previous count
+			} else {
+				visual_needed = mesh_block.mesh_viewers.get() > 0;
 			}
-			mesh_block.collision_viewers.remove();
 
-			if (mesh_block.mesh_viewers.get() == 0 && mesh_block.collision_viewers.get() == 0) {
+			bool collision_needed;
+			if (collision_flag) {
+				collision_needed = (mesh_block.collision_viewers.remove() > 1);
+			} else {
+				collision_needed = mesh_block.collision_viewers.get() > 0;
+			}
+
+			if (collision_needed == false && visual_needed == false) {
 				// No viewer needs this mesh anymore
 
 				if (mesh_block.cancellation_token.is_valid()) {
@@ -793,10 +808,19 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 				lod.mesh_map_state.map.erase(mesh_block_it);
 				lod.mesh_blocks_to_unload.push_back(bpos);
 
-			} else if (mesh_block.mesh_viewers.get() == 0) {
-				// Unload graphics to save memory
-				lod.mesh_blocks_to_drop_visual.push_back(bpos);
-				// Note, `visuals_loaded` will remain true until they are actually unloaded.
+			} else {
+				// The block remains but we may unload one of its resources
+
+				if (visual_flag && !visual_needed) {
+					// Unload graphics to save memory
+					lod.mesh_blocks_to_drop_visual.push_back(bpos);
+					// Note, `visuals_loaded` will remain true until they are actually unloaded.
+				}
+
+				if (collision_flag && !collision_needed) {
+					// Unload colliders to save memory
+					lod.mesh_blocks_to_drop_collision.push_back(bpos);
+				}
 			}
 		}
 	});
@@ -814,7 +838,13 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 		VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
 		// Show parents when children are removed
-		parent_box.for_each_cell([&parent_lod, parent_lod_index, &lod, &state, visual_flag](Vector3i bpos) {
+		parent_box.for_each_cell([&parent_lod, //
+										 parent_lod_index, //
+										 &lod, //
+										 &state, //
+										 visual_flag, //
+										 collision_flag //
+		](Vector3i bpos) {
 			auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
 
 			if (mesh_it != parent_lod.mesh_map_state.map.end()) {
@@ -848,16 +878,18 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 						// }
 					}
 				}
-				if (!mesh_block.collision_active) {
-					const Vector3i child_bpos0 = bpos << 1;
-					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-					if (child_mesh0_it != lod.mesh_map_state.map.end() &&
-							child_mesh0_it->second.collision_viewers.get() > 0) {
-						return;
+				if (collision_flag) {
+					if (!mesh_block.collision_active) {
+						const Vector3i child_bpos0 = bpos << 1;
+						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+						if (child_mesh0_it != lod.mesh_map_state.map.end() &&
+								child_mesh0_it->second.collision_viewers.get() > 0) {
+							return;
+						}
+						mesh_block.collision_active = true;
+						parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
+						activated = true;
 					}
-					mesh_block.collision_active = true;
-					parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
-					activated = true;
 				}
 
 				if (activated) {
@@ -872,6 +904,10 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 			}
 		});
 	}
+}
+
+inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State &viewer_state) {
+	return viewer_state.requires_collisions || viewer_state.requires_visuals;
 }
 
 void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, int mesh_block_size_po2,
@@ -927,55 +963,55 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 			RWLockWrite wlock(lod.mesh_map_state.map_lock);
 
 			// Add meshes entering range
-			if (can_load) {
+			if (requires_meshes(paired_viewer.state) && can_load) {
 				SmallVector<Box3i, 6> new_mesh_boxes;
 				new_mesh_box.difference_to_vec(prev_mesh_box, new_mesh_boxes);
 
 				for (const Box3i &box_to_add : new_mesh_boxes) {
 					view_mesh_box(box_to_add, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data,
-							paired_viewer.state.requires_visuals);
+							paired_viewer.state.requires_visuals, paired_viewer.state.requires_collisions);
 				}
 			}
 
 			// Remove meshes out or range
-			{
+			if (requires_meshes(paired_viewer.prev_state)) {
 				SmallVector<Box3i, 6> old_mesh_boxes;
 				prev_mesh_box.difference_to_vec(new_mesh_box, old_mesh_boxes);
 
 				for (const Box3i &out_of_range_box : old_mesh_boxes) {
 					unview_mesh_box(out_of_range_box, lod, lod_index, lod_count, state,
-							paired_viewer.prev_state.requires_visuals);
+							// Use previous state because old boxes were loaded because of them
+							paired_viewer.prev_state.requires_visuals, paired_viewer.prev_state.requires_collisions);
 				}
 			}
 		}
 
-		// WIP to handle viewer flags changes (however I can't think of a use case at the moment, outside of temporary
-		// editor stuff)
-		/*
-		// Blocks that remained within range of the viewer may need some changes too if viewer flags were
-		// modified. This operates on a DISTINCT set of blocks than the one above.
-		{
+		// Handle viewer flags changes at runtime. However I can't think of a use case at the moment, outside of
+		// temporary editor stuff. It should be rare, or just never happen.
+		// This operates on a DISTINCT set of blocks than the one above.
+		// Also, this won't do anything on new viewers that have no previous state, because the previous box will be
+		// empty.
+		if (!Vector3iUtil::is_empty_size(prev_mesh_box.size)) {
 			if (paired_viewer.state.requires_collisions != paired_viewer.prev_state.requires_collisions) {
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 				if (paired_viewer.state.requires_collisions) {
 					// Add refcount to just collisions
-					view_mesh_box(box, lod, lod_index, is_full_load_mode, false, true, mesh_to_data_factor, data);
+					view_mesh_box(box, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data, false, true);
 				} else {
 					// Remove refcount to just collisions
-					unview_mesh_box(box, lod, lod_index, lod_count, false, true, state);
+					unview_mesh_box(box, lod, lod_index, lod_count, state, false, true);
 				}
 			}
 
-			if (paired_viewer.state.requires_meshes != paired_viewer.prev_state.requires_meshes) {
+			if (paired_viewer.state.requires_visuals != paired_viewer.prev_state.requires_visuals) {
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
-				if (paired_viewer.state.requires_meshes) {
-					view_mesh_box(box, lod, lod_index, is_full_load_mode, true, false, mesh_to_data_factor, data);
+				if (paired_viewer.state.requires_visuals) {
+					view_mesh_box(box, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data, true, false);
 				} else {
-					unview_mesh_box(box, lod, lod_index, lod_count, true, false, state);
+					unview_mesh_box(box, lod, lod_index, lod_count, state, true, false);
 				}
 			}
 		}
-		*/
 
 		// {
 		// 	ZN_PROFILE_SCOPE_NAMED("Cancel updates");
@@ -1001,8 +1037,12 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 	const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
 	for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
-		process_viewer_mesh_blocks_sliding_box(state, mesh_block_size_po2, lod_count, bounds_in_voxels, paired_viewer,
-				can_load, is_full_load_mode, mesh_to_data_factor, data);
+		// Only update around viewers that need meshes.
+		// Check previous state too in case we have to handle them changing
+		if (requires_meshes(paired_viewer.state) || requires_meshes(paired_viewer.prev_state)) {
+			process_viewer_mesh_blocks_sliding_box(state, mesh_block_size_po2, lod_count, bounds_in_voxels,
+					paired_viewer, can_load, is_full_load_mode, mesh_to_data_factor, data);
+		}
 	}
 
 	// VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
@@ -1402,6 +1442,8 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 	remove_unpaired_viewers(unpaired_viewers_to_remove, state.clipbox_streaming.paired_viewers);
 
 	if (streaming_enabled) {
+		// TODO Have an option to turn off meshing entirely (may be useful on servers if the game doesn't use mesh
+		// colliders)
 		process_loaded_data_blocks_trigger_meshing(data, state, settings, bounds_in_voxels);
 	}
 
