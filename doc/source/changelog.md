@@ -14,6 +14,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Primarily developped with Godot 4.2.
 
 - Added `ZN_SpotNoise`, exposing the same algorithm as the `SpotNoise2D` and `SpotNoise3D` nodes of graph generators
+- `VoxelLodTerrain`:
+    - Added new optional LOD streaming system `Clipbox` (advanced settings):
+        - Uses concentric boxes instead of octree traversal, although some logic remains similar to what an octree does
+        - Supports multiple viewers
+        - Supports collision-only viewers
+        - Adds secondary LOD distance parameter controlling the extents of LOD1 and beyond, separately from LOD0 (unused in the legacy system)
+        - Has its own limitations and pending improvements, may be addressed over time
+        - The original system is now referenced as "Legacy Octree".
 
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
