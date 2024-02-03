@@ -374,6 +374,44 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 	}
 }
 
+void unreference_data_block_from_loading_lists(
+		std::unordered_map<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
+		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, Vector3i bpos,
+		unsigned int lod_index) {
+	auto loading_block_it = loading_blocks.find(bpos);
+	if (loading_block_it == loading_blocks.end()) {
+		ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
+		// Not expected, but fine I guess
+		return;
+	}
+
+	VoxelLodTerrainUpdateData::LoadingDataBlock &loading_block = loading_block_it->second;
+	loading_block.viewers.remove();
+
+	if (loading_block.viewers.get() == 0) {
+		// No longer want to load it, no data box contains it
+
+		if (loading_block.cancellation_token.is_valid()) {
+			// Cancel loading task if still in queue
+			loading_block.cancellation_token.cancel();
+		}
+
+		loading_blocks.erase(loading_block_it);
+
+		// Also remove from blocks about to be added to the loading queue
+		VoxelLodTerrainUpdateData::BlockLocation bloc{ bpos, static_cast<uint8_t>(lod_index) };
+		for (size_t i = 0; i < data_blocks_to_load.size(); ++i) {
+			if (data_blocks_to_load[i].loc == bloc) {
+				data_blocks_to_load[i] = data_blocks_to_load.back();
+				data_blocks_to_load.pop_back();
+				// We don't touch the cancellation token since tasks haven't been spawned yet for
+				// these
+				break;
+			}
+		}
+	}
+}
+
 void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		std::vector<VoxelData::BlockToSave> &blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
@@ -469,7 +507,8 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 								&blocks_to_save);
 					});
 
-					// Remove loading blocks (those were loaded and had their refcount reach zero)
+					// Remove loading blocks regardless of refcount (those were loaded and had their refcount reach
+					// zero)
 					for (const Vector3i bpos : tls_found_blocks_positions) {
 						// emit_data_block_unloaded(bpos);
 
@@ -480,38 +519,8 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 
 					// Remove refcount from loading blocks, and cancel loading if it reaches zero
 					for (const Vector3i bpos : tls_missing_blocks) {
-						auto loading_block_it = lod.loading_blocks.find(bpos);
-						if (loading_block_it == lod.loading_blocks.end()) {
-							ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
-							// Not expected, but fine I guess
-							return;
-						}
-
-						VoxelLodTerrainUpdateData::LoadingDataBlock &loading_block = loading_block_it->second;
-						loading_block.viewers.remove();
-
-						if (loading_block.viewers.get() == 0) {
-							// No longer want to load it, no data box contains it
-
-							if (loading_block.cancellation_token.is_valid()) {
-								// Cancel loading task if still in queue
-								loading_block.cancellation_token.cancel();
-							}
-
-							lod.loading_blocks.erase(loading_block_it);
-
-							// Also remove from blocks about to be added to the loading queue
-							VoxelLodTerrainUpdateData::BlockLocation bloc{ bpos, static_cast<uint8_t>(lod_index) };
-							for (size_t i = 0; i < data_blocks_to_load.size(); ++i) {
-								if (data_blocks_to_load[i].loc == bloc) {
-									data_blocks_to_load[i] = data_blocks_to_load.back();
-									data_blocks_to_load.pop_back();
-									// We don't touch the cancellation token since tasks haven't been spawned yet for
-									// these
-									break;
-								}
-							}
-						}
+						unreference_data_block_from_loading_lists(
+								lod.loading_blocks, data_blocks_to_load, bpos, lod_index);
 					}
 				}
 			}
