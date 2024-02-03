@@ -3124,7 +3124,6 @@ void VoxelLodTerrain::update_gizmos() {
 	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES) &&
 			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
 		const float lod_count_f = lod_count;
-		const int mesh_block_size = get_mesh_block_size();
 
 		for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
