@@ -382,11 +382,9 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
 
-	const int data_block_size = data.get_block_size();
 	const int data_block_size_po2 = data.get_block_size_po2();
 	const Box3i bounds_in_voxels = data.get_bounds();
 
-	const int mesh_block_size = 1 << settings.mesh_block_size_po2;
 	// const int mesh_to_data_factor = mesh_block_size / data_block_size;
 
 	// const int lod_distance_in_mesh_chunks = get_lod_distance_in_mesh_chunks(settings.lod_distance, mesh_block_size);
