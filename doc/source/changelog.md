@@ -16,6 +16,8 @@ Primarily developped with Godot 4.2.
 - Added `ZN_SpotNoise`, exposing the same algorithm as the `SpotNoise2D` and `SpotNoise3D` nodes of graph generators
 - `VoxelTool`:
     - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
+- `VoxelStream`:
+    - Added `flush` method to force writing to the filesystem in case the stream's implementation uses caching
 
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions

@@ -73,6 +73,10 @@ int VoxelStream::get_lod_count() const {
 	return 1;
 }
 
+void VoxelStream::flush() {
+	// Can be implemented in subclasses
+}
+
 // Binding land
 
 VoxelStream::ResultCode VoxelStream::_b_load_voxel_block(
@@ -127,6 +131,8 @@ void VoxelStream::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_save_generator_output"), &VoxelStream::get_save_generator_output);
 
 	ClassDB::bind_method(D_METHOD("get_block_size"), &VoxelStream::_b_get_block_size);
+
+	ClassDB::bind_method(D_METHOD("flush"), &VoxelStream::flush);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "save_generator_output"), "set_save_generator_output",
 			"get_save_generator_output");
