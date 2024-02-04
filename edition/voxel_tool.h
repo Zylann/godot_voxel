@@ -79,6 +79,7 @@ public:
 			uint64_t mask_value);
 
 	void smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius);
+	void grow_sphere(Vector3 sphere_center, float sphere_radius, float strength);
 
 	virtual Ref<VoxelRaycastResult> raycast(Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask);
 
