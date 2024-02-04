@@ -349,9 +349,9 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 		copy(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
-		const bool is_mode_add = _mode == VoxelTool::MODE_ADD;
+		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
-		ops::grow_sphere(buffer, strength, relative_sphere_center, sphere_radius, is_mode_add);
+		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
 
 		paste(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
