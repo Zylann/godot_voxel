@@ -83,7 +83,7 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
+          scons platform=windows target=${{matrix.target}} dev_build=${{matrix.dev_build}}
           cd project/addons/zylann.voxel/bin
           dir
 

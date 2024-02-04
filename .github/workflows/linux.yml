@@ -167,7 +167,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons -j2 verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
       - uses: actions/upload-artifact@v3
