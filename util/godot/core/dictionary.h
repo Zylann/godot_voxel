@@ -11,7 +11,7 @@ using namespace godot;
 namespace zylann {
 
 template <typename T>
-inline bool try_get(const Dictionary &d, String key, T &out_value) {
+inline bool try_get(const Dictionary &d, const Variant &key, T &out_value) {
 #if defined(ZN_GODOT)
 	const Variant *v = d.getptr(key);
 	if (v == nullptr) {
