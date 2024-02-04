@@ -14,6 +14,8 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Primarily developped with Godot 4.2.
 
 - Added `ZN_SpotNoise`, exposing the same algorithm as the `SpotNoise2D` and `SpotNoise3D` nodes of graph generators
+- `VoxelTool`:
+    - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
 
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
