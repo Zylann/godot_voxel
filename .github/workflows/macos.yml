@@ -20,12 +20,12 @@ jobs:
         include:
           - name: 4.2 Editor
             target: editor
-            executable_name: godot.macos.editor.x86_64
+            executable_name: godot.macos.editor.universal
             godot_base_branch: "4.2"
 
           - name: 4.2 Template
             target: template_release
-            executable_name: godot.macos.template_release.x86_64
+            executable_name: godot.macos.template_release.universal
             godot_base_branch: "4.2"
 
     steps:
@@ -79,7 +79,9 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          scons -j$(sysctl -n hw.ncpu) arch=x86_64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          scons -j$(sysctl -n hw.ncpu) arch=arm64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          lipo -create bin/godot.macos.${{matrix.target}}.x86_64 bin/godot.macos.${{matrix.target}}.arm64 -output bin/godot.macos.${{matrix.target}}.universal
 
       # Make build available
       - uses: actions/upload-artifact@v3
