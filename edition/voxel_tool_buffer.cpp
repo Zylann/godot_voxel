@@ -73,14 +73,12 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	return _buffer->get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
+void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
 	ERR_FAIL_COND(_buffer.is_null());
-	ERR_FAIL_COND(p_voxels.is_null());
 
 	VoxelBufferInternal &dst = _buffer->get_buffer();
-	const VoxelBufferInternal &src = p_voxels->get_buffer();
 
-	Box3i box(p_pos, p_voxels->get_buffer().get_size());
+	Box3i box(p_pos, src.get_size());
 	const Vector3i min_noclamp = box.pos;
 	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
@@ -117,8 +115,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8
 		}
 	}
 
-	_buffer->get_buffer().copy_voxel_metadata_in_area(
-			p_voxels->get_buffer(), Box3i(Vector3i(), p_voxels->get_buffer().get_size()), p_pos);
+	_buffer->get_buffer().copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
 }
 
 void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask,

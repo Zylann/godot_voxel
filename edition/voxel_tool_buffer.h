@@ -12,7 +12,7 @@ public:
 	VoxelToolBuffer(Ref<gd::VoxelBuffer> vb);
 
 	bool is_area_editable(const Box3i &box) const override;
-	void paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) override;
+	void paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) override;
 	void paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
 			uint64_t mask_value) override;
 

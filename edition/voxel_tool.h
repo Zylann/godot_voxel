@@ -74,7 +74,10 @@ public:
 
 	virtual void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const;
 	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
-	virtual void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask);
+
+	virtual void paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask);
+	void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask);
+
 	virtual void paste_masked(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
 			uint64_t mask_value);
 
