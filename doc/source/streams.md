@@ -39,9 +39,20 @@ Saving only occurs under the following conditions:
 Using streams in the Godot Editor
 ----------------------------------
 
+### Overlap between editor and game
+
 At the moment, streams can run in the editor, but they behave the same as if the game was running. If you modify anything, blocks will eventually get saved under the same conditions as seen earlier. If you want to preserve your game saves, either leave the `stream` property unassigned, or you can assign a "development save" on the stream in the editor. Then, assign a different path from within your game to the real save (using script).
 
 If you use the same save files between game and editor, there is a risk of conflict when you run the game: it will try to open files which are already opened and locked by the editor. To workaround this, either use different files, or close the scene before running the game. See [issue 283](https://github.com/Zylann/godot_voxel/issues/283).
+
+
+### Closing the game
+
+When you test your game and expect proper saving, prefer closing it normally, instead of using Godot's `Stop` button:
+
+![Screenshot of the Stop button in the Godot Editor](images/godot_editor_stop_button.webp)
+
+This button will [kill the game's process](https://github.com/godotengine/godot/blob/b4e2a24c1f62088b3f7ce0197afc90832fc25009/editor/editor_run.cpp#L358), without leaving a chance for cleanup (SIGKILL on Linux). That means any pending save tasks will be lost, and caches won't be flushed. If files are in the middle of being written, it can also cause them to get corrupted.
 
 
 Save format specifications
