@@ -1,19 +1,15 @@
 #ifndef VOXEL_BUFFER_INTERNAL_H
 #define VOXEL_BUFFER_INTERNAL_H
 
-#include "../constants/voxel_constants.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/flat_map.h"
 #include "../util/math/box3i.h"
-#include "../util/thread/rw_lock.h"
 #include "funcs.h"
 #include "voxel_metadata.h"
 
 #include <limits>
 
 namespace zylann::voxel {
-
-class VoxelTool;
 
 // TODO This class is still suffixed "Internal" to avoid conflict with the registered Godot class.
 // Even though the other class is not namespaced yet, it is unsure if it will remain that way after the future port
