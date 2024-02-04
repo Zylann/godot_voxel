@@ -15,7 +15,7 @@ std::atomic_int g_debug_save_block_tasks_count = { 0 };
 
 SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
+		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -24,14 +24,15 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_save_instances(false),
 		_save_voxels(true),
 		_stream_dependency(p_stream_dependency),
-		_tracker(p_tracker) {
+		_tracker(p_tracker),
+		_flush_on_last_tracked_task(flush_on_last_tracked_task) {
 	//
 	++g_debug_save_block_tasks_count;
 }
 
 SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-		std::shared_ptr<AsyncDependencyTracker> p_tracker) :
+		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
 		_instances(std::move(p_instances)),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -40,7 +41,8 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_save_instances(true),
 		_save_voxels(false),
 		_stream_dependency(p_stream_dependency),
-		_tracker(p_tracker) {
+		_tracker(p_tracker),
+		_flush_on_last_tracked_task(flush_on_last_tracked_task) {
 	//
 	++g_debug_save_block_tasks_count;
 }
@@ -95,6 +97,10 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	}
 
 	if (_tracker != nullptr) {
+		if (_flush_on_last_tracked_task && _tracker->get_remaining_count() == 1) {
+			// This was the last task in a tracked group of saving tasks, we may flush now
+			stream->flush();
+		}
 		_tracker->post_complete();
 	}
 

@@ -69,7 +69,8 @@ public:
 
 	// Actions
 
-	void save_all_modified_blocks(BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker);
+	void save_all_modified_blocks(
+			BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush);
 
 	// Event handlers
 
@@ -139,8 +140,8 @@ private:
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
-	SaveBlockDataTask *save_block(
-			Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const;
+	SaveBlockDataTask *save_block(Vector3i data_grid_pos, int lod_index,
+			std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const;
 
 	// Get a layer assuming it exists
 	Layer &get_layer(int id);

@@ -14,8 +14,11 @@ Semver is not yet in place, so each version can have breaking changes, although 
 Primarily developped with Godot 4.2.
 
 - Added `ZN_SpotNoise`, exposing the same algorithm as the `SpotNoise2D` and `SpotNoise3D` nodes of graph generators
+- Saving with `save_all_modified_blocks` now automatically flushes eventual caches implemented by `VoxelStream` upon completion
 - `VoxelTool`:
     - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
+- `VoxelLodTerrain`:
+    - `save_all_modified_blocks` now returns a completion tracker similar to `VoxelTerrain`
 - `VoxelStream`:
     - Added `flush` method to force writing to the filesystem in case the stream's implementation uses caching
 
