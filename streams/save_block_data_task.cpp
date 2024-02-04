@@ -23,9 +23,9 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_block_size(p_block_size),
 		_save_instances(false),
 		_save_voxels(true),
+		_flush_on_last_tracked_task(flush_on_last_tracked_task),
 		_stream_dependency(p_stream_dependency),
-		_tracker(p_tracker),
-		_flush_on_last_tracked_task(flush_on_last_tracked_task) {
+		_tracker(p_tracker) {
 	//
 	++g_debug_save_block_tasks_count;
 }
@@ -40,9 +40,9 @@ SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_block_size(p_block_size),
 		_save_instances(true),
 		_save_voxels(false),
+		_flush_on_last_tracked_task(flush_on_last_tracked_task),
 		_stream_dependency(p_stream_dependency),
-		_tracker(p_tracker),
-		_flush_on_last_tracked_task(flush_on_last_tracked_task) {
+		_tracker(p_tracker) {
 	//
 	++g_debug_save_block_tasks_count;
 }
