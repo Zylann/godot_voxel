@@ -385,15 +385,12 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	static const int channels_mask = (1 << VoxelBufferInternal::CHANNEL_SDF);
 	static const VoxelBufferInternal::ChannelId main_channel = VoxelBufferInternal::CHANNEL_SDF;
 
-	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
-	Ref<gd::VoxelBuffer> source_copy_buffer_ref;
+	VoxelBufferInternal source_copy_buffer;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
-		source_copy_buffer_ref.instantiate();
-		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
-		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
+		source_copy_buffer.create(world_box.size);
+		voxel_tool.copy(world_box.pos, source_copy_buffer, channels_mask);
 	}
-	VoxelBufferInternal &source_copy_buffer = source_copy_buffer_ref->get_buffer();
 
 	// Label distinct voxel groups
 

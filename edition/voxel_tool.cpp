@@ -310,22 +310,19 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
-	// TODO Perhaps should implement `copy` and `paste` with `VoxelBufferInternal` so Godot object wrappers wouldn't be
-	// necessary
-	Ref<gd::VoxelBuffer> buffer;
-	buffer.instantiate();
-	buffer->create(padded_voxel_box.size.x, padded_voxel_box.size.y, padded_voxel_box.size.z);
+	VoxelBufferInternal buffer;
+	buffer.create(padded_voxel_box.size);
 
 	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
 		copy(padded_voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
-		std::shared_ptr<VoxelBufferInternal> smooth_buffer = make_shared_instance<VoxelBufferInternal>();
+		VoxelBufferInternal smooth_buffer;
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
-		ops::box_blur(buffer->get_buffer(), *smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
+		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, gd::VoxelBuffer::create_shared(smooth_buffer), (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -343,19 +340,18 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
 			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
 
-	Ref<gd::VoxelBuffer> buffer;
-	buffer.instantiate();
-	buffer->create(voxel_box.size.x, voxel_box.size.y, voxel_box.size.z);
+	VoxelBufferInternal buffer;
+	buffer.create(voxel_box.size);
 
 	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
-		
+
 		copy(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
-		bool is_mode_add = _mode == VoxelTool::MODE_ADD;
+		const bool is_mode_add = _mode == VoxelTool::MODE_ADD;
 
-		ops::grow_sphere(buffer->get_buffer(), strength, relative_sphere_center, sphere_radius, is_mode_add);
+		ops::grow_sphere(buffer, strength, relative_sphere_center, sphere_radius, is_mode_add);
 
 		paste(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
