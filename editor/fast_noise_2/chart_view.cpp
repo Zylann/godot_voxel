@@ -1,7 +1,7 @@
 #include "chart_view.h"
+#include "../../util/godot/editor_scale.h"
 #include "../../util/math/funcs.h"
 
-#include <editor/editor_scale.h>
 #include <scene/2d/line_2d.h>
 
 namespace zylann {
@@ -87,10 +87,10 @@ void ChartView::_draw() {
 					view_size_pixels.y + _view_min.y * unit_to_pixels.y) // Pixel offset
 	);
 
-	//draw_set_transform_matrix();
-	// Can't use this, because contrary to Godot 3, the thickness of lines drawn with `draw_polyline` will "properly"
-	// be zoomed and stretched by the view transformation. It is also not possible to specify a different width to
-	// account for that, because the scale factor is not uniform. So instead, we apply the view transform manually.
+	// draw_set_transform_matrix();
+	//  Can't use this, because contrary to Godot 3, the thickness of lines drawn with `draw_polyline` will "properly"
+	//  be zoomed and stretched by the view transformation. It is also not possible to specify a different width to
+	//  account for that, because the scale factor is not uniform. So instead, we apply the view transform manually.
 
 	// Lines
 
@@ -101,9 +101,9 @@ void ChartView::_draw() {
 		_visual_points.write[i] = m.xform(_points[i]);
 	}
 
-	//draw_polyline(_visual_points, line_color, 2.0, true);
-	// Even with thickness 2 and antialiasing, `draw_polyline` looks bad (dotted, jagged, inconsistent width).
-	// Line2D has always been better.
+	// draw_polyline(_visual_points, line_color, 2.0, true);
+	//  Even with thickness 2 and antialiasing, `draw_polyline` looks bad (dotted, jagged, inconsistent width).
+	//  Line2D has always been better.
 	_line_renderer->set_width(2.f);
 	_line_renderer->set_begin_cap_mode(Line2D::LINE_CAP_NONE);
 	_line_renderer->set_end_cap_mode(Line2D::LINE_CAP_NONE);

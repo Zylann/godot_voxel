@@ -3,8 +3,13 @@
 
 #include "../../engine/ids.h"
 #include "../../storage/voxel_buffer_gd.h"
+#include "../../util/math/box3i.h"
+#include "../../util/math/vector2i.h"
+#include "../../util/memory.h"
 #include "../../util/ref_count.h"
+#include "../../util/thread/mutex.h"
 #include "../voxel_generator.h"
+#include "voxel_generator_multipass_cb_structs.h"
 #include "voxel_tool_multipass_generator.h" // Must be included so we can define GDVIRTUAL methods
 
 #if defined(ZN_GODOT)

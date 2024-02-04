@@ -32,6 +32,7 @@
 #include "../../util/thread/rw_lock.h"
 #include "../free_mesh_task.h"
 #include "../instancing/voxel_instancer.h"
+#include "../voxel_save_completion_tracker.h"
 #include "voxel_lod_terrain_update_task.h"
 
 namespace zylann::voxel {
@@ -2331,7 +2332,7 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 	});
 }
 
-void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
+void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 
 	// This is often called before quitting the game or forcing a global save.
@@ -2349,13 +2350,23 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		_data->consume_all_modifications(blocks_to_save, with_copy);
 
 		if (_instancer != nullptr && stream->supports_instance_blocks()) {
-			_instancer->save_all_modified_blocks(task_scheduler, nullptr);
+			_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 		}
 	}
 
 	// And flush immediately
-	VoxelLodTerrainUpdateTask::send_block_save_requests(
-			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size(), task_scheduler);
+	VoxelLodTerrainUpdateTask::send_block_save_requests(_volume_id, to_span(blocks_to_save), _streaming_dependency,
+			get_data_block_size(), task_scheduler, tracker,
+			// Require all data we just gathered to be written to disk if the stream uses a cache. So if the
+			// game crashes or gets killed after all tasks are done, data won't be lost.
+			true);
+
+	if (tracker != nullptr) {
+		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
+		tracker->set_count(task_scheduler.get_io_count());
+	}
+
+	// Schedule all tasks
 	task_scheduler.flush();
 }
 
@@ -2740,8 +2751,11 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 
 #endif // TOOLS_ENABLED
 
-void VoxelLodTerrain::_b_save_modified_blocks() {
-	save_all_modified_blocks(true);
+Ref<VoxelSaveCompletionTracker> VoxelLodTerrain::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
+	save_all_modified_blocks(true, tracker);
+	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {

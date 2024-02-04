@@ -953,6 +953,10 @@ void VoxelStreamSQLite::flush_cache() {
 	recycle_connection(con);
 }
 
+void VoxelStreamSQLite::flush() {
+	flush_cache();
+}
+
 // This function does not lock any mutex for internal use.
 void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection) {
 	ZN_PROFILE_SCOPE();

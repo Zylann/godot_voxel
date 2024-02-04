@@ -66,7 +66,7 @@ jobs:
           #mkdir bin/
           #mv Godot_v4.0-beta3_linux.x86_64 bin/godot.linuxbsd.editor.dev.x86_64.san
 
-          scons target=editor use_ubsan=yes use_asan=yes -j2 linker=gold dev_build=yes CCFLAGS="-fpie" LINKFLAGS="-no-pie"
+          scons target=editor use_ubsan=yes use_asan=yes linker=gold dev_build=yes CCFLAGS="-fpie" LINKFLAGS="-no-pie"
 
       - uses: actions/upload-artifact@v3
         with:

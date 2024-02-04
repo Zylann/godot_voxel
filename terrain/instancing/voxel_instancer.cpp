@@ -990,7 +990,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
 				if (modified_block_it != lod.modified_blocks.end()) {
 					if (can_save) {
-						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr);
+						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr, false);
 						if (task != nullptr) {
 							tasks.push_io_task(task);
 						}
@@ -1017,7 +1017,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 }
 
 void VoxelInstancer::save_all_modified_blocks(
-		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker) {
+		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
 	ZN_DSTACK();
 
 	ZN_ASSERT_RETURN(_parent != nullptr);
@@ -1029,7 +1029,7 @@ void VoxelInstancer::save_all_modified_blocks(
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
-			SaveBlockDataTask *task = save_block(*it, lod_index, tracker);
+			SaveBlockDataTask *task = save_block(*it, lod_index, tracker, with_flush);
 			if (task != nullptr) {
 				tasks.push_io_task(task);
 			}
@@ -1415,7 +1415,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 }
 
 SaveBlockDataTask *VoxelInstancer::save_block(
-		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const {
+		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_library.is_null(), nullptr);
 	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
@@ -1568,8 +1568,8 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
 	ZN_ASSERT(stream_dependency != nullptr);
 
-	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-			volume_id, data_grid_pos, lod_index, data_block_size, std::move(block_data), stream_dependency, tracker));
+	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(volume_id, data_grid_pos, lod_index, data_block_size,
+			std::move(block_data), stream_dependency, tracker, with_flush));
 
 	return task;
 }

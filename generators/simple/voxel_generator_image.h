@@ -1,8 +1,11 @@
 #ifndef HEADER_VOXEL_GENERATOR_IMAGE
 #define HEADER_VOXEL_GENERATOR_IMAGE
 
-#include "../../util/godot/classes/image.h"
+#include "../../util/godot/macros.h"
+#include "../../util/thread/rw_lock.h"
 #include "voxel_generator_heightmap.h"
+
+ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 

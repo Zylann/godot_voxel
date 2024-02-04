@@ -411,4 +411,40 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 	}
 }
 
+void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, float sphere_radius) {
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(sphere_radius > 0.001f);
+
+	const Vector3i src_size = src.get_size();
+
+	ZN_ASSERT_RETURN(src_size.x >= 0);
+	ZN_ASSERT_RETURN(src_size.y >= 0);
+	ZN_ASSERT_RETURN(src_size.z >= 0);
+
+	const float sphere_radius_squared = sphere_radius * sphere_radius;
+	const float inv_sphere_radius = 1.f / sphere_radius;
+
+	Vector3i src_pos;
+	for (src_pos.z = 0; src_pos.z < src_size.z; ++src_pos.z) {
+		for (src_pos.x = 0; src_pos.x < src_size.x; ++src_pos.x) {
+			for (src_pos.y = 0; src_pos.y < src_size.y; ++src_pos.y) {
+				const float src_sd = src.get_voxel_f(src_pos, VoxelBufferInternal::CHANNEL_SDF);
+
+				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(src_pos));
+				if (sphere_ds > sphere_radius_squared) {
+					// Outside of brush
+					continue;
+				}
+
+				const float distance = Math::sqrt(sphere_ds);
+				const float sd_offset = strength * (sphere_radius - distance) * inv_sphere_radius;
+
+				// With signed distance fields, subtracting "grows" the shape.
+				// Negative strength is allowed so it can also be used to "shrink".
+				src.set_voxel_f(src_sd - sd_offset, src_pos, VoxelBufferInternal::CHANNEL_SDF);
+			}
+		}
+	}
+}
+
 } // namespace zylann::voxel::ops

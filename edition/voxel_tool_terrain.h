@@ -24,7 +24,7 @@ public:
 	Variant get_voxel_metadata(Vector3i pos) const override;
 
 	void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const override;
-	void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) override;
+	void paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask) override;
 	void paste_masked(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
 			uint64_t mask_value) override;
 

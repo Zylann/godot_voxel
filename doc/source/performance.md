@@ -14,7 +14,9 @@ This module uses threads to speed up heavy operations and avoid stalls.
 Depending on how many threads your CPU can run at the same time, the optimal number of threads can vary. This may also differ for players running your game.
 The module automatically determines the number of threads to use at runtime, based on how many concurrent threads the CPU supports.
 
-You can change how many threads are allocated in your Project Settings, in the `Voxel` section. The automatic calculation will be based on the following properties:
+You can change how many threads are allocated in your Project Settings, in the `Voxel` section (if you don't see it, try checking "Advanced Settings").
+
+The automatic calculation will be based on the following properties:
 
 Parameter name                              | Type    | Description
 --------------------------------------------|---------|-----------------------------------------------------------------

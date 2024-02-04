@@ -533,11 +533,20 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<Asyn
 	_data->consume_all_modifications(_blocks_to_save, with_copy);
 
 	if (stream.is_valid() && _instancer != nullptr && stream->supports_instance_blocks()) {
-		_instancer->save_all_modified_blocks(task_scheduler, tracker);
+		_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 	}
 
-	// And flush immediately
-	consume_block_data_save_requests(task_scheduler, tracker);
+	consume_block_data_save_requests(task_scheduler, tracker,
+			// Require all data we just gathered to be written to disk if the stream uses a cache. So if the
+			// game crashes or gets killed after all tasks are done, data won't be lost.
+			true);
+
+	if (tracker != nullptr) {
+		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
+		tracker->set_count(task_scheduler.get_io_count());
+	}
+
+	// Schedule all tasks
 	task_scheduler.flush();
 }
 
@@ -957,8 +966,8 @@ void VoxelTerrain::send_data_load_requests() {
 	}
 }
 
-void VoxelTerrain::consume_block_data_save_requests(
-		BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> saving_tracker) {
+void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_scheduler,
+		std::shared_ptr<AsyncDependencyTracker> saving_tracker, bool with_flush) {
 	ZN_PROFILE_SCOPE();
 
 	// Blocks to save
@@ -967,8 +976,8 @@ void VoxelTerrain::consume_block_data_save_requests(
 		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
 
-			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-					_volume_id, b.position, 0, data_block_size, b.voxels, _streaming_dependency, saving_tracker));
+			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(_volume_id, b.position, 0, data_block_size, b.voxels,
+					_streaming_dependency, saving_tracker, with_flush));
 
 			// No priority data, saving doesn't need sorting.
 			task_scheduler.push_io_task(task);
@@ -977,11 +986,6 @@ void VoxelTerrain::consume_block_data_save_requests(
 		if (_blocks_to_save.size() > 0) {
 			ZN_PRINT_VERBOSE(format("Not saving {} blocks because no stream is assigned", _blocks_to_save.size()));
 		}
-	}
-
-	if (saving_tracker != nullptr) {
-		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
-		saving_tracker->set_count(task_scheduler.get_io_count());
 	}
 
 	// print_line(String("Sending {0} block requests").format(varray(input.blocks_to_emerge.size())));
@@ -1299,7 +1303,7 @@ void VoxelTerrain::process_viewers() {
 	if (can_load_blocks) {
 		send_data_load_requests();
 		BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
-		consume_block_data_save_requests(task_scheduler, nullptr);
+		consume_block_data_save_requests(task_scheduler, nullptr, false);
 		task_scheduler.flush();
 	}
 

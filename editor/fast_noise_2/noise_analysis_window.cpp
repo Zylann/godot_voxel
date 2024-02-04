@@ -1,8 +1,8 @@
 #include "noise_analysis_window.h"
 #include "../../util/godot/core/packed_arrays.h"
+#include "../../util/godot/editor_scale.h"
 #include "chart_view.h"
 
-#include <editor/editor_scale.h>
 #include <scene/gui/box_container.h>
 #include <scene/gui/grid_container.h>
 #include <scene/gui/option_button.h>
