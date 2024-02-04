@@ -169,6 +169,20 @@
 				Note 2: Beware of using high [code]sphere_radius[/code] and high [code]blur_radius[/code] as the performance can drop quickly if this is called 60 times a second.
 			</description>
 		</method>
+		<method name="grow_sphere">
+			<return type="void" />
+			<param index="0" name="sphere_center" type="Vector3" />
+			<param index="1" name="sphere_radius" type="float" />
+			<param index="2" name="strength" type="float" />
+			<description>
+				Adds/removes (depending on [code]mode[/code]) a value to/from all voxels within a sphere. Added/removed value will be equal to [code]strength[/code] at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
+				[code]sphere_center[/code] is position in the terrain that will be smoothed out.
+				[code]sphere_radius[/code] radius of a sphere from the [code]center[/code] where voxel values will be affected. Should be greater than zero.
+				[code]strength[/code] value that controls maximal value that will be added/removed to/from voxels. Should be in range [0, 1]. Suggested to keep value same as [code]sdf_scale[/code].
+				Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
+				Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
+			</description>
+		</method>
 		<method name="u16_indices_to_vec4i" qualifiers="static">
 			<return type="Vector4i" />
 			<param index="0" name="_unnamed_arg0" type="int" />
