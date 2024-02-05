@@ -79,8 +79,8 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j$(sysctl -n hw.ncpu) arch=x86_64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
-          scons -j$(sysctl -n hw.ncpu) arch=arm64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          scons arch=x86_64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          scons arch=arm64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
           lipo -create bin/godot.macos.${{matrix.target}}.x86_64 bin/godot.macos.${{matrix.target}}.arm64 -output bin/godot.macos.${{matrix.target}}.universal
 
       # Make build available
