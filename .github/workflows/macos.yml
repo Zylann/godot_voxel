@@ -10,22 +10,24 @@ env:
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
-  macos:
+  build:
     # macOS with latest image
     runs-on: "macos-latest"
-    name: ${{matrix.name}}
+    name: ${{matrix.name}} ${{matrix.arch}}
 
     strategy:
       matrix:
+        arch: [x86_64, arm64]
         include:
           - name: 4.2 Editor
             target: editor
-            executable_name: godot.macos.editor.universal
+            # Name no longer includes arch
+            executable_name: godot.macos.editor
             godot_base_branch: "4.2"
 
           - name: 4.2 Template
             target: template_release
-            executable_name: godot.macos.template_release.universal
+            executable_name: godot.macos.template_release
             godot_base_branch: "4.2"
 
     steps:
@@ -46,11 +48,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{github.workspace}}/.scons_cache/
-          key: ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+          key: ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
@@ -77,12 +79,13 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons arch=x86_64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
-          scons arch=arm64 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
-          lipo -create bin/godot.macos.${{matrix.target}}.x86_64 bin/godot.macos.${{matrix.target}}.arm64 -output bin/godot.macos.${{matrix.target}}.universal
-
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}}.${{matrix.arch}} dev_build=no
+          
       # Make build available
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{matrix.executable_name}}
-          path: bin/${{matrix.executable_name}}
+          name: ${{matrix.executable_name}}.${{matrix.arch}}
+          path: bin/${{matrix.executable_name}}.${{matrix.arch}}
+  
+  # create-universal-binaries:
+  #   needs: build
