@@ -2025,7 +2025,7 @@ void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(
 	if (!material.is_valid()) {
 		return;
 	}
-	if (lod_index == get_lod_count()) {
+	if (lod_index == static_cast<unsigned int>(get_lod_count())) {
 		return;
 	}
 
