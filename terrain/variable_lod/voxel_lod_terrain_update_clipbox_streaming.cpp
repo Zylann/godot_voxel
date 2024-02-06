@@ -366,7 +366,8 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 		lod.loading_blocks.insert({ position, new_loading_block });
 
 		blocks_to_load.push_back(
-				VoxelLodTerrainUpdateData::BlockToLoad{ position, lod_index, new_loading_block.cancellation_token });
+				VoxelLodTerrainUpdateData::BlockToLoad{ VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
+						new_loading_block.cancellation_token });
 
 	} else {
 		// Already loaded
