@@ -28,10 +28,13 @@ jobs:
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -107,10 +110,13 @@ jobs:
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
