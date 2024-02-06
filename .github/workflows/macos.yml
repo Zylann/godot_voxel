@@ -82,7 +82,7 @@ jobs:
           scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
           
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.executable_name}}.${{matrix.arch}}
           path: bin/${{matrix.executable_name}}.${{matrix.arch}}
