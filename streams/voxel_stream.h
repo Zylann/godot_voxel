@@ -114,6 +114,14 @@ public:
 	void set_save_generator_output(bool enabled);
 	bool get_save_generator_output() const;
 
+	// If the stream doesn't immediately write data to the filesystem (using a cache to batch I/Os for example), forces
+	// all pending data to be written.
+	// This should not be called frequently if performance is a concern, as it would require much more file I/Os. May be
+	// used if you require all data to be written now. Note that implementations should already do this automatically
+	// when the resource is destroyed or their configuration changes. Some implementations may do nothing if they have
+	// no cache.
+	virtual void flush();
+
 private:
 	static void _bind_methods();
 

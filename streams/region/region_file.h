@@ -80,6 +80,7 @@ public:
 	Error open(const String &fpath, bool create_if_not_found);
 	Error close();
 	bool is_open() const;
+	void flush();
 
 	bool set_format(const RegionFormat &format);
 	const RegionFormat &get_format() const;

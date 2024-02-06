@@ -23,6 +23,7 @@ namespace zylann::voxel {
 class VoxelTool;
 class VoxelStream;
 class VoxelInstancer;
+class VoxelSaveCompletionTracker;
 
 class ShaderMaterialPoolVLT : public ShaderMaterialPool {
 public:
@@ -282,7 +283,7 @@ private:
 
 	void update_shader_material_pool_template();
 
-	void save_all_modified_blocks(bool with_copy);
+	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker);
 
 	void process_deferred_collision_updates(uint32_t timeout_msec);
 	void process_fading_blocks(float delta);
@@ -294,7 +295,7 @@ private:
 
 	LocalCameraInfo get_local_camera_info() const;
 
-	void _b_save_modified_blocks();
+	Ref<VoxelSaveCompletionTracker> _b_save_modified_blocks();
 	void _b_set_voxel_bounds(AABB aabb);
 	AABB _b_get_voxel_bounds() const;
 

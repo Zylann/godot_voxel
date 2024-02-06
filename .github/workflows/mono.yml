@@ -28,10 +28,13 @@ jobs:
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -73,7 +76,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
 
       - name: Generate Mono Glue
         run: |
@@ -107,10 +110,13 @@ jobs:
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -163,7 +169,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
 
       # Make build available
       - uses: actions/upload-artifact@v3
@@ -240,7 +246,7 @@ jobs:
           SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor

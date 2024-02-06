@@ -1,6 +1,7 @@
 #include "voxel_generator_image.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/span.h"
+#include "../../util/godot/classes/image.h"
 
 namespace zylann::voxel {
 
