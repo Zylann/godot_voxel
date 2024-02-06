@@ -3114,25 +3114,24 @@ void VoxelLodTerrain::update_gizmos() {
 
 			const int lod_block_size = mesh_block_size << lod_index;
 
-			mesh_map.for_each_block(
-					[lod_index, lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
-						Color8 color;
-						if (block.has_mesh() && block.has_collision_shape()) {
-							color = Color8(255, 255, 0, 255);
-						} else if (block.has_mesh()) {
-							color = Color8(0, 255, 0, 255);
-						} else if (block.has_collision_shape()) {
-							color = Color8(255, 0, 0, 255);
-						} else {
-							// Zombie block? A block with no visual and no collision should not persist in the map
-							color = Color8(0, 0, 0, 255);
-						}
-						const Vector3i voxel_pos = block.position * lod_block_size;
-						const Transform3D local_transform(
-								Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
-						const Transform3D t = parent_transform * local_transform;
-						dr.draw_box_mm(t, color);
-					});
+			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+				Color8 color;
+				if (block.has_mesh() && block.has_collision_shape()) {
+					color = Color8(255, 255, 0, 255);
+				} else if (block.has_mesh()) {
+					color = Color8(0, 255, 0, 255);
+				} else if (block.has_collision_shape()) {
+					color = Color8(255, 0, 0, 255);
+				} else {
+					// Zombie block? A block with no visual and no collision should not persist in the map
+					color = Color8(0, 0, 0, 255);
+				}
+				const Vector3i voxel_pos = block.position * lod_block_size;
+				const Transform3D local_transform(
+						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+				const Transform3D t = parent_transform * local_transform;
+				dr.draw_box_mm(t, color);
+			});
 		}
 	}
 
@@ -3142,24 +3141,23 @@ void VoxelLodTerrain::update_gizmos() {
 
 			const int lod_block_size = mesh_block_size << lod_index;
 
-			mesh_map.for_each_block(
-					[lod_index, lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
-						Color8 color;
-						if (block.visual_active && block.is_collision_enabled()) {
-							color = Color8(255, 255, 0, 255);
-						} else if (block.visual_active) {
-							color = Color8(0, 255, 0, 255);
-						} else if (block.is_collision_enabled()) {
-							color = Color8(255, 0, 0, 255);
-						} else {
-							return;
-						}
-						const Vector3i voxel_pos = block.position * lod_block_size;
-						const Transform3D local_transform(
-								Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
-						const Transform3D t = parent_transform * local_transform;
-						dr.draw_box_mm(t, color);
-					});
+			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+				Color8 color;
+				if (block.visual_active && block.is_collision_enabled()) {
+					color = Color8(255, 255, 0, 255);
+				} else if (block.visual_active) {
+					color = Color8(0, 255, 0, 255);
+				} else if (block.is_collision_enabled()) {
+					color = Color8(255, 0, 0, 255);
+				} else {
+					return;
+				}
+				const Vector3i voxel_pos = block.position * lod_block_size;
+				const Transform3D local_transform(
+						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+				const Transform3D t = parent_transform * local_transform;
+				dr.draw_box_mm(t, color);
+			});
 		}
 	}
 
