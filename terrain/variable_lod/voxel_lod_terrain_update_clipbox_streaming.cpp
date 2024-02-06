@@ -486,7 +486,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 				if (can_load) {
 					tls_missing_blocks.clear();
 
-					new_data_box.difference(prev_data_box, [&data, lod_index, &data_blocks_to_load](Box3i box_to_load) {
+					new_data_box.difference(prev_data_box, [&data, lod_index](Box3i box_to_load) {
 						data.view_area(box_to_load, lod_index, &tls_missing_blocks, nullptr, nullptr);
 					});
 
@@ -847,7 +847,6 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 
 		// Show parents when children are removed
 		parent_box.for_each_cell([&parent_lod, //
-										 parent_lod_index, //
 										 &lod, //
 										 &state, //
 										 visual_flag, //
