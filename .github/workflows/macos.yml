@@ -97,10 +97,9 @@ jobs:
         executable_name: [godot.macos.editor, godot.macos.template_release]
 
     steps:
-      # Download previous builds as suggested here: https://github.com/orgs/community/discussions/26639#discussioncomment-3838014
       - uses: actions/download-artifact@v4
         with:
-          pattern: ${{matrix.executable_name}}*
+          pattern: ${{matrix.executable_name}}.*
           merge-multiple: true
           path: bin
       # Create universal binary
