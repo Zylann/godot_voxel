@@ -102,6 +102,7 @@ jobs:
           pattern: ${{matrix.executable_name}}.*
           merge-multiple: true
           path: bin
+          
       # Create universal binary
       - name: Lipo bundle
         run: |
