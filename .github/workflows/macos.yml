@@ -32,20 +32,20 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ matrix.godot_base_branch }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: macos-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
