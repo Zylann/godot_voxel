@@ -358,7 +358,9 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 				MutexLock lock(lod.loading_blocks_mutex);
 				for (const Vector3i &missing_pos : tls_missing) {
 					if (add_loading_block(lod, missing_pos)) {
-						blocks_to_load.push_back({ missing_pos, lod_index, TaskCancellationToken() });
+						blocks_to_load.push_back(VoxelLodTerrainUpdateData::BlockToLoad{
+								VoxelLodTerrainUpdateData::BlockLocation{ missing_pos, lod_index },
+								TaskCancellationToken() });
 					}
 				}
 			}
@@ -445,7 +447,9 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 			MutexLock mlock(lod.loading_blocks_mutex);
 			for (const Vector3i &missing_bpos : tls_missing) {
 				if (add_loading_block(lod, missing_bpos)) {
-					blocks_to_load.push_back({ missing_bpos, lod_index, TaskCancellationToken() });
+					blocks_to_load.push_back(VoxelLodTerrainUpdateData::BlockToLoad{
+							VoxelLodTerrainUpdateData::BlockLocation{ missing_bpos, lod_index },
+							TaskCancellationToken() });
 				}
 			}
 			return false;
