@@ -22,7 +22,6 @@ jobs:
         include:
           - name: 4.2 Editor
             target: editor
-            # Name no longer includes arch
             executable_name: godot.macos.editor
             godot_base_branch: "4.2"
 
@@ -80,7 +79,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}}.${{matrix.arch}} dev_build=no
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
           
       # Make build available
       - uses: actions/upload-artifact@v3
