@@ -848,7 +848,6 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 		// Show parents when children are removed
 		parent_box.for_each_cell([&parent_lod, //
 										 &lod, //
-										 &state, //
 										 visual_flag, //
 										 collision_flag //
 		](Vector3i bpos) {
