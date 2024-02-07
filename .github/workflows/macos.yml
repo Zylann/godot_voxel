@@ -112,3 +112,47 @@ jobs:
         with:
           name: ${{matrix.executable_name}}.universal
           path: bin/${{matrix.executable_name}}.universal
+
+  create-app-bundles:
+    needs: [create-universal-binaries]
+    runs-on: "macos-latest"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: 4.2
+     
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: godot.macos.*.universal
+          merge-multiple: true
+          path: bin
+      
+      # Use `ditto` # macos specific archiver to workaround https://github.com/actions/upload-artifact/issues/38
+      - name: Create editor .app bundle
+        run: | 
+          cp -r misc/dist/macos_tools.app ./Godot.app
+          mkdir -p Godot.app/Contents/MacOS
+          cp bin/godot.macos.editor.universal Godot.app/Contents/MacOS/Godot
+          chmod +x Godot.app/Contents/MacOS/Godot
+          codesign --force --timestamp --options=runtime --entitlements misc/dist/macos/editor.entitlements -s - Godot.app
+          ditto -c -k --sequesterRsrc --keepParent Godot.app Godot.app.zip
+          
+      - name: Create macos template
+        run: |
+          cp -r misc/dist/macos_template.app .
+          mkdir -p macos_template.app/Contents/MacOS
+          cp bin/godot.macos.template_release.universal macos_template.app/Contents/MacOS/godot_macos_release.universal
+          chmod +x macos_template.app/Contents/MacOS/godot_macos*
+          ditto -c -k --sequesterRsrc --keepParent macos_template.app macos_template.app.zip
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Godot.app
+          path: Godot.app.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos_template
+          path: macos_template.app.zip
