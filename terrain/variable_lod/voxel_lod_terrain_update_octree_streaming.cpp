@@ -285,10 +285,12 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 	state.octree_streaming.last_octree_region_box = new_box;
 }
 
+#ifdef DEBUG_ENABLED
 inline bool check_block_sizes(int data_block_size, int mesh_block_size) {
 	return (data_block_size == 16 || data_block_size == 32) && (mesh_block_size == 16 || mesh_block_size == 32) &&
 			mesh_block_size >= data_block_size;
 }
+#endif
 
 bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 	auto it = lod.loading_blocks.find(position);
