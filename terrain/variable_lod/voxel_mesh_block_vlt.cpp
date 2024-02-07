@@ -10,7 +10,6 @@ namespace zylann::voxel {
 VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index) :
 		VoxelMeshBlock(bpos) {
 	_position_in_voxels = bpos * (size << p_lod_index);
-	lod_index = p_lod_index;
 
 #ifdef VOXEL_DEBUG_LOD_MATERIALS
 	Ref<SpatialMaterial> debug_material;
@@ -30,11 +29,14 @@ VoxelMeshBlockVLT::VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, uns
 }
 
 VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
-	// Make sure no material override is set, because it's possible the material will get destroyed before the mesh
-	// instance, which would cause errors in RenderingServer. Our thin wrapper does not take ownership of the material.
-	// TODO Eventually it would be better if we could just unref the material after having destroyed the mesh...
-	// VoxelMeshBlock inheritance isn't helping us here
-	_mesh_instance.set_material_override(Ref<Material>());
+	if (_mesh_instance.is_valid()) {
+		// Make sure no material override is set, because it's possible the material will get destroyed before the mesh
+		// instance, which would cause errors in RenderingServer. Our thin wrapper does not take ownership of the
+		// material.
+		// TODO Eventually it would be better if we could just unref the material after having destroyed the mesh...
+		// VoxelMeshBlock inheritance isn't helping us here
+		_mesh_instance.set_material_override(Ref<Material>());
+	}
 
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
 		DirectMeshInstance &tmi = _transition_mesh_instances[i];
@@ -72,11 +74,38 @@ void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_m
 #endif
 
 	} else {
+		// TODO We should no longer expect `set_mesh` to be called with a null mesh, instead we use `drop_visuals`
 		if (_mesh_instance.is_valid()) {
 			// Delete instance if it exists
 			_mesh_instance.destroy();
 		}
 	}
+}
+
+void VoxelMeshBlockVLT::drop_visuals() {
+	if (_mesh_instance.is_valid()) {
+		// Make sure no material override is set, because it's possible the material will get destroyed before the mesh
+		// instance, which would cause errors in RenderingServer. Our thin wrapper does not take ownership of the
+		// material.
+		// TODO Eventually it would be better if we could just unref the material after having destroyed the mesh...
+		// VoxelMeshBlock inheritance isn't helping us here
+		_mesh_instance.set_material_override(Ref<Material>());
+	}
+	FreeMeshTask::try_add_and_destroy(_mesh_instance);
+
+	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
+		DirectMeshInstance &tmi = _transition_mesh_instances[i];
+		if (tmi.is_valid()) {
+			tmi.set_material_override(Ref<Material>());
+			FreeMeshTask::try_add_and_destroy(tmi);
+		}
+	}
+
+	detail_texture_fallback_level = 0;
+	fading_state = FADING_NONE;
+	fading_progress = 0.f;
+	visual_active = false;
+	_transition_mask = 0;
 }
 
 void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
@@ -316,7 +345,7 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 
 		case FADING_NONE:
 			p.x = 1.f;
-			p.y = active ? 1.f : 0.f;
+			p.y = visual_active ? 1.f : 0.f;
 			break;
 
 		default:
@@ -331,7 +360,24 @@ bool VoxelMeshBlockVLT::update_fading(float speed) {
 	return finished;
 }
 
+void VoxelMeshBlockVLT::clear_fading() {
+	fading_state = FADING_NONE;
+	fading_progress = 0.f;
+	if (_shader_material.is_valid()) {
+		_shader_material->set_shader_parameter(VoxelStringNames::get_singleton().u_lod_fade, Vector2(0.0, 0.0));
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
+	for (const VoxelMesher::Output::Surface &surf : surfaces) {
+		if (is_surface_triangulated(surf.arrays)) {
+			return false;
+		}
+	}
+	return true;
+}
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
 		Ref<Material> material) {
@@ -378,7 +424,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 	}*/
 
-	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+	if (mesh.is_valid() && zylann::is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 

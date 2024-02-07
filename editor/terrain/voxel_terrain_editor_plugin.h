@@ -2,6 +2,7 @@
 #define VOXEL_TERRAIN_EDITOR_PLUGIN_H
 
 #include "../../engine/ids.h"
+#include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/godot/macros.h"
 #include "../../util/godot/object_weak_ref.h"
@@ -12,6 +13,7 @@
 #include "../../util/godot/classes/input_event.h"
 
 ZN_GODOT_FORWARD_DECLARE(class MenuButton)
+ZN_GODOT_FORWARD_DECLARE(class EditorFileDialog)
 
 namespace zylann::voxel {
 
@@ -34,40 +36,54 @@ protected:
 
 private:
 	void init();
+	void add_lod_terrain_debug_draw_option(
+			PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index);
 
 	void set_voxel_node(VoxelNode *node);
 
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
+	void _on_save_file_dialog_file_selected(String fpath);
 
 	static void _bind_methods();
 
 	enum MenuID { //
 		MENU_RESTART_STREAM,
 		MENU_REMESH,
+
 		MENU_STREAM_FOLLOW_CAMERA,
+		MENU_ENABLE_EDITOR_VIEWER,
+
 		MENU_SHOW_OCTREE_BOUNDS,
 		MENU_SHOW_OCTREE_NODES,
 		MENU_SHOW_MESH_UPDATES,
 		MENU_SHOW_MODIFIER_BOUNDS,
-		MENU_ABOUT
+		MENU_SHOW_ACTIVE_MESH_BLOCKS,
+		MENU_SHOW_VIEWER_CLIPBOXES,
+		MENU_SHOW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS,
+
+		MENU_DUMP_AS_SCENE,
+		MENU_ABOUT,
+
+		MENU_COUNT
 	};
 
 	ObjectWeakRef<VoxelNode> _terrain_node;
 
 	ViewerID _editor_viewer_id;
+	bool _editor_viewer_enabled = true;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
-	bool _show_octree_nodes = false;
-	bool _show_octree_bounds = false;
-	bool _show_mesh_updates = false;
-	bool _show_modifier_bounds = false;
+
+	uint16_t _lod_terrain_debug_draw_flags = 0;
+	FixedArray<int8_t, MENU_COUNT> _menu_id_to_lod_terrain_debug_flag_index;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
 	VoxelTerrainEditorTaskIndicator *_task_indicator = nullptr;
 	Ref<VoxelTerrainEditorInspectorPlugin> _inspector_plugin;
+	EditorFileDialog *_save_file_dialog = nullptr;
 };
 
 } // namespace zylann::voxel

@@ -1,10 +1,12 @@
 #include "voxel_terrain_editor_plugin.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../generators/voxel_generator.h"
 #include "../../modifiers/godot/voxel_modifier_gd.h"
 #include "../../terrain/fixed_lod/voxel_terrain.h"
 #include "../../terrain/variable_lod/voxel_lod_terrain.h"
 #include "../../util/godot/classes/camera_3d.h"
+#include "../../util/godot/classes/editor_file_dialog.h"
 #include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/editor_settings.h"
 #include "../../util/godot/classes/menu_button.h"
@@ -19,7 +21,10 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
+	_lod_terrain_debug_draw_flags = (1 << VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS);
+	fill<int8_t>(_menu_id_to_lod_terrain_debug_flag_index, -1);
+}
 
 // TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
 // See https://github.com/godotengine/godot-cpp/issues/1179
@@ -40,6 +45,30 @@ void VoxelTerrainEditorPlugin::init() {
 
 	// This plugin actually owns the singleton
 	VoxelAboutWindow::create_singleton(*base_control);
+
+	_save_file_dialog = memnew(EditorFileDialog);
+	_save_file_dialog->set_title(ZN_TTR("Save Debug Terrain Dump As Scene"));
+	_save_file_dialog->add_filter("*.scn", "Godot Scene File");
+	_save_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
+	_save_file_dialog->connect(VoxelStringNames::get_singleton().file_selected,
+			ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_save_file_dialog_file_selected));
+	base_control->add_child(_save_file_dialog);
+}
+
+namespace {
+void add_checkable_item(PopupMenu *popup, String text, int id, bool checked) {
+	popup->add_item(text, id);
+	const int i = popup->get_item_index(id);
+	popup->set_item_as_checkable(i, true);
+	popup->set_item_checked(i, checked);
+}
+
+} // namespace
+
+void VoxelTerrainEditorPlugin::add_lod_terrain_debug_draw_option(
+		PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index) {
+	add_checkable_item(popup, text, menu_id, (_lod_terrain_debug_draw_flags & (1 << debug_flag_index)) != 0);
+	_menu_id_to_lod_terrain_debug_flag_index[menu_id] = debug_flag_index;
 }
 
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
@@ -52,59 +81,62 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);
 	popup->add_separator();
-	{
-		popup->add_item(ZN_TTR("Stream follow camera"), MENU_STREAM_FOLLOW_CAMERA);
-		const int i = popup->get_item_index(MENU_STREAM_FOLLOW_CAMERA);
-		popup->set_item_as_checkable(i, true);
-		popup->set_item_checked(i, _editor_viewer_follows_camera);
-	}
+
+	add_checkable_item(
+			popup, ZN_TTR("Editor Viewer Follow Camera"), MENU_STREAM_FOLLOW_CAMERA, _editor_viewer_follows_camera);
+	add_checkable_item(popup, ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER, _editor_viewer_enabled);
+
 	if (is_lod_terrain) {
 		popup->add_separator();
-		{
-			popup->add_item(ZN_TTR("Show octree bounds"), MENU_SHOW_OCTREE_BOUNDS);
-			const int i = popup->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_octree_bounds);
-		}
-		{
-			popup->add_item(ZN_TTR("Show octree nodes"), MENU_SHOW_OCTREE_NODES);
-			const int i = popup->get_item_index(MENU_SHOW_OCTREE_NODES);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_octree_nodes);
-		}
-		{
-			popup->add_item(ZN_TTR("Show mesh updates"), MENU_SHOW_MESH_UPDATES);
-			const int i = popup->get_item_index(MENU_SHOW_MESH_UPDATES);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_mesh_updates);
-		}
-		{
-			popup->add_item(ZN_TTR("Show modifier bounds"), MENU_SHOW_MODIFIER_BOUNDS);
-			const int i = popup->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
-			popup->set_item_as_checkable(i, true);
-			popup->set_item_checked(i, _show_modifier_bounds);
-		}
+
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree bounds"), //
+				MENU_SHOW_OCTREE_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree nodes"), //
+				MENU_SHOW_OCTREE_NODES, VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active mesh blocks"), //
+				MENU_SHOW_ACTIVE_MESH_BLOCKS, VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show viewer clipboxes"), //
+				MENU_SHOW_VIEWER_CLIPBOXES, VoxelLodTerrain::DEBUG_DRAW_VIEWER_CLIPBOXES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show mesh updates"), //
+				MENU_SHOW_MESH_UPDATES, VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show modifier bounds"), //
+				MENU_SHOW_MODIFIER_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS);
+		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active visual and collision blocks"), //
+				MENU_SHOW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS,
+				VoxelLodTerrain::DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
+
+		popup->add_separator();
+		popup->add_item(ZN_TTR("Dump as scene... (Debug)"), MENU_DUMP_AS_SCENE);
 	}
 	popup->add_separator();
 	popup->add_item(ZN_TTR("About Voxel Tools..."), MENU_ABOUT);
 }
 
+namespace {
+ViewerID create_editor_viewer() {
+	ViewerID id = VoxelEngine::get_singleton().add_viewer();
+	VoxelEngine::get_singleton().set_viewer_distance(id, 512);
+	// No collision needed in editor, also it updates faster without
+	VoxelEngine::get_singleton().set_viewer_requires_collisions(id, false);
+	return id;
+}
+} // namespace
+
 void VoxelTerrainEditorPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			init();
-
-			_editor_viewer_id = VoxelEngine::get_singleton().add_viewer();
-			VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, 512);
-			// No collision needed in editor, also it updates faster without
-			VoxelEngine::get_singleton().set_viewer_requires_collisions(_editor_viewer_id, false);
-
+			if (_editor_viewer_enabled) {
+				_editor_viewer_id = create_editor_viewer();
+			}
 			_inspector_plugin.instantiate();
 			add_inspector_plugin(_inspector_plugin);
 			break;
 
 		case NOTIFICATION_EXIT_TREE:
-			VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			if (_editor_viewer_enabled) {
+				VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			}
 
 			remove_inspector_plugin(_inspector_plugin);
 
@@ -150,11 +182,7 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 
 		if (vlt != nullptr) {
 			vlt->debug_set_draw_enabled(true);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
-			vlt->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
+			vlt->debug_set_draw_flags(_lod_terrain_debug_draw_flags);
 
 		} else if (vt != nullptr) {
 			vt->debug_set_draw_enabled(true);
@@ -190,13 +218,17 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
-	VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	if (_editor_viewer_enabled) {
+		VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+	}
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
 	gd::set_3d_editor_camera_cache(p_camera);
 
 	if (_editor_viewer_follows_camera) {
-		VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		if (_editor_viewer_enabled) {
+			VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+		}
 		gd::VoxelEngine::get_singleton()->set_editor_camera_info(
 				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
@@ -221,7 +253,7 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 		case MENU_STREAM_FOLLOW_CAMERA: {
 			_editor_viewer_follows_camera = !_editor_viewer_follows_camera;
 
-			if (_editor_viewer_follows_camera) {
+			if (_editor_viewer_follows_camera && _editor_viewer_enabled) {
 				VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 			}
 
@@ -229,59 +261,63 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_follows_camera);
 		} break;
 
-		case MENU_SHOW_OCTREE_BOUNDS: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_octree_bounds = !_show_octree_bounds;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS, _show_octree_bounds);
+		case MENU_ENABLE_EDITOR_VIEWER: {
+			_editor_viewer_enabled = !_editor_viewer_enabled;
 
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_BOUNDS);
-			_menu_button->get_popup()->set_item_checked(i, _show_octree_bounds);
+			if (_editor_viewer_enabled) {
+				_editor_viewer_id = create_editor_viewer();
+				if (_editor_viewer_follows_camera) {
+					VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
+				}
+			} else {
+				VoxelEngine::get_singleton().remove_viewer(_editor_viewer_id);
+			}
+
+			const int i = _menu_button->get_popup()->get_item_index(MENU_ENABLE_EDITOR_VIEWER);
+			_menu_button->get_popup()->set_item_checked(i, _editor_viewer_enabled);
 		} break;
 
-		case MENU_SHOW_OCTREE_NODES: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_octree_nodes = !_show_octree_nodes;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES, _show_octree_nodes);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_OCTREE_NODES);
-			_menu_button->get_popup()->set_item_checked(i, _show_octree_nodes);
-		} break;
-
-		case MENU_SHOW_MESH_UPDATES: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_mesh_updates = !_show_mesh_updates;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES, _show_mesh_updates);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MESH_UPDATES);
-			_menu_button->get_popup()->set_item_checked(i, _show_mesh_updates);
-		} break;
-
-		case MENU_SHOW_MODIFIER_BOUNDS: {
-			VoxelNode *node = _terrain_node.get();
-			VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-			ERR_FAIL_COND(lod_terrain == nullptr);
-			_show_modifier_bounds = !_show_modifier_bounds;
-			lod_terrain->debug_set_draw_flag(VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS, _show_modifier_bounds);
-
-			const int i = _menu_button->get_popup()->get_item_index(MENU_SHOW_MODIFIER_BOUNDS);
-			_menu_button->get_popup()->set_item_checked(i, _show_modifier_bounds);
-		} break;
+		case MENU_DUMP_AS_SCENE:
+			_save_file_dialog->popup_centered_ratio();
+			break;
 
 		case MENU_ABOUT:
 			VoxelAboutWindow::popup_singleton();
 			break;
+
+		default: {
+			ZN_ASSERT_RETURN(id >= 0 && id < MENU_COUNT);
+
+			// VoxelLodTerrain debug draw option?
+			int flag_index = _menu_id_to_lod_terrain_debug_flag_index[id];
+			if (flag_index != -1) {
+				VoxelNode *node = _terrain_node.get();
+				VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
+				ERR_FAIL_COND(lod_terrain == nullptr);
+
+				_lod_terrain_debug_draw_flags = _lod_terrain_debug_draw_flags ^ (1 << flag_index);
+				const bool enabled = (_lod_terrain_debug_draw_flags & (1 << flag_index)) != 0;
+				lod_terrain->debug_set_draw_flag(static_cast<VoxelLodTerrain::DebugDrawFlag>(flag_index), enabled);
+
+				const int i = _menu_button->get_popup()->get_item_index(id);
+				_menu_button->get_popup()->set_item_checked(i, enabled);
+			}
+		}
 	}
+}
+
+void VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected(String fpath) {
+	VoxelNode *node = _terrain_node.get();
+	VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
+	ERR_FAIL_COND(lod_terrain == nullptr);
+	lod_terrain->debug_dump_as_scene(fpath, false);
 }
 
 void VoxelTerrainEditorPlugin::_bind_methods() {
 #ifdef ZN_GODOT_EXTENSION
 	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
+	ClassDB::bind_method(D_METHOD("_on_save_file_dialog_file_selected", "fpath"),
+			&VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected);
 #endif
 }
 

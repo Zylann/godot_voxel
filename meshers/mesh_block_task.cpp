@@ -418,8 +418,17 @@ void MeshBlockTask::build_mesh() {
 
 	const Vector3i origin_in_voxels = mesh_block_position * (mesh_block_size << lod_index);
 
-	const VoxelMesher::Input input = { _voxels, meshing_dependency->generator.ptr(), data.get(), origin_in_voxels,
-		lod_index, collision_hint, lod_hint, true };
+	const VoxelMesher::Input input{
+		_voxels, //
+		meshing_dependency->generator.ptr(), //
+		data.get(), //
+		origin_in_voxels, //
+		lod_index, //
+		collision_hint, //
+		lod_hint, //
+		// TODO Gathering detail texture information is not always necessary
+		true // detail_texture_hint
+	};
 	mesher->build(_surfaces_output, input);
 
 	const bool mesh_is_empty = VoxelMesher::is_mesh_empty(_surfaces_output.surfaces);
@@ -428,11 +437,16 @@ void MeshBlockTask::build_mesh() {
 	// provides a cheap source for cells subdividing the mesh. It should be possible to obtain cells from any mesh,
 	// but it is more expensive to find them from scratch, and for now Transvoxel is the most viable algorithm for
 	// smooth terrain.
-	Ref<VoxelMesherTransvoxel> transvoxel_mesher = mesher;
+	Ref<VoxelMesherTransvoxel> transvoxel_mesher;
 
-	if (transvoxel_mesher.is_valid() && detail_texture_settings.enabled && !mesh_is_empty &&
-			lod_index >= detail_texture_settings.begin_lod_index && require_detail_texture) {
-		ZN_PROFILE_SCOPE_NAMED("Schedule virtual render");
+	if (require_visual //
+			&& try_get_as(mesher, transvoxel_mesher) //
+			&& detail_texture_settings.enabled //
+			&& !mesh_is_empty //
+			&& lod_index >= detail_texture_settings.begin_lod_index //
+			&& require_detail_texture //
+	) { //
+		ZN_PROFILE_SCOPE_NAMED("Schedule detail render");
 
 		const transvoxel::MeshArrays &mesh_arrays = VoxelMesherTransvoxel::get_mesh_cache_from_current_thread();
 		Span<const transvoxel::CellInfo> cell_infos = VoxelMesherTransvoxel::get_cell_info_from_current_thread();
@@ -472,8 +486,8 @@ void MeshBlockTask::build_mesh() {
 		VoxelEngine::get_singleton().push_async_task(nm_task);
 	}
 
-	if (VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
-		// This shall only run if Godot supports building meshes from multiple threads
+	if (require_visual && VoxelEngine::get_singleton().is_threaded_graphics_resource_building_enabled()) {
+		// This can only run if the engine supports building meshes from multiple threads
 		_mesh = zylann::voxel::build_mesh(to_span(_surfaces_output.surfaces), _surfaces_output.primitive_type,
 				_surfaces_output.mesh_flags, _mesh_material_indices);
 		_has_mesh_resource = true;
@@ -494,6 +508,9 @@ TaskPriority MeshBlockTask::get_priority() {
 }
 
 bool MeshBlockTask::is_cancelled() {
+	if (cancellation_token.is_valid()) {
+		return cancellation_token.is_cancelled();
+	}
 	return !meshing_dependency->valid || _too_far;
 }
 
@@ -519,6 +536,7 @@ void MeshBlockTask::apply_result() {
 			o.mesh = _mesh;
 			o.mesh_material_indices = std::move(_mesh_material_indices);
 			o.has_mesh_resource = _has_mesh_resource;
+			o.visual_was_required = require_visual;
 			o.detail_textures = _detail_textures;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(volume_id);

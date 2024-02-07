@@ -1,6 +1,7 @@
 #ifndef ZYLANN_BOX3I_H
 #define ZYLANN_BOX3I_H
 
+#include "../containers/small_vector.h"
 #include "vector3i.h"
 #include <iosfwd>
 #include <vector>
@@ -218,8 +219,12 @@ public:
 		difference(b, [&output](const Box3i &sub_box) { output.push_back(sub_box); });
 	}
 
+	inline void difference_to_vec(const Box3i &b, SmallVector<Box3i, 6> &output) const {
+		difference(b, [&output](const Box3i &sub_box) { output.push_back(sub_box); });
+	}
+
 	// Calls a function on all side cell positions belonging to the box.
-	// This function was implemented with no particular order in mind.
+	// Cells don't follow a particular order and may not be relied on.
 	template <typename F>
 	void for_inner_outline(F f) const {
 		//     o-------o
@@ -288,6 +293,10 @@ public:
 	// The result can be an empty rectangle.
 	inline Box3i downscaled_inner(int step_size) const {
 		return Box3i::from_min_max(math::ceildiv(pos, step_size), math::floordiv(pos + size, step_size));
+	}
+
+	inline Box3i scaled(int scale) const {
+		return Box3i(pos * scale, size * scale);
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {

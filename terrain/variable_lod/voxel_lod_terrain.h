@@ -58,6 +58,9 @@ public:
 	void set_lod_distance(float p_lod_distance);
 	float get_lod_distance() const;
 
+	void set_secondary_lod_distance(float p_lod_distance);
+	float get_secondary_lod_distance() const;
+
 	void set_lod_count(int p_lod_count);
 	int get_lod_count() const;
 
@@ -191,6 +194,16 @@ public:
 
 	bool is_area_meshed(const Box3i &box_in_voxels, unsigned int lod_index) const;
 
+	enum StreamingSystem : uint8_t { //
+		STREAMING_SYSTEM_LEGACY_OCTREE = VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE,
+		STREAMING_SYSTEM_CLIPBOX = VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX
+	};
+
+	// This is temporary, to avoid breaking projects as the new system gets improved and allowing to transition
+	// progressively.
+	StreamingSystem get_streaming_system() const;
+	void set_streaming_system(StreamingSystem v);
+
 	// Debugging
 
 	Array debug_raycast_mesh_block(Vector3 world_origin, Vector3 world_direction) const;
@@ -207,8 +220,12 @@ public:
 		DEBUG_DRAW_VOLUME_BOUNDS = 4,
 		DEBUG_DRAW_EDITED_BLOCKS = 5,
 		DEBUG_DRAW_MODIFIER_BOUNDS = 6,
+		DEBUG_DRAW_ACTIVE_MESH_BLOCKS = 7,
+		DEBUG_DRAW_VIEWER_CLIPBOXES = 8,
+		DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS = 9,
+		DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS = 10,
 
-		DEBUG_DRAW_FLAGS_COUNT = 7
+		DEBUG_DRAW_FLAGS_COUNT = 11
 	};
 
 	void debug_set_draw_enabled(bool enabled);
@@ -217,7 +234,12 @@ public:
 	void debug_set_draw_flag(DebugDrawFlag flag_index, bool enabled);
 	bool debug_get_draw_flag(DebugDrawFlag flag_index) const;
 
+#ifdef TOOLS_ENABLED
+	void debug_set_draw_flags(uint32_t mask);
+#endif
+
 	Node3D *debug_dump_as_nodes(bool include_instancer) const;
+	Error debug_dump_as_scene(String fpath, bool include_instancer) const;
 
 	// Editor
 
@@ -250,6 +272,8 @@ public:
 		return _data;
 	}
 
+	void get_lod_distances(Span<float> distances);
+
 protected:
 	void _notification(int p_what);
 
@@ -266,7 +290,7 @@ private:
 	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
 	void apply_detail_texture_update_to_block(
 			VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index);
-	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos);
+	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index);
 
 	void start_updater();
 	void stop_updater();
@@ -277,7 +301,7 @@ private:
 
 	Vector3 get_local_viewer_pos() const;
 	void _set_lod_count(int p_lod_count);
-	void set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading);
+	void set_mesh_block_visual_active(VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index);
 
 	void _on_stream_params_changed();
 
@@ -316,12 +340,11 @@ private:
 	static void _bind_methods();
 
 private:
-	friend class BuildTransitionMeshTask;
-
 	VolumeID _volume_id;
 	ProcessCallback _process_callback = PROCESS_CALLBACK_IDLE;
 
 	Ref<Material> _material;
+	bool _material_uses_lod_info = false;
 
 	// The main reason this pool even exists is because of this: https://github.com/godotengine/godot/issues/34741
 	// Blocks need individual shader parameters for several features,
@@ -395,8 +418,8 @@ private:
 
 #ifdef TOOLS_ENABLED
 	bool _debug_draw_enabled = false;
-	uint8_t _debug_draw_flags = 0;
 	uint8_t _edited_blocks_gizmos_lod_index = 0;
+	uint16_t _debug_draw_flags = 0;
 
 	DebugRenderer _debug_renderer;
 
@@ -425,5 +448,6 @@ private:
 
 VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::ProcessCallback)
 VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::DebugDrawFlag)
+VARIANT_ENUM_CAST(zylann::voxel::VoxelLodTerrain::StreamingSystem);
 
 #endif // VOXEL_LOD_TERRAIN_HPP

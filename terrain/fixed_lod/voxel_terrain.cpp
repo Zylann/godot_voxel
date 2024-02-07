@@ -373,7 +373,7 @@ void VoxelTerrain::set_max_view_distance(int distance_in_voxels) {
 	_max_view_distance_voxels = distance_in_voxels;
 
 	if (_instancer != nullptr) {
-		_instancer->set_mesh_lod_distance(_max_view_distance_voxels);
+		_instancer->update_mesh_lod_distances_from_parent();
 	}
 }
 
@@ -427,7 +427,7 @@ void VoxelTerrain::try_schedule_mesh_update(VoxelMeshBlockVT &mesh_block) {
 	// If we get an empty box at this point, something is wrong with the caller
 	ZN_ASSERT_RETURN(!data_box.is_empty());
 
-	const bool data_available = _data->has_all_blocks_in_area(data_box);
+	const bool data_available = _data->has_all_blocks_in_area(data_box, 0);
 
 	if (data_available) {
 		// Regardless of if the updater is updating the block already,
@@ -464,6 +464,9 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 	// Before that, meshes were updated only when a data block was loaded or modified,
 	// so changing block size or viewer flags did not make meshes appear.
 	try_schedule_mesh_update(*block);
+
+	// TODO this logic schedules a mesh update even if there is a mesh already. It hides the fact that mixing up
+	// viewers with collisions and viewers without will not actually create colliders/meshes individually.
 
 	// TODO viewers with varying flags during the game is not supported at the moment.
 	// They have to be re-created, which may cause world re-load...
@@ -916,7 +919,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
-				stream_dependency, priority_dependency, true, use_gpu, voxel_data));
+				stream_dependency, priority_dependency, true, use_gpu, voxel_data, TaskCancellationToken()));
 
 		scheduler.push_io_task(task);
 
@@ -1334,13 +1337,14 @@ void VoxelTerrain::process_viewer_data_box_change(
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
 			// ZN_PRINT_VERBOSE(format("Unview data box {}", out_of_range_box));
-			_data->unview_area(out_of_range_box, tls_missing_blocks, tls_found_blocks_positions,
+			_data->unview_area(out_of_range_box, 0, &tls_found_blocks_positions, &tls_missing_blocks,
 					may_save ? &_blocks_to_save : nullptr);
 		});
 
 		// Remove loading blocks (those were loaded and had their refcount reach zero)
 		for (const Vector3i bpos : tls_found_blocks_positions) {
 			emit_data_block_unloaded(bpos);
+			// TODO If they were loaded, why would they be in loading blocks?
 			_loading_blocks.erase(bpos);
 		}
 
@@ -1388,7 +1392,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 
 		new_data_box.difference(prev_data_box, [this](Box3i box_to_load) {
 			// ZN_PRINT_VERBOSE(format("View data box {}", box_to_load));
-			_data->view_area(box_to_load, tls_missing_blocks, tls_found_blocks_positions, tls_found_blocks);
+			_data->view_area(box_to_load, 0, &tls_missing_blocks, &tls_found_blocks_positions, &tls_found_blocks);
 		});
 
 		// Schedule loading of missing blocks
@@ -1763,6 +1767,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	block->set_visible(true);
+	block->set_collision_enabled(true);
 	block->set_parent_visible(is_visible());
 	block->set_parent_transform(get_global_transform());
 	// TODO We don't set MESH_UP_TO_DATE anywhere, but it seems to work?

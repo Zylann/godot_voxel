@@ -19,6 +19,13 @@ Primarily developped with Godot 4.2.
     - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
 - `VoxelLodTerrain`:
     - `save_all_modified_blocks` now returns a completion tracker similar to `VoxelTerrain`
+    - Added new optional LOD streaming system `Clipbox` (advanced settings):
+        - Uses concentric boxes instead of octree traversal, although some logic remains similar to what an octree does
+        - Supports multiple viewers
+        - Supports collision-only viewers
+        - Adds secondary LOD distance parameter controlling the extents of LOD1 and beyond, separately from LOD0 (unused in the legacy system)
+        - Has its own limitations and pending improvements, may be addressed over time
+        - The original system is now referenced as "Legacy Octree".
 - `VoxelStream`:
     - Added `flush` method to force writing to the filesystem in case the stream's implementation uses caching
 

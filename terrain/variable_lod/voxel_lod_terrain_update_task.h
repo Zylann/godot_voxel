@@ -55,12 +55,14 @@ public:
 
 	// To use on loaded blocks
 	static inline void schedule_mesh_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
-			std::vector<Vector3i> &blocks_pending_update) {
+			std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update, bool require_visual) {
 		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
-			if (block.active) {
+			if (block.visual_active || block.collision_active) {
 				// Schedule an update
 				block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-				blocks_pending_update.push_back(bpos);
+				block.update_list_index = blocks_pending_update.size();
+				blocks_pending_update.push_back(
+						VoxelLodTerrainUpdateData::MeshToUpdate{ bpos, TaskCancellationToken(), require_visual });
 			} else {
 				// Just mark it as needing update, so the visibility system will schedule its update when needed.
 				block.state = VoxelLodTerrainUpdateData::MESH_NEED_UPDATE;
@@ -83,6 +85,9 @@ private:
 	VolumeID _volume_id;
 	Transform3D _volume_transform;
 };
+
+void update_transition_masks(VoxelLodTerrainUpdateData::State &state, uint32_t lods_to_update_transitions,
+		unsigned int lod_count, bool use_refcounts);
 
 } // namespace zylann::voxel
 

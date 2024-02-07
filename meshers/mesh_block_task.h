@@ -9,6 +9,7 @@
 #include "../generators/generate_block_gpu_task.h"
 #include "../storage/voxel_buffer_internal.h"
 #include "../util/godot/classes/array_mesh.h"
+#include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"
 
 namespace zylann::voxel {
@@ -42,7 +43,12 @@ public:
 	VolumeID volume_id;
 	uint8_t lod_index = 0;
 	uint8_t blocks_count = 0;
+	// If true, a rendering mesh resource will be created if possible.
+	bool require_visual = true;
+	// If true, a collision mesh is required if possible
 	bool collision_hint = false;
+	// If true, the mesh will be used in a context with LOD, which might require a few extra things in the way it is
+	// built
 	bool lod_hint = false;
 	// Detail textures might be enabled, but we don't always want to update them in every mesh update.
 	// So this boolean is also checked to know if they should be computed.
@@ -55,6 +61,7 @@ public:
 	std::shared_ptr<VoxelData> data;
 	DetailRenderingSettings detail_texture_settings;
 	Ref<VoxelGenerator> detail_texture_generator_override;
+	TaskCancellationToken cancellation_token;
 
 private:
 	void gather_voxels_gpu(zylann::ThreadedTaskContext &ctx);

@@ -18,9 +18,8 @@ public:
 		FADING_OUT
 	};
 
-	uint8_t lod_index = 0;
-
 	FadingState fading_state = FADING_NONE;
+	// 1.f when fully opaque, 0.f when fully transparent
 	float fading_progress = 0.f;
 	// Voxel LOD works by splitting a block into up to 8 higher-resolution blocks.
 	// The parent block and its children can be called a "LOD group".
@@ -28,9 +27,9 @@ public:
 	// So when LOD fading is used, we no longer use `visible` to find which block is active,
 	// because blocks can use a cross-fade effect. Overlapping blocks of the same LOD group can be visible at once.
 	// Hence the need to use this boolean.
-	bool active = false;
+	bool visual_active = false;
 
-	bool got_first_mesh_update = false;
+	// bool got_first_mesh_update = false;
 
 	// 0 means not using fallback.
 	// 1 means using texture of parent LOD (lod_index+1).
@@ -43,14 +42,20 @@ public:
 	VoxelMeshBlockVLT(const Vector3i bpos, unsigned int size, unsigned int p_lod_index);
 	~VoxelMeshBlockVLT();
 
+	// Set world used for both collisions and visuals
 	void set_world(Ref<World3D> p_world);
+
+	// Visuals
+
 	void set_visible(bool visible);
 	bool update_fading(float speed);
+	void clear_fading();
 
 	void set_parent_visible(bool parent_visible);
 
 	void set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
 			RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask);
+	void drop_visuals();
 
 	void set_transition_mask(uint8_t m);
 	inline uint8_t get_transition_mask() const {
@@ -68,6 +73,8 @@ public:
 	inline Ref<ShaderMaterial> get_shader_material() const {
 		return _shader_material;
 	}
+
+	// Transform
 
 	void set_parent_transform(const Transform3D &parent_transform);
 	void update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform);
@@ -103,6 +110,8 @@ private:
 	Ref<Material> _debug_transition_material;
 #endif
 };
+
+bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces);
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
 		Ref<Material> material);

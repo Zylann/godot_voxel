@@ -15,7 +15,7 @@ std::atomic_int g_debug_load_block_tasks_count = { 0 };
 LoadBlockDataTask::LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 		bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		PriorityDependency p_priority_dependency, bool generate_cache_data, bool generator_use_gpu,
-		const std::shared_ptr<VoxelData> &vdata) :
+		const std::shared_ptr<VoxelData> &vdata, TaskCancellationToken cancellation_token) :
 		_priority_dependency(p_priority_dependency),
 		_position(p_block_pos),
 		_volume_id(p_volume_id),
@@ -26,7 +26,8 @@ LoadBlockDataTask::LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos,
 		_generator_use_gpu(generator_use_gpu),
 		//_request_voxels(true),
 		_stream_dependency(p_stream_dependency),
-		_voxel_data(vdata) {
+		_voxel_data(vdata),
+		_cancellation_token(cancellation_token) {
 	//
 	++g_debug_load_block_tasks_count;
 }
@@ -127,7 +128,13 @@ TaskPriority LoadBlockDataTask::get_priority() {
 }
 
 bool LoadBlockDataTask::is_cancelled() {
-	return !_stream_dependency->valid || _too_far;
+	if (_stream_dependency->valid == false) {
+		return true;
+	}
+	if (_cancellation_token.is_valid()) {
+		return _cancellation_token.is_cancelled();
+	}
+	return _too_far;
 }
 
 void LoadBlockDataTask::apply_result() {
