@@ -10,56 +10,56 @@ env:
   SCONS_CACHE_LIMIT: 4096
 
 jobs:
-  macos:
+  build:
     # macOS with latest image
     runs-on: "macos-latest"
-    name: ${{matrix.name}}
+    name: ${{matrix.name}} ${{matrix.arch}}
 
     strategy:
       matrix:
+        arch: [x86_64, arm64]
+        target: [editor, template_release]
         include:
           - name: 4.2 Editor
             target: editor
-            executable_name: godot.macos.editor.x86_64
+            executable_name: godot.macos.editor
             godot_base_branch: "4.2"
 
           - name: 4.2 Template
             target: template_release
-            executable_name: godot.macos.template_release.x86_64
+            executable_name: godot.macos.template_release
             godot_base_branch: "4.2"
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ matrix.godot_base_branch }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: macos-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
-          key: ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+          key: ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
           restore-keys: |
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}
-            ${{matrix.executable_name}}-${{matrix.godot_base_branch}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}-${{github.ref}}
+            ${{matrix.executable_name}}-${{matrix.arch}}-${{matrix.godot_base_branch}}
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
 
       # Setup scons, print python version and scons version info, so if anything is broken it won't run the build.
       - name: Configuring Python packages
@@ -79,10 +79,80 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
-
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: ${{matrix.executable_name}}
-          path: bin/${{matrix.executable_name}}
+          name: ${{matrix.executable_name}}.${{matrix.arch}}
+          path: bin/${{matrix.executable_name}}.${{matrix.arch}}
+  
+  create-universal-binaries:
+    needs: [build]
+    runs-on: "macos-latest"
+    name: Create universal library bundles
+
+    strategy:
+      matrix:
+        executable_name: [godot.macos.editor, godot.macos.template_release]
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{matrix.executable_name}}.*
+          merge-multiple: true
+          path: bin
+          
+      # Create universal binary
+      - name: Lipo bundle
+        run: |
+          lipo -create bin/${{matrix.executable_name}}.x86_64 bin/${{matrix.executable_name}}.arm64 -output bin/${{matrix.executable_name}}.universal
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.executable_name}}.universal
+          path: bin/${{matrix.executable_name}}.universal
+
+  create-app-bundles:
+    needs: [create-universal-binaries]
+    runs-on: "macos-latest"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: 4.2
+     
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: godot.macos.*.universal
+          merge-multiple: true
+          path: bin
+      
+      # Use `ditto` # macos specific archiver to workaround https://github.com/actions/upload-artifact/issues/38
+      - name: Create editor .app bundle
+        run: | 
+          cp -r misc/dist/macos_tools.app ./Godot.app
+          mkdir -p Godot.app/Contents/MacOS
+          cp bin/godot.macos.editor.universal Godot.app/Contents/MacOS/Godot
+          chmod +x Godot.app/Contents/MacOS/Godot
+          codesign --force --timestamp --options=runtime --entitlements misc/dist/macos/editor.entitlements -s - Godot.app
+          ditto -c -k --sequesterRsrc --keepParent Godot.app Godot.app.zip
+          
+      - name: Create macos template
+        run: |
+          cp -r misc/dist/macos_template.app .
+          mkdir -p macos_template.app/Contents/MacOS
+          cp bin/godot.macos.template_release.universal macos_template.app/Contents/MacOS/godot_macos_release.universal
+          chmod +x macos_template.app/Contents/MacOS/godot_macos*
+          ditto -c -k --sequesterRsrc --keepParent macos_template.app macos_template.app.zip
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Godot.app
+          path: Godot.app.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos_template
+          path: macos_template.app.zip
