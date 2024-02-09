@@ -16,7 +16,7 @@
 		<method name="get_editable_area_max" qualifiers="const">
 			<return type="Vector3i" />
 			<description>
-				Gets the upper corner of the total editable area, in voxels.
+				Gets the upper corner of the total editable area, in voxels, exclusive.
 			</description>
 		</method>
 		<method name="get_editable_area_min" qualifiers="const">
@@ -28,7 +28,7 @@
 		<method name="get_main_area_max" qualifiers="const">
 			<return type="Vector3i" />
 			<description>
-				Gets the upper corner of the total editable area, in voxels.
+				Gets the upper corner of the total editable area, in voxels, exclusive.
 			</description>
 		</method>
 		<method name="get_main_area_min" qualifiers="const">

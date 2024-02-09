@@ -34,6 +34,9 @@ Primarily developped with Godot 4.2.
     - Fixed `"plugins_list.has(p_plugin)" is true` errors in the editor, at the cost of slight behavior changes. This was caused by existing workarounds to prevent UIs from hiding unexpectedly, which were modified to avoid the error, but are still needed unfortunately.
     - `VoxelLodTerrain`: `VoxelTool.do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
 
+- Breaking changes
+    - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
+
 
 1.1 - 29/12/2023 - `1.1`
 ---------------------------------

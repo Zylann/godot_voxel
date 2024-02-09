@@ -151,7 +151,7 @@ Vector3i VoxelToolMultipassGenerator::get_editable_area_min() const {
 }
 
 Vector3i VoxelToolMultipassGenerator::get_editable_area_max() const {
-	return _editable_voxel_box.pos + _editable_voxel_box.size - Vector3i(1, 1, 1);
+	return _editable_voxel_box.pos + _editable_voxel_box.size;
 }
 
 Vector3i VoxelToolMultipassGenerator::get_main_area_min() const {
