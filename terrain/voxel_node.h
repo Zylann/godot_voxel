@@ -8,6 +8,9 @@
 #include "../streams/voxel_stream.h"
 #include "../util/godot/classes/geometry_instance_3d.h"
 #include "../util/godot/classes/node_3d.h"
+#ifdef TOOLS_ENABLED
+#include "../util/godot/core/version.h"
+#endif
 
 namespace zylann::voxel {
 
@@ -45,9 +48,17 @@ public:
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray get_configuration_warnings() const override;
+#else
+	Array get_configuration_warnings() const override;
+#endif
 #elif defined(ZN_GODOT_EXTENSION)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray _get_configuration_warnings() const override;
+#else
+	Array _get_configuration_warnings() const override;
+#endif
 #endif
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif

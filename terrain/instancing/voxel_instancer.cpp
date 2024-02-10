@@ -24,6 +24,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "../../editor/camera_cache.h"
+#include "../../util/godot/core/packed_arrays.h"
 #endif
 
 // Only needed for debug purposes, otherwise RenderingServer is used directly
@@ -2015,17 +2016,34 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelInstancer::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
+#else
+Array VoxelInstancer::get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	// TODO Eventually make use of new features introduced in Godot 4.3
+	return to_array(warnings);
+}
+#endif
 #elif defined(ZN_GODOT_EXTENSION)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelInstancer::_get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
+#else
+Array VoxelInstancer::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return to_array(warnings);
+}
+#endif
 #endif
 
 void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) const {
