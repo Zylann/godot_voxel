@@ -691,6 +691,8 @@ void VoxelTerrain::stop_streamer() {
 	// VoxelEngine::get_singleton().set_volume_generator(_volume_id, Ref<VoxelGenerator>());
 	_loading_blocks.clear();
 	_blocks_pending_load.clear();
+	_quick_reloading_blocks.clear();
+	_unloaded_saving_blocks.clear();
 }
 
 void VoxelTerrain::clear_mesh_map() {
@@ -958,8 +960,36 @@ void VoxelTerrain::send_data_load_requests() {
 		// Blocks to load
 		for (size_t i = 0; i < _blocks_pending_load.size(); ++i) {
 			const Vector3i block_pos = _blocks_pending_load[i];
-			request_block_load(_volume_id, _streaming_dependency, block_pos, shared_viewers_data, volume_transform,
-					_instancer != nullptr, scheduler, _generator_use_gpu, _data);
+
+			auto saving_block_it = _unloaded_saving_blocks.find(block_pos);
+			const bool quick_reloading = saving_block_it != _unloaded_saving_blocks.end();
+
+			if (quick_reloading) {
+				ZN_PROFILE_SCOPE_NAMED("Quick reloading");
+				// The block is unloaded and currently waiting to be saved but we already want it back. This simulates a
+				// request and will complete on the next process.
+				// Ideally this shouldn't happen often. This is a corner case that occurs if the player moves fast
+				// back and forth or the task runner is overloaded.
+				std::shared_ptr<VoxelBufferInternal> voxel_data = make_shared_instance<VoxelBufferInternal>();
+				// Duplicating to make sure the saving version doesn't get altered by possible upcoming modifications.
+				saving_block_it->second->duplicate_to(*voxel_data, true);
+				_quick_reloading_blocks.push_back(QuickReloadingBlock{ voxel_data, block_pos });
+				_unloaded_saving_blocks.erase(saving_block_it);
+
+				// Notes:
+				// Could we change the design so that saving tasks actually save a box of VoxelData?
+				// To do that we would have to NOT remove data blocks of which refcount becomes 0. Instead, ownership
+				// would sort of be given to a saving task. That task would make a copy of modified chunks and only then
+				// remove them if they still have 0 viewers.
+				// If a viewer moves back into the area, it would simply find the chunks again and no loading would be
+				// needed. If those chunks get modified while saving is underway, it would still work fine as the saving
+				// task would lock the saved regions for reading (which is currently a problem already, because no
+				// locking actually occurs!).
+
+			} else {
+				request_block_load(_volume_id, _streaming_dependency, block_pos, shared_viewers_data, volume_transform,
+						_instancer != nullptr, scheduler, _generator_use_gpu, _data);
+			}
 		}
 		scheduler.flush();
 		_blocks_pending_load.clear();
@@ -1076,6 +1106,24 @@ void VoxelTerrain::process() {
 				generator->get_block_rendering_shader() == nullptr) {
 			generator->compile_shaders();
 		}
+	}
+
+	{
+		for (const QuickReloadingBlock &qrb : _quick_reloading_blocks) {
+			VoxelEngine::BlockDataOutput ob{
+				VoxelEngine::BlockDataOutput::TYPE_LOADED, //
+				qrb.voxels, //
+				// TODO This doesn't work with VoxelInstancer because it unloads based on meshes...
+				nullptr, //
+				qrb.position, //
+				0, //
+				false, //
+				false, //
+				false //
+			};
+			apply_data_block_response(ob);
+		}
+		_quick_reloading_blocks.clear();
 	}
 
 	process_viewers();
@@ -1334,6 +1382,8 @@ void VoxelTerrain::process_viewer_data_box_change(
 		tls_missing_blocks.clear();
 		tls_found_blocks_positions.clear();
 
+		const unsigned to_save_index0 = _blocks_to_save.size();
+
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
 			// ZN_PRINT_VERBOSE(format("Unview data box {}", out_of_range_box));
@@ -1341,10 +1391,17 @@ void VoxelTerrain::process_viewer_data_box_change(
 					may_save ? &_blocks_to_save : nullptr);
 		});
 
+		// Temporarily store unloaded blocks in a map until saving completes
+		for (unsigned int i = to_save_index0; i < _blocks_to_save.size(); ++i) {
+			const VoxelData::BlockToSave &bts = _blocks_to_save[i];
+			_unloaded_saving_blocks[bts.position] = bts.voxels;
+		}
+
 		// Remove loading blocks (those were loaded and had their refcount reach zero)
 		for (const Vector3i bpos : tls_found_blocks_positions) {
 			emit_data_block_unloaded(bpos);
 			// TODO If they were loaded, why would they be in loading blocks?
+			// Probably in case we move so fast that blocks haven't even finished loading
 			_loading_blocks.erase(bpos);
 		}
 
@@ -1408,7 +1465,6 @@ void VoxelTerrain::process_viewer_data_box_change(
 					new_loading_block.viewers_to_notify.push_back(viewer_id);
 				}
 
-				// Schedule a loading request
 				_loading_blocks.insert({ missing_bpos, new_loading_block });
 				_blocks_pending_load.push_back(missing_bpos);
 
@@ -1492,7 +1548,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		_loading_blocks.erase(loading_block_it);
 	}
 
-	CRASH_COND(ob.voxels == nullptr);
+	ZN_ASSERT_RETURN(ob.voxels != nullptr);
 
 	VoxelDataBlock block(ob.voxels, ob.lod_index);
 	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
