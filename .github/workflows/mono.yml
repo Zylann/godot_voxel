@@ -18,13 +18,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -45,7 +45,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: mono-glue-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -56,7 +56,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -85,7 +85,7 @@ jobs:
         #   xvfb-run ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue modules/mono/glue || true
 
       # Make glue available as artifact for dependent jobs
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: mono-glue
           path: |
@@ -100,13 +100,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -127,7 +127,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: linux-editor-mono-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -138,7 +138,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -155,7 +155,7 @@ jobs:
 
       # Download glue from the mono-glue job
       - name: Download Glue
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mono-glue
           path: modules/mono/glue
@@ -172,7 +172,7 @@ jobs:
           scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
 
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: godot.linuxbsd.editor.x86_64.mono
           path: bin/*
@@ -185,13 +185,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -203,7 +203,7 @@ jobs:
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
         id: windows-editor-mono-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -214,7 +214,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -231,7 +231,7 @@ jobs:
 
       # Download glue from the mono-glue job
       - name: Download Glue
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mono-glue
           path: modules/mono/glue
@@ -255,7 +255,7 @@ jobs:
       #    ./bin/godot.windows.editor.x86_64.mono.exe --test
 
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: godot.windows.editor.x86_64.mono
           path: bin/*
