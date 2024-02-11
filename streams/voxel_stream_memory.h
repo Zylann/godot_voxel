@@ -2,18 +2,18 @@
 #define VOXEL_STREAM_MEMORY_H
 
 #include "../constants/voxel_constants.h"
+#include "../storage/voxel_buffer_internal.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
+#include "../util/math/vector3i.h"
 #include "../util/memory.h"
 #include "../util/thread/mutex.h"
+#include "instance_data.h"
 
 #include "voxel_stream.h"
 #include <unordered_map>
 
 namespace zylann::voxel {
-
-class VoxelBufferInternal;
-struct InstanceBlockData;
 
 // "fake" stream that just stores copies of the data in memory instead of saving them to the filesystem. May be used for
 // testing.
