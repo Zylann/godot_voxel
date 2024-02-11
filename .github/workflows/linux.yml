@@ -19,11 +19,9 @@ jobs:
         include:
           # --- Check past and future Godot versions ---
 
-          - name: 4.0 Editor Debug
+          - name: 4.0 Editor
             precision: single
             target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.0"
@@ -32,21 +30,17 @@ jobs:
             # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
             warnings: all
 
-          - name: 4.1 Editor Debug
+          - name: 4.1 Editor
             precision: single
             target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "4.1"
             warnings: extra
           
-          - name: master Editor Debug
+          - name: master Editor
             precision: single
             target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
             executable_name: godot.linuxbsd.editor.dev.x86_64
             godot_base_branch: "master"
@@ -57,8 +51,6 @@ jobs:
           - name: 4.2 Editor
             precision: single
             target: editor
-            dev_build: no
-            #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.2"
@@ -67,8 +59,6 @@ jobs:
           - name: 4.2 Template
             precision: single
             target: template_release
-            dev_build: no
-            #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
             godot_base_branch: "4.2"
@@ -77,8 +67,6 @@ jobs:
           - name: 4.2 Editor Float64
             precision: double
             target: editor
-            dev_build: no
-            #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
             godot_base_branch: "4.2"
@@ -167,7 +155,7 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
       - uses: actions/upload-artifact@v4
