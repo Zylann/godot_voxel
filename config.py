@@ -79,6 +79,7 @@ def get_doc_classes():
         "VoxelRaycastResult",
         "VoxelSaveCompletionTracker",
         "VoxelStream",
+        "VoxelStreamMemory",
         "VoxelStreamRegionFiles",
         "VoxelStreamScript",
         "VoxelStreamSQLite",
