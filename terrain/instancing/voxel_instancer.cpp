@@ -973,7 +973,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 	BufferedTaskScheduler &tasks = BufferedTaskScheduler::get_for_current_thread();
 
-	const bool can_save = _parent == nullptr || _parent->get_stream().is_valid();
+	const bool can_save = _parent != nullptr && _parent->get_stream().is_valid();
 
 	// Remove data blocks
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_data_block_size_po2);
