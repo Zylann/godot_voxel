@@ -974,7 +974,8 @@ void VoxelTerrain::send_data_load_requests() {
 				// Duplicating to make sure the saving version doesn't get altered by possible upcoming modifications.
 				saving_block_it->second->duplicate_to(*voxel_data, true);
 				_quick_reloading_blocks.push_back(QuickReloadingBlock{ voxel_data, block_pos });
-				_unloaded_saving_blocks.erase(saving_block_it);
+				// Don't erase it just yet, we may only do this once we know it is saved
+				// _unloaded_saving_blocks.erase(saving_block_it);
 
 				// Notes:
 				// Could we change the design so that saving tasks actually save a box of VoxelData?
@@ -1505,6 +1506,12 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		if (ob.dropped) {
 			ERR_PRINT(String("Could not save block {0}").format(varray(ob.position)));
+		} else {
+			// TODO What if the version that was saved is older than the one we cached here?
+			// For that to be a problem, you'd have to edit a chunk, move away, move back in, edit it again, move away,
+			// and have the first save complete before the second.
+			// But we may consider adding version numbers.
+			_unloaded_saving_blocks.erase(ob.position);
 		}
 		return;
 	}
