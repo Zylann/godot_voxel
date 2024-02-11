@@ -1,5 +1,6 @@
 #include "voxel_stream_memory.h"
 #include "../storage/voxel_buffer_internal.h"
+#include "../util/thread/thread.h"
 #include "instance_data.h"
 
 namespace zylann::voxel {
@@ -25,11 +26,16 @@ void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 
 void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	for (const VoxelQueryData &q : p_blocks) {
+		if (_artificial_save_latency_usec > 0) {
+			Thread::sleep_usec(_artificial_save_latency_usec);
+		}
 		Lod &lod = _lods[q.lod];
 		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
-		MutexLock mlock(lod.mutex);
-		VoxelBufferInternal &dst = lod.voxel_blocks[bpos];
-		q.voxel_buffer.duplicate_to(dst, true);
+		{
+			MutexLock mlock(lod.mutex);
+			VoxelBufferInternal &dst = lod.voxel_blocks[bpos];
+			q.voxel_buffer.duplicate_to(dst, true);
+		}
 	}
 }
 
@@ -135,6 +141,23 @@ int VoxelStreamMemory::get_lod_count() const {
 	return _lods.size();
 }
 
-void VoxelStreamMemory::_bind_methods() {}
+void VoxelStreamMemory::set_artificial_save_latency_usec(int usec) {
+	ZN_ASSERT_RETURN(usec >= 0);
+	_artificial_save_latency_usec = usec;
+}
+
+int VoxelStreamMemory::get_artificial_save_latency_usec() const {
+	return _artificial_save_latency_usec;
+}
+
+void VoxelStreamMemory::_bind_methods() {
+	ClassDB::bind_method(
+			D_METHOD("set_artificial_save_latency_usec", "usec"), &VoxelStreamMemory::set_artificial_save_latency_usec);
+	ClassDB::bind_method(
+			D_METHOD("get_artificial_save_latency_usec"), &VoxelStreamMemory::get_artificial_save_latency_usec);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "artificial_save_latency_usec"), "set_artificial_save_latency_usec",
+			"get_artificial_save_latency_usec");
+}
 
 } // namespace zylann::voxel

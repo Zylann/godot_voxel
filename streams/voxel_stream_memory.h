@@ -36,6 +36,9 @@ public:
 
 	int get_lod_count() const override;
 
+	void set_artificial_save_latency_usec(int usec);
+	int get_artificial_save_latency_usec() const;
+
 private:
 	static void _bind_methods();
 
@@ -46,6 +49,7 @@ private:
 	};
 
 	FixedArray<Lod, constants::MAX_LOD> _lods;
+	unsigned int _artificial_save_latency_usec = 0;
 };
 
 } // namespace zylann::voxel
