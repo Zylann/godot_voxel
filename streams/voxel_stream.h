@@ -1,14 +1,20 @@
 #ifndef VOXEL_STREAM_H
 #define VOXEL_STREAM_H
 
+#include "../util/containers/span.h"
 #include "../util/godot/classes/resource.h"
+#include "../util/math/vector3.h"
+#include "../util/math/vector3i.h"
 #include "../util/memory.h"
 #include "../util/thread/rw_lock.h"
-#include "instance_data.h"
+
+#include <cstdint>
+#include <vector>
 
 namespace zylann::voxel {
 
 class VoxelBufferInternal;
+struct InstanceBlockData;
 
 namespace gd {
 class VoxelBuffer;
@@ -79,6 +85,7 @@ public:
 	virtual void save_instance_blocks(Span<InstancesQueryData> p_blocks);
 
 	struct FullLoadingResult {
+		// TODO Perhaps this needs to be decoupled. Not all voxel blocks have instances and vice versa
 		struct Block {
 			std::shared_ptr<VoxelBufferInternal> voxels;
 			UniquePtr<InstanceBlockData> instances_data;

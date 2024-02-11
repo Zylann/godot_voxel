@@ -1,0 +1,140 @@
+#include "voxel_stream_memory.h"
+#include "../storage/voxel_buffer_internal.h"
+#include "instance_data.h"
+
+namespace zylann::voxel {
+
+void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
+	for (VoxelQueryData &q : p_blocks) {
+		Lod &lod = _lods[q.lod];
+
+		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
+
+		MutexLock mlock(lod.mutex);
+		auto it = lod.voxel_blocks.find(bpos);
+
+		if (it == lod.voxel_blocks.end()) {
+			q.result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
+
+		} else {
+			q.result = VoxelStream::RESULT_BLOCK_FOUND;
+			it->second.duplicate_to(q.voxel_buffer, true);
+		}
+	}
+}
+
+void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
+	for (const VoxelQueryData &q : p_blocks) {
+		Lod &lod = _lods[q.lod];
+		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
+		MutexLock mlock(lod.mutex);
+		VoxelBufferInternal &dst = lod.voxel_blocks[bpos];
+		q.voxel_buffer.duplicate_to(dst, true);
+	}
+}
+
+void VoxelStreamMemory::load_voxel_block(VoxelQueryData &query_data) {
+	load_voxel_blocks(Span<VoxelQueryData>(&query_data, 1));
+}
+
+void VoxelStreamMemory::save_voxel_block(VoxelQueryData &query_data) {
+	save_voxel_blocks(Span<VoxelQueryData>(&query_data, 1));
+}
+
+bool VoxelStreamMemory::supports_instance_blocks() const {
+	return true;
+}
+
+void VoxelStreamMemory::load_instance_blocks(Span<InstancesQueryData> out_blocks) {
+	for (InstancesQueryData &q : out_blocks) {
+		Lod &lod = _lods[q.lod];
+
+		MutexLock mlock(lod.mutex);
+		auto it = lod.instance_blocks.find(q.position);
+
+		if (it == lod.instance_blocks.end()) {
+			q.result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
+
+		} else {
+			// Copying is required since the cache has ownership on its data
+			q.data = make_unique_instance<InstanceBlockData>();
+			it->second.copy_to(*q.data);
+		}
+	}
+}
+
+void VoxelStreamMemory::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
+	for (const InstancesQueryData &q : p_blocks) {
+		Lod &lod = _lods[q.lod];
+		MutexLock mlock(lod.mutex);
+
+		if (q.data == nullptr) {
+			lod.instance_blocks.erase(q.position);
+		} else {
+			q.data->copy_to(lod.instance_blocks[q.position]);
+		}
+	}
+}
+
+bool VoxelStreamMemory::supports_loading_all_blocks() const {
+	return true;
+}
+
+void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
+	// The return value couples instances and voxels, but our storage is decoupled, so it complicates things a bit
+	std::unordered_map<Vector3i, unsigned int> bpos_to_index;
+
+	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
+		const Lod &lod = _lods[lod_index];
+		bpos_to_index.clear();
+
+		MutexLock mlock(lod.mutex);
+
+		for (auto it = lod.voxel_blocks.begin(); it != lod.voxel_blocks.end(); ++it) {
+			const Vector3i bpos = it->first;
+			const unsigned int index = result.blocks.size();
+			bpos_to_index.insert({ bpos, index });
+			result.blocks.resize(index + 1);
+
+			FullLoadingResult::Block &block = result.blocks[index];
+			block.position = bpos;
+			block.lod = lod_index;
+
+			const VoxelBufferInternal &src = it->second;
+			block.voxels = make_shared_instance<VoxelBufferInternal>();
+			src.duplicate_to(*block.voxels, true);
+		}
+
+		for (auto it = lod.instance_blocks.begin(); it != lod.instance_blocks.end(); ++it) {
+			const Vector3i bpos = it->first;
+			FullLoadingResult::Block *block = nullptr;
+			auto pos_it = bpos_to_index.find(bpos);
+			if (pos_it == bpos_to_index.end()) {
+				const unsigned int index = result.blocks.size();
+				result.blocks.resize(index + 1);
+				block = &result.blocks.back();
+				block->position = bpos;
+				block->lod = lod_index;
+				// bpos_to_index.insert({ bpos, index });
+			} else {
+				const unsigned int index = pos_it->second;
+				block = &result.blocks[index];
+			}
+
+			block->instances_data = make_unique_instance<InstanceBlockData>();
+			it->second.copy_to(*block->instances_data);
+		}
+	}
+}
+
+int VoxelStreamMemory::get_used_channels_mask() const {
+	return VoxelBufferInternal::ALL_CHANNELS_MASK;
+}
+
+int VoxelStreamMemory::get_lod_count() const {
+	return _lods.size();
+}
+
+void VoxelStreamMemory::_bind_methods() {}
+
+} // namespace zylann::voxel

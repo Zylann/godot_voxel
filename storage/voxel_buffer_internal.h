@@ -160,6 +160,7 @@ public:
 	// Specialized copy functions.
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
+	// TODO Rename `copy_channels_from`
 	void copy_from(const VoxelBufferInternal &other);
 	void copy_from(const VoxelBufferInternal &other, unsigned int channel_index);
 	void copy_from(const VoxelBufferInternal &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,

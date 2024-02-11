@@ -43,6 +43,7 @@
 #include "streams/sqlite/voxel_stream_sqlite.h"
 #include "streams/vox/vox_loader.h"
 #include "streams/voxel_block_serializer_gd.h"
+#include "streams/voxel_stream_memory.h"
 #include "streams/voxel_stream_script.h"
 #include "terrain/fixed_lod/voxel_box_mover.h"
 #include "terrain/fixed_lod/voxel_terrain.h"
@@ -255,6 +256,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelStreamRegionFiles>();
 		ClassDB::register_class<VoxelStreamScript>();
 		ClassDB::register_class<VoxelStreamSQLite>();
+		ClassDB::register_class<VoxelStreamMemory>();
 
 		// Generators
 		ClassDB::register_abstract_class<VoxelGenerator>();
