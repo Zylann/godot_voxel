@@ -64,6 +64,7 @@ static uint32_t get_header_size_v3(const RegionFormat &format) {
 
 static bool save_header(
 		FileAccess &f, uint8_t version, const RegionFormat &format, const std::vector<RegionBlockInfo> &block_infos) {
+	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
 
 	store_buffer(f, Span<const uint8_t>(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4));
@@ -269,7 +270,6 @@ Error RegionFile::close() {
 	Error err = OK;
 	if (_file_access != nullptr) {
 		if (_header_modified) {
-			_file_access->seek(MAGIC_AND_VERSION_SIZE);
 			if (!save_header(**_file_access)) {
 				// TODO Need to do a big pass on these errors codes so we can return meaningful ones...
 				// Godot codes are quite limited
@@ -584,8 +584,6 @@ bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
 
 	f.seek(MAGIC_AND_VERSION_SIZE);
 	insert_bytes(f, extra_bytes_needed);
-
-	f.seek(0);
 
 	// Set version because otherwise `save_header` will attempt to migrate again causing stack-overflow
 	_header.version = FORMAT_VERSION;
