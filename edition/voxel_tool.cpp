@@ -310,6 +310,11 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
+	if (!is_area_editable(padded_voxel_box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
 	VoxelBufferInternal buffer;
 	buffer.create(padded_voxel_box.size);
 
@@ -339,6 +344,11 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
 			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+
+	if (!is_area_editable(voxel_box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
 
 	VoxelBufferInternal buffer;
 	buffer.create(voxel_box.size);
