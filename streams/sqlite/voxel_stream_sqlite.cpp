@@ -660,9 +660,9 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	}
 	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
-		// Not using get_connection() because it locks.
+		// Not using get_connection() because it locks, we are already locked.
 		VoxelStreamSQLiteInternal con;
-		const CharString cpath = path.utf8();
+		const CharString cpath = _connection_path.utf8();
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
@@ -675,6 +675,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	}
 	_block_keys_cache.clear();
 	_connection_pool.clear();
+
 	_connection_path = path;
 	// Don't actually open anything here. We'll do it only when necessary
 }
