@@ -283,6 +283,7 @@ protected:
 
 private:
 	void process(float delta);
+	void apply_quick_reloading_blocks();
 	void apply_main_thread_update_tasks();
 
 	void apply_mesh_update(VoxelEngine::BlockMeshOutput &ob);

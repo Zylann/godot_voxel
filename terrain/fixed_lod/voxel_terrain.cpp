@@ -1510,7 +1510,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 			// TODO What if the version that was saved is older than the one we cached here?
 			// For that to be a problem, you'd have to edit a chunk, move away, move back in, edit it again, move away,
 			// and have the first save complete before the second.
-			// But we may consider adding version numbers.
+			// But we may consider adding version numbers, which requires adding block metadata
 			_unloaded_saving_blocks.erase(ob.position);
 		}
 		return;

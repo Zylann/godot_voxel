@@ -80,20 +80,28 @@ void request_block_generate(VolumeID volume_id, unsigned int data_block_size,
 // Used only when streaming block by block
 void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
-		Vector3i block_pos, int lod, bool request_instances,
+		Vector3i block_pos, int lod_index, bool request_instances,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
 		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler,
-		TaskCancellationToken cancellation_token) {
+		TaskCancellationToken cancellation_token, VoxelLodTerrainUpdateData::State &state) {
 	//
-	CRASH_COND(data_block_size > 255);
-	CRASH_COND(stream_dependency == nullptr);
+	ZN_ASSERT(data_block_size < 256);
+	ZN_ASSERT(stream_dependency != nullptr);
+
+	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+	auto saving_it = lod.unloaded_saving_blocks.find(block_pos);
+	if (saving_it != lod.unloaded_saving_blocks.end()) {
+		lod.quick_reloading_blocks.push_back(
+				VoxelLodTerrainUpdateData::QuickReloadingBlock{ saving_it->second, block_pos });
+		return;
+	}
 
 	if (stream_dependency->stream.is_valid()) {
 		PriorityDependency priority_dependency;
-		init_sparse_octree_priority_dependency(priority_dependency, block_pos, lod, data_block_size,
+		init_sparse_octree_priority_dependency(priority_dependency, block_pos, lod_index, data_block_size,
 				shared_viewers_data, volume_transform, settings.lod_distance);
 
-		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod, data_block_size,
+		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod_index, data_block_size,
 				request_instances, stream_dependency, priority_dependency, settings.cache_generated_blocks,
 				settings.generator_use_gpu, data, cancellation_token));
 
@@ -101,8 +109,8 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 
 	} else if (settings.cache_generated_blocks) {
 		// Directly generate the block without checking the stream.
-		request_block_generate(volume_id, data_block_size, stream_dependency, data, block_pos, lod, shared_viewers_data,
-				volume_transform, settings, nullptr, true, task_scheduler, cancellation_token);
+		request_block_generate(volume_id, data_block_size, stream_dependency, data, block_pos, lod_index,
+				shared_viewers_data, volume_transform, settings, nullptr, true, task_scheduler, cancellation_token);
 
 	} else {
 		ZN_PRINT_WARNING("Requesting a block load when it should not have been necessary");
@@ -113,13 +121,14 @@ void send_block_data_requests(VolumeID volume_id, Span<const VoxelLodTerrainUpda
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
 		bool request_instances, const Transform3D &volume_transform,
-		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler) {
+		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler,
+		VoxelLodTerrainUpdateData::State &state) {
 	//
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const VoxelLodTerrainUpdateData::BlockToLoad btl = blocks_to_load[i];
 		request_block_load(volume_id, data_block_size, stream_dependency, data, btl.loc.position, btl.loc.lod,
 				request_instances, shared_viewers_data, volume_transform, settings, task_scheduler,
-				btl.cancellation_token);
+				btl.cancellation_token, state);
 	}
 }
 
@@ -669,6 +678,17 @@ void update_transition_masks(VoxelLodTerrainUpdateData::State &state, uint32_t l
 #endif
 }
 
+void add_unloaded_saving_blocks(VoxelLodTerrainUpdateData::Lod &lod, Span<const VoxelData::BlockToSave> src) {
+	if (src.size() == 0) {
+		return;
+	}
+	ZN_PROFILE_SCOPE();
+	MutexLock mlock(lod.unloaded_saving_blocks_mutex);
+	for (const VoxelData::BlockToSave &bts : src) {
+		lod.unloaded_saving_blocks[bts.position] = bts.voxels;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
@@ -770,7 +790,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 				} else {
 					send_block_data_requests(_volume_id, to_span(data_blocks_to_load), _streaming_dependency, _data,
 							_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings,
-							task_scheduler);
+							task_scheduler, state);
 				}
 			}
 

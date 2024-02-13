@@ -170,11 +170,25 @@ struct VoxelLodTerrainUpdateData {
 		bool require_visual = false;
 	};
 
+	struct QuickReloadingBlock {
+		std::shared_ptr<VoxelBufferInternal> voxels;
+		Vector3i position;
+	};
+
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
 		std::unordered_map<Vector3i, LoadingDataBlock> loading_blocks;
 		BinaryMutex loading_blocks_mutex;
+
+		// Blocks waiting to be saved after they got unloaded. This is to allow reloading them properly if a viewer
+		// needs them again before they even got saved. Items in this cache get removed when they are saved. Needs to be
+		// protected by mutex because the saved notification is received on the main thread at the moment.
+		std::unordered_map<Vector3i, std::shared_ptr<VoxelBufferInternal>> unloaded_saving_blocks;
+		BinaryMutex unloaded_saving_blocks_mutex;
+		// Blocks that will be loaded from the saving cache as if a loading task completed next time the terrain
+		// updates. It won't run while the threaded update runs so locking is needed.
+		std::vector<QuickReloadingBlock> quick_reloading_blocks;
 
 		// These are relative to this LOD, in block coordinates
 		Vector3i last_viewer_data_block_pos;

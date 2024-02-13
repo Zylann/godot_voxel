@@ -64,9 +64,15 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 			// VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			// RWLockWrite wlock(data_lod.map_lock);
 
+			const unsigned int to_save_index0 = blocks_to_save.size();
+
 			prev_box.difference(new_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
 				data.unload_blocks(box_to_remove, lod_index, &blocks_to_save);
 			});
+
+			if (blocks_to_save.size() > to_save_index0) {
+				add_unloaded_saving_blocks(lod, to_span(blocks_to_save).sub(to_save_index0));
+			}
 		}
 
 		{

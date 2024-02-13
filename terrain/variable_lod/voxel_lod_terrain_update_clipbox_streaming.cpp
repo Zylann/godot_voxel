@@ -503,10 +503,16 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 					tls_missing_blocks.clear();
 					tls_found_blocks_positions.clear();
 
+					const unsigned int to_save_index0 = blocks_to_save.size();
+
 					prev_data_box.difference(new_data_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
 						data.unview_area(box_to_remove, lod_index, &tls_found_blocks_positions, &tls_missing_blocks,
 								&blocks_to_save);
 					});
+
+					if (blocks_to_save.size() > to_save_index0) {
+						add_unloaded_saving_blocks(lod, to_span(blocks_to_save).sub(to_save_index0));
+					}
 
 					// Remove loading blocks regardless of refcount (those were loaded and had their refcount reach
 					// zero)

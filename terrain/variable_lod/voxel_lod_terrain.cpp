@@ -754,6 +754,9 @@ void VoxelLodTerrain::stop_streamer() {
 	for (unsigned int i = 0; i < _update_data->state.lods.size(); ++i) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[i];
 		lod.loading_blocks.clear();
+
+		lod.quick_reloading_blocks.clear();
+		lod.unloaded_saving_blocks.clear();
 	}
 
 	//_reception_buffers.data_output.clear();
@@ -1286,6 +1289,27 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	const Transform3D volume_transform = get_global_transform();
 	const unsigned int lod_count = get_lod_count();
 
+	// Apply quick reloads
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
+		for (const VoxelLodTerrainUpdateData::QuickReloadingBlock &qrb : lod.quick_reloading_blocks) {
+			ZN_PROFILE_SCOPE_NAMED("Quick reload");
+			VoxelEngine::BlockDataOutput ob{
+				VoxelEngine::BlockDataOutput::TYPE_LOADED, //
+				qrb.voxels, //
+				// TODO This doesn't work with VoxelInstancer because it unloads based on meshes...
+				nullptr, //
+				qrb.position, //
+				static_cast<uint8_t>(lod_index), //
+				false, //
+				false, //
+				false //
+			};
+			apply_data_block_response(ob);
+		}
+		lod.quick_reloading_blocks.clear();
+	}
+
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -1599,6 +1623,25 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		// we will need to use block versioning to know when we can reset the `modified` flag properly
 
 		// TODO Now that's the case. Use version? Or just keep copying?
+
+		if (ob.dropped) {
+			ZN_PRINT_ERROR(format("Could not save block {}", ob.position));
+
+		} else {
+			VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
+			{
+				// TODO We could avoid locking if we defer this with a list, which we consume when the threaded update
+				// completes?
+				MutexLock mlock(lod.unloaded_saving_blocks_mutex);
+
+				// TODO What if the version that was saved is older than the one we cached here?
+				// For that to be a problem, you'd have to edit a chunk, move away, move back in, edit it again, move
+				// away, and have the first save complete before the second. But we may consider adding version numbers,
+				// which requires adding block metadata
+				lod.unloaded_saving_blocks.erase(ob.position);
+			}
+		}
+
 		return;
 	}
 

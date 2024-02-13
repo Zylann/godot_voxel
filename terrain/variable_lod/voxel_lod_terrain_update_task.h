@@ -89,6 +89,8 @@ private:
 void update_transition_masks(VoxelLodTerrainUpdateData::State &state, uint32_t lods_to_update_transitions,
 		unsigned int lod_count, bool use_refcounts);
 
+void add_unloaded_saving_blocks(VoxelLodTerrainUpdateData::Lod &lod, Span<const VoxelData::BlockToSave> src);
+
 } // namespace zylann::voxel
 
 #endif // VOXEL_LOD_TERRAIN_UPDATE_TASK_H
