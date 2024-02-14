@@ -241,6 +241,21 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
+constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index) {
+	// Make sure other indices are different so the weights associated with them don't override the first
+	// index's weight.
+	const uint8_t index1 = (index + 1) & 0xf;
+	const uint8_t index2 = (index + 2) & 0xf;
+	const uint8_t index3 = (index + 3) & 0xf;
+	const uint16_t encoded_indices = encode_indices_to_packed_u16(index, index1, index2, index3);
+	return encoded_indices;
+	// Note: an alternative would be to snap indices so that the first one is multiple of 4 and following ones are
+	// consecutive. That would minimize the changes in indices layout while keeping them sorted, which could in turn
+	// reduce the amount of seams the mesher might have to make. However it needs to involve weights too instead of
+	// assuming the relevant slot will be the first one. Haven't done that for now as it's not high priority, and it's
+	// likely for the format to change to become simpler instead
+}
+
 // TODO Optimization: this is a simplified output using a complex system.
 // We should implement a texturing system that knows each voxel has a single texture.
 void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_index, const pg::Runtime::State &state,
@@ -258,10 +273,7 @@ void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_i
 	for (int rz = rmin.z; rz < rmax.z; ++rz) {
 		for (int rx = rmin.x; rx < rmax.x; ++rx) {
 			const uint8_t index = math::clamp(int(Math::round(buffer_data[value_index])), 0, 15);
-			// Make sure other indices are different so the weights associated with them don't override the first
-			// index's weight
-			const uint8_t other_index = (index == 0 ? 1 : 0);
-			const uint16_t encoded_indices = encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
 			out_voxel_buffer.set_voxel(encoded_indices, rx, ry, rz, VoxelBufferInternal::CHANNEL_INDICES);
 			++value_index;
 		}
@@ -551,10 +563,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					if (index_range.is_single_value()) {
 						// Make sure other indices are different so the weights associated with them don't override the
 						// first index's weight
-						const int index = int(index_range.min);
-						const uint8_t other_index = (index == 0 ? 1 : 0);
-						const uint16_t encoded_indices =
-								encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+						const int index = static_cast<int>(index_range.min);
+						const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
 						out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBufferInternal::CHANNEL_INDICES);
 						out_buffer.fill_area(0x000f, rmin, rmax, VoxelBufferInternal::CHANNEL_WEIGHTS);
 						single_texture_is_uniform = true;
