@@ -47,6 +47,7 @@ public:
 
 	int get_used_channels_mask() const override;
 
+	void flush() override;
 	void flush_cache();
 
 	// Might improve query performance if saved data is very sparse (like when only edited blocks are saved).

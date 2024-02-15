@@ -1,7 +1,14 @@
 #ifndef VOXEL_GENERATOR_HEIGHTMAP_H
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
+#include "../../constants/voxel_constants.h"
 #include "../../storage/voxel_buffer_gd.h"
+#include "../../storage/voxel_buffer_internal.h"
+#include "../../util/containers/span.h"
+#include "../../util/math/funcs.h"
+#include "../../util/math/vector3f.h"
+#include "../../util/math/vector3i.h"
+#include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
 
 namespace zylann::voxel {
@@ -89,7 +96,7 @@ protected:
 					// Output is blocky, so we can go for just one sample
 					float h = params.range.xform(height_func(gx, gz));
 					h -= origin.y;
-					int ih = int(h) >> lod;
+					int ih = math::arithmetic_rshift(int(h), lod);
 					if (ih > 0) {
 						if (ih > bs.y) {
 							ih = bs.y;
@@ -116,7 +123,7 @@ protected:
 			params = _parameters;
 		}
 
-		//const int channel = params.channel;
+		// const int channel = params.channel;
 		const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
 
 		if (use_sdf) {

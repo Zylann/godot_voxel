@@ -73,4 +73,4 @@ enum **SeamMode**:
 - [void](#)<span id="i_set_geometric_error"></span> **set_geometric_error**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) error ) 
 
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

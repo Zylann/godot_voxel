@@ -8,6 +8,12 @@
 #include <cstdint>
 #include <vector>
 
+#ifdef TOOLS_ENABLED
+#include "../macros.h"
+#include "array.h"
+#include "packed_string_array_fwd.h"
+#endif
+
 namespace zylann {
 
 // Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
@@ -81,6 +87,10 @@ inline Span<const int32_t> to_span(const PackedInt32Array &a) {
 inline Span<const uint8_t> to_span(const PackedByteArray &a) {
 	return Span<const uint8_t>(a.ptr(), a.size());
 }
+
+#ifdef TOOLS_ENABLED
+Array to_array(const PackedStringArray &src);
+#endif
 
 } // namespace zylann
 

@@ -15,6 +15,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "../../editor/voxel_debug.h"
+#include "../../util/godot/core/version.h"
 #endif
 
 //#include <scene/resources/material.h> // Included by node.h lol
@@ -69,7 +70,8 @@ public:
 
 	// Actions
 
-	void save_all_modified_blocks(BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker);
+	void save_all_modified_blocks(
+			BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush);
 
 	// Event handlers
 
@@ -86,7 +88,7 @@ public:
 
 	void set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2);
 	void set_data_block_size_po2(unsigned int p_data_block_size_po2);
-	void set_mesh_lod_distance(float p_lod_distance);
+	void update_mesh_lod_distances_from_parent();
 
 	int get_library_item_id_from_render_block_index(unsigned render_block_index) const;
 
@@ -113,9 +115,17 @@ public:
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray get_configuration_warnings() const override;
+#else
+	Array get_configuration_warnings() const override;
+#endif
 #elif defined(ZN_GODOT_EXTENSION)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	PackedStringArray _get_configuration_warnings() const override;
+#else
+	Array _get_configuration_warnings() const override;
+#endif
 #endif
 	virtual void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
@@ -139,8 +149,8 @@ private:
 	void clear_blocks_in_layer(int layer_id);
 	void clear_layers();
 	void update_visibility();
-	SaveBlockDataTask *save_block(
-			Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const;
+	SaveBlockDataTask *save_block(Vector3i data_grid_pos, int lod_index,
+			std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const;
 
 	// Get a layer assuming it exists
 	Layer &get_layer(int id);
@@ -261,7 +271,7 @@ private:
 	VoxelNode *_parent = nullptr;
 	unsigned int _parent_data_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 	unsigned int _parent_mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
-	float _mesh_lod_distance = 0.f;
+	FixedArray<float, MAX_LOD> _mesh_lod_distances;
 	// Vector3 _mesh_lod_last_update_camera_position;
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;

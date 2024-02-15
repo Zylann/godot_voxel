@@ -51,6 +51,8 @@ public:
 
 	void convert_files(Dictionary d);
 
+	void flush() override;
+
 protected:
 	static void _bind_methods();
 

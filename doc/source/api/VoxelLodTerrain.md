@@ -201,39 +201,111 @@ Note, because this volume uses chunks with LOD, these bounds will snap to the cl
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_dump_as_scene"></span> **debug_dump_as_scene**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) path, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) include_instancer ) 
 
+Saves the current state of the terrain as a Godot scene file. Can be used to inspect meshes and instances in more detail in the editor.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_data_block_count"></span> **debug_get_data_block_count**( ) 
 
+Get how many voxel data chunks are currently loaded
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_data_block_info"></span> **debug_get_data_block_info**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
+Gets some debug information about a specific voxel data chunk.
+
+```
+{
+	"loading_state": int,
+}
+```
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) 
 
+Gets whether a specific debug drawing flag is enabled.
+
+This method always returns false in exported games.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_mesh_block_count"></span> **debug_get_mesh_block_count**( ) 
 
+Gets how many meshes the terrain currently has.
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_mesh_block_info"></span> **debug_get_mesh_block_info**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
+Gets some debug information about a specific mesh.
+
+```
+{
+	"transition_mask": int,
+	"recomputed_transition_mask": int,
+	"loaded": bool,
+	"meshed": bool,
+	"mesh_state": int,
+	"visible"] = visible,
+	"active": bool
+}
+```
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_get_octrees_detailed"></span> **debug_get_octrees_detailed**( ) 
 
+Gets debug information about the grid of octrees used to stream the terrain at multiple levels of detail.
+
+The returned array contains alternating [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) and [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) values, where each pair corresponds to one octree at a specific position:
+
+```
+[
+	Vector3i,
+	Array,
+	Vector3i,
+	Array,
+	...
+]
+```
+
+The array after positions contains info about one octree:
+
+```
+[
+	int (node state),
+	null or Array (children info)
+]
+```
+When children info is not null, it contains 8 arrays structured the same way, and may be recursively traversed to obtain the state of every node of the octree.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_is_draw_enabled"></span> **debug_is_draw_enabled**( ) 
 
+Gets whether debug drawing is enabled.
+
+This method always returns false in exported games.
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_print_sdf_top_down"></span> **debug_print_sdf_top_down**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents ) 
 
+Captures a top-down representation of the signed distance field (SDF) at multiple LOD levels within a specific area. The returned array contains an image for each LOD.
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_raycast_mesh_block"></span> **debug_raycast_mesh_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) 
 
+Gets the non-empty mesh chunk positions from a rough world-space ray, up to a distance of 256 units. All LODs are checked.
+
+The returned array contains:
+
+```
+[
+	{
+		"position": Vector3i,
+		"lod": int
+	},
+	...
+]
+```
 
 - [void](#)<span id="i_debug_set_draw_enabled"></span> **debug_set_draw_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
+Enables or disables debug drawing.
+
+This method does nothing in exported games.
 
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
+Sets a specific debug drawing flag. Note that debug drawing must also be enabled for it to be visible.
+
+This method does nothing in exported games.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_data_block_region_extent"></span> **get_data_block_region_extent**( ) 
 
@@ -311,4 +383,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Nov 11, 2023_
+_Generated on Dec 31, 2023_

@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: '0 0 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Global Cache Settings
 env:
   # TODO Poke qarmin to update Qarminer and stuff
@@ -23,13 +27,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -50,7 +54,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: fuzzer-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -70,9 +74,9 @@ jobs:
           #mkdir bin/
           #mv Godot_v4.0-beta3_linux.x86_64 bin/godot.linuxbsd.editor.dev.x86_64.san
 
-          scons target=editor use_ubsan=yes use_asan=yes -j2 linker=gold dev_build=yes CCFLAGS="-fpie" LINKFLAGS="-no-pie"
+          scons target=editor use_ubsan=yes use_asan=yes linker=gold dev_build=yes CCFLAGS="-fpie" LINKFLAGS="-no-pie"
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: godot-linux
           path: |
@@ -87,7 +91,7 @@ jobs:
 
       # Download binaries from
       - name: Download Executed project
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: godot-linux
           path: bin
@@ -98,13 +102,13 @@ jobs:
           chmod +x bin/godot.linuxbsd.editor.dev.x86_64.san
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
       # Clone fuzzer
       - name: Checkout Godot fuzzer backend
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: qarmin/Qarminer
           ref: ${{ env.GODOT_BASE_BRANCH }}
@@ -162,7 +166,7 @@ jobs:
           fi
 
       - name: Store reproducer Headless
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reproducer_4_headless
           path: crash_reproduce.gd
@@ -198,7 +202,7 @@ jobs:
           fi
 
       - name: Store reproducer Headless
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reproducer_4_gles3
           path: crash_reproduce.gd
@@ -233,7 +237,7 @@ jobs:
           fi
 
       - name: Store reproducer Vulkan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reproducer_4_vulkan
           path: crash_reproduce.gd
@@ -248,13 +252,13 @@ jobs:
 
 
       - name: Store project results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: project-results
           path: project_results.txt
 
       - name: Store last run functions
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: last-run-functions
           path: results_connected.txt

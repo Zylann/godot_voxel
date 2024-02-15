@@ -179,7 +179,8 @@ inline Vector3i operator>>(const Vector3i &a, int b) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT(b >= 0);
 #endif
-	return Vector3i(a.x >> b, a.y >> b, a.z >> b);
+	using namespace zylann::math;
+	return Vector3i(arithmetic_rshift(a.x, b), arithmetic_rshift(a.y, b), arithmetic_rshift(a.z, b));
 }
 
 inline Vector3i operator&(const Vector3i &a, uint32_t b) {
@@ -194,6 +195,12 @@ struct Vector3iHasher {
 		uint32_t hash = zylann::hash_djb2_one_32(v.x);
 		hash = zylann::hash_djb2_one_32(v.y, hash);
 		return zylann::hash_djb2_one_32(v.z, hash);
+
+		// What Godot uses. Turns out to be slower?
+		// uint32_t h = zylann::hash_murmur3_one_32(v.x);
+		// h = zylann::hash_murmur3_one_32(v.y, h);
+		// h = zylann::hash_murmur3_one_32(v.z, h);
+		// return zylann::hash_fmix32(h);
 	}
 };
 

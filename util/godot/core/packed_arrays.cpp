@@ -2,6 +2,10 @@
 #include "../../math/conv.h"
 #include "../../profiling.h"
 
+#ifdef TOOLS_ENABLED
+#include "packed_string_array.h"
+#endif
+
 namespace zylann {
 
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src) {
@@ -104,5 +108,20 @@ void copy_to(Span<float> dst, const PackedFloat32Array &src) {
 	ZN_ASSERT(src_data != nullptr);
 	memcpy(dst.data(), src_data, src_size * sizeof(float));
 }
+
+#ifdef TOOLS_ENABLED
+
+Array to_array(const PackedStringArray &src) {
+	Array dst;
+	const int size = src.size();
+	dst.resize(size);
+	const String *src_p = src.ptr();
+	for (int i = 0; i < size; ++i) {
+		dst[i] = src_p[i];
+	}
+	return dst;
+}
+
+#endif
 
 } // namespace zylann

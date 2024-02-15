@@ -654,8 +654,8 @@ void VoxelInstanceLibraryMultiMeshItem::_bind_methods() {
 						 PROPERTY_USAGE_STORAGE),
 			"_set_mesh_lod_distance_ratios", "_get_mesh_lod_distance_ratios");
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hide_beyond_max_lod", PROPERTY_HINT_RESOURCE_TYPE),
-			"set_hide_beyond_max_lod", "get_hide_beyond_max_lod");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "hide_beyond_max_lod"), "set_hide_beyond_max_lod", "get_hide_beyond_max_lod");
 
 	BIND_CONSTANT(MAX_MESH_LODS);
 }

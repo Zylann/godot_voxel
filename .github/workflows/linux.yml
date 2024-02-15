@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Global Cache Settings
 env:
   SCONS_CACHE_LIMIT: 4096
@@ -22,80 +26,70 @@ jobs:
     strategy:
       matrix:
         include:
-          # Just to check if building still works in that version
-          - name: Editor debug build (4.0)
+          # --- Check past and future Godot versions ---
+
+          - name: 4.0 Editor
             precision: single
             target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
-            executable_name: godot.linuxbsd.editor.dev.x86_64
+            executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.0"
             # TODO Had to downgrade to less warnings because Godot 4.0 raises warnings in GCC 13.
             # To fix this we would have to cherry-pick 41890ff9c3028d3b05d993f8f7ec42c346824304 to the 4.0 branch.
             # There might be other issues cropping up, since there doesn't seem to be an official CI checking this.
             warnings: all
 
-          # Just to check if building works in Godot master
-          - name: Editor debug build (master)
+          - name: 4.1 Editor
             precision: single
             target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
             production: no
-            executable_name: godot.linuxbsd.editor.dev.x86_64
-            godot_base_branch: "master"
-            warnings: extra
-
-          - name: Editor debug build
-            precision: single
-            target: editor
-            dev_build: yes
-            #dev_mode: yes # Flags specified manually. We want extra checks but we don't want to compile tests
-            production: no
-            executable_name: godot.linuxbsd.editor.dev.x86_64
-            godot_base_branch: "4.1"
-            warnings: extra
-
-          - name: Editor build
-            precision: single
-            target: editor
-            dev_build: no
-            #dev_mode: no
-            production: yes
             executable_name: godot.linuxbsd.editor.x86_64
             godot_base_branch: "4.1"
             warnings: extra
-
-          - name: Template build
+          
+          - name: master Editor
             precision: single
-            target: template_release
-            dev_build: no
-            #dev_mode: no
-            production: yes
-            executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.1"
+            target: editor
+            production: no
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "master"
             warnings: extra
 
-          - name: Editor build with 64-bit floats
+          # --- Builds with artifacts ---
+
+          - name: 4.2 Editor
+            precision: single
+            target: editor
+            production: yes
+            executable_name: godot.linuxbsd.editor.x86_64
+            godot_base_branch: "4.2"
+            warnings: extra
+
+          - name: 4.2 Template
+            precision: single
+            target: template_release
+            production: yes
+            executable_name: godot.linuxbsd.template_release.x86_64
+            godot_base_branch: "4.2"
+            warnings: extra
+
+          - name: 4.2 Editor Float64
             precision: double
             target: editor
-            dev_build: no
-            #dev_mode: no
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.1"
+            godot_base_branch: "4.2"
             warnings: extra
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ matrix.godot_base_branch }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -136,7 +130,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: linux-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{matrix.executable_name}}-${{matrix.godot_base_branch}}-${{github.ref}}-${{github.sha}}
@@ -148,7 +142,7 @@ jobs:
       # [Already provided by the custom buildroot]
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       # - name: Set up Python 3.x
-      #   uses: actions/setup-python@v4
+      #   uses: actions/setup-python@v5
       #   with:
       #     # Semantic version range syntax or exact version of a Python version
       #     python-version: '3.x'
@@ -170,11 +164,11 @@ jobs:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
           PATH=${GITHUB_WORKSPACE}/x86_64-godot-linux-gnu_sdk-buildroot/bin:$PATH
-          scons -j2 verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=${{matrix.dev_build}} dev_mode=yes target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
+          scons verbose=yes warnings=${{matrix.warnings}} werror=yes platform=linuxbsd tests=no dev_build=no target=${{matrix.target}} production=${{matrix.production}} precision=${{matrix.precision}}
 
       # Make build available
-      - uses: actions/upload-artifact@v3
-        if: ${{ matrix.dev_build != 'yes' }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ matrix.production == 'yes' }}
         with:
           name: ${{matrix.executable_name}}
           path: bin/${{matrix.executable_name}}

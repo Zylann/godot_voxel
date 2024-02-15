@@ -24,6 +24,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "../../editor/camera_cache.h"
+#include "../../util/godot/core/packed_arrays.h"
 #endif
 
 // Only needed for debug purposes, otherwise RenderingServer is used directly
@@ -44,6 +45,7 @@ VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
 	_generator_results = make_shared_instance<VoxelInstancerGeneratorTaskOutputQueue>();
+	fill(_mesh_lod_distances, 0.f);
 }
 
 VoxelInstancer::~VoxelInstancer() {
@@ -128,7 +130,7 @@ void VoxelInstancer::_notification(int p_what) {
 				_parent = vlt;
 				_parent_data_block_size_po2 = vlt->get_data_block_size_pow2();
 				_parent_mesh_block_size_po2 = vlt->get_mesh_block_size_pow2();
-				_mesh_lod_distance = vlt->get_lod_distance();
+				update_mesh_lod_distances_from_parent();
 				vlt->set_instancer(this);
 			} else {
 				VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(get_parent());
@@ -136,7 +138,7 @@ void VoxelInstancer::_notification(int p_what) {
 					_parent = vt;
 					_parent_data_block_size_po2 = vt->get_data_block_size_pow2();
 					_parent_mesh_block_size_po2 = vt->get_mesh_block_size_pow2();
-					_mesh_lod_distance = vt->get_max_view_distance();
+					update_mesh_lod_distances_from_parent();
 					vt->set_instancer(this);
 				}
 			}
@@ -203,7 +205,7 @@ void VoxelInstancer::_notification(int p_what) {
 
 void VoxelInstancer::process() {
 	process_generator_results();
-	if (_parent != nullptr && _library.is_valid() && _mesh_lod_distance > 0.f) {
+	if (_parent != nullptr && _library.is_valid() && _mesh_lod_distances[0] > 0.f) {
 		process_mesh_lods();
 	}
 #ifdef TOOLS_ENABLED
@@ -393,6 +395,21 @@ void VoxelInstancer::update_mesh_from_mesh_lod(Block &block,
 	}
 }
 
+void VoxelInstancer::update_mesh_lod_distances_from_parent() {
+	ZN_ASSERT_RETURN(_parent != nullptr);
+
+	VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(_parent);
+	if (vlt != nullptr) {
+		vlt->get_lod_distances(to_span(_mesh_lod_distances));
+		return;
+	}
+
+	VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_parent);
+	if (vt != nullptr) {
+		_mesh_lod_distances[0] = vt->get_max_view_distance();
+	}
+}
+
 void VoxelInstancer::process_mesh_lods() {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_library.is_null());
@@ -405,7 +422,7 @@ void VoxelInstancer::process_mesh_lods() {
 	const Vector3 cam_pos_local = gtrans.affine_inverse().xform(cam_pos_global);
 
 	ERR_FAIL_COND(_parent == nullptr);
-	const int block_size = 1 << _parent_mesh_block_size_po2;
+	const unsigned int block_size = 1 << _parent_mesh_block_size_po2;
 
 	const float hysteresis = 1.05;
 
@@ -456,7 +473,7 @@ void VoxelInstancer::process_mesh_lods() {
 			const int lod_index = item->get_lod_index();
 
 			Span<const float> distance_ratios = item->get_mesh_lod_distance_ratios();
-			const float max_distance = _mesh_lod_distance * (1 << lod_index);
+			const float max_distance = _mesh_lod_distances[lod_index];
 
 			// #ifdef DEBUG_ENABLED
 			// 		ERR_FAIL_COND(mesh_lod_count < VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS);
@@ -956,7 +973,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 
 	BufferedTaskScheduler &tasks = BufferedTaskScheduler::get_for_current_thread();
 
-	const bool can_save = _parent == nullptr || _parent->get_stream().is_valid();
+	const bool can_save = _parent != nullptr && _parent->get_stream().is_valid();
 
 	// Remove data blocks
 	const int render_to_data_factor = 1 << (_parent_mesh_block_size_po2 - _parent_data_block_size_po2);
@@ -974,7 +991,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
 				if (modified_block_it != lod.modified_blocks.end()) {
 					if (can_save) {
-						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr);
+						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr, false);
 						if (task != nullptr) {
 							tasks.push_io_task(task);
 						}
@@ -1001,7 +1018,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 }
 
 void VoxelInstancer::save_all_modified_blocks(
-		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker) {
+		BufferedTaskScheduler &tasks, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
 	ZN_DSTACK();
 
 	ZN_ASSERT_RETURN(_parent != nullptr);
@@ -1013,7 +1030,7 @@ void VoxelInstancer::save_all_modified_blocks(
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
-			SaveBlockDataTask *task = save_block(*it, lod_index, tracker);
+			SaveBlockDataTask *task = save_block(*it, lod_index, tracker, with_flush);
 			if (task != nullptr) {
 				tasks.push_io_task(task);
 			}
@@ -1399,7 +1416,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 }
 
 SaveBlockDataTask *VoxelInstancer::save_block(
-		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker) const {
+		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_library.is_null(), nullptr);
 	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
@@ -1552,8 +1569,8 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
 	ZN_ASSERT(stream_dependency != nullptr);
 
-	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-			volume_id, data_grid_pos, lod_index, data_block_size, std::move(block_data), stream_dependency, tracker));
+	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(volume_id, data_grid_pos, lod_index, data_block_size,
+			std::move(block_data), stream_dependency, tracker, with_flush));
 
 	return task;
 }
@@ -1840,10 +1857,6 @@ void VoxelInstancer::set_data_block_size_po2(unsigned int p_data_block_size_po2)
 	_parent_data_block_size_po2 = p_data_block_size_po2;
 }
 
-void VoxelInstancer::set_mesh_lod_distance(float p_lod_distance) {
-	_mesh_lod_distance = p_lod_distance;
-}
-
 int VoxelInstancer::get_library_item_id_from_render_block_index(unsigned int render_block_index) const {
 	ZN_ASSERT_RETURN_V(render_block_index < _blocks.size(), -1);
 	Block &block = *_blocks[render_block_index];
@@ -2003,17 +2016,34 @@ bool VoxelInstancer::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelInstancer::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
+#else
+Array VoxelInstancer::get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	// TODO Eventually make use of new features introduced in Godot 4.3
+	return to_array(warnings);
+}
+#endif
 #elif defined(ZN_GODOT_EXTENSION)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelInstancer::_get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
+#else
+Array VoxelInstancer::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return to_array(warnings);
+}
+#endif
 #endif
 
 void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) const {

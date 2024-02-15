@@ -23,7 +23,8 @@ GenerateBlockMultipassCBTask::GenerateBlockMultipassCBTask(const VoxelGenerator:
 		_drop_beyond_max_distance(params.drop_beyond_max_distance),
 		_priority_dependency(params.priority_dependency),
 		_stream_dependency(params.stream_dependency),
-		_tracker(params.tracker) {
+		_tracker(params.tracker),
+		_cancellation_token(params.cancellation_token) {
 	//
 	VoxelEngine::get_singleton().debug_increment_generate_block_task_counter();
 }
@@ -193,8 +194,8 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
-					_volume_id, _block_position, _lod_index, _block_size, voxels_copy, _stream_dependency, nullptr));
+			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(_volume_id, _block_position, _lod_index,
+					_block_size, voxels_copy, _stream_dependency, nullptr, false));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -212,7 +213,13 @@ TaskPriority GenerateBlockMultipassCBTask::get_priority() {
 }
 
 bool GenerateBlockMultipassCBTask::is_cancelled() {
-	return !_stream_dependency->valid || _too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
+	if (_stream_dependency->valid == false) {
+		return true;
+	}
+	if (_cancellation_token.is_valid()) {
+		return _cancellation_token.is_cancelled();
+	}
+	return _too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
 }
 
 void GenerateBlockMultipassCBTask::apply_result() {

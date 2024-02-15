@@ -291,13 +291,12 @@ void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t c
 	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
-void VoxelToolLodTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) {
+void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND(dst.is_null());
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
 	}
-	const Box3i box(pos, dst->get_size());
+	const Box3i box(pos, src.get_size());
 	if (!is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
@@ -306,7 +305,7 @@ void VoxelToolLodTerrain::paste(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t 
 	VoxelData &data = _terrain->get_storage();
 
 	data.pre_generate_box(box);
-	data.paste(pos, dst->get_buffer(), channels_mask, false);
+	data.paste(pos, src, channels_mask, false);
 
 	_post_edit(box);
 }
@@ -316,7 +315,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	const int channel = get_channel();
 	VoxelData &data = _terrain->get_storage();
-	// TODO Optimization: is it worth a making a fast-path for this?
+	// TODO Optimization: is it worth making a fast-path for this?
 	return get_sdf_interpolated(
 			[&data, channel](Vector3i ipos) {
 				VoxelSingleValue defval;
@@ -386,15 +385,12 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	static const int channels_mask = (1 << VoxelBufferInternal::CHANNEL_SDF);
 	static const VoxelBufferInternal::ChannelId main_channel = VoxelBufferInternal::CHANNEL_SDF;
 
-	// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
-	Ref<gd::VoxelBuffer> source_copy_buffer_ref;
+	VoxelBufferInternal source_copy_buffer;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
-		source_copy_buffer_ref.instantiate();
-		source_copy_buffer_ref->create(world_box.size.x, world_box.size.y, world_box.size.z);
-		voxel_tool.copy(world_box.pos, source_copy_buffer_ref, channels_mask);
+		source_copy_buffer.create(world_box.size);
+		voxel_tool.copy(world_box.pos, source_copy_buffer, channels_mask);
 	}
-	VoxelBufferInternal &source_copy_buffer = source_copy_buffer_ref->get_buffer();
 
 	// Label distinct voxel groups
 
@@ -671,7 +667,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
 
-			if (is_mesh_empty(**mesh)) {
+			if (zylann::is_mesh_empty(**mesh)) {
 				continue;
 			}
 

@@ -261,6 +261,10 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 		// The mesh can be empty
 		return;
 	}
+	if (mesh_arrays.indices.size() == 0) {
+		// The mesh can have vertices, but still be empty, for example because triangles are all degenerate
+		return;
+	}
 
 	transvoxel::MeshArrays *combined_mesh_arrays = &mesh_arrays;
 	if (_mesh_optimization_params.enabled) {

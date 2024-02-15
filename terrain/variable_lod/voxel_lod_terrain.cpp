@@ -30,24 +30,29 @@
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
+#include "../free_mesh_task.h"
 #include "../instancing/voxel_instancer.h"
+#include "../voxel_save_completion_tracker.h"
 #include "voxel_lod_terrain_update_task.h"
 
 namespace zylann::voxel {
 
 namespace {
 
+void remove_shader_material_from_block(VoxelMeshBlockVLT &block, ShaderMaterialPoolVLT &shader_material_pool) {
+	ZN_PROFILE_SCOPE();
+	// Recycle material
+	Ref<ShaderMaterial> sm = block.get_shader_material();
+	if (sm.is_valid()) {
+		shader_material_pool.recycle(sm);
+		block.set_shader_material(Ref<ShaderMaterial>());
+	}
+}
+
 struct BeforeUnloadMeshAction {
 	ShaderMaterialPoolVLT &shader_material_pool;
-
 	void operator()(VoxelMeshBlockVLT &block) {
-		ZN_PROFILE_SCOPE_NAMED("Recycle material");
-		// Recycle material
-		Ref<ShaderMaterial> sm = block.get_shader_material();
-		if (sm.is_valid()) {
-			shader_material_pool.recycle(sm);
-			block.set_shader_material(Ref<ShaderMaterial>());
-		}
+		remove_shader_material_from_block(block, shader_material_pool);
 	}
 };
 
@@ -92,6 +97,7 @@ static void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
 	copy_param(src, dst, sn.u_voxel_virtual_texture_fade);
 	copy_param(src, dst, sn.u_transition_mask);
 	copy_param(src, dst, sn.u_lod_fade);
+	copy_param(src, dst, sn.u_voxel_lod_info);
 }
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
@@ -178,6 +184,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	set_lod_count(4);
 
 	set_lod_distance(48.f);
+	set_secondary_lod_distance(48.f);
 }
 
 VoxelLodTerrain::~VoxelLodTerrain() {
@@ -191,6 +198,10 @@ VoxelLodTerrain::~VoxelLodTerrain() {
 
 Ref<Material> VoxelLodTerrain::get_material() const {
 	return _material;
+}
+
+inline int encode_lod_info_for_shader_uniform(int lod_index, int lod_count) {
+	return lod_index | (lod_count << 8);
 }
 
 void VoxelLodTerrain::set_material(Ref<Material> p_material) {
@@ -223,18 +234,36 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 
 	update_shader_material_pool_template();
 
+	{
+		// Detect presence of lod_index usage in the shader
+		Span<const StringName> uniforms = _shader_material_pool.get_cached_shader_uniforms();
+		_material_uses_lod_info = contains(uniforms, VoxelStringNames::get_singleton().u_voxel_lod_info);
+	}
+
+	// TODO Update when shader changes?
+	// TODO Update when material changes?
+
 	// Update existing meshes
 	if (shader_material.is_valid() && _shader_material_pool.get_template().is_valid()) {
 		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
 
-			map.for_each_block([this](VoxelMeshBlockVLT &block) { //
+			map.for_each_block([this, lod_index, lod_count](VoxelMeshBlockVLT &block) { //
+				if (!block.has_mesh()) {
+					// No visuals loaded (collision only?)
+					return;
+				}
 				Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
 				Ref<ShaderMaterial> prev_material = block.get_shader_material();
 				if (prev_material.is_valid()) {
 					ZN_ASSERT_RETURN(sm.is_valid());
 					// Each block can have specific shader parameters so we have to keep them
 					copy_vlt_block_params(**prev_material, **sm);
+				}
+				// Do after copy, because otherwise it would be overwritten by default value
+				if (_material_uses_lod_info) {
+					sm->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_lod_info,
+							encode_lod_info_for_shader_uniform(lod_index, lod_count));
 				}
 				block.set_shader_material(sm);
 			});
@@ -246,6 +275,10 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 			VoxelMeshMap<VoxelMeshBlockVLT> &map = _mesh_maps_per_lod[lod_index];
 
 			map.for_each_block([&p_material](VoxelMeshBlockVLT &block) { //
+				if (!block.has_mesh()) {
+					// No visuals loaded (collision only?)
+					return;
+				}
 				block.set_shader_material(Ref<ShaderMaterial>());
 
 				Ref<Mesh> mesh = block.get_mesh();
@@ -515,13 +548,14 @@ bool VoxelLodTerrain::is_threaded_update_enabled() const {
 	return _threaded_update_enabled;
 }
 
-void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool active, bool with_fading) {
-	if (block.active == active) {
+void VoxelLodTerrain::set_mesh_block_visual_active(
+		VoxelMeshBlockVLT &block, bool active, bool with_fading, unsigned int lod_index) {
+	if (block.visual_active == active) {
 		return;
 	}
 
 	// TODO Shouldn't we switch colliders with `active` instead of `visible`?
-	block.active = active;
+	block.visual_active = active;
 
 	if (!with_fading) {
 		block.set_visible(active);
@@ -530,7 +564,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 		if (block.fading_state != VoxelMeshBlockVLT::FADING_NONE) {
 			block.fading_state = VoxelMeshBlockVLT::FADING_NONE;
 
-			_fading_blocks_per_lod[block.lod_index].erase(block.position);
+			_fading_blocks_per_lod[lod_index].erase(block.position);
 
 			Ref<ShaderMaterial> mat = block.get_shader_material();
 			if (mat.is_valid()) {
@@ -565,7 +599,7 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 
 	if (block.fading_state != fading_state) {
 		if (block.fading_state == VoxelMeshBlockVLT::FADING_NONE) {
-			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[block.lod_index];
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks = _fading_blocks_per_lod[lod_index];
 			// Must not have duplicates
 			ERR_FAIL_COND(fading_blocks.find(block.position) != fading_blocks.end());
 			fading_blocks.insert({ block.position, &block });
@@ -579,17 +613,10 @@ void VoxelLodTerrain::set_mesh_block_active(VoxelMeshBlockVLT &block, bool activ
 // The provided box must be at LOD0 coordinates.
 void VoxelLodTerrain::post_edit_area(Box3i p_box, bool update_mesh) {
 	ZN_PROFILE_SCOPE();
-	// TODO Better decoupling is needed here.
-	// In the past this padding was necessary for mesh blocks because visuals depend on neighbor voxels.
-	// So when editing voxels at the boundary of two mesh blocks, both must update.
-	// However on data blocks it doesn't make sense, neighbors are not affected (at least for now).
-	// this can cause false positive errors as if we were editing a block that's not loaded (coming up as null).
-	// For now, this is worked around by ignoring cases where blocks are null,
-	// But it might mip more lods than necessary when editing on borders.
-	const Box3i box = p_box.padded(1);
 	{
-		MutexLock lock(_update_data->state.blocks_pending_lodding_lod0_mutex);
-		_data->mark_area_modified(box, &_update_data->state.blocks_pending_lodding_lod0, update_mesh);
+		MutexLock lock(_update_data->state.edit_notifications.mutex);
+		_data->mark_area_modified(p_box, &_update_data->state.edit_notifications.edited_blocks_lod0, update_mesh);
+		_update_data->state.edit_notifications.edited_voxel_areas_lod0.push_back(p_box);
 	}
 
 #ifdef TOOLS_ENABLED
@@ -678,13 +705,21 @@ void VoxelLodTerrain::stop_updater() {
 
 	for (unsigned int i = 0; i < _update_data->state.lods.size(); ++i) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[i];
-		lod.blocks_pending_update.clear();
+
+		for (VoxelLodTerrainUpdateData::MeshToUpdate &mtu : lod.mesh_blocks_pending_update) {
+			if (mtu.cancellation_token.is_valid()) {
+				mtu.cancellation_token.cancel();
+			}
+		}
+		lod.mesh_blocks_pending_update.clear();
 
 		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = it->second;
 			if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_UPDATE_SENT) {
 				mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 			}
+			// We cleared the list so we may clear this index
+			mesh_block.update_list_index = -1;
 		}
 	}
 }
@@ -740,12 +775,60 @@ void VoxelLodTerrain::set_lod_distance(float p_lod_distance) {
 	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
 
 	if (_instancer != nullptr) {
-		_instancer->set_mesh_lod_distance(lod_distance);
+		_instancer->update_mesh_lod_distances_from_parent();
 	}
 }
 
 float VoxelLodTerrain::get_lod_distance() const {
 	return _update_data->settings.lod_distance;
+}
+
+void VoxelLodTerrain::set_secondary_lod_distance(float p_lod_distance) {
+	if (p_lod_distance == _update_data->settings.secondary_lod_distance) {
+		return;
+	}
+
+	_update_data->wait_for_end_of_task();
+
+	// Distance must be greater than a threshold,
+	// otherwise lods will decimate too fast and it will look messy
+	const float secondary_lod_distance =
+			math::clamp(p_lod_distance, constants::MINIMUM_LOD_DISTANCE, constants::MAXIMUM_LOD_DISTANCE);
+	_update_data->settings.secondary_lod_distance = secondary_lod_distance;
+	_update_data->state.octree_streaming.force_update_octrees_next_update = true;
+	// VoxelEngine::get_singleton().set_volume_octree_lod_distance(_volume_id, get_lod_distance());
+
+	if (_instancer != nullptr) {
+		_instancer->update_mesh_lod_distances_from_parent();
+	}
+}
+
+float VoxelLodTerrain::get_secondary_lod_distance() const {
+	return _update_data->settings.secondary_lod_distance;
+}
+
+void VoxelLodTerrain::get_lod_distances(Span<float> distances) {
+	// Get the distances in local coordinates where each LOD ends (not accounting for max view distance extension).
+	// Note that due to chunking adjustments, this may not be fully accurate. Actual chunks can appear further away.
+	// Initially used for VoxelInstancer.
+
+	ZN_ASSERT_RETURN(distances.size() > 0);
+
+	const VoxelLodTerrainUpdateData::Settings &settings = _update_data->settings;
+	const int lod_count = math::min(get_lod_count(), static_cast<int>(distances.size()));
+
+	distances[0] = settings.lod_distance;
+
+	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
+		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
+			distances[lod_index] = settings.lod_distance;
+		}
+
+	} else {
+		for (int lod_index = 1; lod_index < lod_count; ++lod_index) {
+			distances[lod_index] = settings.lod_distance + settings.secondary_lod_distance * (1 << lod_index);
+		}
+	}
 }
 
 void VoxelLodTerrain::set_lod_count(int p_lod_count) {
@@ -831,8 +914,10 @@ void VoxelLodTerrain::reset_mesh_maps() {
 		lod.mesh_map_state.map.clear();
 
 		// Clear temporal lists
-		lod.mesh_blocks_to_activate.clear();
-		lod.mesh_blocks_to_deactivate.clear();
+		lod.mesh_blocks_to_activate_visuals.clear();
+		lod.mesh_blocks_to_deactivate_visuals.clear();
+		lod.mesh_blocks_to_activate_collision.clear();
+		lod.mesh_blocks_to_deactivate_collision.clear();
 		lod.mesh_blocks_to_unload.clear();
 		lod.mesh_blocks_to_update_transitions.clear();
 
@@ -851,6 +936,10 @@ void VoxelLodTerrain::reset_mesh_maps() {
 	// Reset previous state caches to force rebuilding the view area
 	state.octree_streaming.last_octree_region_box = Box3i();
 	state.octree_streaming.lod_octrees.clear();
+	// No need to care about refcounts, we drop everything anyways. Will pair it back on next process.
+	state.clipbox_streaming.paired_viewers.clear();
+	state.clipbox_streaming.loaded_data_blocks.clear();
+	state.clipbox_streaming.loaded_mesh_blocks.clear();
 }
 
 int VoxelLodTerrain::get_lod_count() const {
@@ -1149,6 +1238,16 @@ void VoxelLodTerrain::process(float delta) {
 		// Get viewer location in voxel space
 		const Vector3 viewer_pos = get_local_viewer_pos();
 
+		// Copy viewers
+		{
+			VoxelLodTerrainUpdateData &update_data = *_update_data;
+			update_data.viewers.clear();
+			VoxelEngine::get_singleton().for_each_viewer(
+					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) {
+						update_data.viewers.push_back({ id, viewer });
+					});
+		}
+
 		// TODO Optimization: pool tasks instead of allocating?
 		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
 				_meshing_dependency, VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world(),
@@ -1190,12 +1289,12 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
-		std::unordered_set<const VoxelMeshBlockVLT *> activated_blocks;
+		std::unordered_set<const VoxelMeshBlockVLT *> activated_visual_blocks;
 
 		const int mesh_block_size = get_mesh_block_size() << lod_index;
 
-		for (unsigned int i = 0; i < lod.mesh_blocks_to_activate.size(); ++i) {
-			const Vector3i bpos = lod.mesh_blocks_to_activate[i];
+		for (unsigned int i = 0; i < lod.mesh_blocks_to_activate_visuals.size(); ++i) {
+			const Vector3i bpos = lod.mesh_blocks_to_activate_visuals[i];
 			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
@@ -1209,12 +1308,12 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// Don't start fading on blocks behind the camera
 				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
 			}
-			set_mesh_block_active(*block, true, with_fading);
-			activated_blocks.insert(block);
+			set_mesh_block_visual_active(*block, true, with_fading, lod_index);
+			activated_visual_blocks.insert(block);
 		}
 
-		for (unsigned int i = 0; i < lod.mesh_blocks_to_deactivate.size(); ++i) {
-			const Vector3i bpos = lod.mesh_blocks_to_deactivate[i];
+		for (unsigned int i = 0; i < lod.mesh_blocks_to_deactivate_visuals.size(); ++i) {
+			const Vector3i bpos = lod.mesh_blocks_to_deactivate_visuals[i];
 			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
 			// Can be null if there is actually no surface at this location
 			if (block == nullptr) {
@@ -1228,11 +1327,31 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				// Don't start fading on blocks behind the camera
 				with_fading = camera.forward.dot(block_center - camera.position) > 0.0;
 			}
-			set_mesh_block_active(*block, false, with_fading);
+			set_mesh_block_visual_active(*block, false, with_fading, lod_index);
 		}
 
-		lod.mesh_blocks_to_activate.clear();
-		lod.mesh_blocks_to_deactivate.clear();
+		for (const Vector3i bpos : lod.mesh_blocks_to_activate_collision) {
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
+			// Can be null if there is actually no surface at this location
+			if (block == nullptr) {
+				continue;
+			}
+			block->set_collision_enabled(true);
+		}
+
+		for (const Vector3i bpos : lod.mesh_blocks_to_deactivate_collision) {
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
+			// Can be null if there is actually no surface at this location
+			if (block == nullptr) {
+				continue;
+			}
+			block->set_collision_enabled(false);
+		}
+
+		lod.mesh_blocks_to_activate_visuals.clear();
+		lod.mesh_blocks_to_deactivate_visuals.clear();
+		lod.mesh_blocks_to_activate_collision.clear();
+		lod.mesh_blocks_to_deactivate_collision.clear();
 
 		/*
 #ifdef DEBUG_ENABLED
@@ -1240,11 +1359,119 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 #endif
 		*/
 
+		for (const Vector3i bpos : lod.mesh_blocks_to_drop_visual) {
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
+			// Can be null if there is actually no surface at this location
+			if (block == nullptr) {
+				continue;
+			}
+			block->drop_visuals();
+			remove_shader_material_from_block(*block, _shader_material_pool);
+			// Also update the state in the threaded representation
+			auto it = lod.mesh_map_state.map.find(bpos);
+			if (it != lod.mesh_map_state.map.end()) {
+				it->second.visual_loaded = false;
+			}
+			// TODO When moving out of a region that already has collision-only viewers (causing the present visual-only
+			// unload), we may want to fade visuals the same way we do when the whole block is removed?
+		}
+		lod.mesh_blocks_to_drop_visual.clear();
+
+		for (const Vector3i bpos : lod.mesh_blocks_to_drop_collision) {
+			VoxelMeshBlockVLT *block = mesh_map.get_block(bpos);
+			if (block == nullptr) {
+				continue;
+			}
+			block->drop_collision();
+			block->set_collision_enabled(false);
+		}
+		lod.mesh_blocks_to_drop_collision.clear();
+
 		for (unsigned int i = 0; i < lod.mesh_blocks_to_unload.size(); ++i) {
 			const Vector3i bpos = lod.mesh_blocks_to_unload[i];
-			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
-			_fading_blocks_per_lod[lod_index].erase(bpos);
+			std::map<Vector3i, VoxelMeshBlockVLT *> &fading_blocks_in_current_lod = _fading_blocks_per_lod[lod_index];
+			auto fading_block_it = fading_blocks_in_current_lod.find(bpos);
+
+			if (_lod_fade_duration > 0.f) {
+				// Trigger fading out if the block was visible.
+				// Since the mesh block is removed from the map, we have to create an independent instance.
+				// If we don't do that and the viewer moves quick enough (or has low enough LOD distance), it would
+				// cause flickering as removed meshes are not able to fade out when moving away from them (contrary to
+				// moving closer to them, because in that case they are not removed, just made invisible).
+				// Other approaches could be explored, such as marking the mesh as "pending removal" and actually
+				// removing it after a second or two, to allow fading to finish.
+
+				// TODO It may be more efficient to just move the mesh instance from the block we are about to
+				// remove, rather than creating another
+
+				const Vector3 block_center = volume_transform.xform(
+						to_vec3(bpos * mesh_block_size + Vector3iUtil::create(mesh_block_size / 2)));
+
+				// Don't do fading for blocks behind the camera.
+				// TODO The block can extend by its size to be visible by the camera, even more if the camera is moving
+				// backwards. Perhaps we should take this into account.
+				if (camera.forward.dot(block_center - camera.position) > 0.f) {
+					const VoxelMeshBlockVLT *mesh_block = mesh_map.get_block(bpos);
+
+					if (mesh_block != nullptr && mesh_block->is_visible()) {
+						Ref<ShaderMaterial> shader_material = mesh_block->get_shader_material();
+
+						if (shader_material.is_valid()) {
+							FadingOutMesh item;
+
+							item.local_position = mesh_block->position * mesh_block_size;
+
+							if (fading_block_it != fading_blocks_in_current_lod.end()) {
+								if (fading_block_it->second->fading_state == VoxelMeshBlockVLT::FADING_OUT) {
+									// The block was already fading out, take it from here
+									item.progress = fading_block_it->second->fading_progress;
+								} else {
+									// The block was fading in: don't reverse from here.
+									// When a mesh is fading in, there is usually one or multiple others fading out,
+									// resulting in an proper opaque cross-fade. If we reverse fading of this mesh, we
+									// end up with two fading-out meshes: with discard-based fragment shaders, that
+									// means their pixels won't complement each other, causing a noticeable "noisy
+									// hole". So instead we fast-forward to full alpha and then fade out, complementing
+									// the eventually fading-in mesh that causes this (even though there might be
+									// another spurious fading-out mesh, it's better than seeing a hole).
+									// That situation occurs often with transition updates because they are at LOD
+									// borders.
+									item.progress = 1.f;
+								}
+							} else {
+								item.progress = 1.f;
+							}
+
+							// TODO Do we actually have to instantiate a material? We could just re-use the one from the
+							// block, since it gets removed and no change occurs in that material (contrary to
+							// transition mask changes)
+							item.shader_material = _shader_material_pool.allocate();
+							ZN_ASSERT(item.shader_material.is_valid());
+							copy_shader_params(**shader_material, **item.shader_material,
+									_shader_material_pool.get_cached_shader_uniforms());
+
+							item.mesh_instance.create();
+							item.mesh_instance.set_mesh(mesh_block->get_mesh());
+							item.mesh_instance.set_gi_mode(get_gi_mode());
+							item.mesh_instance.set_transform(
+									volume_transform * Transform3D(Basis(), item.local_position));
+							item.mesh_instance.set_material_override(item.shader_material);
+							item.mesh_instance.set_world(*get_world_3d());
+							// TODO What if the terrain is hidden?
+							item.mesh_instance.set_visible(true);
+
+							_fading_out_meshes.push_back(std::move(item));
+						}
+					}
+				}
+			}
+
+			if (fading_block_it != fading_blocks_in_current_lod.end()) {
+				fading_blocks_in_current_lod.erase(fading_block_it);
+			}
+
+			mesh_map.remove_block(bpos, BeforeUnloadMeshAction{ _shader_material_pool });
 
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(bpos, lod_index);
@@ -1274,14 +1501,17 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				continue;
 			}
 			// CRASH_COND(block == nullptr);
-			if (block->active) {
+			if (block->visual_active) {
 				Ref<ShaderMaterial> shader_material = block->get_shader_material();
+
+				// TODO Don't fade if the transition mask actually didnt change
+				// This can happen if multiple updates occur and then cancel out
 
 				// Fade stitching transitions to avoid cracks.
 				// This is done by triggering a fade-in on the block, while a copy of it fades out with the previous
 				// material settings. This causes a bit of overdraw, but LOD fading does anyways.
 				if (_lod_fade_duration > 0.f && shader_material.is_valid() &&
-						activated_blocks.find(block) == activated_blocks.end() &&
+						activated_visual_blocks.find(block) == activated_visual_blocks.end() &&
 						tu.transition_mask != block->get_transition_mask()) {
 					//
 					const Vector3 block_center = volume_transform.xform(
@@ -1294,7 +1524,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						item.local_position = block->position * mesh_block_size;
 						item.progress = 1.f;
 
-						// Wayyyy too slow, because of https://github.com/godotengine/godot/issues/34741
+						// Wayyyy too slow, initially because of https://github.com/godotengine/godot/issues/34741
+						// but also generally slow because of how `duplicate` is implemented
 						// item.shader_material = shader_material->duplicate(false);
 						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());
@@ -1328,7 +1559,8 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		lod.mesh_blocks_to_unload.clear();
 		lod.mesh_blocks_to_update_transitions.clear();
-	}
+
+	} // for each lod
 
 	// Remove completed async edits
 	unordered_remove_if(state.running_async_edits, [this](VoxelLodTerrainUpdateData::RunningAsyncEdit &e) {
@@ -1358,13 +1590,6 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	_stats.time_update_task = state.stats.time_total;
 }
 
-template <typename T>
-bool thread_safe_contains(const std::unordered_set<T> &set, T v, BinaryMutex &mutex) {
-	MutexLock lock(mutex);
-	typename std::unordered_set<T>::const_iterator it = set.find(v);
-	return it != set.end();
-}
-
 void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	ZN_PROFILE_SCOPE();
 
@@ -1383,11 +1608,24 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		return;
 	}
 
+	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
+	RefCount viewers;
 	// Initial load will be true when we requested data without specifying specific positions,
 	// so we wouldn't know which ones to expect. This is the case of full load mode.
-	VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
-	if (!ob.initial_load) {
-		if (!thread_safe_contains(lod.loading_blocks, ob.position, lod.loading_blocks_mutex)) {
+	// if (!ob.initial_load) {
+	// Actually, in full load mode, we don't care about viewers and loading blocks, since everything should be loaded
+	// up-front. Blocks can also be received due to generation caching afterward, but we don't refcount them either.
+	if (_data->is_streaming_enabled()) {
+		bool was_loading = false;
+		{
+			MutexLock lock(lod.loading_blocks_mutex);
+			auto it = lod.loading_blocks.find(ob.position);
+			if (it != lod.loading_blocks.end()) {
+				was_loading = true;
+				viewers = it->second.viewers;
+			}
+		}
+		if (!was_loading) {
 			// That block was not requested, or is no longer needed. drop it...
 			ZN_PRINT_VERBOSE(
 					format("Ignoring block {} lod {}, it was not in loading blocks", ob.position, ob.lod_index));
@@ -1411,6 +1649,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 
 	VoxelDataBlock block(ob.voxels, ob.lod_index);
 	block.set_edited(ob.type == VoxelEngine::BlockDataOutput::TYPE_LOADED);
+	block.viewers = viewers;
 
 	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
 		// Voxel block size is incorrect, drop it
@@ -1429,8 +1668,16 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 	{
 		// We have to do this after adding the block to the map, otherwise there would be a small period of time where
 		// the threaded update task could request the block again needlessly
+		// TODO In full load mode, this might be unnecessary, since it's not populated
 		MutexLock lock(lod.loading_blocks_mutex);
 		lod.loading_blocks.erase(ob.position);
+	}
+
+	if (_data->is_streaming_enabled() &&
+			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+		MutexLock mlock(cs.loaded_data_blocks_mutex);
+		cs.loaded_data_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod_index });
 	}
 
 	if (_instancer != nullptr && ob.instances != nullptr) {
@@ -1462,7 +1709,12 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	uint8_t transition_mask;
-	bool active;
+	bool visual_active;
+	bool collision_active;
+	bool first_collision_load = false;
+	bool first_visual_load = false;
+	bool visual_expected = false;
+	bool collision_expected = false;
 	{
 		VoxelLodTerrainUpdateData::Lod &lod = update_data.state.lods[ob.lod];
 		RWLockRead rlock(lod.mesh_map_state.map_lock);
@@ -1487,8 +1739,32 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		// The update task could be running at the same time, so we need to do this atomically.
 		// The state can become "up to date" only if no other unsent update was pending.
 		VoxelLodTerrainUpdateData::MeshState expected = VoxelLodTerrainUpdateData::MESH_UPDATE_SENT;
+		// TODO We need to separate visuals from collider
 		mesh_block_state.state.compare_exchange_strong(expected, VoxelLodTerrainUpdateData::MESH_UP_TO_DATE);
-		active = mesh_block_state.active;
+		visual_active = mesh_block_state.visual_active;
+		collision_active = mesh_block_state.collision_active;
+
+		visual_expected = mesh_block_state.mesh_viewers.get() > 0;
+		collision_expected = mesh_block_state.collision_viewers.get() > 0;
+
+		if (visual_expected && ob.visual_was_required) {
+			// Mark visuals loaded for the streaming system to subdivide LODs.
+			// First mesh load? (note, no mesh being present counts as load too. Before that we would not know)
+			first_visual_load = (mesh_block_state.visual_loaded.exchange(true) == false);
+		}
+		if (collision_expected) {
+			// Mark collisions loaded for the streaming system to subdivide LODs.
+			// First mesh load? (note, no mesh being present counts as load too. Before that we would not know)
+			first_collision_load = (mesh_block_state.collision_loaded.exchange(true) == false);
+		}
+	}
+	if ((first_visual_load || first_collision_load) &&
+			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		// Notify streaming system so it can subdivide LODs as they load
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
+		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
+				ob.position, ob.lod, first_visual_load, first_collision_load });
 	}
 
 	// -------- Part where we invoke Godot functions ---------
@@ -1500,22 +1776,27 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 	VoxelMesher::Output &mesh_data = ob.surfaces;
 
 	Ref<ArrayMesh> mesh;
-	if (ob.has_mesh_resource) {
-		// The mesh was already built as part of the threaded task
-		mesh = ob.mesh;
-		// It can be empty
-		if (mesh.is_valid()) {
-			const unsigned int surface_count = mesh->get_surface_count();
-			for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
-				mesh->surface_set_material(surface_index, _material);
+	if (ob.visual_was_required && visual_expected) {
+		if (ob.has_mesh_resource) {
+			// The mesh was already built as part of the threaded task
+			mesh = ob.mesh;
+			// It can be empty
+			if (mesh.is_valid()) {
+				const unsigned int surface_count = mesh->get_surface_count();
+				for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
+					mesh->surface_set_material(surface_index, _material);
+				}
 			}
+		} else {
+			// Can't build meshes in threads, do it here
+			mesh = build_mesh(
+					to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 		}
-	} else {
-		// Can't build meshes in threads, do it here
-		mesh = build_mesh(to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material);
 	}
 
-	if (mesh.is_null()) {
+	// TODO We could simplify this by having a flag returned by MeshTask saying it's actually empty
+	if (mesh.is_null() && voxel::is_mesh_empty(to_span(ob.surfaces.surfaces)) &&
+			ob.surfaces.collision_surface.indices.size() == 0) {
 		// The mesh is empty
 		if (block != nullptr) {
 			// No surface anymore in this block, destroy it
@@ -1530,23 +1811,14 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		return;
 	}
 
+	// There is something in that block.
+
 	if (block == nullptr) {
+		// Create new block
 		block = memnew(VoxelMeshBlockVLT(ob.position, get_mesh_block_size(), ob.lod));
-		block->active = active;
-		block->set_visible(active);
 		mesh_map.set_block(ob.position, block);
-		// ZN_PRINT_VERBOSE(format("Created block pos {} lod {} time {}", ob.position, int(ob.lod),
-		// 		Time::get_singleton()->get_ticks_msec()));
-	}
 
-	bool has_collision = get_generate_collisions();
-	if (has_collision && _collision_lod_count != 0) {
-		has_collision = ob.lod < _collision_lod_count;
-	}
-
-	// TODO Is this boolean needed anymore now that we create blocks only if a surface is present?
-	if (block->got_first_mesh_update == false) {
-		block->got_first_mesh_update = true;
+		block->set_world(get_world_3d());
 
 		// TODO Need a more generic API for this kind of stuff
 		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
@@ -1555,33 +1827,60 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
 
-		// Lazy initialization
-
-		// print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
-		// set_mesh_block_active(*block, false);
-		block->set_parent_visible(is_visible());
-		block->set_world(get_world_3d());
-
-		if (_shader_material_pool.get_template().is_valid() && block->get_shader_material().is_null()) {
-			ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
-
-			// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
-			// Due to a signal used to keep the inspector up to date, even though these
-			// material copies will never be seen in the inspector
-			// See https://github.com/godotengine/godot/issues/34741
-			Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
-
-			// Set individual shader material, because each block can have dynamic parameters,
-			// used to smooth seams without re-uploading meshes and allow to implement LOD fading
-			block->set_shader_material(sm);
-		}
-
-		block->set_transition_mask(transition_mask);
+		block->set_collision_enabled(collision_active);
 	}
 
-	block->set_mesh(
-			mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()), get_render_layers_mask());
+#ifdef DEV_ENABLED
+	if (mesh.is_valid() && !ob.visual_was_required) {
+		ZN_PRINT_ERROR("Got a rendering mesh yet no visual was required?");
+	}
+#endif
 
+	if (ob.visual_was_required && visual_expected) {
+		// We consider a block having a "rendering" mesh as having loaded visuals.
+		if (!block->has_mesh()) {
+			// Setup visuals
+
+			block->visual_active = visual_active;
+			block->set_visible(visual_active);
+			// ZN_PRINT_VERBOSE(format("Created block pos {} lod {} time {}", ob.position, int(ob.lod),
+			// 		Time::get_singleton()->get_ticks_msec()));
+
+			// Lazy initialization
+
+			// print_line(String("Adding block {0} at lod {1}").format(varray(eo.block_position.to_vec3(), eo.lod)));
+			// set_mesh_block_active(*block, false);
+			block->set_parent_visible(is_visible());
+
+			if (_shader_material_pool.get_template().is_valid() && block->get_shader_material().is_null()) {
+				ZN_PROFILE_SCOPE_NAMED("Add ShaderMaterial");
+
+				// Pooling shader materials is necessary for now, to avoid stuttering in the editor.
+				// Due to a signal used to keep the inspector up to date, even though these
+				// material copies will never be seen in the inspector
+				// See https://github.com/godotengine/godot/issues/34741
+				Ref<ShaderMaterial> sm = _shader_material_pool.allocate();
+
+				if (sm.is_valid() && _material_uses_lod_info) {
+					// This is mainly for debugging purposes
+					const int lod_count = get_lod_count();
+					sm->set_shader_parameter(VoxelStringNames::get_singleton().u_voxel_lod_info,
+							encode_lod_info_for_shader_uniform(ob.lod, lod_count));
+				}
+
+				// Set individual shader material, because each block can have dynamic parameters,
+				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
+				block->set_shader_material(sm);
+			}
+
+			block->set_transition_mask(transition_mask);
+		}
+
+		block->set_mesh(mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()),
+				get_render_layers_mask());
+	}
+
+	// TODO Remove this eventually, we no longer use separate transition mesh instances
 	if (!ob.has_mesh_resource) {
 		// Profiling has shown Godot takes as much time to build a transition mesh as the main mesh of a block, so
 		// because there are 6 transition meshes per block, we would spend about 80% of the time on these if we build
@@ -1599,7 +1898,12 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	if (has_collision) {
+	bool has_collision = get_generate_collisions();
+	if (has_collision && _collision_lod_count != 0) {
+		has_collision = ob.lod < _collision_lod_count;
+	}
+
+	if (has_collision && collision_expected) {
 		const uint64_t now = get_ticks_msec();
 
 		if (_collision_update_delay == 0 ||
@@ -1611,6 +1915,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 			block->set_collision_layer(_collision_layer);
 			block->set_collision_mask(_collision_mask);
+			block->set_collision_enabled(collision_active);
 			block->last_collider_update_time = now;
 			block->deferred_collider_data.reset();
 
@@ -1623,9 +1928,11 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
+	// This is done regardless in case a MeshInstance or collision body is created, because it will then set its
+	// position
 	block->set_parent_transform(get_global_transform());
 
-	if (ob.detail_textures != nullptr) {
+	if (ob.detail_textures != nullptr && visual_expected) {
 		if (ob.detail_textures->valid) {
 			apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod);
 		} else {
@@ -1634,7 +1941,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			// We could do this on many other levels (like propagating to children when a normalmap is assigned),
 			// but if we have to, it means the calculation is too expensive anyways,
 			// so it's usually better to tune it in the first place.
-			try_apply_parent_detail_texture_to_block(*block, ob.position);
+			try_apply_parent_detail_texture_to_block(*block, ob.position, ob.lod);
 		}
 	}
 
@@ -1646,14 +1953,17 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 }
 
 void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob) {
+	ZN_PROFILE_SCOPE();
 	VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[ob.lod_index];
 	VoxelMeshBlockVLT *block = mesh_map.get_block(ob.position);
 
 	// This can happen if:
-	// - Virtual texture rendering results are handled before the first meshing results which that have created the
-	//   block. In this case it will be applied when meshing results get handled, since the data is shared with it.
-	// - The block was indeed unloaded early.
-	if (block == nullptr) {
+	// - Detail texture rendering results are handled before the first meshing results which have created the
+	//   block. In this case it will be applied when meshing results get handled, since the data is also shared with it.
+	// - The block was indeed unloaded early, so detail textures will have to be dropped.
+	// - The block's visuals were dropped as no viewers need them anymore, so detail textures will have to be dropped
+	//   too.
+	if (block == nullptr || !block->has_mesh()) {
 		// ZN_PRINT_VERBOSE(format("Ignored virtual texture update, block not found. pos {} lod {} time {}",
 		// ob.position, 		ob.lod_index, Time::get_singleton()->get_ticks_msec()));
 		return;
@@ -1665,9 +1975,9 @@ void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextur
 	apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod_index);
 }
 
-static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, ShaderMaterial &material,
-		unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block, Vector3i parent_bpos,
-		const DetailRenderingSettings &detail_texture_settings) {
+static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index,
+		ShaderMaterial &material, unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block,
+		Vector3i parent_bpos, const DetailRenderingSettings &detail_texture_settings) {
 	//
 	Ref<ShaderMaterial> parent_material = parent_block.get_shader_material();
 	ZN_ASSERT_RETURN(parent_material.is_valid());
@@ -1682,7 +1992,7 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 	material.set_shader_parameter(sn.u_voxel_normalmap_atlas, normalmap_atlas_texture);
 	material.set_shader_parameter(sn.u_voxel_cell_lookup, cell_lookup_texture);
 
-	const int cell_size = 1 << block.lod_index;
+	const int cell_size = 1 << lod_index;
 	material.set_shader_parameter(sn.u_voxel_cell_size, cell_size);
 
 	material.set_shader_parameter(sn.u_voxel_block_size, mesh_block_size);
@@ -1699,7 +2009,7 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_fade, 1.f);
 
-	const unsigned int parent_lod_index = block.lod_index + 1;
+	const unsigned int parent_lod_index = lod_index + 1;
 	const unsigned int tile_size =
 			get_detail_texture_tile_resolution_for_lod(detail_texture_settings, parent_lod_index);
 	material.set_shader_parameter(sn.u_voxel_virtual_texture_tile_size, tile_size);
@@ -1707,19 +2017,20 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 	block.detail_texture_fallback_level = fallback_level;
 }
 
-void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos) {
+void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(
+		VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index) {
 	ZN_PROFILE_SCOPE();
 
 	Ref<ShaderMaterial> material = block.get_shader_material();
 	if (!material.is_valid()) {
 		return;
 	}
-	if (block.lod_index == get_lod_count()) {
+	if (lod_index == static_cast<unsigned int>(get_lod_count())) {
 		return;
 	}
 
 	// Only looking up one level for now
-	const unsigned int parent_lod_index = block.lod_index + 1;
+	const unsigned int parent_lod_index = lod_index + 1;
 	const VoxelMeshMap<VoxelMeshBlockVLT> &parent_map = _mesh_maps_per_lod[parent_lod_index];
 	const Vector3i parent_bpos = bpos >> 1;
 	const VoxelMeshBlockVLT *parent_block = parent_map.get_block(parent_bpos);
@@ -1727,7 +2038,7 @@ void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT
 		return;
 	}
 
-	zylann::voxel::try_apply_parent_detail_texture_to_block(block, bpos, **material, get_mesh_block_size(),
+	zylann::voxel::try_apply_parent_detail_texture_to_block(block, bpos, lod_index, **material, get_mesh_block_size(),
 			*parent_block, parent_bpos, _update_data->settings.detail_texture_settings);
 }
 
@@ -1896,6 +2207,7 @@ void VoxelLodTerrain::process_fading_blocks(float delta) {
 			FadingOutMesh &item = _fading_out_meshes[i];
 			item.progress -= speed;
 			if (item.progress <= 0.f) {
+				FreeMeshTask::try_add_and_destroy(item.mesh_instance);
 				_shader_material_pool.recycle(item.shader_material);
 				// TODO Optimize: mesh instances destroyed here can be really slow due to materials...
 				// Profiling has shown that `RendererSceneCull::free` of a mesh instance
@@ -2020,7 +2332,7 @@ void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vect
 	});
 }
 
-void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
+void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker) {
 	ZN_PROFILE_SCOPE();
 
 	// This is often called before quitting the game or forcing a global save.
@@ -2038,13 +2350,23 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy) {
 		_data->consume_all_modifications(blocks_to_save, with_copy);
 
 		if (_instancer != nullptr && stream->supports_instance_blocks()) {
-			_instancer->save_all_modified_blocks(task_scheduler, nullptr);
+			_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 		}
 	}
 
 	// And flush immediately
-	VoxelLodTerrainUpdateTask::send_block_save_requests(
-			_volume_id, to_span(blocks_to_save), _streaming_dependency, get_data_block_size(), task_scheduler);
+	VoxelLodTerrainUpdateTask::send_block_save_requests(_volume_id, to_span(blocks_to_save), _streaming_dependency,
+			get_data_block_size(), task_scheduler, tracker,
+			// Require all data we just gathered to be written to disk if the stream uses a cache. So if the
+			// game crashes or gets killed after all tasks are done, data won't be lost.
+			true);
+
+	if (tracker != nullptr) {
+		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
+		tracker->set_count(task_scheduler.get_io_count());
+	}
+
+	// Schedule all tasks
 	task_scheduler.flush();
 }
 
@@ -2112,7 +2434,8 @@ void VoxelLodTerrain::remesh_all_blocks() {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		for (auto it = lod.mesh_map_state.map.begin(); it != lod.mesh_map_state.map.end(); ++it) {
-			VoxelLodTerrainUpdateTask::schedule_mesh_update(it->second, it->first, lod.blocks_pending_update);
+			VoxelLodTerrainUpdateTask::schedule_mesh_update(
+					it->second, it->first, lod.mesh_blocks_pending_update, it->second.mesh_viewers.get() > 0);
 		}
 	}
 }
@@ -2132,6 +2455,22 @@ bool VoxelLodTerrain::is_area_meshed(const Box3i &box_in_voxels, unsigned int lo
 		const VoxelLodTerrainUpdateData::MeshBlockState &block = it->second;
 		return block.state == VoxelLodTerrainUpdateData::MESH_UP_TO_DATE;
 	});
+}
+
+VoxelLodTerrain::StreamingSystem VoxelLodTerrain::get_streaming_system() const {
+	return static_cast<StreamingSystem>(_update_data->settings.streaming_system);
+}
+
+void VoxelLodTerrain::set_streaming_system(StreamingSystem v) {
+	VoxelLodTerrainUpdateData::StreamingSystem system = static_cast<VoxelLodTerrainUpdateData::StreamingSystem>(v);
+	if (system == _update_data->settings.streaming_system) {
+		return;
+	}
+	_update_data->settings.streaming_system = system;
+	_on_stream_params_changed();
+#ifdef TOOLS_ENABLED
+	notify_property_list_changed();
+#endif
 }
 
 void VoxelLodTerrain::set_voxel_bounds(Box3i p_box) {
@@ -2169,6 +2508,18 @@ int VoxelLodTerrain::get_collision_update_delay() const {
 
 void VoxelLodTerrain::set_lod_fade_duration(float seconds) {
 	_lod_fade_duration = math::clamp(seconds, 0.f, 1.f);
+
+	if (_lod_fade_duration == 0.f) {
+		// Make sure all mesh blocks have a material with no fading. Otherwise, if they previously faded out and fading
+		// is turned off later, they will not be visible when shown again since the shader might still receive faded out
+		// parameters, while fading logic won't run.
+		for (unsigned int lod_index = 0; lod_index < _mesh_maps_per_lod.size(); ++lod_index) {
+			VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+			mesh_map.for_each_block([](VoxelMeshBlockVLT &mesh_block) { //
+				mesh_block.clear_fading();
+			});
+		}
+	}
 }
 
 float VoxelLodTerrain::get_lod_fade_duration() const {
@@ -2400,8 +2751,11 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 
 #endif // TOOLS_ENABLED
 
-void VoxelLodTerrain::_b_save_modified_blocks() {
-	save_all_modified_blocks(true);
+Ref<VoxelSaveCompletionTracker> VoxelLodTerrain::_b_save_modified_blocks() {
+	std::shared_ptr<AsyncDependencyTracker> tracker = make_shared_instance<AsyncDependencyTracker>();
+	save_all_modified_blocks(true, tracker);
+	ZN_ASSERT_RETURN_V(tracker != nullptr, Ref<VoxelSaveCompletionTracker>());
+	return VoxelSaveCompletionTracker::create(tracker);
 }
 
 void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
@@ -2436,7 +2790,7 @@ Array VoxelLodTerrain::debug_raycast_mesh_block(Vector3 world_origin, Vector3 wo
 			if (block != nullptr && block->is_visible() && block->has_mesh()) {
 				Dictionary d;
 				d["position"] = block->position;
-				d["lod"] = block->lod_index;
+				d["lod"] = lod_index;
 				hits.append(d);
 			}
 		}
@@ -2483,7 +2837,8 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	bool loaded = false;
 	bool meshed = false;
 	bool visible = false;
-	bool active = false;
+	bool visual_active = false;
+	bool collision_active = false;
 	int mesh_state = VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED;
 
 	const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
@@ -2494,8 +2849,8 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 		{
 			const VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 			RWLockRead rlock(lod.mesh_map_state.map_lock);
-			recomputed_transition_mask = VoxelLodTerrainUpdateTask::get_transition_mask(
-					_update_data->state, bpos, block->lod_index, lod_count);
+			recomputed_transition_mask =
+					VoxelLodTerrainUpdateTask::get_transition_mask(_update_data->state, bpos, lod_index, lod_count);
 			auto it = lod.mesh_map_state.map.find(bpos);
 			if (it != lod.mesh_map_state.map.end()) {
 				mesh_state = it->second.state;
@@ -2505,7 +2860,8 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 		loaded = true;
 		meshed = block->has_mesh();
 		visible = block->is_visible();
-		active = block->active;
+		visual_active = block->visual_active;
+		collision_active = block->is_collision_enabled();
 		d["transition_mask"] = block->get_transition_mask();
 		// This can highlight possible bugs between the current state and what it should be
 		d["recomputed_transition_mask"] = recomputed_transition_mask;
@@ -2515,7 +2871,8 @@ Dictionary VoxelLodTerrain::debug_get_mesh_block_info(Vector3 fbpos, int lod_ind
 	d["meshed"] = meshed;
 	d["mesh_state"] = mesh_state;
 	d["visible"] = visible;
-	d["active"] = active;
+	d["visual_active"] = visual_active;
+	d["collision_active"] = collision_active;
 	return d;
 }
 
@@ -2649,6 +3006,12 @@ bool VoxelLodTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 }
 
 #ifdef TOOLS_ENABLED
+void VoxelLodTerrain::debug_set_draw_flags(uint32_t mask) {
+	_debug_draw_flags = mask;
+}
+#endif
+
+#ifdef TOOLS_ENABLED
 
 void VoxelLodTerrain::update_gizmos() {
 	ZN_PROFILE_SCOPE();
@@ -2696,8 +3059,8 @@ void VoxelLodTerrain::update_gizmos() {
 	}
 
 	// Octree nodes
+	// That can be expensive to draw
 	if (debug_get_draw_flag(DEBUG_DRAW_OCTREE_NODES)) {
-		// That can be expensive to draw
 		const float lod_count_f = lod_count;
 
 		for (auto it = state.octree_streaming.lod_octrees.begin(); it != state.octree_streaming.lod_octrees.end();
@@ -2719,6 +3082,99 @@ void VoxelLodTerrain::update_gizmos() {
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
 				dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 			});
+		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_ACTIVE_MESH_BLOCKS)) {
+		const float lod_count_f = lod_count;
+
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+
+			for (auto mesh_it = lod.mesh_map_state.map.begin(); mesh_it != lod.mesh_map_state.map.end(); ++mesh_it) {
+				const VoxelLodTerrainUpdateData::MeshBlockState &ms = mesh_it->second;
+				if (ms.visual_active) {
+					const int size = mesh_block_size << lod_index;
+					const Vector3i bpos = mesh_it->first;
+					const Vector3i voxel_pos = mesh_block_size * (bpos << lod_index);
+					const Transform3D local_transform(Basis().scaled(Vector3(size, size, size)), voxel_pos);
+					const Transform3D t = parent_transform * local_transform;
+					// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
+					// Also this might be better with sRGB?
+					const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
+					dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
+				}
+			}
+		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS)) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+			const int lod_block_size = mesh_block_size << lod_index;
+
+			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+				Color8 color;
+				if (block.has_mesh() && block.has_collision_shape()) {
+					color = Color8(255, 255, 0, 255);
+				} else if (block.has_mesh()) {
+					color = Color8(0, 255, 0, 255);
+				} else if (block.has_collision_shape()) {
+					color = Color8(255, 0, 0, 255);
+				} else {
+					// Zombie block? A block with no visual and no collision should not persist in the map
+					color = Color8(0, 0, 0, 255);
+				}
+				const Vector3i voxel_pos = block.position * lod_block_size;
+				const Transform3D local_transform(
+						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+				const Transform3D t = parent_transform * local_transform;
+				dr.draw_box_mm(t, color);
+			});
+		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS)) {
+		for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+			const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
+
+			const int lod_block_size = mesh_block_size << lod_index;
+
+			mesh_map.for_each_block([lod_block_size, &parent_transform, &dr](const VoxelMeshBlockVLT &block) {
+				Color8 color;
+				if (block.visual_active && block.is_collision_enabled()) {
+					color = Color8(255, 255, 0, 255);
+				} else if (block.visual_active) {
+					color = Color8(0, 255, 0, 255);
+				} else if (block.is_collision_enabled()) {
+					color = Color8(255, 0, 0, 255);
+				} else {
+					return;
+				}
+				const Vector3i voxel_pos = block.position * lod_block_size;
+				const Transform3D local_transform(
+						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
+				const Transform3D t = parent_transform * local_transform;
+				dr.draw_box_mm(t, color);
+			});
+		}
+	}
+
+	if (debug_get_draw_flag(DEBUG_DRAW_VIEWER_CLIPBOXES) &&
+			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		const float lod_count_f = lod_count;
+
+		for (const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer : state.clipbox_streaming.paired_viewers) {
+			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
+				const int lod_mesh_block_size = mesh_block_size << lod_index;
+				const Box3i box = paired_viewer.state.mesh_box_per_lod[lod_index];
+				const Transform3D lt(Basis().scaled(Vector3(box.size * lod_mesh_block_size)),
+						Vector3(box.pos * lod_mesh_block_size));
+				const Transform3D t = parent_transform * lt;
+				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
+				dr.draw_box_mm(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
+			}
 		}
 	}
 
@@ -2854,19 +3310,25 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		const VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
 
-		mesh_map.for_each_block([root](const VoxelMeshBlockVLT &block) {
-			block.for_each_mesh_instance_with_transform([root, &block](const DirectMeshInstance &dmi, Transform3D t) {
-				Ref<Mesh> mesh = dmi.get_mesh();
+		// To make the scene easier to inspect
+		Node3D *lod_node = memnew(Node3D);
+		lod_node->set_name(String("LOD{0}").format(varray(lod_index)));
+		root->add_child(lod_node);
 
-				if (mesh.is_valid()) {
-					MeshInstance3D *mi = memnew(MeshInstance3D);
-					mi->set_mesh(mesh);
-					mi->set_transform(t);
-					// TODO Transition mesh visibility?
-					mi->set_visible(block.is_visible());
-					root->add_child(mi);
-				}
-			});
+		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
+			block.for_each_mesh_instance_with_transform(
+					[lod_node, &block](const DirectMeshInstance &dmi, Transform3D t) {
+						Ref<Mesh> mesh = dmi.get_mesh();
+
+						if (mesh.is_valid()) {
+							MeshInstance3D *mi = memnew(MeshInstance3D);
+							mi->set_mesh(mesh);
+							mi->set_transform(t);
+							// TODO Transition mesh visibility?
+							mi->set_visible(block.is_visible());
+							lod_node->add_child(mi);
+						}
+					});
 		});
 	}
 
@@ -2880,7 +3342,7 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 	return root;
 }
 
-int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer) const {
 	Node3D *root = debug_dump_as_nodes(include_instancer);
 	ZN_ASSERT_RETURN_V(root != nullptr, ERR_BUG);
 
@@ -2896,6 +3358,10 @@ int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include
 
 	const Error save_result = save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	return save_result;
+}
+
+int /*Error*/ VoxelLodTerrain::_b_debug_dump_as_scene(String fpath, bool include_instancer) const {
+	return static_cast<int>(debug_dump_as_scene(fpath, include_instancer));
 }
 
 bool VoxelLodTerrain::_b_is_area_meshed(AABB aabb, int lod_index) const {
@@ -2948,6 +3414,10 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_lod_distance", "lod_distance"), &VoxelLodTerrain::set_lod_distance);
 	ClassDB::bind_method(D_METHOD("get_lod_distance"), &VoxelLodTerrain::get_lod_distance);
+
+	ClassDB::bind_method(
+			D_METHOD("set_secondary_lod_distance", "lod_distance"), &VoxelLodTerrain::set_secondary_lod_distance);
+	ClassDB::bind_method(D_METHOD("get_secondary_lod_distance"), &VoxelLodTerrain::get_secondary_lod_distance);
 
 	// Misc
 
@@ -3027,6 +3497,9 @@ void VoxelLodTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enabled"), &VoxelLodTerrain::set_generator_use_gpu);
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelLodTerrain::get_generator_use_gpu);
 
+	ClassDB::bind_method(D_METHOD("set_streaming_system", "system"), &VoxelLodTerrain::set_streaming_system);
+	ClassDB::bind_method(D_METHOD("get_streaming_system"), &VoxelLodTerrain::get_streaming_system);
+
 	// Debug
 
 	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelLodTerrain::_b_get_statistics);
@@ -3063,7 +3536,14 @@ void VoxelLodTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_EDITED_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_MODIFIER_BOUNDS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_VIEWER_CLIPBOXES);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
+
+	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_LEGACY_OCTREE);
+	BIND_ENUM_CONSTANT(STREAMING_SYSTEM_CLIPBOX);
 
 	ADD_GROUP("Bounds", "");
 
@@ -3074,6 +3554,8 @@ void VoxelLodTerrain::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lod_count"), "set_lod_count", "get_lod_count");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_distance"), "set_lod_distance", "get_lod_distance");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "secondary_lod_distance"), "set_secondary_lod_distance",
+			"get_secondary_lod_distance");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_fade_duration"), "set_lod_fade_duration", "get_lod_fade_duration");
 
 	ADD_GROUP("Material", "");
@@ -3122,6 +3604,8 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "threaded_update_enabled"), "set_threaded_update_enabled",
 			"is_threaded_update_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "streaming_system", PROPERTY_HINT_ENUM, "Octree (legacy),Clipbox"),
+			"set_streaming_system", "get_streaming_system");
 }
 
 } // namespace zylann::voxel

@@ -4,6 +4,8 @@ namespace zylann {
 
 void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEditConnection> &out_connections) {
 #if defined(ZN_GODOT)
+
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 	List<GraphEdit::Connection> connections_list;
 	self.get_connection_list(&connections_list);
 
@@ -22,6 +24,21 @@ void get_graph_edit_connections(const GraphEdit &self, std::vector<GodotGraphEdi
 
 		out_connections.push_back(dst_con);
 	}
+
+#else // Godot 4.3+
+	const List<Ref<GraphEdit::Connection>> &connections_list = self.get_connection_list();
+
+	for (const Ref<GraphEdit::Connection> &src_con : connections_list) {
+		GodotGraphEditConnection dst_con;
+
+		dst_con.from = src_con->from_node;
+		dst_con.to = src_con->to_node;
+		dst_con.from_port = src_con->from_port;
+		dst_con.to_port = src_con->to_port;
+
+		out_connections.push_back(dst_con);
+	}
+#endif
 
 #elif defined(ZN_GODOT_EXTENSION)
 	Array list = self.get_connection_list();

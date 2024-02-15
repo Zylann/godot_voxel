@@ -5,9 +5,13 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.1"
+  GODOT_BASE_BRANCH: "4.2"
   SCONS_CACHE_LIMIT: 4096
 
 
@@ -23,20 +27,23 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -47,7 +54,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: mono-glue-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -58,7 +65,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -78,14 +85,16 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=no copy_mono_root=yes
 
       - name: Generate Mono Glue
         run: |
-          xvfb-run ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue modules/mono/glue || true
+          ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue modules/mono/glue
+        # run: |
+        #   xvfb-run ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue modules/mono/glue || true
 
       # Make glue available as artifact for dependent jobs
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: mono-glue
           path: |
@@ -100,20 +109,23 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
-      - name: Install dependencies
-        run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa
-          sudo apt-get update
+      # TODO That package no longer works, seems to have become more complicated on Godot's repo.
+      #      But why was it needed actually? Now in Godot's repo, installing newer mesa has the title "Linux 
+      #      dependencies for tests", and we are not going to run tests.
+      # - name: Install dependencies
+      #   run: |
+      #     sudo add-apt-repository ppa:kisak/kisak-mesa
+      #     sudo apt-get update
 
       # Install all packages (except scons)
       - name: Configure dependencies
@@ -124,7 +136,7 @@ jobs:
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: linux-editor-mono-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{github.workspace}}/.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -135,7 +147,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -152,7 +164,7 @@ jobs:
 
       # Download glue from the mono-glue job
       - name: Download Glue
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mono-glue
           path: modules/mono/glue
@@ -166,10 +178,10 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
+          scons verbose=yes warnings=all werror=yes platform=linuxbsd tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes mono_static=yes copy_mono_root=yes
 
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: godot.linuxbsd.editor.x86_64.mono
           path: bin/*
@@ -182,13 +194,13 @@ jobs:
 
     steps:
       # Clone Godot
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: godotengine/godot
           ref: ${{ env.GODOT_BASE_BRANCH }}
 
       # Clone our module under the correct directory
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: modules/voxel
 
@@ -200,7 +212,7 @@ jobs:
       # Editing this is pretty dangerous for Windows since it can break and needs to be properly tested with a fresh cache.
       - name: Load .scons_cache directory
         id: windows-editor-mono-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /.scons_cache/
           key: ${{github.job}}-${{env.GODOT_BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
@@ -211,7 +223,7 @@ jobs:
 
       # Use python 3.x release (works cross platform; best to keep self contained in it's own step)
       - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           # Semantic version range syntax or exact version of a Python version
           python-version: '3.x'
@@ -228,7 +240,7 @@ jobs:
 
       # Download glue from the mono-glue job
       - name: Download Glue
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mono-glue
           path: modules/mono/glue
@@ -243,7 +255,7 @@ jobs:
           SCONS_CACHE_MSVC_CONFIG: true
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=editor dev_build=no debug_symbols=no module_mono_enabled=yes mono_glue=yes copy_mono_root=yes mono_static=yes
 
       # TODO Enhancement: Run tests? Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
@@ -252,7 +264,7 @@ jobs:
       #    ./bin/godot.windows.editor.x86_64.mono.exe --test
 
       # Make build available
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: godot.windows.editor.x86_64.mono
           path: bin/*

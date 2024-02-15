@@ -2,8 +2,12 @@
 #define VOXEL_GENERATOR_NOISE_H
 
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../util/godot/classes/noise.h"
+#include "../../storage/voxel_buffer_internal.h"
+#include "../../util/godot/macros.h"
+#include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
+
+ZN_GODOT_FORWARD_DECLARE(class Noise)
 
 namespace zylann::voxel {
 

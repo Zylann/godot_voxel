@@ -280,9 +280,17 @@ void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mas
 	copy(pos, dst->get_buffer(), channel_mask);
 }
 
+void VoxelTool::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+	ERR_PRINT("Not implemented");
+}
+
 void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
+	if (Vector3iUtil::is_empty_size(p_voxels->get_size())) {
+		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be pasted.");
+	}
+	paste(p_pos, p_voxels->get_buffer(), channels_mask);
 }
 
 void VoxelTool::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
@@ -302,22 +310,50 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
-	// TODO Perhaps should implement `copy` and `paste` with `VoxelBufferInternal` so Godot object wrappers wouldn't be
-	// necessary
-	Ref<gd::VoxelBuffer> buffer;
-	buffer.instantiate();
-	buffer->create(padded_voxel_box.size.x, padded_voxel_box.size.y, padded_voxel_box.size.z);
+	VoxelBufferInternal buffer;
+	buffer.create(padded_voxel_box.size);
 
 	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
 		copy(padded_voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
-		std::shared_ptr<VoxelBufferInternal> smooth_buffer = make_shared_instance<VoxelBufferInternal>();
+		VoxelBufferInternal smooth_buffer;
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
-		ops::box_blur(buffer->get_buffer(), *smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
+		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, gd::VoxelBuffer::create_shared(smooth_buffer), (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+
+	} else {
+		ERR_PRINT("Not implemented");
+	}
+}
+
+void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float strength) {
+	// TODO: In the future, it may be preferable to use additional "GROW"/"SHRINK" voxel tool modes instead.
+	// see: https://github.com/Zylann/godot_voxel/pull/594
+	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(sphere_radius >= 0.01f);
+	ZN_ASSERT_RETURN(strength >= 0.0f && strength <= 1.0f);
+
+	const Box3i voxel_box = Box3i::from_min_max(
+			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
+			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+
+	VoxelBufferInternal buffer;
+	buffer.create(voxel_box.size);
+
+	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+		// Note, this only applies to SDF. It won't affect voxel texture data.
+
+		copy(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
+
+		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
+
+		paste(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -481,6 +517,8 @@ void VoxelTool::_bind_methods() {
 
 	ClassDB::bind_method(
 			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere);
+	ClassDB::bind_method(
+			D_METHOD("grow_sphere", "sphere_center", "sphere_radius", "strength"), &VoxelTool::grow_sphere);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);

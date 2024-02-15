@@ -16,7 +16,7 @@ public:
 	LoadBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 			bool p_request_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
 			PriorityDependency p_priority_dependency, bool generate_cache_data, bool generator_use_gpu,
-			const std::shared_ptr<VoxelData> &vdata);
+			const std::shared_ptr<VoxelData> &vdata, TaskCancellationToken cancellation_token);
 
 	~LoadBlockDataTask();
 
@@ -49,6 +49,7 @@ private:
 	bool _generator_use_gpu = false;
 	std::shared_ptr<StreamingDependency> _stream_dependency;
 	std::shared_ptr<VoxelData> _voxel_data;
+	TaskCancellationToken _cancellation_token;
 };
 
 } // namespace zylann::voxel

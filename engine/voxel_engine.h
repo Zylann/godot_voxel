@@ -49,8 +49,11 @@ public:
 		Vector3i position;
 		// TODO Rename lod_index
 		uint8_t lod;
-		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread.
+		// Tells if the mesh resource was built as part of the task. If not, you need to build it on the main thread if
+		// it is needed.
 		bool has_mesh_resource;
+		// Tells if the meshing task was required to build a rendering mesh if possible.
+		bool visual_was_required;
 		// Can be null. Attached to meshing output so it is tracked more easily, because it is baked asynchronously
 		// starting from the mesh task, and it might complete earlier or later than the mesh.
 		std::shared_ptr<DetailTextureOutput> detail_textures;
@@ -74,6 +77,7 @@ public:
 		bool max_lod_hint;
 		// Blocks with this flag set should not be ignored.
 		// This is used when data streaming is off, all blocks are loaded at once.
+		// TODO Unused?
 		bool initial_load;
 	};
 
@@ -149,6 +153,7 @@ public:
 	void set_viewer_network_peer_id(ViewerID viewer_id, int peer_id);
 	int get_viewer_network_peer_id(ViewerID viewer_id) const;
 	bool viewer_exists(ViewerID viewer_id) const;
+	void sync_viewers_task_priority_data();
 
 	template <typename F>
 	inline void for_each_viewer(F f) const {

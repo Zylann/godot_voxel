@@ -900,6 +900,14 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 	emit_changed();
 }
 
+void VoxelStreamRegionFiles::flush() {
+	ZN_PROFILE_SCOPE();
+	MutexLock lock(_mutex);
+	for (CachedRegion *cr : _region_cache) {
+		cr->region.flush();
+	}
+}
+
 void VoxelStreamRegionFiles::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_directory", "directory"), &VoxelStreamRegionFiles::set_directory);
 	ClassDB::bind_method(D_METHOD("get_directory"), &VoxelStreamRegionFiles::get_directory);

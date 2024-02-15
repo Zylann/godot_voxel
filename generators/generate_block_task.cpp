@@ -23,7 +23,8 @@ GenerateBlockTask::GenerateBlockTask(const VoxelGenerator::BlockTaskParams &para
 		_priority_dependency(params.priority_dependency),
 		_stream_dependency(params.stream_dependency),
 		_data(params.data),
-		_tracker(params.tracker) {
+		_tracker(params.tracker),
+		_cancellation_token(params.cancellation_token) {
 	//
 	VoxelEngine::get_singleton().debug_increment_generate_block_task_counter();
 	// println(format(
@@ -154,7 +155,7 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 			// No priority data, saving doesn't need sorting.
 
 			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
-					_volume_id, _position, _lod_index, _block_size, voxels_copy, _stream_dependency, nullptr));
+					_volume_id, _position, _lod_index, _block_size, voxels_copy, _stream_dependency, nullptr, false));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -172,7 +173,13 @@ TaskPriority GenerateBlockTask::get_priority() {
 }
 
 bool GenerateBlockTask::is_cancelled() {
-	return !_stream_dependency->valid || _too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
+	if (_stream_dependency->valid == false) {
+		return false;
+	}
+	if (_cancellation_token.is_valid()) {
+		return _cancellation_token.is_cancelled();
+	}
+	return _too_far; // || stream_dependency->stream->get_fallback_generator().is_null();
 }
 
 void GenerateBlockTask::apply_result() {

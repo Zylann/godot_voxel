@@ -50,6 +50,7 @@ void RenderDetailTextureTask::run(ThreadedTaskContext &ctx) {
 	ZN_ASSERT_RETURN(cell_iterator != nullptr);
 
 	if (use_gpu) {
+		ZN_ASSERT_RETURN(generator->supports_shaders());
 		run_on_gpu();
 	} else {
 		run_on_cpu();
@@ -183,11 +184,15 @@ static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile
 void RenderDetailTextureTask::run_on_gpu() {
 	ZN_PROFILE_SCOPE();
 	RenderDetailTextureGPUTask *gpu_task = make_gpu_task();
+	ZN_ASSERT_RETURN(gpu_task != nullptr);
 	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
 RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	const unsigned int tile_resolution = get_detail_texture_tile_resolution_for_lod(detail_texture_settings, lod_index);
+
+	std::shared_ptr<ComputeShader> shader = generator->get_detail_rendering_shader();
+	ZN_ASSERT_RETURN_V(shader != nullptr, nullptr);
 
 	// Fallback on CPU for tiles containing edited voxels.
 	// TODO Figure out an efficient way to have sparse voxel data available on the GPU
@@ -246,7 +251,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	gpu_task->cell_triangles = std::move(cell_triangles);
 	gpu_task->tile_data = std::move(tile_data);
 	gpu_task->params = params;
-	gpu_task->shader = generator->get_detail_rendering_shader();
+	gpu_task->shader = shader;
 	gpu_task->shader_params = generator->get_detail_rendering_shader_parameters();
 	gpu_task->output = output_textures;
 	gpu_task->edited_tiles_texture_data = std::move(edited_tiles_normalmap_data);

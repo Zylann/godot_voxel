@@ -1,6 +1,8 @@
 #ifndef VOXEL_GENERATOR_WAVES_H
 #define VOXEL_GENERATOR_WAVES_H
 
+#include "../../util/math/vector2.h"
+#include "../../util/thread/rw_lock.h"
 #include "voxel_generator_heightmap.h"
 
 namespace zylann::voxel {

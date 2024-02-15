@@ -17,12 +17,12 @@ public:
 	// For saving voxels only
 	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 			std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			std::shared_ptr<AsyncDependencyTracker> p_tracker);
+			std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task);
 
 	// For saving instances only
 	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, uint8_t p_block_size,
 			UniquePtr<InstanceBlockData> p_instances, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			std::shared_ptr<AsyncDependencyTracker> p_tracker);
+			std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task);
 
 	~SaveBlockDataTask();
 
@@ -47,6 +47,7 @@ private:
 	bool _has_run = false;
 	bool _save_instances = false;
 	bool _save_voxels = false;
+	bool _flush_on_last_tracked_task = false;
 	std::shared_ptr<StreamingDependency> _stream_dependency;
 	// Optional tracking, can be null
 	std::shared_ptr<AsyncDependencyTracker> _tracker;

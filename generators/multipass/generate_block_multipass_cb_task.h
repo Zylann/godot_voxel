@@ -44,6 +44,7 @@ private:
 	PriorityDependency _priority_dependency;
 	std::shared_ptr<StreamingDependency> _stream_dependency; // For saving generator output
 	std::shared_ptr<AsyncDependencyTracker> _tracker; // For async edits
+	TaskCancellationToken _cancellation_token;
 
 	bool _has_run = false;
 	bool _too_far = false;

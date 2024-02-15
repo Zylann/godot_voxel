@@ -312,7 +312,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		rd.compute_list_dispatch(compute_list_id, //
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(tile_data.size(), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
 	}
 
 	// Ensure dependencies are ready before running dilation on the result (I though this was automatically handled?
@@ -348,7 +348,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		rd.compute_list_dispatch(compute_list_id, //
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(tile_data.size(), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -395,7 +395,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		rd.compute_list_dispatch(compute_list_id, //
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(tile_data.size(), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
 
 		rd.compute_list_add_barrier(compute_list_id);
 	}
@@ -430,7 +430,7 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		rd.compute_list_dispatch(compute_list_id, //
 				math::ceildiv(params.tile_size_pixels, local_group_size_x),
 				math::ceildiv(params.tile_size_pixels, local_group_size_y),
-				math::ceildiv(tile_data.size(), local_group_size_z));
+				math::ceildiv(static_cast<int32_t>(tile_data.size()), local_group_size_z));
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -452,11 +452,15 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 		rd.compute_list_bind_compute_pipeline(compute_list_id, _normalmap_dilation_pipeline_rid);
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
-		const int local_group_size_x = 8;
-		const int local_group_size_y = 8;
-		const int local_group_size_z = 1;
-		rd.compute_list_dispatch(compute_list_id, math::ceildiv(texture_width, local_group_size_x),
-				math::ceildiv(texture_height, local_group_size_y), local_group_size_z);
+		const unsigned int local_group_size_x = 8;
+		const unsigned int local_group_size_y = 8;
+		const unsigned int local_group_size_z = 1;
+		rd.compute_list_dispatch(compute_list_id,
+				// Had to cast explicitely because even though both arguments are unsigned, MSVC is too dumb to
+				// realize it can just use the unsigned version of this function. Also, if both are uint16_t, it
+				// somehow decides to use the SIGNED version.
+				math::ceildiv(static_cast<unsigned int>(texture_width), local_group_size_x),
+				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y), local_group_size_z);
 	}
 
 	rd.compute_list_add_barrier(compute_list_id);
@@ -480,11 +484,12 @@ void RenderDetailTextureGPUTask::prepare(GPUTaskContext &ctx) {
 
 		rd.compute_list_bind_uniform_set(compute_list_id, dilation_uniform_set_rid, 0);
 
-		const int local_group_size_x = 8;
-		const int local_group_size_y = 8;
-		const int local_group_size_z = 1;
-		rd.compute_list_dispatch(compute_list_id, math::ceildiv(texture_width, local_group_size_x),
-				math::ceildiv(texture_height, local_group_size_y), local_group_size_z);
+		const unsigned int local_group_size_x = 8;
+		const unsigned int local_group_size_y = 8;
+		const unsigned int local_group_size_z = 1;
+		rd.compute_list_dispatch(compute_list_id,
+				math::ceildiv(static_cast<unsigned int>(texture_width), local_group_size_x),
+				math::ceildiv(static_cast<unsigned int>(texture_height), local_group_size_y), local_group_size_z);
 	}
 
 	// Final result should be in image0.

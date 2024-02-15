@@ -75,9 +75,7 @@ void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBufferInternal &dst, u
 	copy_from_chunked_storage(dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input);
 }
 
-void VoxelToolMultipassGenerator::paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
-	ZN_ASSERT_RETURN(p_voxels.is_valid());
-	const VoxelBufferInternal &src = p_voxels->get_buffer();
+void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
 	paste_to_chunked_storage(
 			src, pos, _block_size_po2, channels_mask, false, 0, 0, get_pass_input_block_w, &_pass_input);
 }
@@ -153,7 +151,7 @@ Vector3i VoxelToolMultipassGenerator::get_editable_area_min() const {
 }
 
 Vector3i VoxelToolMultipassGenerator::get_editable_area_max() const {
-	return _editable_voxel_box.pos + _editable_voxel_box.size - Vector3i(1, 1, 1);
+	return _editable_voxel_box.pos + _editable_voxel_box.size;
 }
 
 Vector3i VoxelToolMultipassGenerator::get_main_area_min() const {

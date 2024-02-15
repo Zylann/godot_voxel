@@ -1,7 +1,10 @@
 #ifndef VOXEL_GENERATOR_NOISE_2D_H
 #define VOXEL_GENERATOR_NOISE_2D_H
 
-#include "../../util/macros.h"
+#include "../../util/containers/span.h"
+#include "../../util/godot/macros.h"
+#include "../../util/math/vector3f.h"
+#include "../../util/thread/rw_lock.h"
 #include "voxel_generator_heightmap.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Curve)

@@ -399,8 +399,8 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	// TODO Optimize: thread_local pooling?
 	std::vector<Task> todo;
 	// We'll pack tasks per LOD so we'll have less locking to do
-	// TODO Optimize: thread_local pooling?
-	std::vector<unsigned int> count_per_lod;
+	FixedArray<unsigned int, constants::MAX_LOD> count_per_lod;
+	fill(count_per_lod, 0u);
 
 	// We could have locked all LODs for writing during the whole process.
 	// But in order to reduce the amount of locking and time being locked, we only lock them one by one for reading
@@ -440,7 +440,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 			});
 		}
 
-		count_per_lod.push_back(todo.size() - prev_size);
+		count_per_lod[lod_index] = todo.size() - prev_size;
 	}
 
 	const Vector3i block_size = Vector3iUtil::create(data_block_size);
@@ -539,13 +539,14 @@ void VoxelData::mark_area_modified(
 
 		bbox.for_each_cell([&data_lod0, lod0_new_blocks_to_lod, require_lod_updates](Vector3i block_pos_lod0) {
 			VoxelDataBlock *block = data_lod0.map.get_block(block_pos_lod0);
-			// We can get null blocks due to the added padding...
-			// ERR_FAIL_COND(block == nullptr);
+
+			// TODO Not finding a block or allocated voxels could indicate an error elsewhere, but is it worth printing?
 			if (block == nullptr) {
+				ZN_PRINT_VERBOSE("Modifying area without data blocks?");
 				return;
 			}
-			// We can get blocks without voxels in them due to the added padding...
 			if (!block->has_voxels()) {
+				ZN_PRINT_VERBOSE("Modifying area without allocated voxels?");
 				return;
 			}
 
@@ -579,12 +580,19 @@ bool VoxelData::has_block(Vector3i bpos, unsigned int lod_index) const {
 	return data_lod.map.has_block(bpos);
 }
 
-bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box) const {
+bool VoxelData::has_all_blocks_in_area(Box3i data_blocks_box, unsigned int lod_index) const {
 	ZN_PROFILE_SCOPE();
-	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
+	// TODO get_bounds locks a mutex, it may be better for all callers to prefer the unbound version and clip
+	// themselves, especially when doing this many times
+	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size() << lod_index);
 	data_blocks_box = data_blocks_box.clipped(bounds_in_blocks);
 
-	const Lod &data_lod = _lods[0];
+	return has_all_blocks_in_area_unbound(data_blocks_box, lod_index);
+}
+
+bool VoxelData::has_all_blocks_in_area_unbound(Box3i data_blocks_box, unsigned int lod_index) const {
+	// ZN_PROFILE_SCOPE();
+	const Lod &data_lod = _lods[lod_index];
 	RWLockRead rlock(data_lod.map_lock);
 
 	return data_blocks_box.all_cells_match([&data_lod](Vector3i bpos) { //
@@ -612,7 +620,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	// i.e there is no way for a block to be loaded if its parent LOD isn't loaded already.
 	// In the future we may implement storing of edits to be applied later if blocks can't be found.
 
-	const int data_block_size = get_block_size();
+	const unsigned int data_block_size = get_block_size();
 	const int data_block_size_po2 = get_block_size_po2();
 	const unsigned int lod_count = get_lod_count();
 	const bool streaming_enabled = is_streaming_enabled();
@@ -959,13 +967,15 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 	return true;
 }
 
-void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-		std::vector<Vector3i> &found_blocks_positions, std::vector<VoxelDataBlock> &found_blocks) {
+void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *missing_blocks,
+		std::vector<Vector3i> *found_blocks_positions, std::vector<VoxelDataBlock> *found_blocks) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(lod_index < _lods.size());
+
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
-	Lod &lod = _lods[0];
+	Lod &lod = _lods[lod_index];
 
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much?
@@ -974,25 +984,31 @@ void VoxelData::view_area(Box3i blocks_box, std::vector<Vector3i> &missing_block
 	// Locking for read because we don't add or remove blocks.
 	RWLockRead rlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, &found_blocks_positions, &found_blocks, &missing_blocks](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, found_blocks_positions, found_blocks, &missing_blocks](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.add();
-			found_blocks.push_back(*block);
-			found_blocks_positions.push_back(bpos);
-		} else {
-			missing_blocks.push_back(bpos);
+			if (found_blocks != nullptr) {
+				found_blocks->push_back(*block);
+			}
+			if (found_blocks_positions != nullptr) {
+				found_blocks_positions->push_back(bpos);
+			}
+		} else if (missing_blocks != nullptr) {
+			missing_blocks->push_back(bpos);
 		}
 	});
 }
 
-void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blocks,
-		std::vector<Vector3i> &removed_blocks, std::vector<BlockToSave> *to_save) {
+void VoxelData::unview_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *removed_blocks,
+		std::vector<Vector3i> *missing_blocks, std::vector<BlockToSave> *to_save) {
 	ZN_PROFILE_SCOPE();
+	ZN_ASSERT_RETURN(lod_index < _lods.size());
+
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
 	blocks_box = blocks_box.clipped(bounds_in_blocks);
 
-	Lod &lod = _lods[0];
+	Lod &lod = _lods[lod_index];
 
 	// Locking for write because we are modifying states on blocks.
 	// TODO Could use atomics if contention is too much? However if we do, we need to ensure no other thread is holding
@@ -1002,7 +1018,7 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 	// Locking for write because we are potentially going to remove blocks from the map.
 	RWLockWrite wlock(lod.map_lock);
 
-	blocks_box.for_each_cell_zxy([&lod, &missing_blocks, &removed_blocks, to_save](Vector3i bpos) {
+	blocks_box.for_each_cell_zxy([&lod, missing_blocks, removed_blocks, to_save](Vector3i bpos) {
 		VoxelDataBlock *block = lod.map.get_block(bpos);
 		if (block != nullptr) {
 			block->viewers.remove();
@@ -1012,10 +1028,12 @@ void VoxelData::unview_area(Box3i blocks_box, std::vector<Vector3i> &missing_blo
 				} else {
 					lod.map.remove_block(bpos, BeforeUnloadSaveAction{ to_save, bpos, 0 });
 				}
-				removed_blocks.push_back(bpos);
+				if (removed_blocks != nullptr) {
+					removed_blocks->push_back(bpos);
+				}
 			}
-		} else {
-			missing_blocks.push_back(bpos);
+		} else if (missing_blocks != nullptr) {
+			missing_blocks->push_back(bpos);
 		}
 	});
 }

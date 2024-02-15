@@ -396,6 +396,21 @@ inline void remap_intervals_to_linear_params(
 	out_b = b;
 }
 
+// The result of the right-shift operator `>>` is implementation-defined until C++20, where it performs arithmetic
+// shift. This function makes it explicit to handle eventual issues before C++20.
+// https://en.cppreference.com/w/cpp/language/operator_arithmetic#Built-in_bitwise_shift_operators
+inline int32_t arithmetic_rshift(int32_t a, unsigned int b) {
+	// MSVC documents right shift as arithmetic.
+	// https://learn.microsoft.com/en-us/cpp/cpp/left-shift-and-right-shift-operators-input-and-output?view=msvc-170#right-shifts
+
+	// GCC documents right shifts as arithmetic.
+	// https://gcc.gnu.org/onlinedocs/gcc-13.1.0/gcc/Integers-implementation.html
+
+	static_assert(-4 >> 1 == -2, "Signed right-shift is not arithmetic, patch needed to support current compiler.");
+
+	return a >> b;
+}
+
 } // namespace zylann::math
 
 #endif // VOXEL_MATH_FUNCS_H

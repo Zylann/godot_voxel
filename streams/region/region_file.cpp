@@ -286,6 +286,16 @@ bool RegionFile::is_open() const {
 	return _file_access != nullptr;
 }
 
+void RegionFile::flush() {
+	if (!_file_access.is_valid()) {
+		return;
+	}
+	if (_header_modified) {
+		ZN_ASSERT_RETURN(save_header(**_file_access));
+	}
+	_file_access->flush();
+}
+
 bool RegionFile::set_format(const RegionFormat &format) {
 	ERR_FAIL_COND_V_MSG(_file_access != nullptr, false, "Can't set format when the file already exists");
 	ERR_FAIL_COND_V(!format.validate(), false);

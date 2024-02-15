@@ -11,34 +11,38 @@ namespace zylann::voxel {
 // Had to resort to this in Godot4 because deleting meshes is particularly expensive,
 // because of the Vulkan allocator used by the renderer.
 // It is a deferred cost (it is not spent at the exact time the Mesh object is destroyed, it happens later), so had to
-// use a different type of task
+// use a different type of task to load-balance it. What this task actually does is just to hold a reference on a mesh a
+// bit longer, assuming that mesh is no longer used. Then the execution of the task releases that reference.
 class FreeMeshTask : public IProgressiveTask {
 public:
 	static inline void try_add_and_destroy(DirectMeshInstance &mi) {
-		if (mi.get_mesh().is_valid()) {
+		const Mesh *mesh = mi.get_mesh_ptr();
+		if (mesh != nullptr && mesh->get_reference_count() == 1) {
+			// That instances holds the last reference to this mesh
 			add(mi.get_mesh());
 		}
 		mi.destroy();
 	}
 
+	void run() override {
+		ZN_PROFILE_SCOPE();
+		if (_mesh->get_reference_count() > 1) {
+			ZN_PRINT_WARNING("Mesh has more than one ref left, task spreading will not be effective at smoothing "
+							 "destruction cost");
+		}
+		_mesh.unref();
+	}
+
+private:
 	static void add(Ref<Mesh> mesh) {
-		CRASH_COND(mesh.is_null());
+		ZN_ASSERT(mesh.is_valid());
 		FreeMeshTask *task = memnew(FreeMeshTask(mesh));
 		VoxelEngine::get_singleton().push_main_thread_progressive_task(task);
 	}
 
-	FreeMeshTask(Ref<Mesh> p_mesh) : mesh(p_mesh) {}
+	FreeMeshTask(Ref<Mesh> p_mesh) : _mesh(p_mesh) {}
 
-	void run() override {
-		ZN_PROFILE_SCOPE();
-		if (mesh->get_reference_count() > 1) {
-			WARN_PRINT("Mesh has more than one ref left, task spreading will not be effective at smoothing "
-					   "destruction cost");
-		}
-		mesh.unref();
-	}
-
-	Ref<Mesh> mesh;
+	Ref<Mesh> _mesh;
 };
 
 } // namespace zylann::voxel

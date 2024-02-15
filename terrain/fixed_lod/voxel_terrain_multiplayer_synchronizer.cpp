@@ -11,6 +11,10 @@
 #include "../../util/string_funcs.h"
 #include "voxel_terrain.h"
 
+#ifdef TOOLS_ENABLED
+#include "../../util/godot/core/packed_arrays.h"
+#endif
+
 namespace zylann::voxel {
 
 VoxelTerrainMultiplayerSynchronizer::VoxelTerrainMultiplayerSynchronizer() {
@@ -233,12 +237,37 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelTerrainMultiplayerSynchronizer::get_configuration_warnings() const {
-#elif defined(ZN_GODOT_EXTENSION)
-PackedStringArray VoxelTerrainMultiplayerSynchronizer::_get_configuration_warnings() const {
-#endif
 	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return warnings;
+}
+#else
+Array VoxelTerrainMultiplayerSynchronizer::get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	// TODO Eventually make use of new features introduced in Godot 4.3
+	return to_array(warnings);
+}
+#endif
+#elif defined(ZN_GODOT_EXTENSION)
+#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
+PackedStringArray VoxelTerrainMultiplayerSynchronizer::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return warnings;
+}
+#else
+Array VoxelTerrainMultiplayerSynchronizer::_get_configuration_warnings() const {
+	PackedStringArray warnings;
+	get_configuration_warnings(warnings);
+	return to_array(warnings);
+}
+#endif
+#endif
 
+void VoxelTerrainMultiplayerSynchronizer::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (is_inside_tree()) {
 		if (_terrain == nullptr) {
 			warnings.append(ZN_TTR("This node must be child of {0}").format(varray(VoxelTerrain::get_class_static())));
@@ -255,8 +284,6 @@ PackedStringArray VoxelTerrainMultiplayerSynchronizer::_get_configuration_warnin
 			}
 		}
 	}
-
-	return warnings;
 }
 
 #endif

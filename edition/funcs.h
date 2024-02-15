@@ -572,6 +572,8 @@ void box_blur_slow_ref(
 void box_blur(
 		const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos, float sphere_radius);
 
-}; // namespace zylann::voxel::ops
+void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, float sphere_radius);
+
+} // namespace zylann::voxel::ops
 
 #endif // VOXEL_EDITION_FUNCS_H

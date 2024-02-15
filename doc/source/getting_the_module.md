@@ -1,28 +1,32 @@
 Getting Voxel Tools
 =====================
 
-This is a C++ module, which needs to get compiled into Godot Engine.
+This is a C++ module, which needs to get compiled into Godot Engine 4.
 
 Precompiled builds
 -------------------
 
 ### Release builds
 
-Currently there are no builds done "per milestone", we only do development builds of latest versions.
+Builds are provided at [https://github.com/Zylann/godot_voxel/releases](https://github.com/Zylann/godot_voxel/releases).
+The project follows a continuous development cycle, so "releases" are merely snapshots of development versions. Because Github requires an account to download latest development versions from Github Actions, releases are published for convenience.
 
-Because the plugin is primarily developped as a module, it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
+The plugin is primarily developped as a module, so it comes as a whole custom build of the Godot editor, and might differ a little from the official version.
 
-The engine is massive and targets a lot of platforms, while our module is small in comparison and we don't have dedicated build containers, so not all export templates are available. You can develop your game and test it with the editor on main desktop platforms, but if you want to export it, you may need to compile the templates yourself.
+The engine is massive and targets a lot of platforms, while our module is small in comparison and we don't have dedicated build containers, so not all combinations of editors and export templates are available. You can develop your game and test it with the editor on main desktop platforms, but if a combination of platforms/options isn't provided, you will have to build them yourself.
 
 ### Development builds
 
-#### For Godot 4
+Development builds contain the very latest features and bug fixes (although they can also contain unknown bugs). They are available on Github Actions.
 
-Available on Github Actions, pick your platform:
+!!! note
+	You need a Github account to download artifacts from Github Actions. Otherwise, links will not work.
+
+Pick your platform:
 
 - [Windows builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml)
 - [Linux builds](https://github.com/Zylann/godot_voxel/actions/workflows/linux.yml)
-- [Mono builds](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml) (likely not available, they broke in Godot 4, help is needed to fix them)
+- [MacOS builds](https://github.com/Zylann/godot_voxel/actions/workflows/macos.yml)
 
 Then click on the latest successful build, with a green checkmark:
 
@@ -35,24 +39,11 @@ Then scroll to the bottom, you should see download links:
 In case there are multiple downloadable artifacts, the editor build will be the one with `editor` in the name.
 
 These builds correspond to the `master` version depicted in the [changelog](https://github.com/Zylann/godot_voxel/blob/master/CHANGELOG.md).
-They are built using Godot's latest stable version branch (for example, `4.0` at time of writing), instead of `master`, unless indicated otherwise.
+They are built using Godot's latest stable version branch (for example, `4.2` at time of writing), instead of `master`, unless indicated otherwise.
 A new build is made each time commits are pushed to the main branch, but also when other developers make Pull Requests, so careful about which one you pick.
 
-
 !!! note
-	You will need a Github account to be able to download development builds. Otherwise, links will not work.
-
-#### For Godot 3 (legacy builds)
-
-On Github actions, you may search for builds occurring with the `godot3.x` branch.
-
-Development of new features on that branch stopped though, so it is possible the downloads expired. In which case you may look for a release or compile yourself.
-
-### Tokisan builds (very old)
-
-- Available on [Tokisan Games website](http://tokisan.com/godot-binaries/).
-
-A long while ago, [Cory Petkovsek](https://github.com/tinmanjuggernaut) made full builds of Godot with the module and some additions of his own, including export templates. However they are now way behind the current version so they miss a lot of recent features and setup differences.
+	Mono builds (C# support) [are also done](https://github.com/Zylann/godot_voxel/actions/workflows/mono.yml), however they no longer work out of the box. For more information, see [C# support](#c-suppport).
 
 
 Building yourself
@@ -108,7 +99,7 @@ C# builds are available on Github Actions as well (as "Mono Builds"). Unfortunat
 To obtain a working version, you may generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_dotnet.html).
 
 
-### GDExtension and C#
+### GDExtension and `C#`
 
 The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
 

@@ -4,6 +4,7 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../util/godot/classes/control.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../util/godot/object_weak_ref.h"
 #include "../../util/math/vector2f.h"
 #include "../voxel_debug.h"
 
@@ -133,6 +134,7 @@ private:
 	// PopupMenu *_context_menu = nullptr;
 	Label *_profile_label = nullptr;
 	Label *_compile_result_label = nullptr;
+	Label *_no_graph_open_label = nullptr;
 	VoxelRangeAnalysisDialog *_range_analysis_dialog = nullptr;
 	// Not owned.
 	// TODO Not sure if using `EditorUndoRedoManager` directly is the right thing to do?
@@ -142,7 +144,7 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
-	VoxelNode *_voxel_node = nullptr;
+	ObjectWeakRef<VoxelNode> _terrain_node;
 	DebugRenderer _debug_renderer;
 	VoxelGraphEditorShaderDialog *_shader_dialog = nullptr;
 	bool _live_update_enabled = false;
