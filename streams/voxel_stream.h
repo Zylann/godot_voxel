@@ -57,7 +57,7 @@ public:
 
 	struct InstancesQueryData {
 		UniquePtr<InstanceBlockData> data;
-		Vector3i position;
+		Vector3i position_in_blocks;
 		uint8_t lod;
 		ResultCode result;
 	};

@@ -103,7 +103,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 
 		VoxelStream::InstancesQueryData instances_query;
 		instances_query.lod = _lod_index;
-		instances_query.position = _position;
+		instances_query.position_in_blocks = _position;
 		stream->load_instance_blocks(Span<VoxelStream::InstancesQueryData>(&instances_query, 1));
 
 		if (instances_query.result == VoxelStream::RESULT_ERROR) {

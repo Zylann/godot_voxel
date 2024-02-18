@@ -801,7 +801,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	for (size_t i = 0; i < out_blocks.size(); ++i) {
 		VoxelStream::InstancesQueryData &q = out_blocks[i];
 
-		if (_cache.load_instance_block(q.position, q.lod, q.data)) {
+		if (_cache.load_instance_block(q.position_in_blocks, q.lod, q.data)) {
 			q.result = RESULT_BLOCK_FOUND;
 
 		} else {
@@ -826,9 +826,9 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		VoxelStream::InstancesQueryData &q = out_blocks[ri];
 
 		BlockLocation loc;
-		loc.x = q.position.x;
-		loc.y = q.position.y;
-		loc.z = q.position.z;
+		loc.x = q.position_in_blocks.x;
+		loc.y = q.position_in_blocks.y;
+		loc.z = q.position_in_blocks.z;
 		loc.lod = q.lod;
 
 		std::vector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
@@ -867,14 +867,14 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	for (size_t i = 0; i < p_blocks.size(); ++i) {
 		VoxelStream::InstancesQueryData &q = p_blocks[i];
 
-		if (!BlockLocation::validate(q.position, q.lod)) {
-			ZN_PRINT_ERROR(format("Instance block position {} is outside of supported range", q.position));
+		if (!BlockLocation::validate(q.position_in_blocks, q.lod)) {
+			ZN_PRINT_ERROR(format("Instance block position {} is outside of supported range", q.position_in_blocks));
 			continue;
 		}
 
-		_cache.save_instance_block(q.position, q.lod, std::move(q.data));
+		_cache.save_instance_block(q.position_in_blocks, q.lod, std::move(q.data));
 		if (_block_keys_cache_enabled) {
-			_block_keys_cache.add(to_vec3i16(q.position), q.lod);
+			_block_keys_cache.add(to_vec3i16(q.position_in_blocks), q.lod);
 		}
 	}
 

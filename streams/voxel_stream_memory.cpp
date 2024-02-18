@@ -56,7 +56,7 @@ void VoxelStreamMemory::load_instance_blocks(Span<InstancesQueryData> out_blocks
 		Lod &lod = _lods[q.lod];
 
 		MutexLock mlock(lod.mutex);
-		auto it = lod.instance_blocks.find(q.position);
+		auto it = lod.instance_blocks.find(q.position_in_blocks);
 
 		if (it == lod.instance_blocks.end()) {
 			q.result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
@@ -75,9 +75,9 @@ void VoxelStreamMemory::save_instance_blocks(Span<InstancesQueryData> p_blocks) 
 		MutexLock mlock(lod.mutex);
 
 		if (q.data == nullptr) {
-			lod.instance_blocks.erase(q.position);
+			lod.instance_blocks.erase(q.position_in_blocks);
 		} else {
-			q.data->copy_to(lod.instance_blocks[q.position]);
+			q.data->copy_to(lod.instance_blocks[q.position_in_blocks]);
 		}
 	}
 }
