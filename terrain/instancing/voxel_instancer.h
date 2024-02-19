@@ -18,7 +18,6 @@
 #include "../../util/godot/core/version.h"
 #endif
 
-//#include <scene/resources/material.h> // Included by node.h lol
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
