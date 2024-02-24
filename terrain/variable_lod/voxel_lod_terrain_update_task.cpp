@@ -89,11 +89,19 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-	auto saving_it = lod.unloaded_saving_blocks.find(block_pos);
-	if (saving_it != lod.unloaded_saving_blocks.end()) {
-		lod.quick_reloading_blocks.push_back(
-				VoxelLodTerrainUpdateData::QuickReloadingBlock{ saving_it->second, block_pos });
-		return;
+	{
+		std::shared_ptr<VoxelBufferInternal> voxels;
+		{
+			MutexLock mlock(lod.unloaded_saving_blocks_mutex);
+			auto saving_it = lod.unloaded_saving_blocks.find(block_pos);
+			if (saving_it != lod.unloaded_saving_blocks.end()) {
+				voxels = saving_it->second;
+			}
+		}
+		if (voxels != nullptr) {
+			lod.quick_reloading_blocks.push_back(VoxelLodTerrainUpdateData::QuickReloadingBlock{ voxels, block_pos });
+			return;
+		}
 	}
 
 	if (stream_dependency->stream.is_valid()) {
