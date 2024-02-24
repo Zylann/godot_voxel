@@ -18,6 +18,8 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 	static thread_local std::vector<Transform3f> tls_generated_transforms;
 	tls_generated_transforms.clear();
 
+	const uint8_t gen_octant_mask = ~edited_mask;
+
 	generator->generate_transforms(tls_generated_transforms, mesh_block_grid_position, lod_index, layer_id,
 			surface_arrays, static_cast<VoxelInstanceGenerator::UpMode>(up_mode), gen_octant_mask, mesh_block_size);
 
@@ -27,9 +29,10 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 
 	{
 		MutexLock mlock(output_queue->mutex);
-		output_queue->results.push_back(VoxelInstanceGeneratorTaskOutput());
-		VoxelInstanceGeneratorTaskOutput &o = output_queue->results.back();
+		output_queue->results.push_back(VoxelInstanceLoadingTaskOutput());
+		VoxelInstanceLoadingTaskOutput &o = output_queue->results.back();
 		o.layer_id = layer_id;
+		o.edited_mask = edited_mask;
 		o.render_block_position = mesh_block_grid_position;
 		o.transforms = std::move(transforms);
 	}

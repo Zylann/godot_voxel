@@ -27,7 +27,7 @@ public:
 			std::shared_ptr<StreamingDependency> p_streaming_dependency,
 			std::shared_ptr<MeshingDependency> p_meshing_dependency,
 			std::shared_ptr<PriorityDependency::ViewersData> p_shared_viewers_data, Vector3 p_viewer_pos,
-			bool p_request_instances, VolumeID p_volume_id, Transform3D p_volume_transform) :
+			VolumeID p_volume_id, Transform3D p_volume_transform) :
 			//
 			_data(p_data),
 			_update_data(p_update_data),
@@ -35,7 +35,6 @@ public:
 			_meshing_dependency(p_meshing_dependency),
 			_shared_viewers_data(p_shared_viewers_data),
 			_viewer_pos(p_viewer_pos),
-			_request_instances(p_request_instances),
 			_volume_id(p_volume_id),
 			_volume_transform(p_volume_transform) {}
 
@@ -81,7 +80,6 @@ private:
 	std::shared_ptr<MeshingDependency> _meshing_dependency;
 	std::shared_ptr<PriorityDependency::ViewersData> _shared_viewers_data;
 	Vector3 _viewer_pos;
-	bool _request_instances;
 	VolumeID _volume_id;
 	Transform3D _volume_transform;
 };

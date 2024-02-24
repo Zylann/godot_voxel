@@ -1,8 +1,14 @@
 #ifndef VOXEL_INSTANCE_MODEL_LIBRARY_H
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
+#include "../../constants/voxel_constants.h"
+#include "../../util/godot/classes/resource.h"
+#include "../../util/godot/core/string.h"
+#include "../../util/godot/core/string_name.h"
+#include "../../util/thread/mutex.h"
 #include "voxel_instance_library_item.h"
 #include <map>
+#include <vector>
 
 namespace zylann::voxel {
 
@@ -49,7 +55,17 @@ public:
 	void get_configuration_warnings(PackedStringArray &warnings) const;
 #endif
 
+	struct PackedItem {
+		Ref<VoxelInstanceGenerator> generator;
+		unsigned int id;
+	};
+
+	void get_packed_items_at_lod(std::vector<PackedItem> &out_items, unsigned int lod_index) const;
+
 protected:
+	void set_item(int id, Ref<VoxelInstanceLibraryItem> item);
+	void update_packed_items();
+
 	Ref<VoxelInstanceLibraryItem> _b_get_item(int id) const;
 	PackedInt32Array _b_get_all_item_ids() const;
 
@@ -68,6 +84,18 @@ private:
 	std::map<int, Ref<VoxelInstanceLibraryItem>> _items;
 
 	std::vector<IListener *> _listeners;
+
+	struct PackedItems {
+		struct Lod {
+			std::vector<PackedItem> items;
+		};
+		FixedArray<Lod, constants::MAX_LOD> lods;
+		mutable Mutex mutex;
+		std::atomic_bool needs_update = false;
+	};
+
+	// Packed representation of items for use in procedural generation tasks
+	PackedItems _packed_items;
 };
 
 } // namespace zylann::voxel

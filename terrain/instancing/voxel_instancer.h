@@ -74,7 +74,8 @@ public:
 
 	// Event handlers
 
-	void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData> instances);
+	// void on_data_block_loaded(Vector3i grid_position, unsigned int lod_index, UniquePtr<InstanceBlockData>
+	// instances);
 	void on_mesh_block_enter(Vector3i render_grid_position, unsigned int lod_index, Array surface_arrays);
 	void on_mesh_block_exit(Vector3i render_grid_position, unsigned int lod_index);
 	void on_area_edited(Box3i p_voxel_box);
@@ -136,7 +137,7 @@ private:
 	struct Layer;
 
 	void process();
-	void process_generator_results();
+	void process_task_results();
 	void process_mesh_lods();
 
 	void add_layer(int layer_id, int lod_index);
@@ -204,6 +205,7 @@ private:
 		uint8_t lod_index = 0;
 		// If true, the block is waiting to be populated asynchronously. We create blocks in this state so when async
 		// generation completes, we can check if the block is still present.
+		// TODO Unused?
 		bool pending_instances = false;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
@@ -250,7 +252,11 @@ private:
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use Godot's `HashMap` because it lacks move semantics.
-		std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
+		// std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
+
+		// Blocks that contain edited data (not generated).
+		// Keys follows the data block coordinate system.
+		std::unordered_set<Vector3i> edited_data_blocks;
 
 		// FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};
@@ -275,7 +281,7 @@ private:
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
 
-	std::shared_ptr<VoxelInstancerGeneratorTaskOutputQueue> _generator_results;
+	std::shared_ptr<VoxelInstancerTaskOutputQueue> _loading_results;
 
 #ifdef TOOLS_ENABLED
 	DebugRenderer _debug_renderer;

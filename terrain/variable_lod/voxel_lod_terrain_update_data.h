@@ -187,7 +187,7 @@ struct VoxelLodTerrainUpdateData {
 		std::unordered_map<Vector3i, std::shared_ptr<VoxelBufferInternal>> unloaded_saving_blocks;
 		BinaryMutex unloaded_saving_blocks_mutex;
 		// Blocks that will be loaded from the saving cache as if a loading task completed next time the terrain
-		// updates. It won't run while the threaded update runs so locking is needed.
+		// updates. It won't run while the threaded update runs so no locking is needed.
 		std::vector<QuickReloadingBlock> quick_reloading_blocks;
 
 		// These are relative to this LOD, in block coordinates

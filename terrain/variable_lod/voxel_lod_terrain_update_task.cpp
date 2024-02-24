@@ -80,10 +80,10 @@ void request_block_generate(VolumeID volume_id, unsigned int data_block_size,
 // Used only when streaming block by block
 void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
-		Vector3i block_pos, int lod_index, bool request_instances,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform,
-		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler,
-		TaskCancellationToken cancellation_token, VoxelLodTerrainUpdateData::State &state) {
+		Vector3i block_pos, int lod_index, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform, const VoxelLodTerrainUpdateData::Settings &settings,
+		BufferedTaskScheduler &task_scheduler, TaskCancellationToken cancellation_token,
+		VoxelLodTerrainUpdateData::State &state) {
 	//
 	ZN_ASSERT(data_block_size < 256);
 	ZN_ASSERT(stream_dependency != nullptr);
@@ -101,7 +101,8 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 		init_sparse_octree_priority_dependency(priority_dependency, block_pos, lod_index, data_block_size,
 				shared_viewers_data, volume_transform, settings.lod_distance);
 
-		LoadBlockDataTask *task = memnew(LoadBlockDataTask(volume_id, block_pos, lod_index, data_block_size,
+		const bool request_instances = false;
+		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, lod_index, data_block_size,
 				request_instances, stream_dependency, priority_dependency, settings.cache_generated_blocks,
 				settings.generator_use_gpu, data, cancellation_token));
 
@@ -120,15 +121,13 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 void send_block_data_requests(VolumeID volume_id, Span<const VoxelLodTerrainUpdateData::BlockToLoad> blocks_to_load,
 		std::shared_ptr<StreamingDependency> &stream_dependency, const std::shared_ptr<VoxelData> &data,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, unsigned int data_block_size,
-		bool request_instances, const Transform3D &volume_transform,
-		const VoxelLodTerrainUpdateData::Settings &settings, BufferedTaskScheduler &task_scheduler,
-		VoxelLodTerrainUpdateData::State &state) {
+		const Transform3D &volume_transform, const VoxelLodTerrainUpdateData::Settings &settings,
+		BufferedTaskScheduler &task_scheduler, VoxelLodTerrainUpdateData::State &state) {
 	//
 	for (unsigned int i = 0; i < blocks_to_load.size(); ++i) {
 		const VoxelLodTerrainUpdateData::BlockToLoad btl = blocks_to_load[i];
 		request_block_load(volume_id, data_block_size, stream_dependency, data, btl.loc.position, btl.loc.lod,
-				request_instances, shared_viewers_data, volume_transform, settings, task_scheduler,
-				btl.cancellation_token, state);
+				shared_viewers_data, volume_transform, settings, task_scheduler, btl.cancellation_token, state);
 	}
 }
 
@@ -789,8 +788,7 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 
 				} else {
 					send_block_data_requests(_volume_id, to_span(data_blocks_to_load), _streaming_dependency, _data,
-							_shared_viewers_data, data_block_size, _request_instances, _volume_transform, settings,
-							task_scheduler, state);
+							_shared_viewers_data, data_block_size, _volume_transform, settings, task_scheduler, state);
 				}
 			}
 

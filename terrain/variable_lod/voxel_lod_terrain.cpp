@@ -1252,9 +1252,9 @@ void VoxelLodTerrain::process(float delta) {
 		}
 
 		// TODO Optimization: pool tasks instead of allocating?
-		VoxelLodTerrainUpdateTask *task = memnew(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
+		VoxelLodTerrainUpdateTask *task = ZN_NEW(VoxelLodTerrainUpdateTask(_data, _update_data, _streaming_dependency,
 				_meshing_dependency, VoxelEngine::get_singleton().get_shared_viewers_data_from_default_world(),
-				viewer_pos, _instancer != nullptr, _volume_id, get_global_transform()));
+				viewer_pos, _volume_id, get_global_transform()));
 
 		_update_data->task_is_complete = false;
 
@@ -1627,7 +1627,7 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		if (ob.dropped) {
 			ZN_PRINT_ERROR(format("Could not save block {}", ob.position));
 
-		} else {
+		} else if (ob.had_voxels) {
 			VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[ob.lod_index];
 			{
 				// TODO We could avoid locking if we defer this with a list, which we consume when the threaded update
@@ -1723,9 +1723,9 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 		cs.loaded_data_blocks.push_back(VoxelLodTerrainUpdateData::BlockLocation{ ob.position, ob.lod_index });
 	}
 
-	if (_instancer != nullptr && ob.instances != nullptr) {
-		_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
-	}
+	// if (_instancer != nullptr && ob.instances != nullptr) {
+	// 	_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
+	// }
 }
 
 void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {

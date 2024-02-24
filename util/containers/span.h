@@ -283,6 +283,11 @@ Span<const T> to_span_const(const Span<T> &a) {
 	return Span<const T>(a.data(), 0, a.size());
 }
 
+template <typename T>
+inline Span<T> to_single_element_span(T &a) {
+	return Span<T>(&a, 1);
+}
+
 } // namespace zylann
 
 #endif // ZN_SPAN_H

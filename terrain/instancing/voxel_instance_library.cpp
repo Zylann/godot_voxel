@@ -1,4 +1,6 @@
 #include "voxel_instance_library.h"
+#include "../../util/containers/container_funcs.h"
+#include "../../util/profiling.h"
 #include "voxel_instancer.h"
 #include <algorithm>
 #ifdef ZN_GODOT_EXTENSION
@@ -24,11 +26,26 @@ int VoxelInstanceLibrary::get_next_available_id() {
 }
 
 void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItem> item) {
-	ERR_FAIL_COND_MSG(_items.find(id) != _items.end(), "An item with the same ID is already registered");
-	ERR_FAIL_COND(id < 0 || id >= MAX_ID);
 	ERR_FAIL_COND(item.is_null());
+	ERR_FAIL_COND(id < 0 || id >= MAX_ID);
+	ERR_FAIL_COND_MSG(_items.find(id) != _items.end(), "An item with the same ID is already registered");
 	_items.insert({ id, item });
 	item->add_listener(this, id);
+
+	// This is also called when the resource is loaded, so do this iteratively instead of updating all packed items
+	Ref<VoxelInstanceGenerator> generator = item->get_generator();
+	if (generator.is_valid()) {
+		PackedItems::Lod &lod = _packed_items.lods[item->get_lod_index()];
+		MutexLock mlock(_packed_items.mutex);
+		if (!contains(to_span_const(lod.items),
+					[id](const PackedItem &existing_item) { return existing_item.id == id; })) {
+			PackedItem item;
+			item.id = id;
+			item.generator = generator;
+			lod.items.push_back(item);
+		}
+	}
+
 	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
 	notify_property_list_changed();
 }
@@ -41,6 +58,17 @@ void VoxelInstanceLibrary::remove_item(int id) {
 		item->remove_listener(this, id);
 	}
 	_items.erase(it);
+
+	// This is also called when the resource is loaded, so do this iteratively instead of updating all packed items
+	PackedItems::Lod &lod = _packed_items.lods[item->get_lod_index()];
+	{
+		MutexLock mlock(_packed_items.mutex);
+		size_t index;
+		if (find(to_span_const(lod.items), index, [id](const PackedItem &pi) { return pi.id == id; })) {
+			lod.items.erase(lod.items.begin() + index);
+		}
+	}
+
 	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 	notify_property_list_changed();
 }
@@ -49,7 +77,9 @@ void VoxelInstanceLibrary::clear() {
 	for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
 		notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
 	});
+
 	_items.clear();
+
 	notify_property_list_changed();
 }
 
@@ -98,6 +128,17 @@ const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_const(int id) con
 }
 
 void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) {
+	switch (change) {
+		// These changes will be reported after the resource is loaded and should be rare in-game, or occur in the
+		// editor, so we can do a simpler bulk update
+		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
+		case VoxelInstanceLibraryItem::CHANGE_LOD_INDEX:
+			update_packed_items();
+			break;
+		default:
+			break;
+	}
+
 	notify_listeners(id, change);
 }
 
@@ -119,6 +160,43 @@ void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 	_listeners.erase(it);
 }
 
+void VoxelInstanceLibrary::get_packed_items_at_lod(std::vector<PackedItem> &out_items, unsigned int lod_index) const {
+	const PackedItems::Lod &lod = _packed_items.lods[lod_index];
+	MutexLock mlock(_packed_items.mutex);
+	append_array(out_items, lod.items);
+}
+
+void VoxelInstanceLibrary::update_packed_items() {
+	ZN_PROFILE_SCOPE();
+
+	// Yet another candidate for a post-resource-loading callback.
+	// TODO Maybe we could solve this if items were stored in an exposed TypedArray<Item>? We'd do it in the setter?
+	// That doesn't solve cases where items themselves change though
+
+	// This should be called rarely. Main use case is in the editor, and eventually in-game editing?
+
+	PackedItems &packed_items = _packed_items;
+	MutexLock mlock(_packed_items.mutex);
+
+	for (PackedItems::Lod &lod : packed_items.lods) {
+		lod.items.clear();
+	}
+
+	for_each_item([&packed_items](int id, const VoxelInstanceLibraryItem &item) {
+		const unsigned int lod_index = item.get_lod_index();
+		PackedItems::Lod &lod = packed_items.lods[lod_index];
+		PackedItem packed_item;
+		packed_item.generator = item.get_generator();
+		if (packed_item.generator.is_null()) {
+			return;
+		}
+		packed_item.id = id;
+		lod.items.push_back(packed_item);
+	});
+
+	packed_items.needs_update = false;
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warnings) const {
@@ -134,34 +212,37 @@ void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warning
 
 #endif
 
+void VoxelInstanceLibrary::set_item(int id, Ref<VoxelInstanceLibraryItem> item) {
+	ZN_ASSERT_RETURN(item.is_valid());
+
+	auto it = _items.find(id);
+
+	if (it == _items.end()) {
+		add_item(id, item);
+
+	} else {
+		// Replace
+		if (it->second != item) {
+			Ref<VoxelInstanceLibraryItem> old_item = it->second;
+			if (old_item.is_valid()) {
+				old_item->remove_listener(this, id);
+				notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
+			}
+			it->second = item;
+
+			item->add_listener(this, id);
+			notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
+		}
+	}
+}
+
 bool VoxelInstanceLibrary::_set(const StringName &p_name, const Variant &p_value) {
 	const String property_name = p_name;
-
 	if (property_name.begins_with("item_")) {
 		const int id = property_name.substr(5).to_int();
-
 		Ref<VoxelInstanceLibraryItem> item = p_value;
 		ERR_FAIL_COND_V_MSG(item.is_null(), false, "Setting a null item is not allowed");
-
-		auto it = _items.find(id);
-
-		if (it == _items.end()) {
-			add_item(id, item);
-
-		} else {
-			// Replace
-			if (it->second != item) {
-				Ref<VoxelInstanceLibraryItem> old_item = it->second;
-				if (old_item.is_valid()) {
-					old_item->remove_listener(this, id);
-					notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
-				}
-				it->second = item;
-				item->add_listener(this, id);
-				notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
-			}
-		}
-
+		set_item(id, item);
 		return true;
 	}
 	return false;

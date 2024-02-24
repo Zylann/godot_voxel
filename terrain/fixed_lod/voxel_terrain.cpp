@@ -905,7 +905,7 @@ static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector
 
 static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency,
 		Vector3i block_pos, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
-		const Transform3D volume_transform, bool request_instances, BufferedTaskScheduler &scheduler, bool use_gpu,
+		const Transform3D volume_transform, BufferedTaskScheduler &scheduler, bool use_gpu,
 		const std::shared_ptr<VoxelData> &voxel_data) {
 	ZN_ASSERT(stream_dependency != nullptr);
 
@@ -920,6 +920,7 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		init_sparse_grid_priority_dependency(
 				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
 
+		const bool request_instances = false;
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
 				stream_dependency, priority_dependency, true, use_gpu, voxel_data, TaskCancellationToken()));
 
@@ -989,7 +990,7 @@ void VoxelTerrain::send_data_load_requests() {
 
 			} else {
 				request_block_load(_volume_id, _streaming_dependency, block_pos, shared_viewers_data, volume_transform,
-						_instancer != nullptr, scheduler, _generator_use_gpu, _data);
+						scheduler, _generator_use_gpu, _data);
 			}
 		}
 		scheduler.flush();
@@ -1383,7 +1384,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 		tls_missing_blocks.clear();
 		tls_found_blocks_positions.clear();
 
-		const unsigned to_save_index0 = _blocks_to_save.size();
+		const unsigned int to_save_index0 = _blocks_to_save.size();
 
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
@@ -1506,7 +1507,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		if (ob.dropped) {
 			ERR_PRINT(String("Could not save block {0}").format(varray(ob.position)));
-		} else {
+		} else if (ob.had_voxels) {
 			// TODO What if the version that was saved is older than the one we cached here?
 			// For that to be a problem, you'd have to edit a chunk, move away, move back in, edit it again, move away,
 			// and have the first save complete before the second.
@@ -1601,9 +1602,9 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	// 	send_block_data_requests();
 	// }
 
-	if (_instancer != nullptr && ob.instances != nullptr) {
-		_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
-	}
+	// if (_instancer != nullptr && ob.instances != nullptr) {
+	// 	_instancer->on_data_block_loaded(ob.position, ob.lod_index, std::move(ob.instances));
+	// }
 }
 
 // Sets voxel data of a block, discarding existing data if any.

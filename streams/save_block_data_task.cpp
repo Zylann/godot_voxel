@@ -128,6 +128,8 @@ void SaveBlockDataTask::apply_result() {
 			o.dropped = !_has_run;
 			o.max_lod_hint = false; // Unused
 			o.initial_load = false; // Unused
+			o.had_instances = _save_instances;
+			o.had_voxels = _save_voxels;
 			o.type = VoxelEngine::BlockDataOutput::TYPE_SAVED;
 
 			VoxelEngine::VolumeCallbacks callbacks = VoxelEngine::get_singleton().get_volume_callbacks(_volume_id);

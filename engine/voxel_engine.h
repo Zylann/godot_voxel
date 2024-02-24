@@ -79,6 +79,8 @@ public:
 		// This is used when data streaming is off, all blocks are loaded at once.
 		// TODO Unused?
 		bool initial_load;
+		bool had_instances;
+		bool had_voxels;
 	};
 
 	struct BlockDetailTextureOutput {
