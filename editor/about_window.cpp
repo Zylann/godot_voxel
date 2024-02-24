@@ -225,6 +225,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"Trey2k (Trey Moller)\n"
 						"marcinn (Marcin Nowak)\n"
 						"bfoster68\n"
+						"gumby-cmyk\n"
+						"Joshua Woods (jpw1991)\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"
