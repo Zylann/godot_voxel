@@ -37,6 +37,7 @@ Primarily developped with Godot 4.2.
 
 - Breaking changes
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
+    - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
 
 
 1.1 - 29/12/2023 - `1.1`
