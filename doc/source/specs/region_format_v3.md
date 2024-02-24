@@ -5,7 +5,7 @@ Version: 3
 
 Region files allows to save large fixed-size 3D voxel volumes in a format suitable for frequent streaming and partial edition.
 This format is inspired by [Seed of Andromeda](https://www.seedofandromeda.com/blogs/1-creating-a-region-file-system-for-a-voxel-game) and Minecraft.
-It is used by `VoxelStreamRegionFiles`, which is implemented in [this C++ file](https://github.com/Zylann/godot_voxel/blob/master/streams/voxel_stream_region_files.cpp)
+It is used by `VoxelStreamRegionFiles`, which is implemented in [this C++ file](https://github.com/Zylann/godot_voxel/blob/master/streams/region/voxel_stream_region_files.cpp)
 
 Two use cases exist:
 - Standalone region: fixed-size voxel volume
