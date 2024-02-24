@@ -210,10 +210,10 @@
 			</description>
 		</method>
 		<method name="save_modified_blocks">
-			<return type="void" />
+			<return type="VoxelSaveCompletionTracker" />
 			<description>
 				Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
-				There is currently no reliable way to tell if saving has completed.
+				Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
 				Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 			</description>
 		</method>
@@ -281,6 +281,7 @@
 		</member>
 		<member name="lod_distance" type="float" setter="set_lod_distance" getter="get_lod_distance" default="48.0">
 			How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [member full_load_mode_enabled] is disabled, this also defines how far edits are allowed.
+			For further control of LODs beyond 0, see [member secondary_lod_distance].
 		</member>
 		<member name="lod_fade_duration" type="float" setter="set_lod_fade_duration" getter="get_lod_fade_duration" default="0.0">
 			When set greater than 0, enables LOD fading. When mesh blocks get split/merged as level of detail changes, they will fade to make the transition less noticeable (or at least more pleasant). This feature requires to use a specific shader, check the online documentation or examples for more information.
@@ -315,6 +316,15 @@
 		</member>
 		<member name="run_stream_in_editor" type="bool" setter="set_run_stream_in_editor" getter="is_stream_running_in_editor" default="true">
 			Sets wether the [member generator] and the [member stream] will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
+		</member>
+		<member name="secondary_lod_distance" type="float" setter="set_secondary_lod_distance" getter="get_secondary_lod_distance" default="48.0">
+			Controls the size of each LOD above LOD 0, in voxels relative to those LODs (voxels of LOD N are twice as big than LOD N-1). Higher values allow to see further away before detail are decimated, but is more expensive.
+			Note that it will not necessarily be respected accurately, and will rather be used as a target minimum distance.
+			This is only used when [member streaming_system] is set to [constant STREAMING_SYSTEM_CLIPBOX]. In other cases, [member lod_distance] is used.
+			To control LOD 0, see [member lod_distance].
+		</member>
+		<member name="streaming_system" type="int" setter="set_streaming_system" getter="get_streaming_system" enum="VoxelLodTerrain.StreamingSystem" default="0">
+			Selects the underlying algorithm used to determine when to load and unload chunks around viewers as they move around.
 		</member>
 		<member name="threaded_update_enabled" type="bool" setter="set_threaded_update_enabled" getter="is_threaded_update_enabled" default="false">
 			When enabled, this node will run a large part of its update cycle in a separate thread. Otherwise, it will run on the main thread.
@@ -354,7 +364,24 @@
 		</constant>
 		<constant name="DEBUG_DRAW_MODIFIER_BOUNDS" value="6" enum="DebugDrawFlag">
 		</constant>
-		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="7" enum="DebugDrawFlag">
+		<constant name="DEBUG_DRAW_ACTIVE_MESH_BLOCKS" value="7" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_VIEWER_CLIPBOXES" value="8" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS" value="9" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS" value="10" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="11" enum="DebugDrawFlag">
+		</constant>
+		<constant name="STREAMING_SYSTEM_LEGACY_OCTREE" value="0" enum="StreamingSystem">
+			Loads chunks around the viewer in a spherical pattern.
+			Does not support multiple viewers. Does not support collision-only viewers.
+			This was the first system to be implemented, therefore it remains available as default for compatibility.
+		</constant>
+		<constant name="STREAMING_SYSTEM_CLIPBOX" value="1" enum="StreamingSystem">
+			Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming.
+			Due to simplifications, chunk locations at each LOD might be less optimal than [constant STREAMING_SYSTEM_LEGACY_OCTREE].
 		</constant>
 	</constants>
 </class>

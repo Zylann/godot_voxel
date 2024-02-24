@@ -17,6 +17,14 @@
 				[i]Deprecated.[/i] Use [method load_voxel_block] instead.
 			</description>
 		</method>
+		<method name="flush">
+			<return type="void" />
+			<description>
+				Forces cached data to be saved to the filesystem. Some streams might use a cache to improve performance of frequent I/Os.
+				This should not be called frequently if performance is a concern. May be used if you require all data to be written now. Note that implementations should already do this automatically when the resource is destroyed or their configuration changes. Some implementations may do nothing if they have no cache.
+				Note that terrains save asynchronously, so flushing might not always fulfill your goal if saving tasks are still queued and haven't called into [VoxelStream] yet. See [method VoxelTerrain.save_modified_blocks] or [method VoxelLodTerrain.save_modified_blocks].
+			</description>
+		</method>
 		<method name="get_block_size" qualifiers="const">
 			<return type="Vector3" />
 			<description>
