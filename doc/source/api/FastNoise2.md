@@ -189,4 +189,4 @@ Gets which SIMD level was detected by the library. This gives an indication of p
 
 This method must be called after you change properties, so they can take effect.
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

@@ -20,6 +20,7 @@ Type    | Name                                               | Default
 Return                                                                        | Signature                                                                                                                                                                                                                                                        
 ----------------------------------------------------------------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [emerge_block](#i_emerge_block) ( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod )            
+[void](#)                                                                     | [flush](#i_flush) ( )                                                                                                                                                                                                                                            
 [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)  | [get_block_size](#i_get_block_size) ( ) const                                                                                                                                                                                                                    
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)          | [get_used_channels_mask](#i_get_used_channels_mask) ( ) const                                                                                                                                                                                                    
 [void](#)                                                                     | [immerge_block](#i_immerge_block) ( [VoxelBuffer](VoxelBuffer.md) buffer, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod )              
@@ -48,6 +49,14 @@ When this is enabled, if a block cannot be found in the stream and it gets gener
 
 *Deprecated.* Use [VoxelStream.load_voxel_block](VoxelStream.md#i_load_voxel_block) instead.
 
+- [void](#)<span id="i_flush"></span> **flush**( ) 
+
+Forces cached data to be saved to the filesystem. Some streams might use a cache to improve performance of frequent I/Os.
+
+This should not be called frequently if performance is a concern. May be used if you require all data to be written now. Note that implementations should already do this automatically when the resource is destroyed or their configuration changes. Some implementations may do nothing if they have no cache.
+
+Note that terrains save asynchronously, so flushing might not always fulfill your goal if saving tasks are still queued and haven't called into [VoxelStream](VoxelStream.md) yet. See [VoxelTerrain.save_modified_blocks](VoxelTerrain.md#i_save_modified_blocks) or [VoxelLodTerrain.save_modified_blocks](VoxelLodTerrain.md#i_save_modified_blocks).
+
 - [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_block_size"></span> **get_block_size**( ) 
 
 
@@ -65,4 +74,4 @@ When this is enabled, if a block cannot be found in the stream and it gets gener
 
 `buffer`: Block of voxels to save. It is strongly recommended to not keep a reference to that data afterward, because streams are allowed to cache it, and saved data must represent either snapshots (copies) or last references to the data after the volume they belonged to is destroyed.
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

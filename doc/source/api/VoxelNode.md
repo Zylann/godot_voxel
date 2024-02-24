@@ -42,4 +42,4 @@ Defines how voxels are transformed into visible meshes.
 
 Primary source of persistent voxel data. If left unassigned, the whole volume will use the generator.
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

@@ -80,4 +80,4 @@ enum **DebugDrawFlag**:
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

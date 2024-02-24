@@ -21,7 +21,7 @@ Return                                                                | Signatur
 
 - [void](#)<span id="i__generate_block"></span> **_generate_block**( [VoxelBuffer](VoxelBuffer.md) out_buffer, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) origin_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) 
 
-`out_buffer`: Buffer in which to populate voxel data. It will never be `null` and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
+`out_buffer`: Buffer in which to populate voxel data. It will never be `null` and will have the requested size. It is only valid for this function, do not store it anywhere after the end. Note: this buffer can have any non-empty size, but some assumptions can be made depending on which terrain node you're using. [VoxelTerrain](VoxelTerrain.md) will always request blocks of size 16x16x16, but [VoxelLodTerrain](VoxelLodTerrain.md) can request blocks of different sizes.
 
 `origin_in_voxels`: Coordinates of the lower corner of the box to generate, relative to LOD0. The size of the box is known from `out_buffer`.
 
@@ -31,4 +31,4 @@ Return                                                                | Signatur
 
 Use this to indicate which channels your generator will use. It returns a bitmask, so for example you may provide information like this: `(1 << channel1) | (1 << channel2)`
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

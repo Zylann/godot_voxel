@@ -42,4 +42,4 @@ enum **Axis**:
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_from_vec3"></span> **from_vec3**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) v ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

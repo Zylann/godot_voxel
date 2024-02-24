@@ -33,6 +33,8 @@ Type        | Name                                                              
 `int`       | [normalmap_tile_resolution_min](#i_normalmap_tile_resolution_min)                  | 4                                                                                     
 `bool`      | [normalmap_use_gpu](#i_normalmap_use_gpu)                                          | false                                                                                 
 `bool`      | [run_stream_in_editor](#i_run_stream_in_editor)                                    | true                                                                                  
+`float`     | [secondary_lod_distance](#i_secondary_lod_distance)                                | 48.0                                                                                  
+`int`       | [streaming_system](#i_streaming_system)                                            | 0                                                                                     
 `bool`      | [threaded_update_enabled](#i_threaded_update_enabled)                              | false                                                                                 
 `bool`      | [use_gpu_generation](#i_use_gpu_generation)                                        | false                                                                                 
 `int`       | [view_distance](#i_view_distance)                                                  | 512                                                                                   
@@ -64,7 +66,7 @@ Return                                                                          
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                         
 [VoxelTool](VoxelTool.md)                                                           | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                               
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [is_area_meshed](#i_is_area_meshed) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) const                                   
-[void](#)                                                                           | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
+[VoxelSaveCompletionTracker](VoxelSaveCompletionTracker.md)                         | [save_modified_blocks](#i_save_modified_blocks) ( )                                                                                                                                                                                                   
 [void](#)                                                                           | [set_normalmap_generator_override](#i_set_normalmap_generator_override) ( [VoxelGenerator](VoxelGenerator.md) generator_override )                                                                                                                    
 [void](#)                                                                           | [set_normalmap_generator_override_begin_lod_index](#i_set_normalmap_generator_override_begin_lod_index) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index )                                                            
 [void](#)                                                                           | [set_process_callback](#i_set_process_callback) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mode )                                                                                                                         
@@ -89,7 +91,22 @@ enum **DebugDrawFlag**:
 - <span id="i_DEBUG_DRAW_VOLUME_BOUNDS"></span>**DEBUG_DRAW_VOLUME_BOUNDS** = **4**
 - <span id="i_DEBUG_DRAW_EDITED_BLOCKS"></span>**DEBUG_DRAW_EDITED_BLOCKS** = **5**
 - <span id="i_DEBUG_DRAW_MODIFIER_BOUNDS"></span>**DEBUG_DRAW_MODIFIER_BOUNDS** = **6**
-- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **7**
+- <span id="i_DEBUG_DRAW_ACTIVE_MESH_BLOCKS"></span>**DEBUG_DRAW_ACTIVE_MESH_BLOCKS** = **7**
+- <span id="i_DEBUG_DRAW_VIEWER_CLIPBOXES"></span>**DEBUG_DRAW_VIEWER_CLIPBOXES** = **8**
+- <span id="i_DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS"></span>**DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS** = **9**
+- <span id="i_DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS"></span>**DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS** = **10**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **11**
+
+enum **StreamingSystem**: 
+
+- <span id="i_STREAMING_SYSTEM_LEGACY_OCTREE"></span>**STREAMING_SYSTEM_LEGACY_OCTREE** = **0** --- Loads chunks around the viewer in a spherical pattern.
+
+Does not support multiple viewers. Does not support collision-only viewers.
+
+This was the first system to be implemented, therefore it remains available as default for compatibility.
+- <span id="i_STREAMING_SYSTEM_CLIPBOX"></span>**STREAMING_SYSTEM_CLIPBOX** = **1** --- Loads chunks around the viewer in concentric boxes. Supports multiple viewers and collision-only viewers. This is a better system for multiplayer streaming.
+
+Due to simplifications, chunk locations at each LOD might be less optimal than [VoxelLodTerrain.STREAMING_SYSTEM_LEGACY_OCTREE](VoxelLodTerrain.md#i_STREAMING_SYSTEM_LEGACY_OCTREE).
 
 
 ## Property Descriptions
@@ -131,6 +148,8 @@ How many LOD levels to use. This should be tuned alongside [VoxelLodTerrain.lod_
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_distance"></span> **lod_distance** = 48.0
 
 How far LOD 0 extends from the viewer. Each parent LOD will extend twice as far as their children LOD levels. When [VoxelLodTerrain.full_load_mode_enabled](VoxelLodTerrain.md#i_full_load_mode_enabled) is disabled, this also defines how far edits are allowed.
+
+For further control of LODs beyond 0, see [VoxelLodTerrain.secondary_lod_distance](VoxelLodTerrain.md#i_secondary_lod_distance).
 
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_lod_fade_duration"></span> **lod_fade_duration** = 0.0
 
@@ -178,6 +197,20 @@ Enables GPU detail normalmaps generation, which can speed it up. This is only va
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_run_stream_in_editor"></span> **run_stream_in_editor** = true
 
 Sets wether the [VoxelLodTerrain.generator](VoxelLodTerrain.md#i_generator) and the [VoxelLodTerrain.stream](VoxelLodTerrain.md#i_stream) will run in the editor. This setting may turn on automatically if either contain a script, as multithreading can clash with script reloading in unexpected ways.
+
+- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_secondary_lod_distance"></span> **secondary_lod_distance** = 48.0
+
+Controls the size of each LOD above LOD 0, in voxels relative to those LODs (voxels of LOD N are twice as big than LOD N-1). Higher values allow to see further away before detail are decimated, but is more expensive.
+
+Note that it will not necessarily be respected accurately, and will rather be used as a target minimum distance.
+
+This is only used when [VoxelLodTerrain.streaming_system](VoxelLodTerrain.md#i_streaming_system) is set to [VoxelLodTerrain.STREAMING_SYSTEM_CLIPBOX](VoxelLodTerrain.md#i_STREAMING_SYSTEM_CLIPBOX). In other cases, [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance) is used.
+
+To control LOD 0, see [VoxelLodTerrain.lod_distance](VoxelLodTerrain.md#i_lod_distance).
+
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_streaming_system"></span> **streaming_system** = 0
+
+Selects the underlying algorithm used to determine when to load and unload chunks around viewers as they move around.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_threaded_update_enabled"></span> **threaded_update_enabled** = false
 
@@ -238,8 +271,9 @@ Gets some debug information about a specific mesh.
 	"loaded": bool,
 	"meshed": bool,
 	"mesh_state": int,
-	"visible"] = visible,
-	"active": bool
+	"visible": bool,
+	"visual_active": bool,
+	"collision_active": bool
 }
 ```
 
@@ -357,11 +391,11 @@ Returns false if the area has not been processed by meshing (therefore it is unk
 
 When streaming terrain, this can be used to determine if an area has fully "loaded", in case the game relies meshes or mesh colliders.
 
-- [void](#)<span id="i_save_modified_blocks"></span> **save_modified_blocks**( ) 
+- [VoxelSaveCompletionTracker](VoxelSaveCompletionTracker.md)<span id="i_save_modified_blocks"></span> **save_modified_blocks**( ) 
 
 Requests saving of all modified voxels. Saving is asynchronous and will complete some time in the future. If the game quits, the engine will ensure saving tasks get completed before the application shuts down.
 
-There is currently no reliable way to tell if saving has completed.
+Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
 
 Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
 
@@ -383,4 +417,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_
