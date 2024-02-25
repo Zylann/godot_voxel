@@ -21,6 +21,7 @@
 #include "load_instance_block_task.h"
 #include "voxel_instance_component.h"
 #include "voxel_instance_library_scene_item.h"
+#include "voxel_instancer_quick_reloading_cache.h"
 #include "voxel_instancer_rigidbody.h"
 
 #ifdef TOOLS_ENABLED
@@ -1028,7 +1029,7 @@ void VoxelInstancer::on_mesh_block_exit(Vector3i render_grid_position, unsigned 
 				auto modified_block_it = lod.modified_blocks.find(data_grid_pos);
 				if (modified_block_it != lod.modified_blocks.end()) {
 					if (can_save) {
-						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr, false);
+						SaveBlockDataTask *task = save_block(data_grid_pos, lod_index, nullptr, false, true);
 						if (task != nullptr) {
 							scheduler.push_io_task(task);
 						}
@@ -1067,7 +1068,7 @@ void VoxelInstancer::save_all_modified_blocks(
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		Lod &lod = _lods[lod_index];
 		for (auto it = lod.modified_blocks.begin(); it != lod.modified_blocks.end(); ++it) {
-			SaveBlockDataTask *task = save_block(*it, lod_index, tracker, with_flush);
+			SaveBlockDataTask *task = save_block(*it, lod_index, tracker, with_flush, false);
 			if (task != nullptr) {
 				tasks.push_io_task(task);
 			}
@@ -1361,6 +1362,7 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	LoadInstanceChunkTask *task = ZN_NEW(LoadInstanceChunkTask( //
 			_loading_results, //
 			stream, //
+			lod.quick_reload_cache, //
 			_library, //
 			surface_arrays, //
 			render_grid_position, //
@@ -1373,8 +1375,8 @@ void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod
 	VoxelEngine::get_singleton().push_async_io_task(task);
 }
 
-SaveBlockDataTask *VoxelInstancer::save_block(
-		Vector3i data_grid_pos, int lod_index, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const {
+SaveBlockDataTask *VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_index,
+		std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush, bool cache_while_saving) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(_library.is_null(), nullptr);
 	ERR_FAIL_COND_V(_parent == nullptr, nullptr);
@@ -1528,6 +1530,21 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 
 	std::shared_ptr<StreamingDependency> stream_dependency = _parent->get_streaming_dependency();
 	ZN_ASSERT(stream_dependency != nullptr);
+
+	if (cache_while_saving) {
+		Lod &lod_mutable = _lods[lod_index];
+		// Keep data in memory in case it quickly gets reloaded
+		// TODO Making a pre-emptive copy isn't very efficient, we could keep a shared_ptr instead?
+		UniquePtr<InstanceBlockData> saving_cache = make_unique_instance<InstanceBlockData>();
+		block_data->copy_to(*saving_cache);
+		if (lod_mutable.quick_reload_cache == nullptr) {
+			lod_mutable.quick_reload_cache = make_shared_instance<VoxelInstancerQuickReloadingCache>();
+		}
+		{
+			MutexLock mlock(lod_mutable.quick_reload_cache->mutex);
+			lod_mutable.quick_reload_cache->map[data_grid_pos] = std::move(saving_cache);
+		}
+	}
 
 	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(volume_id, data_grid_pos, lod_index, data_block_size,
 			std::move(block_data), stream_dependency, tracker, with_flush));
@@ -1813,6 +1830,17 @@ void VoxelInstancer::on_scene_instance_modified(Vector3i data_block_position, un
 	const Layer &layer = get_layer(block.layer_id);
 	Lod &lod = _lods[layer.lod_index];
 	lod.modified_blocks.insert(data_block_position);
+}
+
+void VoxelInstancer::on_data_block_saved(Vector3i data_grid_position, unsigned int lod_index) {
+	if (lod_index >= _lods.size()) {
+		return;
+	}
+	Lod &lod = _lods[lod_index];
+	if (lod.quick_reload_cache != nullptr) {
+		MutexLock mlock(lod.quick_reload_cache->mutex);
+		lod.quick_reload_cache->map.erase(data_grid_position);
+	}
 }
 
 void VoxelInstancer::set_mesh_block_size_po2(unsigned int p_mesh_block_size_po2) {

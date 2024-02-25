@@ -1507,12 +1507,16 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	if (ob.type == VoxelEngine::BlockDataOutput::TYPE_SAVED) {
 		if (ob.dropped) {
 			ERR_PRINT(String("Could not save block {0}").format(varray(ob.position)));
+
 		} else if (ob.had_voxels) {
 			// TODO What if the version that was saved is older than the one we cached here?
 			// For that to be a problem, you'd have to edit a chunk, move away, move back in, edit it again, move away,
 			// and have the first save complete before the second.
 			// But we may consider adding version numbers, which requires adding block metadata
 			_unloaded_saving_blocks.erase(ob.position);
+
+		} else if (ob.had_instances && _instancer != nullptr) {
+			_instancer->on_data_block_saved(ob.position, ob.lod_index);
 		}
 		return;
 	}

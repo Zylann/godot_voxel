@@ -4,13 +4,16 @@
 #include "../../util/containers/container_funcs.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/conv.h"
+#include "../../util/profiling.h"
 #include "generate_instances_block_task.h"
+#include "voxel_instancer_quick_reloading_cache.h"
 
 namespace zylann::voxel {
 
 LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		std::shared_ptr<VoxelInstancerTaskOutputQueue> output_queue, //
 		Ref<VoxelStream> stream, //
+		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache,
 		Ref<VoxelInstanceLibrary> library, //
 		Array mesh_arrays, //
 		Vector3i grid_position, //
@@ -22,6 +25,7 @@ LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		//
 		_output_queue(output_queue), //
 		_stream(stream), //
+		_quick_reload_cache(quick_reload_cache), //
 		_library(library), //
 		_mesh_arrays(mesh_arrays), //
 		_render_grid_position(grid_position), //
@@ -61,6 +65,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		ZN_ASSERT(data_factor <= 2);
 		FixedArray<VoxelStream::InstancesQueryData, 8> queries;
 
+		// Create queries
 		unsigned int query_count = 0;
 		data_box.for_each_cell([&query_count, &queries, this](Vector3i data_pos) {
 			VoxelStream::InstancesQueryData &query = queries[query_count];
@@ -70,11 +75,57 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 			++query_count;
 		});
 
-		_stream->load_instance_blocks(to_span(queries, query_count));
+		{
+			unsigned int stream_queries_count = 0;
+			FixedArray<VoxelStream::InstancesQueryData, 8> stream_queries;
+			FixedArray<uint8_t, 8> stream_queries_octant_indices;
+
+			for (unsigned int i = 0; i < stream_queries_octant_indices.size(); ++i) {
+				stream_queries_octant_indices[i] = i;
+			}
+
+			if (_quick_reload_cache != nullptr) {
+				// Look first into quick reload cache and filter out queries to the stream... I don't like this,
+				// especially the fact it gets complicated with differing chunk sizes
+				MutexLock mlock(_quick_reload_cache->mutex);
+				for (unsigned int query_index = 0; query_index < query_count; ++query_index) {
+					VoxelStream::InstancesQueryData &query = queries[query_index];
+					auto it = _quick_reload_cache->map.find(query.position_in_blocks);
+
+					if (it != _quick_reload_cache->map.end()) {
+						ZN_PROFILE_SCOPE_NAMED("Instance quick reload");
+						UniquePtr<InstanceBlockData> data;
+						if (it->second != nullptr) {
+							UniquePtr<InstanceBlockData> data = make_unique_instance<InstanceBlockData>();
+							it->second->copy_to(*data);
+						}
+						query.result = VoxelStream::RESULT_BLOCK_FOUND;
+						query.data = std::move(data);
+
+					} else {
+						stream_queries[stream_queries_count] = std::move(query);
+						stream_queries_octant_indices[stream_queries_count] = query_index;
+						++stream_queries_count;
+					}
+				}
+
+			} else {
+				stream_queries = std::move(queries);
+				stream_queries_count = query_count;
+			}
+
+			_stream->load_instance_blocks(to_span(stream_queries, stream_queries_count));
+
+			for (unsigned int i = 0; i < stream_queries_count; ++i) {
+				const unsigned int octant_index = stream_queries_octant_indices[i];
+				queries[octant_index] = std::move(stream_queries[i]);
+			}
+		}
 
 		const Vector3i data_min_block_pos = _render_grid_position * data_factor;
 
 		// For each octant (will be only 1 if data chunks are the same size as render chunks, otherwise 8)
+		// Populate layers from what we found in stream
 		for (unsigned int octant_index = 0; octant_index < query_count; ++octant_index) {
 			const VoxelStream::InstancesQueryData &query = queries[octant_index];
 

@@ -38,6 +38,8 @@ class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
 class SaveBlockDataTask;
 class BufferedTaskScheduler;
+struct InstanceBlockData;
+struct VoxelInstancerQuickReloadingCache;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -83,6 +85,7 @@ public:
 	void on_scene_instance_removed(
 			Vector3i data_block_position, unsigned int render_block_index, unsigned int instance_index);
 	void on_scene_instance_modified(Vector3i data_block_position, unsigned int render_block_index);
+	void on_data_block_saved(Vector3i data_grid_position, unsigned int lod_index);
 
 	// Internal properties
 
@@ -150,7 +153,7 @@ private:
 	void clear_layers();
 	void update_visibility();
 	SaveBlockDataTask *save_block(Vector3i data_grid_pos, int lod_index,
-			std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) const;
+			std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush, bool cache_while_saving);
 
 	// Get a layer assuming it exists
 	Layer &get_layer(int id);
@@ -257,6 +260,8 @@ private:
 		// Blocks that contain edited data (not generated).
 		// Keys follows the data block coordinate system.
 		std::unordered_set<Vector3i> edited_data_blocks;
+
+		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache;
 
 		// FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};

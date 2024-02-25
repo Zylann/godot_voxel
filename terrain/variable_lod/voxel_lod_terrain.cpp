@@ -1640,6 +1640,9 @@ void VoxelLodTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob
 				// which requires adding block metadata
 				lod.unloaded_saving_blocks.erase(ob.position);
 			}
+
+		} else if (ob.had_instances && _instancer != nullptr) {
+			_instancer->on_data_block_saved(ob.position, ob.lod_index);
 		}
 
 		return;
@@ -1845,6 +1848,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			// No surface anymore in this block, destroy it
 			// TODO Factor removal in a function, it's done in a few places
 			mesh_map.remove_block(ob.position, BeforeUnloadMeshAction{ _shader_material_pool });
+
 			if (_instancer != nullptr) {
 				_instancer->on_mesh_block_exit(ob.position, ob.lod);
 			}
@@ -1866,6 +1870,10 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		// TODO Need a more generic API for this kind of stuff
 		if (_instancer != nullptr && ob.surfaces.surfaces.size() > 0) {
 			// TODO The mesh could come from an edited region!
+			// If we place spheres upwards eventually it will create a new chunk mesh which we can't differenciate
+			// from a mesh that would have been part of the original terrain. Because of that the instancer will
+			// unexpectedly generate instances on it
+
 			// We would have to know if specific voxels got edited, or different from the generator
 			_instancer->on_mesh_block_enter(ob.position, ob.lod, ob.surfaces.surfaces[0].arrays);
 		}
