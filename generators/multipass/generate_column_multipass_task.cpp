@@ -1,4 +1,5 @@
 #include "generate_column_multipass_task.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data.h"
 

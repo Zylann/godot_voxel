@@ -1,5 +1,5 @@
 #include "voxel_generator_multipass_cb.h"
-#include "../../engine/voxel_engine.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"

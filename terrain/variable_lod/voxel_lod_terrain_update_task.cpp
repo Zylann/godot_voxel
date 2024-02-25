@@ -1,4 +1,5 @@
 #include "voxel_lod_terrain_update_task.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../engine/voxel_engine.h"
 #include "../../generators/generate_block_task.h"
 #include "../../meshers/mesh_block_task.h"

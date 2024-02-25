@@ -1,4 +1,5 @@
 #include "../../edition/voxel_tool.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../streams/save_block_data_task.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"

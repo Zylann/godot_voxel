@@ -1,6 +1,7 @@
 #include "voxel_lod_terrain.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../edition/voxel_tool_lod_terrain.h"
+#include "../../engine/buffered_task_scheduler.h"
 #include "../../engine/detail_rendering/detail_rendering.h"
 #include "../../engine/voxel_engine_gd.h"
 #include "../../engine/voxel_engine_updater.h"
