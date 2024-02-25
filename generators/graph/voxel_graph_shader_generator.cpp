@@ -161,7 +161,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					ZN_ASSERT(it != port_to_var.end());
 					codegen.add_format("out_sd = {};\n", it->second);
 				} else {
-					codegen.add("out_sd = 0.0;\n");
+					codegen.add_format("out_sd = {};\n", float(node.default_inputs[0]));
 				}
 				continue;
 			}
@@ -174,7 +174,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					ZN_ASSERT(it != port_to_var.end());
 					codegen.add_format("out_single_texture = {};\n", it->second);
 				} else {
-					codegen.add("out_single_texture = 0.0;\n");
+					codegen.add_format("out_single_texture = {};\n", float(node.default_inputs[0]));
 				}
 				continue;
 			}
@@ -187,7 +187,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 					ZN_ASSERT(it != port_to_var.end());
 					codegen.add_format("out_type = {};\n", it->second);
 				} else {
-					codegen.add("out_type = 0.0;\n");
+					codegen.add_format("out_type = {};\n", float(node.default_inputs[0]));
 				}
 				continue;
 			}
