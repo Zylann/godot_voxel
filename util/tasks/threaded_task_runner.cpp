@@ -338,10 +338,9 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 			// Run each task
 			for (size_t i = 0; i < tasks.size(); ++i) {
 				TaskItem &item = tasks[i];
+
 				if (!item.task->is_cancelled()) {
-					ThreadedTaskContext ctx{ uint8_t(data.index),
-						// By default, if the task does not set this status, it will be considered complete after run
-						ThreadedTaskContext::STATUS_COMPLETE, item.cached_priority };
+					ThreadedTaskContext ctx(data.index, item.cached_priority);
 					data.debug_running_task_name = item.task->get_debug_name();
 					item.task->run(ctx);
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
@@ -351,6 +350,17 @@ void ThreadedTaskRunner::thread_func(ThreadData &data) {
 #endif
 					item.status = ctx.status;
 					data.debug_running_task_name = nullptr;
+
+					/*
+					if (ctx.next_immediate_task != nullptr) {
+						TaskItem next;
+						next.task = ctx.next_immediate_task;
+#ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
+						debug_add_owned_task(next.task);
+#endif
+						tasks.push_back(next);
+					}
+					*/
 				}
 			}
 
