@@ -7,7 +7,7 @@
 namespace zylann {
 
 struct ThreadedTaskContext {
-	enum Status {
+	enum Status : uint8_t {
 		// The task is complete and will be put in the list of completed tasks by the TaskRunner. It will be deleted
 		// later. This is the default status.
 		STATUS_COMPLETE = 0,
