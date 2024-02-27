@@ -11,6 +11,7 @@ namespace zylann::voxel {
 
 struct StreamingDependency;
 struct MeshingDependency;
+class BufferedTaskScheduler;
 
 // Runs a part of the update loop of a VoxelLodTerrain.
 // This part can run on another thread, so multiple terrains can update in parallel.
