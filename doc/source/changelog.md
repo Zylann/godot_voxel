@@ -36,6 +36,7 @@ Primarily developped with Godot 4.2.
     - `VoxelLodTerrain`: `VoxelTool.do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
 
 - Breaking changes
+    - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
 
 

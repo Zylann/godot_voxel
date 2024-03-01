@@ -78,8 +78,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		// request
 		_voxels->duplicate_to(voxels_copy, true);
 		_voxels = nullptr;
-		const Vector3i origin_in_voxels = (_position << _lod) * _block_size;
-		VoxelStream::VoxelQueryData q{ voxels_copy, origin_in_voxels, _lod, VoxelStream::RESULT_ERROR };
+		VoxelStream::VoxelQueryData q{ voxels_copy, _position, _lod, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);
 	}
 

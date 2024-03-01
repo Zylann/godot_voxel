@@ -48,8 +48,6 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	Ref<VoxelStream> stream = _stream_dependency->stream;
 	CRASH_COND(stream.is_null());
 
-	const Vector3i origin_in_voxels = (_position << _lod_index) * _block_size;
-
 	ERR_FAIL_COND(_voxels != nullptr);
 	_voxels = make_shared_instance<VoxelBufferInternal>();
 	_voxels->create(_block_size, _block_size, _block_size);
@@ -60,7 +58,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 
 	// TODO Assign max_lod_hint when available
 
-	VoxelStream::VoxelQueryData voxel_query_data{ *_voxels, origin_in_voxels, _lod_index, VoxelStream::RESULT_ERROR };
+	VoxelStream::VoxelQueryData voxel_query_data{ *_voxels, _position, _lod_index, VoxelStream::RESULT_ERROR };
 	stream->load_voxel_block(voxel_query_data);
 
 	if (voxel_query_data.result == VoxelStream::RESULT_ERROR) {

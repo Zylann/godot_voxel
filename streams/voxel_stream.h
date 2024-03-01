@@ -49,7 +49,7 @@ public:
 
 	struct VoxelQueryData {
 		VoxelBufferInternal &voxel_buffer;
-		Vector3i origin_in_voxels;
+		Vector3i position_in_blocks;
 		uint8_t lod_index;
 		// This is currently not used in save queries. Maybe it should?
 		ResultCode result;

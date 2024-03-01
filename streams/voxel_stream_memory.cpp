@@ -9,10 +9,8 @@ void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	for (VoxelQueryData &q : p_blocks) {
 		Lod &lod = _lods[q.lod_index];
 
-		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
-
 		MutexLock mlock(lod.mutex);
-		auto it = lod.voxel_blocks.find(bpos);
+		auto it = lod.voxel_blocks.find(q.position_in_blocks);
 
 		if (it == lod.voxel_blocks.end()) {
 			q.result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
@@ -30,10 +28,9 @@ void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 			Thread::sleep_usec(_artificial_save_latency_usec);
 		}
 		Lod &lod = _lods[q.lod_index];
-		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
 		{
 			MutexLock mlock(lod.mutex);
-			VoxelBufferInternal &dst = lod.voxel_blocks[bpos];
+			VoxelBufferInternal &dst = lod.voxel_blocks[q.position_in_blocks];
 			q.voxel_buffer.duplicate_to(dst, true);
 		}
 	}

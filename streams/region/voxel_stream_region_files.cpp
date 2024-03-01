@@ -84,7 +84,7 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
 		VoxelStream::VoxelQueryData &q = p_blocks[bi];
-		const EmergeResult result = _load_block(q.voxel_buffer, q.origin_in_voxels, q.lod_index);
+		const EmergeResult result = _load_block(q.voxel_buffer, q.position_in_blocks, q.lod_index);
 		switch (result) {
 			case EMERGE_OK:
 				q.result = RESULT_BLOCK_FOUND;
@@ -114,7 +114,7 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	for (unsigned int i = 0; i < sorted_block_indices.size(); ++i) {
 		const unsigned int bi = sorted_block_indices[i];
 		VoxelStream::VoxelQueryData &q = p_blocks[bi];
-		_save_block(q.voxel_buffer, q.origin_in_voxels, q.lod_index);
+		_save_block(q.voxel_buffer, q.position_in_blocks, q.lod_index);
 	}
 }
 
@@ -124,7 +124,7 @@ int VoxelStreamRegionFiles::get_used_channels_mask() const {
 }
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
-		VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod) {
+		VoxelBufferInternal &out_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
@@ -154,7 +154,6 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 		out_buffer.set_channel_depth(channel_index, _meta.channel_depths[channel_index]);
 	}
 
-	const Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	const Vector3i region_pos = get_region_position_from_blocks(block_pos);
 
 	CachedRegion *cache = open_region(region_pos, lod, false);
@@ -177,7 +176,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod) {
+void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
@@ -213,7 +212,6 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 	}
 
 	const Vector3i region_size = Vector3iUtil::create(1 << _meta.region_size_po2);
-	Vector3i block_pos = get_block_position_from_voxels(origin_in_voxels) >> lod;
 	Vector3i region_pos = get_region_position_from_blocks(block_pos);
 	Vector3i block_rpos = math::wrap(block_pos, region_size);
 
@@ -689,7 +687,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			Vector3i block_pos = block_rpos + region_info.position * old_region_size;
 			VoxelStream::VoxelQueryData old_block_load_query{
 				old_block, //
-				block_pos * old_block_size << region_info.lod_index, //
+				block_pos, //
 				region_info.lod_index, //
 				RESULT_ERROR //
 			};
@@ -699,7 +697,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			if (old_block_size == new_block_size) {
 				VoxelStream::VoxelQueryData old_block_save_query{
 					old_block, //
-					block_pos * new_block_size << region_info.lod_index, //
+					block_pos, //
 					region_info.lod_index,
 					RESULT_ERROR //
 				};
@@ -716,7 +714,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					// Copy to a sub-area of one block
 					VoxelStream::VoxelQueryData new_block_load_query{ //
 						new_block, //
-						new_block_pos * new_block_size << region_info.lod_index, //
+						new_block_pos, //
 						region_info.lod_index, //
 						RESULT_ERROR
 					};
@@ -732,7 +730,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					new_block.compress_uniform_channels();
 					VoxelStream::VoxelQueryData new_block_save_query{ //
 						new_block, //
-						new_block_pos * new_block_size << region_info.lod_index, //
+						new_block_pos, //
 						region_info.lod_index, //
 						RESULT_ERROR
 					};
@@ -756,7 +754,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 								VoxelStream::VoxelQueryData new_block_save_query{ //
 									new_block, //
-									(new_block_pos + rpos) * new_block_size << region_info.lod_index, //
+									new_block_pos + rpos, //
 									region_info.lod_index, //
 									RESULT_ERROR
 								};

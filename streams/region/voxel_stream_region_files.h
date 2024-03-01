@@ -66,8 +66,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i origin_in_voxels, int lod);
-	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i origin_in_voxels, int lod);
+	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i block_pos, int lod);
+	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod);
 
 	FileResult save_meta();
 	FileResult load_meta();
@@ -104,8 +104,8 @@ private:
 			} else if (a.lod_index > b.lod_index) {
 				return false;
 			}
-			Vector3i bpos_a = self->get_block_position_from_voxels(a.origin_in_voxels);
-			Vector3i bpos_b = self->get_block_position_from_voxels(b.origin_in_voxels);
+			Vector3i bpos_a = a.position_in_blocks;
+			Vector3i bpos_b = b.position_in_blocks;
 			Vector3i rpos_a = self->get_region_position_from_blocks(bpos_a);
 			Vector3i rpos_b = self->get_region_position_from_blocks(bpos_b);
 			return rpos_a < rpos_b;

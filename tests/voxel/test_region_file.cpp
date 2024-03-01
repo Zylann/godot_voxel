@@ -188,9 +188,8 @@ void test_voxel_stream_region_files() {
 			}
 		}
 
-		// The position isn't a correct use because it's in voxels, not blocks, but it remains a case that should
-		// not cause errors or crash. The same blocks will simply get written to several times.
-		VoxelStream::VoxelQueryData q{ buffer, Vector3(cycle, 0, 0), 0, VoxelStream::RESULT_ERROR };
+		// Dividing coordinate so it saves multiple times the same block. That should not crash.
+		VoxelStream::VoxelQueryData q{ buffer, Vector3(cycle / 16, 0, 0), 0, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);
 	}
 }
