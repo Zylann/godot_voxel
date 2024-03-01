@@ -106,8 +106,26 @@ The only workarounds involve limiting the game:
 - Reduce LOD distance so less blocks have to be destroyed, at the expense of quality
 
 
-Access to voxels
+Iteration order
 -----------------
+
+In this engine, voxels are stored in flat arrays indexed in ZXY order. Y is the "deepest" coordinate: when iterating a `VoxelBuffer` of dimensions `(size.x, size.y, size.z)`, adding 1 to the Y coordinate is equivalent to advancing by 1 element in memory. Conversely, adding 1 to the X coordinate advances by `size.y` elements, and adding 1 to the Z coordinate advances by `(size.x * size.y)` elements.
+
+Therefore, for cache locality, iterating voxels is best done in this order:
+
+```
+for z in size.z:
+    for x in size.x:
+        for y in size.y:
+            var v := buffer.get_voxel(x, y, z, channel)
+            # ...
+```
+
+The only reason for this particular choice was that most games use Y as the vertical coordinate, so some operations can be done quickly alongside the vertical axis. It was decided in early days of the project and was kept for consistency. But generally, this convention should only matter if you are working on low-level code.
+
+
+Access to voxels from different threads
+-----------------------------
 
 This section explains in more detail how multithreading is implemented with voxel storage, and what are the implications when you access and modify voxels.
 

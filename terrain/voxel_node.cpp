@@ -68,34 +68,17 @@ Ref<VoxelTool> VoxelNode::get_voxel_tool() {
 #ifdef TOOLS_ENABLED
 
 #if defined(ZN_GODOT)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelNode::get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
-#else
-Array VoxelNode::get_configuration_warnings() const {
-	PackedStringArray warnings;
-	get_configuration_warnings(warnings);
-	// TODO Eventually make use of new features introduced in Godot 4.3
-	return to_array(warnings);
-}
-#endif
 #elif defined(ZN_GODOT_EXTENSION)
-#if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2
 PackedStringArray VoxelNode::_get_configuration_warnings() const {
 	PackedStringArray warnings;
 	get_configuration_warnings(warnings);
 	return warnings;
 }
-#else
-Array VoxelNode::_get_configuration_warnings() const {
-	PackedStringArray warnings;
-	get_configuration_warnings(warnings);
-	return to_array(warnings);
-}
-#endif
 #endif
 
 void VoxelNode::get_configuration_warnings(PackedStringArray &warnings) const {

@@ -65,4 +65,4 @@ enum **ColorMode**:
 - [void](#)<span id="i_set_material_by_index"></span> **set_material_by_index**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id, [Material](https://docs.godotengine.org/en/stable/classes/class_material.html) material ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

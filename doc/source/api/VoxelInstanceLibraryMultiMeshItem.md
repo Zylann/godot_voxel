@@ -124,4 +124,4 @@ Sets the list of group names that will be added to collider nodes generated for 
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

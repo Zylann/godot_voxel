@@ -2,8 +2,12 @@
 #define VOXEL_BUFFER_GD_H
 
 #include "../util/godot/classes/ref_counted.h"
+#include "../util/godot/core/array.h"
+#include "../util/godot/core/typed_array.h"
 #include "../util/macros.h"
+#include "../util/math/vector3i.h"
 #include "voxel_buffer_internal.h"
+#include <cstdint>
 #include <memory>
 
 ZN_GODOT_FORWARD_DECLARE(class Image)
@@ -160,7 +164,7 @@ public:
 
 	Ref<Image> debug_print_sdf_to_image_top_down();
 	static Ref<Image> debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb);
-	Array debug_print_sdf_y_slices(float scale) const;
+	TypedArray<Image> debug_print_sdf_y_slices(float scale) const;
 	Ref<Image> debug_print_sdf_y_slice(float scale, int y) const;
 	static Ref<Image> debug_print_sdf_y_slice(const VoxelBufferInternal &buffer, float scale, int y);
 	static Ref<Image> debug_print_sdf_z_slice(const VoxelBufferInternal &buffer, float scale, int z);

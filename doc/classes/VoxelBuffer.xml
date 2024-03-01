@@ -81,9 +81,11 @@
 			</description>
 		</method>
 		<method name="debug_print_sdf_y_slices" qualifiers="const">
-			<return type="Array" />
-			<param index="0" name="scale" type="float" />
+			<return type="Image[]" />
+			<param index="0" name="scale" type="float" default="1.0" />
 			<description>
+				Renders the contents of the SDF channel into images where blue gradients are negative values (below surface) and yellow gradients are positive (above surface). Each image corresponds to an XZ slice of the buffer.
+				The [code]scale[/code] parameter can be used to change contrast of images by scaling the SDF.
 			</description>
 		</method>
 		<method name="downscale_to" qualifiers="const">

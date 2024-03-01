@@ -77,6 +77,9 @@ Kluskey (Jared McCluskey)
 Trey2k (Trey Moller)
 marcinn (Marcin Nowak)
 bfoster68
+gumby-cmyk
+Joshua Woods (jpw1991)
+jjoshpoland (Josh)
 ```
 
 ### Supporters

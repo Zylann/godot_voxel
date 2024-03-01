@@ -69,6 +69,7 @@ Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_automatic_loading_enabled"></span> **automatic_loading_enabled** = true
 
+If turned off, the terrain will no longer automatically load blocks around viewers locally. This may be used in multiplayer scenarios, when the terrain is client-side, because blocks will be sent by the server instead.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_block_enter_notification_enabled"></span> **block_enter_notification_enabled** = false
 
@@ -191,10 +192,14 @@ Note 2: this will only have an effect if the stream setup on this terrain suppor
 
 Note 3: saving is asynchronous and won't block the game. the save may complete only a short time after you call this method.
 
+Use the returned tracker object to know when saving has completed. However, saves occurring after calling this method won't be tracked by this object.
+
+Note that blocks getting unloaded as the viewer moves around can also trigger saving tasks, independently from this function.
+
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_try_set_block_data"></span> **try_set_block_data**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels ) 
 
 
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

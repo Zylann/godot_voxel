@@ -192,7 +192,7 @@ INDICES:  aaaa bbbb   cccc dddd
 WEIGHTS:  aaaa bbbb   cccc dddd
 ```
 
-By default, these channels default to indices `(0,1,2,3)` and weights `(1,0,0,0)`, meaning voxels always start with texture `0`.
+By default, these channels default to indices `(0,1,2,3)` and weights `(1,0,0,0)`, meaning voxels always start with texture `0`. Another rule is that indices must not appear twice (for example, indices `(0,1,1,1)` are invalid). If an index appears twice, in particular with different weights, it can cause ambiguous calculations.
 
 The feature is recent and will need further work or changes in this area.
 At the moment, indices and weights are mostly applied manually. It is possible to set them directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. One easy way to paint is to use `VoxelTool.do_sphere()`:

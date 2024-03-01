@@ -170,12 +170,12 @@ For the most part, use `clang-format` and follow Godot conventions.
 - Avoid using macros to define logic or constants. Prefer `static const`, `constexpr` and `inline` functions.
 - Prefer adding `const` to variables that won't change after being initialized (function arguments are spared for now as it would make signatures very long)
 - Don't exploit booleanization when an explicit alternative exists. Example: use `if (a == nullptr)` instead of `if (!a)`
-- If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span` (or `std::array` and `std::span` once [this](https://github.com/godotengine/godot/issues/31608) is fixed)
+- If possible, avoid plain arrays like `int a[42]`. Debuggers don't catch overruns on them. Prefer using wrappers such as `FixedArray` and `Span`.
 - Use `uint32_t`, `uint16_t`, `uint8_t` in case integer size matters.
 - If possible, use forward declarations in headers instead of including files
+- `#include` what you use, don't assume a header transitively includes things. This has been broadly ignored for a while, but new code may follow it. `util/godot` micro-headers are an exception.
 - Don't do `using namespace` in headers (Except with `godot::`, but that's only to help supporting GDExtension using the same codebase, since Godot core does not have this namespace).
 - `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in multi-threaded context.
-- No use of exceptions
 
 ### Error handling
 

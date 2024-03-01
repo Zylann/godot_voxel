@@ -6,7 +6,14 @@
 #include "../../math/vector3f.h"
 
 #if defined(ZN_GODOT)
+#include <core/version.h>
+
+#if VERSION_MAJOR == 4 && VERSION_MINOR <= 2
 #include <scene/resources/concave_polygon_shape_3d.h>
+#else
+#include <scene/resources/3d/concave_polygon_shape_3d.h>
+#endif
+
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/concave_polygon_shape3d.hpp>
 using namespace godot;

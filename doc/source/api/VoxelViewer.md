@@ -15,6 +15,7 @@ The voxel world uses the position and options of all the [VoxelViewer](VoxelView
 
 Type    | Name                                                                       | Default 
 ------- | -------------------------------------------------------------------------- | --------
+`bool`  | [enabled_in_editor](#i_enabled_in_editor)                                  | false   
 `bool`  | [requires_collisions](#i_requires_collisions)                              | true    
 `bool`  | [requires_data_block_notifications](#i_requires_data_block_notifications)  | false   
 `bool`  | [requires_visuals](#i_requires_visuals)                                    | true    
@@ -31,6 +32,12 @@ Return                                                                | Signatur
 <p></p>
 
 ## Property Descriptions
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_enabled_in_editor"></span> **enabled_in_editor** = false
+
+Sets whether this viewer will cause loading to occur in the editor. This is mainly intented for testing purposes.
+
+Note that streaming in editor can also be turned off on terrains.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_requires_collisions"></span> **requires_collisions** = true
 
@@ -55,4 +62,4 @@ How far should voxels generate around this viewer.
 - [void](#)<span id="i_set_network_peer_id"></span> **set_network_peer_id**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) id ) 
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

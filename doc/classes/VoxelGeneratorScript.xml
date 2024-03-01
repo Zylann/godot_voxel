@@ -15,7 +15,7 @@
 			<param index="1" name="origin_in_voxels" type="Vector3i" />
 			<param index="2" name="lod" type="int" />
 			<description>
-				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end.
+				[code]out_buffer[/code]: Buffer in which to populate voxel data. It will never be [code]null[/code] and will have the requested size. It is only valid for this function, do not store it anywhere after the end. Note: this buffer can have any non-empty size, but some assumptions can be made depending on which terrain node you're using. [VoxelTerrain] will always request blocks of size 16x16x16, but [VoxelLodTerrain] can request blocks of different sizes.
 				[code]origin_in_voxels[/code]: Coordinates of the lower corner of the box to generate, relative to LOD0. The size of the box is known from [code]out_buffer[/code].
 				[code]lod[/code]: Level of detail index to use for this block. It can be ignored if you don't use LOD. This may be used as a power of two, telling how big is one voxel. For example, if you use a loop to fill the buffer using noise, you should sample that noise at steps of 2^lod, starting from [code]origin_in_voxels[/code] (in code you can use [code]1 &lt;&lt; lod[/code] for fast computation, instead of [code]pow(2, lod)[/code]). You may want to separate variables that iterate the coordinates in [code]out_buffer[/code] and variables used to generate voxel values in space.
 			</description>

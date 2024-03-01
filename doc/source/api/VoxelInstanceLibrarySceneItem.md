@@ -21,4 +21,4 @@ Type           | Name               | Default
 - [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
 
-_Generated on Dec 31, 2023_
+_Generated on Feb 24, 2024_

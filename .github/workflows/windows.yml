@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
