@@ -99,9 +99,9 @@ private:
 		// operator<
 		_FORCE_INLINE_ bool operator()(
 				const VoxelStream::VoxelQueryData &a, const VoxelStream::VoxelQueryData &b) const {
-			if (a.lod < b.lod) {
+			if (a.lod_index < b.lod_index) {
 				return true;
-			} else if (a.lod > b.lod) {
+			} else if (a.lod_index > b.lod_index) {
 				return false;
 			}
 			Vector3i bpos_a = self->get_block_position_from_voxels(a.origin_in_voxels);

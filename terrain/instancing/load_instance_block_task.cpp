@@ -70,7 +70,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		unsigned int query_count = 0;
 		data_box.for_each_cell([&query_count, &queries, this](Vector3i data_pos) {
 			VoxelStream::InstancesQueryData &query = queries[query_count];
-			query.lod = _lod_index;
+			query.lod_index = _lod_index;
 			query.position_in_blocks = data_pos;
 			query.result = VoxelStream::RESULT_BLOCK_NOT_FOUND;
 			++query_count;

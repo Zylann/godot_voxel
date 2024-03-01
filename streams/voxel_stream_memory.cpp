@@ -7,7 +7,7 @@ namespace zylann::voxel {
 
 void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 	for (VoxelQueryData &q : p_blocks) {
-		Lod &lod = _lods[q.lod];
+		Lod &lod = _lods[q.lod_index];
 
 		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
 
@@ -29,7 +29,7 @@ void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 		if (_artificial_save_latency_usec > 0) {
 			Thread::sleep_usec(_artificial_save_latency_usec);
 		}
-		Lod &lod = _lods[q.lod];
+		Lod &lod = _lods[q.lod_index];
 		const Vector3i bpos = q.origin_in_voxels >> get_block_size_po2();
 		{
 			MutexLock mlock(lod.mutex);
@@ -53,7 +53,7 @@ bool VoxelStreamMemory::supports_instance_blocks() const {
 
 void VoxelStreamMemory::load_instance_blocks(Span<InstancesQueryData> out_blocks) {
 	for (InstancesQueryData &q : out_blocks) {
-		Lod &lod = _lods[q.lod];
+		Lod &lod = _lods[q.lod_index];
 
 		MutexLock mlock(lod.mutex);
 		auto it = lod.instance_blocks.find(q.position_in_blocks);
@@ -71,7 +71,7 @@ void VoxelStreamMemory::load_instance_blocks(Span<InstancesQueryData> out_blocks
 
 void VoxelStreamMemory::save_instance_blocks(Span<InstancesQueryData> p_blocks) {
 	for (const InstancesQueryData &q : p_blocks) {
-		Lod &lod = _lods[q.lod];
+		Lod &lod = _lods[q.lod_index];
 		MutexLock mlock(lod.mutex);
 
 		if (q.data == nullptr) {

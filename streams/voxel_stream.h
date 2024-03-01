@@ -36,7 +36,7 @@ public:
 	VoxelStream();
 	~VoxelStream();
 
-	enum ResultCode {
+	enum ResultCode : uint8_t {
 		// Something went wrong, the request should be aborted
 		RESULT_ERROR,
 		// The block could not be found in the stream. The requester may fallback on the generator.
@@ -50,7 +50,7 @@ public:
 	struct VoxelQueryData {
 		VoxelBufferInternal &voxel_buffer;
 		Vector3i origin_in_voxels;
-		int lod;
+		uint8_t lod_index;
 		// This is currently not used in save queries. Maybe it should?
 		ResultCode result;
 	};
@@ -58,7 +58,7 @@ public:
 	struct InstancesQueryData {
 		UniquePtr<InstanceBlockData> data;
 		Vector3i position_in_blocks;
-		uint8_t lod;
+		uint8_t lod_index;
 		ResultCode result;
 	};
 
@@ -132,13 +132,13 @@ public:
 private:
 	static void _bind_methods();
 
-	ResultCode _b_load_voxel_block(Ref<gd::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod);
-	void _b_save_voxel_block(Ref<gd::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod);
+	ResultCode _b_load_voxel_block(Ref<gd::VoxelBuffer> out_buffer, Vector3i origin_in_voxels, int lod_index);
+	void _b_save_voxel_block(Ref<gd::VoxelBuffer> buffer, Vector3i origin_in_voxels, int lod_index);
 	int _b_get_used_channels_mask() const;
 	Vector3 _b_get_block_size() const;
 	// Deprecated
-	ResultCode _b_emerge_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
-	void _b_immerge_block(Ref<gd::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod);
+	ResultCode _b_emerge_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod_index);
+	void _b_immerge_block(Ref<gd::VoxelBuffer> buffer, Vector3 origin_in_voxels, int lod_index);
 
 	struct Parameters {
 		bool save_generator_output = false;
