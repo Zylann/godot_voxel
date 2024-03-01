@@ -227,6 +227,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"bfoster68\n"
 						"gumby-cmyk\n"
 						"Joshua Woods (jpw1991)\n"
+						"jjoshpoland (Josh)\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"

@@ -79,6 +79,7 @@ marcinn (Marcin Nowak)
 bfoster68
 gumby-cmyk
 Joshua Woods (jpw1991)
+jjoshpoland (Josh)
 ```
 
 ### Supporters
