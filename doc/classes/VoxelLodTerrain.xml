@@ -196,7 +196,7 @@
 		<method name="get_voxel_tool">
 			<return type="VoxelTool" />
 			<description>
-				Gets an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
+				Creates an instance of [VoxelTool] bound to this volume. Allows to query and edit voxels.
 			</description>
 		</method>
 		<method name="is_area_meshed" qualifiers="const">
