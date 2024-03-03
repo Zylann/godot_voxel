@@ -1325,16 +1325,6 @@ void VoxelInstancer::update_block_from_transforms( //
 	}
 }
 
-static const InstanceBlockData::LayerData *find_layer_data(const InstanceBlockData &instances_data, int id) {
-	for (size_t i = 0; i < instances_data.layers.size(); ++i) {
-		const InstanceBlockData::LayerData &layer = instances_data.layers[i];
-		if (layer.id == id) {
-			return &layer;
-		}
-	}
-	return nullptr;
-}
-
 void VoxelInstancer::create_render_blocks(Vector3i render_grid_position, int lod_index, Array surface_arrays) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_library.is_valid());
