@@ -7,6 +7,7 @@
 #include "../util/math/vector3i.h"
 #include "../util/memory.h"
 #include "../util/thread/rw_lock.h"
+#include "block_task_sequencer.h"
 
 #include <cstdint>
 #include <vector>
@@ -129,6 +130,10 @@ public:
 	// no cache.
 	virtual void flush();
 
+	inline BlockTaskSequencer &get_task_sequencer() {
+		return _task_sequencer;
+	}
+
 private:
 	static void _bind_methods();
 
@@ -146,6 +151,10 @@ private:
 
 	Parameters _parameters;
 	RWLock _parameters_lock;
+
+	// This requires shared ownership between tasks, but currently we can rely on VoxelStream being RefCounted so no
+	// need for shared_ptr
+	BlockTaskSequencer _task_sequencer;
 };
 
 } // namespace zylann::voxel

@@ -2,6 +2,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../util/godot/core/string.h"
 #include "../util/string_funcs.h"
+#include "block_task_sequencer.h"
 
 namespace zylann::voxel {
 

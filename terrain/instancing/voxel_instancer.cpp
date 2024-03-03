@@ -1550,6 +1550,15 @@ SaveBlockDataTask *VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_in
 	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(volume_id, data_grid_pos, lod_index, data_block_size,
 			std::move(block_data), stream_dependency, tracker, with_flush));
 
+	// TODO There is a problem with this: loading uses tasks tied to larger chunk sizes!
+	// Ref<VoxelStream> &stream = stream_dependency->stream;
+	// if (stream.is_valid()) {
+	// 	BlockTaskSequencer &bts = stream->get_task_sequencer();
+	// 	if (bts.enqueue(task, data_grid_pos, lod_index)) {
+	// 		return nullptr;
+	// 	}
+	// }
+
 	return task;
 }
 

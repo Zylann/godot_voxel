@@ -925,7 +925,10 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
 				stream_dependency, priority_dependency, true, use_gpu, voxel_data, TaskCancellationToken()));
 
-		scheduler.push_io_task(task);
+		BlockTaskSequencer &bts = stream_dependency->stream->get_task_sequencer();
+		if (!bts.enqueue(task, block_pos, 0)) {
+			scheduler.push_io_task(task);
+		}
 
 	} else {
 		// Directly generate the block without checking the stream
@@ -1004,16 +1007,22 @@ void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_
 	ZN_PROFILE_SCOPE();
 
 	// Blocks to save
-	if (get_stream().is_valid()) {
+	Ref<VoxelStream> stream = get_stream();
+	if (stream.is_valid()) {
 		const uint8_t data_block_size = get_data_block_size();
+
+		BlockTaskSequencer &bts = stream->get_task_sequencer();
+
 		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
 
 			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(_volume_id, b.position, 0, data_block_size, b.voxels,
 					_streaming_dependency, saving_tracker, with_flush));
-
 			// No priority data, saving doesn't need sorting.
-			task_scheduler.push_io_task(task);
+
+			if (!bts.enqueue(task, b.position, b.lod_index)) {
+				task_scheduler.push_io_task(task);
+			}
 		}
 	} else {
 		if (_blocks_to_save.size() > 0) {

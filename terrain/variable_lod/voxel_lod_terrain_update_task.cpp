@@ -115,7 +115,10 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 				request_instances, stream_dependency, priority_dependency, settings.cache_generated_blocks,
 				settings.generator_use_gpu, data, cancellation_token));
 
-		task_scheduler.push_io_task(task);
+		BlockTaskSequencer &bts = stream_dependency->stream->get_task_sequencer();
+		if (!bts.enqueue(task, block_pos, lod_index)) {
+			task_scheduler.push_io_task(task);
+		}
 
 	} else if (settings.cache_generated_blocks) {
 		// Directly generate the block without checking the stream.
@@ -188,10 +191,15 @@ void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBufferInt
 	CRASH_COND(stream_dependency == nullptr);
 	ERR_FAIL_COND(stream_dependency->stream.is_null());
 
+	BlockTaskSequencer &bts = stream_dependency->stream->get_task_sequencer();
+
 	SaveBlockDataTask *task = memnew(SaveBlockDataTask(
 			volume_id, block_pos, lod, data_block_size, voxels, stream_dependency, tracker, with_flush));
-
 	// No priority data, saving doesn't need sorting.
+
+	if (bts.enqueue(task, block_pos, lod)) {
+		return;
+	}
 
 	task_scheduler.push_io_task(task);
 }

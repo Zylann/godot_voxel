@@ -197,7 +197,10 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(_volume_id, _block_position, _lod_index,
 					_block_size, voxels_copy, _stream_dependency, nullptr, false));
 
-			VoxelEngine::get_singleton().push_async_io_task(save_task);
+			BlockTaskSequencer &bts = stream->get_task_sequencer();
+			if (!bts.enqueue(save_task, _block_position, _lod_index)) {
+				VoxelEngine::get_singleton().push_async_io_task(save_task);
+			}
 		}
 	}
 

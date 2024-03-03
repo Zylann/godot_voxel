@@ -103,6 +103,17 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		_tracker->post_complete();
 	}
 
+	// Not used by instance blocks for now...
+	if (_save_voxels) {
+		BlockTaskSequencer &bts = stream->get_task_sequencer();
+		IThreadedTask *next = bts.dequeue(_position, _lod);
+		if (next != nullptr) {
+			// TODO It would be more efficient to somehow run the task after the current one on the same thread without
+			// delaying it through the runner's priority queue
+			VoxelEngine::get_singleton().push_async_io_task(next);
+		}
+	}
+
 	_has_run = true;
 }
 
