@@ -23,11 +23,11 @@ public:
 		_io_tasks.push_back(task);
 	}
 
-	inline size_t get_main_count() const {
+	inline unsigned int get_main_count() const {
 		return _main_tasks.size();
 	}
 
-	inline size_t get_io_count() const {
+	inline unsigned int get_io_count() const {
 		return _io_tasks.size();
 	}
 
