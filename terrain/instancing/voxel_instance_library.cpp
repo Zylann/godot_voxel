@@ -38,8 +38,7 @@ void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item
 	if (generator.is_valid()) {
 		PackedItems::Lod &lod = _packed_items.lods[item->get_lod_index()];
 		MutexLock mlock(_packed_items.mutex);
-		if (!contains(to_span_const(lod.items),
-					[id](const PackedItem &existing_item) { return existing_item.id == id; })) {
+		if (!contains(lod.items, [id](const PackedItem &existing_item) { return existing_item.id == id; })) {
 			PackedItem packed_item;
 			packed_item.id = id;
 			packed_item.generator = generator;
@@ -67,7 +66,7 @@ void VoxelInstanceLibrary::remove_item(int p_id) {
 	{
 		MutexLock mlock(_packed_items.mutex);
 		size_t index;
-		if (find(to_span_const(lod.items), index, [id](const PackedItem &pi) { return pi.id == id; })) {
+		if (find(lod.items, index, [id](const PackedItem &pi) { return pi.id == id; })) {
 			lod.items.erase(lod.items.begin() + index);
 		}
 	}
