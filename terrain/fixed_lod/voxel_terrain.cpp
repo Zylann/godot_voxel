@@ -1005,7 +1005,6 @@ void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_
 
 	// Blocks to save
 	if (get_stream().is_valid()) {
-		const uint8_t data_block_size = get_data_block_size();
 		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
 
