@@ -1118,10 +1118,12 @@ void VoxelTerrain::process() {
 				// TODO This doesn't work with VoxelInstancer because it unloads based on meshes...
 				nullptr, //
 				qrb.position, //
-				0, //
-				false, //
-				false, //
-				false //
+				0, // lod_index
+				false, // dropped
+				false, // max_lod_hint
+				false, // initial_load
+				false, // had_instances
+				true // had_voxels
 			};
 			apply_data_block_response(ob);
 		}

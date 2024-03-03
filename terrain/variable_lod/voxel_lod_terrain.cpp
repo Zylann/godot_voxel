@@ -1302,9 +1302,11 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 				nullptr, //
 				qrb.position, //
 				static_cast<uint8_t>(lod_index), //
-				false, //
-				false, //
-				false //
+				false, // dropped
+				false, // max_lod_hint
+				false, // initial_load
+				false, // had_instances
+				true // had_voxels
 			};
 			apply_data_block_response(ob);
 		}
