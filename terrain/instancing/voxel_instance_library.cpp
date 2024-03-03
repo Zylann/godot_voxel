@@ -40,10 +40,10 @@ void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item
 		MutexLock mlock(_packed_items.mutex);
 		if (!contains(to_span_const(lod.items),
 					[id](const PackedItem &existing_item) { return existing_item.id == id; })) {
-			PackedItem item;
-			item.id = id;
-			item.generator = generator;
-			lod.items.push_back(item);
+			PackedItem packed_item;
+			packed_item.id = id;
+			packed_item.generator = generator;
+			lod.items.push_back(packed_item);
 		}
 	}
 
