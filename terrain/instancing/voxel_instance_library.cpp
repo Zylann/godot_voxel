@@ -25,9 +25,10 @@ int VoxelInstanceLibrary::get_next_available_id() {
 	}
 }
 
-void VoxelInstanceLibrary::add_item(int id, Ref<VoxelInstanceLibraryItem> item) {
+void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item) {
 	ERR_FAIL_COND(item.is_null());
-	ERR_FAIL_COND(id < 0 || id >= MAX_ID);
+	ERR_FAIL_COND(p_id < 0 || p_id >= MAX_ID);
+	const unsigned int id = p_id;
 	ERR_FAIL_COND_MSG(_items.find(id) != _items.end(), "An item with the same ID is already registered");
 	_items.insert({ id, item });
 	item->add_listener(this, id);
