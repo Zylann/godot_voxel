@@ -38,6 +38,7 @@ Primarily developped with Godot 4.2.
         - Fixed default input values of output nodes were always 0 when using GPU generation
     - `VoxelToolLodTerrain`: 
         - `get_voxel` would always return 0 in indices and weight channels if the area was never edited, data streaming is on and the generator is a `VoxelGeneratorGraph` producing single-texture information
+        - `copy` would return incorrect buffers when used on non-edited areas when data streaming is on and a generator is assigned
 
 - Breaking changes
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
