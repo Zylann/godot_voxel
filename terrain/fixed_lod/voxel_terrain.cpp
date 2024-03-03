@@ -1009,8 +1009,8 @@ void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_
 		for (const VoxelData::BlockToSave &b : _blocks_to_save) {
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
 
-			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(_volume_id, b.position, 0, data_block_size, b.voxels,
-					_streaming_dependency, saving_tracker, with_flush));
+			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+					_volume_id, b.position, 0, b.voxels, _streaming_dependency, saving_tracker, with_flush));
 
 			// No priority data, saving doesn't need sorting.
 			task_scheduler.push_io_task(task);

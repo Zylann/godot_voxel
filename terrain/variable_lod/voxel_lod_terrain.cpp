@@ -2408,7 +2408,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<A
 
 	// And flush immediately
 	VoxelLodTerrainUpdateTask::send_block_save_requests(_volume_id, to_span(blocks_to_save), _streaming_dependency,
-			get_data_block_size(), task_scheduler, tracker,
+			task_scheduler, tracker,
 			// Require all data we just gathered to be written to disk if the stream uses a cache. So if the
 			// game crashes or gets killed after all tasks are done, data won't be lost.
 			true);

@@ -182,14 +182,14 @@ void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::Bl
 }
 
 void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBufferInternal> &voxels, Vector3i block_pos,
-		int lod, std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
-		BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
+		int lod, std::shared_ptr<StreamingDependency> &stream_dependency, BufferedTaskScheduler &task_scheduler,
+		std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
 	//
 	CRASH_COND(stream_dependency == nullptr);
 	ERR_FAIL_COND(stream_dependency->stream.is_null());
 
-	SaveBlockDataTask *task = memnew(SaveBlockDataTask(
-			volume_id, block_pos, lod, data_block_size, voxels, stream_dependency, tracker, with_flush));
+	SaveBlockDataTask *task =
+			memnew(SaveBlockDataTask(volume_id, block_pos, lod, voxels, stream_dependency, tracker, with_flush));
 
 	// No priority data, saving doesn't need sorting.
 
@@ -452,14 +452,13 @@ void process_changed_generated_areas(VoxelLodTerrainUpdateData::State &state,
 
 void VoxelLodTerrainUpdateTask::send_block_save_requests(VolumeID volume_id,
 		Span<VoxelData::BlockToSave> blocks_to_save, std::shared_ptr<StreamingDependency> &stream_dependency,
-		unsigned int data_block_size, BufferedTaskScheduler &task_scheduler,
-		std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
+		BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
 	//
 	for (unsigned int i = 0; i < blocks_to_save.size(); ++i) {
 		VoxelData::BlockToSave &b = blocks_to_save[i];
 		ZN_PRINT_VERBOSE(format("Requesting save of block {} lod {}", b.position, b.lod_index));
-		request_voxel_block_save(volume_id, b.voxels, b.position, b.lod_index, stream_dependency, data_block_size,
-				task_scheduler, tracker, with_flush);
+		request_voxel_block_save(
+				volume_id, b.voxels, b.position, b.lod_index, stream_dependency, task_scheduler, tracker, with_flush);
 	}
 }
 
@@ -801,8 +800,8 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 				}
 			}
 
-			send_block_save_requests(_volume_id, to_span(data_blocks_to_save), _streaming_dependency, data_block_size,
-					task_scheduler, nullptr, false);
+			send_block_save_requests(
+					_volume_id, to_span(data_blocks_to_save), _streaming_dependency, task_scheduler, nullptr, false);
 		}
 		data_blocks_to_load.clear();
 		data_blocks_to_save.clear();

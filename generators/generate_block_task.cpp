@@ -155,7 +155,7 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 			// No priority data, saving doesn't need sorting.
 
 			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
-					_volume_id, _position, _lod_index, _block_size, voxels_copy, _stream_dependency, nullptr, false));
+					_volume_id, _position, _lod_index, voxels_copy, _stream_dependency, nullptr, false));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}

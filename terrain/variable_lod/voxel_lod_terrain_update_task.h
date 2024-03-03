@@ -71,8 +71,8 @@ public:
 	}
 
 	static void send_block_save_requests(VolumeID volume_id, Span<VoxelData::BlockToSave> blocks_to_save,
-			std::shared_ptr<StreamingDependency> &stream_dependency, unsigned int data_block_size,
-			BufferedTaskScheduler &task_scheduler, std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush);
+			std::shared_ptr<StreamingDependency> &stream_dependency, BufferedTaskScheduler &task_scheduler,
+			std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush);
 
 private:
 	std::shared_ptr<VoxelData> _data;

@@ -1547,8 +1547,8 @@ SaveBlockDataTask *VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_in
 		}
 	}
 
-	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(volume_id, data_grid_pos, lod_index, data_block_size,
-			std::move(block_data), stream_dependency, tracker, with_flush));
+	SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
+			volume_id, data_grid_pos, lod_index, std::move(block_data), stream_dependency, tracker, with_flush));
 
 	return task;
 }
