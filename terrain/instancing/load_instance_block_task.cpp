@@ -97,7 +97,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						ZN_PROFILE_SCOPE_NAMED("Instance quick reload");
 						UniquePtr<InstanceBlockData> data;
 						if (it->second != nullptr) {
-							UniquePtr<InstanceBlockData> data = make_unique_instance<InstanceBlockData>();
+							data = make_unique_instance<InstanceBlockData>();
 							it->second->copy_to(*data);
 						}
 						query.result = VoxelStream::RESULT_BLOCK_FOUND;
