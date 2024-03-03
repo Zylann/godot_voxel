@@ -29,7 +29,7 @@ public:
 
 	int get_next_available_id();
 	void add_item(int p_id, Ref<VoxelInstanceLibraryItem> item);
-	void remove_item(int id);
+	void remove_item(int p_id);
 	void clear();
 	int find_item_by_name(String p_name) const;
 	int get_item_count() const;
