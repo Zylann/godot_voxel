@@ -91,7 +91,7 @@ public:
 	String get_save_extension() const override;
 	String get_resource_type() const override;
 	float get_priority() const override;
-	// int get_import_order() const override;
+	int get_import_order() const override;
 	void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
 	bool get_option_visibility(
 			const String &p_path, const String &p_option, const HashMap<StringName, Variant> &p_options) const override;
@@ -108,6 +108,7 @@ public:
 	String _get_save_extension() const override;
 	String _get_resource_type() const override;
 	double _get_priority() const override;
+	int32_t _get_import_order() const override;
 	TypedArray<Dictionary> _get_import_options(const String &path, int32_t preset_index) const override;
 	bool _get_option_visibility(
 			const String &path, const StringName &option_name, const Dictionary &options) const override;
@@ -128,6 +129,7 @@ protected:
 	virtual String _zn_get_save_extension() const;
 	virtual String _zn_get_resource_type() const;
 	virtual double _zn_get_priority() const;
+	virtual int _zn_get_import_order() const;
 
 	virtual void _zn_get_import_options(
 			std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const;

@@ -41,6 +41,10 @@ float ZN_EditorImportPlugin::get_priority() const {
 	return _zn_get_priority();
 }
 
+int ZN_EditorImportPlugin::get_import_order() const {
+	return _zn_get_import_order();
+}
+
 void ZN_EditorImportPlugin::get_import_options(
 		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	ZN_ASSERT(r_options != nullptr);
@@ -98,6 +102,10 @@ String ZN_EditorImportPlugin::_get_resource_type() const {
 
 double ZN_EditorImportPlugin::_get_priority() const {
 	return _zn_get_priority();
+}
+
+int32_t ZN_EditorImportPlugin::_get_import_order() const {
+	return _zn_get_import_order();
 }
 
 TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int32_t preset_index) const {
@@ -176,6 +184,10 @@ String ZN_EditorImportPlugin::_zn_get_resource_type() const {
 
 double ZN_EditorImportPlugin::_zn_get_priority() const {
 	return 1.0;
+}
+
+int ZN_EditorImportPlugin::_zn_get_import_order() const {
+	return IMPORT_ORDER_DEFAULT;
 }
 
 void ZN_EditorImportPlugin::_zn_get_import_options(

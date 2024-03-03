@@ -17,6 +17,7 @@ public:
 	String _zn_get_save_extension() const override;
 	String _zn_get_resource_type() const override;
 	double _zn_get_priority() const override;
+	int _zn_get_import_order() const override;
 	void _zn_get_import_options(
 			std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const override;
 	bool _zn_get_option_visibility(

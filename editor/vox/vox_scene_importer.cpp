@@ -50,8 +50,9 @@ double VoxelVoxSceneImporter::_zn_get_priority() const {
 	return 1.0;
 }
 
-// int VoxelVoxImporter::get_import_order() const {
-// }
+int VoxelVoxSceneImporter::_zn_get_import_order() const {
+	return IMPORT_ORDER_SCENE;
+}
 
 void VoxelVoxSceneImporter::_zn_get_import_options(
 		std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const {
