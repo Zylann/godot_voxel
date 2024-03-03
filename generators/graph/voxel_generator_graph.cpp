@@ -1465,34 +1465,65 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 }
 
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
-	// TODO Support other channels
+	// This is very slow when used multiple times, so if possible prefer using bulk queries
+
 	VoxelSingleValue v;
 	v.i = 0;
-	if (channel != VoxelBufferInternal::CHANNEL_SDF) {
+	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+		std::shared_ptr<const Runtime> runtime_ptr;
+		{
+			RWLockRead rlock(_runtime_lock);
+			runtime_ptr = _runtime;
+		}
+		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		if (runtime_ptr->sdf_output_buffer_index == -1) {
+			return v;
+		}
+
+		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
+
+		Cache &cache = get_tls_cache();
+		const pg::Runtime &runtime = runtime_ptr->runtime;
+		runtime.prepare_state(cache.state, 1, false);
+		runtime.generate_single(cache.state, inputs.get(), nullptr);
+		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+		ERR_FAIL_COND_V(buffer.size == 0, v);
+		ERR_FAIL_COND_V(buffer.data == nullptr, v);
+		v.f = buffer.data[0];
+		return v;
+
+	} else if (channel == VoxelBufferInternal::CHANNEL_INDICES || channel == VoxelBufferInternal::CHANNEL_WEIGHTS) {
+		std::shared_ptr<const Runtime> runtime_ptr;
+		{
+			RWLockRead rlock(_runtime_lock);
+			runtime_ptr = _runtime;
+		}
+		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		if (runtime_ptr->single_texture_output_buffer_index == -1) {
+			return v;
+		}
+
+		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
+
+		Cache &cache = get_tls_cache();
+		const pg::Runtime &runtime = runtime_ptr->runtime;
+		runtime.prepare_state(cache.state, 1, false);
+		runtime.generate_single(cache.state, inputs.get(), nullptr);
+		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->single_texture_output_buffer_index);
+		ERR_FAIL_COND_V(buffer.size == 0, v);
+		ERR_FAIL_COND_V(buffer.data == nullptr, v);
+		const float tex_index = buffer.data[0];
+		if (channel == VoxelBufferInternal::CHANNEL_INDICES) {
+			v.i = make_encoded_indices_for_single_texture(tex_index);
+		} else {
+			v.i = make_encoded_weights_for_single_texture();
+		}
+		return v;
+
+	} else {
+		// TODO Support other channels
 		return v;
 	}
-	std::shared_ptr<const Runtime> runtime_ptr;
-	{
-		RWLockRead rlock(_runtime_lock);
-		runtime_ptr = _runtime;
-	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
-	// TODO Allow return values from other outputs
-	if (runtime_ptr->sdf_output_buffer_index == -1) {
-		return v;
-	}
-
-	QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
-
-	Cache &cache = get_tls_cache();
-	const pg::Runtime &runtime = runtime_ptr->runtime;
-	runtime.prepare_state(cache.state, 1, false);
-	runtime.generate_single(cache.state, inputs.get(), nullptr);
-	const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
-	ERR_FAIL_COND_V(buffer.size == 0, v);
-	ERR_FAIL_COND_V(buffer.data == nullptr, v);
-	v.f = buffer.data[0];
-	return v;
 }
 
 // Note, this wrapper may not be used for main generation tasks.

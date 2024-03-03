@@ -36,6 +36,8 @@ Primarily developped with Godot 4.2.
     - `VoxelGeneratorGraph`: 
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
         - Fixed default input values of output nodes were always 0 when using GPU generation
+    - `VoxelToolLodTerrain`: 
+        - `get_voxel` would always return 0 in indices and weight channels if the area was never edited, data streaming is on and the generator is a `VoxelGeneratorGraph` producing single-texture information
 
 - Breaking changes
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
