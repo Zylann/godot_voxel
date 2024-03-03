@@ -162,9 +162,9 @@ inline bool find(const FixedArray<T, N> &a, const T &v, unsigned int &out_index)
 }
 
 template <typename T, unsigned int N>
-inline bool contains(const FixedArray<T, N> &a, const T &v) {
+inline bool contains(const FixedArray<T, N> &a, const T &value_to_search) {
 	for (const T &v : a) {
-		if (v == a) {
+		if (v == value_to_search) {
 			return true;
 		}
 	}
