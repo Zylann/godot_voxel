@@ -33,10 +33,15 @@ Primarily developped with Godot 4.2.
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
     - Fixed `"plugins_list.has(p_plugin)" is true` errors in the editor, at the cost of slight behavior changes. This was caused by existing workarounds to prevent UIs from hiding unexpectedly, which were modified to avoid the error, but are still needed unfortunately.
+    - Fixed error `Unimplemented _get_import_order in add-on` when importing `.vox` files
     - `VoxelLodTerrain`: `VoxelTool.do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
     - `VoxelGeneratorGraph`: 
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
         - Fixed default input values of output nodes were always 0 when using GPU generation
+    - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
+    - `VoxelToolLodTerrain`: 
+        - `get_voxel` would always return 0 in indices and weight channels if the area was never edited, data streaming is on and the generator is a `VoxelGeneratorGraph` producing single-texture information
+        - `copy` would return incorrect buffers when used on non-edited areas when data streaming is on and a generator is assigned
 
 - Breaking changes
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels

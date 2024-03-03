@@ -241,6 +241,10 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
+constexpr inline uint16_t make_encoded_weights_for_single_texture() {
+	return encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+}
+
 constexpr inline uint16_t make_encoded_indices_for_single_texture(uint8_t index) {
 	// Make sure other indices are different so the weights associated with them don't override the first
 	// index's weight.
@@ -266,7 +270,7 @@ void gather_indices_and_weights_from_single_texture(unsigned int output_buffer_i
 	Span<const float> buffer_data = Span<const float>(buffer.data, buffer.size);
 
 	// TODO Should not really be here, but may work. Left here for now so all code for this is in one place
-	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
+	const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
 	out_voxel_buffer.clear_channel(VoxelBufferInternal::CHANNEL_WEIGHTS, encoded_weights);
 
 	unsigned int value_index = 0;
@@ -565,8 +569,9 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 						// first index's weight
 						const int index = static_cast<int>(index_range.min);
 						const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
+						const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
 						out_buffer.fill_area(encoded_indices, rmin, rmax, VoxelBufferInternal::CHANNEL_INDICES);
-						out_buffer.fill_area(0x000f, rmin, rmax, VoxelBufferInternal::CHANNEL_WEIGHTS);
+						out_buffer.fill_area(encoded_weights, rmin, rmax, VoxelBufferInternal::CHANNEL_WEIGHTS);
 						single_texture_is_uniform = true;
 					} else {
 						required_outputs[required_outputs_count] = runtime_ptr->single_texture_output_index;
@@ -781,10 +786,10 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 			// Make sure other indices are different so the weights associated with them don't override the
 			// first index's weight
 			const int index = int(index_range.min);
-			const uint8_t other_index = (index == 0 ? 1 : 0);
-			const uint16_t encoded_indices = encode_indices_to_packed_u16(index, other_index, other_index, other_index);
+			const uint16_t encoded_indices = make_encoded_indices_for_single_texture(index);
+			const uint16_t encoded_weights = make_encoded_weights_for_single_texture();
 			out_buffer.fill(encoded_indices, VoxelBufferInternal::CHANNEL_INDICES);
-			out_buffer.fill(0x000f, VoxelBufferInternal::CHANNEL_WEIGHTS);
+			out_buffer.fill(encoded_weights, VoxelBufferInternal::CHANNEL_WEIGHTS);
 		} else {
 			return false;
 		}
@@ -1460,34 +1465,65 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 }
 
 VoxelSingleValue VoxelGeneratorGraph::generate_single(Vector3i position, unsigned int channel) {
-	// TODO Support other channels
+	// This is very slow when used multiple times, so if possible prefer using bulk queries
+
 	VoxelSingleValue v;
 	v.i = 0;
-	if (channel != VoxelBufferInternal::CHANNEL_SDF) {
+	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+		std::shared_ptr<const Runtime> runtime_ptr;
+		{
+			RWLockRead rlock(_runtime_lock);
+			runtime_ptr = _runtime;
+		}
+		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		if (runtime_ptr->sdf_output_buffer_index == -1) {
+			return v;
+		}
+
+		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
+
+		Cache &cache = get_tls_cache();
+		const pg::Runtime &runtime = runtime_ptr->runtime;
+		runtime.prepare_state(cache.state, 1, false);
+		runtime.generate_single(cache.state, inputs.get(), nullptr);
+		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
+		ERR_FAIL_COND_V(buffer.size == 0, v);
+		ERR_FAIL_COND_V(buffer.data == nullptr, v);
+		v.f = buffer.data[0];
+		return v;
+
+	} else if (channel == VoxelBufferInternal::CHANNEL_INDICES || channel == VoxelBufferInternal::CHANNEL_WEIGHTS) {
+		std::shared_ptr<const Runtime> runtime_ptr;
+		{
+			RWLockRead rlock(_runtime_lock);
+			runtime_ptr = _runtime;
+		}
+		ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
+		if (runtime_ptr->single_texture_output_buffer_index == -1) {
+			return v;
+		}
+
+		QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
+
+		Cache &cache = get_tls_cache();
+		const pg::Runtime &runtime = runtime_ptr->runtime;
+		runtime.prepare_state(cache.state, 1, false);
+		runtime.generate_single(cache.state, inputs.get(), nullptr);
+		const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->single_texture_output_buffer_index);
+		ERR_FAIL_COND_V(buffer.size == 0, v);
+		ERR_FAIL_COND_V(buffer.data == nullptr, v);
+		const float tex_index = buffer.data[0];
+		if (channel == VoxelBufferInternal::CHANNEL_INDICES) {
+			v.i = make_encoded_indices_for_single_texture(tex_index);
+		} else {
+			v.i = make_encoded_weights_for_single_texture();
+		}
+		return v;
+
+	} else {
+		// TODO Support other channels
 		return v;
 	}
-	std::shared_ptr<const Runtime> runtime_ptr;
-	{
-		RWLockRead rlock(_runtime_lock);
-		runtime_ptr = _runtime;
-	}
-	ERR_FAIL_COND_V(runtime_ptr == nullptr, v);
-	// TODO Allow return values from other outputs
-	if (runtime_ptr->sdf_output_buffer_index == -1) {
-		return v;
-	}
-
-	QueryInputs<float> inputs(*runtime_ptr, position.x, position.y, position.z, 0.f);
-
-	Cache &cache = get_tls_cache();
-	const pg::Runtime &runtime = runtime_ptr->runtime;
-	runtime.prepare_state(cache.state, 1, false);
-	runtime.generate_single(cache.state, inputs.get(), nullptr);
-	const pg::Runtime::Buffer &buffer = cache.state.get_buffer(runtime_ptr->sdf_output_buffer_index);
-	ERR_FAIL_COND_V(buffer.size == 0, v);
-	ERR_FAIL_COND_V(buffer.data == nullptr, v);
-	v.f = buffer.data[0];
-	return v;
 }
 
 // Note, this wrapper may not be used for main generation tasks.

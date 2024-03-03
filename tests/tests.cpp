@@ -113,6 +113,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_spatial_lock_misc);
 	VOXEL_TEST(test_spatial_lock_spam);
 	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
+	VOXEL_TEST(test_discord_soakil_copypaste);
 
 	print_line("------------ Voxel tests end -------------");
 }

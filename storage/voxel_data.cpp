@@ -298,10 +298,10 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 	const Box3i blocks_box = Box3i(min_pos, dst_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
 	SpatialLock3D::Read srlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
-	if (is_streaming_enabled() || generator.is_null()) {
+	if (generator.is_null()) {
 		RWLockRead rlock(data_lod0.map_lock);
 		// Only gets blocks we have voxel data of. Other blocks will be air.
-		// TODO Maybe in the end we should just do the same in either case?
+		// TODO Modifiers?
 		data_lod0.map.copy(min_pos, dst_buffer, channels_mask);
 
 	} else {
@@ -311,6 +311,11 @@ void VoxelData::copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned
 		};
 
 		GenContext gctx{ **generator, modifiers };
+
+		// Note, when streaming is enabled and this intersects non-loaded areas, they will fallback on the generator.
+		// That's technically not correct as we don't really know what these areas should contain, they could have been
+		// edited. It may be useful for the caller to check first if the area is loaded. It would be better if all this
+		// could be done in a single transaction? Might need a proper transaction API eventually
 
 		RWLockRead rlock(data_lod0.map_lock);
 		data_lod0.map.copy(min_pos, dst_buffer, channels_mask, &gctx,

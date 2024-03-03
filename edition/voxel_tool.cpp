@@ -286,7 +286,6 @@ void VoxelTool::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t ch
 
 void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(p_voxels.is_null());
-	ERR_PRINT("Not implemented");
 	if (Vector3iUtil::is_empty_size(p_voxels->get_size())) {
 		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be pasted.");
 	}
