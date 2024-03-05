@@ -44,6 +44,7 @@ Primarily developped with Godot 4.2.
         - `do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
         - `get_voxel` would always return 0 in indices and weight channels if the area was never edited, data streaming is on and the generator is a `VoxelGeneratorGraph` producing single-texture information
         - `copy` would return incorrect buffers when used on non-edited areas when data streaming is on and a generator is assigned
+        - Fixed errors printed when moving away from edited chunks while no stream is assigned
 
 - Breaking changes
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels

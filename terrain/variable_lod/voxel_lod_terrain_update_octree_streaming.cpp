@@ -8,7 +8,7 @@ namespace zylann::voxel {
 namespace {
 
 void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> &blocks_to_save, bool can_save,
+		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> *blocks_to_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
@@ -64,14 +64,14 @@ void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 			// VoxelDataLodMap::Lod &data_lod = data.lods[lod_index];
 			// RWLockWrite wlock(data_lod.map_lock);
 
-			const unsigned int to_save_index0 = blocks_to_save.size();
+			const unsigned int to_save_index0 = blocks_to_save != nullptr ? blocks_to_save->size() : 0;
 
 			prev_box.difference(new_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
-				data.unload_blocks(box_to_remove, lod_index, &blocks_to_save);
+				data.unload_blocks(box_to_remove, lod_index, blocks_to_save);
 			});
 
-			if (blocks_to_save.size() > to_save_index0) {
-				add_unloaded_saving_blocks(lod, to_span(blocks_to_save).sub(to_save_index0));
+			if (blocks_to_save != nullptr && blocks_to_save->size() > to_save_index0) {
+				add_unloaded_saving_blocks(lod, to_span(*blocks_to_save).sub(to_save_index0));
 			}
 		}
 
@@ -692,16 +692,15 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 } // namespace
 
 void process_octree_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
-		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
+		std::vector<VoxelData::BlockToSave> *data_blocks_to_save,
 		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool stream_enabled) {
+		const VoxelLodTerrainUpdateData::Settings &settings, bool stream_enabled) {
 	ZN_PROFILE_SCOPE();
 
 	// Unload data blocks falling out of block region extent.
 	// We only unload data if data streaming is enabled. Otherwise it's always loaded.
 	if (data.is_streaming_enabled()) {
-		process_unload_data_blocks_sliding_box(
-				state, data, viewer_pos, data_blocks_to_save, stream.is_valid(), settings);
+		process_unload_data_blocks_sliding_box(state, data, viewer_pos, data_blocks_to_save, settings);
 	}
 
 	// Unload mesh blocks falling out of block region extent

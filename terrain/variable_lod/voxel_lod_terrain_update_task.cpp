@@ -759,17 +759,21 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	// Other mesh updates
 	process_changed_generated_areas(state, settings, lod_count);
 
-	static thread_local std::vector<VoxelData::BlockToSave> data_blocks_to_save;
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToLoad> data_blocks_to_load;
+	static thread_local std::vector<VoxelData::BlockToSave> tls_data_blocks_to_save;
+	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToLoad> tls_data_blocks_to_load;
+
+	std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load = tls_data_blocks_to_load;
 	data_blocks_to_load.clear();
+
+	std::vector<VoxelData::BlockToSave> *data_blocks_to_save = stream.is_valid() ? &tls_data_blocks_to_save : nullptr;
 
 	profiling_clock.restart();
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {
 		process_octree_streaming(
-				state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream, stream_enabled);
+				state, data, _viewer_pos, data_blocks_to_save, data_blocks_to_load, settings, stream_enabled);
 	} else {
 		process_clipbox_streaming(state, data, to_span(update_data.viewers), _volume_transform, data_blocks_to_save,
-				data_blocks_to_load, settings, stream, stream_enabled, _meshing_dependency->mesher.is_valid());
+				data_blocks_to_load, settings, stream_enabled, _meshing_dependency->mesher.is_valid());
 	}
 	state.stats.time_detect_required_blocks = profiling_clock.restart();
 
@@ -800,11 +804,15 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 				}
 			}
 
-			send_block_save_requests(
-					_volume_id, to_span(data_blocks_to_save), _streaming_dependency, task_scheduler, nullptr, false);
+			if (data_blocks_to_save != nullptr) {
+				send_block_save_requests(_volume_id, to_span(*data_blocks_to_save), _streaming_dependency,
+						task_scheduler, nullptr, false);
+			}
 		}
 		data_blocks_to_load.clear();
-		data_blocks_to_save.clear();
+		if (data_blocks_to_save != nullptr) {
+			data_blocks_to_save->clear();
+		}
 	}
 	state.stats.time_io_requests = profiling_clock.restart();
 

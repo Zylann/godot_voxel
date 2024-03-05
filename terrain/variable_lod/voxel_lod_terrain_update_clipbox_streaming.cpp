@@ -414,7 +414,7 @@ void unreference_data_block_from_loading_lists(
 }
 
 void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		std::vector<VoxelData::BlockToSave> &blocks_to_save,
+		std::vector<VoxelData::BlockToSave> *blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
 		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, int lod_count, bool can_load) {
@@ -503,15 +503,15 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 					tls_missing_blocks.clear();
 					tls_found_blocks_positions.clear();
 
-					const unsigned int to_save_index0 = blocks_to_save.size();
+					const unsigned int to_save_index0 = blocks_to_save != nullptr ? blocks_to_save->size() : 0;
 
-					prev_data_box.difference(new_data_box, [&data, &blocks_to_save, lod_index](Box3i box_to_remove) {
+					prev_data_box.difference(new_data_box, [&data, blocks_to_save, lod_index](Box3i box_to_remove) {
 						data.unview_area(box_to_remove, lod_index, &tls_found_blocks_positions, &tls_missing_blocks,
-								&blocks_to_save);
+								blocks_to_save);
 					});
 
-					if (blocks_to_save.size() > to_save_index0) {
-						add_unloaded_saving_blocks(lod, to_span(blocks_to_save).sub(to_save_index0));
+					if (blocks_to_save != nullptr && blocks_to_save->size() > to_save_index0) {
+						add_unloaded_saving_blocks(lod, to_span(*blocks_to_save).sub(to_save_index0));
 					}
 
 					// Remove loading blocks regardless of refcount (those were loaded and had their refcount reach
@@ -1415,9 +1415,9 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
-		std::vector<VoxelData::BlockToSave> &data_blocks_to_save,
+		std::vector<VoxelData::BlockToSave> *data_blocks_to_save,
 		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, Ref<VoxelStream> stream, bool can_load, bool can_mesh) {
+		const VoxelLodTerrainUpdateData::Settings &settings, bool can_load, bool can_mesh) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int lod_count = data.get_lod_count();
