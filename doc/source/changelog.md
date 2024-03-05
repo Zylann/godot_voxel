@@ -35,6 +35,7 @@ Primarily developped with Godot 4.2.
     - Fixed `"plugins_list.has(p_plugin)" is true` errors in the editor, at the cost of slight behavior changes. This was caused by existing workarounds to prevent UIs from hiding unexpectedly, which were modified to avoid the error, but are still needed unfortunately.
     - Fixed error `Unimplemented _get_import_order in add-on` when importing `.vox` files
     - Fixed some corner cases where quickly leaving and coming back to an edited area would revert edits to their previous state, due to chunks reloading before those edits got saved asynchronously
+    - Fixed possible artifacts near terrain borders when using generators that sometimes avoid filling the output buffer, assuming they are initialized to defaults (issue #603)
     - `VoxelGeneratorGraph`: 
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
         - Fixed default input values of output nodes were always 0 when using GPU generation

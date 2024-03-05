@@ -167,6 +167,7 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 			mesh_block_pos * (area_info.mesh_block_size_factor * data_block_size << lod_index) -
 			Vector3iUtil::create(min_padding << lod_index);
 
+	// Undo padding to go back to proper buffer coordinates
 	for (Box3i &box : boxes_to_generate) {
 		box.pos += Vector3iUtil::create(min_padding);
 	}
