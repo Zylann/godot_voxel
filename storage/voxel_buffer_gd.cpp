@@ -319,7 +319,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const VoxelBufferInternal &buffe
 			const float posi = math::clamp(sd, 0.0f, 1.0f);
 			const Color col = math::lerp(black, nega_col, nega) + math::lerp(black, posi_col, posi);
 
-			im->set_pixel(x, y, col);
+			im->set_pixel(x, res.y - y - 1, col);
 		}
 	}
 
