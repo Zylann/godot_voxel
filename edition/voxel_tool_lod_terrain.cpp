@@ -366,6 +366,97 @@ void VoxelToolLodTerrain::set_raycast_binary_search_iterations(int iterations) {
 	_raycast_binary_search_iterations = math::clamp(iterations, 0, 16);
 }
 
+void box_propagate_ccl(Span<uint8_t> cells, const Vector3i size) {
+	ZN_PROFILE_SCOPE();
+
+	// Propagate non-zero cells towards zero cells in a 3x3x3 pattern.
+	// Used on a grid produced by Connected-Component-Labelling.
+
+	// Z
+	{
+		ZN_PROFILE_SCOPE_NAMED("Z");
+		Vector3i pos;
+		const int dz = size.x * size.y;
+		unsigned int i = 0;
+		for (pos.x = 0; pos.x < size.x; ++pos.x) {
+			for (pos.y = 0; pos.y < size.y; ++pos.y) {
+				// Note, border cells are not handled. Not just because it's more work, but also because that could
+				// make the label touch the edge, which is later interpreted as NOT being an island.
+				pos.z = 2;
+				i = Vector3iUtil::get_zxy_index(pos, size);
+				for (; pos.z < size.z - 2; ++pos.z, i += dz) {
+					const uint8_t c = cells[i];
+					if (c != 0) {
+						if (cells[i - dz] == 0) {
+							cells[i - dz] = c;
+						}
+						if (cells[i + dz] == 0) {
+							cells[i + dz] = c;
+							// Skip next cell, otherwise it would cause endless propagation
+							i += dz;
+							++pos.z;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// X
+	{
+		ZN_PROFILE_SCOPE_NAMED("X");
+		Vector3i pos;
+		const int dx = size.y;
+		unsigned int i = 0;
+		for (pos.z = 0; pos.z < size.z; ++pos.z) {
+			for (pos.y = 0; pos.y < size.y; ++pos.y) {
+				pos.x = 2;
+				i = Vector3iUtil::get_zxy_index(pos, size);
+				for (; pos.x < size.x - 2; ++pos.x, i += dx) {
+					const uint8_t c = cells[i];
+					if (c != 0) {
+						if (cells[i - dx] == 0) {
+							cells[i - dx] = c;
+						}
+						if (cells[i + dx] == 0) {
+							cells[i + dx] = c;
+							i += dx;
+							++pos.x;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Y
+	{
+		ZN_PROFILE_SCOPE_NAMED("Y");
+		Vector3i pos;
+		const int dy = 1;
+		unsigned int i = 0;
+		for (pos.z = 0; pos.z < size.z; ++pos.z) {
+			for (pos.x = 0; pos.x < size.x; ++pos.x) {
+				pos.y = 2;
+				i = Vector3iUtil::get_zxy_index(pos, size);
+				for (; pos.y < size.y - 2; ++pos.y, i += dy) {
+					const uint8_t c = cells[i];
+					if (c != 0) {
+						if (cells[i - dy] == 0) {
+							cells[i - dy] = c;
+						}
+						if (cells[i + dy] == 0) {
+							cells[i + dy] = c;
+							i += dy;
+							++pos.y;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // Turns floating chunks of voxels into rigidbodies:
 // Detects separate groups of connected voxels within a box. Each group fully contained in the box is removed from
 // the source volume, and turned into a rigidbody.
@@ -417,6 +508,13 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		Vector3i max_pos; // inclusive
 		bool valid = false;
 	};
+
+	if (main_channel == VoxelBufferInternal::CHANNEL_SDF) {
+		// Propagate labels to improve SDF quality, otherwise gradients of separated chunks would cut off abruptly.
+		// Limitation: if two islands are too close to each other, one will win over the other.
+		// An alternative could be to do this on individual chunks?
+		box_propagate_ccl(to_span(ccl_output), world_box.size);
+	}
 
 	// Compute bounds of each group
 
@@ -688,7 +786,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// }
 
 			// TODO Option to make multiple convex shapes
-			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing.
+			// TODO Use the fast way. This is slow because of the internal TriangleMesh thing and mesh data query.
 			// TODO Don't create a body if the mesh has no triangles
 			Ref<Shape3D> shape = mesh->create_convex_shape();
 			ERR_CONTINUE(shape.is_null());

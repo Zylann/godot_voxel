@@ -27,6 +27,8 @@ Primarily developped with Godot 4.2.
         - Adds secondary LOD distance parameter controlling the extents of LOD1 and beyond, separately from LOD0 (unused in the legacy system)
         - Has its own limitations and pending improvements, may be addressed over time
         - The original system is now referenced as "Legacy Octree".
+- `VoxelToolLodTerrain`:
+    - Improved quality of `separate_floating_chunks` on smooth terrains by expanding cutting-off area to include more gradients
 - `VoxelStream`:
     - Added `flush` method to force writing to the filesystem in case the stream's implementation uses caching
 
@@ -45,6 +47,7 @@ Primarily developped with Godot 4.2.
         - `get_voxel` would always return 0 in indices and weight channels if the area was never edited, data streaming is on and the generator is a `VoxelGeneratorGraph` producing single-texture information
         - `copy` would return incorrect buffers when used on non-edited areas when data streaming is on and a generator is assigned
         - Fixed errors printed when moving away from edited chunks while no stream is assigned
+        - Fixed `separate_floating_chunks` was spawning chunks not exactly at the same place
 
 - Breaking changes
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
