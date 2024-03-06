@@ -63,7 +63,8 @@ public:
 	Ref<VoxelBlockyModel> get_variant(const VariantKey &key) const;
 
 	void bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
-			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const;
+			VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key,
+			bool bake_tangents) const;
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &out_warnings) const;

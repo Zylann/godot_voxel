@@ -310,10 +310,9 @@ static math::OrthoBasis get_baking_rotation_ortho_basis(
 // }
 
 void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
-		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key) const {
+		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key, bool bake_tangents) const {
 	ZN_PROFILE_SCOPE();
 
-	const bool bake_tangents = false;
 	// Don't print warnings when used for previewing. It's ok to have momentarily invalid setups when the user is
 	// editing properties.
 	const bool print_warnings = (specific_key == nullptr);
@@ -482,11 +481,15 @@ Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 	std::vector<Ref<Material>> materials;
 	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
 	std::vector<VariantKey> keys;
-	bake(baked_models, keys, material_indexer, &key);
+
+	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview
+	const bool require_tangents = true;
+
+	bake(baked_models, keys, material_indexer, &key, true);
 
 	ZN_ASSERT_RETURN_V(baked_models.size() == 1, Ref<Mesh>());
 	const VoxelBlockyModel::BakedData &baked_model = baked_models[0];
-	Ref<Mesh> mesh = VoxelBlockyModel::make_mesh_from_baked_data(baked_model, false);
+	Ref<Mesh> mesh = VoxelBlockyModel::make_mesh_from_baked_data(baked_model, require_tangents);
 
 	for (unsigned int surface_index = 0; surface_index < baked_model.model.surface_count; ++surface_index) {
 		const unsigned int material_index = baked_model.model.surfaces[surface_index].material_id;

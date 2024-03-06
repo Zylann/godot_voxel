@@ -61,7 +61,7 @@ void VoxelBlockyTypeLibrary::bake() {
 		ZN_ASSERT_CONTINUE_MSG(
 				type.is_valid(), format("{} at index {} is null", get_class_name_str<VoxelBlockyType>(), i));
 
-		type->bake(baked_models, keys, material_indexer, nullptr);
+		type->bake(baked_models, keys, material_indexer, nullptr, get_bake_tangents());
 
 		VoxelID id;
 		id.type_name = type->get_unique_name();
