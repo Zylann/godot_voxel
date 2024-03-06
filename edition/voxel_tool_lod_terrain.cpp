@@ -636,7 +636,10 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// 	print_line("//");
 			// }
 
-			const Transform3D local_transform(Basis(), info.world_pos);
+			const Transform3D local_transform(Basis(),
+					info.world_pos
+							// Undo min padding
+							+ Vector3i(1, 1, 1));
 
 			for (int i = 0; i < materials.size(); ++i) {
 				if ((materials_to_instance_mask & (1 << i)) != 0) {
