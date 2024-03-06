@@ -81,7 +81,7 @@ public:
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
+	Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error
@@ -126,6 +126,7 @@ public:
 	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
 protected:
+	Ref<Mesh> _b_build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 	static void _bind_methods();
 
 	void set_padding(int minimum, int maximum);

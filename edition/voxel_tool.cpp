@@ -218,20 +218,25 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 
 // Erases matter in every voxel where the provided buffer has matter.
 void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
+	ZN_ASSERT_RETURN(stamp.is_valid());
+	sdf_stamp_erase(stamp->get_buffer(), pos);
+}
+
+void VoxelTool::sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_MSG(
 			get_channel() != VoxelBufferInternal::CHANNEL_SDF, "This function only works when channel is set to SDF");
 
-	const Box3i box(pos, stamp->get_buffer().get_size());
+	const Box3i box(pos, stamp.get_size());
 	if (!is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
 
-	box.for_each_cell_zxy([this, stamp, pos](Vector3i pos_in_volume) {
+	box.for_each_cell_zxy([this, &stamp, pos](Vector3i pos_in_volume) {
 		const Vector3i pos_in_stamp = pos_in_volume - pos;
 		const float dst_sdf =
-				stamp->get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBufferInternal::CHANNEL_SDF);
+				stamp.get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBufferInternal::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
 			_set_voxel_f(pos_in_volume, 1.f);
 		}

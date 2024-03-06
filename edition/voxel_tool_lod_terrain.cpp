@@ -491,7 +491,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// Create voxel buffer for each group
 
 	struct InstanceInfo {
-		Ref<gd::VoxelBuffer> voxels;
+		VoxelBufferInternal voxels;
 		Vector3i world_pos;
 		unsigned int label;
 	};
@@ -515,15 +515,13 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Vector3i size =
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
-			// TODO We should be able to use `VoxelBufferInternal`, just needs some things exposed
-			Ref<gd::VoxelBuffer> buffer_ref;
-			buffer_ref.instantiate();
-			buffer_ref->create(size.x, size.y, size.z);
+			instances_info.push_back(InstanceInfo{ VoxelBufferInternal(), world_pos, label });
+
+			VoxelBufferInternal &buffer = instances_info.back().voxels;
+			buffer.create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
-			voxel_tool.copy(world_pos, buffer_ref, channels_mask);
-
-			VoxelBufferInternal &buffer = buffer_ref->get_buffer();
+			voxel_tool.copy(world_pos, buffer, channels_mask);
 
 			// Cleanup padding borders
 			const Box3i inner_box(Vector3iUtil::create(min_padding),
@@ -548,8 +546,6 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 					}
 				}
 			}
-
-			instances_info.push_back(InstanceInfo{ buffer_ref, world_pos, label });
 		}
 	}
 
@@ -563,9 +559,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
 			CRASH_COND(instance_index >= instances_info.size());
-			const InstanceInfo info = instances_info[instance_index];
-			ERR_CONTINUE(info.voxels.is_null());
-
+			const InstanceInfo &info = instances_info[instance_index];
 			voxel_tool.sdf_stamp_erase(info.voxels, info.world_pos);
 		}
 	}
@@ -616,8 +610,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 		for (unsigned int instance_index = 0; instance_index < instances_info.size(); ++instance_index) {
 			CRASH_COND(instance_index >= instances_info.size());
-			const InstanceInfo info = instances_info[instance_index];
-			ERR_CONTINUE(info.voxels.is_null());
+			const InstanceInfo &info = instances_info[instance_index];
 
 			CRASH_COND(info.label >= bounds_per_label.size());
 			const Bounds local_bounds = bounds_per_label[info.label];

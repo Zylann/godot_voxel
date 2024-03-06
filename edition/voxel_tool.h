@@ -71,6 +71,7 @@ public:
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
 
 	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
+	void sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos);
 
 	virtual void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const;
 	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
