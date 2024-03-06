@@ -480,9 +480,13 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		Bounds &local_bounds = bounds_per_label[label];
 		ERR_CONTINUE(!local_bounds.valid);
 
-		if (local_bounds.min_pos.x == 0 || local_bounds.min_pos.y == 0 || local_bounds.min_pos.z == 0 ||
-				local_bounds.max_pos.x == lbmax.x || local_bounds.max_pos.y == lbmax.y ||
-				local_bounds.max_pos.z == lbmax.z) {
+		if ( //
+				local_bounds.min_pos.x == 0 //
+				|| local_bounds.min_pos.y == 0 //
+				|| local_bounds.min_pos.z == 0 //
+				|| local_bounds.max_pos.x == lbmax.x //
+				|| local_bounds.max_pos.y == lbmax.y //
+				|| local_bounds.max_pos.z == lbmax.z) {
 			//
 			local_bounds.valid = false;
 		}
