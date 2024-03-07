@@ -372,7 +372,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		vertices.resize(vertex_count);
 		normals.resize(vertex_count);
 		if (tangents_enabled) {
-			tangents.resize(vertex_count);
+			tangents.resize(vertex_count * 4);
 		}
 		colors.resize(vertex_count);
 		uvs.resize(vertex_count);
