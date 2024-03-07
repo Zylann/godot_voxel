@@ -276,7 +276,8 @@ void write_graph_nodes_doc_xml(
 void run_graph_nodes_doc_tool(String src_xml_fpath, String dst_xml_fpath) {
 	ZN_PRINT_VERBOSE("Running Voxel graph nodes doc tool");
 
-	Ref<XMLParser> parser = memnew(XMLParser);
+	Ref<XMLParser> parser;
+	parser.instantiate();
 	{
 		const Error err = parser->open(src_xml_fpath);
 		if (err != OK) {

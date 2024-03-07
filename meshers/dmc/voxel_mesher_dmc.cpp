@@ -1536,7 +1536,8 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 }
 
 Ref<Resource> VoxelMesherDMC::duplicate(bool p_subresources) const {
-	VoxelMesherDMC *c = memnew(VoxelMesherDMC);
+	Ref<VoxelMesherDMC> c;
+	c.instantiate();
 	RWLockRead rlock(_parameters_lock);
 	c->_parameters = _parameters;
 	return c;

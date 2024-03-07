@@ -629,7 +629,8 @@ Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
 		params.library = params.library->duplicate(true);
 	}
 
-	VoxelMesherBlocky *c = memnew(VoxelMesherBlocky);
+	Ref<VoxelMesherBlocky> c;
+	c.instantiate();
 	c->_parameters = params;
 	return c;
 }

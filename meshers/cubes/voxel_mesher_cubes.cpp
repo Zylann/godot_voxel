@@ -1017,7 +1017,8 @@ Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
 	if (p_subresources && params.palette.is_valid()) {
 		params.palette = params.palette->duplicate(true);
 	}
-	VoxelMesherCubes *d = memnew(VoxelMesherCubes);
+	Ref<VoxelMesherCubes> d;
+	d.instantiate();
 	d->_parameters = params;
 
 	return d;
