@@ -2,7 +2,7 @@
 #include "../../math/conv.h"
 #include "../../profiling.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> &r_result, Vector2i &r_size) {
 	ZN_PROFILE_SCOPE();
@@ -49,4 +49,4 @@ void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> 
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

@@ -59,7 +59,7 @@ void VoxelBlockyTypeLibrary::bake() {
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 		ZN_ASSERT_CONTINUE_MSG(
-				type.is_valid(), format("{} at index {} is null", get_class_name_str<VoxelBlockyType>(), i));
+				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i));
 
 		type->bake(baked_models, keys, material_indexer, nullptr, get_bake_tangents());
 
@@ -154,7 +154,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		}
 	}
 	if (null_indices.size() > 0) {
-		const String null_indices_str = join_comma_separated<unsigned int>(to_span(null_indices));
+		const String null_indices_str = godot::join_comma_separated<unsigned int>(to_span(null_indices));
 		out_warnings.push_back(
 				String("{0} contains null items at indices {1}").format(varray(get_class(), null_indices_str)));
 	}
@@ -200,7 +200,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		String sname = String(type->get_unique_name()).strip_edges();
 		if (sname.length() == 0) {
 			out_warnings.push_back(String("{0} at index {1} has an empty name.")
-										   .format(varray(get_class_name_str<VoxelBlockyType>(), type_index)));
+										   .format(varray(godot::get_class_name_str<VoxelBlockyType>(), type_index)));
 		}
 
 		type->get_configuration_warnings(out_warnings);
@@ -731,11 +731,11 @@ String VoxelBlockyTypeLibrary::serialize_id_map_to_json() const {
 }
 
 TypedArray<VoxelBlockyType> VoxelBlockyTypeLibrary::_b_get_types() const {
-	return to_typed_array(to_span(_types));
+	return godot::to_typed_array(to_span(_types));
 }
 
 void VoxelBlockyTypeLibrary::_b_set_types(TypedArray<VoxelBlockyType> types) {
-	copy_to(_types, types);
+	godot::copy_to(_types, types);
 	_needs_baking = true;
 }
 

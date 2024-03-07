@@ -21,8 +21,8 @@ class VoxelAboutWindow;
 class VoxelNode;
 class VoxelTerrainEditorTaskIndicator;
 
-class VoxelTerrainEditorPlugin : public ZN_EditorPlugin {
-	GDCLASS(VoxelTerrainEditorPlugin, ZN_EditorPlugin)
+class VoxelTerrainEditorPlugin : public godot::ZN_EditorPlugin {
+	GDCLASS(VoxelTerrainEditorPlugin, godot::ZN_EditorPlugin)
 public:
 	VoxelTerrainEditorPlugin();
 
@@ -69,7 +69,7 @@ private:
 		MENU_COUNT
 	};
 
-	ObjectWeakRef<VoxelNode> _terrain_node;
+	godot::ObjectWeakRef<VoxelNode> _terrain_node;
 
 	ViewerID _editor_viewer_id;
 	bool _editor_viewer_enabled = true;

@@ -101,7 +101,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 	const float to_world_scale = to_world.basis.get_column(Vector3::AXIS_X).length();
 	const float max_distance = p_max_distance / to_world_scale;
 
-	if (try_get_as(_terrain->get_mesher(), mesher_blocky)) {
+	if (godot::try_get_as(_terrain->get_mesher(), mesher_blocky)) {
 		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
 		if (library_ref.is_null()) {
 			return res;
@@ -118,7 +118,7 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 			res->distance_along_ray = hit_distance * to_world_scale;
 		}
 
-	} else if (try_get_as(_terrain->get_mesher(), mesher_cubes)) {
+	} else if (godot::try_get_as(_terrain->get_mesher(), mesher_cubes)) {
 		RaycastPredicateColor predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;

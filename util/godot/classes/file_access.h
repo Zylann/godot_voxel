@@ -13,7 +13,7 @@ using namespace godot;
 
 #include "../../containers/span.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 inline Ref<FileAccess> open_file(const String path, FileAccess::ModeFlags mode_flags, Error &out_error) {
 #if defined(ZN_GODOT)
@@ -57,6 +57,6 @@ inline String get_as_text(FileAccess &f) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_FILE_ACCESS_H

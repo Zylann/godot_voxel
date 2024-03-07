@@ -9,7 +9,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class World3D);
 
-namespace zylann {
+namespace zylann::godot {
 
 // Thin wrapper around VisualServer mesh instance API
 class DirectMeshInstance : public NonCopyable {
@@ -43,6 +43,6 @@ private:
 	Ref<Mesh> _mesh;
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // DIRECT_MESH_INSTANCE_H

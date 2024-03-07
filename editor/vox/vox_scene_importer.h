@@ -6,8 +6,8 @@
 namespace zylann::voxel::magica {
 
 // Imports a vox file as a scene, where the internal scene layout is preserved as nodes
-class VoxelVoxSceneImporter : public ZN_EditorImportPlugin {
-	GDCLASS(VoxelVoxSceneImporter, ZN_EditorImportPlugin)
+class VoxelVoxSceneImporter : public godot::ZN_EditorImportPlugin {
+	GDCLASS(VoxelVoxSceneImporter, godot::ZN_EditorImportPlugin)
 public:
 	String _zn_get_importer_name() const override;
 	String _zn_get_visible_name() const override;
@@ -18,13 +18,13 @@ public:
 	String _zn_get_resource_type() const override;
 	double _zn_get_priority() const override;
 	int _zn_get_import_order() const override;
-	void _zn_get_import_options(
-			std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const override;
-	bool _zn_get_option_visibility(
-			const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const override;
+	void _zn_get_import_options(std::vector<godot::ImportOptionWrapper> &p_out_options, const String &p_path,
+			int p_preset_index) const override;
+	bool _zn_get_option_visibility(const String &p_path, const StringName &p_option_name,
+			const godot::KeyValueWrapper p_options) const override;
 
-	Error _zn_import(const String &p_source_file, const String &p_save_path, const GodotKeyValueWrapper p_options,
-			GodotStringListWrapper p_out_platform_variants, GodotStringListWrapper p_out_gen_files) const override;
+	Error _zn_import(const String &p_source_file, const String &p_save_path, const godot::KeyValueWrapper p_options,
+			godot::StringListWrapper p_out_platform_variants, godot::StringListWrapper p_out_gen_files) const override;
 
 private:
 	// When compiling with GodotCpp, `_bind_methods` is not optional.

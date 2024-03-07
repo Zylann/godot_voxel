@@ -84,7 +84,7 @@ void ZN_FastNoiseLiteViewer::_notification(int p_what) {
 void ZN_FastNoiseLiteViewer::update_preview() {
 	const Vector2i preview_size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-	Ref<Image> im = create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
+	Ref<Image> im = godot::create_empty_image(preview_size.x, preview_size.y, false, Image::FORMAT_RGB8);
 
 	if (_noise.is_valid()) {
 		for (int y = 0; y < preview_size.y; ++y) {

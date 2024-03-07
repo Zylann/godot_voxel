@@ -627,7 +627,7 @@ void VoxelBlockyType::_on_base_model_changed() {
 }
 
 TypedArray<VoxelBlockyAttribute> VoxelBlockyType::_b_get_attributes() const {
-	return to_typed_array(to_span(_attributes));
+	return godot::to_typed_array(to_span(_attributes));
 }
 
 void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attributes) {
@@ -668,7 +668,7 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 	}
 #endif
 
-	copy_to(_attributes, attributes);
+	godot::copy_to(_attributes, attributes);
 
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {

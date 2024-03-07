@@ -81,7 +81,7 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	material->set_shader_parameter(sn.u_transition_mask, 0);
 	material->set_shader_parameter(sn.u_lod_fade, Vector2(0.0, 0.0));
 
-	ShaderMaterialPool::recycle(material);
+	godot::ShaderMaterialPool::recycle(material);
 }
 
 inline void copy_param(ShaderMaterial &src, ShaderMaterial &dst, const StringName &name) {
@@ -1475,7 +1475,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 							// transition mask changes)
 							item.shader_material = _shader_material_pool.allocate();
 							ZN_ASSERT(item.shader_material.is_valid());
-							copy_shader_params(**shader_material, **item.shader_material,
+							godot::copy_shader_params(**shader_material, **item.shader_material,
 									_shader_material_pool.get_cached_shader_uniforms());
 
 							item.mesh_instance.create();
@@ -1556,7 +1556,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 						// item.shader_material = shader_material->duplicate(false);
 						item.shader_material = _shader_material_pool.allocate();
 						ZN_ASSERT(item.shader_material.is_valid());
-						copy_shader_params(**shader_material, **item.shader_material,
+						godot::copy_shader_params(**shader_material, **item.shader_material,
 								_shader_material_pool.get_cached_shader_uniforms());
 
 						// item.shader_material->set_shader_param(
@@ -2715,7 +2715,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 			} else {
 				Ref<Shader> shader = shader_material->get_shader();
 				if (shader.is_valid()) {
-					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
+					if (!godot::shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_transition_mask)) {
 						warnings.append(ZN_TTR(
 								"The current mesher ({0}) requires to use shader with specific uniforms. Missing: {1}")
 												.format(varray(mesher->get_class(),
@@ -2736,7 +2736,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 					warnings.append(String("Lod fading is enabled but the current material is missing a shader.")
 											.format(varray(ShaderMaterial::get_class_static())));
 				} else {
-					if (!shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
+					if (!godot::shader_has_uniform(**shader, VoxelStringNames::get_singleton().u_lod_fade)) {
 						warnings.append(ZN_TTR(
 								"Lod fading is enabled but it requires to use a specific shader uniform. Missing: {0}")
 												.format(varray(VoxelStringNames::get_singleton().u_lod_fade)));
@@ -2777,7 +2777,8 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 						expected_uniforms[1] = VoxelStringNames::get_singleton().u_voxel_cell_lookup;
 						// There is more but they are not absolutely required for the shader to be made working
 
-						const String missing_uniforms = get_missing_uniform_names(to_span(expected_uniforms), **shader);
+						const String missing_uniforms =
+								godot::get_missing_uniform_names(to_span(expected_uniforms), **shader);
 
 						if (missing_uniforms.length() != 0) {
 							warnings.append(String(
@@ -3079,7 +3080,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 	const VoxelLodTerrainUpdateData::State &state = _update_data->state;
 
-	DebugRenderer &dr = _debug_renderer;
+	godot::DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
 	const Transform3D parent_transform = get_global_transform();
@@ -3094,7 +3095,7 @@ void VoxelLodTerrain::update_gizmos() {
 		for (auto it = state.octree_streaming.lod_octrees.begin(); it != state.octree_streaming.lod_octrees.end();
 				++it) {
 			const Transform3D local_transform(local_octree_basis, it->first * octree_size);
-			dr.draw_box(parent_transform * local_transform, DebugColors::ID_OCTREE_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, godot::DebugColors::ID_OCTREE_BOUNDS);
 		}
 	}
 
@@ -3108,7 +3109,7 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
-			dr.draw_box(parent_transform * local_transform, DebugColors::ID_VOXEL_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, godot::DebugColors::ID_VOXEL_BOUNDS);
 		}
 	}
 
@@ -3371,7 +3372,7 @@ Node3D *VoxelLodTerrain::debug_dump_as_nodes(bool include_instancer) const {
 
 		mesh_map.for_each_block([lod_node](const VoxelMeshBlockVLT &block) {
 			block.for_each_mesh_instance_with_transform(
-					[lod_node, &block](const DirectMeshInstance &dmi, Transform3D t) {
+					[lod_node, &block](const godot::DirectMeshInstance &dmi, Transform3D t) {
 						Ref<Mesh> mesh = dmi.get_mesh();
 
 						if (mesh.is_valid()) {
@@ -3400,7 +3401,7 @@ Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer)
 	Node3D *root = debug_dump_as_nodes(include_instancer);
 	ZN_ASSERT_RETURN_V(root != nullptr, ERR_BUG);
 
-	set_nodes_owner_except_root(root, root);
+	godot::set_nodes_owner_except_root(root, root);
 
 	Ref<PackedScene> scene;
 	scene.instantiate();
@@ -3410,7 +3411,7 @@ Error VoxelLodTerrain::debug_dump_as_scene(String fpath, bool include_instancer)
 		return pack_result;
 	}
 
-	const Error save_result = save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = godot::save_resource(scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	return save_result;
 }
 

@@ -6,7 +6,7 @@
 #include "packed_string_array.h"
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src) {
 	dst.resize(src.size());
@@ -124,4 +124,4 @@ Array to_array(const PackedStringArray &src) {
 
 #endif
 
-} // namespace zylann
+} // namespace zylann::godot

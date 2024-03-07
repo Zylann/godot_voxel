@@ -225,7 +225,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -254,7 +254,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 	}*/
 
-	if (mesh.is_valid() && is_mesh_empty(**mesh)) {
+	if (mesh.is_valid() && godot::is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 
@@ -441,7 +441,7 @@ void MeshBlockTask::build_mesh() {
 	Ref<VoxelMesherTransvoxel> transvoxel_mesher;
 
 	if (require_visual //
-			&& try_get_as(mesher, transvoxel_mesher) //
+			&& godot::try_get_as(mesher, transvoxel_mesher) //
 			&& detail_texture_settings.enabled //
 			&& !mesh_is_empty //
 			&& lod_index >= detail_texture_settings.begin_lod_index //

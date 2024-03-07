@@ -10,18 +10,18 @@ using namespace godot;
 
 #include <vector>
 
-namespace zylann {
+namespace zylann::godot {
 
-struct GodotImportOption {
+struct ImportOptionWrapper {
 	PropertyInfo option;
 	Variant default_value;
 
-	GodotImportOption(PropertyInfo p_option, Variant p_default_value) :
+	ImportOptionWrapper(PropertyInfo p_option, Variant p_default_value) :
 			option(p_option), default_value(p_default_value) {}
 };
 
 // Exposes the same interface for different equivalent dictionary types, depending on the compiling target.
-struct GodotKeyValueWrapper {
+struct KeyValueWrapper {
 #if defined(ZN_GODOT)
 
 	const HashMap<StringName, Variant> &_map;
@@ -63,7 +63,7 @@ struct GodotKeyValueWrapper {
 };
 
 // Exposes the same interface for different equivalent lists of strings, depending on the compiling target.
-struct GodotStringListWrapper {
+struct StringListWrapper {
 #if defined(ZN_GODOT)
 	List<String> &_list;
 	inline void append(const String s) {
@@ -132,19 +132,18 @@ protected:
 	virtual int _zn_get_import_order() const;
 
 	virtual void _zn_get_import_options(
-			std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const;
+			std::vector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const;
 
 	virtual bool _zn_get_option_visibility(
-			const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const;
+			const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const;
 
-	virtual Error _zn_import(const String &p_source_file, const String &p_save_path,
-			const GodotKeyValueWrapper p_options, GodotStringListWrapper p_out_platform_variants,
-			GodotStringListWrapper p_out_gen_files) const;
+	virtual Error _zn_import(const String &p_source_file, const String &p_save_path, const KeyValueWrapper p_options,
+			StringListWrapper p_out_platform_variants, StringListWrapper p_out_gen_files) const;
 
 private:
 	static void _bind_methods() {}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_IMPORT_PLUGIN_H

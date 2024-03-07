@@ -8,8 +8,8 @@ namespace zylann::voxel {
 
 class VoxelBlockyTypeLibraryIDSDialog;
 
-class VoxelBlockyTypeLibraryEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelBlockyTypeLibraryEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelBlockyTypeLibraryEditorInspectorPlugin : public godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelBlockyTypeLibraryEditorInspectorPlugin, godot::ZN_EditorInspectorPlugin)
 public:
 	void set_ids_dialog(VoxelBlockyTypeLibraryIDSDialog *ids_dialog);
 

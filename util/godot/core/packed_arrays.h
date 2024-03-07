@@ -14,7 +14,7 @@
 #include "packed_string_array_fwd.h"
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
 void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src);
@@ -63,6 +63,14 @@ void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
 }
 #endif
 
+#ifdef TOOLS_ENABLED
+Array to_array(const PackedStringArray &src);
+#endif
+
+} // namespace zylann::godot
+
+namespace zylann {
+
 // template <typename T>
 // Span<const T> to_span_const(const Vector<T> &a) {
 // 	return Span<const T>(a.ptr(), 0, a.size());
@@ -87,10 +95,6 @@ inline Span<const int32_t> to_span(const PackedInt32Array &a) {
 inline Span<const uint8_t> to_span(const PackedByteArray &a) {
 	return Span<const uint8_t>(a.ptr(), a.size());
 }
-
-#ifdef TOOLS_ENABLED
-Array to_array(const PackedStringArray &src);
-#endif
 
 } // namespace zylann
 

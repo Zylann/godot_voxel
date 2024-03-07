@@ -53,16 +53,16 @@ double VoxelVoxMeshImporter::_zn_get_priority() const {
 }
 
 void VoxelVoxMeshImporter::_zn_get_import_options(
-		std::vector<GodotImportOption> &out_options, const String &path, int preset_index) const {
+		std::vector<godot::ImportOptionWrapper> &out_options, const String &path, int preset_index) const {
 	// const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-	out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
-	out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
-	out_options.push_back(GodotImportOption(
+	out_options.push_back(godot::ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	out_options.push_back(godot::ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	out_options.push_back(godot::ImportOptionWrapper(
 			PropertyInfo(Variant::INT, "pivot_mode", PROPERTY_HINT_ENUM, "LowerCorner,SceneOrigin,Center"), 1));
 }
 
 bool VoxelVoxMeshImporter::_zn_get_option_visibility(
-		const String &path, const StringName &option_name, const GodotKeyValueWrapper options) const {
+		const String &path, const StringName &option_name, const godot::KeyValueWrapper options) const {
 	return true;
 }
 
@@ -222,8 +222,8 @@ bool make_single_voxel_grid(
 }
 
 Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String &p_save_path,
-		const GodotKeyValueWrapper p_options, GodotStringListWrapper out_platform_variants,
-		GodotStringListWrapper out_gen_files) const {
+		const godot::KeyValueWrapper p_options, godot::StringListWrapper out_platform_variants,
+		godot::StringListWrapper out_gen_files) const {
 	//
 	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
 	const float p_scale = p_options.get("scale");
@@ -361,7 +361,7 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 	{
 		ZN_PROFILE_SCOPE();
 		String mesh_save_path = String("{0}.mesh").format(varray(p_save_path));
-		const Error mesh_save_err = save_resource(mesh, mesh_save_path, ResourceSaver::FLAG_NONE);
+		const Error mesh_save_err = godot::save_resource(mesh, mesh_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(mesh_save_path)));
 	}

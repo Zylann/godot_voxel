@@ -6,8 +6,8 @@
 
 namespace zylann::voxel {
 
-class VoxelMeshSDFInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelMeshSDFInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelMeshSDFInspectorPlugin : public godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelMeshSDFInspectorPlugin, godot::ZN_EditorInspectorPlugin)
 protected:
 	bool _zn_can_handle(const Object *p_object) const override;
 	void _zn_parse_begin(Object *p_object) override;
@@ -17,8 +17,8 @@ private:
 	static void _bind_methods() {}
 };
 
-class VoxelMeshSDFEditorPlugin : public ZN_EditorPlugin {
-	GDCLASS(VoxelMeshSDFEditorPlugin, ZN_EditorPlugin)
+class VoxelMeshSDFEditorPlugin : public godot::ZN_EditorPlugin {
+	GDCLASS(VoxelMeshSDFEditorPlugin, godot::ZN_EditorPlugin)
 public:
 	VoxelMeshSDFEditorPlugin();
 

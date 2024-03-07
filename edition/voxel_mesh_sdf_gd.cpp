@@ -437,7 +437,7 @@ void VoxelMeshSDF::_b_set_data(Dictionary d) {
 	ERR_FAIL_COND(d.is_empty());
 
 	Vector3i res;
-	ERR_FAIL_COND(!try_get(d, "res", res));
+	ERR_FAIL_COND(!godot::try_get(d, "res", res));
 	ERR_FAIL_COND(Vector3iUtil::is_empty_size(res));
 
 	_voxel_buffer.instantiate();
@@ -449,7 +449,7 @@ void VoxelMeshSDF::_b_set_data(Dictionary d) {
 	ERR_FAIL_COND(!vb.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, channel));
 
 	PackedFloat32Array sdf_f32;
-	ERR_FAIL_COND(!try_get(d, "sdf_f32", sdf_f32));
+	ERR_FAIL_COND(!godot::try_get(d, "sdf_f32", sdf_f32));
 	memcpy(channel.data(), sdf_f32.ptr(), channel.size() * sizeof(float));
 
 	_min_pos = to_vec3f(Vector3(d["min_pos"]));

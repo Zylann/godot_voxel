@@ -1,6 +1,6 @@
 #include "editor_property.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 Span<const Color> editor_property_get_colors(EditorProperty &self) {
 	static FixedArray<Color, 4> s_colors;
@@ -33,4 +33,4 @@ void ZN_EditorProperty::_set_read_only(bool p_read_only) {
 void ZN_EditorProperty::_zn_update_property() {}
 void ZN_EditorProperty::_zn_set_read_only(bool p_read_only) {}
 
-} // namespace zylann
+} // namespace zylann::godot

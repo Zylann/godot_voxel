@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // Godot doesn't have configuration warnings yet on resources.
 // But when we add them and they are nested, it can be difficult to put them into context when the warning appears in
@@ -36,6 +36,6 @@ inline void get_resource_configuration_warnings(const TResource &resource, Packe
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_RESOURCE_H

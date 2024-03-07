@@ -10,7 +10,7 @@ using namespace godot;
 
 #include <vector>
 
-namespace zylann {
+namespace zylann::godot {
 
 inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 #if defined(ZN_GODOT)
@@ -20,13 +20,13 @@ inline void free_rendering_server_rid(RenderingServer &rs, const RID &rid) {
 #endif
 }
 
-struct GodotShaderParameterInfo {
+struct ShaderParameterInfo {
 	String name;
 	Variant::Type type;
 };
 
-void get_shader_parameter_list(const RID &shader_rid, std::vector<GodotShaderParameterInfo> &out_parameters);
+void get_shader_parameter_list(const RID &shader_rid, std::vector<ShaderParameterInfo> &out_parameters);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_RENDERING_SERVER_H

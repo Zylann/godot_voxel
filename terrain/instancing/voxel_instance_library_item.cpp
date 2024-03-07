@@ -80,7 +80,7 @@ void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &war
 		warnings.append(
 				String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class()));
 	} else {
-		get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
+		godot::get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
 	}
 }
 

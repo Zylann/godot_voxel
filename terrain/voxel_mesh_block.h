@@ -77,7 +77,7 @@ public:
 protected:
 	void _set_visible(bool visible);
 
-	inline void set_mesh_instance_visible(DirectMeshInstance &mi, bool visible) {
+	inline void set_mesh_instance_visible(godot::DirectMeshInstance &mi, bool visible) {
 		if (visible) {
 			mi.set_world(*_world);
 		} else {
@@ -87,8 +87,8 @@ protected:
 
 	Vector3i _position_in_voxels;
 
-	DirectMeshInstance _mesh_instance;
-	DirectStaticBody _static_body;
+	godot::DirectMeshInstance _mesh_instance;
+	godot::DirectStaticBody _static_body;
 	Ref<World3D> _world;
 
 	// Must match default value of `active`

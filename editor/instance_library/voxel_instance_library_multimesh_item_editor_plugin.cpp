@@ -16,7 +16,7 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::init() {
 	Control *base_control = get_editor_interface()->get_base_control();
 
 	_open_scene_dialog = memnew(EditorFileDialog);
-	PackedStringArray extensions = get_recognized_extensions_for_type(PackedScene::get_class_static());
+	PackedStringArray extensions = godot::get_recognized_extensions_for_type(PackedScene::get_class_static());
 	for (int i = 0; i < extensions.size(); ++i) {
 		_open_scene_dialog->add_filter("*." + extensions[i]);
 	}
@@ -75,7 +75,7 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button
 
 static void update_multimesh_item_from_scene(
 		VoxelInstanceLibraryMultiMeshItem &item, String scene_file_path, EditorUndoRedoManager &ur) {
-	Ref<PackedScene> scene = load_resource(scene_file_path);
+	Ref<PackedScene> scene = godot::load_resource(scene_file_path);
 	ERR_FAIL_COND(scene.is_null());
 
 	Node *node = scene->instantiate();

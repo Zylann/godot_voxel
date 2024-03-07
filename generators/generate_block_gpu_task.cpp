@@ -92,7 +92,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		out_offset_elements += buffer_volume * generator_shader_outputs->outputs.size();
 
 		PackedByteArray params_pba;
-		copy_bytes_to(params_pba, params);
+		godot::copy_bytes_to(params_pba, params);
 
 		bd.params_sb = storage_buffer_pool.allocate(params_pba);
 		ERR_FAIL_COND(bd.params_sb.is_null());
@@ -147,7 +147,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		// Note, this internally locks RenderingDeviceVulkan's class mutex. Which means it could perhaps be used outside
 		// of the compute list (which already locks the class mutex until it ends). Thankfully, it uses a recursive
 		// Mutex (instead of BinaryMutex)
-		const RID generator_uniform_set = uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
+		const RID generator_uniform_set = godot::uniform_set_create(rd, generator_uniforms, generator_shader_rid, 0);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("compute_list_bind_compute_pipeline");
@@ -201,7 +201,8 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 					add_uniform_params(modifier_data.params->params, modifier_uniforms);
 				}
 
-				const RID modifier_uniform_set = uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
+				const RID modifier_uniform_set =
+						godot::uniform_set_create(rd, modifier_uniforms, modifier_data.shader_rid, 0);
 
 				const RID pipeline_rid = _modifier_pipelines[modifier_index];
 				rd.compute_list_bind_compute_pipeline(compute_list_id, pipeline_rid);
@@ -413,10 +414,10 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 		storage_buffer_pool.recycle(bd.params_sb);
 	}
 
-	free_rendering_device_rid(rd, _generator_pipeline_rid);
+	godot::free_rendering_device_rid(rd, _generator_pipeline_rid);
 
 	for (RID rid : _modifier_pipelines) {
-		free_rendering_device_rid(rd, rid);
+		godot::free_rendering_device_rid(rd, rid);
 	}
 
 	// We leave conversion to the CPU task, because we have only one thread for GPU work and it only exists for waiting

@@ -42,7 +42,7 @@ void GPUStorageBufferPool::clear() {
 					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index));
 		}
 		for (GPUStorageBuffer &b : pool.buffers) {
-			free_rendering_device_rid(rd, b.rid);
+			godot::free_rendering_device_rid(rd, b.rid);
 		}
 		pool.buffers.clear();
 		++pool_index;
@@ -105,7 +105,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByt
 		b.rid = rd.storage_buffer_create(capacity);
 		ZN_ASSERT_RETURN_V(b.rid.is_valid(), GPUStorageBuffer());
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, pba->size(), *pba);
+			godot::update_storage_buffer(rd, b.rid, 0, pba->size(), *pba);
 		}
 		b.size = capacity;
 
@@ -114,7 +114,7 @@ GPUStorageBuffer GPUStorageBufferPool::allocate(uint32_t p_size, const PackedByt
 		ZN_ASSERT(b.is_valid());
 		pool.buffers.pop_back();
 		if (pba != nullptr) {
-			update_storage_buffer(rd, b.rid, 0, p_size, *pba);
+			godot::update_storage_buffer(rd, b.rid, 0, p_size, *pba);
 		}
 	}
 

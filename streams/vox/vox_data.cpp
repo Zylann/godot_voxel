@@ -57,11 +57,11 @@ static Error parse_string(FileAccess &f, String &s) {
 
 	static thread_local std::vector<char> bytes;
 	bytes.resize(size);
-	ERR_FAIL_COND_V(
-			get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(), ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(),
+			ERR_PARSE_ERROR);
 
 	s = "";
-	ERR_FAIL_COND_V(parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::parse_utf8(s, to_span(bytes)) != OK, ERR_PARSE_ERROR);
 
 	return OK;
 }
@@ -203,14 +203,14 @@ Error Data::_load_from_file(String fpath) {
 	ZN_PRINT_VERBOSE(format("Loading {}", fpath));
 
 	Error open_err;
-	Ref<FileAccess> f_ref = open_file(fpath, FileAccess::READ, open_err);
+	Ref<FileAccess> f_ref = godot::open_file(fpath, FileAccess::READ, open_err);
 	if (f_ref == nullptr) {
 		return open_err;
 	}
 	FileAccess &f = **f_ref;
 
 	char magic[5] = { 0 };
-	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)magic, 4)) != 4, ERR_PARSE_ERROR);
 	ERR_FAIL_COND_V(strcmp(magic, "VOX ") != 0, ERR_PARSE_ERROR);
 
 	const uint32_t version = f.get_32();
@@ -224,7 +224,7 @@ Error Data::_load_from_file(String fpath) {
 
 	while (f.get_position() < file_length) {
 		char chunk_id[5] = { 0 };
-		ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>((uint8_t *)chunk_id, 4)) != 4, ERR_PARSE_ERROR);
+		ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)chunk_id, 4)) != 4, ERR_PARSE_ERROR);
 
 		const uint32_t chunk_size = f.get_32();
 		f.get_32(); // child_chunks_size

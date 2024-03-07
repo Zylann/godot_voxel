@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // TODO The following functions should be able to work on `Mesh`,
 // but the script/extension API exposes some methods only on `ArrayMesh`, even though they exist on `Mesh` internally...
@@ -33,6 +33,6 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 
 #endif
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_ARRAY_MESH_H

@@ -325,7 +325,7 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uin
 void ProgramGraph::debug_print_dot_file(String p_file_path) const {
 	// https://www.graphviz.org/pdf/dotguide.pdf
 
-	const std::string file_path = to_std_string(p_file_path);
+	const std::string file_path = godot::to_std_string(p_file_path);
 	std::ofstream ofs(file_path, std::ios::binary | std::ios::trunc | std::ios::out);
 
 	if (!ofs.good()) {

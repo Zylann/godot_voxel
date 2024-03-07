@@ -349,7 +349,7 @@ private:
 
 	Ref<Material> _material_override;
 
-	GodotObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
+	godot::ObjectUniquePtr<VoxelDataBlockEnterInfo> _data_block_enter_info_obj;
 
 	// References to external nodes.
 	VoxelInstancer *_instancer = nullptr;
@@ -361,7 +361,7 @@ private:
 	bool _debug_draw_enabled = false;
 	uint8_t _debug_draw_flags = 0;
 
-	DebugRenderer _debug_renderer;
+	godot::DebugRenderer _debug_renderer;
 #endif
 };
 

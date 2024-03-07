@@ -1,7 +1,7 @@
 #include "geometry_instance_3d.h"
 #include "rendering_server.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 const char *const CAST_SHADOW_ENUM_HINT_STRING = "Off,On,Double-Sided,Shadows Only";
 const char *const GI_MODE_ENUM_HINT_STRING = "Disabled,Static (VoxelGI/SDFGI/LightmapGI),Dynamic (VoxelGI only)";
@@ -35,4 +35,4 @@ void set_geometry_instance_gi_mode(RID rid, GeometryInstance3D::GIMode mode) {
 	vs.instance_geometry_set_flag(rid, RenderingServer::INSTANCE_FLAG_USE_DYNAMIC_GI, dynamic_gi);
 }
 
-} // namespace zylann
+} // namespace zylann::godot

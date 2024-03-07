@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline Ref<Image> create_empty_image(int width, int height, bool mipmaps, Image::Format format) {
 #if defined(ZN_GODOT)
@@ -18,6 +18,6 @@ inline Ref<Image> create_empty_image(int width, int height, bool mipmaps, Image:
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_IMAGE_H

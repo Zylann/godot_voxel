@@ -276,7 +276,7 @@ ProgramGraph::Node *duplicate_node(
 			Ref<Resource> res = param_value;
 			if (res.is_valid()) {
 				// If the resource has a path, keep it shared
-				if (!is_resource_file(res->get_path())) {
+				if (!godot::is_resource_file(res->get_path())) {
 					param_value = res->duplicate();
 				}
 			}
@@ -691,7 +691,7 @@ uint64_t VoxelGraphFunction::get_output_graph_hash() const {
 				if (obj != nullptr) {
 					// Note, the obtained hash can change here even if the result is identical, because it's hard to
 					// tell which properties contribute to the result. This should be rare though.
-					hash = hash_djb2_one_64(get_deep_hash(*obj), hash);
+					hash = hash_djb2_one_64(godot::get_deep_hash(*obj), hash);
 				}
 			} else {
 				hash = hash_djb2_one_64(v.hash(), hash);
@@ -1087,7 +1087,7 @@ void VoxelGraphFunction::get_node_input_info(
 				ZN_ASSERT(input_index < type.inputs.size());
 				*out_name = type.inputs[input_index].name;
 			} else {
-				*out_name = to_godot(port.dynamic_name);
+				*out_name = godot::to_godot(port.dynamic_name);
 			}
 		}
 	}
@@ -1124,7 +1124,7 @@ String VoxelGraphFunction::get_node_output_name(uint32_t node_id, unsigned int o
 			ZN_ASSERT(output_index < type.outputs.size());
 			return type.outputs[output_index].name;
 		} else {
-			return to_godot(port.dynamic_name);
+			return godot::to_godot(port.dynamic_name);
 		}
 	}
 }
@@ -1284,7 +1284,7 @@ bool VoxelGraphFunction::get_node_input_index_by_name(
 	} else {
 		for (unsigned int i = 0; i < node.inputs.size(); ++i) {
 			const std::string &dynamic_name = node.inputs[i].dynamic_name;
-			if (!dynamic_name.empty() && to_godot(dynamic_name) == input_name) {
+			if (!dynamic_name.empty() && godot::to_godot(dynamic_name) == input_name) {
 				out_input_index = i;
 				return true;
 			}

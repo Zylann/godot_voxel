@@ -116,7 +116,7 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 		mesh_params.model_to_buffer_translation = min_pos;
 		mesh_params.isolevel = _isolevel;
 		PackedByteArray pba;
-		copy_bytes_to(pba, mesh_params);
+		godot::copy_bytes_to(pba, mesh_params);
 
 		if (_shader_data->params.size() < 3) {
 			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();

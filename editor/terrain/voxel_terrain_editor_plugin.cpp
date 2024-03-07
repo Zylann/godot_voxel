@@ -75,8 +75,8 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
 
-	popup->add_shortcut(get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
-								godot::KEY_MASK_CMD_OR_CTRL | godot::KEY_R),
+	popup->add_shortcut(godot::get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
+								::godot::KEY_MASK_CMD_OR_CTRL | ::godot::KEY_R),
 			MENU_RESTART_STREAM);
 
 	popup->add_item(ZN_TTR("Re-mesh"), MENU_REMESH);

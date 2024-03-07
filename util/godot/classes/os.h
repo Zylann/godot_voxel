@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 inline PackedStringArray get_command_line_arguments() {
 #if defined(ZN_GODOT)
@@ -24,6 +24,6 @@ inline PackedStringArray get_command_line_arguments() {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_OS_H

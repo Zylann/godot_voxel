@@ -33,7 +33,7 @@ void VoxelInstanceLibraryInspectorPlugin::add_buttons() {
 	HBoxContainer *hb = memnew(HBoxContainer);
 
 	MenuButton *button_add = memnew(MenuButton);
-	set_button_icon(*button_add, icon_provider->get_theme_icon(sn.Add, sn.EditorIcons));
+	godot::set_button_icon(*button_add, icon_provider->get_theme_icon(sn.Add, sn.EditorIcons));
 	button_add->get_popup()->add_item("MultiMesh item (fast)", BUTTON_ADD_MULTIMESH_ITEM);
 	button_add->get_popup()->add_item("Scene item (slow)", BUTTON_ADD_SCENE_ITEM);
 	button_add->get_popup()->connect("id_pressed",
@@ -41,7 +41,7 @@ void VoxelInstanceLibraryInspectorPlugin::add_buttons() {
 	hb->add_child(button_add);
 
 	Button *button_remove = memnew(Button);
-	set_button_icon(*button_remove, icon_provider->get_theme_icon(sn.Remove, sn.EditorIcons));
+	godot::set_button_icon(*button_remove, icon_provider->get_theme_icon(sn.Remove, sn.EditorIcons));
 	button_remove->set_flat(true);
 	button_remove->connect("pressed",
 			ZN_GODOT_CALLABLE_MP(button_listener, VoxelInstanceLibraryEditorPlugin, _on_remove_item_button_pressed));

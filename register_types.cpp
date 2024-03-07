@@ -357,7 +357,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 #endif
 
 		gd::VoxelEngine::create_singleton();
-		add_godot_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
+		zylann::godot::add_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
 
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
 				gd::METADATA_TYPE_VARIANT);
@@ -460,7 +460,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 #ifdef TOOLS_ENABLED
 		// TODO Any way to define a custom command line argument that closes Godot afterward?
 
-		const PackedStringArray command_line_arguments = get_command_line_arguments();
+		const PackedStringArray command_line_arguments = zylann::godot::get_command_line_arguments();
 		const String doc_tool_cmd = "--voxel_doc_tool";
 
 		for (int i = 0; i < command_line_arguments.size(); ++i) {
@@ -487,7 +487,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace voxel;
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		remove_godot_singleton("VoxelEngine");
+		zylann::godot::remove_singleton("VoxelEngine");
 
 		// At this point, the GDScript module has nullified GDScriptLanguage::singleton!!
 		// That means it's impossible to free scripts still referenced by VoxelEngine. And that can happen, because
@@ -510,7 +510,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		zylann::free_debug_resources();
+		zylann::godot::free_debug_resources();
 		VoxelGraphEditorNodePreview::unload_resources();
 
 		// Plugins are automatically unregistered since https://github.com/godotengine/godot-cpp/pull/1138

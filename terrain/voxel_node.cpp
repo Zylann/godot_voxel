@@ -169,7 +169,7 @@ int VoxelNode::get_used_channels_mask() const {
 }
 
 void VoxelNode::set_gi_mode(GeometryInstance3D::GIMode mode) {
-	ERR_FAIL_INDEX(mode, GI_MODE_COUNT);
+	ERR_FAIL_INDEX(mode, godot::GI_MODE_COUNT);
 	if (mode != _gi_mode) {
 		_gi_mode = mode;
 		_on_gi_mode_changed();
@@ -228,9 +228,9 @@ void VoxelNode::_bind_methods() {
 			"set_generator", "get_generator");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesher", PROPERTY_HINT_RESOURCE_TYPE, VoxelMesher::get_class_static()),
 			"set_mesher", "get_mesher");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, GI_MODE_ENUM_HINT_STRING), "set_gi_mode",
-			"get_gi_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, CAST_SHADOW_ENUM_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "gi_mode", PROPERTY_HINT_ENUM, godot::GI_MODE_ENUM_HINT_STRING),
+			"set_gi_mode", "get_gi_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "cast_shadow", PROPERTY_HINT_ENUM, godot::CAST_SHADOW_ENUM_HINT_STRING),
 			"set_shadow_casting", "get_shadow_casting");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "render_layers_mask", PROPERTY_HINT_LAYERS_3D_RENDER),
 			"set_render_layers_mask", "get_render_layers_mask");

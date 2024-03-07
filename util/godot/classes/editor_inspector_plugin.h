@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 class ZN_EditorInspectorPlugin : public EditorInspectorPlugin {
 	GDCLASS(ZN_EditorInspectorPlugin, EditorInspectorPlugin)
@@ -43,6 +43,6 @@ protected:
 	static void _bind_methods() {}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_INSPECTOR_PLUGIN_H

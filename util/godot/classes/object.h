@@ -21,7 +21,7 @@ using namespace godot;
 #define MAKE_RESOURCE_TYPE_HINT(m_type) vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, m_type)
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // Get the name of a Godot class as a Godot String.
 #if defined(ZN_GODOT)
@@ -48,17 +48,17 @@ uint64_t get_deep_hash(
 		const Object &obj, uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0);
 
 // Getting property info in Godot modules and GDExtension has a different API, with the same information.
-struct GodotPropertyInfo {
+struct PropertyInfoWrapper {
 	Variant::Type type;
 	String name;
 	uint32_t usage;
 };
-void get_property_list(const Object &obj, std::vector<GodotPropertyInfo> &out_properties);
+void get_property_list(const Object &obj, std::vector<PropertyInfoWrapper> &out_properties);
 
 void set_object_edited(Object &obj);
 
 #endif
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_OBJECT_H

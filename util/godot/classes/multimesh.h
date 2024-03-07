@@ -8,11 +8,11 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // This API can be confusing so I made a wrapper
 int get_visible_instance_count(const MultiMesh &mm);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_MULTIMESH_H

@@ -32,7 +32,7 @@ void VoxelInstanceLibraryEditorPlugin::init() {
 	base_control->add_child(_info_dialog);
 
 	_open_scene_dialog = memnew(EditorFileDialog);
-	PackedStringArray extensions = get_recognized_extensions_for_type(PackedScene::get_class_static());
+	PackedStringArray extensions = godot::get_recognized_extensions_for_type(PackedScene::get_class_static());
 	for (int i = 0; i < extensions.size(); ++i) {
 		_open_scene_dialog->add_filter("*." + extensions[i]);
 	}
@@ -183,7 +183,7 @@ void VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected(Strin
 void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ERR_FAIL_COND(_library.is_null());
 
-	Ref<PackedScene> scene = load_resource(fpath);
+	Ref<PackedScene> scene = godot::load_resource(fpath);
 	ERR_FAIL_COND(scene.is_null());
 
 	Ref<VoxelInstanceLibrarySceneItem> item;

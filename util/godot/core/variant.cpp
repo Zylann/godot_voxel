@@ -6,7 +6,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 size_t get_variant_encoded_size(const Variant &src) {
 #if defined(ZN_GODOT)
@@ -69,4 +69,4 @@ bool decode_variant(Span<const uint8_t> src, Variant &dst, size_t &out_read_size
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

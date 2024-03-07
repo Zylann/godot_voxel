@@ -1,7 +1,7 @@
 #include "string.h"
 #include <sstream>
 
-namespace zylann {
+namespace zylann::godot {
 
 #ifdef TOOLS_ENABLED
 
@@ -25,7 +25,7 @@ PackedStringArray to_godot(const std::vector<std::string> &sv) {
 
 #endif
 
-} // namespace zylann
+} // namespace zylann::godot
 
 ZN_GODOT_NAMESPACE_BEGIN
 

@@ -67,7 +67,7 @@ static bool save_header(
 	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
 
-	store_buffer(f, Span<const uint8_t>(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4));
+	godot::store_buffer(f, Span<const uint8_t>(reinterpret_cast<const uint8_t *>(FORMAT_REGION_MAGIC), 4));
 	f.store_8(version);
 
 	f.store_8(format.block_size_po2);
@@ -96,7 +96,7 @@ static bool save_header(
 	}
 
 	// TODO Deal with endianess, this should be little-endian
-	store_buffer(f,
+	godot::store_buffer(f,
 			Span<const uint8_t>(reinterpret_cast<const uint8_t *>(block_infos.data()),
 					block_infos.size() * sizeof(RegionBlockInfo)));
 
@@ -115,7 +115,7 @@ static bool load_header(
 
 	FixedArray<char, 5> magic;
 	fill(magic, '\0');
-	ERR_FAIL_COND_V(get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false);
+	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>(reinterpret_cast<uint8_t *>(magic.data()), 4)) != 4, false);
 	ERR_FAIL_COND_V(strcmp(magic.data(), FORMAT_REGION_MAGIC) != 0, false);
 
 	const uint8_t version = f.get_8();
@@ -161,7 +161,7 @@ static bool load_header(
 
 	// TODO Deal with endianess
 	const size_t blocks_len = out_block_infos.size() * sizeof(RegionBlockInfo);
-	const size_t read_size = get_buffer(f, Span<uint8_t>((uint8_t *)out_block_infos.data(), blocks_len));
+	const size_t read_size = godot::get_buffer(f, Span<uint8_t>((uint8_t *)out_block_infos.data(), blocks_len));
 	ERR_FAIL_COND_V(read_size != blocks_len, false);
 
 	return true;
@@ -189,7 +189,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 	Error file_error;
 	// Open existing file for read and write permissions. This should not create the file if it doesn't exist.
 	// Note, there is no read-only mode supported, because there was no need for it yet.
-	Ref<FileAccess> f = open_file(fpath, FileAccess::READ_WRITE, file_error);
+	Ref<FileAccess> f = godot::open_file(fpath, FileAccess::READ_WRITE, file_error);
 	if (file_error != OK) {
 		if (create_if_not_found) {
 			CRASH_COND(f != nullptr);
@@ -202,7 +202,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 			}
 
 			// This time, we attempt to create the file
-			f = open_file(fpath, FileAccess::WRITE_READ, file_error);
+			f = godot::open_file(fpath, FileAccess::WRITE_READ, file_error);
 			if (file_error != OK) {
 				ERR_PRINT(String("Failed to create file {0}").format(varray(fpath)));
 				return file_error;
@@ -382,7 +382,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
 		f.store_32(res.data.size());
 		const unsigned int written_size = sizeof(uint32_t) + res.data.size();
-		store_buffer(f, to_span(res.data));
+		godot::store_buffer(f, to_span(res.data));
 
 		const unsigned int end_pos = f.get_position();
 		CRASH_COND_MSG(written_size != (end_pos - block_offset),
@@ -429,7 +429,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 			f.seek(block_offset);
 
 			f.store_32(data.size());
-			store_buffer(f, to_span(data));
+			godot::store_buffer(f, to_span(data));
 
 			const size_t end_pos = f.get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));
@@ -447,7 +447,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
 			f.seek(block_offset);
 
 			f.store_32(data.size());
-			store_buffer(f, to_span(data));
+			godot::store_buffer(f, to_span(data));
 
 			const size_t end_pos = f.get_position();
 			CRASH_COND(written_size != (end_pos - block_offset));
@@ -518,11 +518,11 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	// Erase sectors from file
 	while (src_offset < old_end_offset) {
 		f.seek(src_offset);
-		const size_t read_bytes = get_buffer(f, to_span(temp));
+		const size_t read_bytes = godot::get_buffer(f, to_span(temp));
 		CRASH_COND(read_bytes != sector_size); // Corrupted file
 
 		f.seek(dst_offset);
-		store_buffer(f, to_span(temp));
+		godot::store_buffer(f, to_span(temp));
 
 		src_offset += sector_size;
 		dst_offset += sector_size;
@@ -583,7 +583,7 @@ bool RegionFile::migrate_from_v2_to_v3(FileAccess &f, RegionFormat &format) {
 	const unsigned int extra_bytes_needed = new_header_size - old_header_size;
 
 	f.seek(MAGIC_AND_VERSION_SIZE);
-	insert_bytes(f, extra_bytes_needed);
+	godot::insert_bytes(f, extra_bytes_needed);
 
 	// Set version because otherwise `save_header` will attempt to migrate again causing stack-overflow
 	_header.version = FORMAT_VERSION;

@@ -22,7 +22,7 @@ using namespace godot;
 
 #include "../../containers/span.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 inline String to_godot(const std::string_view sv) {
 	return String::utf8(sv.data(), sv.size());
@@ -74,7 +74,7 @@ inline String ptr2s(const void *p) {
 	return String::num_uint64((uint64_t)p, 16);
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 // `TTR` means "tools translate", which is for editor-only localized messages.
 // Godot does not define the TTR macro for translation of messages in release builds. However, there are some non-editor

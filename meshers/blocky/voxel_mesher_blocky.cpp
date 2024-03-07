@@ -585,11 +585,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				PackedColorArray colors;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(uvs, arrays.uvs);
-				copy_to(normals, arrays.normals);
-				copy_to(colors, arrays.colors);
-				copy_to(indices, arrays.indices);
+				godot::copy_to(positions, arrays.positions);
+				godot::copy_to(uvs, arrays.uvs);
+				godot::copy_to(normals, arrays.normals);
+				godot::copy_to(colors, arrays.colors);
+				godot::copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
@@ -599,7 +599,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 				if (arrays.tangents.size() > 0) {
 					PackedFloat32Array tangents;
-					copy_to(tangents, arrays.tangents);
+					godot::copy_to(tangents, arrays.tangents);
 					mesh_arrays[Mesh::ARRAY_TANGENT] = tangents;
 				}
 			}

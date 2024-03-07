@@ -7,8 +7,8 @@
 namespace zylann::voxel::magica {
 
 // Imports a vox file as a single mesh, where all contents of the vox scene is merged
-class VoxelVoxMeshImporter : public ZN_EditorImportPlugin {
-	GDCLASS(VoxelVoxMeshImporter, ZN_EditorImportPlugin)
+class VoxelVoxMeshImporter : public godot::ZN_EditorImportPlugin {
+	GDCLASS(VoxelVoxMeshImporter, godot::ZN_EditorImportPlugin)
 protected:
 	String _zn_get_importer_name() const override;
 	String _zn_get_visible_name() const override;
@@ -20,13 +20,13 @@ protected:
 	double _zn_get_priority() const override;
 
 	void _zn_get_import_options(
-			std::vector<GodotImportOption> &out_options, const String &path, int preset_index) const override;
+			std::vector<godot::ImportOptionWrapper> &out_options, const String &path, int preset_index) const override;
 
 	bool _zn_get_option_visibility(
-			const String &path, const StringName &option_name, const GodotKeyValueWrapper options) const override;
+			const String &path, const StringName &option_name, const godot::KeyValueWrapper options) const override;
 
-	Error _zn_import(const String &p_source_file, const String &p_save_path, const GodotKeyValueWrapper p_options,
-			GodotStringListWrapper out_platform_variants, GodotStringListWrapper out_gen_files) const override;
+	Error _zn_import(const String &p_source_file, const String &p_save_path, const godot::KeyValueWrapper p_options,
+			godot::StringListWrapper out_platform_variants, godot::StringListWrapper out_gen_files) const override;
 
 	enum PivotMode { //
 		PIVOT_LOWER_CORNER,

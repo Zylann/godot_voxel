@@ -6,7 +6,7 @@
 #include "../util/godot/direct_multimesh_instance.h"
 #include "../util/memory.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 FixedArray<Ref<Mesh>, DebugColors::ID_COUNT> g_wirecubes;
 bool g_finalized = false;
@@ -140,7 +140,7 @@ private:
 	Transform3D _transform;
 	bool _visible = true;
 	Ref<Mesh> _mesh;
-	zylann::DirectMeshInstance _mesh_instance;
+	DirectMeshInstance _mesh_instance;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -287,4 +287,4 @@ void DebugMultiMeshRenderer::clear() {
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot

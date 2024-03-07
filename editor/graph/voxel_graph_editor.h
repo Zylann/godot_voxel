@@ -144,8 +144,8 @@ private:
 	Vector2 _click_position;
 	bool _nothing_selected_check_scheduled = false;
 	float _time_before_preview_update = 0.f;
-	ObjectWeakRef<VoxelNode> _terrain_node;
-	DebugRenderer _debug_renderer;
+	godot::ObjectWeakRef<VoxelNode> _terrain_node;
+	godot::DebugRenderer _debug_renderer;
 	VoxelGraphEditorShaderDialog *_shader_dialog = nullptr;
 	bool _live_update_enabled = false;
 	uint64_t _last_output_graph_hash = 0;

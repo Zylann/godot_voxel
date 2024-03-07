@@ -836,7 +836,7 @@ void VoxelInstanceGenerator::get_configuration_warnings(PackedStringArray &warni
 
 	if (noise_graph.is_valid()) {
 		// Graph compiles?
-		get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
+		godot::get_resource_configuration_warnings(**noise_graph, warnings, []() { return "noise_graph: "; });
 
 		// Check I/Os
 		const int expected_input_count = (_noise_dimension == DIMENSION_2D ? 2 : 3);

@@ -8,11 +8,11 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // TODO GDX: InputEventKey::create_reference is not exposed
 Ref<InputEventKey> create_input_event_from_key(Key p_keycode_with_modifier_masks, bool p_physical = false);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_INPUT_EVENT_KEY_H

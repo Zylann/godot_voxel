@@ -1077,7 +1077,7 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 		return;
 	}
 	if (_data_block_enter_info_obj == nullptr) {
-		_data_block_enter_info_obj = gd_make_unique<VoxelDataBlockEnterInfo>();
+		_data_block_enter_info_obj = godot::make_unique<VoxelDataBlockEnterInfo>();
 	}
 	const int network_peer_id = VoxelEngine::get_singleton().get_viewer_network_peer_id(viewer_id);
 	_data_block_enter_info_obj->network_peer_id = network_peer_id;
@@ -2002,7 +2002,7 @@ bool VoxelTerrain::debug_get_draw_flag(DebugDrawFlag flag_index) const {
 void VoxelTerrain::process_debug_draw() {
 	ZN_PROFILE_SCOPE();
 
-	DebugRenderer &dr = _debug_renderer;
+	godot::DebugRenderer &dr = _debug_renderer;
 	dr.begin();
 
 	const Transform3D parent_transform = get_global_transform();
@@ -2017,7 +2017,7 @@ void VoxelTerrain::process_debug_draw() {
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
-			dr.draw_box(parent_transform * local_transform, DebugColors::ID_VOXEL_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, godot::DebugColors::ID_VOXEL_BOUNDS);
 		}
 	}
 

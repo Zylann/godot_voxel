@@ -1,7 +1,7 @@
 #include "input_event_key.h"
 #include "../core/keyboard.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 Ref<InputEventKey> create_input_event_from_key(Key p_keycode_with_modifier_masks, bool p_physical) {
 #if defined(ZN_GODOT)
@@ -48,4 +48,4 @@ Ref<InputEventKey> create_input_event_from_key(Key p_keycode_with_modifier_masks
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

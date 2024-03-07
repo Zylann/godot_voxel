@@ -4,7 +4,7 @@
 #include "classes/physics_server_3d.h"
 #include "classes/world_3d.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 DirectStaticBody::DirectStaticBody() {
 	// Nothing here. It is a thin RID wrapper,
@@ -136,4 +136,4 @@ void DirectStaticBody::set_debug(bool enabled, World3D *world) {
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot

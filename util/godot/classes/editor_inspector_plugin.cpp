@@ -1,6 +1,6 @@
 #include "editor_inspector_plugin.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 #if defined(ZN_GODOT)
 bool ZN_EditorInspectorPlugin::can_handle(Object *p_object) {
@@ -61,4 +61,4 @@ bool ZN_EditorInspectorPlugin::_zn_parse_property(Object *p_object, const Varian
 	return false;
 }
 
-} // namespace zylann
+} // namespace zylann::godot

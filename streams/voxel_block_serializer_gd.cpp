@@ -12,13 +12,13 @@ int VoxelBlockSerializer::serialize_to_stream_peer(Ref<StreamPeer> peer, Ref<Vox
 	if (compress) {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer());
 		ERR_FAIL_COND_V(!res.success, -1);
-		stream_peer_put_data(**peer, to_span(res.data));
+		godot::stream_peer_put_data(**peer, to_span(res.data));
 		return res.data.size();
 
 	} else {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize(voxel_buffer->get_buffer());
 		ERR_FAIL_COND_V(!res.success, -1);
-		stream_peer_put_data(**peer, to_span(res.data));
+		godot::stream_peer_put_data(**peer, to_span(res.data));
 		return res.data.size();
 	}
 }
@@ -32,7 +32,7 @@ void VoxelBlockSerializer::deserialize_from_stream_peer(
 	if (decompress) {
 		std::vector<uint8_t> &compressed_data = BlockSerializer::get_tls_compressed_data();
 		compressed_data.resize(size);
-		const Error err = stream_peer_get_data(**peer, to_span(compressed_data));
+		const Error err = godot::stream_peer_get_data(**peer, to_span(compressed_data));
 		ERR_FAIL_COND(err != OK);
 		const bool success =
 				BlockSerializer::decompress_and_deserialize(to_span(compressed_data), voxel_buffer->get_buffer());
@@ -41,7 +41,7 @@ void VoxelBlockSerializer::deserialize_from_stream_peer(
 	} else {
 		std::vector<uint8_t> &data = BlockSerializer::get_tls_data();
 		data.resize(size);
-		const Error err = stream_peer_get_data(**peer, to_span(data));
+		const Error err = godot::stream_peer_get_data(**peer, to_span(data));
 		ERR_FAIL_COND(err != OK);
 		BlockSerializer::deserialize(to_span(data), voxel_buffer->get_buffer());
 	}
@@ -54,12 +54,12 @@ PackedByteArray VoxelBlockSerializer::serialize_to_byte_array(Ref<VoxelBuffer> v
 	if (compress) {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(voxel_buffer->get_buffer());
 		ERR_FAIL_COND_V(!res.success, PackedByteArray());
-		copy_to(bytes, to_span(res.data));
+		godot::copy_to(bytes, to_span(res.data));
 
 	} else {
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize(voxel_buffer->get_buffer());
 		ERR_FAIL_COND_V(!res.success, PackedByteArray());
-		copy_to(bytes, to_span(res.data));
+		godot::copy_to(bytes, to_span(res.data));
 	}
 	return bytes;
 }

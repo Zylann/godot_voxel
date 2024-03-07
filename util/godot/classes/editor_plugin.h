@@ -13,7 +13,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 class ZN_EditorPlugin : public EditorPlugin {
 	GDCLASS(ZN_EditorPlugin, EditorPlugin)

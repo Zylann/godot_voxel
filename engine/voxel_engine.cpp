@@ -89,7 +89,7 @@ VoxelEngine::VoxelEngine(ThreadsConfig threads_config) {
 		// Otherwise I don't feel like there is a point in using one IMO.
 		sampler_state->set_mag_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
 		sampler_state->set_min_filter(RenderingDevice::SAMPLER_FILTER_LINEAR);
-		_filtering_sampler_rid = sampler_create(*_rendering_device, **sampler_state);
+		_filtering_sampler_rid = godot::sampler_create(*_rendering_device, **sampler_state);
 
 		_gpu_storage_buffer_pool.set_rendering_device(_rendering_device);
 
@@ -148,7 +148,7 @@ VoxelEngine::~VoxelEngine() {
 		_block_modifier_sphere_shader.clear();
 		_block_modifier_mesh_shader.clear();
 
-		free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
+		godot::free_rendering_device_rid(*_rendering_device, _filtering_sampler_rid);
 		_filtering_sampler_rid = RID();
 
 		if (is_verbose_output_enabled()) {

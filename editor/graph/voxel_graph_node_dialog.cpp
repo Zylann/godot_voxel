@@ -326,17 +326,17 @@ void VoxelGraphNodeDialog::_on_filter_gui_input(Ref<InputEvent> event) {
 
 		if (key_event->is_pressed()) {
 			switch (key_event->get_keycode()) {
-				case godot::KEY_UP:
+				case ::godot::KEY_UP:
 					select_up(*_tree);
 					_filter_line_edit->accept_event();
 					break;
 
-				case godot::KEY_DOWN:
+				case ::godot::KEY_DOWN:
 					select_down(*_tree);
 					_filter_line_edit->accept_event();
 					break;
 
-				case godot::KEY_ENTER:
+				case ::godot::KEY_ENTER:
 					_on_tree_item_activated();
 					break;
 
@@ -367,7 +367,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
 		// Quick open function nodes
-		_function_quick_open_dialog->popup_dialog(get_class_name_str<pg::VoxelGraphFunction>());
+		_function_quick_open_dialog->popup_dialog(godot::get_class_name_str<pg::VoxelGraphFunction>());
 #endif
 
 	} else {

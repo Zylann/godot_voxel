@@ -33,9 +33,9 @@ Array MeshBuilder::commit(bool wireframe) {
 	PackedVector3Array normals;
 	PackedInt32Array indices;
 
-	copy_to(positions, _positions);
-	copy_to(normals, _normals);
-	copy_to(indices, _indices);
+	godot::copy_to(positions, _positions);
+	godot::copy_to(normals, _normals);
+	godot::copy_to(indices, _indices);
 
 	clear();
 

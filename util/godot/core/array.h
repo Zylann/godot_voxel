@@ -8,9 +8,8 @@
 #include <godot_cpp/variant/array.hpp>
 using namespace godot;
 
-namespace zylann {
-
 // TODO GDX: GodotCpp does not define `varray` (which is available in modules)
+// Here exposed the same as in core, so no namespace
 
 inline godot::Array varray(const godot::Variant &a0) {
 	godot::Array a;
@@ -42,8 +41,6 @@ inline godot::Array varray(
 	a.append(a3);
 	return a;
 }
-
-} // namespace zylann
 
 #endif // ZN_GODOT_EXTENSION
 

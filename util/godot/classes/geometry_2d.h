@@ -12,10 +12,10 @@ using namespace godot;
 #include "../../math/vector2i.h"
 #include <vector>
 
-namespace zylann {
+namespace zylann::godot {
 
 void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> &r_result, Vector2i &r_size);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_GEOMETRY_2D_H

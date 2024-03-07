@@ -1,6 +1,6 @@
 #include "node.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 template <typename F>
 void for_each_node_depth_first(Node *parent, F f) {
@@ -40,4 +40,4 @@ void get_node_groups(const Node &node, std::vector<StringName> &out_groups) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

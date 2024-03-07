@@ -11,7 +11,7 @@ using namespace godot;
 
 #include "../../containers/span.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 inline void stream_peer_put_data(StreamPeer &peer, Span<const uint8_t> src) {
 #if defined(ZN_GODOT)
@@ -37,6 +37,6 @@ inline Error stream_peer_get_data(StreamPeer &peer, Span<uint8_t> dst) {
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_STREAM_PEER_H

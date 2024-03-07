@@ -8,7 +8,7 @@
 #include "rd_texture_view.h"
 #include "rd_uniform.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 void free_rendering_device_rid(RenderingDevice &rd, RID rid) {
 	ZN_DSTACK();
@@ -189,4 +189,4 @@ Error update_storage_buffer(
 #endif
 }
 
-} // namespace zylann
+} // namespace zylann::godot

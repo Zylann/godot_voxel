@@ -637,7 +637,7 @@ Ref<Image> make_greedy_atlas(
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 			sizes[i] = Vector2i(im.size_x, im.size_y);
 		}
-		geometry_2d_make_atlas(to_span(sizes), result_points, result_size);
+		godot::geometry_2d_make_atlas(to_span(sizes), result_points, result_size);
 	}
 
 	// DEBUG
@@ -926,9 +926,9 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				PackedVector3Array normals;
 				PackedInt32Array indices;
 
-				copy_to(positions, arrays.positions);
-				copy_to(normals, arrays.normals);
-				copy_to(indices, arrays.indices);
+				godot::copy_to(positions, arrays.positions);
+				godot::copy_to(normals, arrays.normals);
+				godot::copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
@@ -936,12 +936,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				if (arrays.colors.size() > 0) {
 					PackedColorArray colors;
-					copy_to(colors, arrays.colors);
+					godot::copy_to(colors, arrays.colors);
 					mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				}
 				if (arrays.uvs.size() > 0) {
 					PackedVector2Array uvs;
-					copy_to(uvs, arrays.uvs);
+					godot::copy_to(uvs, arrays.uvs);
 					mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				}
 			}
@@ -1107,14 +1107,14 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
-		offset_surface(arrays, centering_offset);
+		godot::offset_surface(arrays, centering_offset);
 
 		if (voxel_size != 1.f) {
-			scale_surface(arrays, voxel_size);
+			godot::scale_surface(arrays, voxel_size);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);

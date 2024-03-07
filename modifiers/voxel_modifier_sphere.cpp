@@ -69,7 +69,7 @@ void VoxelModifierSphere::get_shader_data(ShaderData &out_shader_data) {
 		SphereParams sphere_params;
 		sphere_params.radius = _radius;
 		PackedByteArray pba;
-		copy_bytes_to(pba, sphere_params);
+		godot::copy_bytes_to(pba, sphere_params);
 
 		if (_shader_data->params.size() < 2) {
 			std::shared_ptr<ComputeShaderResource> res = make_shared_instance<ComputeShaderResource>();

@@ -18,7 +18,8 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	{
 		Ref<PointMesh> point_mesh = mesh;
 		if (point_mesh.is_valid()) {
-			ZN_PRINT_ERROR(format("PointMesh is not supported by {}.", get_class_name_str<VoxelBlockyModelMesh>()));
+			ZN_PRINT_ERROR(
+					format("PointMesh is not supported by {}.", godot::get_class_name_str<VoxelBlockyModelMesh>()));
 			return;
 		}
 	}
@@ -228,13 +229,13 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 				ZN_PRINT_ERROR(format("Voxel model is missing tangents and UVs. The model won't be "
 									  "baked. You should consider providing a mesh with tangents, or at least UVs and "
 									  "normals, or turn off tangents baking in {}.",
-						get_class_name_str<VoxelBlockyLibrary>()));
+						godot::get_class_name_str<VoxelBlockyLibrary>()));
 				continue;
 			}
 			ZN_PRINT_WARNING(format("Voxel model does not have tangents. They will be generated."
 									"You should consider providing a mesh with tangents, or at least UVs and normals, "
 									"or turn off tangents baking in {}.",
-					get_class_name_str<VoxelBlockyLibrary>()));
+					godot::get_class_name_str<VoxelBlockyLibrary>()));
 
 			tangents = generate_tangents_from_uvs(positions, normals, uvs, indices);
 		}
@@ -381,7 +382,7 @@ bool VoxelBlockyModelMesh::is_empty() const {
 	}
 	Ref<ArrayMesh> array_mesh = _mesh;
 	if (array_mesh.is_valid()) {
-		return is_mesh_empty(**array_mesh);
+		return godot::is_mesh_empty(**array_mesh);
 	}
 	return false;
 }

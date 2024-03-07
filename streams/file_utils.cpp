@@ -2,7 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/classes/directory.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 const char *to_string(FileResult res) {
 	switch (res) {
@@ -69,13 +69,6 @@ Error check_directory_created(const std::string &p_directory_path) {
 	return OK;
 }
 
-namespace voxel {
-Error check_directory_created_using_file_locker(const std::string &directory_path) {
-	VoxelFileLockerWrite file_wlock(directory_path);
-	return check_directory_created(directory_path);
-}
-} // namespace voxel
-
 // TODO Write tests
 
 // Makes the file bigger to move the half from the current position further,
@@ -116,4 +109,13 @@ void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size) {
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot
+
+namespace zylann::voxel {
+
+Error check_directory_created_using_file_locker(const std::string &directory_path) {
+	VoxelFileLockerWrite file_wlock(directory_path);
+	return godot::check_directory_created(directory_path);
+}
+
+} // namespace zylann::voxel

@@ -3,7 +3,7 @@
 #include "classes/material.h"
 #include "classes/world_3d.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 DirectMeshInstance::DirectMeshInstance() {
 	// Nothing here. It is a thin RID wrapper,
@@ -133,4 +133,4 @@ void DirectMeshInstance::operator=(DirectMeshInstance &&src) {
 	src._mesh.unref();
 }
 
-} // namespace zylann
+} // namespace zylann::godot

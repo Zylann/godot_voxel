@@ -58,7 +58,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -136,7 +136,7 @@ bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
 		return true;
 	}
 	for (const Output::Surface &surface : surfaces) {
-		if (is_surface_triangulated(surface.arrays)) {
+		if (godot::is_surface_triangulated(surface.arrays)) {
 			return false;
 		}
 	}

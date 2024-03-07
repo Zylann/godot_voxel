@@ -39,7 +39,7 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		DirectMeshInstance &tmi = _transition_mesh_instances[i];
+		godot::DirectMeshInstance &tmi = _transition_mesh_instances[i];
 		if (tmi.is_valid()) {
 			tmi.set_material_override(Ref<Material>());
 			FreeMeshTask::try_add_and_destroy(tmi);
@@ -94,7 +94,7 @@ void VoxelMeshBlockVLT::drop_visuals() {
 	FreeMeshTask::try_add_and_destroy(_mesh_instance);
 
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		DirectMeshInstance &tmi = _transition_mesh_instances[i];
+		godot::DirectMeshInstance &tmi = _transition_mesh_instances[i];
 		if (tmi.is_valid()) {
 			tmi.set_material_override(Ref<Material>());
 			FreeMeshTask::try_add_and_destroy(tmi);
@@ -111,7 +111,7 @@ void VoxelMeshBlockVLT::drop_visuals() {
 void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 	VoxelMeshBlock::set_gi_mode(mode);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
 			mi.set_gi_mode(mode);
 		}
@@ -121,7 +121,7 @@ void VoxelMeshBlockVLT::set_gi_mode(GeometryInstance3D::GIMode mode) {
 void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting mode) {
 	VoxelMeshBlock::set_shadow_casting(mode);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
 			mi.set_cast_shadows_setting(mode);
 		}
@@ -131,7 +131,7 @@ void VoxelMeshBlockVLT::set_shadow_casting(RenderingServer::ShadowCastingSetting
 void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
 	VoxelMeshBlock::set_render_layers_mask(mask);
 	for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-		DirectMeshInstance &mi = _transition_mesh_instances[i];
+		godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 		if (mi.is_valid()) {
 			mi.set_render_layers_mask(mask);
 		}
@@ -140,7 +140,7 @@ void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
 
 void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
 		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
-	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
+	godot::DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
 		if (!mesh_instance.is_valid()) {
@@ -193,7 +193,7 @@ void VoxelMeshBlockVLT::set_visible(bool visible) {
 void VoxelMeshBlockVLT::_set_visible(bool visible) {
 	VoxelMeshBlock::_set_visible(visible);
 	for (unsigned int dir = 0; dir < _transition_mesh_instances.size(); ++dir) {
-		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		godot::DirectMeshInstance &mi = _transition_mesh_instances[dir];
 		if (mi.is_valid()) {
 			set_mesh_instance_visible(mi, visible && _is_transition_visible(dir));
 		}
@@ -207,7 +207,7 @@ void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 		_mesh_instance.set_material_override(_shader_material);
 
 		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			godot::DirectMeshInstance &mi = _transition_mesh_instances[dir];
 			if (mi.is_valid()) {
 				mi.set_material_override(_shader_material);
 			}
@@ -258,7 +258,7 @@ void VoxelMeshBlockVLT::set_transition_mask(uint8_t m) {
 		_shader_material->set_shader_parameter(VoxelStringNames::get_singleton().u_transition_mask, tm);
 	}
 	for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-		DirectMeshInstance &mi = _transition_mesh_instances[dir];
+		godot::DirectMeshInstance &mi = _transition_mesh_instances[dir];
 		if (mi.is_valid() && (diff & (1 << dir))) {
 			set_mesh_instance_visible(mi, _visible && _parent_visible && _is_transition_visible(dir));
 		}
@@ -285,7 +285,7 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 			_mesh_instance.set_transform(world_transform);
 
 			for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-				DirectMeshInstance &mi = _transition_mesh_instances[i];
+				godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 				if (mi.is_valid()) {
 					mi.set_transform(world_transform);
 				}
@@ -299,7 +299,7 @@ void VoxelMeshBlockVLT::set_parent_transform(const Transform3D &parent_transform
 }
 
 void VoxelMeshBlockVLT::update_transition_mesh_transform(unsigned int side, const Transform3D &parent_transform) {
-	DirectMeshInstance &mi = _transition_mesh_instances[side];
+	godot::DirectMeshInstance &mi = _transition_mesh_instances[side];
 	if (mi.is_valid()) {
 		// TODO Optimize: could be optimized due to the basis being identity
 		const Transform3D local_transform(Basis(), _position_in_voxels);
@@ -372,7 +372,7 @@ void VoxelMeshBlockVLT::clear_fading() {
 
 bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
 	for (const VoxelMesher::Output::Surface &surf : surfaces) {
-		if (is_surface_triangulated(surf.arrays)) {
+		if (godot::is_surface_triangulated(surf.arrays)) {
 			return false;
 		}
 	}
@@ -394,7 +394,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!is_surface_triangulated(arrays)) {
+		if (!godot::is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -424,7 +424,7 @@ Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mes
 		}
 	}*/
 
-	if (mesh.is_valid() && zylann::is_mesh_empty(**mesh)) {
+	if (mesh.is_valid() && godot::is_mesh_empty(**mesh)) {
 		mesh = Ref<Mesh>();
 	}
 

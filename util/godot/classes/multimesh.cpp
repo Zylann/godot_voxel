@@ -1,6 +1,6 @@
 #include "multimesh.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 int get_visible_instance_count(const MultiMesh &mm) {
 	int visible_count = mm.get_visible_instance_count();
@@ -10,4 +10,4 @@ int get_visible_instance_count(const MultiMesh &mm) {
 	return visible_count;
 }
 
-} // namespace zylann
+} // namespace zylann::godot

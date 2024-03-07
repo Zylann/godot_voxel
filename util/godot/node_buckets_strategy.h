@@ -7,7 +7,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class Node)
 
-namespace zylann {
+namespace zylann::godot {
 
 // A workaround for the fact Godot is very slow at removing nodes from the scene tree if they have many siblings...
 // See https://github.com/godotengine/godot/issues/61929
@@ -52,6 +52,6 @@ private:
 	std::vector<TBucket *> _used_buckets;
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_NODE_BUCKETS_STRATEGY_H

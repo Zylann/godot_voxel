@@ -5,8 +5,8 @@
 
 namespace zylann::voxel {
 
-class VoxelTerrainEditorInspectorPlugin : public ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelTerrainEditorInspectorPlugin, ZN_EditorInspectorPlugin)
+class VoxelTerrainEditorInspectorPlugin : public godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelTerrainEditorInspectorPlugin, godot::ZN_EditorInspectorPlugin)
 protected:
 	bool _zn_can_handle(const Object *p_object) const override;
 	bool _zn_parse_property(Object *p_object, const Variant::Type p_type, const String &p_path,

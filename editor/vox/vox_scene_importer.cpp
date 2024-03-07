@@ -55,14 +55,14 @@ int VoxelVoxSceneImporter::_zn_get_import_order() const {
 }
 
 void VoxelVoxSceneImporter::_zn_get_import_options(
-		std::vector<GodotImportOption> &p_out_options, const String &p_path, int p_preset_index) const {
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
-	p_out_options.push_back(GodotImportOption(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
+		std::vector<godot::ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+	p_out_options.push_back(godot::ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
+	p_out_options.push_back(godot::ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
+	p_out_options.push_back(godot::ImportOptionWrapper(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
 }
 
 bool VoxelVoxSceneImporter::_zn_get_option_visibility(
-		const String &p_path, const StringName &p_option_name, const GodotKeyValueWrapper p_options) const {
+		const String &p_path, const StringName &p_option_name, const godot::KeyValueWrapper p_options) const {
 	return true;
 }
 
@@ -238,8 +238,8 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 // }
 
 Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const String &p_save_path,
-		const GodotKeyValueWrapper p_options, GodotStringListWrapper p_out_platform_variants,
-		GodotStringListWrapper p_out_gen_files) const {
+		const godot::KeyValueWrapper p_options, godot::StringListWrapper p_out_platform_variants,
+		godot::StringListWrapper p_out_gen_files) const {
 	ZN_PROFILE_SCOPE();
 
 	const bool p_store_colors_in_textures = p_options.get("store_colors_in_texture");
@@ -374,7 +374,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		String res_save_path = String("{0}.model{1}.mesh").format(varray(p_save_path, model_index));
 		// `FLAG_CHANGE_PATH` did not do what I thought it did.
 		mesh->set_path(res_save_path);
-		const Error mesh_save_err = save_resource(mesh, res_save_path, ResourceSaver::FLAG_NONE);
+		const Error mesh_save_err = godot::save_resource(mesh, res_save_path, ResourceSaver::FLAG_NONE);
 		ERR_FAIL_COND_V_MSG(
 				mesh_save_err != OK, mesh_save_err, String("Failed to save {0}").format(varray(res_save_path)));
 	}
@@ -388,7 +388,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		scene.instantiate();
 		scene->pack(root_node);
 		String scene_save_path = p_save_path + String(".tscn");
-		const Error save_err = save_resource(scene, scene_save_path, ResourceSaver::FLAG_NONE);
+		const Error save_err = godot::save_resource(scene, scene_save_path, ResourceSaver::FLAG_NONE);
 		memdelete(root_node);
 		ERR_FAIL_COND_V_MSG(save_err != OK, save_err, "Cannot save scene to file '" + scene_save_path);
 	}

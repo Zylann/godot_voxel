@@ -80,7 +80,7 @@ bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 	// Workaround for when we inspect nodes of the graph...
 	if (p_object == nullptr && _ignore_edit_null) {
-		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", get_class_name_str<VoxelGraphEditorPlugin>()));
+		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", godot::get_class_name_str<VoxelGraphEditorPlugin>()));
 		return;
 	}
 
@@ -147,7 +147,8 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 	// Workaround for when we inspect nodes of the graph...
 	if (_ignore_make_visible) {
-		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", get_class_name_str<VoxelGraphEditorPlugin>(), visible));
+		ZN_PRINT_VERBOSE(
+				format("{}: ignored make_visible({})", godot::get_class_name_str<VoxelGraphEditorPlugin>(), visible));
 		return;
 	}
 
@@ -310,7 +311,7 @@ void VoxelGraphEditorPlugin::_on_generator_changed() {
 	// See https://github.com/godotengine/godot-proposals/discussions/7168
 	Ref<VoxelGeneratorGraph> generator = _graph_editor->get_generator();
 	if (generator.is_valid()) {
-		set_object_edited(**generator);
+		godot::set_object_edited(**generator);
 	}
 }
 

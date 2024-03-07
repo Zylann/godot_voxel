@@ -4,7 +4,7 @@
 #include "collision_shape_3d.h"
 #include "mesh.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces) {
 	// Faster version of Mesh::create_trimesh_shape()
@@ -157,4 +157,4 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arra
 	return shape;
 }
 
-} // namespace zylann
+} // namespace zylann::godot

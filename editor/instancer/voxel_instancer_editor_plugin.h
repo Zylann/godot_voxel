@@ -11,8 +11,8 @@ namespace zylann::voxel {
 class VoxelInstancer;
 class VoxelInstancerStatView;
 
-class VoxelInstancerEditorPlugin : public ZN_EditorPlugin {
-	GDCLASS(VoxelInstancerEditorPlugin, ZN_EditorPlugin)
+class VoxelInstancerEditorPlugin : public godot::ZN_EditorPlugin {
+	GDCLASS(VoxelInstancerEditorPlugin, godot::ZN_EditorPlugin)
 public:
 	VoxelInstancerEditorPlugin();
 

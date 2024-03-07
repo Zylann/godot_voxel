@@ -19,7 +19,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // Combines all mesh surface arrays into one collider.
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Array> surfaces);
@@ -27,6 +27,6 @@ Ref<ConcavePolygonShape3D> create_concave_polygon_shape(Span<const Vector3f> pos
 // Create shape from a sub-region of a mesh surface (starting at 0).
 Ref<ConcavePolygonShape3D> create_concave_polygon_shape(const Array surface_arrays, unsigned int index_count);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_CONCAVE_POLYGON_SHAPE_3D_H

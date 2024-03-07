@@ -3,7 +3,7 @@
 #include "classes/material.h"
 #include "classes/world_3d.h"
 
-namespace zylann {
+namespace zylann::godot {
 
 DirectMultiMeshInstance::DirectMultiMeshInstance() {}
 
@@ -229,4 +229,4 @@ void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
 	}
 }
 
-} // namespace zylann
+} // namespace zylann::godot

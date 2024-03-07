@@ -85,7 +85,7 @@ public:
 		const Transform3D world_transform = local_transform;
 		f(_mesh_instance, world_transform);
 		for (unsigned int i = 0; i < _transition_mesh_instances.size(); ++i) {
-			const DirectMeshInstance &mi = _transition_mesh_instances[i];
+			const godot::DirectMeshInstance &mi = _transition_mesh_instances[i];
 			if (mi.is_valid()) {
 				f(mi, world_transform);
 			}
@@ -101,7 +101,7 @@ private:
 
 	Ref<ShaderMaterial> _shader_material;
 
-	FixedArray<DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
+	FixedArray<godot::DirectMeshInstance, Cube::SIDE_COUNT> _transition_mesh_instances;
 
 	uint8_t _transition_mask = 0;
 

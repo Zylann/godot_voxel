@@ -37,12 +37,13 @@ zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
 
 	// Compute thread count for general pool.
 
-	add_custom_godot_project_setting(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64", 1, true);
-	add_custom_godot_project_setting(
+	godot::add_custom_project_setting(
+			Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64", 1, true);
+	godot::add_custom_project_setting(
 			Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64", 1, true);
-	add_custom_godot_project_setting(
+	godot::add_custom_project_setting(
 			Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1", 0.5f, true);
-	add_custom_godot_project_setting(
+	godot::add_custom_project_setting(
 			Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000", 8, true);
 
 	out_main_thread_time_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));

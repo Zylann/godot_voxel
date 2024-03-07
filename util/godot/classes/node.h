@@ -11,7 +11,7 @@ using namespace godot;
 #include "../../errors.h"
 #include <vector>
 
-namespace zylann {
+namespace zylann::godot {
 
 void set_nodes_owner(Node *root, Node *owner);
 void set_nodes_owner_except_root(Node *root, Node *owner);
@@ -27,6 +27,6 @@ inline T *get_node_typed(const Node &self, const NodePath &path) {
 
 void get_node_groups(const Node &node, std::vector<StringName> &out_groups);
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_NODE_H

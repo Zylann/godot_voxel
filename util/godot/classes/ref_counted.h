@@ -10,7 +10,7 @@
 using namespace godot;
 #endif
 
-namespace zylann {
+namespace zylann::godot {
 
 // `(ref1 = ref2).is_valid()` does not work because Ref<T> does not implement an `operator=` returning the value.
 // So instead we can write it as `try_get_as(ref2, ref1)`
@@ -28,7 +28,7 @@ struct RefHasher {
 	}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 namespace std {
 

@@ -674,7 +674,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	uint32_t materials_to_instance_mask = 0;
 	{
-		std::vector<GodotShaderParameterInfo> params;
+		std::vector<godot::ShaderParameterInfo> params;
 		const String u_block_local_transform = VoxelStringNames::get_singleton().u_block_local_transform;
 
 		ZN_ASSERT_RETURN_V_MSG(materials.size() < 32, Array(),
@@ -694,7 +694,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			params.clear();
 			get_shader_parameter_list(shader->get_rid(), params);
 
-			for (const GodotShaderParameterInfo &param_info : params) {
+			for (const godot::ShaderParameterInfo &param_info : params) {
 				if (param_info.name == u_block_local_transform) {
 					materials_to_instance_mask |= (1 << material_index);
 					break;
@@ -765,7 +765,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
 
-			if (zylann::is_mesh_empty(**mesh)) {
+			if (godot::is_mesh_empty(**mesh)) {
 				continue;
 			}
 

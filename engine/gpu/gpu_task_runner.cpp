@@ -113,7 +113,7 @@ void GPUTaskRunner::thread_func() {
 			if (required_shared_output_buffer_size > shared_output_storage_buffer_capacity) {
 				ZN_PROFILE_SCOPE_NAMED("Resize shared output buffer");
 				if (shared_output_storage_buffer_rid.is_valid()) {
-					free_rendering_device_rid(ctx.rendering_device, shared_output_storage_buffer_rid);
+					godot::free_rendering_device_rid(ctx.rendering_device, shared_output_storage_buffer_rid);
 				}
 				// TODO Resize to some multiplier above?
 				shared_output_storage_buffer_rid =
@@ -176,7 +176,7 @@ void GPUTaskRunner::thread_func() {
 	}
 
 	if (shared_output_storage_buffer_rid.is_valid()) {
-		free_rendering_device_rid(*_rendering_device, shared_output_storage_buffer_rid);
+		godot::free_rendering_device_rid(*_rendering_device, shared_output_storage_buffer_rid);
 	}
 
 	ZN_ASSERT(tasks.size() == 0);

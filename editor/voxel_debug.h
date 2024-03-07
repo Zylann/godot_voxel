@@ -7,7 +7,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class Mesh);
 
-namespace zylann {
+namespace zylann::godot {
 namespace DebugColors {
 
 enum ColorID { //
@@ -86,6 +86,6 @@ private:
 	DebugMultiMeshRenderer _mm_renderer;
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // VOXEL_DEBUG_H
