@@ -106,7 +106,7 @@ public:
 			if (block == nullptr) {
 				ERR_PRINT("Unexpected nullptr in VoxelMap::clear()");
 			} else {
-				memdelete(block);
+				ZN_DELETE(block);
 			}
 		}
 		_blocks.clear();
@@ -178,12 +178,12 @@ private:
 		// TODO Could it be enough to do both render and physic deallocation with the task in ~MeshBlock_T()?
 		struct FreeMeshBlockTask : public zylann::ITimeSpreadTask {
 			void run(TimeSpreadTaskContext &ctx) override {
-				memdelete(block);
+				ZN_DELETE(block);
 			}
 			MeshBlock_T *block = nullptr;
 		};
 		ERR_FAIL_COND(block == nullptr);
-		FreeMeshBlockTask *task = memnew(FreeMeshBlockTask);
+		FreeMeshBlockTask *task = ZN_NEW(FreeMeshBlockTask);
 		task->block = block;
 		VoxelEngine::get_singleton().push_main_thread_time_spread_task(task);
 	}

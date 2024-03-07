@@ -273,7 +273,7 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 			BufferData &bd = state.buffer_datas[i];
 			ZN_ASSERT(bd.data == nullptr);
 			// These are new items, we always allocate.
-			bd.data = reinterpret_cast<float *>(memalloc(buffer_size * sizeof(float)));
+			bd.data = reinterpret_cast<float *>(ZN_ALLOC(buffer_size * sizeof(float)));
 			bd.capacity = buffer_size;
 		}
 	}
@@ -285,7 +285,7 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 			ZN_ASSERT(bd.data != nullptr);
 			if (bd.capacity < buffer_size) {
 				// These are existing items, we always realloc.
-				bd.data = reinterpret_cast<float *>(memrealloc(bd.data, buffer_size * sizeof(float)));
+				bd.data = reinterpret_cast<float *>(ZN_REALLOC(bd.data, buffer_size * sizeof(float)));
 				bd.capacity = buffer_size;
 			}
 		}

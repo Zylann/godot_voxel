@@ -1,6 +1,7 @@
 #include "progressive_task_runner.h"
 #include "../errors.h"
 #include "../math/funcs.h"
+#include "../memory.h"
 
 #include "../godot/classes/time.h"
 
@@ -38,7 +39,7 @@ void ProgressiveTaskRunner::process() {
 		_tasks.pop();
 		task->run();
 		// TODO Call recycling function instead?
-		memdelete(task);
+		ZN_DELETE(task);
 		--count;
 	}
 }
@@ -48,7 +49,7 @@ void ProgressiveTaskRunner::flush() {
 		IProgressiveTask *task = _tasks.front();
 		_tasks.pop();
 		task->run();
-		memdelete(task);
+		ZN_DELETE(task);
 	}
 }
 

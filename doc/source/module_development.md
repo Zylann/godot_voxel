@@ -176,6 +176,8 @@ For the most part, use `clang-format` and follow Godot conventions.
 - `#include` what you use, don't assume a header transitively includes things. This has been broadly ignored for a while, but new code may follow it. `util/godot` micro-headers are an exception.
 - Don't do `using namespace` in headers (Except with `godot::`, but that's only to help supporting GDExtension using the same codebase, since Godot core does not have this namespace).
 - `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in multi-threaded context.
+- Use `ZN_NEW` and `ZN_DELETE` instead of `new` and `delete` on types that don't derive from Godot `Object`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
+- Use `ZN_ALLOC` and `ZN_FREE` instead of `malloc` and `free`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
 
 ### Error handling
 
@@ -202,7 +204,7 @@ In performance-critical areas which run a lot:
 
 - In areas where performance matters, use the most direct APIs for the job. Especially, don't use nodes. See `RenderingServer` and `PhysicsServer`.
 - Only expose a function to the script API if it is safe to use and guaranteed to remain present for a while
-- When possible, use `memnew`, `memdelete`, `memalloc` and `memfree` so memory usage is counted within Godot monitors
+- Use `memnew` and `memdelete` instead of `new` and `delete` on types derived from Godot `Object`
 - Don't leave random prints. For verbose mode you may also use `ZN_PRINT_VERBOSE()` instead of `print_verbose()`.
 - Use `int` as argument for functions exposed to scripts if they don't need to exceed 2^31, even if they are never negative, so errors are clearer if the user makes a mistake
 - If possible, keep Godot usage to a minimum, to make the code more portable, and sometimes faster for future GDExtension. Some areas use custom equivalents defined in `util/`.

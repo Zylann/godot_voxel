@@ -410,7 +410,7 @@ void VoxelStreamRegionFiles::close_all_regions() {
 	for (unsigned int i = 0; i < _region_cache.size(); ++i) {
 		CachedRegion *cache = _region_cache[i];
 		close_region(cache);
-		memdelete(cache);
+		ZN_DELETE(cache);
 	}
 	_region_cache.clear();
 }
@@ -456,7 +456,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 
 	String fpath = get_region_file_path(region_pos, lod);
 
-	cached_region = memnew(CachedRegion);
+	cached_region = ZN_NEW(CachedRegion);
 
 	// Configure format because we might have to create the file, and some old file versions don't embed format
 	{
@@ -481,7 +481,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 	//   we assume no other process will modify region files.
 
 	if (err != OK) {
-		memdelete(cached_region);
+		ZN_DELETE(cached_region);
 		if (create_if_not_found) {
 			// Could not create it apparently
 			ERR_PRINT(String("Could not open or create region file {0}, error: {1}").format(varray(fpath, err)));
@@ -500,7 +500,7 @@ VoxelStreamRegionFiles::CachedRegion *VoxelStreamRegionFiles::open_region(
 				|| format.region_size != Vector3iUtil::create(1 << _meta.region_size_po2) //
 				|| format.sector_size != _meta.sector_size) {
 			ERR_PRINT("Region file has unexpected format");
-			memdelete(cached_region);
+			ZN_DELETE(cached_region);
 			return nullptr;
 		}
 	}
@@ -542,7 +542,7 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 	_region_cache.erase(_region_cache.begin() + oldest_index);
 
 	close_region(region);
-	memdelete(region);
+	ZN_DELETE(region);
 }
 
 static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {

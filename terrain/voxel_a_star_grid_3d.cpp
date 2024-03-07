@@ -186,7 +186,7 @@ void VoxelAStarGrid3D::find_path_async(Vector3i from_position, Vector3i to_posit
 		}
 	};
 
-	Task *task = memnew(Task);
+	Task *task = ZN_NEW(Task);
 	task->astar = Ref<VoxelAStarGrid3D>(this);
 	task->from_position = from_position;
 	task->to_position = to_position;

@@ -86,7 +86,7 @@ void GenerateBlockTask::run_gpu_task(zylann::ThreadedTaskContext &ctx) {
 
 	const Vector3i resolution = Vector3iUtil::create(_block_size);
 
-	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	GenerateBlockGPUTask *gpu_task = ZN_NEW(GenerateBlockGPUTask);
 	gpu_task->boxes_to_generate.push_back(Box3i(Vector3i(), resolution));
 	gpu_task->generator_shader = generator_shader;
 	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();
@@ -154,7 +154,7 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
+			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
 					_volume_id, _position, _lod_index, voxels_copy, _stream_dependency, nullptr, false));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);

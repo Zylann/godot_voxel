@@ -279,7 +279,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 
 	std::shared_ptr<VoxelData> data = _terrain->get_storage_shared();
 
-	VoxelToolAsyncEdit<ops::DoSphere> *task = memnew(VoxelToolAsyncEdit<ops::DoSphere>(op, data));
+	VoxelToolAsyncEdit<ops::DoSphere> *task = ZN_NEW(VoxelToolAsyncEdit<ops::DoSphere>(op, data));
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 

@@ -36,7 +36,7 @@ public:
 private:
 	static void add(Ref<Mesh> mesh) {
 		ZN_ASSERT(mesh.is_valid());
-		FreeMeshTask *task = memnew(FreeMeshTask(mesh));
+		FreeMeshTask *task = ZN_NEW(FreeMeshTask(mesh));
 		VoxelEngine::get_singleton().push_main_thread_progressive_task(task);
 	}
 

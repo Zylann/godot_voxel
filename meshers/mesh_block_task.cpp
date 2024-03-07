@@ -337,7 +337,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	std::shared_ptr<ComputeShader> generator_shader = generator->get_block_rendering_shader();
 	ERR_FAIL_COND(generator_shader == nullptr);
 
-	GenerateBlockGPUTask *gpu_task = memnew(GenerateBlockGPUTask);
+	GenerateBlockGPUTask *gpu_task = ZN_NEW(GenerateBlockGPUTask);
 	gpu_task->boxes_to_generate = std::move(boxes_to_generate);
 	gpu_task->generator_shader = generator_shader;
 	gpu_task->generator_shader_params = generator->get_block_rendering_shader_parameters();

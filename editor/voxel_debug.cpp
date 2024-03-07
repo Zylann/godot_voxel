@@ -151,7 +151,7 @@ DebugRenderer::~DebugRenderer() {
 
 void DebugRenderer::clear() {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
-		memdelete(*it);
+		ZN_DELETE(*it);
 	}
 	_items.clear();
 	_mm_renderer.clear();

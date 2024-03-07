@@ -39,13 +39,13 @@ void register_curve_node(Span<NodeType> types) {
 			// Make sure it is baked. We don't want multithreading to bail out because of a write operation
 			// happening in `interpolate_baked`...
 			curve->bake();
-			CurveRangeData *curve_range_data = memnew(CurveRangeData);
+			CurveRangeData *curve_range_data = ZN_NEW(CurveRangeData);
 			get_curve_monotonic_sections(**curve, curve_range_data->sections);
 			Params p;
 			p.curve_range_data = curve_range_data;
 			p.curve = *curve;
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(curve_range_data);
+			ctx.add_delete_cleanup(curve_range_data);
 		};
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
 			ZN_PROFILE_SCOPE_NAMED("NODE_CURVE");

@@ -194,7 +194,7 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.
 
-			SaveBlockDataTask *save_task = memnew(SaveBlockDataTask(
+			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
 					_volume_id, _block_position, _lod_index, voxels_copy, _stream_dependency, nullptr, false));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);

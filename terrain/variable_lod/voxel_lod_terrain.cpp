@@ -152,7 +152,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 	callbacks.data = this;
 	callbacks.mesh_output_callback = [](void *cb_data, VoxelEngine::BlockMeshOutput &ob) {
 		VoxelLodTerrain *self = reinterpret_cast<VoxelLodTerrain *>(cb_data);
-		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
+		ApplyMeshUpdateTask *task = ZN_NEW(ApplyMeshUpdateTask);
 		task->volume_id = self->get_volume_id();
 		task->self = self;
 		task->data = std::move(ob);
@@ -736,7 +736,7 @@ void VoxelLodTerrain::start_streamer() {
 
 			_data->set_full_load_completed(false);
 
-			LoadAllBlocksDataTask *task = memnew(LoadAllBlocksDataTask);
+			LoadAllBlocksDataTask *task = ZN_NEW(LoadAllBlocksDataTask);
 			task->volume_id = _volume_id;
 			task->stream_dependency = _streaming_dependency;
 			task->data = _data;
@@ -1267,7 +1267,7 @@ void VoxelLodTerrain::process(float delta) {
 		} else {
 			ThreadedTaskContext ctx(0, TaskPriority());
 			task->run(ctx);
-			memdelete(task);
+			ZN_DELETE(task);
 			apply_main_thread_update_tasks();
 		}
 	}
@@ -1865,7 +1865,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	if (block == nullptr) {
 		// Create new block
-		block = memnew(VoxelMeshBlockVLT(ob.position, get_mesh_block_size(), ob.lod));
+		block = ZN_NEW(VoxelMeshBlockVLT(ob.position, get_mesh_block_size(), ob.lod));
 		mesh_map.set_block(ob.position, block);
 
 		block->set_world(get_world_3d());
@@ -2216,7 +2216,7 @@ void VoxelLodTerrain::abort_async_edits() {
 	for (auto it = state.pending_async_edits.begin(); it != state.pending_async_edits.end(); ++it) {
 		VoxelLodTerrainUpdateData::AsyncEdit &e = *it;
 		CRASH_COND(e.task == nullptr);
-		memdelete(e.task);
+		ZN_DELETE(e.task);
 	}
 	state.pending_async_edits.clear();
 	state.running_async_edits.clear();

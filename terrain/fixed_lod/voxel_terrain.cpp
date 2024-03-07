@@ -77,7 +77,7 @@ VoxelTerrain::VoxelTerrain() {
 	callbacks.data = this;
 	callbacks.mesh_output_callback = [](void *cb_data, VoxelEngine::BlockMeshOutput &ob) {
 		VoxelTerrain *self = reinterpret_cast<VoxelTerrain *>(cb_data);
-		ApplyMeshUpdateTask *task = memnew(ApplyMeshUpdateTask);
+		ApplyMeshUpdateTask *task = ZN_NEW(ApplyMeshUpdateTask);
 		task->volume_id = self->_volume_id;
 		task->self = self;
 		task->data = std::move(ob);
@@ -448,7 +448,7 @@ void VoxelTerrain::view_mesh_block(Vector3i bpos, bool mesh_flag, bool collision
 
 	if (block == nullptr) {
 		// Create if not found
-		block = memnew(VoxelMeshBlockVT(bpos, get_mesh_block_size()));
+		block = ZN_NEW(VoxelMeshBlockVT(bpos, get_mesh_block_size()));
 		block->set_world(get_world_3d());
 		_mesh_map.set_block(bpos, block);
 	}

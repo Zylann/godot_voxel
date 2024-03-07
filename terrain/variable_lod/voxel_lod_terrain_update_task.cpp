@@ -189,7 +189,7 @@ void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBufferInt
 	ERR_FAIL_COND(stream_dependency->stream.is_null());
 
 	SaveBlockDataTask *task =
-			memnew(SaveBlockDataTask(volume_id, block_pos, lod, voxels, stream_dependency, tracker, with_flush));
+			ZN_NEW(SaveBlockDataTask(volume_id, block_pos, lod, voxels, stream_dependency, tracker, with_flush));
 
 	// No priority data, saving doesn't need sorting.
 
@@ -395,7 +395,7 @@ void process_async_edits(VoxelLodTerrainUpdateData::State &state, const VoxelLod
 			// Not sure if worth doing, I don't think tasks can be aborted before even being scheduled.
 			if (edit.task_tracker->is_aborted()) {
 				ZN_PRINT_VERBOSE("Aborted async edit");
-				memdelete(edit.task);
+				ZN_DELETE(edit.task);
 				continue;
 			}
 

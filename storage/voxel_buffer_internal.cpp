@@ -19,7 +19,7 @@ inline uint8_t *allocate_channel_data(size_t size) {
 #ifdef VOXEL_BUFFER_USE_MEMORY_POOL
 	return VoxelMemoryPool::get_singleton().allocate(size);
 #else
-	return (uint8_t *)memalloc(size * sizeof(uint8_t));
+	return (uint8_t *)ZN_ALLOC(size * sizeof(uint8_t));
 #endif
 }
 
@@ -27,7 +27,7 @@ inline void free_channel_data(uint8_t *data, uint32_t size) {
 #ifdef VOXEL_BUFFER_USE_MEMORY_POOL
 	VoxelMemoryPool::get_singleton().recycle(data, size);
 #else
-	memfree(data);
+	ZN_FREE(data);
 #endif
 }
 

@@ -81,13 +81,13 @@ public:
 
 	// In case the compilation step produces a resource to be deleted
 	template <typename T>
-	void add_memdelete_cleanup(T *ptr) {
+	void add_delete_cleanup(T *ptr) {
+		static_assert(!std::is_base_of<Object, T>::value);
 		Runtime::HeapResource hr;
 		hr.ptr = ptr;
 		hr.deleter = [](void *p) {
-			// TODO We have no guarantee it was allocated with memnew :|
 			T *tp = reinterpret_cast<T *>(p);
-			memdelete(tp);
+			ZN_DELETE(tp);
 		};
 		_heap_resources.push_back(hr);
 	}

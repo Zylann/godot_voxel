@@ -130,14 +130,14 @@ void register_image_nodes(Span<NodeType> types) {
 									   .format(varray(Image::get_class_static())));
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			ImageRangeGrid *im_range = ZN_NEW(ImageRangeGrid);
 			im_range->generate(**image);
 			Params p;
 			p.image = *image;
 			p.image_range_grid = im_range;
 			p.filter = static_cast<Filter>(static_cast<int>(ctx.get_param(1)));
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(im_range);
+			ctx.add_delete_cleanup(im_range);
 		};
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {
 			ZN_PROFILE_SCOPE_NAMED("NODE_IMAGE_2D");
@@ -201,7 +201,7 @@ void register_image_nodes(Span<NodeType> types) {
 									   .format(varray(Image::get_class_static())));
 				return;
 			}
-			ImageRangeGrid *im_range = memnew(ImageRangeGrid);
+			ImageRangeGrid *im_range = ZN_NEW(ImageRangeGrid);
 			im_range->generate(**image);
 			const float factor = ctx.get_param(2);
 			const Interval range = im_range->get_range() * factor;
@@ -215,7 +215,7 @@ void register_image_nodes(Span<NodeType> types) {
 			p.norm_x = image->get_width();
 			p.norm_y = image->get_height();
 			ctx.set_params(p);
-			ctx.add_memdelete_cleanup(im_range);
+			ctx.add_delete_cleanup(im_range);
 		};
 
 		t.process_buffer_func = [](Runtime::ProcessBufferContext &ctx) {

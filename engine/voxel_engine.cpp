@@ -171,7 +171,7 @@ void VoxelEngine::wait_and_clear_all_tasks(bool warn) {
 			ZN_PRINT_WARNING("General tasks remain on module cleanup, "
 							 "this could become a problem if they reference scripts");
 		}
-		memdelete(task);
+		ZN_DELETE(task);
 	});
 }
 
@@ -325,7 +325,7 @@ void VoxelEngine::process() {
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
 		task->apply_result();
-		memdelete(task);
+		ZN_DELETE(task);
 	});
 
 	// Run this after dequeueing threaded tasks, because they can add some to this runner,

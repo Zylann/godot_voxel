@@ -59,12 +59,7 @@ UniquePtr<T> make_unique_instance(Types &&...args) {
 
 template <class T, class... Types, std::enable_if_t<!std::is_array_v<T>, int> = 0>
 inline std::shared_ptr<T> make_shared_instance(Types &&...args) {
-#ifdef ZN_GODOT
-	// Use Godot's allocator
-	return std::shared_ptr<T>(memnew(T(std::forward<Types>(args)...)), memdelete<T>);
-#else
-	return std::shared_ptr<T>(new T(std::forward<Types>(args)...));
-#endif
+	return std::shared_ptr<T>(ZN_NEW(T(std::forward<Types>(args)...)), memdelete<T>);
 }
 
 } // namespace zylann

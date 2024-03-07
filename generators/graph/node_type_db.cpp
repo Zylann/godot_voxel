@@ -27,12 +27,12 @@ const NodeTypeDB &NodeTypeDB::get_singleton() {
 
 void NodeTypeDB::create_singleton() {
 	CRASH_COND(g_node_type_db != nullptr);
-	g_node_type_db = memnew(NodeTypeDB());
+	g_node_type_db = ZN_NEW(NodeTypeDB());
 }
 
 void NodeTypeDB::destroy_singleton() {
 	CRASH_COND(g_node_type_db == nullptr);
-	memdelete(g_node_type_db);
+	ZN_DELETE(g_node_type_db);
 	g_node_type_db = nullptr;
 }
 
