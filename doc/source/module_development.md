@@ -96,6 +96,21 @@ For example, the *implementation* of Transvoxel has very little dependencies on 
 
 Same for `VoxelBuffer`: this class is actually not a full-fledged Godot object. It is much lighter than that, because it can have thousands of instances, or even supports being allocated on the stack and moved. It is exposed as a wrapper object instead for the few cases where scripters have to interact with it.
 
+### Namespaces
+
+Namespace                 | Description
+--------------------------|--------------
+`zylann`                  | General-purpose, not necessarily related to Godot
+`zylann::math`            | Math utilities
+`zylann::godot`           | General-purpose Godot utilities
+`zylann::voxel`           | Voxel engine
+`zylann::voxel::ops`      | Voxel editing utilities
+`zylann::voxel::godot`    | Some classes have Godot-specific wrappers in order to be exposed to scripting APIs, which are in this namespace to allow using the same name as in `zylann::voxel`
+`zylann::voxel::magica`   | MagicaVoxel functions
+`zylann::voxel::pg`       | Graph processing functionality
+
+There might be more smaller namespaces that can be documented in code.
+
 
 Tests
 -------
