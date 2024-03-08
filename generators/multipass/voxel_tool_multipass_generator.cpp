@@ -49,7 +49,7 @@ bool VoxelToolMultipassGenerator::is_area_editable(const Box3i &box) const {
 }
 
 namespace {
-inline VoxelBufferInternal *get_pass_input_block(PassInput &pi, const Vector3i &bpos) {
+inline VoxelBuffer *get_pass_input_block(PassInput &pi, const Vector3i &bpos) {
 	const Vector3i rbpos = bpos - pi.grid_origin;
 	const Vector3i gs = pi.grid_size;
 	if (rbpos.x < 0 || rbpos.y < 0 || rbpos.z < 0 || rbpos.x >= gs.x || rbpos.y >= gs.y || rbpos.z >= gs.z) {
@@ -59,31 +59,31 @@ inline VoxelBufferInternal *get_pass_input_block(PassInput &pi, const Vector3i &
 	return &pi.grid[loc]->voxels;
 }
 
-VoxelBufferInternal *get_pass_input_block_w(void *ctx, Vector3i bpos) {
+VoxelBuffer *get_pass_input_block_w(void *ctx, Vector3i bpos) {
 	PassInput *pi = static_cast<PassInput *>(ctx);
 	return get_pass_input_block(*pi, bpos);
 }
 // Just wrapping up for const...
-const VoxelBufferInternal *get_pass_input_block_r(void *ctx, Vector3i bpos) {
+const VoxelBuffer *get_pass_input_block_r(void *ctx, Vector3i bpos) {
 	return get_pass_input_block_w(ctx, bpos);
 }
 
 } // namespace
 
-void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
+void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	PassInput pass_input = _pass_input;
 	copy_from_chunked_storage(dst, pos, _block_size_po2, channels_mask, &get_pass_input_block_r, &pass_input);
 }
 
-void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	paste_to_chunked_storage(
 			src, pos, _block_size_po2, channels_mask, false, 0, 0, get_pass_input_block_w, &_pass_input);
 }
 
-void VoxelToolMultipassGenerator::paste_masked(
-		Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel, uint64_t mask_value) {
+void VoxelToolMultipassGenerator::paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
+		uint8_t mask_channel, uint64_t mask_value) {
 	ZN_ASSERT_RETURN(p_voxels.is_valid());
-	const VoxelBufferInternal &src = p_voxels->get_buffer();
+	const VoxelBuffer &src = p_voxels->get_buffer();
 	paste_to_chunked_storage(src, pos, _block_size_po2, channels_mask, true, mask_channel, mask_value,
 			get_pass_input_block_w, &_pass_input);
 }
@@ -166,7 +166,7 @@ void VoxelToolMultipassGenerator::do_path(Span<const Vector3> positions, Span<co
 	struct GridAccess {
 		PassInput *pass_input;
 		unsigned int block_size_po2;
-		inline VoxelBufferInternal *get_block(Vector3i bpos) {
+		inline VoxelBuffer *get_block(Vector3i bpos) {
 			return get_pass_input_block(*pass_input, bpos);
 		}
 		inline unsigned int get_block_size_po2() const {

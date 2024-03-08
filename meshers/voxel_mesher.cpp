@@ -15,7 +15,7 @@ using namespace zylann::godot;
 namespace zylann::voxel {
 
 Ref<Mesh> VoxelMesher::build_mesh(
-		const VoxelBufferInternal &voxels, TypedArray<Material> materials, Dictionary additional_data) {
+		const VoxelBuffer &voxels, TypedArray<Material> materials, Dictionary additional_data) {
 	ZN_PROFILE_SCOPE();
 
 	Output output;

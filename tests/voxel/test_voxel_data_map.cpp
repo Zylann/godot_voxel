@@ -7,9 +7,9 @@ namespace zylann::voxel::tests {
 void test_voxel_data_map_paste_fill() {
 	static const int voxel_value = 1;
 	static const int default_value = 0;
-	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+	static const int channel = VoxelBuffer::CHANNEL_TYPE;
 
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(32, 16, 32);
 	buffer.fill(voxel_value, channel);
 
@@ -43,9 +43,9 @@ void test_voxel_data_map_paste_mask() {
 	static const int voxel_value = 1;
 	static const int masked_value = 2;
 	static const int default_value = 0;
-	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+	static const int channel = VoxelBuffer::CHANNEL_TYPE;
 
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(32, 16, 32);
 	// Fill the inside of the buffer with a value, and outline it with another value, which we'll use as mask
 	buffer.fill(masked_value, channel);
@@ -114,13 +114,13 @@ void test_voxel_data_map_paste_mask() {
 void test_voxel_data_map_copy() {
 	static const int voxel_value = 1;
 	static const int default_value = 0;
-	static const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+	static const int channel = VoxelBuffer::CHANNEL_TYPE;
 
 	VoxelDataMap map;
 	map.create(0);
 
 	Box3i box(10, 10, 10, 32, 16, 32);
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(box.size);
 
 	// Fill the inside of the buffer with a value, and leave outline to zero,
@@ -135,7 +135,7 @@ void test_voxel_data_map_copy() {
 
 	map.paste(box.pos, buffer, (1 << channel), true, channel, default_value, true);
 
-	VoxelBufferInternal buffer2;
+	VoxelBuffer buffer2;
 	buffer2.create(box.size);
 
 	map.copy(box.pos, buffer2, (1 << channel));

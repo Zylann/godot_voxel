@@ -53,7 +53,7 @@ public:
 	struct SharedData {
 		std::vector<Triangle> triangles;
 		std::atomic_int pending_jobs = { 0 };
-		VoxelBufferInternal buffer;
+		VoxelBuffer buffer;
 		Vector3f min_pos;
 		Vector3f max_pos;
 		ChunkGrid chunk_grid;

@@ -36,9 +36,9 @@ public:
 	static int debug_get_running_count();
 
 	// 3x3x3 or 4x4x4 grid of voxel blocks.
-	FixedArray<std::shared_ptr<VoxelBufferInternal>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
+	FixedArray<std::shared_ptr<VoxelBuffer>, constants::MAX_BLOCK_COUNT_PER_REQUEST> blocks;
 	// TODO Need to provide format
-	// FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
+	// FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channel_depths;
 	Vector3i mesh_block_position; // In mesh blocks of the specified lod
 	VolumeID volume_id;
 	uint8_t lod_index = 0;
@@ -72,7 +72,7 @@ private:
 	bool _too_far = false;
 	bool _has_mesh_resource = false;
 	uint8_t _stage = 0;
-	VoxelBufferInternal _voxels;
+	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
 	std::vector<uint16_t> _mesh_material_indices; // Indexed by mesh surface

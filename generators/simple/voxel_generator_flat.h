@@ -16,8 +16,8 @@ public:
 	VoxelGeneratorFlat();
 	~VoxelGeneratorFlat();
 
-	void set_channel(VoxelBufferInternal::ChannelId p_channel);
-	VoxelBufferInternal::ChannelId get_channel() const;
+	void set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId get_channel() const;
 	int get_used_channels_mask() const override;
 
 	Result generate_block(VoxelGenerator::VoxelQueryData &input) override;
@@ -36,7 +36,7 @@ private:
 	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	struct Parameters {
-		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		int voxel_type = 1;
 		float height = 0;
 		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;

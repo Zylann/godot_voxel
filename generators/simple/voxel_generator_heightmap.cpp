@@ -8,8 +8,8 @@ VoxelGeneratorHeightmap::VoxelGeneratorHeightmap() {}
 
 VoxelGeneratorHeightmap::~VoxelGeneratorHeightmap() {}
 
-void VoxelGeneratorHeightmap::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorHeightmap::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -23,7 +23,7 @@ void VoxelGeneratorHeightmap::set_channel(VoxelBufferInternal::ChannelId p_chann
 	}
 }
 
-VoxelBufferInternal::ChannelId VoxelGeneratorHeightmap::get_channel() const {
+VoxelBuffer::ChannelId VoxelGeneratorHeightmap::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.channel;
 }
@@ -64,7 +64,7 @@ float VoxelGeneratorHeightmap::get_iso_scale() const {
 }
 
 void VoxelGeneratorHeightmap::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
 godot::VoxelBuffer::ChannelId VoxelGeneratorHeightmap::_b_get_channel() const {

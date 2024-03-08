@@ -32,7 +32,7 @@ void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
 
 	_buffer->get_buffer().write_box_2_template<ops::TextureBlendSphereOp, uint16_t, uint16_t>(box,
-			VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS,
+			VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
 			ops::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
 
 	_post_edit(box);
@@ -73,10 +73,10 @@ Variant VoxelToolBuffer::get_voxel_metadata(Vector3i pos) const {
 	return _buffer->get_voxel_metadata(pos);
 }
 
-void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_FAIL_COND(_buffer.is_null());
 
-	VoxelBufferInternal &dst = _buffer->get_buffer();
+	VoxelBuffer &dst = _buffer->get_buffer();
 
 	Box3i box(p_pos, src.get_size());
 	const Vector3i min_noclamp = box.pos;
@@ -87,8 +87,8 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint
 	}
 
 	unsigned int channel_count;
-	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channel_count);
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBuffer::mask_to_channels_list(channels_mask, channel_count);
 
 	const Vector3i box_max = box.pos + box.size;
 
@@ -123,8 +123,8 @@ void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_vox
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 
-	VoxelBufferInternal &dst = _buffer->get_buffer();
-	const VoxelBufferInternal &src = p_voxels->get_buffer();
+	VoxelBuffer &dst = _buffer->get_buffer();
+	const VoxelBuffer &src = p_voxels->get_buffer();
 
 	Box3i box(p_pos, p_voxels->get_buffer().get_size());
 	const Vector3i min_noclamp = box.pos;
@@ -135,8 +135,8 @@ void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_vox
 	}
 
 	unsigned int channel_count;
-	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channel_count);
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBuffer::mask_to_channels_list(channels_mask, channel_count);
 
 	const Vector3i box_max = box.pos + box.size;
 
@@ -184,7 +184,7 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 	ZN_ASSERT_RETURN(positions.size() == radii.size());
 
 	ERR_FAIL_COND(_buffer.is_null());
-	VoxelBufferInternal &dst = _buffer->get_buffer();
+	VoxelBuffer &dst = _buffer->get_buffer();
 
 	// TODO Increase margin a bit with smooth voxels?
 	const int margin = 1;
@@ -218,36 +218,36 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 
 		const Box3i local_box = segment_box.clipped(Box3i(Vector3i(), dst.get_size()));
 
-		if (get_channel() == VoxelBufferInternal::CHANNEL_SDF) {
+		if (get_channel() == VoxelBuffer::CHANNEL_SDF) {
 			switch (get_mode()) {
 				case MODE_ADD: {
 					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
 					ops::SdfOperation16bit<ops::SdfUnion, ops::SdfRoundCone> op;
 					op.shape = shape;
 					op.op.strength = get_sdf_strength();
-					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+					dst.write_box(local_box, VoxelBuffer::CHANNEL_SDF, op, Vector3i());
 				} break;
 
 				case MODE_REMOVE: {
 					ops::SdfOperation16bit<ops::SdfSubtract, ops::SdfRoundCone> op;
 					op.shape = shape;
 					op.op.strength = get_sdf_strength();
-					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+					dst.write_box(local_box, VoxelBuffer::CHANNEL_SDF, op, Vector3i());
 				} break;
 
 				case MODE_SET: {
 					ops::SdfOperation16bit<ops::SdfSet, ops::SdfRoundCone> op;
 					op.shape = shape;
 					op.op.strength = get_sdf_strength();
-					dst.write_box(local_box, VoxelBufferInternal::CHANNEL_SDF, op, Vector3i());
+					dst.write_box(local_box, VoxelBuffer::CHANNEL_SDF, op, Vector3i());
 				} break;
 
 				case MODE_TEXTURE_PAINT: {
 					ops::TextureBlendOp<ops::SdfRoundCone> op;
 					op.shape = shape;
 					op.texture_params = _texture_params;
-					dst.write_box_2_template<ops::TextureBlendOp<ops::SdfRoundCone>, uint16_t, uint16_t>(local_box,
-							VoxelBufferInternal::CHANNEL_INDICES, VoxelBufferInternal::CHANNEL_WEIGHTS, op, Vector3i());
+					dst.write_box_2_template<ops::TextureBlendOp<ops::SdfRoundCone>, uint16_t, uint16_t>(
+							local_box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i());
 				} break;
 
 				default:

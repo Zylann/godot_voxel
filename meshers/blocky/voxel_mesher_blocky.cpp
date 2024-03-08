@@ -452,7 +452,7 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+	const int channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -487,7 +487,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// - Slower
 	// => Could be implemented in a separate class?
 
-	const VoxelBufferInternal &voxels = input.voxels;
+	const VoxelBuffer &voxels = input.voxels;
 #ifdef TOOLS_ENABLED
 	if (input.lod_index != 0) {
 		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
@@ -501,7 +501,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 		// All voxels have the same type.
 		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
 		// TODO Handle edge case of uniform block with non-cubic voxels!
@@ -509,7 +509,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		// error), decompress into a backing array to still allow the use of the same algorithm.
 		return;
 
-	} else if (voxels.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
+	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
 		// No other form of compression is allowed
 		ERR_PRINT("VoxelMesherBlocky received unsupported voxel compression");
 		return;
@@ -533,7 +533,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const VoxelBufferInternal::Depth channel_depth = voxels.get_channel_depth(channel);
+	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	VoxelMesher::Output::CollisionSurface *collision_surface = nullptr;
 	if (input.collision_hint) {
@@ -553,12 +553,12 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		}
 
 		switch (channel_depth) {
-			case VoxelBufferInternal::DEPTH_8_BIT:
+			case VoxelBuffer::DEPTH_8_BIT:
 				generate_blocky_mesh(arrays_per_material, collision_surface, raw_channel, block_size,
 						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
 				break;
 
-			case VoxelBufferInternal::DEPTH_16_BIT:
+			case VoxelBuffer::DEPTH_16_BIT:
 				generate_blocky_mesh(arrays_per_material, collision_surface,
 						raw_channel.reinterpret_cast_to<uint16_t>(), block_size, library_baked_data,
 						params.bake_occlusion, baked_occlusion_darkness);
@@ -638,7 +638,7 @@ Ref<Resource> VoxelMesherBlocky::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherBlocky::get_used_channels_mask() const {
-	return (1 << VoxelBufferInternal::CHANNEL_TYPE);
+	return (1 << VoxelBuffer::CHANNEL_TYPE);
 }
 
 Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const {

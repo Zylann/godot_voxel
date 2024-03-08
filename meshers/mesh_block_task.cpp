@@ -54,8 +54,8 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
-void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
-		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
+void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBuffer &dst, int min_padding,
+		int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
 		uint8_t lod_index, Vector3i mesh_block_pos, std::vector<Box3i> *out_boxes_to_generate,
 		Vector3i *out_origin_in_voxels) {
 	ZN_DSTACK();
@@ -63,14 +63,14 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 
 	// Extract wanted channels in a list
 	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBuffer::mask_to_channels_list(channels_mask, channels_count);
 
 	// Determine size of the cube of blocks
 	const CubicAreaInfo area_info = get_cubic_area_info_from_size(blocks.size());
 	ERR_FAIL_COND(!area_info.is_valid());
 
-	std::shared_ptr<VoxelBufferInternal> &central_buffer = blocks[area_info.anchor_buffer_index];
+	std::shared_ptr<VoxelBuffer> &central_buffer = blocks[area_info.anchor_buffer_index];
 	ERR_FAIL_COND_MSG(central_buffer == nullptr && generator.is_null(), "Central buffer must be valid");
 	if (central_buffer != nullptr) {
 		ERR_FAIL_COND_MSG(
@@ -88,7 +88,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 	// }
 	// This is a hack
 	for (unsigned int i = 0; i < blocks.size(); ++i) {
-		const std::shared_ptr<VoxelBufferInternal> &buffer = blocks[i];
+		const std::shared_ptr<VoxelBuffer> &buffer = blocks[i];
 		if (buffer != nullptr) {
 			// Initialize channel depths from the first non-null block found
 			dst.copy_format(*buffer);
@@ -105,7 +105,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 	// These boxes are in buffer coordinates (not world voxel coordinates)
 	std::vector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
-	if (contains(blocks.to_const(), std::shared_ptr<VoxelBufferInternal>())) {
+	if (contains(blocks.to_const(), std::shared_ptr<VoxelBuffer>())) {
 		boxes_to_generate.push_back(mesh_data_box);
 	}
 
@@ -124,7 +124,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 			for (int x = -1; x < area_info.edge_size - 1; ++x) {
 				for (int y = -1; y < area_info.edge_size - 1; ++y) {
 					const Vector3i offset = data_block_size * Vector3i(x, y, z);
-					const std::shared_ptr<VoxelBufferInternal> &src = blocks[block_index];
+					const std::shared_ptr<VoxelBuffer> &src = blocks[block_index];
 					++block_index;
 
 					if (src == nullptr) {
@@ -185,7 +185,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 	} else {
 		// Complete data with generated voxels on the CPU
 		ZN_PROFILE_SCOPE_NAMED("Generate");
-		VoxelBufferInternal generated_voxels;
+		VoxelBuffer generated_voxels;
 
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
@@ -194,7 +194,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks,
 			// print_line(String("size={0}").format(varray(box.size.to_vec3())));
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
-			// VoxelBufferInternal::CHANNEL_SDF);
+			// VoxelBuffer::CHANNEL_SDF);
 			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
 
 			if (generator.is_valid()) {
@@ -404,7 +404,7 @@ void MeshBlockTask::gather_voxels_cpu() {
 					// 		continue;
 					// 	}
 					// }
-					std::shared_ptr<VoxelBufferInternal> &cache_buffer = make_shared_instance<VoxelBufferInternal>();
+					std::shared_ptr<VoxelBuffer> &cache_buffer = make_shared_instance<VoxelBuffer>();
 					cache_buffer->copy_format(voxels);
 					const Vector3i min_src_pos =
 							(bpos - min_bpos) * data_block_size + Vector3iUtil::create(min_padding);

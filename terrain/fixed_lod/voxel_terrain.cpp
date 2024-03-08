@@ -975,7 +975,7 @@ void VoxelTerrain::send_data_load_requests() {
 				// request and will complete on the next process.
 				// Ideally this shouldn't happen often. This is a corner case that occurs if the player moves fast
 				// back and forth or the task runner is overloaded.
-				std::shared_ptr<VoxelBufferInternal> voxel_data = make_shared_instance<VoxelBufferInternal>();
+				std::shared_ptr<VoxelBuffer> voxel_data = make_shared_instance<VoxelBuffer>();
 				// Duplicating to make sure the saving version doesn't get altered by possible upcoming modifications.
 				saving_block_it->second->duplicate_to(*voxel_data, true);
 				_quick_reloading_blocks.push_back(QuickReloadingBlock{ voxel_data, block_pos });
@@ -1619,7 +1619,7 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 // Sets voxel data of a block, discarding existing data if any.
 // If the given block coordinates are not inside any viewer's area, this function won't do anything and return
 // false. If a block is already loading or generating at this position, it will be cancelled.
-bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data) {
+bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBuffer> &voxel_data) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(voxel_data == nullptr, false);
 
@@ -1857,9 +1857,9 @@ Ref<VoxelTool> VoxelTerrain::get_voxel_tool() {
 	Ref<VoxelTool> vt = memnew(VoxelToolTerrain(this));
 	const int used_channels_mask = get_used_channels_mask();
 	// Auto-pick first used channel
-	for (int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
+	for (int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 		if ((used_channels_mask & (1 << channel)) != 0) {
-			vt->set_channel(VoxelBufferInternal::ChannelId(channel));
+			vt->set_channel(VoxelBuffer::ChannelId(channel));
 			break;
 		}
 	}
@@ -2066,7 +2066,7 @@ AABB VoxelTerrain::_b_get_bounds() const {
 
 bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<godot::VoxelBuffer> voxel_data) {
 	ERR_FAIL_COND_V(voxel_data.is_null(), false);
-	std::shared_ptr<VoxelBufferInternal> buffer = voxel_data->get_buffer_shared();
+	std::shared_ptr<VoxelBuffer> buffer = voxel_data->get_buffer_shared();
 
 #ifdef DEBUG_ENABLED
 	// It is not allowed to call this function at two different positions with the same voxel buffer

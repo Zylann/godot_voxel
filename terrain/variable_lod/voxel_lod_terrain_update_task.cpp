@@ -91,7 +91,7 @@ void request_block_load(VolumeID volume_id, unsigned int data_block_size,
 
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	{
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBuffer> voxels;
 		{
 			MutexLock mlock(lod.unloaded_saving_blocks_mutex);
 			auto saving_it = lod.unloaded_saving_blocks.find(block_pos);
@@ -181,8 +181,8 @@ void apply_block_data_requests_as_empty(Span<const VoxelLodTerrainUpdateData::Bl
 	}
 }
 
-void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBufferInternal> &voxels, Vector3i block_pos,
-		int lod, std::shared_ptr<StreamingDependency> &stream_dependency, BufferedTaskScheduler &task_scheduler,
+void request_voxel_block_save(VolumeID volume_id, std::shared_ptr<VoxelBuffer> &voxels, Vector3i block_pos, int lod,
+		std::shared_ptr<StreamingDependency> &stream_dependency, BufferedTaskScheduler &task_scheduler,
 		std::shared_ptr<AsyncDependencyTracker> tracker, bool with_flush) {
 	//
 	CRASH_COND(stream_dependency == nullptr);

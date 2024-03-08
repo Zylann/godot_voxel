@@ -19,7 +19,7 @@ VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelGenerator::Voxel
 		params = _parameters;
 	}
 
-	VoxelBufferInternal &out_buffer = input.voxel_buffer;
+	VoxelBuffer &out_buffer = input.voxel_buffer;
 	const Vector2 freq(
 			Math_PI / static_cast<float>(params.pattern_size.x), Math_PI / static_cast<float>(params.pattern_size.y));
 	const Vector2 offset = params.pattern_offset;

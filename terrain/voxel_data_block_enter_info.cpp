@@ -9,7 +9,7 @@ int VoxelDataBlockEnterInfo::_b_get_network_peer_id() const {
 
 Ref<godot::VoxelBuffer> VoxelDataBlockEnterInfo::_b_get_voxels() const {
 	ERR_FAIL_COND_V(!voxel_block.has_voxels(), Ref<godot::VoxelBuffer>());
-	std::shared_ptr<VoxelBufferInternal> vbi = voxel_block.get_voxels_shared();
+	std::shared_ptr<VoxelBuffer> vbi = voxel_block.get_voxels_shared();
 	Ref<godot::VoxelBuffer> vb = godot::VoxelBuffer::create_shared(vbi);
 	return vb;
 }

@@ -6,8 +6,8 @@ VoxelGeneratorFlat::VoxelGeneratorFlat() {}
 
 VoxelGeneratorFlat::~VoxelGeneratorFlat() {}
 
-void VoxelGeneratorFlat::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelGeneratorFlat::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	bool changed = false;
 	{
 		RWLockWrite wlock(_parameters_lock);
@@ -21,7 +21,7 @@ void VoxelGeneratorFlat::set_channel(VoxelBufferInternal::ChannelId p_channel) {
 	}
 }
 
-VoxelBufferInternal::ChannelId VoxelGeneratorFlat::get_channel() const {
+VoxelBuffer::ChannelId VoxelGeneratorFlat::get_channel() const {
 	RWLockRead rlock(_parameters_lock);
 	return _parameters.channel;
 }
@@ -60,11 +60,11 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 		params = _parameters;
 	}
 
-	VoxelBufferInternal &out_buffer = input.voxel_buffer;
+	VoxelBuffer &out_buffer = input.voxel_buffer;
 	const Vector3i origin = input.origin_in_voxels;
 	const int channel = params.channel;
 	const Vector3i bs = out_buffer.get_size();
-	const bool use_sdf = channel == VoxelBufferInternal::CHANNEL_SDF;
+	const bool use_sdf = channel == VoxelBuffer::CHANNEL_SDF;
 	const float margin = 1 << input.lod;
 	const int lod = input.lod;
 
@@ -124,7 +124,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 }
 
 void VoxelGeneratorFlat::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
 godot::VoxelBuffer::ChannelId VoxelGeneratorFlat::_b_get_channel() const {

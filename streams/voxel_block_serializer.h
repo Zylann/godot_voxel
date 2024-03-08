@@ -14,7 +14,7 @@ using namespace godot;
 
 namespace zylann::voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 
 namespace BlockSerializer {
 
@@ -30,12 +30,12 @@ struct SerializeResult {
 	inline SerializeResult(const std::vector<uint8_t> &p_data, bool p_success) : data(p_data), success(p_success) {}
 };
 
-SerializeResult serialize(const VoxelBufferInternal &voxel_buffer);
-bool deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
+SerializeResult serialize(const VoxelBuffer &voxel_buffer);
+bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer);
 
-SerializeResult serialize_and_compress(const VoxelBufferInternal &voxel_buffer);
-bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBufferInternal &out_voxel_buffer);
-bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBufferInternal &out_voxel_buffer);
+SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer);
+bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer);
+bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelBuffer &out_voxel_buffer);
 
 // Temporary thread-local buffers for internal use
 std::vector<uint8_t> &get_tls_data();

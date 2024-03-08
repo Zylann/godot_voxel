@@ -96,7 +96,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			VoxelSingleValue defval;
 			defval.f = 1.f;
-			const VoxelSingleValue v = data.get_voxel(rs.hit_position, VoxelBufferInternal::CHANNEL_SDF, defval);
+			const VoxelSingleValue v = data.get_voxel(rs.hit_position, VoxelBuffer::CHANNEL_SDF, defval);
 			return v.f < 0;
 		}
 	};
@@ -138,7 +138,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 				inline float operator()(const Vector3i &pos) const {
 					VoxelSingleValue defval;
 					defval.f = 1.f;
-					const VoxelSingleValue value = data.get_voxel(pos, VoxelBufferInternal::CHANNEL_SDF, defval);
+					const VoxelSingleValue value = data.get_voxel(pos, VoxelBuffer::CHANNEL_SDF, defval);
 					return value.f;
 				}
 			};
@@ -283,7 +283,7 @@ void VoxelToolLodTerrain::do_sphere_async(Vector3 center, float radius) {
 	_terrain->push_async_edit(task, op.box, task->get_tracker());
 }
 
-void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
+void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_FAIL_COND(_terrain == nullptr);
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
@@ -291,7 +291,7 @@ void VoxelToolLodTerrain::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t c
 	_terrain->get_storage().copy(pos, dst, channels_mask);
 }
 
-void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+void VoxelToolLodTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	if (channels_mask == 0) {
 		channels_mask = (1 << _channel);
@@ -473,10 +473,10 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// Copy source data
 
 	// TODO Do not assume channel, at the moment it's hardcoded for smooth terrain
-	static const int channels_mask = (1 << VoxelBufferInternal::CHANNEL_SDF);
-	static const VoxelBufferInternal::ChannelId main_channel = VoxelBufferInternal::CHANNEL_SDF;
+	static const int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
+	static const VoxelBuffer::ChannelId main_channel = VoxelBuffer::CHANNEL_SDF;
 
-	VoxelBufferInternal source_copy_buffer;
+	VoxelBuffer source_copy_buffer;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer.create(world_box.size);
@@ -509,7 +509,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		bool valid = false;
 	};
 
-	if (main_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (main_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Propagate labels to improve SDF quality, otherwise gradients of separated chunks would cut off abruptly.
 		// Limitation: if two islands are too close to each other, one will win over the other.
 		// An alternative could be to do this on individual chunks?
@@ -593,7 +593,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	// Create voxel buffer for each group
 
 	struct InstanceInfo {
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels;
 		Vector3i world_pos;
 		unsigned int label;
 	};
@@ -617,9 +617,9 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Vector3i size =
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
-			instances_info.push_back(InstanceInfo{ VoxelBufferInternal(), world_pos, label });
+			instances_info.push_back(InstanceInfo{ VoxelBuffer(), world_pos, label });
 
-			VoxelBufferInternal &buffer = instances_info.back().voxels;
+			VoxelBuffer &buffer = instances_info.back().voxels;
 			buffer.create(size.x, size.y, size.z);
 
 			// Read voxels from the source volume
@@ -865,10 +865,10 @@ void VoxelToolLodTerrain::stamp_sdf(
 	ERR_FAIL_COND(!mesh_sdf->is_baked());
 	Ref<godot::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
 	ERR_FAIL_COND(buffer_ref.is_null());
-	const VoxelBufferInternal &buffer = buffer_ref->get_buffer();
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	ERR_FAIL_COND(buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM);
-	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBufferInternal::DEPTH_32_BIT);
+	const VoxelBuffer &buffer = buffer_ref->get_buffer();
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+	ERR_FAIL_COND(buffer.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM);
+	ERR_FAIL_COND(buffer.get_channel_depth(channel) != VoxelBuffer::DEPTH_32_BIT);
 
 	const Transform3D &box_to_world = transform;
 	const AABB local_aabb = mesh_sdf->get_aabb();
@@ -908,7 +908,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	VoxelDataGrid grid;
 	data.get_blocks_grid(grid, voxel_box, 0);
-	grid.write_box(voxel_box, VoxelBufferInternal::CHANNEL_SDF, op);
+	grid.write_box(voxel_box, VoxelBuffer::CHANNEL_SDF, op);
 
 	_post_edit(voxel_box);
 }
@@ -939,9 +939,9 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	data.pre_generate_box(box);
 
-	const unsigned int channel_index = VoxelBufferInternal::CHANNEL_SDF;
+	const unsigned int channel_index = VoxelBuffer::CHANNEL_SDF;
 
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(box.size);
 	data.copy(box.pos, buffer, 1 << channel_index);
 

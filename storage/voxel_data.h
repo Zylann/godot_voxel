@@ -105,17 +105,16 @@ public:
 
 	// Copies voxel data in a box from LOD0.
 	// `channels_mask` bits tell which channel is read.
-	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const;
+	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const;
 
 	// Pastes voxel data in a box at LOD0.
 	// `channels_mask` bits tell which channel is pasted.
 	// If `use_mask` is used, will only write voxels of the source buffer that are not equal to `mask_value`.
 	// If `create_new_blocks` is true, blocks will be created if not found in the area.
-	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
-			bool create_new_blocks);
+	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
 
-	void paste_masked(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask,
-			uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks);
+	void paste_masked(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, uint8_t mask_channel,
+			uint64_t mask_value, bool create_new_blocks);
 
 	// Tests if the given area is loaded at LOD0.
 	// This is necessary for editing destructively.
@@ -225,7 +224,7 @@ public:
 	void update_lods(Span<const Vector3i> modified_lod0_blocks, std::vector<BlockLocation> *out_updated_blocks);
 
 	struct BlockToSave {
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBuffer> voxels;
 		Vector3i position;
 		uint32_t lod_index;
 	};
@@ -263,7 +262,7 @@ public:
 	// Blocks found will be placed at an index computed as if the array was a flat grid (ZXY).
 	// Entries without voxel data will be left to null.
 	void get_blocks_with_voxel_data(
-			Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBufferInternal>> out_blocks) const;
+			Box3i p_blocks_box, unsigned int lod_index, Span<std::shared_ptr<VoxelBuffer>> out_blocks) const;
 
 	// Gets blocks with voxels at the given LOD and indexes them in a grid. This will query every location
 	// intersecting the box at the specified LOD, so if the area is large, you may want to do a broad check first.
@@ -282,7 +281,7 @@ public:
 	// Access voxels of a specific block.
 	// WARNING: you must hold the spatial lock before calling this, and until you're done working on such blocks.
 	// Can return null.
-	std::shared_ptr<VoxelBufferInternal> try_get_block_voxels(Vector3i bpos);
+	std::shared_ptr<VoxelBuffer> try_get_block_voxels(Vector3i bpos);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Reference-counted API (LOD0 only)
@@ -340,7 +339,7 @@ private:
 	static void pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int data_block_size, bool streaming,
 			unsigned int lod_count, Ref<VoxelGenerator> generator, VoxelModifierStack &modifiers);
 
-	static inline std::shared_ptr<VoxelBufferInternal> try_get_voxel_buffer_with_lock(
+	static inline std::shared_ptr<VoxelBuffer> try_get_voxel_buffer_with_lock(
 			const Lod &data_lod, Vector3i block_pos, bool &out_generate) {
 		RWLockRead rlock(data_lod.map_lock);
 		const VoxelDataBlock *block = data_lod.map.get_block(block_pos);

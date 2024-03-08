@@ -717,7 +717,7 @@ VoxelMesherCubes::Cache &VoxelMesherCubes::get_tls_cache() {
 
 void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();
-	const int channel = VoxelBufferInternal::CHANNEL_COLOR;
+	const int channel = VoxelBuffer::CHANNEL_COLOR;
 	Cache &cache = get_tls_cache();
 
 	for (unsigned int i = 0; i < cache.arrays_per_material.size(); ++i) {
@@ -725,7 +725,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		a.clear();
 	}
 
-	const VoxelBufferInternal &voxels = input.voxels;
+	const VoxelBuffer &voxels = input.voxels;
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -734,12 +734,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	// That means we can use raw pointers to voxel data inside instead of using the higher-level getters,
 	// and then save a lot of time.
 
-	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 		// All voxels have the same type.
 		// If it's all air, nothing to do. If it's all cubes, nothing to do either.
 		return;
 
-	} else if (voxels.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
+	} else if (voxels.get_channel_compression(channel) != VoxelBuffer::COMPRESSION_NONE) {
 		// No other form of compression is allowed
 		ERR_PRINT("VoxelMesherCubes received unsupported voxel compression");
 		return;
@@ -753,7 +753,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	}
 
 	const Vector3i block_size = voxels.get_size();
-	const VoxelBufferInternal::Depth channel_depth = voxels.get_channel_depth(channel);
+	const VoxelBuffer::Depth channel_depth = voxels.get_channel_depth(channel);
 
 	Parameters params;
 	{
@@ -767,7 +767,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 	switch (params.color_mode) {
 		case COLOR_RAW:
 			switch (channel_depth) {
-				case VoxelBufferInternal::DEPTH_8_BIT:
+				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
 								cache.mask_memory_pool, Color8::from_u8);
@@ -777,7 +777,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBufferInternal::DEPTH_16_BIT:
+				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -788,7 +788,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBufferInternal::DEPTH_32_BIT:
+				case VoxelBuffer::DEPTH_32_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint32_t>(), block_size, cache.mask_memory_pool,
@@ -820,7 +820,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetColorFromPalette get_color_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBufferInternal::DEPTH_8_BIT:
+				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						if (params.store_colors_in_texture) {
 							build_voxel_mesh_as_greedy_cubes_atlased(cache.arrays_per_material, cache.greedy_atlas_data,
@@ -837,7 +837,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBufferInternal::DEPTH_16_BIT:
+				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -867,7 +867,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			const GetIndexFromPalette get_index_from_palette{ **params.palette };
 
 			switch (channel_depth) {
-				case VoxelBufferInternal::DEPTH_8_BIT:
+				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
 								cache.mask_memory_pool, get_index_from_palette);
@@ -877,7 +877,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					}
 					break;
 
-				case VoxelBufferInternal::DEPTH_16_BIT:
+				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
 								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
@@ -1027,7 +1027,7 @@ Ref<Resource> VoxelMesherCubes::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherCubes::get_used_channels_mask() const {
-	return (1 << VoxelBufferInternal::CHANNEL_COLOR);
+	return (1 << VoxelBuffer::CHANNEL_COLOR);
 }
 
 void VoxelMesherCubes::set_material_by_index(Materials id, Ref<Material> material) {
@@ -1064,8 +1064,8 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 			!image->is_compressed(), Ref<Mesh>(), format("Image format not supported: {}", image->get_format()));
 
 	// Convert image
-	VoxelBufferInternal voxels;
-	voxels.set_channel_depth(VoxelBufferInternal::CHANNEL_COLOR, VoxelBufferInternal::DEPTH_32_BIT);
+	VoxelBuffer voxels;
+	voxels.set_channel_depth(VoxelBuffer::CHANNEL_COLOR, VoxelBuffer::DEPTH_32_BIT);
 	const int im_size_x = image->get_width();
 	const int im_size_y = image->get_height();
 	// Currently all meshers require pre-padded voxel data...
@@ -1079,7 +1079,7 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 					Vector3i(x + VoxelMesherCubes::PADDING,
 							// Flip Y axis, since Y goes up in world space, but Y goes down in Image space
 							(im_size_y - 1 - y) + VoxelMesherCubes::PADDING, VoxelMesherCubes::PADDING),
-					VoxelBufferInternal::CHANNEL_COLOR);
+					VoxelBuffer::CHANNEL_COLOR);
 		}
 	}
 

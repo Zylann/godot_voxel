@@ -109,7 +109,7 @@ public:
 	// Creates or overrides whatever block data there is at the given position.
 	// The use case is multiplayer, client-side.
 	// If no local viewer is actually in range, the data will not be applied and the function returns `false`.
-	bool try_set_block_data(Vector3i position, std::shared_ptr<VoxelBufferInternal> &voxel_data);
+	bool try_set_block_data(Vector3i position, std::shared_ptr<VoxelBuffer> &voxel_data);
 
 	bool has_data_block(Vector3i position) const;
 
@@ -140,7 +140,7 @@ public:
 	const Stats &get_stats() const;
 
 	// struct BlockToSave {
-	// 	std::shared_ptr<VoxelBufferInternal> voxels;
+	// 	std::shared_ptr<VoxelBuffer> voxels;
 	// 	Vector3i position;
 	// };
 
@@ -320,10 +320,10 @@ private:
 	// Data blocks that have been unloaded and needed saving. They are temporarily stored here until saving completes,
 	// and is checked first before loading new blocks. This is in case players leave an area and come back to it faster
 	// than saving, because otherwise loading from stream would return an outdated version.
-	std::unordered_map<Vector3i, std::shared_ptr<VoxelBufferInternal>> _unloaded_saving_blocks;
+	std::unordered_map<Vector3i, std::shared_ptr<VoxelBuffer>> _unloaded_saving_blocks;
 	// List of data blocks that will be used to simulate a loading response on the next process call.
 	struct QuickReloadingBlock {
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBuffer> voxels;
 		Vector3i position;
 	};
 	std::vector<QuickReloadingBlock> _quick_reloading_blocks;

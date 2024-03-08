@@ -18,7 +18,7 @@ class VoxelTool;
 
 namespace godot {
 
-// Scripts-facing wrapper around VoxelBufferInternal.
+// Scripts-facing wrapper around VoxelBuffer.
 // It is separate because being a Godot object requires to carry more baggage, and because this data type can
 // be instanced many times while being rarely accessed directly from scripts, it is a bit better to take this part out
 class VoxelBuffer : public RefCounted {
@@ -26,33 +26,33 @@ class VoxelBuffer : public RefCounted {
 
 public:
 	enum ChannelId {
-		CHANNEL_TYPE = VoxelBufferInternal::CHANNEL_TYPE,
-		CHANNEL_SDF = VoxelBufferInternal::CHANNEL_SDF,
-		CHANNEL_COLOR = VoxelBufferInternal::CHANNEL_COLOR,
-		CHANNEL_INDICES = VoxelBufferInternal::CHANNEL_INDICES,
-		CHANNEL_WEIGHTS = VoxelBufferInternal::CHANNEL_WEIGHTS,
-		CHANNEL_DATA5 = VoxelBufferInternal::CHANNEL_DATA5,
-		CHANNEL_DATA6 = VoxelBufferInternal::CHANNEL_DATA6,
-		CHANNEL_DATA7 = VoxelBufferInternal::CHANNEL_DATA7,
-		MAX_CHANNELS = VoxelBufferInternal::MAX_CHANNELS,
+		CHANNEL_TYPE = zylann::voxel::VoxelBuffer::CHANNEL_TYPE,
+		CHANNEL_SDF = zylann::voxel::VoxelBuffer::CHANNEL_SDF,
+		CHANNEL_COLOR = zylann::voxel::VoxelBuffer::CHANNEL_COLOR,
+		CHANNEL_INDICES = zylann::voxel::VoxelBuffer::CHANNEL_INDICES,
+		CHANNEL_WEIGHTS = zylann::voxel::VoxelBuffer::CHANNEL_WEIGHTS,
+		CHANNEL_DATA5 = zylann::voxel::VoxelBuffer::CHANNEL_DATA5,
+		CHANNEL_DATA6 = zylann::voxel::VoxelBuffer::CHANNEL_DATA6,
+		CHANNEL_DATA7 = zylann::voxel::VoxelBuffer::CHANNEL_DATA7,
+		MAX_CHANNELS = zylann::voxel::VoxelBuffer::MAX_CHANNELS,
 	};
 
 	// TODO use C++17 inline to initialize right here...
 	static const char *CHANNEL_ID_HINT_STRING;
 
 	enum Compression {
-		COMPRESSION_NONE = VoxelBufferInternal::COMPRESSION_NONE,
-		COMPRESSION_UNIFORM = VoxelBufferInternal::COMPRESSION_UNIFORM,
+		COMPRESSION_NONE = zylann::voxel::VoxelBuffer::COMPRESSION_NONE,
+		COMPRESSION_UNIFORM = zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM,
 		// COMPRESSION_RLE,
-		COMPRESSION_COUNT = VoxelBufferInternal::COMPRESSION_COUNT
+		COMPRESSION_COUNT = zylann::voxel::VoxelBuffer::COMPRESSION_COUNT
 	};
 
 	enum Depth {
-		DEPTH_8_BIT = VoxelBufferInternal::DEPTH_8_BIT,
-		DEPTH_16_BIT = VoxelBufferInternal::DEPTH_16_BIT,
-		DEPTH_32_BIT = VoxelBufferInternal::DEPTH_32_BIT,
-		DEPTH_64_BIT = VoxelBufferInternal::DEPTH_64_BIT,
-		DEPTH_COUNT = VoxelBufferInternal::DEPTH_COUNT
+		DEPTH_8_BIT = zylann::voxel::VoxelBuffer::DEPTH_8_BIT,
+		DEPTH_16_BIT = zylann::voxel::VoxelBuffer::DEPTH_16_BIT,
+		DEPTH_32_BIT = zylann::voxel::VoxelBuffer::DEPTH_32_BIT,
+		DEPTH_64_BIT = zylann::voxel::VoxelBuffer::DEPTH_64_BIT,
+		DEPTH_COUNT = zylann::voxel::VoxelBuffer::DEPTH_COUNT
 	};
 
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
@@ -61,35 +61,35 @@ public:
 	// Constructs a new buffer
 	VoxelBuffer();
 	// Reference an existing buffer
-	VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other);
+	VoxelBuffer(std::shared_ptr<zylann::voxel::VoxelBuffer> &other);
 
 	~VoxelBuffer();
 
 	// Workaround because the constructor with arguments cannot always be used due to Godot limitations
-	static Ref<VoxelBuffer> create_shared(std::shared_ptr<VoxelBufferInternal> &other);
+	static Ref<VoxelBuffer> create_shared(std::shared_ptr<zylann::voxel::VoxelBuffer> &other);
 
-	inline const VoxelBufferInternal &get_buffer() const {
+	inline const zylann::voxel::VoxelBuffer &get_buffer() const {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
 #endif
 		return *_buffer;
 	}
 
-	inline VoxelBufferInternal &get_buffer() {
+	inline zylann::voxel::VoxelBuffer &get_buffer() {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
 #endif
 		return *_buffer;
 	}
 
-	inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() {
+	inline std::shared_ptr<zylann::voxel::VoxelBuffer> get_buffer_shared() {
 #ifdef DEBUG_ENABLED
 		CRASH_COND(_buffer == nullptr);
 #endif
 		return _buffer;
 	}
 
-	// inline std::shared_ptr<VoxelBufferInternal> get_buffer_shared() { return _buffer; }
+	// inline std::shared_ptr<zylann::voxel::VoxelBuffer> get_buffer_shared() { return _buffer; }
 
 	Vector3i get_size() const {
 		return _buffer->get_size();
@@ -163,11 +163,11 @@ public:
 	// Debugging
 
 	Ref<Image> debug_print_sdf_to_image_top_down();
-	static Ref<Image> debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb);
+	static Ref<Image> debug_print_sdf_to_image_top_down(const zylann::voxel::VoxelBuffer &vb);
 	TypedArray<Image> debug_print_sdf_y_slices(float scale) const;
 	Ref<Image> debug_print_sdf_y_slice(float scale, int y) const;
-	static Ref<Image> debug_print_sdf_y_slice(const VoxelBufferInternal &buffer, float scale, int y);
-	static Ref<Image> debug_print_sdf_z_slice(const VoxelBufferInternal &buffer, float scale, int z);
+	static Ref<Image> debug_print_sdf_y_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int y);
+	static Ref<Image> debug_print_sdf_z_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int z);
 
 private:
 	void _b_deprecated_optimize();
@@ -179,7 +179,7 @@ private:
 
 	static void _bind_methods();
 
-	std::shared_ptr<VoxelBufferInternal> _buffer;
+	std::shared_ptr<zylann::voxel::VoxelBuffer> _buffer;
 };
 
 } // namespace godot

@@ -233,38 +233,35 @@ inline Span<T> get_temporary_conversion_memory_tls(unsigned int count) {
 	return to_span(mem).reinterpret_cast_to<T>();
 }
 
-void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
-	const float sd_scale = VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	const VoxelBuffer::Depth depth = dst.get_channel_depth(VoxelBuffer::CHANNEL_SDF);
+	const float sd_scale = VoxelBuffer::get_sdf_quantization_scale(depth);
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<int8_t> sd_data = get_temporary_conversion_memory_tls<int8_t>(src_data_f.size());
 			for (unsigned int i = 0; i < src_data_f.size(); ++i) {
 				sd_data[i] = snorm_to_s8(sd_scale * src_data_f[i]);
 			}
-			dst.copy_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+			dst.copy_from(sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<int16_t> sd_data = get_temporary_conversion_memory_tls<int16_t>(src_data_f.size());
 			for (unsigned int i = 0; i < src_data_f.size(); ++i) {
 				sd_data[i] = snorm_to_s16(sd_scale * src_data_f[i]);
 			}
 
-			dst.copy_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+			dst.copy_from(sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
-			dst.copy_from(
-					src_data_f.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_SDF);
+		case VoxelBuffer::DEPTH_32_BIT: {
+			dst.copy_from(src_data_f.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT: {
+		case VoxelBuffer::DEPTH_64_BIT: {
 			ZN_PRINT_ERROR("64-bit SDF is not supported");
 		} break;
 
@@ -274,10 +271,10 @@ void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> src_data
 	}
 }
 
-void convert_gpu_output_single_texture(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
-	dst.fill_area(encoded_weights, box.pos, box.pos + box.size, VoxelBufferInternal::CHANNEL_WEIGHTS);
+	dst.fill_area(encoded_weights, box.pos, box.pos + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
 
 	// Little hack: the destination type is smaller than float, so we can convert in place.
 	Span<uint16_t> src_data_u16 = get_temporary_conversion_memory_tls<uint16_t>(src_data_f.size());
@@ -291,8 +288,7 @@ void convert_gpu_output_single_texture(VoxelBufferInternal &dst, Span<const floa
 		src_data_u16[value_index] = encoded_indices;
 	}
 
-	dst.copy_from(
-			src_data_u16.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBufferInternal::CHANNEL_INDICES);
+	dst.copy_from(src_data_u16.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_INDICES);
 }
 
 template <typename T>
@@ -307,30 +303,30 @@ Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &me
 	return dst;
 }
 
-void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box,
-		VoxelBufferInternal::ChannelId channel_index) {
+void convert_gpu_output_uint(
+		VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box, VoxelBuffer::ChannelId channel_index) {
 	ZN_PROFILE_SCOPE();
 
-	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
+	const VoxelBuffer::Depth depth = dst.get_channel_depth(VoxelBuffer::CHANNEL_SDF);
 	std::vector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			dst.copy_from(
 					cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos, channel_index);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			dst.copy_from(cast_floats<uint16_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
 					channel_index);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
+		case VoxelBuffer::DEPTH_32_BIT: {
 			dst.copy_from(cast_floats<uint32_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
 					channel_index);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT: {
+		case VoxelBuffer::DEPTH_64_BIT: {
 			dst.copy_from(cast_floats<uint64_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
 					channel_index);
 		} break;
@@ -343,7 +339,7 @@ void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_dat
 
 } // namespace
 
-void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &dst) {
+void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBuffer &dst) {
 	// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?
 	// TODO Should we convert in the compute shader to reduce bandwidth and CPU work?
 	Span<const float> src_data_f = _bytes.reinterpret_cast_to<const float>();
@@ -358,7 +354,7 @@ void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &ds
 			break;
 
 		case VoxelGenerator::ShaderOutput::TYPE_TYPE:
-			convert_gpu_output_uint(dst, src_data_f, _box, VoxelBufferInternal::CHANNEL_TYPE);
+			convert_gpu_output_uint(dst, src_data_f, _box, VoxelBuffer::CHANNEL_TYPE);
 			break;
 
 		default:
@@ -368,7 +364,7 @@ void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &ds
 }
 
 void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(
-		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst) {
+		Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBuffer &dst) {
 	ZN_PROFILE_SCOPE();
 
 	for (GenerateBlockGPUTaskResult &box_data : boxes_data) {

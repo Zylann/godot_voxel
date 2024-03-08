@@ -148,7 +148,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 
 			// TODO Take out voxel data from this block to save memory, it must not be touched by generation anymore
 			// (if we do, we need to change the column's spatial lock to WRITE)
-			voxels = make_shared_instance<VoxelBufferInternal>();
+			voxels = make_shared_instance<VoxelBuffer>();
 			voxels->create(block.voxels.get_size());
 			voxels->copy_from(block.voxels);
 
@@ -160,7 +160,7 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 	// Single-pass generation
 
 	if (voxels == nullptr) {
-		voxels = make_shared_instance<VoxelBufferInternal>();
+		voxels = make_shared_instance<VoxelBuffer>();
 		voxels->create(_block_size, _block_size, _block_size);
 	}
 
@@ -188,7 +188,7 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 					"Requesting save of generator output for block {} lod {}", _block_position, int(_lod_index)));
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
-			std::shared_ptr<VoxelBufferInternal> voxels_copy = make_shared_instance<VoxelBufferInternal>();
+			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>();
 			voxels->duplicate_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.

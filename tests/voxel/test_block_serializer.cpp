@@ -10,7 +10,7 @@ namespace zylann::voxel::tests {
 void test_block_serializer() {
 	// Create an example buffer
 	const Vector3i block_size(8, 9, 10);
-	VoxelBufferInternal voxel_buffer;
+	VoxelBuffer voxel_buffer;
 	voxel_buffer.create(block_size);
 	voxel_buffer.fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
 	voxel_buffer.fill_area(43, Vector3i(2, 3, 4), Vector3i(6, 6, 6), 0);
@@ -26,7 +26,7 @@ void test_block_serializer() {
 		ZN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
 
 		// Deserialize
-		VoxelBufferInternal deserialized_voxel_buffer;
+		VoxelBuffer deserialized_voxel_buffer;
 		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span_const(data), deserialized_voxel_buffer));
 
 		// Must be equal
@@ -41,7 +41,7 @@ void test_block_serializer() {
 		ZN_TEST_ASSERT(data.size() > 0);
 
 		// Deserialize
-		VoxelBufferInternal deserialized_voxel_buffer;
+		VoxelBuffer deserialized_voxel_buffer;
 		ZN_TEST_ASSERT(BlockSerializer::decompress_and_deserialize(to_span_const(data), deserialized_voxel_buffer));
 
 		// Must be equal

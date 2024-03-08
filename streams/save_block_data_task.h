@@ -15,9 +15,9 @@ namespace voxel {
 class SaveBlockDataTask : public IThreadedTask {
 public:
 	// For saving voxels only
-	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-			std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
-			std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task);
+	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod, std::shared_ptr<VoxelBuffer> p_voxels,
+			std::shared_ptr<StreamingDependency> p_stream_dependency, std::shared_ptr<AsyncDependencyTracker> p_tracker,
+			bool flush_on_last_tracked_task);
 
 	// For saving instances only
 	SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
@@ -38,7 +38,7 @@ public:
 	static int debug_get_running_count();
 
 private:
-	std::shared_ptr<VoxelBufferInternal> _voxels;
+	std::shared_ptr<VoxelBuffer> _voxels;
 	UniquePtr<InstanceBlockData> _instances;
 	Vector3i _position; // In data blocks of the specified lod
 	VolumeID _volume_id;

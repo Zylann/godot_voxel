@@ -9,7 +9,7 @@
 namespace zylann::voxel {
 
 VoxelTool::VoxelTool() {
-	_sdf_scale = VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
+	_sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
 }
 
 void VoxelTool::set_value(uint64_t val) {
@@ -28,12 +28,12 @@ uint64_t VoxelTool::get_eraser_value() const {
 	return _eraser_value;
 }
 
-void VoxelTool::set_channel(VoxelBufferInternal::ChannelId p_channel) {
-	ERR_FAIL_INDEX(p_channel, VoxelBufferInternal::MAX_CHANNELS);
+void VoxelTool::set_channel(VoxelBuffer::ChannelId p_channel) {
+	ERR_FAIL_INDEX(p_channel, VoxelBuffer::MAX_CHANNELS);
 	_channel = p_channel;
 }
 
-VoxelBufferInternal::ChannelId VoxelTool::get_channel() const {
+VoxelBuffer::ChannelId VoxelTool::get_channel() const {
 	return _channel;
 }
 
@@ -126,7 +126,7 @@ void VoxelTool::do_point(Vector3i pos) {
 	if (!is_area_editable(box)) {
 		return;
 	}
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
 	} else {
 		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
@@ -196,7 +196,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 		return;
 	}
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
 			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
@@ -222,10 +222,9 @@ void VoxelTool::sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos) {
 	sdf_stamp_erase(stamp->get_buffer(), pos);
 }
 
-void VoxelTool::sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos) {
+void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND_MSG(
-			get_channel() != VoxelBufferInternal::CHANNEL_SDF, "This function only works when channel is set to SDF");
+	ERR_FAIL_COND_MSG(get_channel() != VoxelBuffer::CHANNEL_SDF, "This function only works when channel is set to SDF");
 
 	const Box3i box(pos, stamp.get_size());
 	if (!is_area_editable(box)) {
@@ -236,7 +235,7 @@ void VoxelTool::sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos) 
 	box.for_each_cell_zxy([this, &stamp, pos](Vector3i pos_in_volume) {
 		const Vector3i pos_in_stamp = pos_in_volume - pos;
 		const float dst_sdf =
-				stamp.get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBufferInternal::CHANNEL_SDF);
+				stamp.get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
 			_set_voxel_f(pos_in_volume, 1.f);
 		}
@@ -255,7 +254,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 		return;
 	}
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// TODO Better quality
 		box.for_each_cell([this](Vector3i pos) { _set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode)); });
 
@@ -271,7 +270,7 @@ void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) 
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const {
+void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
 }
 
@@ -285,7 +284,7 @@ void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_
 	copy(pos, dst->get_buffer(), channel_mask);
 }
 
-void VoxelTool::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t channels_mask) {
+void VoxelTool::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_PRINT("Not implemented");
 }
 
@@ -319,19 +318,19 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 		return;
 	}
 
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(padded_voxel_box.size);
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
-		copy(padded_voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		copy(padded_voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		VoxelBufferInternal smooth_buffer;
+		VoxelBuffer smooth_buffer;
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -354,20 +353,20 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 		return;
 	}
 
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(voxel_box.size);
 
-	if (_channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
 
-		copy(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		copy(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
 		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, buffer, (1 << VoxelBufferInternal::CHANNEL_SDF));
+		paste(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -487,7 +486,7 @@ Color _b_normalize_color(Color c) {
 } // namespace
 
 void VoxelTool::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
-	set_channel(VoxelBufferInternal::ChannelId(p_channel));
+	set_channel(VoxelBuffer::ChannelId(p_channel));
 }
 
 godot::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {

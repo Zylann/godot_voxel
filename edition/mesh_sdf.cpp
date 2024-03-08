@@ -1074,9 +1074,9 @@ void GenMeshSDFSubBoxTask::run(ThreadedTaskContext &ctx) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(shared_data != nullptr);
 
-	VoxelBufferInternal &buffer = shared_data->buffer;
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	// ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_NONE);
+	VoxelBuffer &buffer = shared_data->buffer;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+	// ZN_ASSERT(!buffer.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_NONE);
 	Span<float> sdf_grid;
 	ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 

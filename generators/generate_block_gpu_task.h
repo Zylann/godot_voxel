@@ -18,10 +18,10 @@ public:
 			PackedByteArray p_shared_bytes) :
 			_box(p_box), _type(p_type), _bytes(p_bytes), _shared_bytes(p_shared_bytes) {}
 
-	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBufferInternal &dst);
+	static void convert_to_voxel_buffer(Span<GenerateBlockGPUTaskResult> boxes_data, VoxelBuffer &dst);
 
 private:
-	void convert_to_voxel_buffer(VoxelBufferInternal &dst);
+	void convert_to_voxel_buffer(VoxelBuffer &dst);
 
 	Box3i _box;
 	VoxelGenerator::ShaderOutput::Type _type;

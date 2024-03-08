@@ -3,9 +3,8 @@
 
 namespace zylann::voxel {
 
-void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		uint32_t channels_mask, const VoxelBufferInternal *(*get_block_func)(void *, Vector3i),
-		void *get_block_func_ctx) {
+void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
+		uint32_t channels_mask, const VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx) {
 	//
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
@@ -18,14 +17,14 @@ void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos
 	const Vector3i block_size_v = Vector3iUtil::create(1 << block_size_po2);
 
 	unsigned int channels_count;
-	FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels =
-			VoxelBufferInternal::mask_to_channels_list(channels_mask, channels_count);
+	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
+			VoxelBuffer::mask_to_channels_list(channels_mask, channels_count);
 
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				const VoxelBufferInternal *src_buffer = (*get_block_func)(get_block_func_ctx, bpos);
+				const VoxelBuffer *src_buffer = (*get_block_func)(get_block_func_ctx, bpos);
 				const Vector3i src_block_origin = bpos << block_size_po2;
 
 				if (src_buffer != nullptr) {
@@ -42,8 +41,8 @@ void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos
 						const uint8_t channel = channels[ci];
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						dst_buffer.fill_area(VoxelBufferInternal::get_default_value_static(channel),
-								src_block_origin - min_pos, src_block_origin - min_pos + block_size_v, channel);
+						dst_buffer.fill_area(VoxelBuffer::get_default_value_static(channel), src_block_origin - min_pos,
+								src_block_origin - min_pos + block_size_v, channel);
 					}
 				}
 			}
@@ -51,9 +50,9 @@ void copy_from_chunked_storage(VoxelBufferInternal &dst_buffer, Vector3i min_pos
 	}
 }
 
-void paste_to_chunked_storage(const VoxelBufferInternal &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
+void paste_to_chunked_storage(const VoxelBuffer &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
 		unsigned int channels_mask, bool use_mask, uint8_t mask_channel, uint64_t mask_value,
-		VoxelBufferInternal *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx) {
+		VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx) {
 	//
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
@@ -65,11 +64,11 @@ void paste_to_chunked_storage(const VoxelBufferInternal &src_buffer, Vector3i mi
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				for (unsigned int channel = 0; channel < VoxelBufferInternal::MAX_CHANNELS; ++channel) {
+				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
 					if (((1 << channel) & channels_mask) == 0) {
 						continue;
 					}
-					VoxelBufferInternal *dst_buffer = (*get_block_func)(get_block_func_ctx, bpos);
+					VoxelBuffer *dst_buffer = (*get_block_func)(get_block_func_ctx, bpos);
 
 					if (dst_buffer == nullptr) {
 						continue;
@@ -149,8 +148,7 @@ Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1) {
 #ifdef DEBUG_ENABLED
 
 // Reference implementation. Correct but very slow.
-void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos,
-		float sphere_radius) {
+void box_blur_slow_ref(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sphere_pos, float sphere_radius) {
 	ZN_PROFILE_SCOPE();
 
 	const Vector3i dst_size = src.get_size() - Vector3i(radius, radius, radius) * 2;
@@ -171,12 +169,12 @@ void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst,
 		for (dst_pos.x = 0; dst_pos.x < dst.get_size().x; ++dst_pos.x) {
 			for (dst_pos.y = 0; dst_pos.y < dst.get_size().y; ++dst_pos.y) {
 				const float sd_src =
-						src.get_voxel_f(dst_pos + Vector3i(radius, radius, radius), VoxelBufferInternal::CHANNEL_SDF);
+						src.get_voxel_f(dst_pos + Vector3i(radius, radius, radius), VoxelBuffer::CHANNEL_SDF);
 
 				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(dst_pos));
 				if (sphere_ds > sphere_radius_s) {
 					// Outside of brush
-					dst.set_voxel_f(sd_src, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+					dst.set_voxel_f(sd_src, dst_pos, VoxelBuffer::CHANNEL_SDF);
 					continue;
 				}
 				// Brush factor
@@ -192,7 +190,7 @@ void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst,
 						for (src_pos.y = src_min.y; src_pos.y < src_max.y; ++src_pos.y) {
 							// This is a hotspot. Could be optimized by separating XYZ blurs and caching reads in a
 							// ringbuffer
-							sd_sum += src.get_voxel_f(src_pos, VoxelBufferInternal::CHANNEL_SDF);
+							sd_sum += src.get_voxel_f(src_pos, VoxelBuffer::CHANNEL_SDF);
 						}
 					}
 				}
@@ -200,7 +198,7 @@ void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst,
 				const float sd_avg = sd_sum / box_volume;
 				const float sd = Math::lerp(sd_src, sd_avg, factor);
 
-				dst.set_voxel_f(sd, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+				dst.set_voxel_f(sd, dst_pos, VoxelBuffer::CHANNEL_SDF);
 			}
 		}
 	}
@@ -208,8 +206,7 @@ void box_blur_slow_ref(const VoxelBufferInternal &src, VoxelBufferInternal &dst,
 
 #endif
 
-void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radius, Vector3f sphere_pos,
-		float sphere_radius) {
+void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sphere_pos, float sphere_radius) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(radius >= 1);
 
@@ -258,8 +255,7 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 				for (int y = 0; y < box_size; ++y) {
 					// TODO The fact we sample this way for the first axis makes it a lot slower than the others.
 					// Make tmp larger to fit the whole size and convert first into it?
-					const float sd =
-							src.get_voxel_f(Vector3i(dst_pos.x, y, dst_pos.z), VoxelBufferInternal::CHANNEL_SDF);
+					const float sd = src.get_voxel_f(Vector3i(dst_pos.x, y, dst_pos.z), VoxelBuffer::CHANNEL_SDF);
 					ring_buffer[y] = sd;
 					sd_sum += sd;
 				}
@@ -275,7 +271,7 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 				for (dst_pos.y = 1; dst_pos.y < tmp_size.y; ++dst_pos.y) {
 					// Look 2*radius ahead because we sample from a buffer that's also bigger than tmp in Y
 					const float sd = src.get_voxel_f(
-							Vector3i(dst_pos.x, dst_pos.y + radius * 2, dst_pos.z), VoxelBufferInternal::CHANNEL_SDF);
+							Vector3i(dst_pos.x, dst_pos.y + radius * 2, dst_pos.z), VoxelBuffer::CHANNEL_SDF);
 					// Remove sample exiting the window
 					sd_sum -= ring_buffer[rbr];
 					// Add sample entering the window
@@ -387,12 +383,12 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 					//
 					const Vector3i src_pos = dst_pos + Vector3i(radius, radius, radius);
 					// TODO It might be possible to optimize this read
-					const float src_sd = src.get_voxel_f(src_pos, VoxelBufferInternal::CHANNEL_SDF);
+					const float src_sd = src.get_voxel_f(src_pos, VoxelBuffer::CHANNEL_SDF);
 
 					const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(dst_pos));
 					if (sphere_ds > sphere_radius_s) {
 						// Outside of brush
-						dst.set_voxel_f(src_sd, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+						dst.set_voxel_f(src_sd, dst_pos, VoxelBuffer::CHANNEL_SDF);
 						continue;
 					}
 
@@ -404,14 +400,14 @@ void box_blur(const VoxelBufferInternal &src, VoxelBufferInternal &dst, int radi
 					const float tmp_sd = tmp[tmp_loc];
 
 					const float sd = Math::lerp(src_sd, tmp_sd, factor);
-					dst.set_voxel_f(sd, dst_pos, VoxelBufferInternal::CHANNEL_SDF);
+					dst.set_voxel_f(sd, dst_pos, VoxelBuffer::CHANNEL_SDF);
 				}
 			}
 		}
 	}
 }
 
-void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, float sphere_radius) {
+void grow_sphere(VoxelBuffer &src, float strength, Vector3f sphere_pos, float sphere_radius) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(sphere_radius > 0.001f);
 
@@ -428,7 +424,7 @@ void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, 
 	for (src_pos.z = 0; src_pos.z < src_size.z; ++src_pos.z) {
 		for (src_pos.x = 0; src_pos.x < src_size.x; ++src_pos.x) {
 			for (src_pos.y = 0; src_pos.y < src_size.y; ++src_pos.y) {
-				const float src_sd = src.get_voxel_f(src_pos, VoxelBufferInternal::CHANNEL_SDF);
+				const float src_sd = src.get_voxel_f(src_pos, VoxelBuffer::CHANNEL_SDF);
 
 				const float sphere_ds = math::distance_squared(sphere_pos, to_vec3f(src_pos));
 				if (sphere_ds > sphere_radius_squared) {
@@ -441,7 +437,7 @@ void grow_sphere(VoxelBufferInternal &src, float strength, Vector3f sphere_pos, 
 
 				// With signed distance fields, subtracting "grows" the shape.
 				// Negative strength is allowed so it can also be used to "shrink".
-				src.set_voxel_f(src_sd - sd_offset, src_pos, VoxelBufferInternal::CHANNEL_SDF);
+				src.set_voxel_f(src_sd - sd_offset, src_pos, VoxelBuffer::CHANNEL_SDF);
 			}
 		}
 	}

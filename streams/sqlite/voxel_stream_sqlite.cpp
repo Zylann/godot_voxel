@@ -58,11 +58,11 @@ public:
 		int block_size_po2 = 0;
 
 		struct Channel {
-			VoxelBufferInternal::Depth depth;
+			VoxelBuffer::Depth depth;
 			bool used = false;
 		};
 
-		FixedArray<Channel, VoxelBufferInternal::MAX_CHANNELS> channels;
+		FixedArray<Channel, VoxelBuffer::MAX_CHANNELS> channels;
 	};
 
 	enum BlockType { //
@@ -236,7 +236,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 		for (unsigned int i = 0; i < meta.channels.size(); ++i) {
 			Meta::Channel &channel = meta.channels[i];
 			channel.used = true;
-			channel.depth = VoxelBufferInternal::DEPTH_16_BIT;
+			channel.depth = VoxelBuffer::DEPTH_16_BIT;
 		}
 		save_meta(meta);
 	}
@@ -547,13 +547,13 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 				ERR_PRINT(String("Channel index {0} is invalid").format(varray(index)));
 				continue;
 			}
-			if (depth < 0 || depth >= VoxelBufferInternal::DEPTH_COUNT) {
+			if (depth < 0 || depth >= VoxelBuffer::DEPTH_COUNT) {
 				ERR_PRINT(String("Depth {0} is invalid").format(varray(depth)));
 				continue;
 			}
 			Meta::Channel &channel = meta.channels[index];
 			channel.used = true;
-			channel.depth = static_cast<VoxelBufferInternal::Depth>(depth);
+			channel.depth = static_cast<VoxelBuffer::Depth>(depth);
 			continue;
 		}
 		if (rc != SQLITE_DONE) {
@@ -909,7 +909,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			result_block.lod = location.lod;
 
 			if (voxel_data.size() > 0) {
-				std::shared_ptr<VoxelBufferInternal> voxels = make_shared_instance<VoxelBufferInternal>();
+				std::shared_ptr<VoxelBuffer> voxels = make_shared_instance<VoxelBuffer>();
 				ERR_FAIL_COND(!BlockSerializer::decompress_and_deserialize(voxel_data, *voxels));
 				result_block.voxels = voxels;
 			}
@@ -940,7 +940,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 
 int VoxelStreamSQLite::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBufferInternal::ALL_CHANNELS_MASK;
+	return VoxelBuffer::ALL_CHANNELS_MASK;
 }
 
 void VoxelStreamSQLite::flush_cache() {

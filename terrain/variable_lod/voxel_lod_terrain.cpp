@@ -663,7 +663,7 @@ void VoxelLodTerrain::push_async_edit(IThreadedTask *task, Box3i box, std::share
 Ref<VoxelTool> VoxelLodTerrain::get_voxel_tool() {
 	VoxelToolLodTerrain *vt = memnew(VoxelToolLodTerrain(this));
 	// Set to most commonly used channel on this kind of terrain
-	vt->set_channel(VoxelBufferInternal::CHANNEL_SDF);
+	vt->set_channel(VoxelBuffer::CHANNEL_SDF);
 	return Ref<VoxelTool>(vt);
 }
 
@@ -2767,7 +2767,7 @@ void VoxelLodTerrain::get_configuration_warnings(PackedStringArray &warnings) co
 											.format(varray(generator->get_class())));
 				}
 
-				if ((generator->get_used_channels_mask() & (1 << VoxelBufferInternal::CHANNEL_SDF)) == 0) {
+				if ((generator->get_used_channels_mask() & (1 << VoxelBuffer::CHANNEL_SDF)) == 0) {
 					warnings.append(ZN_TTR("Normalmaps are enabled, but it requires the generator to use the SDF "
 										   "channel. The current generator ({0}) does not support it, or is not "
 										   "configured to do so.")
@@ -3331,15 +3331,15 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 			continue;
 		}
 
-		VoxelBufferInternal buffer;
+		VoxelBuffer buffer;
 		buffer.create(world_box.size);
 
 		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {
 			const Vector3i rpos = world_pos - world_box.pos;
 			VoxelSingleValue v;
 			v.f = 1.f;
-			v = voxel_data.get_voxel(world_pos, VoxelBufferInternal::CHANNEL_SDF, v);
-			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBufferInternal::CHANNEL_SDF);
+			v = voxel_data.get_voxel(world_pos, VoxelBuffer::CHANNEL_SDF, v);
+			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
 		});
 
 		Ref<Image> image = godot::VoxelBuffer::debug_print_sdf_to_image_top_down(buffer);

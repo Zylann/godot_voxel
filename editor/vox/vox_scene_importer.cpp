@@ -289,12 +289,12 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
 		const magica::Model &model = data.get_model(model_index);
 
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels;
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
-		voxels.decompress_channel(VoxelBufferInternal::CHANNEL_COLOR);
+		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBufferInternal::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
+		ERR_FAIL_COND_V(!voxels.get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices), ERR_BUG);
 		Span<const uint8_t> src_color_indices = to_span_const(model.color_indexes);
 		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);

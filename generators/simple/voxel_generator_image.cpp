@@ -57,7 +57,7 @@ bool VoxelGeneratorImage::is_blur_enabled() const {
 }
 
 VoxelGenerator::Result VoxelGeneratorImage::generate_block(VoxelGenerator::VoxelQueryData &input) {
-	VoxelBufferInternal &out_buffer = input.voxel_buffer;
+	VoxelBuffer &out_buffer = input.voxel_buffer;
 
 	Parameters params;
 	{

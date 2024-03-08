@@ -36,7 +36,7 @@ bool RegionFormat::validate() const {
 	// Test worst case limits (this does not include arbitrary metadata, so it can't be 100% accurrate...)
 	size_t bytes_per_block = 0;
 	for (unsigned int i = 0; i < channel_depths.size(); ++i) {
-		bytes_per_block += VoxelBufferInternal::get_depth_bit_count(channel_depths[i]) / 8;
+		bytes_per_block += VoxelBuffer::get_depth_bit_count(channel_depths[i]) / 8;
 	}
 	bytes_per_block *= Vector3iUtil::get_volume(Vector3iUtil::create(1 << block_size_po2));
 	const size_t sectors_per_block = (bytes_per_block - 1) / sector_size + 1;
@@ -47,9 +47,9 @@ bool RegionFormat::validate() const {
 	return true;
 }
 
-bool RegionFormat::verify_block(const VoxelBufferInternal &block) const {
+bool RegionFormat::verify_block(const VoxelBuffer &block) const {
 	ERR_FAIL_COND_V(block.get_size() != Vector3iUtil::create(1 << block_size_po2), false);
-	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND_V(block.get_channel_depth(i) != channel_depths[i], false);
 	}
 	return true;
@@ -131,8 +131,8 @@ bool load_header(
 
 		for (unsigned int i = 0; i < out_format.channel_depths.size(); ++i) {
 			const uint8_t d = f.get_8();
-			ERR_FAIL_COND_V(d >= VoxelBufferInternal::DEPTH_COUNT, false);
-			out_format.channel_depths[i] = static_cast<VoxelBufferInternal::Depth>(d);
+			ERR_FAIL_COND_V(d >= VoxelBuffer::DEPTH_COUNT, false);
+			out_format.channel_depths[i] = static_cast<VoxelBuffer::Depth>(d);
 		}
 
 		out_format.sector_size = f.get_16();
@@ -177,7 +177,7 @@ RegionFile::RegionFile() {
 	// Defaults
 	_header.format.block_size_po2 = 4;
 	_header.format.region_size = Vector3i(16, 16, 16);
-	fill(_header.format.channel_depths, VoxelBufferInternal::DEPTH_8_BIT);
+	fill(_header.format.channel_depths, VoxelBuffer::DEPTH_8_BIT);
 	_header.format.sector_size = 512;
 }
 
@@ -324,7 +324,7 @@ bool RegionFile::is_valid_block_position(const Vector3 position) const {
 			position.z < _header.format.region_size.z;
 }
 
-Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) {
+Error RegionFile::load_block(Vector3i position, VoxelBuffer &out_block) {
 	ERR_FAIL_COND_V(_file_access.is_null(), ERR_FILE_CANT_READ);
 	FileAccess &f = **_file_access;
 
@@ -357,7 +357,7 @@ Error RegionFile::load_block(Vector3i position, VoxelBufferInternal &out_block) 
 	return OK;
 }
 
-Error RegionFile::save_block(Vector3i position, VoxelBufferInternal &block) {
+Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 	ERR_FAIL_COND_V(_header.format.verify_block(block) == false, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(!is_valid_block_position(position), ERR_INVALID_PARAMETER);
 

@@ -66,10 +66,10 @@ VoxelMesherTransvoxel::~VoxelMesherTransvoxel() {}
 
 int VoxelMesherTransvoxel::get_used_channels_mask() const {
 	if (_texture_mode == TEXTURES_BLEND_4_OVER_16) {
-		return (1 << VoxelBufferInternal::CHANNEL_SDF) | (1 << VoxelBufferInternal::CHANNEL_INDICES) |
-				(1 << VoxelBufferInternal::CHANNEL_WEIGHTS);
+		return (1 << VoxelBuffer::CHANNEL_SDF) | (1 << VoxelBuffer::CHANNEL_INDICES) |
+				(1 << VoxelBuffer::CHANNEL_WEIGHTS);
 	}
-	return (1 << VoxelBufferInternal::CHANNEL_SDF);
+	return (1 << VoxelBuffer::CHANNEL_SDF);
 }
 
 bool VoxelMesherTransvoxel::is_generating_collision_surface() const {
@@ -182,10 +182,10 @@ void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &ds
 struct DeepSampler : transvoxel::IDeepSDFSampler {
 	VoxelGenerator &generator;
 	const VoxelData &data;
-	const VoxelBufferInternal::ChannelId sdf_channel;
+	const VoxelBuffer::ChannelId sdf_channel;
 	const Vector3i origin;
 
-	DeepSampler(VoxelGenerator &p_generator, const VoxelData &p_data, VoxelBufferInternal::ChannelId p_sdf_channel,
+	DeepSampler(VoxelGenerator &p_generator, const VoxelData &p_data, VoxelBuffer::ChannelId p_sdf_channel,
 			Vector3i p_origin) :
 			generator(p_generator), data(p_data), sdf_channel(p_sdf_channel), origin(p_origin) {}
 
@@ -195,7 +195,7 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 		/*const Vector3i lod_pos = position_in_voxels >> lod_index;
 		const VoxelDataLodMap::Lod &lod = data.lods[lod_index];
 		unsigned int bsm = 0;
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBuffer> voxels;
 		{
 			RWLockRead rlock(lod.map_lock);
 			const Vector3i lod_bpos = lod_pos >> lod.map.get_block_size_pow2();
@@ -226,7 +226,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// static thread_local FixedArray<transvoxel::MeshArrays, Cube::SIDE_COUNT> tls_transition_mesh_arrays;
 	static thread_local transvoxel::MeshArrays tls_simplified_mesh_arrays;
 
-	const VoxelBufferInternal::ChannelId sdf_channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBuffer::ChannelId sdf_channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Initialize dynamic memory:
 	// These vectors are re-used.
@@ -235,7 +235,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	transvoxel::MeshArrays &mesh_arrays = transvoxel::get_tls_mesh_arrays();
 	mesh_arrays.clear();
 
-	const VoxelBufferInternal &voxels = input.voxels;
+	const VoxelBuffer &voxels = input.voxels;
 	if (voxels.is_uniform(sdf_channel)) {
 		// There won't be anything to polygonize since the SDF has no variations, so it can't cross the isolevel
 		return;
@@ -325,7 +325,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuff
 
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 
-	if (voxels->is_uniform(VoxelBufferInternal::CHANNEL_SDF)) {
+	if (voxels->is_uniform(VoxelBuffer::CHANNEL_SDF)) {
 		// Uniform SDF won't produce any surface
 		return Ref<ArrayMesh>();
 	}
@@ -334,7 +334,7 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuff
 	// For now we can't support proper texture indices in this specific case
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
 	default_texture_indices_data.use = false;
-	transvoxel::build_transition_mesh(voxels->get_buffer(), VoxelBufferInternal::CHANNEL_SDF, direction, 0,
+	transvoxel::build_transition_mesh(voxels->get_buffer(), VoxelBuffer::CHANNEL_SDF, direction, 0,
 			static_cast<transvoxel::TexturingMode>(_texture_mode), s_cache, s_mesh_arrays,
 			default_texture_indices_data);
 

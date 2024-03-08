@@ -14,18 +14,18 @@ struct HermiteValue {
 	HermiteValue() : sdf(1.0) {}
 };
 
-inline float get_isolevel_clamped(const VoxelBufferInternal &voxels, unsigned int x, unsigned int y, unsigned int z) {
+inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 	x = x >= (unsigned int)voxels.get_size().x ? voxels.get_size().x - 1 : x;
 	y = y >= (unsigned int)voxels.get_size().y ? voxels.get_size().y - 1 : y;
 	z = z >= (unsigned int)voxels.get_size().z ? voxels.get_size().z - 1 : z;
-	return voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+	return voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);
 }
 
 inline HermiteValue get_hermite_value(
-		const VoxelBufferInternal &voxels, unsigned int x, unsigned int y, unsigned int z) {
+		const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 	HermiteValue v;
 
-	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);
 
 	Vector3f gradient;
 
@@ -38,7 +38,7 @@ inline HermiteValue get_hermite_value(
 	return v;
 }
 
-inline HermiteValue get_interpolated_hermite_value(const VoxelBufferInternal &voxels, Vector3f pos) {
+inline HermiteValue get_interpolated_hermite_value(const VoxelBuffer &voxels, Vector3f pos) {
 	int x0 = static_cast<int>(pos.x);
 	int y0 = static_cast<int>(pos.y);
 	int z0 = static_cast<int>(pos.z);

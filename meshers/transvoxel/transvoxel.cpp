@@ -1250,12 +1250,12 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 
 template <typename T>
 Span<const T> get_or_decompress_channel(
-		const VoxelBufferInternal &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
+		const VoxelBuffer &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
 	//
 	ZN_ASSERT_RETURN_V(
-			voxels.get_channel_depth(channel) == VoxelBufferInternal::get_depth_from_size(sizeof(T)), Span<const T>());
+			voxels.get_channel_depth(channel) == VoxelBuffer::get_depth_from_size(sizeof(T)), Span<const T>());
 
-	if (voxels.get_channel_compression(channel) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
 		backing_buffer.resize(Vector3iUtil::get_volume(voxels.get_size()));
 		const T v = voxels.get_voxel(Vector3i(), channel);
 		// TODO Could use a fast fill using 8-byte blocks or intrinsics?
@@ -1271,9 +1271,9 @@ Span<const T> get_or_decompress_channel(
 	}
 }
 
-TextureIndicesData get_texture_indices_data(const VoxelBufferInternal &voxels, unsigned int channel,
-		DefaultTextureIndicesData &out_default_texture_indices_data) {
-	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(channel) == VoxelBufferInternal::DEPTH_16_BIT, TextureIndicesData());
+TextureIndicesData get_texture_indices_data(
+		const VoxelBuffer &voxels, unsigned int channel, DefaultTextureIndicesData &out_default_texture_indices_data) {
+	ZN_ASSERT_RETURN_V(voxels.get_channel_depth(channel) == VoxelBuffer::DEPTH_16_BIT, TextureIndicesData());
 
 	TextureIndicesData data;
 
@@ -1374,9 +1374,9 @@ Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 	return to_span_const(sdf_data);
 }*/
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel,
-		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler, std::vector<CellInfo> *cell_infos) {
+DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, uint32_t lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler,
+		std::vector<CellInfo> *cell_infos) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
@@ -1393,14 +1393,13 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		// From this point we know SDF is not uniform so it has an allocated buffer,
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
-		indices_data =
-				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
+		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
 		weights_data.u8_data0 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBufferInternal::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
 		weights_data.u8_data1 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBufferInternal::CHANNEL_DATA5);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
 		weights_data.u8_data2 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBufferInternal::CHANNEL_DATA6);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
 		ERR_FAIL_COND_V(weights_data.u8_data0.size() != voxels_count, default_texture_indices_data);
 		ERR_FAIL_COND_V(weights_data.u8_data1.size() != voxels_count, default_texture_indices_data);
 		ERR_FAIL_COND_V(weights_data.u8_data2.size() != voxels_count, default_texture_indices_data);
@@ -1410,10 +1409,9 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
 		// From this point we know SDF is not uniform so it has an allocated buffer,
 		// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
-		indices_data =
-				get_texture_indices_data(voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
-		weights_data.u16_data = get_or_decompress_channel(
-				voxels, get_tls_weights_backing_buffer_u16(), VoxelBufferInternal::CHANNEL_WEIGHTS);
+		indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
+		weights_data.u16_data =
+				get_or_decompress_channel(voxels, get_tls_weights_backing_buffer_u16(), VoxelBuffer::CHANNEL_WEIGHTS);
 		ZN_ASSERT_RETURN_V(weights_data.u16_data.size() == voxels_count, default_texture_indices_data);
 	}
 #endif
@@ -1421,13 +1419,13 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	// We settle data types up-front so we can get rid of abstraction layers and conditionals,
 	// which would otherwise harm performance in tight iterations
 	switch (voxels.get_channel_depth(sdf_channel)) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<const int8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int8_t>();
 			build_regular_mesh<int8_t>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
 					texturing_mode, cache, output, deep_sdf_sampler, cell_infos);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<const int16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int16_t>();
 			build_regular_mesh<int16_t>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
 					texturing_mode, cache, output, deep_sdf_sampler, cell_infos);
@@ -1436,13 +1434,13 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 		// TODO Remove support for 32-bit SDF in Transvoxel?
 		// I don't think it's worth it. And it could reduce executable size significantly
 		// (the optimized obj size for just transvoxel.cpp is 1.2 Mb on Windows)
-		case VoxelBufferInternal::DEPTH_32_BIT: {
+		case VoxelBuffer::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_regular_mesh<float>(sdf_data, indices_data, weights_data, voxels.get_size(), lod_index,
 					texturing_mode, cache, output, deep_sdf_sampler, cell_infos);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT:
+		case VoxelBuffer::DEPTH_64_BIT:
 			ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;
@@ -1455,8 +1453,8 @@ DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, 
 	return default_texture_indices_data;
 }
 
-void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction,
-		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, uint32_t lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1478,15 +1476,14 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 			// From this point we know SDF is not uniform so it has an allocated buffer,
 			// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 			// TODO Is it worth doing conditionnals instead during meshing?
-			indices_data = get_texture_indices_data(
-					voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
+			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
 		}
 		weights_data.u8_data0 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBufferInternal::CHANNEL_WEIGHTS);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_0, VoxelBuffer::CHANNEL_WEIGHTS);
 		weights_data.u8_data1 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBufferInternal::CHANNEL_DATA5);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_1, VoxelBuffer::CHANNEL_DATA5);
 		weights_data.u8_data2 =
-				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBufferInternal::CHANNEL_DATA6);
+				get_or_decompress_channel(voxels, s_weights_backing_buffer_u8_2, VoxelBuffer::CHANNEL_DATA6);
 		ERR_FAIL_COND(weights_data.u8_data0.size() != voxels_count);
 		ERR_FAIL_COND(weights_data.u8_data1.size() != voxels_count);
 		ERR_FAIL_COND(weights_data.u8_data2.size() != voxels_count);
@@ -1501,35 +1498,34 @@ void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_c
 			// From this point we know SDF is not uniform so it has an allocated buffer,
 			// but it might have uniform indices or weights so we need to ensure there is a backing buffer.
 			// TODO Is it worth doing conditionnals instead during meshing?
-			indices_data = get_texture_indices_data(
-					voxels, VoxelBufferInternal::CHANNEL_INDICES, default_texture_indices_data);
+			indices_data = get_texture_indices_data(voxels, VoxelBuffer::CHANNEL_INDICES, default_texture_indices_data);
 		}
-		weights_data.u16_data = get_or_decompress_channel(
-				voxels, get_tls_weights_backing_buffer_u16(), VoxelBufferInternal::CHANNEL_WEIGHTS);
+		weights_data.u16_data =
+				get_or_decompress_channel(voxels, get_tls_weights_backing_buffer_u16(), VoxelBuffer::CHANNEL_WEIGHTS);
 		ZN_ASSERT_RETURN(weights_data.u16_data.size() == voxels_count);
 	}
 #endif
 
 	switch (voxels.get_channel_depth(sdf_channel)) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<const int8_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int8_t>();
 			build_transition_mesh<int8_t>(sdf_data, indices_data, weights_data, voxels.get_size(), direction, lod_index,
 					texturing_mode, cache, output);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<const int16_t> sdf_data = sdf_data_raw.reinterpret_cast_to<const int16_t>();
 			build_transition_mesh<int16_t>(sdf_data, indices_data, weights_data, voxels.get_size(), direction,
 					lod_index, texturing_mode, cache, output);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
+		case VoxelBuffer::DEPTH_32_BIT: {
 			Span<const float> sdf_data = sdf_data_raw.reinterpret_cast_to<const float>();
 			build_transition_mesh<float>(sdf_data, indices_data, weights_data, voxels.get_size(), direction, lod_index,
 					texturing_mode, cache, output);
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT:
+		case VoxelBuffer::DEPTH_64_BIT:
 			ZN_PRINT_ERROR("Double-precision SDF channel is not supported");
 			// Not worth growing executable size for relatively pointless double-precision sdf
 			break;

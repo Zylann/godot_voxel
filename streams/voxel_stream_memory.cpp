@@ -30,7 +30,7 @@ void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 		Lod &lod = _lods[q.lod_index];
 		{
 			MutexLock mlock(lod.mutex);
-			VoxelBufferInternal &dst = lod.voxel_blocks[q.position_in_blocks];
+			VoxelBuffer &dst = lod.voxel_blocks[q.position_in_blocks];
 			q.voxel_buffer.duplicate_to(dst, true);
 		}
 	}
@@ -103,8 +103,8 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 			block.position = bpos;
 			block.lod = lod_index;
 
-			const VoxelBufferInternal &src = it->second;
-			block.voxels = make_shared_instance<VoxelBufferInternal>();
+			const VoxelBuffer &src = it->second;
+			block.voxels = make_shared_instance<VoxelBuffer>();
 			src.duplicate_to(*block.voxels, true);
 		}
 
@@ -131,7 +131,7 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 }
 
 int VoxelStreamMemory::get_used_channels_mask() const {
-	return VoxelBufferInternal::ALL_CHANNELS_MASK;
+	return VoxelBuffer::ALL_CHANNELS_MASK;
 }
 
 int VoxelStreamMemory::get_lod_count() const {

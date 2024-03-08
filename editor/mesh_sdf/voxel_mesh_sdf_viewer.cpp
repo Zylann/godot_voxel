@@ -78,7 +78,7 @@ void VoxelMeshSDFViewer::update_view() {
 	Ref<godot::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
 	float sdf_min;
 	float sdf_max;
-	vb->get_buffer().get_range_f(sdf_min, sdf_max, VoxelBufferInternal::CHANNEL_SDF);
+	vb->get_buffer().get_range_f(sdf_min, sdf_max, VoxelBuffer::CHANNEL_SDF);
 	Ref<Image> image = vb->debug_print_sdf_y_slice((sdf_max - sdf_min) / 2.0, _slice_y);
 	Ref<ImageTexture> texture = ImageTexture::create_from_image(image);
 	_texture_rect->set_texture(texture);

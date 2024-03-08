@@ -13,7 +13,7 @@
 
 namespace zylann::voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 struct InstanceBlockData;
 
 namespace godot {
@@ -48,7 +48,7 @@ public:
 	};
 
 	struct VoxelQueryData {
-		VoxelBufferInternal &voxel_buffer;
+		VoxelBuffer &voxel_buffer;
 		Vector3i position_in_blocks;
 		uint8_t lod_index;
 		// This is currently not used in save queries. Maybe it should?
@@ -87,7 +87,7 @@ public:
 	struct FullLoadingResult {
 		// TODO Perhaps this needs to be decoupled. Not all voxel blocks have instances and vice versa
 		struct Block {
-			std::shared_ptr<VoxelBufferInternal> voxels;
+			std::shared_ptr<VoxelBuffer> voxels;
 			UniquePtr<InstanceBlockData> instances_data;
 			Vector3i position;
 			unsigned int lod;

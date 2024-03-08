@@ -32,8 +32,8 @@ public:
 	void set_value(uint64_t val);
 	uint64_t get_value() const;
 
-	void set_channel(VoxelBufferInternal::ChannelId p_channel);
-	VoxelBufferInternal::ChannelId get_channel() const;
+	void set_channel(VoxelBuffer::ChannelId p_channel);
+	VoxelBuffer::ChannelId get_channel() const;
 
 	void set_mode(Mode mode);
 	Mode get_mode() const;
@@ -71,12 +71,12 @@ public:
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
 
 	void sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos);
-	void sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos);
+	void sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos);
 
-	virtual void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const;
+	virtual void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const;
 	void copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channels_mask) const;
 
-	virtual void paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask);
+	virtual void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask);
 	void paste(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask);
 
 	virtual void paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
@@ -130,7 +130,7 @@ private:
 protected:
 	uint64_t _value = 0;
 	uint64_t _eraser_value = 0; // air
-	VoxelBufferInternal::ChannelId _channel = VoxelBufferInternal::CHANNEL_TYPE;
+	VoxelBuffer::ChannelId _channel = VoxelBuffer::CHANNEL_TYPE;
 	float _sdf_scale = 1.f;
 	float _sdf_strength = 1.f;
 	Mode _mode = MODE_ADD;

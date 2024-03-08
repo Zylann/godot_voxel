@@ -43,7 +43,7 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	// struct BlockToSave {
-	// 	std::shared_ptr<VoxelBufferInternal> voxels;
+	// 	std::shared_ptr<VoxelBuffer> voxels;
 	// 	Vector3i position;
 	// 	uint8_t lod;
 	// };
@@ -171,7 +171,7 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	struct QuickReloadingBlock {
-		std::shared_ptr<VoxelBufferInternal> voxels;
+		std::shared_ptr<VoxelBuffer> voxels;
 		Vector3i position;
 	};
 
@@ -184,7 +184,7 @@ struct VoxelLodTerrainUpdateData {
 		// Blocks waiting to be saved after they got unloaded. This is to allow reloading them properly if a viewer
 		// needs them again before they even got saved. Items in this cache get removed when they are saved. Needs to be
 		// protected by mutex because the saved notification is received on the main thread at the moment.
-		std::unordered_map<Vector3i, std::shared_ptr<VoxelBufferInternal>> unloaded_saving_blocks;
+		std::unordered_map<Vector3i, std::shared_ptr<VoxelBuffer>> unloaded_saving_blocks;
 		BinaryMutex unloaded_saving_blocks_mutex;
 		// Blocks that will be loaded from the saving cache as if a loading task completed next time the terrain
 		// updates. It won't run while the threaded update runs so no locking is needed.

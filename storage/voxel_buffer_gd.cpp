@@ -13,16 +13,16 @@ static thread_local bool s_create_shared = false;
 
 VoxelBuffer::VoxelBuffer() {
 	if (!s_create_shared) {
-		_buffer = make_shared_instance<VoxelBufferInternal>();
+		_buffer = make_shared_instance<zylann::voxel::VoxelBuffer>();
 	}
 }
 
-VoxelBuffer::VoxelBuffer(std::shared_ptr<VoxelBufferInternal> &other) {
+VoxelBuffer::VoxelBuffer(std::shared_ptr<zylann::voxel::VoxelBuffer> &other) {
 	CRASH_COND(other == nullptr);
 	_buffer = other;
 }
 
-Ref<VoxelBuffer> VoxelBuffer::create_shared(std::shared_ptr<VoxelBufferInternal> &other) {
+Ref<VoxelBuffer> VoxelBuffer::create_shared(std::shared_ptr<zylann::voxel::VoxelBuffer> &other) {
 	Ref<VoxelBuffer> vb;
 	s_create_shared = true;
 	vb.instantiate();
@@ -106,7 +106,7 @@ Ref<VoxelTool> VoxelBuffer::get_voxel_tool() {
 }
 
 void VoxelBuffer::set_channel_depth(unsigned int channel_index, Depth new_depth) {
-	_buffer->set_channel_depth(channel_index, VoxelBufferInternal::Depth(new_depth));
+	_buffer->set_channel_depth(channel_index, zylann::voxel::VoxelBuffer::Depth(new_depth));
 }
 
 VoxelBuffer::Depth VoxelBuffer::get_channel_depth(unsigned int channel_index) const {
@@ -117,10 +117,10 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 	Span<const int> map_r(map.ptr(), map.size());
-	const VoxelBufferInternal::Depth depth = _buffer->get_channel_depth(channel_index);
+	const zylann::voxel::VoxelBuffer::Depth depth = _buffer->get_channel_depth(channel_index);
 
 	// TODO If `get_channel_data` could return a span of size 1 for this case, we wouldn't need this code
-	if (_buffer->get_channel_compression(channel_index) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+	if (_buffer->get_channel_compression(channel_index) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
 		uint64_t v = _buffer->get_voxel(Vector3i(), channel_index);
 		if (v < map_r.size()) {
 			v = map_r[v];
@@ -130,7 +130,7 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 	}
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case zylann::voxel::VoxelBuffer::DEPTH_8_BIT: {
 			Span<uint8_t> values;
 			ZN_ASSERT_RETURN(_buffer->get_channel_raw(channel_index, values));
 			for (uint8_t &v : values) {
@@ -140,7 +140,7 @@ void VoxelBuffer::remap_values(unsigned int channel_index, PackedInt32Array map)
 			}
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case zylann::voxel::VoxelBuffer::DEPTH_16_BIT: {
 			Span<uint16_t> values;
 			ZN_ASSERT_RETURN(_buffer->get_channel_data(channel_index, values));
 			for (uint16_t &v : values) {
@@ -256,14 +256,14 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 	return debug_print_sdf_to_image_top_down(*_buffer);
 }
 
-Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb) {
+Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const zylann::voxel::VoxelBuffer &vb) {
 	const Vector3i size = vb.get_size();
 	Ref<Image> im = zylann::godot::create_empty_image(size.x, size.z, false, Image::FORMAT_RGB8);
 	Vector3i pos;
 	for (pos.z = 0; pos.z < size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < size.x; ++pos.x) {
 			for (pos.y = size.y - 1; pos.y >= 0; --pos.y) {
-				float v = vb.get_voxel_f(pos.x, pos.y, pos.z, VoxelBufferInternal::CHANNEL_SDF);
+				float v = vb.get_voxel_f(pos.x, pos.y, pos.z, zylann::voxel::VoxelBuffer::CHANNEL_SDF);
 				if (v < 0.0) {
 					break;
 				}
@@ -276,7 +276,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInter
 	return im;
 }
 
-Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const VoxelBufferInternal &buffer, float scale, int y) {
+Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int y) {
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(y < 0 || y >= res.y, Ref<Image>());
 
@@ -288,7 +288,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const VoxelBufferInternal &buffe
 
 	for (int z = 0; z < res.z; ++z) {
 		for (int x = 0; x < res.x; ++x) {
-			const float sd = scale * buffer.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+			const float sd = scale * buffer.get_voxel_f(x, y, z, zylann::voxel::VoxelBuffer::CHANNEL_SDF);
 
 			const float nega = math::clamp(-sd, 0.0f, 1.0f);
 			const float posi = math::clamp(sd, 0.0f, 1.0f);
@@ -301,7 +301,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const VoxelBufferInternal &buffe
 	return im;
 }
 
-Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const VoxelBufferInternal &buffer, float scale, int z) {
+Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const zylann::voxel::VoxelBuffer &buffer, float scale, int z) {
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(z < 0 || z >= res.z, Ref<Image>());
 
@@ -313,7 +313,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const VoxelBufferInternal &buffe
 
 	for (int x = 0; x < res.x; ++x) {
 		for (int y = 0; y < res.y; ++y) {
-			const float sd = scale * buffer.get_voxel_f(x, y, z, VoxelBufferInternal::CHANNEL_SDF);
+			const float sd = scale * buffer.get_voxel_f(x, y, z, zylann::voxel::VoxelBuffer::CHANNEL_SDF);
 
 			const float nega = math::clamp(-sd, 0.0f, 1.0f);
 			const float posi = math::clamp(sd, 0.0f, 1.0f);
@@ -333,7 +333,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(float scale, int y) const {
 TypedArray<Image> VoxelBuffer::debug_print_sdf_y_slices(float scale) const {
 	TypedArray<Image> images;
 
-	const VoxelBufferInternal &buffer = *_buffer;
+	const zylann::voxel::VoxelBuffer &buffer = *_buffer;
 	const Vector3i res = buffer.get_size();
 
 	for (int y = 0; y < res.y; ++y) {

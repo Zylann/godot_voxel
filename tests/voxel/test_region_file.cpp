@@ -21,10 +21,10 @@ void test_region_file() {
 			rng.seed(131183);
 		}
 
-		void generate(VoxelBufferInternal &buffer) {
+		void generate(VoxelBuffer &buffer) {
 			buffer.create(Vector3iUtil::create(block_size));
 			const unsigned int channel_index = 0;
-			buffer.set_channel_depth(channel_index, VoxelBufferInternal::DEPTH_16_BIT);
+			buffer.set_channel_depth(channel_index, VoxelBuffer::DEPTH_16_BIT);
 
 			const float r = rng.randf();
 
@@ -60,7 +60,7 @@ void test_region_file() {
 	RandomBlockGenerator generator;
 
 	// Create a block of voxels
-	VoxelBufferInternal voxel_buffer;
+	VoxelBuffer voxel_buffer;
 	generator.generate(voxel_buffer);
 
 	{
@@ -69,7 +69,7 @@ void test_region_file() {
 		// Configure region format
 		RegionFormat region_format = region_file.get_format();
 		region_format.block_size_po2 = block_size_po2;
-		for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 			region_format.channel_depths[channel_index] = voxel_buffer.get_channel_depth(channel_index);
 		}
 		ZN_TEST_ASSERT(region_file.set_format(region_format));
@@ -83,7 +83,7 @@ void test_region_file() {
 		ZN_TEST_ASSERT(save_error == OK);
 
 		// Read back
-		VoxelBufferInternal loaded_voxel_buffer;
+		VoxelBuffer loaded_voxel_buffer;
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ZN_TEST_ASSERT(load_error == OK);
 
@@ -99,7 +99,7 @@ void test_region_file() {
 		ZN_TEST_ASSERT(open_error == OK);
 
 		// Read back
-		VoxelBufferInternal loaded_voxel_buffer;
+		VoxelBuffer loaded_voxel_buffer;
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ZN_TEST_ASSERT(load_error == OK);
 
@@ -116,7 +116,7 @@ void test_region_file() {
 
 		RandomPCG rng;
 
-		std::unordered_map<Vector3i, VoxelBufferInternal> buffers;
+		std::unordered_map<Vector3i, VoxelBuffer> buffers;
 		const Vector3i region_size = region_file.get_format().region_size;
 
 		for (int i = 0; i < 1000; ++i) {
@@ -137,7 +137,7 @@ void test_region_file() {
 
 		// Read back
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-			VoxelBufferInternal loaded_voxel_buffer;
+			VoxelBuffer loaded_voxel_buffer;
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
 			ZN_TEST_ASSERT(load_error == OK);
 			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
@@ -152,7 +152,7 @@ void test_region_file() {
 
 		// Read back again
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-			VoxelBufferInternal loaded_voxel_buffer;
+			VoxelBuffer loaded_voxel_buffer;
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
 			ZN_TEST_ASSERT(load_error == OK);
 			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
@@ -176,7 +176,7 @@ void test_voxel_stream_region_files() {
 	RandomPCG rng;
 
 	for (int cycle = 0; cycle < 1000; ++cycle) {
-		VoxelBufferInternal buffer;
+		VoxelBuffer buffer;
 		buffer.create(block_size, block_size, block_size);
 
 		// Make a block with enough data to take some significant space even if compressed

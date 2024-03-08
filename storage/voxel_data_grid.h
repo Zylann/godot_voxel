@@ -104,7 +104,7 @@ public:
 		_locked = false;
 	}
 
-	inline bool try_get_voxel_f(Vector3i pos, float &out_value, VoxelBufferInternal::ChannelId channel) const {
+	inline bool try_get_voxel_f(Vector3i pos, float &out_value, VoxelBuffer::ChannelId channel) const {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(_locked);
 #endif
@@ -113,7 +113,7 @@ public:
 			return false;
 		}
 		const unsigned int loc = Vector3iUtil::get_zxy_index(bpos, _size_in_blocks);
-		const VoxelBufferInternal *voxels = _blocks[loc].get();
+		const VoxelBuffer *voxels = _blocks[loc].get();
 		if (voxels == nullptr) {
 			return false;
 		}
@@ -129,7 +129,7 @@ public:
 		if (_spatial_lock != nullptr) {
 			lock_write();
 		}
-		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+		_box_loop(voxel_box, [action, channel](VoxelBuffer &voxels, Box3i local_box, Vector3i voxel_offset) {
 			voxels.write_box(local_box, channel, action, voxel_offset);
 		});
 		if (_spatial_lock != nullptr) {
@@ -140,7 +140,7 @@ public:
 	// D action(Vector3i pos, D value)
 	template <typename F>
 	void write_box_no_lock(Box3i voxel_box, unsigned int channel, F action) {
-		_box_loop(voxel_box, [action, channel](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
+		_box_loop(voxel_box, [action, channel](VoxelBuffer &voxels, Box3i local_box, Vector3i voxel_offset) {
 			voxels.write_box(local_box, channel, action, voxel_offset);
 		});
 	}
@@ -151,11 +151,9 @@ public:
 		if (_spatial_lock != nullptr) {
 			lock_write();
 		}
-		_box_loop(voxel_box,
-				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
-					voxels.write_box_2_template<F, uint16_t, uint16_t>(
-							local_box, channel0, channel1, action, voxel_offset);
-				});
+		_box_loop(voxel_box, [action, channel0, channel1](VoxelBuffer &voxels, Box3i local_box, Vector3i voxel_offset) {
+			voxels.write_box_2_template<F, uint16_t, uint16_t>(local_box, channel0, channel1, action, voxel_offset);
+		});
 		if (_spatial_lock != nullptr) {
 			unlock_write();
 		}
@@ -164,14 +162,12 @@ public:
 	// void action(Vector3i pos, D0 &value, D1 &value)
 	template <typename F>
 	void write_box_2_no_lock(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
-		_box_loop(voxel_box,
-				[action, channel0, channel1](VoxelBufferInternal &voxels, Box3i local_box, Vector3i voxel_offset) {
-					voxels.write_box_2_template<F, uint16_t, uint16_t>(
-							local_box, channel0, channel1, action, voxel_offset);
-				});
+		_box_loop(voxel_box, [action, channel0, channel1](VoxelBuffer &voxels, Box3i local_box, Vector3i voxel_offset) {
+			voxels.write_box_2_template<F, uint16_t, uint16_t>(local_box, channel0, channel1, action, voxel_offset);
+		});
 	}
 
-	// inline const VoxelBufferInternal *get_block(Vector3i position) const {
+	// inline const VoxelBuffer *get_block(Vector3i position) const {
 	// 	ERR_FAIL_COND_V(!is_valid_position(position), nullptr);
 	// 	position -= _offset_in_blocks;
 	// 	const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -186,7 +182,7 @@ public:
 		_spatial_lock = nullptr;
 	}
 
-	inline VoxelBufferInternal *get_block_no_lock(Vector3i position) {
+	inline VoxelBuffer *get_block_no_lock(Vector3i position) {
 		return get_block(position);
 	}
 
@@ -207,7 +203,7 @@ private:
 		for (block_rpos.z = 0; block_rpos.z < _size_in_blocks.z; ++block_rpos.z) {
 			for (block_rpos.x = 0; block_rpos.x < _size_in_blocks.x; ++block_rpos.x) {
 				for (block_rpos.y = 0; block_rpos.y < _size_in_blocks.y; ++block_rpos.y) {
-					VoxelBufferInternal *block = _blocks[index].get();
+					VoxelBuffer *block = _blocks[index].get();
 					// Flat grid and iteration order allows us to just increment the index since we iterate them all
 					++index;
 					if (block == nullptr) {
@@ -243,7 +239,7 @@ private:
 		return is_valid_relative_block_position(pos - _offset_in_blocks);
 	}
 
-	inline void set_block(Vector3i position, std::shared_ptr<VoxelBufferInternal> block) {
+	inline void set_block(Vector3i position, std::shared_ptr<VoxelBuffer> block) {
 		ZN_ASSERT_RETURN(is_valid_block_position(position));
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -251,7 +247,7 @@ private:
 		_blocks[index] = block;
 	}
 
-	inline VoxelBufferInternal *get_block(Vector3i position) {
+	inline VoxelBuffer *get_block(Vector3i position) {
 		ZN_ASSERT_RETURN_V(is_valid_block_position(position), nullptr);
 		position -= _offset_in_blocks;
 		const unsigned int index = Vector3iUtil::get_zxy_index(position, _size_in_blocks);
@@ -261,7 +257,7 @@ private:
 
 	// Flat grid indexed in ZXY order
 	// TODO Ability to use thread-local/stack pool allocator? Such grids are often temporary
-	std::vector<std::shared_ptr<VoxelBufferInternal>> _blocks;
+	std::vector<std::shared_ptr<VoxelBuffer>> _blocks;
 	// Size of the grid in blocks
 	Vector3i _size_in_blocks;
 	// Block coordinates offset. This is used for when we cache a sub-region of a map, we need to keep the origin

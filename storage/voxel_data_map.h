@@ -66,22 +66,22 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBufferInternal::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF);
 
-	inline void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask) const {
+	inline void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
 	}
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBufferInternal &dst_buffer, unsigned int channels_mask, void *,
-			void (*gen_func)(void *, VoxelBufferInternal &, Vector3i)) const;
+	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask, void *,
+			void (*gen_func)(void *, VoxelBuffer &, Vector3i)) const;
 
-	void paste(Vector3i min_pos, const VoxelBufferInternal &src_buffer, unsigned int channels_mask, bool use_mask,
+	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask,
 			uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
-	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBufferInternal> &buffer, bool overwrite);
+	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBuffer> &buffer, bool overwrite);
 	VoxelDataBlock *set_empty_block(Vector3i bpos, bool overwrite);
 	void set_block(Vector3i bpos, const VoxelDataBlock &block);
 
@@ -136,7 +136,7 @@ public:
 
 	template <typename F>
 	inline void write_box(const Box3i &voxel_box, unsigned int channel, F action) {
-		write_box(voxel_box, channel, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+		write_box(voxel_box, channel, action, [](const VoxelBuffer &, const Vector3i &) {});
 	}
 
 	// D F(Vector3i pos, D value)
@@ -160,7 +160,7 @@ public:
 
 	template <typename F>
 	inline void write_box_2(const Box3i &voxel_box, unsigned int channel0, unsigned int channel1, F action) {
-		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBufferInternal &, const Vector3i &) {});
+		write_box_2(voxel_box, channel0, channel1, action, [](const VoxelBuffer &, const Vector3i &) {});
 	}
 
 	// void F(Vector3i pos, D0 &value, D1 &value)

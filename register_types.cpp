@@ -180,7 +180,7 @@ void print_size_reminders() {
 	ZN_PRINT_VERBOSE(format("Size of BinaryMutex: {}", sizeof(zylann::BinaryMutex)));
 
 	ZN_PRINT_VERBOSE(format("Size of godot::VoxelBuffer: {}", sizeof(voxel::godot::VoxelBuffer)));
-	ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
+	ZN_PRINT_VERBOSE(format("Size of VoxelBuffer: {}", sizeof(VoxelBuffer)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelLodTerrain: {}", sizeof(VoxelLodTerrain)));

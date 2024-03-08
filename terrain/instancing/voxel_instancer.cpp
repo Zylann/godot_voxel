@@ -1708,7 +1708,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 	Ref<VoxelTool> maybe_voxel_tool = _parent->get_voxel_tool();
 	ERR_FAIL_COND(maybe_voxel_tool.is_null());
 	VoxelTool &voxel_tool = **maybe_voxel_tool;
-	voxel_tool.set_channel(VoxelBufferInternal::CHANNEL_SDF);
+	voxel_tool.set_channel(VoxelBuffer::CHANNEL_SDF);
 
 	const Transform3D parent_transform = get_global_transform();
 	const int base_block_size_po2 = _parent_mesh_block_size_po2;

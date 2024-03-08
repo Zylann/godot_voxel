@@ -158,11 +158,11 @@ struct CellInfo {
 	uint32_t triangle_count;
 };
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel,
+DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel,
 		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		const IDeepSDFSampler *deep_sdf_sampler, std::vector<CellInfo> *cell_infos);
 
-void build_transition_mesh(const VoxelBufferInternal &voxels, unsigned int sdf_channel, int direction,
+void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction,
 		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 

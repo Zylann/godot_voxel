@@ -51,11 +51,11 @@ VoxelStreamRegionFiles::VoxelStreamRegionFiles() {
 	_meta.region_size_po2 = 4;
 	_meta.sector_size = 512; // next_power_of_2(_meta.block_size.volume() / 10) // based on compression ratios
 	_meta.lod_count = 1;
-	fill(_meta.channel_depths, VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH);
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_TYPE] = VoxelBufferInternal::DEFAULT_TYPE_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_SDF] = VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_INDICES] = VoxelBufferInternal::DEFAULT_INDICES_CHANNEL_DEPTH;
-	_meta.channel_depths[VoxelBufferInternal::CHANNEL_WEIGHTS] = VoxelBufferInternal::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
+	fill(_meta.channel_depths, VoxelBuffer::DEFAULT_CHANNEL_DEPTH);
+	_meta.channel_depths[VoxelBuffer::CHANNEL_TYPE] = VoxelBuffer::DEFAULT_TYPE_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_SDF] = VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_INDICES] = VoxelBuffer::DEFAULT_INDICES_CHANNEL_DEPTH;
+	_meta.channel_depths[VoxelBuffer::CHANNEL_WEIGHTS] = VoxelBuffer::DEFAULT_WEIGHTS_CHANNEL_DEPTH;
 }
 
 VoxelStreamRegionFiles::~VoxelStreamRegionFiles() {
@@ -120,11 +120,11 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 
 int VoxelStreamRegionFiles::get_used_channels_mask() const {
 	// Assuming all, since that stream can store anything.
-	return VoxelBufferInternal::ALL_CHANNELS_MASK;
+	return VoxelBuffer::ALL_CHANNELS_MASK;
 }
 
 VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
-		VoxelBufferInternal &out_buffer, Vector3i block_pos, int lod) {
+		VoxelBuffer &out_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
 
 	MutexLock lock(_mutex);
@@ -176,7 +176,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 }
 
-void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod) {
+void VoxelStreamRegionFiles::_save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
 	using namespace zylann::godot;
 
@@ -209,7 +209,7 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 	// Verify format
 	const Vector3i block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
 	ERR_FAIL_COND(voxel_buffer.get_size() != block_size);
-	for (unsigned int i = 0; i < VoxelBufferInternal::MAX_CHANNELS; ++i) {
+	for (unsigned int i = 0; i < VoxelBuffer::MAX_CHANNELS; ++i) {
 		ERR_FAIL_COND(voxel_buffer.get_channel_depth(i) != _meta.channel_depths[i]);
 	}
 
@@ -257,11 +257,11 @@ bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 	return true;
 }
 
-bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
+bool depth_from_json_variant(Variant &v, VoxelBuffer::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
-	ZN_ASSERT_RETURN_V(n < VoxelBufferInternal::DEPTH_COUNT, false);
-	d = (VoxelBufferInternal::Depth)n;
+	ZN_ASSERT_RETURN_V(n < VoxelBuffer::DEPTH_COUNT, false);
+	d = (VoxelBuffer::Depth)n;
 	return true;
 }
 
@@ -322,9 +322,9 @@ namespace {
 void migrate_region_meta_data(Dictionary &data) {
 	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
-		depths.resize(VoxelBufferInternal::MAX_CHANNELS);
+		depths.resize(VoxelBuffer::MAX_CHANNELS);
 		for (int i = 0; i < depths.size(); ++i) {
-			depths[i] = VoxelBufferInternal::DEFAULT_CHANNEL_DEPTH;
+			depths[i] = VoxelBuffer::DEFAULT_CHANNEL_DEPTH;
 		}
 		data["channel_depths"] = depths;
 		data["version"] = FORMAT_VERSION_LEGACY_2;
@@ -390,7 +390,7 @@ zylann::godot::FileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(meta.version < 0, FILE_INVALID_DATA);
 
 	Array channel_depths_data = d["channel_depths"];
-	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBufferInternal::MAX_CHANNELS, FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBuffer::MAX_CHANNELS, FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
 		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), FILE_INVALID_DATA);
 	}
@@ -696,10 +696,10 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				continue;
 			}
 
-			VoxelBufferInternal old_block;
+			VoxelBuffer old_block;
 			old_block.create(old_block_size.x, old_block_size.y, old_block_size.z);
 
-			VoxelBufferInternal new_block;
+			VoxelBuffer new_block;
 			new_block.create(new_block_size.x, new_block_size.y, new_block_size.z);
 
 			// Load block from old stream
@@ -742,8 +742,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 					Vector3i dst_pos = rel * old_block.get_size();
 
-					for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
-							++channel_index) {
+					for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 						new_block.copy_from(old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
 					}
 
@@ -767,7 +766,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 								Vector3i src_min = rpos * new_block.get_size();
 								Vector3i src_max = src_min + new_block.get_size();
 
-								for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS;
+								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
 										++channel_index) {
 									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}

@@ -20,7 +20,7 @@ class AsyncDependencyTracker;
 
 namespace voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 class ComputeShader;
 struct ComputeShaderParameters;
 struct StreamingDependency;
@@ -53,7 +53,7 @@ public:
 	};
 
 	struct VoxelQueryData {
-		VoxelBufferInternal &voxel_buffer;
+		VoxelBuffer &voxel_buffer;
 		Vector3i origin_in_voxels;
 		uint32_t lod;
 	};
@@ -71,7 +71,7 @@ public:
 		std::shared_ptr<StreamingDependency> stream_dependency; // For saving generator output
 		std::shared_ptr<VoxelData> data; // Just for modifiers
 		std::shared_ptr<AsyncDependencyTracker> tracker; // For async edits
-		std::shared_ptr<VoxelBufferInternal> voxels; // Optionally re-use a voxel buffer for the result
+		std::shared_ptr<VoxelBuffer> voxels; // Optionally re-use a voxel buffer for the result
 		TaskCancellationToken cancellation_token; // For explicit cancellation
 	};
 

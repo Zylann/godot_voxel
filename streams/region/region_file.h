@@ -16,21 +16,20 @@ struct RegionFormat {
 	static const uint32_t MAX_BLOCKS_ACROSS = 255;
 	static const uint32_t CHANNEL_COUNT = 8;
 
-	static_assert(
-			CHANNEL_COUNT == VoxelBufferInternal::MAX_CHANNELS, "This format doesn't support variable channel count");
+	static_assert(CHANNEL_COUNT == VoxelBuffer::MAX_CHANNELS, "This format doesn't support variable channel count");
 
 	// How many voxels in a cubic block, as power of two
 	uint8_t block_size_po2 = 0;
 	// How many blocks across all dimensions (stored as 3 bytes)
 	Vector3i region_size;
-	FixedArray<VoxelBufferInternal::Depth, CHANNEL_COUNT> channel_depths;
+	FixedArray<VoxelBuffer::Depth, CHANNEL_COUNT> channel_depths;
 	// Blocks are stored at offsets multiple of that size
 	uint32_t sector_size = 0;
 	FixedArray<Color8, 256> palette;
 	bool has_palette = false;
 
 	bool validate() const;
-	bool verify_block(const VoxelBufferInternal &block) const;
+	bool verify_block(const VoxelBuffer &block) const;
 };
 
 struct RegionBlockInfo {
@@ -85,8 +84,8 @@ public:
 	bool set_format(const RegionFormat &format);
 	const RegionFormat &get_format() const;
 
-	Error load_block(Vector3i position, VoxelBufferInternal &out_block);
-	Error save_block(Vector3i position, VoxelBufferInternal &block);
+	Error load_block(Vector3i position, VoxelBuffer &out_block);
+	Error save_block(Vector3i position, VoxelBuffer &block);
 
 	unsigned int get_header_block_count() const;
 	bool has_block(Vector3i position) const;

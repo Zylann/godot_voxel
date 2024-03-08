@@ -28,16 +28,16 @@ int VoxelGenerator::get_used_channels_mask() const {
 VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int channel) {
 	VoxelSingleValue v;
 	v.i = 0;
-	ZN_ASSERT_RETURN_V(channel < VoxelBufferInternal::MAX_CHANNELS, v);
+	ZN_ASSERT_RETURN_V(channel < VoxelBuffer::MAX_CHANNELS, v);
 	// Default slow implementation
 	// TODO Optimize: a small part of the slowness is caused by the allocator.
 	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
 	// Instead it would be faster if it was a thread-local using the default allocator.
-	VoxelBufferInternal buffer;
+	VoxelBuffer buffer;
 	buffer.create(1, 1, 1);
 	VoxelQueryData q{ buffer, pos, 0 };
 	generate_block(q);
-	if (channel == VoxelBufferInternal::CHANNEL_SDF) {
+	if (channel == VoxelBuffer::CHANNEL_SDF) {
 		v.f = buffer.get_voxel_f(0, 0, 0, channel);
 	} else {
 		v.i = buffer.get_voxel(0, 0, 0, channel);

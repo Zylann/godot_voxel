@@ -38,7 +38,7 @@ static constexpr int MAX_SUBPASSES = MAX_PASSES * 2 - 1; // get_subpass_count_fr
 // moved outside of the class, which is inconvenient
 
 struct Block {
-	VoxelBufferInternal voxels;
+	VoxelBuffer voxels;
 
 	// If set, this task will be scheduled when the block's generation is complete.
 	// Only a non-scheduled, non-running task can be referenced here.

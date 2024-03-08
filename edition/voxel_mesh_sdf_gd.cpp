@@ -118,11 +118,11 @@ void VoxelMeshSDF::bake() {
 	const Vector3f box_size = box_max_pos - box_min_pos;
 
 	const Vector3i res = mesh_sdf::auto_compute_grid_resolution(box_size, _cell_count);
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	Ref<godot::VoxelBuffer> vbgd;
 	vbgd.instantiate();
-	VoxelBufferInternal &buffer = vbgd->get_buffer();
-	buffer.set_channel_depth(channel, VoxelBufferInternal::DEPTH_32_BIT);
+	VoxelBuffer &buffer = vbgd->get_buffer();
+	buffer.set_channel_depth(channel, VoxelBuffer::DEPTH_32_BIT);
 	buffer.create(res);
 	buffer.decompress_channel(channel);
 	Span<float> sdf_grid;
@@ -230,8 +230,8 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			const Vector3f box_size = box_max_pos - box_min_pos;
 
 			const Vector3i res = mesh_sdf::auto_compute_grid_resolution(box_size, cell_count);
-			const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-			shared_data->buffer.set_channel_depth(channel, VoxelBufferInternal::DEPTH_32_BIT);
+			const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
+			shared_data->buffer.set_channel_depth(channel, VoxelBuffer::DEPTH_32_BIT);
 			shared_data->buffer.create(res);
 			shared_data->buffer.decompress_channel(channel);
 
@@ -268,7 +268,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 				} break;
 
 				case BAKE_MODE_APPROX_INTERP: {
-					VoxelBufferInternal &buffer = shared_data->buffer;
+					VoxelBuffer &buffer = shared_data->buffer;
 					Span<float> sdf_grid;
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
@@ -283,7 +283,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 				} break;
 
 				case BAKE_MODE_APPROX_FLOODFILL: {
-					VoxelBufferInternal &buffer = shared_data->buffer;
+					VoxelBuffer &buffer = shared_data->buffer;
 					Span<float> sdf_grid;
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
@@ -358,10 +358,10 @@ std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
 	MutexLock mlock(_gpu_resource_mutex);
 
 	if (_gpu_resource == nullptr && _voxel_buffer.is_valid()) {
-		const VoxelBufferInternal &buffer = _voxel_buffer->get_buffer();
+		const VoxelBuffer &buffer = _voxel_buffer->get_buffer();
 
 		Span<const float> sdf_grid;
-		ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, sdf_grid), _gpu_resource);
+		ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, sdf_grid), _gpu_resource);
 
 		std::shared_ptr<ComputeShaderResource> resource = make_shared_instance<ComputeShaderResource>();
 		resource->create_texture_3d_zxy(sdf_grid, buffer.get_size());
@@ -376,9 +376,9 @@ Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 
 	ZN_ASSERT_RETURN_V(is_baked(), result);
 	ZN_ASSERT(_voxel_buffer.is_valid());
-	const VoxelBufferInternal &buffer = _voxel_buffer->get_buffer();
+	const VoxelBuffer &buffer = _voxel_buffer->get_buffer();
 	Span<const float> sdf_grid;
-	ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, sdf_grid), result);
+	ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, sdf_grid), result);
 
 	ZN_ASSERT_RETURN_V(mesh.is_valid(), result);
 	std::vector<mesh_sdf::Triangle> triangles;
@@ -412,7 +412,7 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 	if (_voxel_buffer.is_null()) {
 		return Dictionary();
 	}
-	const VoxelBufferInternal &vb = _voxel_buffer->get_buffer();
+	const VoxelBuffer &vb = _voxel_buffer->get_buffer();
 
 	Dictionary d;
 	d["v"] = 0;
@@ -422,7 +422,7 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 	PackedFloat32Array sdf_f32;
 	sdf_f32.resize(Vector3iUtil::get_volume(vb.get_size()));
 	Span<const float> channel;
-	ERR_FAIL_COND_V(!vb.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, channel), Dictionary());
+	ERR_FAIL_COND_V(!vb.get_channel_data(VoxelBuffer::CHANNEL_SDF, channel), Dictionary());
 	memcpy(sdf_f32.ptrw(), channel.data(), channel.size() * sizeof(float));
 	d["sdf_f32"] = sdf_f32;
 
@@ -445,12 +445,12 @@ void VoxelMeshSDF::_b_set_data(Dictionary d) {
 	ERR_FAIL_COND(Vector3iUtil::is_empty_size(res));
 
 	_voxel_buffer.instantiate();
-	VoxelBufferInternal &vb = _voxel_buffer->get_buffer();
+	VoxelBuffer &vb = _voxel_buffer->get_buffer();
 	vb.create(res);
-	vb.set_channel_depth(VoxelBufferInternal::CHANNEL_SDF, VoxelBufferInternal::DEPTH_32_BIT);
-	vb.decompress_channel(VoxelBufferInternal::CHANNEL_SDF);
+	vb.set_channel_depth(VoxelBuffer::CHANNEL_SDF, VoxelBuffer::DEPTH_32_BIT);
+	vb.decompress_channel(VoxelBuffer::CHANNEL_SDF);
 	Span<float> channel;
-	ERR_FAIL_COND(!vb.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, channel));
+	ERR_FAIL_COND(!vb.get_channel_data(VoxelBuffer::CHANNEL_SDF, channel));
 
 	PackedFloat32Array sdf_f32;
 	ERR_FAIL_COND(!zylann::godot::try_get(d, "sdf_f32", sdf_f32));

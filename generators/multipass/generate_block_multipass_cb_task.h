@@ -30,7 +30,7 @@ public:
 	void apply_result() override;
 
 	// Not an input, but can be assigned a re-usable instance to avoid allocating one in the task
-	std::shared_ptr<VoxelBufferInternal> voxels;
+	std::shared_ptr<VoxelBuffer> voxels;
 
 private:
 	void run_cpu_generation();

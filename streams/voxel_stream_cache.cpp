@@ -2,7 +2,7 @@
 
 namespace zylann::voxel {
 
-bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &out_voxels) {
+bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, VoxelBuffer &out_voxels) {
 	const Lod &lod = _cache[lod_index];
 
 	RWLockRead rlock(lod.rw_lock);
@@ -16,7 +16,7 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 	} else {
 		// In cache, serve it
 
-		const VoxelBufferInternal &vb = it->second.voxels;
+		const VoxelBuffer &vb = it->second.voxels;
 
 		// Copying is required since the cache has ownership on its data,
 		// and the requests wants us to populate the buffer it provides
@@ -26,7 +26,7 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 	}
 }
 
-void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBufferInternal &voxels) {
+void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, VoxelBuffer &voxels) {
 	Lod &lod = _cache[lod_index];
 	RWLockWrite wlock(lod.rw_lock);
 	auto it = lod.blocks.find(position);

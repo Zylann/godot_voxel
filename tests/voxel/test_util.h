@@ -3,11 +3,11 @@
 
 namespace zylann::voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 
 namespace tests {
 
-bool sd_equals_approx(const VoxelBufferInternal &vb1, const VoxelBufferInternal &vb2);
+bool sd_equals_approx(const VoxelBuffer &vb1, const VoxelBuffer &vb2);
 
 } // namespace tests
 } // namespace zylann::voxel

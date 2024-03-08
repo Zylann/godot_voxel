@@ -19,7 +19,7 @@ public:
 
 	VoxelDataBlock(unsigned int p_lod_index) : _lod_index(p_lod_index) {}
 
-	VoxelDataBlock(std::shared_ptr<VoxelBufferInternal> &buffer, unsigned int p_lod_index) :
+	VoxelDataBlock(std::shared_ptr<VoxelBuffer> &buffer, unsigned int p_lod_index) :
 			_voxels(buffer), _lod_index(p_lod_index) {}
 
 	VoxelDataBlock(VoxelDataBlock &&src) :
@@ -70,7 +70,7 @@ public:
 	}
 
 	// Get voxels, expecting them to be present
-	VoxelBufferInternal &get_voxels() {
+	VoxelBuffer &get_voxels() {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(_voxels != nullptr);
 #endif
@@ -78,7 +78,7 @@ public:
 	}
 
 	// Get voxels, expecting them to be present
-	const VoxelBufferInternal &get_voxels_const() const {
+	const VoxelBuffer &get_voxels_const() const {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(_voxels != nullptr);
 #endif
@@ -86,14 +86,14 @@ public:
 	}
 
 	// Get voxels, expecting them to be present
-	std::shared_ptr<VoxelBufferInternal> get_voxels_shared() const {
+	std::shared_ptr<VoxelBuffer> get_voxels_shared() const {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(_voxels != nullptr);
 #endif
 		return _voxels;
 	}
 
-	void set_voxels(const std::shared_ptr<VoxelBufferInternal> &buffer) {
+	void set_voxels(const std::shared_ptr<VoxelBuffer> &buffer) {
 		ZN_ASSERT_RETURN(buffer != nullptr);
 		_voxels = buffer;
 	}
@@ -127,7 +127,7 @@ public:
 
 private:
 	// Voxel data. If null, it means the data may be obtained with procedural generation.
-	std::shared_ptr<VoxelBufferInternal> _voxels;
+	std::shared_ptr<VoxelBuffer> _voxels;
 
 	// TODO Storing lod index here might not be necessary, it is known since we have to get the map first.
 	// For now it can remain here since in practice it doesn't cost space, due to other stored flags and alignment.

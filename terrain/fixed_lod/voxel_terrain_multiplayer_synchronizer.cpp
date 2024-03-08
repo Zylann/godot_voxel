@@ -85,7 +85,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	_terrain->get_viewers_in_area(viewers, voxel_box);
 
 	// Not particularly efficient for single-voxel edits, but should scale ok with bigger boxes
-	VoxelBufferInternal voxels;
+	VoxelBuffer voxels;
 	voxels.create(voxel_box.size);
 	_terrain->get_storage().copy(voxel_box.pos, voxels, 0xff);
 
@@ -199,12 +199,12 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_blocks(PackedByteArray mess
 		const int voxel_data_size = mr.get_16();
 		// print_line(String("Client: receive block {0} data {1}").format(varray(bpos, voxel_data_size)));
 
-		VoxelBufferInternal voxels;
+		VoxelBuffer voxels;
 		ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
 		mr.pos += voxel_data_size;
 
-		std::shared_ptr<VoxelBufferInternal> voxels_p = make_shared_instance<VoxelBufferInternal>();
+		std::shared_ptr<VoxelBuffer> voxels_p = make_shared_instance<VoxelBuffer>();
 		*voxels_p = std::move(voxels);
 
 		ZN_ASSERT_RETURN(_terrain != nullptr);
@@ -224,7 +224,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	pos.z = int32_t(mr.get_32());
 	const int voxel_data_size = mr.get_32();
 
-	VoxelBufferInternal voxels;
+	VoxelBuffer voxels;
 	ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
 	_terrain->get_storage().paste(pos, voxels, 0xff, false);

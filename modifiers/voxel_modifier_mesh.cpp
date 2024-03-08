@@ -38,7 +38,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	if (voxel_buffer_gd.is_null()) {
 		return;
 	}
-	const VoxelBufferInternal &buffer = voxel_buffer_gd->get_buffer();
+	const VoxelBuffer &buffer = voxel_buffer_gd->get_buffer();
 
 	// TODO VoxelMeshSDF isn't preventing scripts from writing into this buffer from a different thread.
 	// I can't think of a reason to manually modify the buffer of a VoxelMeshSDF at the moment.
@@ -52,7 +52,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	const Transform3D buffer_to_world = model_to_world * buffer_to_model;
 
 	Span<const float> buffer_sdf;
-	ZN_ASSERT_RETURN(buffer.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, buffer_sdf));
+	ZN_ASSERT_RETURN(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, buffer_sdf));
 	const float smoothness = get_smoothness();
 
 	ops::SdfBufferShape shape;

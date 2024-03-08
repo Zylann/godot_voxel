@@ -19,10 +19,10 @@ const float NEAR_SURFACE_FACTOR = 2.0;
 
 // Helper to access padded voxel data
 struct VoxelAccess {
-	const VoxelBufferInternal &buffer;
+	const VoxelBuffer &buffer;
 	const Vector3i offset;
 
-	VoxelAccess(const VoxelBufferInternal &p_buffer, Vector3i p_offset) : buffer(p_buffer), offset(p_offset) {}
+	VoxelAccess(const VoxelBuffer &p_buffer, Vector3i p_offset) : buffer(p_buffer), offset(p_offset) {}
 
 	inline HermiteValue get_hermite_value(int x, int y, int z) const {
 		return dmc::get_hermite_value(buffer, x + offset.x, y + offset.y, z + offset.z);
@@ -44,7 +44,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 
 	Vector3i origin = node_origin + voxels.offset;
 	int step = node_size;
-	int channel = VoxelBufferInternal::CHANNEL_SDF;
+	int channel = VoxelBuffer::CHANNEL_SDF;
 
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
 	Vector3i center_pos = node_origin + Vector3iUtil::create(node_size / 2);
@@ -1290,8 +1290,8 @@ inline void polygonize_dual_grid(
 	}
 }
 
-void polygonize_volume_directly(const VoxelBufferInternal &voxels, Vector3i min, Vector3i size,
-		MeshBuilder &mesh_builder, bool skirts_enabled) {
+void polygonize_volume_directly(
+		const VoxelBuffer &voxels, Vector3i min, Vector3i size, MeshBuilder &mesh_builder, bool skirts_enabled) {
 	Vector3f corners[8];
 	HermiteValue values[8];
 
@@ -1400,9 +1400,9 @@ void VoxelMesherDMC::build(VoxelMesher::Output &output, const VoxelMesher::Input
 	// - Voxel data must be padded
 	// - The non-padded area size is cubic and power of two
 
-	const VoxelBufferInternal &voxels = input.voxels;
+	const VoxelBuffer &voxels = input.voxels;
 
-	if (voxels.is_uniform(VoxelBufferInternal::CHANNEL_SDF)) {
+	if (voxels.is_uniform(VoxelBuffer::CHANNEL_SDF)) {
 		// That won't produce any polygon
 		_stats = {};
 		return;
@@ -1544,7 +1544,7 @@ Ref<Resource> VoxelMesherDMC::duplicate(bool p_subresources) const {
 }
 
 int VoxelMesherDMC::get_used_channels_mask() const {
-	return (1 << zylann::voxel::VoxelBufferInternal::CHANNEL_SDF);
+	return (1 << zylann::voxel::VoxelBuffer::CHANNEL_SDF);
 }
 
 Dictionary VoxelMesherDMC::get_statistics() const {

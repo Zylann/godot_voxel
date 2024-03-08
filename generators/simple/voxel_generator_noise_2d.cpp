@@ -72,7 +72,7 @@ VoxelGenerator::Result VoxelGeneratorNoise2D::generate_block(VoxelGenerator::Vox
 	ERR_FAIL_COND_V(params.noise.is_null(), result);
 	Noise &noise = **params.noise;
 
-	VoxelBufferInternal &out_buffer = input.voxel_buffer;
+	VoxelBuffer &out_buffer = input.voxel_buffer;
 
 	if (_curve.is_null()) {
 		result = VoxelGeneratorHeightmap::generate(

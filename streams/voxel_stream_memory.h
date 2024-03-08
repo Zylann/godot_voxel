@@ -43,7 +43,7 @@ private:
 	static void _bind_methods();
 
 	struct Lod {
-		std::unordered_map<Vector3i, VoxelBufferInternal> voxel_blocks;
+		std::unordered_map<Vector3i, VoxelBuffer> voxel_blocks;
 		std::unordered_map<Vector3i, InstanceBlockData> instance_blocks;
 		Mutex mutex;
 	};

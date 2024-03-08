@@ -66,8 +66,8 @@ private:
 		EMERGE_FAILED
 	};
 
-	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i block_pos, int lod);
-	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod);
+	EmergeResult _load_block(VoxelBuffer &out_buffer, Vector3i block_pos, int lod);
+	void _save_block(VoxelBuffer &voxel_buffer, Vector3i block_pos, int lod);
 
 	zylann::godot::FileResult save_meta();
 	zylann::godot::FileResult load_meta();
@@ -85,7 +85,7 @@ private:
 		uint8_t lod_count = 0;
 		uint8_t block_size_po2 = 0; // How many voxels in a cubic block
 		uint8_t region_size_po2 = 0; // How many blocks in one cubic region
-		FixedArray<VoxelBufferInternal::Depth, VoxelBufferInternal::MAX_CHANNELS> channel_depths;
+		FixedArray<VoxelBuffer::Depth, VoxelBuffer::MAX_CHANNELS> channel_depths;
 		uint32_t sector_size = 0; // Blocks are stored at offsets multiple of that size
 	};
 

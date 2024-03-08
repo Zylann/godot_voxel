@@ -14,7 +14,7 @@ std::atomic_int g_debug_save_block_tasks_count = { 0 };
 }
 
 SaveBlockDataTask::SaveBlockDataTask(VolumeID p_volume_id, Vector3i p_block_pos, uint8_t p_lod,
-		std::shared_ptr<VoxelBufferInternal> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
+		std::shared_ptr<VoxelBuffer> p_voxels, std::shared_ptr<StreamingDependency> p_stream_dependency,
 		std::shared_ptr<AsyncDependencyTracker> p_tracker, bool flush_on_last_tracked_task) :
 		_voxels(p_voxels),
 		_position(p_block_pos),
@@ -69,7 +69,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 			return;
 		}
 
-		VoxelBufferInternal voxels_copy;
+		VoxelBuffer voxels_copy;
 		// Note, we are not locking voxels here. This is supposed to be done at the time this task is scheduled.
 		// If this is not a copy, it means the map it came from is getting unloaded anyways.
 		// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the

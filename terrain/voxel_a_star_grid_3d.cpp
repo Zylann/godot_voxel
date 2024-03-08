@@ -46,11 +46,11 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 		ZN_PROFILE_SCOPE_NAMED("Caching voxels");
 		ZN_ASSERT(data != nullptr);
 
-		const VoxelBufferInternal::ChannelId channel_index = VoxelBufferInternal::CHANNEL_TYPE;
+		const VoxelBuffer::ChannelId channel_index = VoxelBuffer::CHANNEL_TYPE;
 		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().pos;
 		data->copy(copy_origin, _voxel_buffer, 1 << channel_index);
 
-		if (_voxel_buffer.get_channel_compression(channel_index) == VoxelBufferInternal::COMPRESSION_UNIFORM) {
+		if (_voxel_buffer.get_channel_compression(channel_index) == VoxelBuffer::COMPRESSION_UNIFORM) {
 			if (_voxel_buffer.get_voxel(0, 0, 0, channel_index) != 0) {
 				chunk.solid_bits = 0xffffffffffffffff;
 			} else {
@@ -61,7 +61,7 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 			chunk.solid_bits = 0;
 
 			switch (_voxel_buffer.get_channel_depth(channel_index)) {
-				case VoxelBufferInternal::DEPTH_8_BIT: {
+				case VoxelBuffer::DEPTH_8_BIT: {
 					Span<const uint8_t> values;
 					ZN_ASSERT(_voxel_buffer.get_channel_data(channel_index, values));
 					uint64_t i = 0;
@@ -72,7 +72,7 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 					}
 				} break;
 
-				case VoxelBufferInternal::DEPTH_16_BIT: {
+				case VoxelBuffer::DEPTH_16_BIT: {
 					Span<const uint16_t> values;
 					ZN_ASSERT(_voxel_buffer.get_channel_data(channel_index, values));
 					uint64_t i = 0;

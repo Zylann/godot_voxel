@@ -180,8 +180,7 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 	ZN_PROFILE_SCOPE();
 
 	// TODO Get scale properly
-	const float sdf_scale =
-			VoxelBufferInternal::get_sdf_quantization_scale(VoxelBufferInternal::DEFAULT_SDF_CHANNEL_DEPTH);
+	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
 	const float sdf_scale_inv = 1.f / sdf_scale;
 
 	VoxelDataGrid::LockRead rlock(grid);
@@ -198,7 +197,7 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 		FixedArray<uint8_t, 8> i_gen;
 		unsigned int gen_count = 0;
 
-		const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+		const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 
 		const Vector3i posi0 = math::floor_to_int(posf);
 		unsigned int i = 0;
@@ -317,7 +316,7 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_vox
 		// Generator only.
 
 		// Note, these samples are not scaled since we are working with floats instead of encoded buffer values.
-		generator.generate_series(query_x_buffer, query_y_buffer, query_z_buffer, VoxelBufferInternal::CHANNEL_SDF,
+		generator.generate_series(query_x_buffer, query_y_buffer, query_z_buffer, VoxelBuffer::CHANNEL_SDF,
 				query_sdf_buffer, query_min_pos, query_max_pos);
 
 		if (modifiers != nullptr) {

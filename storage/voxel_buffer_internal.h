@@ -11,14 +11,10 @@
 
 namespace zylann::voxel {
 
-// TODO This class is still suffixed "Internal" to avoid conflict with the registered Godot class.
-// Even though the other class is not namespaced yet, it is unsure if it will remain that way after the future port
-// to GDExtension
-
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
 // Values can be interpreted either as unsigned integers or normalized floats.
-class VoxelBufferInternal {
+class VoxelBuffer {
 public:
 	enum ChannelId {
 		CHANNEL_TYPE = 0,
@@ -50,13 +46,13 @@ public:
 		DEPTH_COUNT
 	};
 
-	static inline uint32_t get_depth_byte_count(VoxelBufferInternal::Depth d) {
-		ZN_ASSERT(d >= 0 && d < VoxelBufferInternal::DEPTH_COUNT);
+	static inline uint32_t get_depth_byte_count(VoxelBuffer::Depth d) {
+		ZN_ASSERT(d >= 0 && d < VoxelBuffer::DEPTH_COUNT);
 		return 1 << d;
 	}
 
 	static inline uint32_t get_depth_bit_count(Depth d) {
-		// CRASH_COND(d < 0 || d >= VoxelBufferInternal::DEPTH_COUNT);
+		// CRASH_COND(d < 0 || d >= VoxelBuffer::DEPTH_COUNT);
 		return get_depth_byte_count(d) << 3;
 	}
 
@@ -102,12 +98,12 @@ public:
 		static const size_t MAX_SIZE_IN_BYTES = std::numeric_limits<uint32_t>::max();
 	};
 
-	VoxelBufferInternal();
-	VoxelBufferInternal(VoxelBufferInternal &&src);
+	VoxelBuffer();
+	VoxelBuffer(VoxelBuffer &&src);
 
-	~VoxelBufferInternal();
+	~VoxelBuffer();
 
-	VoxelBufferInternal &operator=(VoxelBufferInternal &&src);
+	VoxelBuffer &operator=(VoxelBuffer &&src);
 
 	void create(unsigned int sx, unsigned int sy, unsigned int sz);
 	void create(Vector3i size);
@@ -119,7 +115,7 @@ public:
 		return _size;
 	}
 
-	void set_default_values(FixedArray<uint64_t, VoxelBufferInternal::MAX_CHANNELS> values);
+	void set_default_values(FixedArray<uint64_t, VoxelBuffer::MAX_CHANNELS> values);
 
 	static uint64_t get_default_value_static(unsigned int channel_index);
 
@@ -155,16 +151,16 @@ public:
 
 	static size_t get_size_in_bytes_for_volume(Vector3i size, Depth depth);
 
-	void copy_format(const VoxelBufferInternal &other);
+	void copy_format(const VoxelBuffer &other);
 
 	// Specialized copy functions.
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
 	// TODO Rename `copy_channels_from`
-	void copy_from(const VoxelBufferInternal &other);
-	void copy_from(const VoxelBufferInternal &other, unsigned int channel_index);
-	void copy_from(const VoxelBufferInternal &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
-			unsigned int channel_index);
+	void copy_from(const VoxelBuffer &other);
+	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
+	void copy_from(
+			const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
 
 	// Copy a region from a box of values, passed as a raw array.
 	// `src_size` is the total 3D size of the source box.
@@ -367,10 +363,10 @@ public:
 
 	static inline FixedArray<uint8_t, MAX_CHANNELS> mask_to_channels_list(
 			uint8_t channels_mask, unsigned int &out_count) {
-		FixedArray<uint8_t, VoxelBufferInternal::MAX_CHANNELS> channels;
+		FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
 		unsigned int channel_count = 0;
 
-		for (unsigned int channel_index = 0; channel_index < VoxelBufferInternal::MAX_CHANNELS; ++channel_index) {
+		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 			if (((1 << channel_index) & channels_mask) != 0) {
 				channels[channel_count] = channel_index;
 				++channel_count;
@@ -381,8 +377,8 @@ public:
 		return channels;
 	}
 
-	void duplicate_to(VoxelBufferInternal &dst, bool include_metadata) const;
-	void move_to(VoxelBufferInternal &dst);
+	void duplicate_to(VoxelBuffer &dst, bool include_metadata) const;
+	void move_to(VoxelBuffer &dst);
 
 	inline bool is_position_valid(unsigned int x, unsigned int y, unsigned int z) const {
 		return x < (unsigned)_size.x && y < (unsigned)_size.y && z < (unsigned)_size.z;
@@ -410,9 +406,9 @@ public:
 		return true;
 	}
 
-	void downscale_to(VoxelBufferInternal &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
+	void downscale_to(VoxelBuffer &dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 
-	bool equals(const VoxelBufferInternal &p_other) const;
+	bool equals(const VoxelBuffer &p_other) const;
 
 	void set_channel_depth(unsigned int channel_index, Depth new_depth);
 	Depth get_channel_depth(unsigned int channel_index) const;
@@ -460,8 +456,8 @@ public:
 
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Box3i box);
-	void copy_voxel_metadata_in_area(const VoxelBufferInternal &src_buffer, Box3i src_box, Vector3i dst_origin);
-	void copy_voxel_metadata(const VoxelBufferInternal &src_buffer);
+	void copy_voxel_metadata_in_area(const VoxelBuffer &src_buffer, Box3i src_box, Vector3i dst_origin);
+	void copy_voxel_metadata(const VoxelBuffer &src_buffer);
 
 	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &get_voxel_metadata() const {
 		return _voxel_metadata;
@@ -484,17 +480,17 @@ private:
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
 
-	// TODO Could we separate metadata from VoxelBufferInternal?
+	// TODO Could we separate metadata from VoxelBuffer?
 	VoxelMetadata _block_metadata;
 	// This metadata is expected to be sparse, with low amount of items.
 	FlatMapMoveOnly<Vector3i, VoxelMetadata> _voxel_metadata;
 };
 
-inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &voxels) {
+inline void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
 	for (int z = 0; z < voxels.get_size().z; ++z) {
 		for (int x = 0; x < voxels.get_size().x; ++x) {
 			for (int y = 0; y < voxels.get_size().y; ++y) {
-				uint16_t pi = voxels.get_voxel(x, y, z, VoxelBufferInternal::CHANNEL_INDICES);
+				uint16_t pi = voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_INDICES);
 				FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(pi);
 				debug_check_texture_indices(indices);
 			}
@@ -502,9 +498,9 @@ inline void debug_check_texture_indices_packed_u16(const VoxelBufferInternal &vo
 	}
 }
 
-void get_unscaled_sdf(const VoxelBufferInternal &voxels, Span<float> sdf);
-void scale_and_store_sdf(VoxelBufferInternal &voxels, Span<float> sdf);
-void scale_and_store_sdf_if_modified(VoxelBufferInternal &voxels, Span<float> sdf, Span<const float> comparand);
+void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf);
+void scale_and_store_sdf(VoxelBuffer &voxels, Span<float> sdf);
+void scale_and_store_sdf_if_modified(VoxelBuffer &voxels, Span<float> sdf, Span<const float> comparand);
 
 } // namespace zylann::voxel
 

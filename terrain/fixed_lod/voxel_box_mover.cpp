@@ -204,7 +204,7 @@ void collect_boxes(
 	if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_blocky)) {
 		Ref<VoxelBlockyLibraryBase> library_ref = mesher_blocky->get_library();
 		ERR_FAIL_COND_MSG(library_ref.is_null(), "VoxelMesherBlocky has no library assigned");
-		const int channel = VoxelBufferInternal::CHANNEL_TYPE;
+		const int channel = VoxelBuffer::CHANNEL_TYPE;
 		VoxelSingleValue defval;
 		defval.i = 0;
 
@@ -234,7 +234,7 @@ void collect_boxes(
 		}
 
 	} else if (zylann::godot::try_get_as(p_terrain.get_mesher(), mesher_cubes)) {
-		const int channel = VoxelBufferInternal::CHANNEL_COLOR;
+		const int channel = VoxelBuffer::CHANNEL_COLOR;
 		VoxelSingleValue defval;
 		defval.i = 0;
 

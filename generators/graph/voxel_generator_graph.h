@@ -22,7 +22,7 @@ ZN_GODOT_FORWARD_DECLARE(class Image)
 
 namespace zylann::voxel {
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 
 // Uses an internal VoxelGraphFunction to generate voxel data.
 class VoxelGeneratorGraph : public VoxelGenerator {
@@ -148,7 +148,7 @@ private:
 	};
 
 	static void gather_indices_and_weights(Span<const WeightOutput> weight_outputs, const pg::Runtime::State &state,
-			Vector3i rmin, Vector3i rmax, int ry, VoxelBufferInternal &out_voxel_buffer,
+			Vector3i rmin, Vector3i rmax, int ry, VoxelBuffer &out_voxel_buffer,
 			FixedArray<uint8_t, 4> spare_indices);
 
 	static void _bind_methods();

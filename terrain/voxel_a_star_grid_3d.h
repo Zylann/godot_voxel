@@ -49,7 +49,7 @@ private:
 	DynamicBitset _grid_chunk_states;
 
 	// Temporary buffer used to read voxels from the main voxel storage
-	VoxelBufferInternal _voxel_buffer;
+	VoxelBuffer _voxel_buffer;
 };
 
 // Godot-facing API for voxel grid A* pathfinding. Suitable for blocky terrains.

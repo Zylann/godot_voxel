@@ -39,7 +39,7 @@ private:
 	void run_stream_saving_and_finish();
 
 	// Not an input, but can be assigned a re-usable instance to avoid allocating one in the task
-	std::shared_ptr<VoxelBufferInternal> _voxels;
+	std::shared_ptr<VoxelBuffer> _voxels;
 
 	Vector3i _position;
 	VolumeID _volume_id;

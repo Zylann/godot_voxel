@@ -17,7 +17,7 @@ namespace godot {
 class VoxelBuffer;
 }
 
-class VoxelBufferInternal;
+class VoxelBuffer;
 class VoxelGenerator;
 class VoxelData;
 
@@ -27,7 +27,7 @@ class VoxelMesher : public Resource {
 public:
 	struct Input {
 		// Voxels to be used as the primary source of data.
-		const VoxelBufferInternal &voxels;
+		const VoxelBuffer &voxels;
 		// When using LOD, some meshers can use the generator and edited voxels to affine results.
 		// If not provided, the mesher will only use `voxels`.
 		VoxelGenerator *generator = nullptr;
@@ -81,7 +81,7 @@ public:
 	virtual void build(Output &output, const Input &voxels);
 
 	// Builds a mesh from the given voxels. This function is simplified to be used by the script API.
-	Ref<Mesh> build_mesh(const VoxelBufferInternal &voxels, TypedArray<Material> materials, Dictionary additional_data);
+	Ref<Mesh> build_mesh(const VoxelBuffer &voxels, TypedArray<Material> materials, Dictionary additional_data);
 
 	// Gets how many neighbor voxels need to be accessed around the meshed area, toward negative axes.
 	// If this is not respected, the mesher might produce seams at the edges, or an error

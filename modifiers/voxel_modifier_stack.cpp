@@ -57,19 +57,19 @@ Span<const Vector3> get_positions_temporary(
 	return positions;
 }
 
-// TODO Use VoxelBufferInternal helper function
-void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &sdf) {
+// TODO Use VoxelBuffer helper function
+void decompress_sdf_to_buffer(VoxelBuffer &voxels, std::vector<float> &sdf) {
 	ZN_DSTACK();
 
 	sdf.resize(Vector3iUtil::get_volume(voxels.get_size()));
 
-	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	voxels.decompress_channel(channel);
 
-	const VoxelBufferInternal::Depth depth = voxels.get_channel_depth(channel);
+	const VoxelBuffer::Depth depth = voxels.get_channel_depth(channel);
 
 	switch (depth) {
-		case VoxelBufferInternal::DEPTH_8_BIT: {
+		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<int8_t> raw;
 			ZN_ASSERT(voxels.get_channel_data(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
@@ -77,7 +77,7 @@ void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &s
 			}
 		} break;
 
-		case VoxelBufferInternal::DEPTH_16_BIT: {
+		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<int16_t> raw;
 			ZN_ASSERT(voxels.get_channel_data(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
@@ -85,13 +85,13 @@ void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &s
 			}
 		} break;
 
-		case VoxelBufferInternal::DEPTH_32_BIT: {
+		case VoxelBuffer::DEPTH_32_BIT: {
 			Span<float> raw;
 			ZN_ASSERT(voxels.get_channel_data(channel, raw));
 			memcpy(sdf.data(), raw.data(), sizeof(float) * sdf.size());
 		} break;
 
-		case VoxelBufferInternal::DEPTH_64_BIT: {
+		case VoxelBuffer::DEPTH_64_BIT: {
 			Span<double> raw;
 			ZN_ASSERT(voxels.get_channel_data(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
@@ -103,7 +103,7 @@ void decompress_sdf_to_buffer(VoxelBufferInternal &voxels, std::vector<float> &s
 			ZN_CRASH();
 	}
 
-	const float inv_scale = 1.0f / VoxelBufferInternal::get_sdf_quantization_scale(depth);
+	const float inv_scale = 1.0f / VoxelBuffer::get_sdf_quantization_scale(depth);
 	for (unsigned int i = 0; i < sdf.size(); ++i) {
 		sdf[i] *= inv_scale;
 	}
@@ -166,7 +166,7 @@ VoxelModifier *VoxelModifierStack::get_modifier(uint32_t id) const {
 	return nullptr;
 }
 
-void VoxelModifierStack::apply(VoxelBufferInternal &voxels, AABB aabb) const {
+void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 
