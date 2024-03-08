@@ -21,7 +21,7 @@
 #include <godot_cpp/core/memory.hpp>
 
 #define ZN_NEW(t) memnew(t)
-#define ZN_DELETE(t) godot::memdelete(t)
+#define ZN_DELETE(t) ::godot::memdelete(t)
 #define ZN_ALLOC(size) memalloc(size)
 #define ZN_REALLOC(p, size) memrealloc(p, size)
 #define ZN_FREE(p) memfree(p)
@@ -59,7 +59,7 @@ UniquePtr<T> make_unique_instance(Types &&...args) {
 
 template <class T, class... Types, std::enable_if_t<!std::is_array_v<T>, int> = 0>
 inline std::shared_ptr<T> make_shared_instance(Types &&...args) {
-	return std::shared_ptr<T>(ZN_NEW(T(std::forward<Types>(args)...)), memdelete<T>);
+	return std::shared_ptr<T>(ZN_NEW(T(std::forward<Types>(args)...)), [](T *p) { ZN_DELETE(p); });
 }
 
 } // namespace zylann

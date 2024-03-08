@@ -195,6 +195,7 @@ void print_size_reminders() {
 
 void initialize_voxel_module(ModuleInitializationLevel p_level) {
 	using namespace zylann;
+	using namespace zylann::godot;
 	using namespace voxel;
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {

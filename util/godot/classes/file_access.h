@@ -21,7 +21,7 @@ inline Ref<FileAccess> open_file(const String path, FileAccess::ModeFlags mode_f
 #elif defined(ZN_GODOT_EXTENSION)
 	Ref<FileAccess> file = FileAccess::open(path, mode_flags);
 	out_error = FileAccess::get_open_error();
-	if (out_error != godot::OK) {
+	if (out_error != ::godot::OK) {
 		return Ref<FileAccess>();
 	} else {
 		return file;

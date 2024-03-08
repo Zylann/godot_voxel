@@ -56,7 +56,7 @@ void println(const char *cstr) {
 #if defined(ZN_GODOT)
 	print_line(cstr);
 #elif defined(ZN_GODOT_EXTENSION)
-	godot::UtilityFunctions::print(cstr);
+	::godot::UtilityFunctions::print(cstr);
 #endif
 
 #endif

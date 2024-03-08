@@ -49,7 +49,7 @@ void Thread::set_name(const char *name) {
 #elif defined(ZN_GODOT_EXTENSION)
 
 struct ThreadImpl {
-	godot::Ref<godot::Thread> thread;
+	::godot::Ref<::godot::Thread> thread;
 	ZN_GodotThreadHelper *helper;
 
 	ThreadImpl() {
@@ -71,9 +71,9 @@ Thread::~Thread() {
 }
 
 void Thread::start(Callback p_callback, void *p_userdata, Priority priority) {
-	godot::Thread::Priority gd_priority = godot::Thread::Priority(priority);
+	::godot::Thread::Priority gd_priority = ::godot::Thread::Priority(priority);
 	_impl->helper->set_callback(p_callback, p_userdata);
-	_impl->thread->start(godot::Callable(_impl->helper, godot::StringName("run")), gd_priority);
+	_impl->thread->start(::godot::Callable(_impl->helper, ::godot::StringName("run")), gd_priority);
 }
 
 bool Thread::is_started() const {
