@@ -144,7 +144,7 @@
 
 #endif // TOOLS_ENABLED
 
-#ifdef VOXEL_RUN_TESTS
+#ifdef VOXEL_TESTS
 #include "tests/tests.h"
 #endif
 
@@ -364,8 +364,17 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		VoxelMesherTransvoxel::load_static_resources();
 
-#ifdef VOXEL_RUN_TESTS
-		zylann::voxel::tests::run_voxel_tests();
+#ifdef VOXEL_TESTS
+		const PackedStringArray command_line_arguments = zylann::godot::get_command_line_arguments();
+		const String tests_cmd = "--run_voxel_tests";
+
+		for (int i = 0; i < command_line_arguments.size(); ++i) {
+			const String arg = command_line_arguments[i];
+			if (arg == tests_cmd) {
+				zylann::voxel::tests::run_voxel_tests();
+				break;
+			}
+		}
 #endif
 	}
 

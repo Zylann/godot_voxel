@@ -16,7 +16,7 @@ FAST_NOISE_2_SRC = env["voxel_fast_noise_2"]
 if not env["arch"].startswith("x86"):
 	FAST_NOISE_2_SRC = False
 
-RUN_TESTS = env["voxel_tests"]
+INCLUDE_TESTS = env["voxel_tests"]
 
 env_voxel = env_modules.Clone()
 
@@ -27,7 +27,7 @@ env_voxel.Append(CPPDEFINES=[
 	"ZN_GODOT"
 ])
 
-if RUN_TESTS:
+if INCLUDE_TESTS:
 	voxel_files += [
 		"tests/*.cpp",
 		"tests/util/*.cpp",
@@ -37,7 +37,7 @@ if RUN_TESTS:
 	if FAST_NOISE_2_SRC:
 		voxel_files += ["tests/fast_noise_2/*.cpp"]
 
-	env_voxel.Append(CPPDEFINES={"VOXEL_RUN_TESTS": 0})
+	env_voxel.Append(CPPDEFINES={"VOXEL_TESTS": 1})
 
 # ----------------------------------------------------------------------------------------------------------------------
 # SQLite

@@ -100,11 +100,14 @@ Same for `VoxelBuffer`: this class is actually not a full-fledged Godot object. 
 Tests
 -------
 
-Tests are not mandatory, but if there is time to make new ones, it's good to have.
+Tests are not mandatory, but if there is time to make new ones, it's good to have. Full coverage isn't really a goal, but it's useful when troubleshooting some bugs and ensuring they don't come back.
 
-The module recently includes a `tests/` folder, which contains unit tests. At time of writing, there are very few of them, and I still don't write new ones often. As a game developer, writing unit tests for everything isn't part of my habits, but I recognize that for a module like this one, it is always better to have some if a feature can be easily tested. It even helped fix a few bugs already. 
+### Internal tests
 
-No test framework is used at the moment, instead they just run by either printing an error when they fail or not. In Godot 4 the Doctest framework is used, so we may see if we can migrate to that later.
+The module contains internal tests in the `tests/` folder. No test framework is used at the moment, instead they just run by either printing an error when they fail or not.
+
+Tests will only be compiled if `voxel_tests=yes` is passed as parameter to the SCons command line.
+Tests will run on startup if `--run_voxel_tests` is passed as command line parameter when launching Godot.
 
 
 Threads
@@ -402,7 +405,7 @@ Some can be specified through SCons command line parameters.
 - `MESHOPTIMIZER_ZYLANN_NEVER_COLLAPSE_BORDERS`: this one must be defined to fix an issue with `MeshOptimizer`. See [https://github.com/zeux/meshoptimizer/issues/311](https://github.com/zeux/meshoptimizer/issues/311)
 - `MESHOPTIMIZER_ZYLANN_WRAP_LIBRARY_IN_NAMESPACE`: this one must be defined to prevent conflict with Godot's own version of MeshOptimizer. See [https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624](https://github.com/zeux/meshoptimizer/issues/311#issuecomment-955750624)
 - `VOXEL_ENABLE_FAST_NOISE_2`: if defined, the module will compile with integrated support for SIMD noise using FastNoise2. It is optional in case it causes problem on some compilers or platforms. SCons parameter: `voxel_fast_noise_2=yes`
-- `VOXEL_RUN_TESTS`: If `True`, tests will be compiled and run on startup to verify if some features of the engine still work correctly. It is off by default in production builds. This is mostly for debug builds when doing C++ development on the module. SCons parameter: `voxel_tests=yes`
+- `VOXEL_TESTS`: If `True`, tests will be compiled as part of the build (SCons parameter: `voxel_tests=yes`). They will run on startup if the `--run_voxel_tests` command line argument is passed. 
 - `ZN_GODOT`: must be defined when compiling this project as a module.
 - `ZN_GODOT_EXTENSION`: must be defined when compiling this project as a GDExtension.
 
