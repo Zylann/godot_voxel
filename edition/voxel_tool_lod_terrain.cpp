@@ -674,7 +674,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	uint32_t materials_to_instance_mask = 0;
 	{
-		std::vector<godot::ShaderParameterInfo> params;
+		std::vector<zylann::godot::ShaderParameterInfo> params;
 		const String u_block_local_transform = VoxelStringNames::get_singleton().u_block_local_transform;
 
 		ZN_ASSERT_RETURN_V_MSG(materials.size() < 32, Array(),
@@ -692,9 +692,9 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			}
 
 			params.clear();
-			get_shader_parameter_list(shader->get_rid(), params);
+			zylann::godot::get_shader_parameter_list(shader->get_rid(), params);
 
-			for (const godot::ShaderParameterInfo &param_info : params) {
+			for (const zylann::godot::ShaderParameterInfo &param_info : params) {
 				if (param_info.name == u_block_local_transform) {
 					materials_to_instance_mask |= (1 << material_index);
 					break;
@@ -765,7 +765,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// because we build these buffers from connected groups that had negative SDF.
 			ERR_CONTINUE(mesh.is_null());
 
-			if (godot::is_mesh_empty(**mesh)) {
+			if (zylann::godot::is_mesh_empty(**mesh)) {
 				continue;
 			}
 
@@ -863,7 +863,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(mesh_sdf.is_null());
 	ERR_FAIL_COND(!mesh_sdf->is_baked());
-	Ref<gd::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
+	Ref<godot::VoxelBuffer> buffer_ref = mesh_sdf->get_voxel_buffer();
 	ERR_FAIL_COND(buffer_ref.is_null());
 	const VoxelBufferInternal &buffer = buffer_ref->get_buffer();
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;

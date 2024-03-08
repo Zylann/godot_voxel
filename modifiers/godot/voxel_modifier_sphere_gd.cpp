@@ -1,7 +1,7 @@
 #include "voxel_modifier_sphere_gd.h"
 #include "../voxel_modifier_sphere.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 zylann::voxel::VoxelModifierSphere *get_sphere(VoxelLodTerrain &volume, uint32_t id) {
 	return get_modifier<zylann::voxel::VoxelModifierSphere>(volume, id, zylann::voxel::VoxelModifier::TYPE_SPHERE);
@@ -39,4 +39,4 @@ void VoxelModifierSphere::_bind_methods() {
 			PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "0.0, 100.0, 0.1"), "set_radius", "get_radius");
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

@@ -26,7 +26,7 @@ struct ComputeShaderParameters;
 struct StreamingDependency;
 class VoxelData;
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -177,7 +177,7 @@ public:
 protected:
 	static void _bind_methods();
 
-	void _b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
+	void _b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod);
 
 	std::shared_ptr<ComputeShader> _detail_rendering_shader;
 	std::shared_ptr<ComputeShaderParameters> _detail_rendering_shader_parameters;

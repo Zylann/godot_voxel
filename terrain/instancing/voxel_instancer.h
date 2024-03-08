@@ -204,7 +204,7 @@ private:
 		bool pending_instances = false;
 		// Position in mesh block coordinate system
 		Vector3i grid_position;
-		godot::DirectMultiMeshInstance multimesh_instance;
+		zylann::godot::DirectMultiMeshInstance multimesh_instance;
 		// For physics we use nodes because it's easier to manage.
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
@@ -281,7 +281,7 @@ private:
 	std::shared_ptr<VoxelInstancerTaskOutputQueue> _loading_results;
 
 #ifdef TOOLS_ENABLED
-	godot::DebugRenderer _debug_renderer;
+	zylann::godot::DebugRenderer _debug_renderer;
 	bool _gizmos_enabled = false;
 	uint8_t _debug_draw_flags = 0;
 #endif

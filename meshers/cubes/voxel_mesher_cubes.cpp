@@ -637,7 +637,7 @@ Ref<Image> make_greedy_atlas(
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];
 			sizes[i] = Vector2i(im.size_x, im.size_y);
 		}
-		godot::geometry_2d_make_atlas(to_span(sizes), result_points, result_size);
+		zylann::godot::geometry_2d_make_atlas(to_span(sizes), result_points, result_size);
 	}
 
 	// DEBUG
@@ -921,14 +921,16 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			Array &mesh_arrays = surface.arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
 
+			using namespace zylann::godot;
+
 			{
 				PackedVector3Array positions;
 				PackedVector3Array normals;
 				PackedInt32Array indices;
 
-				godot::copy_to(positions, arrays.positions);
-				godot::copy_to(normals, arrays.normals);
-				godot::copy_to(indices, arrays.indices);
+				copy_to(positions, arrays.positions);
+				copy_to(normals, arrays.normals);
+				copy_to(indices, arrays.indices);
 
 				mesh_arrays[Mesh::ARRAY_VERTEX] = positions;
 				mesh_arrays[Mesh::ARRAY_NORMAL] = normals;
@@ -936,12 +938,12 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 
 				if (arrays.colors.size() > 0) {
 					PackedColorArray colors;
-					godot::copy_to(colors, arrays.colors);
+					copy_to(colors, arrays.colors);
 					mesh_arrays[Mesh::ARRAY_COLOR] = colors;
 				}
 				if (arrays.uvs.size() > 0) {
 					PackedVector2Array uvs;
-					godot::copy_to(uvs, arrays.uvs);
+					copy_to(uvs, arrays.uvs);
 					mesh_arrays[Mesh::ARRAY_TEX_UV] = uvs;
 				}
 			}
@@ -1099,6 +1101,8 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	const Vector3 centering_offset = -Vector3(im_size_x, im_size_y, 1) / 2.0;
 
 	for (unsigned int i = 0; i < output.surfaces.size(); ++i) {
+		using namespace zylann::godot;
+
 		VoxelMesher::Output::Surface &surface = output.surfaces[i];
 		Array arrays = surface.arrays;
 
@@ -1107,14 +1111,14 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!godot::is_surface_triangulated(arrays)) {
+		if (!is_surface_triangulated(arrays)) {
 			continue;
 		}
 
-		godot::offset_surface(arrays, centering_offset);
+		offset_surface(arrays, centering_offset);
 
 		if (voxel_size != 1.f) {
-			godot::scale_surface(arrays, voxel_size);
+			scale_surface(arrays, voxel_size);
 		}
 
 		mesh->add_surface_from_arrays(output.primitive_type, arrays, Array(), Dictionary(), output.mesh_flags);

@@ -6,7 +6,7 @@
 
 namespace zylann::voxel {
 
-VoxelToolBuffer::VoxelToolBuffer(Ref<gd::VoxelBuffer> vb) {
+VoxelToolBuffer::VoxelToolBuffer(Ref<godot::VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
 	_buffer = vb;
 }
@@ -118,7 +118,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint
 	_buffer->get_buffer().copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
 }
 
-void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask,
+void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
 		uint8_t mask_channel, uint64_t mask_value) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());

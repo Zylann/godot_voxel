@@ -10,6 +10,7 @@
 namespace zylann::voxel {
 
 using namespace pg;
+using namespace zylann::godot;
 
 namespace {
 const char *AUTOCONNECT_PROPERTY_NAME = "autoconnect_default_inputs";
@@ -80,7 +81,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 					}
 					hint_string += param.enum_items[item_index];
 				}
-				pi.hint_string = godot::to_godot(hint_string);
+				pi.hint_string = to_godot(hint_string);
 				pi.hint = PROPERTY_HINT_ENUM;
 			}
 
@@ -175,7 +176,7 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 		ur.add_do_method(&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
-	ur.add_do_method(&graph, "set_expression_node_inputs", node_id, godot::to_godot(new_input_names));
+	ur.add_do_method(&graph, "set_expression_node_inputs", node_id, to_godot(new_input_names));
 
 	for (size_t i = 0; i < to_reconnect.size(); ++i) {
 		const Connection con = to_reconnect[i];
@@ -190,7 +191,7 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 				&graph, "remove_connection", con.src.node_id, con.src.port_index, node_id, con.dst_port_index);
 	}
 
-	ur.add_undo_method(&graph, "set_expression_node_inputs", node_id, godot::to_godot(old_input_names));
+	ur.add_undo_method(&graph, "set_expression_node_inputs", node_id, to_godot(old_input_names));
 
 	for (size_t i = 0; i < to_disconnect.size(); ++i) {
 		const Connection con = to_disconnect[i];

@@ -10,7 +10,7 @@ ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial);
 
 namespace zylann::voxel {
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -27,7 +27,7 @@ public:
 	~VoxelMesherTransvoxel();
 
 	void build(VoxelMesher::Output &output, const VoxelMesher::Input &input) override;
-	Ref<ArrayMesh> build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction);
+	Ref<ArrayMesh> build_transition_mesh(Ref<godot::VoxelBuffer> voxels, int direction);
 
 	int get_used_channels_mask() const override;
 

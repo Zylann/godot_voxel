@@ -32,8 +32,8 @@ protected:
 	static void _bind_methods();
 
 private:
-	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
-	gd::VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
+	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	struct Parameters {
 		VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;

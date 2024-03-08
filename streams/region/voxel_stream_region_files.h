@@ -69,8 +69,8 @@ private:
 	EmergeResult _load_block(VoxelBufferInternal &out_buffer, Vector3i block_pos, int lod);
 	void _save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod);
 
-	godot::FileResult save_meta();
-	godot::FileResult load_meta();
+	zylann::godot::FileResult save_meta();
+	zylann::godot::FileResult load_meta();
 	Vector3i get_block_position_from_voxels(const Vector3i &origin_in_voxels) const;
 	Vector3i get_region_position_from_blocks(const Vector3i &block_position) const;
 	void close_all_regions();

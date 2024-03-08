@@ -313,8 +313,10 @@ void VoxelInstancer::process_task_results() {
 #ifdef TOOLS_ENABLED
 
 void VoxelInstancer::process_gizmos() {
+	using namespace zylann::godot;
+
 	struct L {
-		static inline void draw_box(godot::DebugRenderer &dr, const Transform3D parent_transform, Vector3i bpos,
+		static inline void draw_box(DebugRenderer &dr, const Transform3D parent_transform, Vector3i bpos,
 				unsigned int lod_index, unsigned int base_block_size_po2, Color8 color) {
 			const int block_size_po2 = base_block_size_po2 + lod_index;
 			const int block_size = 1 << block_size_po2;
@@ -342,7 +344,7 @@ void VoxelInstancer::process_gizmos() {
 				if (block.multimesh_instance.get_multimesh().is_null()) {
 					// Allocated but without multimesh (wut?)
 					color = Color8(128, 0, 0, 255);
-				} else if (godot::get_visible_instance_count(**block.multimesh_instance.get_multimesh()) == 0) {
+				} else if (get_visible_instance_count(**block.multimesh_instance.get_multimesh()) == 0) {
 					// Allocated but empty multimesh
 					color = Color8(255, 64, 0, 255);
 				}
@@ -394,7 +396,7 @@ namespace {
 Vector3 get_global_camera_position(const Node &node) {
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
-		return gd::get_3d_editor_camera_position();
+		return zylann::voxel::godot::get_3d_editor_camera_position();
 	}
 #endif
 	const Viewport *viewport = node.get_viewport();
@@ -710,7 +712,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			}
 			Ref<MultiMesh> multimesh = render_block.multimesh_instance.get_multimesh();
 			ERR_FAIL_COND(multimesh.is_null());
-			const int instance_count = godot::get_visible_instance_count(**multimesh);
+			const int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 			const float h = render_block_size / 2;
 			for (int i = 0; i < instance_count; ++i) {
 				// TODO This is terrible in MT mode! Think about keeping a local copy...
@@ -1175,7 +1177,7 @@ void VoxelInstancer::update_block_from_transforms( //
 				multimesh->set_visible_instance_count(-1);
 			}
 			PackedFloat32Array bulk_array;
-			godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
+			zylann::godot::DirectMultiMeshInstance::make_transform_3d_bulk_array(transforms, bulk_array);
 			multimesh->set_instance_count(transforms.size());
 
 			// Setting the mesh BEFORE `multimesh_set_buffer` because otherwise Godot computes the AABB inside
@@ -1438,7 +1440,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(Vector3i data_grid_pos, int lod_in
 
 			ZN_PROFILE_SCOPE();
 
-			const int instance_count = godot::get_visible_instance_count(**multimesh);
+			const int instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 
 			if (render_to_data_factor == 1) {
 				layer_data.instances.resize(instance_count);
@@ -1553,7 +1555,7 @@ void VoxelInstancer::remove_floating_multimesh_instances(Block &block, const Tra
 	Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 	ERR_FAIL_COND(multimesh.is_null());
 
-	const int initial_instance_count = godot::get_visible_instance_count(**multimesh);
+	const int initial_instance_count = zylann::godot::get_visible_instance_count(**multimesh);
 	int instance_count = initial_instance_count;
 
 	const Transform3D block_global_transform =
@@ -1766,7 +1768,7 @@ void VoxelInstancer::on_body_removed(
 		Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 		ERR_FAIL_COND(multimesh.is_null());
 
-		int visible_count = godot::get_visible_instance_count(**multimesh);
+		int visible_count = zylann::godot::get_visible_instance_count(**multimesh);
 		ERR_FAIL_COND(static_cast<int>(instance_index) >= visible_count);
 
 		--visible_count;
@@ -1868,7 +1870,7 @@ void VoxelInstancer::debug_get_instance_counts(std::unordered_map<uint32_t, uint
 			Ref<MultiMesh> multimesh = block.multimesh_instance.get_multimesh();
 			ZN_ASSERT_CONTINUE(multimesh.is_valid());
 
-			count += godot::get_visible_instance_count(**multimesh);
+			count += zylann::godot::get_visible_instance_count(**multimesh);
 		}
 
 		counts_per_layer[block.layer_id] += count;
@@ -1889,7 +1891,7 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 	Node *root = debug_dump_as_nodes();
 	ERR_FAIL_COND(root == nullptr);
 
-	godot::set_nodes_owner_except_root(root, root);
+	zylann::godot::set_nodes_owner_except_root(root, root);
 
 	Ref<PackedScene> packed_scene;
 	packed_scene.instantiate();
@@ -1897,7 +1899,7 @@ void VoxelInstancer::debug_dump_as_scene(String fpath) const {
 	memdelete(root);
 	ERR_FAIL_COND(pack_result != OK);
 
-	const Error save_result = godot::save_resource(packed_scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
+	const Error save_result = zylann::godot::save_resource(packed_scene, fpath, ResourceSaver::FLAG_BUNDLE_RESOURCES);
 	ERR_FAIL_COND(save_result != OK);
 }
 
@@ -2028,7 +2030,7 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 		warnings.append(ZN_TTR("The assigned library is empty. Add items to it so they can be spawned."));
 
 	} else {
-		godot::get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
+		zylann::godot::get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
 	}
 }
 

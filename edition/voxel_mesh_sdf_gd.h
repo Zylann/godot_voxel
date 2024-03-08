@@ -72,7 +72,7 @@ public:
 	// There are some usages (like modifiers) that will read it from different threads,
 	// but there is no thread safety in case of direct modification.
 	// TODO Introduce a VoxelBufferReadOnly? Since that's likely the only way in an object-oriented script API...
-	Ref<gd::VoxelBuffer> get_voxel_buffer() const;
+	Ref<godot::VoxelBuffer> get_voxel_buffer() const;
 
 	// Gets the padded bounding box of the model. This is important to know for signed distances to be coherent.
 	AABB get_aabb() const;
@@ -89,7 +89,7 @@ public:
 	Array debug_check_sdf(Ref<Mesh> mesh);
 
 private:
-	void _on_bake_async_completed(Ref<gd::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos);
+	void _on_bake_async_completed(Ref<godot::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos);
 
 	Dictionary _b_get_data() const;
 	void _b_set_data(Dictionary d);
@@ -97,7 +97,7 @@ private:
 	static void _bind_methods();
 
 	// Data
-	Ref<gd::VoxelBuffer> _voxel_buffer;
+	Ref<godot::VoxelBuffer> _voxel_buffer;
 	Vector3f _min_pos;
 	Vector3f _max_pos;
 	// Stored as a shared_ptr in case that resource is in use while being re-generated

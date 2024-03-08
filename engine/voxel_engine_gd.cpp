@@ -9,7 +9,9 @@
 #include "../util/tasks/godot/threaded_task_gd.h"
 #include "voxel_engine.h"
 
-namespace zylann::voxel::gd {
+using namespace zylann::godot;
+
+namespace zylann::voxel::godot {
 VoxelEngine *g_voxel_engine = nullptr;
 
 VoxelEngine *VoxelEngine::get_singleton() {
@@ -37,13 +39,12 @@ zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
 
 	// Compute thread count for general pool.
 
-	godot::add_custom_project_setting(
-			Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64", 1, true);
-	godot::add_custom_project_setting(
+	add_custom_project_setting(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64", 1, true);
+	add_custom_project_setting(
 			Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64", 1, true);
-	godot::add_custom_project_setting(
+	add_custom_project_setting(
 			Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1", 0.5f, true);
-	godot::add_custom_project_setting(
+	add_custom_project_setting(
 			Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000", 8, true);
 
 	out_main_thread_time_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));
@@ -152,4 +153,4 @@ void VoxelEngine::_bind_methods() {
 #endif
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

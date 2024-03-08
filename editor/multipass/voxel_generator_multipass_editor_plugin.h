@@ -6,8 +6,8 @@
 
 namespace zylann::voxel {
 
-class VoxelGeneratorMultipassEditorPlugin : public godot::ZN_EditorPlugin {
-	GDCLASS(VoxelGeneratorMultipassEditorPlugin, godot::ZN_EditorPlugin)
+class VoxelGeneratorMultipassEditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(VoxelGeneratorMultipassEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
 	VoxelGeneratorMultipassEditorPlugin();
 

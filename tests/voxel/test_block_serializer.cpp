@@ -52,7 +52,7 @@ void test_block_serializer() {
 void test_block_serializer_stream_peer() {
 	// Create an example buffer
 	const Vector3i block_size(8, 9, 10);
-	Ref<gd::VoxelBuffer> voxel_buffer;
+	Ref<godot::VoxelBuffer> voxel_buffer;
 	voxel_buffer.instantiate();
 	voxel_buffer->create(block_size.x, block_size.y, block_size.z);
 	voxel_buffer->fill_area(42, Vector3i(1, 2, 3), Vector3i(5, 5, 5), 0);
@@ -63,20 +63,20 @@ void test_block_serializer_stream_peer() {
 	peer.instantiate();
 	// peer->clear();
 
-	const int size = gd::VoxelBlockSerializer::serialize_to_stream_peer(peer, voxel_buffer, true);
+	const int size = godot::VoxelBlockSerializer::serialize_to_stream_peer(peer, voxel_buffer, true);
 
 	PackedByteArray data_array = peer->get_data_array();
 
 	// Client
 
-	Ref<gd::VoxelBuffer> voxel_buffer2;
+	Ref<godot::VoxelBuffer> voxel_buffer2;
 	voxel_buffer2.instantiate();
 
 	Ref<StreamPeerBuffer> peer2;
 	peer2.instantiate();
 	peer2->set_data_array(data_array);
 
-	gd::VoxelBlockSerializer::deserialize_from_stream_peer(peer2, voxel_buffer2, size, true);
+	godot::VoxelBlockSerializer::deserialize_from_stream_peer(peer2, voxel_buffer2, size, true);
 
 	ZN_TEST_ASSERT(voxel_buffer2->get_buffer().equals(voxel_buffer->get_buffer()));
 }

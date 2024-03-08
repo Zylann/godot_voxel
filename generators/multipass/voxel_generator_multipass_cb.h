@@ -90,7 +90,7 @@ public:
 	// Run the generator to get a particular column from scratch, using a single thread for better script debugging
 	// (since Godot 4 still doesn't support debugging scripts in different threads, at time of writing). This doesn't
 	// use the internal cache and can be extremely slow.
-	TypedArray<gd::VoxelBuffer> debug_generate_test_column(Vector2i column_position_blocks);
+	TypedArray<godot::VoxelBuffer> debug_generate_test_column(Vector2i column_position_blocks);
 
 	// Internal
 
@@ -128,7 +128,7 @@ protected:
 	GDVIRTUAL2(_generate_pass, Ref<VoxelToolMultipassGenerator>, int)
 
 	// Called outside of the column region so it is possible to define what generates past the top and bottom
-	GDVIRTUAL2(_generate_block_fallback, Ref<gd::VoxelBuffer>, Vector3i)
+	GDVIRTUAL2(_generate_block_fallback, Ref<godot::VoxelBuffer>, Vector3i)
 
 	GDVIRTUAL0RC(int, _get_used_channels_mask)
 #endif

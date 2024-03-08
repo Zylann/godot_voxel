@@ -1,18 +1,18 @@
 #include "voxel_metadata_variant.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 size_t VoxelMetadataVariant::get_serialized_size() const {
-	return godot::get_variant_encoded_size(data);
+	return zylann::godot::get_variant_encoded_size(data);
 }
 
 size_t VoxelMetadataVariant::serialize(Span<uint8_t> dst) const {
-	return godot::encode_variant(data, dst);
+	return zylann::godot::encode_variant(data, dst);
 }
 
 bool VoxelMetadataVariant::deserialize(Span<const uint8_t> src, uint64_t &out_read_size) {
 	size_t read_size = 0;
-	const bool success = godot::decode_variant(src, data, read_size);
+	const bool success = zylann::godot::decode_variant(src, data, read_size);
 	out_read_size = read_size;
 	return success;
 }
@@ -59,4 +59,4 @@ void set_as_variant(VoxelMetadata &meta, Variant v) {
 	}
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

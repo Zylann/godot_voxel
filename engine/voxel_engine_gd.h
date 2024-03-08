@@ -7,7 +7,7 @@ namespace zylann {
 class ZN_ThreadedTask;
 } // namespace zylann
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 // Godot-facing singleton class.
 // the real class is internal and does not need anything from Object.
@@ -43,6 +43,6 @@ private:
 #endif
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_ENGINE_GD_H

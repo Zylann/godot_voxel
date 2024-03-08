@@ -13,7 +13,7 @@ ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
 namespace zylann::voxel {
 
-namespace gd {
+namespace godot {
 class VoxelBuffer;
 }
 
@@ -126,7 +126,7 @@ public:
 	virtual Ref<ShaderMaterial> get_default_lod_material() const;
 
 protected:
-	Ref<Mesh> _b_build_mesh(Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
+	Ref<Mesh> _b_build_mesh(Ref<godot::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data);
 	static void _bind_methods();
 
 	void set_padding(int minimum, int maximum);

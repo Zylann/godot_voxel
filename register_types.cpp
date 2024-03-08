@@ -179,7 +179,7 @@ void print_size_reminders() {
 	ZN_PRINT_VERBOSE(format("Size of Mutex: {}", sizeof(zylann::Mutex)));
 	ZN_PRINT_VERBOSE(format("Size of BinaryMutex: {}", sizeof(zylann::BinaryMutex)));
 
-	ZN_PRINT_VERBOSE(format("Size of gd::VoxelBuffer: {}", sizeof(gd::VoxelBuffer)));
+	ZN_PRINT_VERBOSE(format("Size of godot::VoxelBuffer: {}", sizeof(voxel::godot::VoxelBuffer)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelBufferInternal: {}", sizeof(VoxelBufferInternal)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelMeshBlock: {}", sizeof(VoxelMeshBlock)));
 	ZN_PRINT_VERBOSE(format("Size of VoxelTerrain: {}", sizeof(VoxelTerrain)));
@@ -206,7 +206,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// TODO Enhancement: can I prevent users from instancing `VoxelEngine`?
 		// This class is used as a singleton so it's not really abstract.
 		// Should I use `register_abstract_class` anyways?
-		ClassDB::register_class<gd::VoxelEngine>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelEngine>();
 
 		// Misc
 
@@ -237,7 +237,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<pg::VoxelGraphFunction>();
 
 		// Storage
-		ClassDB::register_class<gd::VoxelBuffer>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelBuffer>();
 
 		// Nodes
 		ClassDB::register_abstract_class<VoxelNode>();
@@ -248,9 +248,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelInstancer>();
 		ClassDB::register_class<VoxelInstanceComponent>();
 		ClassDB::register_abstract_class<VoxelInstancerRigidBody>();
-		ClassDB::register_abstract_class<gd::VoxelModifier>();
-		ClassDB::register_class<gd::VoxelModifierSphere>();
-		ClassDB::register_class<gd::VoxelModifierMesh>();
+		ClassDB::register_abstract_class<zylann::voxel::godot::VoxelModifier>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelModifierSphere>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelModifierMesh>();
 
 		// Streams
 		ClassDB::register_abstract_class<VoxelStream>();
@@ -281,7 +281,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// And this can happen in a thread, causing crashes due to the concurrent access
 		ClassDB::register_abstract_class<VoxelToolBuffer>();
 		ClassDB::register_abstract_class<VoxelToolMultipassGenerator>();
-		ClassDB::register_class<gd::VoxelBlockSerializer>();
+		ClassDB::register_class<zylann::voxel::godot::VoxelBlockSerializer>();
 		ClassDB::register_class<VoxelVoxLoader>();
 		ClassDB::register_class<ZN_FastNoiseLite>();
 		ClassDB::register_class<ZN_FastNoiseLiteGradient>();
@@ -337,7 +337,7 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		unsigned int main_thread_budget_usec;
 		const VoxelEngine::ThreadsConfig threads_config =
-				gd::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
+				zylann::voxel::godot::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
 		VoxelEngine::create_singleton(threads_config);
 		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
 #if defined(ZN_GODOT)
@@ -357,11 +357,11 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		// different threads
 #endif
 
-		gd::VoxelEngine::create_singleton();
-		zylann::godot::add_singleton("VoxelEngine", gd::VoxelEngine::get_singleton());
+		zylann::voxel::godot::VoxelEngine::create_singleton();
+		zylann::godot::add_singleton("VoxelEngine", zylann::voxel::godot::VoxelEngine::get_singleton());
 
-		VoxelMetadataFactory::get_singleton().add_constructor_by_type<gd::VoxelMetadataVariant>(
-				gd::METADATA_TYPE_VARIANT);
+		VoxelMetadataFactory::get_singleton().add_constructor_by_type<zylann::voxel::godot::VoxelMetadataVariant>(
+				zylann::voxel::godot::METADATA_TYPE_VARIANT);
 
 		VoxelMesherTransvoxel::load_static_resources();
 
@@ -507,7 +507,7 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelMesherTransvoxel::free_static_resources();
 		VoxelStringNames::destroy_singleton();
 		pg::NodeTypeDB::destroy_singleton();
-		gd::VoxelEngine::destroy_singleton();
+		zylann::voxel::godot::VoxelEngine::destroy_singleton();
 		VoxelEngine::destroy_singleton();
 
 		// Do this last as VoxelEngine might still be holding some refs to voxel blocks

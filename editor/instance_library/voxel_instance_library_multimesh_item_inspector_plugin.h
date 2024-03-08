@@ -7,8 +7,8 @@ namespace zylann::voxel {
 
 class VoxelInstanceLibraryMultiMeshItemEditorPlugin;
 
-class VoxelInstanceLibraryMultiMeshItemInspectorPlugin : public godot::ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelInstanceLibraryMultiMeshItemInspectorPlugin, godot::ZN_EditorInspectorPlugin)
+class VoxelInstanceLibraryMultiMeshItemInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelInstanceLibraryMultiMeshItemInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 public:
 	VoxelInstanceLibraryMultiMeshItemEditorPlugin *listener = nullptr;
 

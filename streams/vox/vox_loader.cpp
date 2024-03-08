@@ -6,10 +6,10 @@
 
 namespace zylann::voxel {
 
-int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<gd::VoxelBuffer> p_voxels,
-		Ref<VoxelColorPalette> palette, gd::VoxelBuffer::ChannelId dst_channel) {
+int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<godot::VoxelBuffer> p_voxels,
+		Ref<VoxelColorPalette> palette, godot::VoxelBuffer::ChannelId dst_channel) {
 	ZN_DSTACK();
-	ERR_FAIL_INDEX_V(dst_channel, gd::VoxelBuffer::MAX_CHANNELS, ERR_INVALID_PARAMETER);
+	ERR_FAIL_INDEX_V(dst_channel, godot::VoxelBuffer::MAX_CHANNELS, ERR_INVALID_PARAMETER);
 	ERR_FAIL_COND_V(p_voxels.is_null(), ERR_INVALID_PARAMETER);
 	VoxelBufferInternal &voxels = p_voxels->get_buffer();
 
@@ -77,7 +77,7 @@ int /*Error*/ VoxelVoxLoader::load_from_file(String fpath, Ref<gd::VoxelBuffer> 
 
 void VoxelVoxLoader::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("load_from_file", "fpath", "voxels", "palette", "dst_channel"),
-			&VoxelVoxLoader::load_from_file, DEFVAL(gd::VoxelBuffer::CHANNEL_COLOR));
+			&VoxelVoxLoader::load_from_file, DEFVAL(godot::VoxelBuffer::CHANNEL_COLOR));
 }
 
 } // namespace zylann::voxel

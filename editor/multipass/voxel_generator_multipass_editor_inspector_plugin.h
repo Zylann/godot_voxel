@@ -5,8 +5,8 @@
 
 namespace zylann::voxel {
 
-class VoxelGeneratorMultipassEditorInspectorPlugin : public godot::ZN_EditorInspectorPlugin {
-	GDCLASS(VoxelGeneratorMultipassEditorInspectorPlugin, godot::ZN_EditorInspectorPlugin)
+class VoxelGeneratorMultipassEditorInspectorPlugin : public zylann::godot::ZN_EditorInspectorPlugin {
+	GDCLASS(VoxelGeneratorMultipassEditorInspectorPlugin, zylann::godot::ZN_EditorInspectorPlugin)
 protected:
 	bool _zn_can_handle(const Object *p_object) const override;
 	void _zn_parse_begin(Object *p_object) override;

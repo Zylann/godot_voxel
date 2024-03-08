@@ -1076,7 +1076,7 @@ void VoxelData::set_voxel_metadata(Vector3i pos, Variant meta) {
 	ZN_ASSERT_RETURN_MSG(block->has_voxels(), "Area not cached");
 	VoxelMetadata *meta_storage = block->get_voxels().get_or_create_voxel_metadata(lod.map.to_local(pos));
 	ZN_ASSERT_RETURN(meta_storage != nullptr);
-	gd::set_as_variant(*meta_storage, meta);
+	godot::set_as_variant(*meta_storage, meta);
 }
 
 Variant VoxelData::get_voxel_metadata(Vector3i pos) {
@@ -1094,7 +1094,7 @@ Variant VoxelData::get_voxel_metadata(Vector3i pos) {
 	if (meta == nullptr) {
 		return Variant();
 	}
-	return gd::get_as_variant(*meta);
+	return godot::get_as_variant(*meta);
 }
 
 } // namespace zylann::voxel

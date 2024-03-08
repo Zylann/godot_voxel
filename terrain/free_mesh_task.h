@@ -15,7 +15,7 @@ namespace zylann::voxel {
 // bit longer, assuming that mesh is no longer used. Then the execution of the task releases that reference.
 class FreeMeshTask : public IProgressiveTask {
 public:
-	static inline void try_add_and_destroy(godot::DirectMeshInstance &mi) {
+	static inline void try_add_and_destroy(zylann::godot::DirectMeshInstance &mi) {
 		const Mesh *mesh = mi.get_mesh_ptr();
 		if (mesh != nullptr && mesh->get_reference_count() == 1) {
 			// That instances holds the last reference to this mesh

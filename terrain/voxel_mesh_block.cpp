@@ -212,19 +212,21 @@ bool VoxelMeshBlock::is_collision_enabled() const {
 
 Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 		const VoxelMesher::Output &mesher_output, const VoxelMesher &mesher) {
+	using namespace zylann::godot;
+
 	Ref<ConcavePolygonShape3D> shape;
 
 	if (mesher.is_generating_collision_surface()) {
 		if (mesher_output.collision_surface.submesh_vertex_end != -1) {
 			// Use a sub-region of the render mesh
 			if (mesher_output.surfaces.size() > 0) {
-				shape = godot::create_concave_polygon_shape(
+				shape = create_concave_polygon_shape(
 						mesher_output.surfaces[0].arrays, mesher_output.collision_surface.submesh_index_end);
 			}
 
 		} else {
 			// Use specialized collision mesh
-			shape = godot::create_concave_polygon_shape(to_span(mesher_output.collision_surface.positions),
+			shape = create_concave_polygon_shape(to_span(mesher_output.collision_surface.positions),
 					to_span(mesher_output.collision_surface.indices));
 		}
 
@@ -237,7 +239,7 @@ Ref<ConcavePolygonShape3D> make_collision_shape_from_mesher_output(
 			tls_render_surfaces.push_back(mesher_output.surfaces[i].arrays);
 		}
 
-		shape = godot::create_concave_polygon_shape(to_span(tls_render_surfaces));
+		shape = create_concave_polygon_shape(to_span(tls_render_surfaces));
 
 		tls_render_surfaces.clear();
 	}

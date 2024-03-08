@@ -4,7 +4,7 @@
 #include "../util/godot/core/variant.h"
 #include "voxel_metadata.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 // TODO Not sure if that should be a custom type. Custom types are supposed to be specific to a game?
 enum GodotMetadataTypes { //
@@ -26,6 +26,6 @@ public:
 Variant get_as_variant(const VoxelMetadata &meta);
 void set_as_variant(VoxelMetadata &meta, Variant v);
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_METADATA_VARIANT_H

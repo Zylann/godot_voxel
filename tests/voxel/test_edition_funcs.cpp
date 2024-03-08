@@ -145,7 +145,7 @@ void test_box_blur() {
 
 	struct L {
 		static void save_image(const VoxelBufferInternal &vb, int y, const char *name) {
-			Ref<Image> im = gd::VoxelBuffer::debug_print_sdf_z_slice(vb, 1.f, y);
+			Ref<Image> im = godot::VoxelBuffer::debug_print_sdf_z_slice(vb, 1.f, y);
 			ZN_ASSERT(im.is_valid());
 			im->resize(im->get_width() * 4, im->get_height() * 4, Image::INTERPOLATE_NEAREST);
 			im->save_png(name);

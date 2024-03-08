@@ -115,7 +115,7 @@ namespace zylann::voxel {
 
 Error check_directory_created_using_file_locker(const std::string &directory_path) {
 	VoxelFileLockerWrite file_wlock(directory_path);
-	return godot::check_directory_created(directory_path);
+	return zylann::godot::check_directory_created(directory_path);
 }
 
 } // namespace zylann::voxel

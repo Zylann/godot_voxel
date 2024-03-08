@@ -6,7 +6,7 @@
 #include "../util/memory.h"
 #include "voxel_metadata_variant.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 const char *VoxelBuffer::CHANNEL_ID_HINT_STRING = "Type,Sdf,Color,Indices,Weights,Data5,Data6,Data7";
 static thread_local bool s_create_shared = false;
@@ -258,7 +258,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down() {
 
 Ref<Image> VoxelBuffer::debug_print_sdf_to_image_top_down(const VoxelBufferInternal &vb) {
 	const Vector3i size = vb.get_size();
-	Ref<Image> im = godot::create_empty_image(size.x, size.z, false, Image::FORMAT_RGB8);
+	Ref<Image> im = zylann::godot::create_empty_image(size.x, size.z, false, Image::FORMAT_RGB8);
 	Vector3i pos;
 	for (pos.z = 0; pos.z < size.z; ++pos.z) {
 		for (pos.x = 0; pos.x < size.x; ++pos.x) {
@@ -280,7 +280,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_y_slice(const VoxelBufferInternal &buffe
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(y < 0 || y >= res.y, Ref<Image>());
 
-	Ref<Image> im = godot::create_empty_image(res.x, res.z, false, Image::FORMAT_RGB8);
+	Ref<Image> im = zylann::godot::create_empty_image(res.x, res.z, false, Image::FORMAT_RGB8);
 
 	const Color nega_col(0.5f, 0.5f, 1.0f);
 	const Color posi_col(1.0f, 0.6f, 0.1f);
@@ -305,7 +305,7 @@ Ref<Image> VoxelBuffer::debug_print_sdf_z_slice(const VoxelBufferInternal &buffe
 	const Vector3i res = buffer.get_size();
 	ERR_FAIL_COND_V(z < 0 || z >= res.z, Ref<Image>());
 
-	Ref<Image> im = godot::create_empty_image(res.x, res.y, false, Image::FORMAT_RGB8);
+	Ref<Image> im = zylann::godot::create_empty_image(res.x, res.y, false, Image::FORMAT_RGB8);
 
 	const Color nega_col(0.5f, 0.5f, 1.0f);
 	const Color posi_col(1.0f, 0.6f, 0.1f);
@@ -418,4 +418,4 @@ void VoxelBuffer::_bind_methods() {
 	BIND_CONSTANT(MAX_SIZE);
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

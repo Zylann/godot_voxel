@@ -70,17 +70,17 @@ public:
 	virtual void do_box(Vector3i begin, Vector3i end);
 	virtual void do_path(Span<const Vector3> positions, Span<const float> radii);
 
-	void sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos);
+	void sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos);
 	void sdf_stamp_erase(const VoxelBufferInternal &stamp, Vector3i pos);
 
 	virtual void copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_mask) const;
-	void copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channels_mask) const;
+	void copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channels_mask) const;
 
 	virtual void paste(Vector3i pos, const VoxelBufferInternal &src, uint8_t channels_mask);
-	void paste(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask);
+	void paste(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask);
 
-	virtual void paste_masked(Vector3i pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
-			uint64_t mask_value);
+	virtual void paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
+			uint8_t mask_channel, uint64_t mask_value);
 
 	void smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius);
 	void grow_sphere(Vector3 sphere_center, float sphere_radius, float strength);
@@ -117,15 +117,15 @@ private:
 	void _b_do_sphere(Vector3 pos, float radius);
 	void _b_do_box(Vector3i begin, Vector3i end);
 	void _b_do_path(PackedVector3Array positions, PackedFloat32Array radii);
-	void _b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask);
-	void _b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask);
+	void _b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask);
+	void _b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask);
 	void _b_paste_masked(
-			Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value);
+			Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value);
 	Variant _b_get_voxel_metadata(Vector3i pos) const;
 	void _b_set_voxel_metadata(Vector3i pos, Variant meta);
 	bool _b_is_area_editable(AABB box) const;
-	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
-	gd::VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
+	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 protected:
 	uint64_t _value = 0;

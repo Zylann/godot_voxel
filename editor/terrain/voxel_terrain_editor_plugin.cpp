@@ -75,7 +75,7 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
 
-	popup->add_shortcut(godot::get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
+	popup->add_shortcut(zylann::godot::get_or_create_editor_shortcut("voxel/regenerate_terrain", ZN_TTR("Re-generate"),
 								::godot::KEY_MASK_CMD_OR_CTRL | ::godot::KEY_R),
 			MENU_RESTART_STREAM);
 
@@ -223,13 +223,13 @@ EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 	}
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 
-	gd::set_3d_editor_camera_cache(p_camera);
+	godot::set_3d_editor_camera_cache(p_camera);
 
 	if (_editor_viewer_follows_camera) {
 		if (_editor_viewer_enabled) {
 			VoxelEngine::get_singleton().set_viewer_position(_editor_viewer_id, _editor_camera_last_position);
 		}
-		gd::VoxelEngine::get_singleton()->set_editor_camera_info(
+		godot::VoxelEngine::get_singleton()->set_editor_camera_info(
 				_editor_camera_last_position, get_forward(p_camera->get_global_transform()));
 	}
 

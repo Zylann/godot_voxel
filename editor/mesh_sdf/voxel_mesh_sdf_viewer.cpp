@@ -75,7 +75,7 @@ void VoxelMeshSDFViewer::update_view() {
 		_texture_rect->set_texture(Ref<Texture>());
 		return;
 	}
-	Ref<gd::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
+	Ref<godot::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
 	float sdf_min;
 	float sdf_max;
 	vb->get_buffer().get_range_f(sdf_min, sdf_max, VoxelBufferInternal::CHANNEL_SDF);
@@ -152,7 +152,7 @@ void VoxelMeshSDFViewer::update_slice_spinbox() {
 
 	_slice_spinbox->set_editable(true);
 	_slice_spinbox->set_min(0);
-	Ref<gd::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
+	Ref<godot::VoxelBuffer> vb = _mesh_sdf->get_voxel_buffer();
 	_slice_spinbox->set_max(vb->get_size().y);
 	_slice_spinbox->set_step(1);
 	_slice_spinbox->set_value(_slice_y);

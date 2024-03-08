@@ -14,6 +14,8 @@
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
+using namespace zylann::godot;
+
 namespace zylann::voxel {
 
 namespace {
@@ -84,7 +86,7 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedFloat32Array texturing_data; // 2*4*uint8 as 2*float32
 	PackedInt32Array indices;
 
-	godot::copy_to(vertices, src.vertices);
+	copy_to(vertices, src.vertices);
 
 	// raw_copy_to(lod_data, src.lod_data);
 	lod_data.resize(src.lod_data.size() * 4);
@@ -92,12 +94,12 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	static_assert(sizeof(transvoxel::LodAttrib) == 16);
 	memcpy(lod_data.ptrw(), src.lod_data.data(), lod_data.size() * sizeof(float));
 
-	godot::copy_to(indices, src.indices);
+	copy_to(indices, src.indices);
 
 	arrays.resize(Mesh::ARRAY_MAX);
 	arrays[Mesh::ARRAY_VERTEX] = vertices;
 	if (src.normals.size() != 0) {
-		godot::copy_to(normals, src.normals);
+		copy_to(normals, src.normals);
 		arrays[Mesh::ARRAY_NORMAL] = normals;
 	}
 	if (src.texturing_data.size() != 0) {
@@ -315,7 +317,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 }
 
 // Only exists for testing
-Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<gd::VoxelBuffer> voxels, int direction) {
+Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuffer> voxels, int direction) {
 	static thread_local transvoxel::Cache s_cache;
 	static thread_local transvoxel::MeshArrays s_mesh_arrays;
 

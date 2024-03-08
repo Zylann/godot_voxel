@@ -56,7 +56,7 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 	}
 
 	// Create a temporary wrapper so Godot can pass it to scripts
-	Ref<gd::VoxelBuffer> buffer_wrapper;
+	Ref<godot::VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
@@ -412,7 +412,7 @@ void VoxelGeneratorMultipassCB::get_configuration_warnings(PackedStringArray &ou
 
 #endif
 
-TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_column(Vector2i column_position_blocks) {
+TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_column(Vector2i column_position_blocks) {
 	// struct L {
 	// 	static void debug_print_blocks_with_stone(const Column &column, unsigned int column_index) {
 	// 		for (unsigned int block_index = 0; block_index < column.blocks.size(); ++block_index) {
@@ -527,11 +527,11 @@ TypedArray<gd::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_colum
 	// L::debug_print_blocks_with_stone(final_column, final_column_loc);
 
 	// Wrap up result for script API
-	TypedArray<gd::VoxelBuffer> column_ta;
+	TypedArray<godot::VoxelBuffer> column_ta;
 	column_ta.resize(final_column.blocks.size());
 	for (unsigned int i = 0; i < final_column.blocks.size(); ++i) {
 		Block &block = final_column.blocks[i];
-		Ref<gd::VoxelBuffer> buffer;
+		Ref<godot::VoxelBuffer> buffer;
 		buffer.instantiate();
 		block.voxels.move_to(buffer->get_buffer());
 		column_ta[i] = buffer;

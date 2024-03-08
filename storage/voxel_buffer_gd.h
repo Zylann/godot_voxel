@@ -16,7 +16,7 @@ namespace zylann::voxel {
 
 class VoxelTool;
 
-namespace gd {
+namespace godot {
 
 // Scripts-facing wrapper around VoxelBufferInternal.
 // It is separate because being a Godot object requires to carry more baggage, and because this data type can
@@ -182,11 +182,11 @@ private:
 	std::shared_ptr<VoxelBufferInternal> _buffer;
 };
 
-} // namespace gd
+} // namespace godot
 } // namespace zylann::voxel
 
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::ChannelId)
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Depth)
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelBuffer::Compression)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
 
 #endif // VOXEL_BUFFER_GD_H

@@ -418,7 +418,7 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 				// Read Variant
 				Variant src_meta;
 				size_t read_length;
-				const bool decode_success = godot::decode_variant(
+				const bool decode_success = zylann::godot::decode_variant(
 						Span<const uint8_t>(&mr.data[mr.pos], mr.data.size() - mr.pos), src_meta, read_length);
 				ZN_ASSERT_RETURN_V_MSG(decode_success, false, "Failed to deserialize v3 Variant metadata");
 				mr.pos += read_length;
@@ -426,9 +426,9 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 
 				// Write v4 equivalent
 				VoxelMetadata dst_meta;
-				gd::VoxelMetadataVariant *custom = ZN_NEW(gd::VoxelMetadataVariant);
+				godot::VoxelMetadataVariant *custom = ZN_NEW(godot::VoxelMetadataVariant);
 				custom->data = src_meta;
-				dst_meta.set_custom(gd::METADATA_TYPE_VARIANT, custom);
+				dst_meta.set_custom(godot::METADATA_TYPE_VARIANT, custom);
 				mw.store_8(dst_meta.get_type());
 				const size_t ss = custom->get_serialized_size();
 				const size_t prev_size = mw.data.size();
@@ -702,7 +702,7 @@ bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelB
 	std::vector<uint8_t> &compressed_data = get_tls_compressed_data();
 
 	compressed_data.resize(size_to_read);
-	const unsigned int read_size = godot::get_buffer(f, to_span(compressed_data));
+	const unsigned int read_size = zylann::godot::get_buffer(f, to_span(compressed_data));
 	ERR_FAIL_COND_V(read_size != size_to_read, false);
 
 	return decompress_and_deserialize(to_span(compressed_data), out_voxel_buffer);

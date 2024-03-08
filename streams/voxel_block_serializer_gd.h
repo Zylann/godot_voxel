@@ -5,7 +5,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class StreamPeer);
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 class VoxelBuffer;
 
@@ -24,6 +24,6 @@ public:
 	static void _bind_methods();
 };
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_BLOCK_SERIALIZER_GD_H

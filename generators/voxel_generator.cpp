@@ -51,7 +51,7 @@ void VoxelGenerator::generate_series(Span<const float> positions_x, Span<const f
 	ZN_PRINT_ERROR("Not implemented");
 }
 
-void VoxelGenerator::_b_generate_block(Ref<gd::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
+void VoxelGenerator::_b_generate_block(Ref<godot::VoxelBuffer> out_buffer, Vector3 origin_in_voxels, int lod) {
 	ERR_FAIL_COND(lod < 0);
 	ERR_FAIL_COND(lod >= int(constants::MAX_LOD));
 	ERR_FAIL_COND(out_buffer.is_null());

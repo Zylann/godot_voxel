@@ -231,12 +231,12 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 	return result;
 }
 
-void VoxelGeneratorNoise::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
+void VoxelGeneratorNoise::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
 	set_channel(VoxelBufferInternal::ChannelId(p_channel));
 }
 
-gd::VoxelBuffer::ChannelId VoxelGeneratorNoise::_b_get_channel() const {
-	return gd::VoxelBuffer::ChannelId(get_channel());
+godot::VoxelBuffer::ChannelId VoxelGeneratorNoise::_b_get_channel() const {
+	return godot::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelGeneratorNoise::_bind_methods() {
@@ -256,7 +256,7 @@ void VoxelGeneratorNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise::_on_noise_changed);
 #endif
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
 	// TODO Accept `Noise` instead of `FastNoiseLite`?
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),

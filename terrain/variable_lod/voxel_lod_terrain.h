@@ -25,7 +25,7 @@ class VoxelStream;
 class VoxelInstancer;
 class VoxelSaveCompletionTracker;
 
-class ShaderMaterialPoolVLT : public godot::ShaderMaterialPool {
+class ShaderMaterialPoolVLT : public zylann::godot::ShaderMaterialPool {
 public:
 	void recycle(Ref<ShaderMaterial> material);
 };
@@ -364,7 +364,7 @@ private:
 	struct FadingOutMesh {
 		// Position in space coordinates local to the volume
 		Vector3 local_position;
-		godot::DirectMeshInstance mesh_instance;
+		zylann::godot::DirectMeshInstance mesh_instance;
 		// Changing properties is the reason we may want to fade the mesh, so we may hold on a copy of the material with
 		// properties before the fade starts.
 		Ref<ShaderMaterial> shader_material;
@@ -422,7 +422,7 @@ private:
 	uint8_t _edited_blocks_gizmos_lod_index = 0;
 	uint16_t _debug_draw_flags = 0;
 
-	godot::DebugRenderer _debug_renderer;
+	zylann::godot::DebugRenderer _debug_renderer;
 
 	struct DebugMeshUpdateItem {
 		static constexpr uint32_t LINGER_FRAMES = 10;

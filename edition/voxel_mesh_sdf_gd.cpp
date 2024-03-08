@@ -15,6 +15,8 @@
 // defined
 #include "../util/godot/classes/scene_tree.h"
 
+using namespace zylann::godot;
+
 namespace zylann::voxel {
 
 namespace {
@@ -117,7 +119,7 @@ void VoxelMeshSDF::bake() {
 
 	const Vector3i res = mesh_sdf::auto_compute_grid_resolution(box_size, _cell_count);
 	const VoxelBufferInternal::ChannelId channel = VoxelBufferInternal::CHANNEL_SDF;
-	Ref<gd::VoxelBuffer> vbgd;
+	Ref<godot::VoxelBuffer> vbgd;
 	vbgd.instantiate();
 	VoxelBufferInternal &buffer = vbgd->get_buffer();
 	buffer.set_channel_depth(channel, VoxelBufferInternal::DEPTH_32_BIT);
@@ -170,7 +172,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 
 	struct L {
 		static void notify_on_complete(VoxelMeshSDF &obj, mesh_sdf::GenMeshSDFSubBoxTask::SharedData &shared_data) {
-			Ref<gd::VoxelBuffer> vbgd;
+			Ref<godot::VoxelBuffer> vbgd;
 			vbgd.instantiate();
 			shared_data.buffer.move_to(vbgd->get_buffer());
 			obj.call_deferred(
@@ -305,7 +307,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 
 	private:
 		void report_error() {
-			obj_to_notify->call_deferred("_on_bake_async_completed", Ref<gd::VoxelBuffer>(), Vector3(), Vector3());
+			obj_to_notify->call_deferred("_on_bake_async_completed", Ref<godot::VoxelBuffer>(), Vector3(), Vector3());
 		}
 	};
 
@@ -332,7 +334,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	VoxelEngine::get_singleton().push_async_task(task);
 }
 
-void VoxelMeshSDF::_on_bake_async_completed(Ref<gd::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos) {
+void VoxelMeshSDF::_on_bake_async_completed(Ref<godot::VoxelBuffer> buffer, Vector3 min_pos, Vector3 max_pos) {
 	_is_baking = false;
 
 	// This can mean an error occurred during one of the tasks
@@ -344,7 +346,7 @@ void VoxelMeshSDF::_on_bake_async_completed(Ref<gd::VoxelBuffer> buffer, Vector3
 	emit_signal("baked");
 }
 
-Ref<gd::VoxelBuffer> VoxelMeshSDF::get_voxel_buffer() const {
+Ref<godot::VoxelBuffer> VoxelMeshSDF::get_voxel_buffer() const {
 	return _voxel_buffer;
 }
 
@@ -439,7 +441,7 @@ void VoxelMeshSDF::_b_set_data(Dictionary d) {
 	ERR_FAIL_COND(d.is_empty());
 
 	Vector3i res;
-	ERR_FAIL_COND(!godot::try_get(d, "res", res));
+	ERR_FAIL_COND(!zylann::godot::try_get(d, "res", res));
 	ERR_FAIL_COND(Vector3iUtil::is_empty_size(res));
 
 	_voxel_buffer.instantiate();
@@ -451,7 +453,7 @@ void VoxelMeshSDF::_b_set_data(Dictionary d) {
 	ERR_FAIL_COND(!vb.get_channel_data(VoxelBufferInternal::CHANNEL_SDF, channel));
 
 	PackedFloat32Array sdf_f32;
-	ERR_FAIL_COND(!godot::try_get(d, "sdf_f32", sdf_f32));
+	ERR_FAIL_COND(!zylann::godot::try_get(d, "sdf_f32", sdf_f32));
 	memcpy(channel.data(), sdf_f32.ptr(), channel.size() * sizeof(float));
 
 	_min_pos = to_vec3f(Vector3(d["min_pos"]));

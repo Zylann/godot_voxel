@@ -10,8 +10,7 @@
 #include "../../util/godot/core/version.h"
 #endif
 
-namespace zylann::voxel {
-namespace gd {
+namespace zylann::voxel::godot {
 
 class VoxelModifier : public Node3D {
 	GDCLASS(VoxelModifier, Node3D)
@@ -67,9 +66,8 @@ T *get_modifier(VoxelLodTerrain &volume, uint32_t id, zylann::voxel::VoxelModifi
 	return static_cast<T *>(modifier);
 }
 
-} // namespace gd
-} // namespace zylann::voxel
+} // namespace zylann::voxel::godot
 
-VARIANT_ENUM_CAST(zylann::voxel::gd::VoxelModifier::Operation);
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelModifier::Operation);
 
 #endif // VOXEL_MODIFIER_GD_H

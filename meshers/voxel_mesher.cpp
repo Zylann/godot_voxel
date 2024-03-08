@@ -10,6 +10,8 @@
 #include "../util/profiling.h"
 #include "transvoxel/transvoxel_cell_iterator.h"
 
+using namespace zylann::godot;
+
 namespace zylann::voxel {
 
 Ref<Mesh> VoxelMesher::build_mesh(
@@ -58,7 +60,7 @@ Ref<Mesh> VoxelMesher::build_mesh(
 		}
 
 		CRASH_COND(arrays.size() != Mesh::ARRAY_MAX);
-		if (!godot::is_surface_triangulated(arrays)) {
+		if (!is_surface_triangulated(arrays)) {
 			continue;
 		}
 
@@ -136,7 +138,7 @@ bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
 		return true;
 	}
 	for (const Output::Surface &surface : surfaces) {
-		if (godot::is_surface_triangulated(surface.arrays)) {
+		if (is_surface_triangulated(surface.arrays)) {
 			return false;
 		}
 	}
@@ -148,7 +150,7 @@ Ref<ShaderMaterial> VoxelMesher::get_default_lod_material() const {
 }
 
 Ref<Mesh> VoxelMesher::_b_build_mesh(
-		Ref<gd::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data) {
+		Ref<godot::VoxelBuffer> voxels, TypedArray<Material> materials, Dictionary additional_data) {
 	ERR_FAIL_COND_V(voxels.is_null(), Ref<ArrayMesh>());
 	return build_mesh(voxels->get_buffer(), materials, additional_data);
 }

@@ -217,7 +217,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 }
 
 // Erases matter in every voxel where the provided buffer has matter.
-void VoxelTool::sdf_stamp_erase(Ref<gd::VoxelBuffer> stamp, Vector3i pos) {
+void VoxelTool::sdf_stamp_erase(Ref<godot::VoxelBuffer> stamp, Vector3i pos) {
 	ZN_ASSERT_RETURN(stamp.is_valid());
 	sdf_stamp_erase(stamp->get_buffer(), pos);
 }
@@ -275,7 +275,7 @@ void VoxelTool::copy(Vector3i pos, VoxelBufferInternal &dst, uint8_t channels_ma
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::copy(Vector3i pos, Ref<gd::VoxelBuffer> dst, uint8_t channel_mask) const {
+void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask) const {
 	ERR_FAIL_COND(dst.is_null());
 #ifdef TOOLS_ENABLED
 	if (Vector3iUtil::is_empty_size(dst->get_size())) {
@@ -289,7 +289,7 @@ void VoxelTool::paste(Vector3i p_pos, const VoxelBufferInternal &src, uint8_t ch
 	ERR_PRINT("Not implemented");
 }
 
-void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask) {
+void VoxelTool::paste(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (Vector3iUtil::is_empty_size(p_voxels->get_size())) {
 		ZN_PRINT_WARNING("The passed buffer has an empty size, nothing will be pasted.");
@@ -297,8 +297,8 @@ void VoxelTool::paste(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t cha
 	paste(p_pos, p_voxels->get_buffer(), channels_mask);
 }
 
-void VoxelTool::paste_masked(Vector3i p_pos, Ref<gd::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
-		uint64_t mask_value) {
+void VoxelTool::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
+		uint8_t mask_channel, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 }
@@ -428,16 +428,16 @@ void VoxelTool::_b_do_path(PackedVector3Array positions, PackedFloat32Array radi
 	do_path(to_span(positions), to_span(radii));
 }
 
-void VoxelTool::_b_copy(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channel_mask) {
+void VoxelTool::_b_copy(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channel_mask) {
 	copy(pos, voxels, channel_mask);
 }
 
-void VoxelTool::_b_paste(Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask) {
+void VoxelTool::_b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask) {
 	paste(pos, voxels, channels_mask);
 }
 
 void VoxelTool::_b_paste_masked(
-		Vector3i pos, Ref<gd::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value) {
+		Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value) {
 	paste_masked(pos, voxels, channels_mask, mask_channel, mask_value);
 }
 
@@ -486,12 +486,12 @@ Color _b_normalize_color(Color c) {
 }
 } // namespace
 
-void VoxelTool::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
+void VoxelTool::_b_set_channel(godot::VoxelBuffer::ChannelId p_channel) {
 	set_channel(VoxelBufferInternal::ChannelId(p_channel));
 }
 
-gd::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {
-	return gd::VoxelBuffer::ChannelId(get_channel());
+godot::VoxelBuffer::ChannelId VoxelTool::_b_get_channel() const {
+	return godot::VoxelBuffer::ChannelId(get_channel());
 }
 
 void VoxelTool::_bind_methods() {
@@ -563,7 +563,7 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("normalize_color"), &_b_normalize_color);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, gd::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");

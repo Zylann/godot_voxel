@@ -41,6 +41,7 @@
 namespace zylann::voxel {
 
 using namespace pg;
+using namespace zylann::godot;
 
 const char *VoxelGraphEditor::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphEditor::SIGNAL_NOTHING_SELECTED = "nothing_selected";
@@ -333,8 +334,8 @@ void VoxelGraphEditor::_notification(int p_what) {
 
 		case NOTIFICATION_THEME_CHANGED: {
 			const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-			godot::set_button_icon(*_pin_button, get_theme_icon(sn.Pin, sn.EditorIcons));
-			godot::set_button_icon(*_popout_button, get_theme_icon(sn.ExternalLink, sn.EditorIcons));
+			set_button_icon(*_pin_button, get_theme_icon(sn.Pin, sn.EditorIcons));
+			set_button_icon(*_popout_button, get_theme_icon(sn.ExternalLink, sn.EditorIcons));
 		} break;
 	}
 }
@@ -406,8 +407,7 @@ void VoxelGraphEditor::build_gui_from_graph() {
 		const ProgramGraph::Connection &con = all_connections[i];
 		const String from_node_name = node_to_gui_name(con.src.node_id);
 		const String to_node_name = node_to_gui_name(con.dst.node_id);
-		VoxelGraphEditorNode *to_node_view =
-				godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, NodePath(to_node_name));
+		VoxelGraphEditorNode *to_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, NodePath(to_node_name));
 		ERR_FAIL_COND(to_node_view == nullptr);
 		const Error err = _graph_edit->connect_node(
 				from_node_name, con.src.port_index, to_node_view->get_name(), con.dst.port_index);
@@ -445,10 +445,10 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 void remove_connections_from_and_to(GraphEdit &graph_edit, StringName node_name) {
 	// Get copy of connection list
-	std::vector<godot::GraphEditConnection> connections;
-	godot::get_graph_edit_connections(graph_edit, connections);
+	std::vector<GraphEditConnection> connections;
+	get_graph_edit_connections(graph_edit, connections);
 
-	for (const godot::GraphEditConnection &con : connections) {
+	for (const GraphEditConnection &con : connections) {
 		if (con.from == node_name || con.to == node_name) {
 			graph_edit.disconnect_node(con.from, con.from_port, con.to, con.to_port);
 		}
@@ -459,7 +459,7 @@ void VoxelGraphEditor::remove_node_gui(StringName gui_node_name) {
 	// Remove connections from the UI, because GraphNode doesn't do it...
 	remove_connections_from_and_to(*_graph_edit, gui_node_name);
 
-	Node *node_view = godot::get_node_typed<Node>(*_graph_edit, to_node_path(gui_node_name));
+	Node *node_view = get_node_typed<Node>(*_graph_edit, to_node_path(gui_node_name));
 	ERR_FAIL_COND(Object::cast_to<GraphNode>(node_view) == nullptr);
 	memdelete(node_view);
 }
@@ -484,17 +484,17 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 
 	GraphEdit &graph_edit = *_graph_edit;
 	const String view_name = node_to_gui_name(node_id);
-	VoxelGraphEditorNode *view = godot::get_node_typed<VoxelGraphEditorNode>(graph_edit, view_name);
+	VoxelGraphEditorNode *view = get_node_typed<VoxelGraphEditorNode>(graph_edit, view_name);
 	ERR_FAIL_COND(view == nullptr);
 
 	// Remove all GUI connections going to the node
 
-	std::vector<godot::GraphEditConnection> old_connections;
-	godot::get_graph_edit_connections(graph_edit, old_connections);
+	std::vector<GraphEditConnection> old_connections;
+	get_graph_edit_connections(graph_edit, old_connections);
 
-	for (const godot::GraphEditConnection &con : old_connections) {
+	for (const GraphEditConnection &con : old_connections) {
 		const NodePath to = to_node_path(con.to);
-		const VoxelGraphEditorNode *to_view = godot::get_node_typed<VoxelGraphEditorNode>(graph_edit, to);
+		const VoxelGraphEditorNode *to_view = get_node_typed<VoxelGraphEditorNode>(graph_edit, to);
 		if (to_view == nullptr) {
 			continue;
 		}
@@ -531,7 +531,7 @@ void VoxelGraphEditor::update_node_comment(uint32_t node_id) {
 
 	GraphEdit &graph_edit = *_graph_edit;
 	const String view_name = node_to_gui_name(node_id);
-	VoxelGraphEditorNode *view = godot::get_node_typed<VoxelGraphEditorNode>(graph_edit, view_name);
+	VoxelGraphEditorNode *view = get_node_typed<VoxelGraphEditorNode>(graph_edit, view_name);
 	ERR_FAIL_COND(view == nullptr);
 
 	view->update_comment_text(**_graph);
@@ -561,8 +561,8 @@ void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
 void VoxelGraphEditor::_on_graph_edit_connection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
 	//
-	VoxelGraphEditorNode *src_node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, from_node_name);
-	VoxelGraphEditorNode *dst_node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, to_node_name);
+	VoxelGraphEditorNode *src_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, from_node_name);
+	VoxelGraphEditorNode *dst_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, to_node_name);
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
 
@@ -611,8 +611,8 @@ void VoxelGraphEditor::_on_graph_edit_connection_request(
 
 void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 		String from_node_name, int from_slot, String to_node_name, int to_slot) {
-	VoxelGraphEditorNode *src_node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, from_node_name);
-	VoxelGraphEditorNode *dst_node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, to_node_name);
+	VoxelGraphEditorNode *src_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, from_node_name);
+	VoxelGraphEditorNode *dst_node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, to_node_name);
 	ERR_FAIL_COND(src_node_view == nullptr);
 	ERR_FAIL_COND(dst_node_view == nullptr);
 
@@ -774,7 +774,7 @@ void VoxelGraphEditor::_on_graph_node_dragged(Vector2 from, Vector2 to, int id) 
 
 void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
 	String node_name = node_to_gui_name(id);
-	GraphNode *node_view = godot::get_node_typed<GraphNode>(*_graph_edit, node_name);
+	GraphNode *node_view = get_node_typed<GraphNode>(*_graph_edit, node_name);
 	if (node_view != nullptr) {
 		node_view->set_position_offset(offset);
 	}
@@ -785,7 +785,7 @@ void VoxelGraphEditor::set_node_position(int id, Vector2 offset) {
 
 void VoxelGraphEditor::_on_node_resize_request(Vector2 new_size, int node_id) {
 	const String node_view_path = node_to_gui_name(node_id);
-	Node *node = godot::get_node_typed<Node>(*_graph_edit, node_view_path);
+	Node *node = get_node_typed<Node>(*_graph_edit, node_view_path);
 	ZN_ASSERT_RETURN(node != nullptr);
 	VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
 	ZN_ASSERT_RETURN(node_view != nullptr);
@@ -802,7 +802,7 @@ void VoxelGraphEditor::_on_node_resize_request(Vector2 new_size, int node_id) {
 
 void VoxelGraphEditor::set_node_size(int id, Vector2 size) {
 	String node_name = node_to_gui_name(id);
-	GraphNode *node_view = godot::get_node_typed<GraphNode>(*_graph_edit, node_name);
+	GraphNode *node_view = get_node_typed<GraphNode>(*_graph_edit, node_name);
 	if (node_view != nullptr) {
 		node_view->set_size(size);
 	}
@@ -856,9 +856,9 @@ void VoxelGraphEditor::set_preview_transform(Vector2f offset, float scale) {
 
 Vector2 get_graph_offset_from_mouse(const GraphEdit *graph_edit, const Vector2 local_mouse_pos) {
 	// TODO Ask for a method, or at least documentation about how it's done
-	Vector2 offset = godot::get_graph_edit_scroll_offset(*graph_edit) + local_mouse_pos;
-	if (godot::is_graph_edit_using_snapping(*graph_edit)) {
-		const int snap = godot::get_graph_edit_snapping_distance(*graph_edit);
+	Vector2 offset = get_graph_edit_scroll_offset(*graph_edit) + local_mouse_pos;
+	if (is_graph_edit_using_snapping(*graph_edit)) {
+		const int snap = get_graph_edit_snapping_distance(*graph_edit);
 		offset = offset.snapped(Vector2(snap, snap));
 	}
 	offset /= EDSCALE;
@@ -949,7 +949,7 @@ void VoxelGraphEditor::update_previews(bool with_live_update) {
 
 		if (result.node_id >= 0) {
 			String node_view_path = node_to_gui_name(result.node_id);
-			VoxelGraphEditorNode *node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, node_view_path);
+			VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, node_view_path);
 			// If this happens then perhaps it got incorrectly remapped in case it's a node created by the compiler
 			if (node_view != nullptr) {
 				node_view->set_modulate(Color(1, 0.3, 0.1));
@@ -1043,7 +1043,7 @@ void VoxelGraphEditor::update_range_analysis_previews() {
 			continue;
 		}
 		const String node_view_path = node_to_gui_name(node_id);
-		Node *node = godot::get_node_typed<Node>(*_graph_edit, node_view_path);
+		Node *node = get_node_typed<Node>(*_graph_edit, node_view_path);
 		ZN_ASSERT_CONTINUE(node != nullptr);
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(node);
 		ZN_ASSERT_CONTINUE(node_view != nullptr);
@@ -1067,7 +1067,7 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 	const AABB aabb = _range_analysis_dialog->get_aabb();
 	_debug_renderer.begin();
 	_debug_renderer.draw_box(parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position),
-			godot::DebugColors::ID_VOXEL_GRAPH_DEBUG_BOUNDS);
+			DebugColors::ID_VOXEL_GRAPH_DEBUG_BOUNDS);
 	_debug_renderer.end();
 }
 
@@ -1187,7 +1187,7 @@ void VoxelGraphEditor::_on_graph_node_name_changed(int node_id) {
 	const uint32_t node_type_id = _graph->get_node_type_id(node_id);
 
 	const String ui_node_name = node_to_gui_name(node_id);
-	VoxelGraphEditorNode *node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
+	VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
 	ERR_FAIL_COND(node_view == nullptr);
 
 	if (node_type_id != VoxelGraphFunction::NODE_EXPRESSION) {
@@ -1245,7 +1245,7 @@ void VoxelGraphEditor::profile() {
 			continue;
 		}
 		const String ui_node_name = node_to_gui_name(nr.node_id);
-		VoxelGraphEditorNode *node_view = godot::get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
+		VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(*_graph_edit, ui_node_name);
 		ERR_CONTINUE(node_view == nullptr);
 		node_view->set_profiling_ratio_visible(true);
 		node_view->set_profiling_ratio(nr.ratio);
@@ -1309,7 +1309,7 @@ void VoxelGraphEditor::_on_node_dialog_file_selected(String fpath) {
 }
 
 void VoxelGraphEditor::create_function_node(String fpath) {
-	Ref<Resource> res = godot::load_resource(fpath);
+	Ref<Resource> res = load_resource(fpath);
 	if (res.is_null()) {
 		ERR_PRINT("Could not instantiate function, resource could not be loaded.");
 		return;
@@ -1349,8 +1349,7 @@ void VoxelGraphEditor::update_functions() {
 		static void try_update_node_view(
 				VoxelGraphFunction &graph, GraphEdit &graph_edit, uint32_t node_id, const String &node_view_name) {
 			if (graph.get_node_type_id(node_id) == VoxelGraphFunction::NODE_FUNCTION) {
-				VoxelGraphEditorNode *node_view =
-						godot::get_node_typed<VoxelGraphEditorNode>(graph_edit, node_view_name);
+				VoxelGraphEditorNode *node_view = get_node_typed<VoxelGraphEditorNode>(graph_edit, node_view_name);
 				ERR_FAIL_COND(node_view == nullptr);
 				node_view->update_layout(graph);
 			}

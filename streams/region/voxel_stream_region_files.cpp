@@ -134,8 +134,8 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 	}
 
 	if (!_meta_loaded) {
-		const godot::FileResult load_res = load_meta();
-		if (load_res != godot::FILE_OK) {
+		const zylann::godot::FileResult load_res = load_meta();
+		if (load_res != zylann::godot::FILE_OK) {
 			// No block was ever saved
 			return EMERGE_OK_FALLBACK;
 		}
@@ -178,6 +178,7 @@ VoxelStreamRegionFiles::EmergeResult VoxelStreamRegionFiles::_load_block(
 
 void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vector3i block_pos, int lod) {
 	ZN_PROFILE_SCOPE();
+	using namespace zylann::godot;
 
 	MutexLock lock(_mutex);
 
@@ -186,11 +187,12 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 	if (!_meta_loaded) {
 		// If it's not loaded, always try to load meta file first if it exists already,
 		// because we could want to save blocks without reading any
-		godot::FileResult load_res = load_meta();
-		if (load_res != godot::FILE_OK && load_res != godot::FILE_CANT_OPEN) {
+		FileResult load_res = load_meta();
+		if (load_res != FILE_OK && load_res != FILE_CANT_OPEN) {
 			// The file is present but there is a problem with it
 			String meta_path = _directory_path.path_join(META_FILE_NAME);
-			ERR_PRINT(String("Could not read {0}: error {1}").format(varray(meta_path, godot::to_string(load_res))));
+			ERR_PRINT(String("Could not read {0}: error {1}")
+							  .format(varray(meta_path, zylann::godot::to_string(load_res))));
 			return;
 		}
 	}
@@ -200,8 +202,8 @@ void VoxelStreamRegionFiles::_save_block(VoxelBufferInternal &voxel_buffer, Vect
 		for (unsigned int i = 0; i < _meta.channel_depths.size(); ++i) {
 			_meta.channel_depths[i] = voxel_buffer.get_channel_depth(i);
 		}
-		godot::FileResult err = save_meta();
-		ERR_FAIL_COND(err != godot::FILE_OK);
+		FileResult err = save_meta();
+		ERR_FAIL_COND(err != FILE_OK);
 	}
 
 	// Verify format
@@ -265,8 +267,10 @@ bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
 
 } // namespace
 
-godot::FileResult VoxelStreamRegionFiles::save_meta() {
-	ERR_FAIL_COND_V(_directory_path == "", godot::FILE_CANT_OPEN);
+zylann::godot::FileResult VoxelStreamRegionFiles::save_meta() {
+	using namespace zylann::godot;
+
+	ERR_FAIL_COND_V(_directory_path == "", FILE_CANT_OPEN);
 
 	Dictionary d;
 	d["version"] = _meta.version;
@@ -290,7 +294,7 @@ godot::FileResult VoxelStreamRegionFiles::save_meta() {
 		Error err = check_directory_created_using_file_locker(directory_path_utf8.get_data());
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
-			return godot::FILE_CANT_OPEN;
+			return FILE_CANT_OPEN;
 		}
 	}
 
@@ -299,10 +303,10 @@ godot::FileResult VoxelStreamRegionFiles::save_meta() {
 
 	Error err;
 	VoxelFileLockerWrite file_wlock(meta_path_utf8.get_data());
-	Ref<FileAccess> f = godot::open_file(meta_path, FileAccess::WRITE, err);
+	Ref<FileAccess> f = open_file(meta_path, FileAccess::WRITE, err);
 	if (f.is_null()) {
 		ERR_PRINT(String("Could not save {0}").format(varray(meta_path)));
-		return godot::FILE_CANT_OPEN;
+		return FILE_CANT_OPEN;
 	}
 
 	f->store_string(json_string);
@@ -310,7 +314,7 @@ godot::FileResult VoxelStreamRegionFiles::save_meta() {
 	_meta_saved = true;
 	_meta_loaded = true;
 
-	return godot::FILE_OK;
+	return FILE_OK;
 }
 
 namespace {
@@ -338,8 +342,10 @@ void migrate_region_meta_data(Dictionary &data) {
 
 } // namespace
 
-godot::FileResult VoxelStreamRegionFiles::load_meta() {
-	ERR_FAIL_COND_V(_directory_path == "", godot::FILE_CANT_OPEN);
+zylann::godot::FileResult VoxelStreamRegionFiles::load_meta() {
+	using namespace zylann::godot;
+
+	ERR_FAIL_COND_V(_directory_path == "", FILE_CANT_OPEN);
 
 	// Ensure you cleanup previous world before loading another
 	CRASH_COND(_region_cache.size() > 0);
@@ -351,11 +357,11 @@ godot::FileResult VoxelStreamRegionFiles::load_meta() {
 		Error err;
 		const CharString meta_path_utf8 = meta_path.utf8();
 		VoxelFileLockerRead file_rlock(meta_path_utf8.get_data());
-		Ref<FileAccess> f = godot::open_file(meta_path, FileAccess::READ, err);
+		Ref<FileAccess> f = open_file(meta_path, FileAccess::READ, err);
 		if (f.is_null()) {
-			return godot::FILE_CANT_OPEN;
+			return FILE_CANT_OPEN;
 		}
-		json_string = godot::get_as_text(**f);
+		json_string = get_as_text(**f);
 	}
 
 	// Note: I chose JSON purely for debugging purposes. This file is not meant to be edited by hand.
@@ -369,34 +375,33 @@ godot::FileResult VoxelStreamRegionFiles::load_meta() {
 		const String json_err_msg = json->get_error_message();
 		const int json_err_line = json->get_error_line();
 		ZN_PRINT_ERROR(format("Error when parsing {}: line {}: {}", meta_path, json_err_line, json_err_msg));
-		return godot::FILE_INVALID_DATA;
+		return FILE_INVALID_DATA;
 	}
 
 	Dictionary d = res;
 	migrate_region_meta_data(d);
 	Meta meta;
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), godot::FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), godot::FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), godot::FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), godot::FILE_INVALID_DATA);
-	ERR_FAIL_COND_V(!u32_from_json_variant(d["sector_size"], meta.sector_size), godot::FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["version"], meta.version), FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["block_size_po2"], meta.block_size_po2), FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["region_size_po2"], meta.region_size_po2), FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u8_from_json_variant(d["lod_count"], meta.lod_count), FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!u32_from_json_variant(d["sector_size"], meta.sector_size), FILE_INVALID_DATA);
 
-	ERR_FAIL_COND_V(meta.version < 0, godot::FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(meta.version < 0, FILE_INVALID_DATA);
 
 	Array channel_depths_data = d["channel_depths"];
-	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBufferInternal::MAX_CHANNELS, godot::FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(channel_depths_data.size() != VoxelBufferInternal::MAX_CHANNELS, FILE_INVALID_DATA);
 	for (int i = 0; i < channel_depths_data.size(); ++i) {
-		ERR_FAIL_COND_V(
-				!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), godot::FILE_INVALID_DATA);
+		ERR_FAIL_COND_V(!depth_from_json_variant(channel_depths_data[i], meta.channel_depths[i]), FILE_INVALID_DATA);
 	}
 
-	ERR_FAIL_COND_V(!check_meta(meta), godot::FILE_INVALID_DATA);
+	ERR_FAIL_COND_V(!check_meta(meta), FILE_INVALID_DATA);
 
 	_meta = meta;
 	_meta_loaded = true;
 	_meta_saved = true;
 
-	return godot::FILE_OK;
+	return FILE_OK;
 }
 
 bool VoxelStreamRegionFiles::check_meta(const Meta &meta) {
@@ -569,6 +574,8 @@ Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new
 } // namespace
 
 void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
+	using namespace zylann::godot;
+
 	// TODO Converting across different block sizes is untested.
 	// I wrote it because it would be too bad to loose large voxel worlds because of a setting change, so one day we may
 	// need it
@@ -588,7 +595,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	// Backup current folder by renaming it, leaving the current name vacant
 	{
-		Ref<DirAccess> da = godot::open_directory(_directory_path);
+		Ref<DirAccess> da = open_directory(_directory_path);
 		ERR_FAIL_COND(da.is_null());
 		int i = 0;
 		String old_dir;
@@ -598,7 +605,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 			} else {
 				old_dir = _directory_path + "_old" + String::num_int64(i);
 			}
-			if (godot::directory_exists(**da, old_dir)) {
+			if (directory_exists(**da, old_dir)) {
 				++i;
 			} else {
 				Error err = da->rename(_directory_path, old_dir);
@@ -618,7 +625,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 		uint8_t lod_index;
 	};
 
-	ERR_FAIL_COND(old_stream->load_meta() != godot::FILE_OK);
+	ERR_FAIL_COND(old_stream->load_meta() != FILE_OK);
 
 	std::vector<PositionAndLod> old_region_list;
 	Meta old_meta = old_stream->_meta;
@@ -630,7 +637,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					old_stream->_directory_path.path_join("regions").path_join("lod") + String::num_int64(lod_index);
 			const String ext = String(".") + RegionFormat::FILE_EXTENSION;
 
-			Ref<DirAccess> da = godot::open_directory(lod_folder);
+			Ref<DirAccess> da = open_directory(lod_folder);
 			if (da.is_null()) {
 				continue;
 			}
@@ -664,7 +671,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	}
 
 	_meta = new_meta;
-	ERR_FAIL_COND(save_meta() != godot::FILE_OK);
+	ERR_FAIL_COND(save_meta() != FILE_OK);
 
 	const Vector3i old_block_size = Vector3iUtil::create(1 << old_meta.block_size_po2);
 	const Vector3i new_block_size = Vector3iUtil::create(1 << _meta.block_size_po2);
@@ -893,7 +900,7 @@ void VoxelStreamRegionFiles::convert_files(Dictionary d) {
 		ERR_FAIL_COND_MSG(!check_meta(meta), "Invalid setting");
 
 		if (!_meta_loaded) {
-			if (load_meta() != godot::FILE_OK) {
+			if (load_meta() != zylann::godot::FILE_OK) {
 				// New stream, nothing to convert
 				_meta = meta;
 

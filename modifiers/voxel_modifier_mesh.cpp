@@ -34,7 +34,7 @@ void VoxelModifierMesh::apply(VoxelModifierContext ctx) const {
 	if (_mesh_sdf.is_null()) {
 		return;
 	}
-	Ref<gd::VoxelBuffer> voxel_buffer_gd = _mesh_sdf->get_voxel_buffer();
+	Ref<godot::VoxelBuffer> voxel_buffer_gd = _mesh_sdf->get_voxel_buffer();
 	if (voxel_buffer_gd.is_null()) {
 		return;
 	}
@@ -116,7 +116,7 @@ void VoxelModifierMesh::get_shader_data(ShaderData &out_shader_data) {
 		mesh_params.model_to_buffer_translation = min_pos;
 		mesh_params.isolevel = _isolevel;
 		PackedByteArray pba;
-		godot::copy_bytes_to(pba, mesh_params);
+		zylann::godot::copy_bytes_to(pba, mesh_params);
 
 		if (_shader_data->params.size() < 3) {
 			std::shared_ptr<ComputeShaderResource> params_res = make_shared_instance<ComputeShaderResource>();

@@ -16,8 +16,8 @@ class VoxelNode;
 class VoxelGraphEditorWindow;
 class VoxelGraphEditorIODialog;
 
-class VoxelGraphEditorPlugin : public godot::ZN_EditorPlugin {
-	GDCLASS(VoxelGraphEditorPlugin, godot::ZN_EditorPlugin)
+class VoxelGraphEditorPlugin : public zylann::godot::ZN_EditorPlugin {
+	GDCLASS(VoxelGraphEditorPlugin, zylann::godot::ZN_EditorPlugin)
 public:
 	VoxelGraphEditorPlugin();
 
@@ -53,7 +53,7 @@ private:
 	VoxelGraphEditorIODialog *_io_dialog = nullptr;
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
-	godot::ObjectWeakRef<VoxelNode> _voxel_node;
+	zylann::godot::ObjectWeakRef<VoxelNode> _voxel_node;
 	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
 	// Workaround for a new Godot 4 behavior:
 	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first, and `make_visible(false)`.

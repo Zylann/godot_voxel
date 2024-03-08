@@ -6,7 +6,7 @@
 
 ZN_GODOT_FORWARD_DECLARE(class Camera3D);
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 // This is a workaround.
 // In the Godot Editor, `get_viewport()->get_camera_3d()` always returns `nullptr`, so if a node in the edited scene
@@ -17,6 +17,6 @@ namespace zylann::voxel::gd {
 Vector3 get_3d_editor_camera_position();
 void set_3d_editor_camera_cache(Camera3D *camera);
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot
 
 #endif // VOXEL_EDITOR_CAMERA_CACHE_H

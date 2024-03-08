@@ -3,7 +3,7 @@
 #include "../../util/godot/core/callable.h"
 #include "../voxel_modifier_mesh.h"
 
-namespace zylann::voxel::gd {
+namespace zylann::voxel::godot {
 
 zylann::voxel::VoxelModifierMesh *get_mesh_modifier(VoxelLodTerrain &volume, uint32_t id) {
 	return get_modifier<zylann::voxel::VoxelModifierMesh>(volume, id, zylann::voxel::VoxelModifier::TYPE_MESH);
@@ -115,4 +115,4 @@ void VoxelModifierMesh::_bind_methods() {
 			"get_isolevel");
 }
 
-} // namespace zylann::voxel::gd
+} // namespace zylann::voxel::godot

@@ -35,8 +35,8 @@ public:
 	float get_iso_scale() const;
 
 protected:
-	void _b_set_channel(gd::VoxelBuffer::ChannelId p_channel);
-	gd::VoxelBuffer::ChannelId _b_get_channel() const;
+	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
+	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 	// float height_func(x, y)
 	template <typename Height_F>
