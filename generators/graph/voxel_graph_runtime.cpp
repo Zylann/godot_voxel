@@ -31,7 +31,9 @@ void Runtime::clear() {
 	_program.clear();
 }
 
-static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
+namespace {
+
+Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> operations, uint16_t op_address) {
 	const uint16_t opid = operations[op_address];
 	const NodeType &node_type = NodeTypeDB::get_singleton().get_type(opid);
 
@@ -41,6 +43,8 @@ static Span<const uint16_t> get_outputs_from_op_address(Span<const uint16_t> ope
 	// The +1 is for `opid`
 	return operations.sub(op_address + 1 + inputs_count, outputs_count);
 }
+
+} // namespace
 
 bool Runtime::is_operation_constant(const State &state, uint16_t op_address) const {
 	Span<const uint16_t> outputs = get_outputs_from_op_address(to_span_const(_program.operations), op_address);
@@ -379,7 +383,9 @@ void Runtime::prepare_state(State &state, unsigned int buffer_size, bool with_pr
 	}
 }
 
-static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
+namespace {
+
+inline Span<const uint8_t> read_params(Span<const uint16_t> operations, unsigned int &pc) {
 	const uint16_t params_size_in_words = operations[pc];
 	++pc;
 	Span<const uint8_t> params;
@@ -392,6 +398,8 @@ static inline Span<const uint8_t> read_params(Span<const uint16_t> operations, u
 	}
 	return params;
 }
+
+} // namespace
 
 void Runtime::generate_set(
 		State &state, Span<Span<float>> p_inputs, bool skip_outer_group, const ExecutionMap *p_execution_map) const {

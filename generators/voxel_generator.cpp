@@ -99,7 +99,9 @@ std::shared_ptr<VoxelGenerator::ShaderOutputs> VoxelGenerator::get_block_renderi
 	}
 }
 
-static void append_generator_parameter_uniforms(String &source_text, ComputeShaderParameters &out_params,
+namespace {
+
+void append_generator_parameter_uniforms(String &source_text, ComputeShaderParameters &out_params,
 		VoxelGenerator::ShaderSourceData &shader_data, unsigned int bindings_start) {
 	for (unsigned int i = 0; i < shader_data.parameters.size(); ++i) {
 		VoxelGenerator::ShaderParameter &p = shader_data.parameters[i];
@@ -113,6 +115,8 @@ static void append_generator_parameter_uniforms(String &source_text, ComputeShad
 	}
 	source_text += "\n";
 }
+
+} // namespace
 
 std::shared_ptr<ComputeShader> compile_detail_rendering_compute_shader(
 		VoxelGenerator &generator, ComputeShaderParameters &out_params) {

@@ -55,14 +55,16 @@ bool RegionFormat::verify_block(const VoxelBufferInternal &block) const {
 	return true;
 }
 
-static uint32_t get_header_size_v3(const RegionFormat &format) {
+namespace {
+
+uint32_t get_header_size_v3(const RegionFormat &format) {
 	// Which file offset blocks data is starting
 	// magic + version + blockinfos
 	return MAGIC_AND_VERSION_SIZE + FIXED_HEADER_DATA_SIZE + (format.has_palette ? PALETTE_SIZE_IN_BYTES : 0) +
 			Vector3iUtil::get_volume(format.region_size) * sizeof(RegionBlockInfo);
 }
 
-static bool save_header(
+bool save_header(
 		FileAccess &f, uint8_t version, const RegionFormat &format, const std::vector<RegionBlockInfo> &block_infos) {
 	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
@@ -108,7 +110,7 @@ static bool save_header(
 	return true;
 }
 
-static bool load_header(
+bool load_header(
 		FileAccess &f, uint8_t &out_version, RegionFormat &out_format, std::vector<RegionBlockInfo> &out_block_infos) {
 	ERR_FAIL_COND_V(f.get_position() != 0, false);
 	ERR_FAIL_COND_V(f.get_length() < MAGIC_AND_VERSION_SIZE, false);
@@ -166,6 +168,8 @@ static bool load_header(
 
 	return true;
 }
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

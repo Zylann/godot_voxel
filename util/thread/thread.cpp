@@ -98,11 +98,15 @@ unsigned int Thread::get_hardware_concurrency() {
 	return std::thread::hardware_concurrency();
 }
 
-static uint64_t get_hash(const std::thread::id &p_t) {
+namespace {
+
+uint64_t get_hash(const std::thread::id &p_t) {
 	static std::hash<std::thread::id> hasher;
 	// TODO Maybe not a good idea to use a hash, could have collisions?
 	return hasher(p_t);
 }
+
+} // namespace
 
 Thread::ID Thread::get_caller_id() {
 	static thread_local ID caller_id = get_hash(std::this_thread::get_id());

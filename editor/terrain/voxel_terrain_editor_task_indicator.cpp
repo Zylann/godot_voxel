@@ -71,11 +71,13 @@ void VoxelTerrainEditorTaskIndicator::create_stat(StatID id, String short_name, 
 	_box_container->add_child(stat.label);
 }
 
+namespace {
+
 // TODO Optimize: these String formatting functions are extremely slow in GDExtension, due to indirection costs,
 // extra calls and unnecessary allocations caused by workarounds for missing APIs. It would just be more portable to
 // format a local `std::string` and convert to `String` at the end.
 
-static String with_commas(int64_t n) {
+String with_commas(int64_t n) {
 	String res = "";
 	if (n < 0) {
 		res += "-";
@@ -95,7 +97,7 @@ static String with_commas(int64_t n) {
 // There is `String::humanize_size` but:
 // 1) it is specifically for bytes, 2) it works on a 1024 base
 // This function allows any unit, and works on a base of 1000
-static String with_unit(int64_t n, const char *unit) {
+String with_unit(int64_t n, const char *unit) {
 	String s = "";
 	if (n < 0) {
 		s += "-";
@@ -139,6 +141,8 @@ static String with_unit(int64_t n, const char *unit) {
 	s += unit;
 	return s;
 }
+
+} // namespace
 
 void VoxelTerrainEditorTaskIndicator::set_stat(StatID id, int64_t value) {
 	Stat &stat = _stats[id];

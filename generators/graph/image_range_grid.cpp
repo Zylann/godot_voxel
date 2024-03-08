@@ -115,7 +115,9 @@ void ImageRangeGrid::generate(const Image &im) {
 	_lod_count = lod_count;
 }
 
-static void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) {
+namespace {
+
+void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) {
 	// Convert range to integer coordinates
 	const int imin = static_cast<int>(Math::floor(i.min));
 	const int imax = static_cast<int>(Math::ceil(i.max));
@@ -126,6 +128,8 @@ static void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) 
 	out_min = clamp(imin, -len, len);
 	out_max = clamp(imax, -len, len);
 }
+
+} // namespace
 
 Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
 	CRASH_COND(_lod_count <= 0);

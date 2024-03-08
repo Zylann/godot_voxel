@@ -105,7 +105,7 @@ inline T read(uint8_t *&src) {
 	return d;
 }
 
-static void serialize_metadata(const VoxelMetadata &meta, MemoryWriterExistingBuffer &mw) {
+void serialize_metadata(const VoxelMetadata &meta, MemoryWriterExistingBuffer &mw) {
 	const uint8_t type = meta.get_type();
 	switch (type) {
 		case VoxelMetadata::TYPE_EMPTY:
@@ -162,7 +162,7 @@ struct ClearOnExit {
 
 //#define CLEAR_ON_EXIT(container) ClearOnExit<decltype(container)> clear_on_exit_##__LINE__;
 
-static bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
+bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 	const uint8_t type = mr.get_8();
 	switch (type) {
 		case VoxelMetadata::TYPE_EMPTY:

@@ -378,7 +378,9 @@ void VoxelEngine::sync_viewers_task_priority_data() {
 	dep.highest_view_distance = max_distance * 2;
 }
 
-static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {
+namespace {
+
+unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunner &pool) {
 	unsigned int active_count = 0;
 	for (unsigned int i = 0; i < pool.get_thread_count(); ++i) {
 		zylann::ThreadedTaskRunner::State s = pool.get_thread_debug_state(i);
@@ -389,7 +391,7 @@ static unsigned int debug_get_active_thread_count(const zylann::ThreadedTaskRunn
 	return active_count;
 }
 
-static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
+VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::ThreadedTaskRunner &pool) {
 	VoxelEngine::Stats::ThreadPoolStats d;
 	d.tasks = pool.get_debug_remaining_tasks();
 	d.active_threads = debug_get_active_thread_count(pool);
@@ -402,6 +404,8 @@ static VoxelEngine::Stats::ThreadPoolStats debug_get_pool_stats(const zylann::Th
 
 	return d;
 }
+
+} // namespace
 
 VoxelEngine::Stats VoxelEngine::get_stats() const {
 	Stats s;

@@ -4,7 +4,9 @@
 
 namespace zylann {
 
-static fast_noise_lite::FastNoiseLite::FractalType to_fnl_fractal_type(ZN_FastNoiseLiteGradient::FractalType type) {
+namespace {
+
+fast_noise_lite::FastNoiseLite::FractalType to_fnl_fractal_type(ZN_FastNoiseLiteGradient::FractalType type) {
 	switch (type) {
 		case ZN_FastNoiseLiteGradient::FRACTAL_NONE:
 			return fast_noise_lite::FastNoiseLite::FractalType_None;
@@ -21,6 +23,8 @@ static fast_noise_lite::FastNoiseLite::FractalType to_fnl_fractal_type(ZN_FastNo
 	}
 	return fast_noise_lite::FastNoiseLite::FractalType_None;
 }
+
+} // namespace
 
 ZN_FastNoiseLiteGradient::ZN_FastNoiseLiteGradient() {
 	_fn.SetDomainWarpType(static_cast<_FastNoise::DomainWarpType>(_noise_type));

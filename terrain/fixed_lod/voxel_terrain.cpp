@@ -884,11 +884,13 @@ void VoxelTerrain::_notification(int p_what) {
 	}
 }
 
-inline Vector3i get_block_center(Vector3i pos, int bs) {
+namespace {
+
+Vector3i get_block_center(Vector3i pos, int bs) {
 	return pos * bs + Vector3iUtil::create(bs / 2);
 }
 
-static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector3i block_position, int block_size,
+void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector3i block_position, int block_size,
 		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform) {
 	const Vector3i voxel_pos = get_block_center(block_position, block_size);
 	const float block_radius = block_size / 2;
@@ -904,10 +906,9 @@ static void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector
 			math::squared(shared_viewers_data->highest_view_distance + 2.f * transformed_block_radius);
 }
 
-static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency,
-		Vector3i block_pos, std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
-		const Transform3D volume_transform, BufferedTaskScheduler &scheduler, bool use_gpu,
-		const std::shared_ptr<VoxelData> &voxel_data) {
+void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency, Vector3i block_pos,
+		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D volume_transform,
+		BufferedTaskScheduler &scheduler, bool use_gpu, const std::shared_ptr<VoxelData> &voxel_data) {
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	if (use_gpu && (stream_dependency->generator.is_null() || !stream_dependency->generator->supports_shaders())) {
@@ -947,6 +948,8 @@ static void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDepe
 		scheduler.push_main_task(task);
 	}
 }
+
+} // namespace
 
 void VoxelTerrain::send_data_load_requests() {
 	ZN_PROFILE_SCOPE();

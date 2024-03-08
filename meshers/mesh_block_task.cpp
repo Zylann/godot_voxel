@@ -15,6 +15,8 @@
 
 namespace zylann::voxel {
 
+namespace {
+
 struct CubicAreaInfo {
 	int edge_size; // In data blocks
 	int mesh_block_size_factor;
@@ -52,7 +54,7 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // Takes a list of blocks and interprets it as a cube of blocks centered around the area we want to create a mesh from.
 // Voxels from central blocks are copied, and part of side blocks are also copied so we get a temporary buffer
 // which includes enough neighbors for the mesher to avoid doing bound checks.
-static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
+void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> blocks, VoxelBufferInternal &dst,
 		int min_padding, int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
 		uint8_t lod_index, Vector3i mesh_block_pos, std::vector<Box3i> *out_boxes_to_generate,
 		Vector3i *out_origin_in_voxels) {
@@ -206,6 +208,8 @@ static void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBufferInternal>> 
 		}
 	}
 }
+
+} // namespace
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
 		// This vector indexes surfaces to the material they use (if a surface uses a material but is empty, it

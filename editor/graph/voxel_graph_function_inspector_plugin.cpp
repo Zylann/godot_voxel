@@ -18,7 +18,8 @@ bool VoxelGraphFunctionInspectorPlugin::_zn_can_handle(const Object *obj) const 
 	return Object::cast_to<VoxelGraphFunction>(obj) != nullptr;
 }
 
-static VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> ports, String title) {
+namespace {
+VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> ports, String title) {
 	VBoxContainer *vb = memnew(VBoxContainer);
 	vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 
@@ -36,6 +37,7 @@ static VBoxContainer *create_ports_control(Span<const VoxelGraphFunction::Port> 
 
 	return vb;
 }
+} // namespace
 
 bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, const Variant::Type p_type,
 		const String &p_path, const PropertyHint p_hint, const String &p_hint_text,

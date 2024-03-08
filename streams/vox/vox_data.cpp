@@ -48,7 +48,7 @@ uint32_t g_default_palette[PALETTE_SIZE] = {
 };
 // clang-format on
 
-static Error parse_string(FileAccess &f, String &s) {
+Error parse_string(FileAccess &f, String &s) {
 	const int size = f.get_32();
 
 	// Sanity checks
@@ -66,7 +66,7 @@ static Error parse_string(FileAccess &f, String &s) {
 	return OK;
 }
 
-static Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
+Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
 	const int item_count = f.get_32();
 
 	// Sanity checks
@@ -122,7 +122,7 @@ void transpose(Vector3i sx, Vector3i sy, Vector3i sz, Vector3i &dx, Vector3i &dy
 	dz.z = sz.z;
 }
 
-static Basis parse_basis(uint8_t data) {
+Basis parse_basis(uint8_t data) {
 	// bits 0 and 1 are the index of the non-zero entry in the first row
 	const int xi = (data >> 0) & 0x03;
 	// bits 2 and 3 are the index of the non-zero entry in the second row

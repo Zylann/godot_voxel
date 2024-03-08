@@ -32,10 +32,12 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	emit_changed();
 }
 
+namespace {
+
 #ifdef TOOLS_ENABLED
 // Generate tangents based on UVs (won't be as good as properly imported tangents)
-static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &positions,
-		const PackedVector3Array &normals, const PackedVector2Array &uvs, const PackedInt32Array &indices) {
+PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &positions, const PackedVector3Array &normals,
+		const PackedVector2Array &uvs, const PackedInt32Array &indices) {
 	PackedFloat32Array tangents;
 	tangents.resize(positions.size() * 4);
 
@@ -70,23 +72,23 @@ static PackedFloat32Array generate_tangents_from_uvs(const PackedVector3Array &p
 }
 #endif
 
-static void add(Span<Vector3> vectors, Vector3 rhs) {
+void add(Span<Vector3> vectors, Vector3 rhs) {
 	for (Vector3 &v : vectors) {
 		v += rhs;
 	}
 }
 
-static void mul(Span<Vector3> vectors, const Basis &basis) {
+void mul(Span<Vector3> vectors, const Basis &basis) {
 	for (Vector3 &v : vectors) {
 		v = basis.xform(v);
 	}
 }
 
-inline void add(PackedVector3Array &vectors, Vector3 rhs) {
+void add(PackedVector3Array &vectors, Vector3 rhs) {
 	add(Span<Vector3>(vectors.ptrw(), vectors.size()), rhs);
 }
 
-static void rotate_mesh_arrays(
+void rotate_mesh_arrays(
 		PackedVector3Array &vertices, PackedVector3Array &normals, PackedFloat32Array tangents, const Basis &basis) {
 	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
 	Span<Vector3> normals_w(normals.ptrw(), normals.size());
@@ -124,14 +126,13 @@ static void rotate_mesh_arrays(
 	}
 }
 
-static void rotate_mesh_arrays_ortho(PackedVector3Array &vertices, PackedVector3Array &normals,
-		PackedFloat32Array tangents, unsigned int ortho_basis_index) {
+void rotate_mesh_arrays_ortho(PackedVector3Array &vertices, PackedVector3Array &normals, PackedFloat32Array tangents,
+		unsigned int ortho_basis_index) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_basis_index);
 	const Basis basis(to_vec3(ortho_basis.x), to_vec3(ortho_basis.y), to_vec3(ortho_basis.z));
 	rotate_mesh_arrays(vertices, normals, tangents, basis);
 }
 
-namespace {
 bool validate_indices(Span<const int> indices, int vertex_count) {
 	ZN_ASSERT_RETURN_V(vertex_count >= 0, false);
 	for (const int index : indices) {
@@ -143,9 +144,8 @@ bool validate_indices(Span<const int> indices, int vertex_count) {
 	}
 	return true;
 }
-} // namespace
 
-static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> materials,
+void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> materials,
 		VoxelBlockyModel::BakedData &baked_data, bool bake_tangents,
 		VoxelBlockyModel::MaterialIndexer &material_indexer, unsigned int ortho_rotation) {
 	baked_data.model.surface_count = surfaces.size();
@@ -339,8 +339,8 @@ static void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Materi
 	} // namespace zylann::voxel
 }
 
-static void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::BakedData &baked_data,
-		bool bake_tangents, VoxelBlockyModel::MaterialIndexer &material_indexer) {
+void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::BakedData &baked_data, bool bake_tangents,
+		VoxelBlockyModel::MaterialIndexer &material_indexer) {
 	Ref<Mesh> mesh = config.get_mesh();
 
 	if (mesh.is_null()) {
@@ -369,6 +369,8 @@ static void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyMo
 	bake_mesh_geometry(to_span(surfaces), to_span(materials), baked_data, bake_tangents, material_indexer,
 			config.get_mesh_ortho_rotation_index());
 }
+
+} // namespace
 
 void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();

@@ -16,7 +16,9 @@
 
 namespace zylann::voxel {
 
-static Ref<Mesh> make_axes_mesh() {
+namespace {
+
+Ref<Mesh> make_axes_mesh() {
 	PackedVector3Array vertices;
 	vertices.resize(6);
 	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
@@ -61,7 +63,7 @@ static Ref<Mesh> make_axes_mesh() {
 }
 
 // TODO Re-use this function in VoxelDebug?
-static Ref<Mesh> make_wireboxes_mesh(Span<const AABB> p_aabbs, Color p_color) {
+Ref<Mesh> make_wireboxes_mesh(Span<const AABB> p_aabbs, Color p_color) {
 	if (p_aabbs.size() == 0) {
 		return Ref<Mesh>();
 	}
@@ -159,6 +161,8 @@ static Ref<Mesh> make_wireboxes_mesh(Span<const AABB> p_aabbs, Color p_color) {
 
 	return mesh;
 }
+
+} // namespace
 
 VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 	Ref<StandardMaterial3D> line_material;

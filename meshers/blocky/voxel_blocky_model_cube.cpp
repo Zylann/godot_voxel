@@ -112,7 +112,9 @@ float VoxelBlockyModelCube::get_height() const {
 	return _height;
 }
 
-static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::BakedData &baked_data,
+namespace {
+
+void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::BakedData &baked_data,
 		Vector2i p_atlas_size, bool bake_tangents) {
 	const float height = config.get_height();
 
@@ -184,6 +186,8 @@ static void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyMo
 
 	baked_data.empty = false;
 }
+
+} // namespace
 
 void VoxelBlockyModelCube::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();

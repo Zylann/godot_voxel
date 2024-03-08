@@ -237,7 +237,9 @@ void VoxelStreamRegionFiles::set_directory(String dirpath) {
 	}
 }
 
-static bool u8_from_json_variant(const Variant &v, uint8_t &i) {
+namespace {
+
+bool u8_from_json_variant(const Variant &v, uint8_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	int n = v;
 	ERR_FAIL_COND_V(n < 0 || n > 255, false);
@@ -246,20 +248,22 @@ static bool u8_from_json_variant(const Variant &v, uint8_t &i) {
 	return true;
 }
 
-static bool u32_from_json_variant(const Variant &v, uint32_t &i) {
+bool u32_from_json_variant(const Variant &v, uint32_t &i) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT && v.get_type() != Variant::FLOAT, false);
 	ERR_FAIL_COND_V(v.operator int64_t() < 0, false);
 	i = v;
 	return true;
 }
 
-static bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
+bool depth_from_json_variant(Variant &v, VoxelBufferInternal::Depth &d) {
 	uint8_t n;
 	ERR_FAIL_COND_V(!u8_from_json_variant(v, n), false);
 	ZN_ASSERT_RETURN_V(n < VoxelBufferInternal::DEPTH_COUNT, false);
 	d = (VoxelBufferInternal::Depth)n;
 	return true;
 }
+
+} // namespace
 
 godot::FileResult VoxelStreamRegionFiles::save_meta() {
 	ERR_FAIL_COND_V(_directory_path == "", godot::FILE_CANT_OPEN);
@@ -309,7 +313,9 @@ godot::FileResult VoxelStreamRegionFiles::save_meta() {
 	return godot::FILE_OK;
 }
 
-static void migrate_region_meta_data(Dictionary &data) {
+namespace {
+
+void migrate_region_meta_data(Dictionary &data) {
 	if (data["version"] == Variant(real_t(FORMAT_VERSION_LEGACY_1))) {
 		Array depths;
 		depths.resize(VoxelBufferInternal::MAX_CHANNELS);
@@ -329,6 +335,8 @@ static void migrate_region_meta_data(Dictionary &data) {
 	//  TODO Throw error?
 	// }
 }
+
+} // namespace
 
 godot::FileResult VoxelStreamRegionFiles::load_meta() {
 	ERR_FAIL_COND_V(_directory_path == "", godot::FILE_CANT_OPEN);
@@ -546,15 +554,19 @@ void VoxelStreamRegionFiles::close_oldest_region() {
 	ZN_DELETE(region);
 }
 
-static inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
+namespace {
+
+inline int convert_block_coordinate(int p_x, int old_size, int new_size) {
 	return math::floordiv(p_x * old_size, new_size);
 }
 
-static Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {
+Vector3i convert_block_coordinates(Vector3i pos, Vector3i old_size, Vector3i new_size) {
 	return Vector3i(convert_block_coordinate(pos.x, old_size.x, new_size.x),
 			convert_block_coordinate(pos.y, old_size.y, new_size.y),
 			convert_block_coordinate(pos.z, old_size.z, new_size.z));
 }
+
+} // namespace
 
 void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 	// TODO Converting across different block sizes is untested.

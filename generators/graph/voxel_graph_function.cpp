@@ -762,7 +762,9 @@ void VoxelGraphFunction::_on_subresource_changed() {
 	emit_changed();
 }
 
-static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
+namespace {
+
+Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	/*
 	{
 		"version": 2,
@@ -891,11 +893,15 @@ static Dictionary get_graph_as_variant_data(const ProgramGraph &graph) {
 	return data;
 }
 
+} // namespace
+
 Dictionary VoxelGraphFunction::get_graph_as_variant_data() const {
 	return zylann::voxel::pg::get_graph_as_variant_data(_graph);
 }
 
-static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
+namespace {
+
+bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	ERR_FAIL_COND_V(v.get_type() != Variant::INT, false);
 	const int i = v;
 	ERR_FAIL_COND_V(i < 0 || (unsigned int)i < min, false);
@@ -903,7 +909,7 @@ static bool var_to_id(Variant v, uint32_t &out_id, uint32_t min = 0) {
 	return true;
 }
 
-static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, String resource_path) {
+bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, String resource_path) {
 	Dictionary nodes_data = data["nodes"];
 	Array connections_data = data["connections"];
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -1041,6 +1047,8 @@ static bool load_graph_from_variant_data(ProgramGraph &graph, Dictionary data, S
 
 	return true;
 }
+
+} // namespace
 
 bool VoxelGraphFunction::load_graph_from_variant_data(Dictionary data) {
 	clear();
@@ -1186,6 +1194,8 @@ Span<const VoxelGraphFunction::Port> VoxelGraphFunction::get_output_definitions(
 	return to_span(_outputs);
 }
 
+namespace {
+
 bool validate_io_definitions(Span<const VoxelGraphFunction::Port> ports, const Category category) {
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 	for (unsigned int i = 0; i < ports.size(); ++i) {
@@ -1204,6 +1214,8 @@ bool validate_io_definitions(Span<const VoxelGraphFunction::Port> ports, const C
 	}
 	return true;
 }
+
+} // namespace
 
 void VoxelGraphFunction::set_io_definitions(Span<const Port> inputs, Span<const Port> outputs) {
 	ERR_FAIL_COND(!validate_io_definitions(inputs, CATEGORY_INPUT));

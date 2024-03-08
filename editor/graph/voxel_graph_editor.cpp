@@ -60,9 +60,33 @@ enum ToolbarMenuIDs {
 	MENU_GENERATE_SHADER
 };
 
-static NodePath to_node_path(const StringName &sn) {
+// Utilities
+namespace {
+
+NodePath to_node_path(const StringName &sn) {
 	return NodePath(String(sn));
 }
+
+bool is_nothing_selected(GraphEdit *graph_edit) {
+	for (int i = 0; i < graph_edit->get_child_count(); ++i) {
+		GraphNode *node = Object::cast_to<GraphNode>(graph_edit->get_child(i));
+		if (node != nullptr && node->is_selected()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void update_menu_radio_checkable_items(PopupMenu &menu, int checked_id) {
+	for (int i = 0; i < menu.get_item_count(); ++i) {
+		if (menu.is_item_radio_checkable(i)) {
+			const int item_id = menu.get_item_id(i);
+			menu.set_item_checked(i, item_id == checked_id);
+		}
+	}
+}
+
+} // namespace
 
 VoxelGraphEditor::VoxelGraphEditor() {
 	VBoxContainer *vbox_container = memnew(VBoxContainer);
@@ -515,16 +539,6 @@ void VoxelGraphEditor::update_node_comment(uint32_t node_id) {
 
 bool VoxelGraphEditor::is_pinned_hint() const {
 	return _pin_button->is_pressed();
-}
-
-static bool is_nothing_selected(GraphEdit *graph_edit) {
-	for (int i = 0; i < graph_edit->get_child_count(); ++i) {
-		GraphNode *node = Object::cast_to<GraphNode>(graph_edit->get_child(i));
-		if (node != nullptr && node->is_selected()) {
-			return false;
-		}
-	}
-	return true;
 }
 
 void VoxelGraphEditor::_on_graph_edit_gui_input(Ref<InputEvent> event) {
@@ -1235,15 +1249,6 @@ void VoxelGraphEditor::profile() {
 		ERR_CONTINUE(node_view == nullptr);
 		node_view->set_profiling_ratio_visible(true);
 		node_view->set_profiling_ratio(nr.ratio);
-	}
-}
-
-static void update_menu_radio_checkable_items(PopupMenu &menu, int checked_id) {
-	for (int i = 0; i < menu.get_item_count(); ++i) {
-		if (menu.is_item_radio_checkable(i)) {
-			const int item_id = menu.get_item_id(i);
-			menu.set_item_checked(i, item_id == checked_id);
-		}
 	}
 }
 

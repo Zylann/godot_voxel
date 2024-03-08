@@ -75,7 +75,9 @@ bool VoxelMesherTransvoxel::is_generating_collision_surface() const {
 	return true;
 }
 
-static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
+namespace {
+
+void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 	PackedVector3Array vertices;
 	PackedVector3Array normals;
 	PackedFloat32Array lod_data; // 4*float32
@@ -109,7 +111,7 @@ static void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src
 }
 
 template <typename T>
-static void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &dst_data,
+void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &dst_data,
 		const std::vector<unsigned int> &remap_indices, unsigned int unique_vertex_count) {
 	if (src_data.size() == 0) {
 		dst_data.clear();
@@ -120,7 +122,7 @@ static void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &d
 			&dst_data[0], &src_data[0], src_data.size(), sizeof(T), remap_indices.data());
 }
 
-static void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &dst_mesh, float p_target_ratio,
+void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &dst_mesh, float p_target_ratio,
 		float p_error_threshold) {
 	ZN_PROFILE_SCOPE();
 
@@ -212,6 +214,8 @@ struct DeepSampler : transvoxel::IDeepSDFSampler {
 		}*/
 	}
 };
+
+} // namespace
 
 void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
 	ZN_PROFILE_SCOPE();

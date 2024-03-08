@@ -13,6 +13,8 @@
 
 namespace zylann::voxel::pg {
 
+namespace {
+
 // Updates remaps for replacing one node with one other, where old and new nodes have the same number of outputs.
 void add_remap(GraphRemappingInfo &remaps, uint32_t old_node_id, uint32_t new_node_id, unsigned int output_count) {
 	bool existing_remap = false;
@@ -103,11 +105,11 @@ struct ToConnect {
 	ProgramGraph::PortLocation dst;
 };
 
-static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
+uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
 		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
 		Span<const ExpressionParser::Function> functions);
 
-static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg, ProgramGraph::Node &pg_node,
+bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg, ProgramGraph::Node &pg_node,
 		uint32_t pg_node_input_index, const NodeTypeDB &db, std::vector<ToConnect> &to_connect,
 		std::vector<uint32_t> &expanded_node_ids, Span<const ExpressionParser::Function> functions) {
 	switch (arg.type) {
@@ -137,7 +139,7 @@ static bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg,
 	return true;
 }
 
-static ProgramGraph::Node &create_node(
+ProgramGraph::Node &create_node(
 		ProgramGraph &graph, const NodeTypeDB &db, VoxelGraphFunction::NodeTypeID node_type_id) {
 	// Not creating default sub-resources here, there are no use cases where we use such nodes.
 	ProgramGraph::Node *node = create_node_internal(graph, node_type_id, Vector2(), ProgramGraph::NULL_ID, false);
@@ -145,7 +147,7 @@ static ProgramGraph::Node &create_node(
 	return *node;
 }
 
-static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
+uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
 		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
 		Span<const ExpressionParser::Function> functions) {
 	switch (ep_node.type) {
@@ -263,7 +265,7 @@ static uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &e
 	}
 }
 
-static CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
+CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
 		ProgramGraph::PortLocation &expanded_output_port, std::vector<uint32_t> &expanded_nodes,
 		const NodeTypeDB &type_db) {
 	ZN_PROFILE_SCOPE();
@@ -392,8 +394,8 @@ struct NodePair {
 	}
 };
 
-static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::Node &node1,
-		const ProgramGraph::Node &node2, std::vector<NodePair> &equivalences) {
+bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::Node &node1, const ProgramGraph::Node &node2,
+		std::vector<NodePair> &equivalences) {
 	if (node1.id == node2.id) {
 		// They are the same node (this can happen while processing ancestors).
 		return true;
@@ -471,7 +473,7 @@ static bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::No
 }
 
 // Removes node 2 and moves its output connections to node 1. The two nodes must have the same type.
-static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
+void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, GraphRemappingInfo *remap_info) {
 	const ProgramGraph::Node &node1 = graph.get_node(node1_id);
 	const ProgramGraph::Node &node2 = graph.get_node(node2_id);
 	ZN_ASSERT_RETURN(node1.type_id == node2.type_id);
@@ -498,7 +500,7 @@ static void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id
 // For example, a SphereHeightNoise macro will want to normalize (X,Y,Z). Other branches may want to do this too,
 // so we should share that operation, but it's harder to do so with self-contained branches. So it's easier if that
 // can be delegated to an automated process.
-static void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
+void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
 	std::vector<uint32_t> node_ids;
 	graph.get_node_ids(node_ids);
@@ -540,7 +542,7 @@ static void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_in
 // For each node with auto-connect enabled, if they have non-connected ports supporting auto-connect, connects them to a
 // default input node. If no such node exists in the graph but it is present in input definitions of the graph, it is
 // created.
-static void apply_auto_connects(
+void apply_auto_connects(
 		ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs, const NodeTypeDB &type_db) {
 	// Copy ids first because we might create new nodes
 	std::vector<uint32_t> node_ids;
@@ -1102,6 +1104,8 @@ CompilationResult combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunct
 	return CompilationResult::make_success();
 }
 
+} // namespace
+
 CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
 		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
 		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info) {
@@ -1178,11 +1182,13 @@ CompilationResult Runtime::compile(const VoxelGraphFunction &function, bool debu
 	return result;
 }
 
+namespace {
+
 // Optimize parts of the graph that only depend on inputs tagged as "outer group",
 // so they can be moved in the outer loop when blocks are generated, running less times.
 // Moves them all at the beginning.
 // `order` is a previously computed order of execution of each node.
-static uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, const ProgramGraph &graph) {
+uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, const ProgramGraph &graph) {
 	ZN_PROFILE_SCOPE();
 	std::vector<uint32_t> immediate_deps;
 	std::unordered_set<uint32_t> outer_group_node_ids;
@@ -1232,7 +1238,7 @@ static uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, con
 	return inner_group_start_index;
 }
 
-static void compute_node_execution_order(
+void compute_node_execution_order(
 		std::vector<uint32_t> &order, const ProgramGraph &graph, bool debug, const NodeTypeDB &type_db) {
 	std::vector<uint32_t> terminal_nodes;
 
@@ -1255,6 +1261,8 @@ static void compute_node_execution_order(
 
 	graph.find_dependencies(terminal_nodes, order);
 }
+
+} // namespace
 
 CompilationResult Runtime::compile_preprocessed_graph(Program &program, const ProgramGraph &graph,
 		unsigned int input_count, Span<const uint32_t> input_node_ids, bool debug, const NodeTypeDB &type_db) {

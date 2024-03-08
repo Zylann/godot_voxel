@@ -8,10 +8,12 @@
 
 namespace zylann::godot {
 
+namespace {
+
 FixedArray<Ref<Mesh>, DebugColors::ID_COUNT> g_wirecubes;
 bool g_finalized = false;
 
-static Color get_color(DebugColors::ColorID id) {
+Color get_color(DebugColors::ColorID id) {
 	switch (id) {
 		case DebugColors::ID_VOXEL_BOUNDS:
 			return Color(1, 1, 1);
@@ -26,6 +28,8 @@ static Color get_color(DebugColors::ColorID id) {
 	}
 	return Color();
 }
+
+} // namespace
 
 Ref<Mesh> get_debug_wirecube(DebugColors::ColorID id) {
 	CRASH_COND(g_finalized);

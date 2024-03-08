@@ -68,7 +68,7 @@ void VoxelBlockyLibraryBase::_bind_methods() {
 }
 
 template <typename F>
-static void rasterize_triangle_barycentric(Vector2f a, Vector2f b, Vector2f c, F output_func) {
+void rasterize_triangle_barycentric(Vector2f a, Vector2f b, Vector2f c, F output_func) {
 	// Slower than scanline method, but looks better
 
 	// Grow the triangle a tiny bit, to help against floating point error

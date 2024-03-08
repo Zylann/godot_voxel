@@ -218,7 +218,9 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 	rd.compute_list_end();
 }
 
-static std::vector<uint8_t> &get_temporary_conversion_memory_tls() {
+namespace {
+
+std::vector<uint8_t> &get_temporary_conversion_memory_tls() {
 	static thread_local std::vector<uint8_t> mem;
 	return mem;
 }
@@ -230,7 +232,7 @@ inline Span<T> get_temporary_conversion_memory_tls(unsigned int count) {
 	return to_span(mem).reinterpret_cast_to<T>();
 }
 
-static void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 
 	const VoxelBufferInternal::Depth depth = dst.get_channel_depth(VoxelBufferInternal::CHANNEL_SDF);
@@ -271,8 +273,7 @@ static void convert_gpu_output_sdf(VoxelBufferInternal &dst, Span<const float> s
 	}
 }
 
-static void convert_gpu_output_single_texture(
-		VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
+void convert_gpu_output_single_texture(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
 	dst.fill_area(encoded_weights, box.pos, box.pos + box.size, VoxelBufferInternal::CHANNEL_WEIGHTS);
@@ -305,7 +306,7 @@ Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &me
 	return dst;
 }
 
-static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box,
+void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> src_data_f, const Box3i &box,
 		VoxelBufferInternal::ChannelId channel_index) {
 	ZN_PROFILE_SCOPE();
 
@@ -338,6 +339,8 @@ static void convert_gpu_output_uint(VoxelBufferInternal &dst, Span<const float> 
 			break;
 	}
 }
+
+} // namespace
 
 void GenerateBlockGPUTaskResult::convert_to_voxel_buffer(VoxelBufferInternal &dst) {
 	// Shaders can only output float arrays for now. Also looks like GLSL does not have 8-bit or 16-bit data types?

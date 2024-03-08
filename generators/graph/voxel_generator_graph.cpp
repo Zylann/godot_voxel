@@ -241,6 +241,8 @@ void VoxelGeneratorGraph::gather_indices_and_weights(Span<const WeightOutput> we
 	}
 }
 
+namespace {
+
 constexpr inline uint16_t make_encoded_weights_for_single_texture() {
 	return encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
 }
@@ -298,9 +300,8 @@ void fill_zx_sdf_slice(Span<Data_T> channel_data, float sdf_scale, Vector3i rmin
 	}
 }
 
-static void fill_zx_sdf_slice(const pg::Runtime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer,
-		unsigned int channel, VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax,
-		int ry) {
+void fill_zx_sdf_slice(const pg::Runtime::Buffer &sdf_buffer, VoxelBufferInternal &out_buffer, unsigned int channel,
+		VoxelBufferInternal::Depth channel_depth, float sdf_scale, Vector3i rmin, Vector3i rmax, int ry) {
 	ZN_PROFILE_SCOPE_NAMED("Copy SDF to block");
 
 	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
@@ -353,8 +354,8 @@ void fill_zx_integer_slice(Span<Data_T> channel_data, Vector3i rmin, Vector3i rm
 	}
 }
 
-static void fill_zx_integer_slice(const pg::Runtime::Buffer &src_buffer, VoxelBufferInternal &out_buffer,
-		unsigned int channel, VoxelBufferInternal::Depth channel_depth, Vector3i rmin, Vector3i rmax, int ry) {
+void fill_zx_integer_slice(const pg::Runtime::Buffer &src_buffer, VoxelBufferInternal &out_buffer, unsigned int channel,
+		VoxelBufferInternal::Depth channel_depth, Vector3i rmin, Vector3i rmax, int ry) {
 	ZN_PROFILE_SCOPE_NAMED("Copy integer data to block");
 
 	if (out_buffer.get_channel_compression(channel) != VoxelBufferInternal::COMPRESSION_NONE) {
@@ -391,6 +392,8 @@ static void fill_zx_integer_slice(const pg::Runtime::Buffer &src_buffer, VoxelBu
 			break;
 	}
 }
+
+} // namespace
 
 VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::VoxelQueryData &input) {
 	std::shared_ptr<Runtime> runtime_ptr;
@@ -799,7 +802,9 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	return true;
 }
 
-static bool has_output_type(
+namespace {
+
+bool has_output_type(
 		const pg::Runtime &runtime, const ProgramGraph &graph, pg::VoxelGraphFunction::NodeTypeID node_type_id) {
 	for (unsigned int other_output_index = 0; other_output_index < runtime.get_output_count(); ++other_output_index) {
 		const pg::Runtime::OutputInfo output = runtime.get_output_info(other_output_index);
@@ -810,6 +815,8 @@ static bool has_output_type(
 	}
 	return false;
 }
+
+} // namespace
 
 pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 	// This is a specialized compilation. We use VoxelGraphFunction for a more precise use case, which is to generate

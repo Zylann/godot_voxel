@@ -274,11 +274,13 @@ Ref<VoxelBlockyModel> VoxelBlockyType::get_variant(const VariantKey &key) const 
 	}
 }*/
 
+namespace {
+
 // Get automatic rotation transform to apply to a model when baking.
 // It is based on the assumption the base model is pre-rotated according to the default value of the rotation attribute
 // (which could be identity, most of the time). So we essentially need to obtain the transformation that goes from the
 // default rotation to others.
-static math::OrthoBasis get_baking_rotation_ortho_basis(
+math::OrthoBasis get_baking_rotation_ortho_basis(
 		Ref<VoxelBlockyAttribute> rotation_attribute, unsigned int rotation_attribute_value) {
 	const unsigned int default_value = rotation_attribute->get_default_value();
 
@@ -308,6 +310,8 @@ static math::OrthoBasis get_baking_rotation_ortho_basis(
 // 	}
 // 	return s;
 // }
+
+} // namespace
 
 void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
 		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key, bool bake_tangents) const {

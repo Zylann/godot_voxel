@@ -322,7 +322,9 @@ bool VoxelInstanceLibraryMultiMeshItem::_get(const StringName &p_name, Variant &
 // 	return false;
 // }
 
-static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
+namespace {
+
+RenderingServer::ShadowCastingSetting node_to_visual_server_enum(GeometryInstance3D::ShadowCastingSetting v) {
 	switch (v) {
 		case GeometryInstance3D::SHADOW_CASTING_SETTING_OFF:
 			return RenderingServer::SHADOW_CASTING_SETTING_OFF;
@@ -342,7 +344,7 @@ static RenderingServer::ShadowCastingSetting node_to_visual_server_enum(Geometry
 	}
 }
 
-static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings &settings) {
+bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings &settings) {
 	struct L {
 		static unsigned int get_lod_index_from_name(const String &name) {
 			if (name.ends_with("LOD0")) {
@@ -400,6 +402,8 @@ static bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::S
 
 	return true;
 }
+
+} // namespace
 
 #if defined(ZN_GODOT)
 void VoxelInstanceLibraryMultiMeshItem::setup_from_template(Node *root) {

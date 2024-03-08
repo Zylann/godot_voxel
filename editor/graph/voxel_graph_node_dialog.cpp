@@ -25,7 +25,9 @@
 
 namespace zylann::voxel {
 
-static const GraphNodesDocData::Node *get_graph_node_documentation(String name) {
+namespace {
+
+const GraphNodesDocData::Node *get_graph_node_documentation(String name) {
 	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
 		if (node.name == name) {
@@ -35,7 +37,7 @@ static const GraphNodesDocData::Node *get_graph_node_documentation(String name) 
 	return nullptr;
 }
 
-static void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
+void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
 	std::unordered_set<String> categories;
 	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
@@ -44,6 +46,59 @@ static void get_graph_node_documentation_category_names(std::vector<String> &out
 		}
 	}
 }
+
+// This is a dumbed down re-implementation of `Tree::_up` because this stuff is not exposed...
+void select_up(Tree &tree) {
+	TreeItem *selected_item = tree.get_selected();
+
+	if (selected_item == nullptr) {
+		ZN_PRINT_VERBOSE("No item selected in tree, can't select down");
+		return;
+	}
+
+	TreeItem *prev = selected_item->get_prev_visible();
+
+	const int col = 0;
+	while (prev != nullptr && !prev->is_selectable(col)) {
+		prev = prev->get_prev_visible();
+	}
+	if (prev == nullptr) {
+		return;
+	}
+
+	prev->select(col);
+
+	tree.ensure_cursor_is_visible();
+	// tree.accept_event();
+}
+
+// This is a dumbed down re-implementation of `Tree::_down` because this stuff is not exposed...
+void select_down(Tree &tree) {
+	TreeItem *selected_item = tree.get_selected();
+
+	if (selected_item == nullptr) {
+		ZN_PRINT_VERBOSE("No item selected in tree, can't select down");
+		return;
+	}
+
+	TreeItem *next = selected_item->get_next_visible();
+
+	const int col = 0;
+
+	while (next != nullptr && !next->is_selectable(col)) {
+		next = next->get_next_visible();
+	}
+	if (next == nullptr) {
+		return;
+	}
+
+	next->select(col);
+
+	tree.ensure_cursor_is_visible();
+	// tree.accept_event();
+}
+
+} // namespace
 
 const char *VoxelGraphNodeDialog::SIGNAL_NODE_SELECTED = "node_selected";
 const char *VoxelGraphNodeDialog::SIGNAL_FILE_SELECTED = "file_selected";
@@ -260,57 +315,6 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 
 void VoxelGraphNodeDialog::_on_filter_text_changed(String new_text) {
 	update_tree(true);
-}
-
-// This is a dumbed down re-implementation of `Tree::_up` because this stuff is not exposed...
-static void select_up(Tree &tree) {
-	TreeItem *selected_item = tree.get_selected();
-
-	if (selected_item == nullptr) {
-		ZN_PRINT_VERBOSE("No item selected in tree, can't select down");
-		return;
-	}
-
-	TreeItem *prev = selected_item->get_prev_visible();
-
-	const int col = 0;
-	while (prev != nullptr && !prev->is_selectable(col)) {
-		prev = prev->get_prev_visible();
-	}
-	if (prev == nullptr) {
-		return;
-	}
-
-	prev->select(col);
-
-	tree.ensure_cursor_is_visible();
-	// tree.accept_event();
-}
-
-// This is a dumbed down re-implementation of `Tree::_down` because this stuff is not exposed...
-static void select_down(Tree &tree) {
-	TreeItem *selected_item = tree.get_selected();
-
-	if (selected_item == nullptr) {
-		ZN_PRINT_VERBOSE("No item selected in tree, can't select down");
-		return;
-	}
-
-	TreeItem *next = selected_item->get_next_visible();
-
-	const int col = 0;
-
-	while (next != nullptr && !next->is_selectable(col)) {
-		next = next->get_next_visible();
-	}
-	if (next == nullptr) {
-		return;
-	}
-
-	next->select(col);
-
-	tree.ensure_cursor_is_visible();
-	// tree.accept_event();
 }
 
 void VoxelGraphNodeDialog::_on_filter_gui_input(Ref<InputEvent> event) {

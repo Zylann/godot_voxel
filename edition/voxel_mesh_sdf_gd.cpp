@@ -17,7 +17,8 @@
 
 namespace zylann::voxel {
 
-static bool prepare_triangles(
+namespace {
+bool prepare_triangles(
 		Mesh &mesh, std::vector<mesh_sdf::Triangle> &triangles, Vector3f &out_min_pos, Vector3f &out_max_pos) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(mesh.get_surface_count() == 0, false);
@@ -36,6 +37,7 @@ static bool prepare_triangles(
 			false);
 	return true;
 }
+} // namespace
 
 bool VoxelMeshSDF::is_baked() const {
 	return _voxel_buffer.is_valid();

@@ -6,7 +6,9 @@
 
 namespace zylann::voxel {
 
-static AABB expand_with_vector(AABB box, Vector3 v) {
+namespace {
+
+AABB expand_with_vector(AABB box, Vector3 v) {
 	if (v.x > 0) {
 		box.size.x += v.x;
 	} else if (v.x < 0) {
@@ -31,7 +33,7 @@ static AABB expand_with_vector(AABB box, Vector3 v) {
 	return box;
 }
 
-static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
+real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int i, int j, int k) {
 	const real_t EPSILON = 0.001;
 
 	const Vector3 other_end = other.position + other.size;
@@ -80,7 +82,7 @@ static real_t calculate_i_offset(const AABB &box, AABB other, real_t motion, int
 //
 // TODO one way to fix this would be to try a "hot side" projection instead
 //
-static Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes) {
+Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes) {
 	// The bounding box is expanded to include it's estimated version at next update.
 	// This also makes the algorithm tunnelling-free
 	const AABB expanded_box = expand_with_vector(box, motion);
@@ -119,7 +121,7 @@ static Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment
 	return new_motion;
 }
 
-// static bool raycast_down(Span<const AABB> aabbs, Vector3 ray_origin, real_t &out_hit_y) {
+// bool raycast_down(Span<const AABB> aabbs, Vector3 ray_origin, real_t &out_hit_y) {
 // 	if (aabbs.size() == 0) {
 // 		return false;
 // 	}
@@ -150,7 +152,7 @@ inline Vector2 get_xz(Vector3 v) {
 	return Vector2(v.x, v.z);
 }
 
-static bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_size, real_t &out_hit_y) {
+bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_size, real_t &out_hit_y) {
 	if (aabbs.size() == 0) {
 		return false;
 	}
@@ -172,7 +174,7 @@ static bool boxcast_down(Span<const AABB> aabbs, Vector2 box_pos, Vector2 box_si
 	return hit;
 }
 
-static bool intersects(Span<const AABB> aabbs, const AABB &box) {
+bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	for (unsigned int i = 0; i < aabbs.size(); ++i) {
 		if (aabbs[i].intersects(box)) {
 			return true;
@@ -181,7 +183,7 @@ static bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	return false;
 }
 
-static void collect_boxes(
+void collect_boxes(
 		VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, std::vector<AABB> &potential_boxes) {
 	const VoxelData &voxels = p_terrain.get_storage();
 
@@ -249,6 +251,8 @@ static void collect_boxes(
 		}
 	}
 }
+
+} // namespace
 
 Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain &p_terrain) {
 	// The mesher is required to know how collisions should be processed

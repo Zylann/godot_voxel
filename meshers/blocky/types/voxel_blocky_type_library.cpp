@@ -241,7 +241,9 @@ int VoxelBlockyTypeLibrary::get_model_index_default(StringName type_name) const 
 	return get_model_index(id);
 }
 
-static bool parse_attribute_value(
+namespace {
+
+bool parse_attribute_value(
 		const Variant &vv, const VoxelBlockyType &type, const StringName &attrib_name, uint8_t &out_attrib_value) {
 	if (vv.get_type() == Variant::STRING_NAME) {
 		StringName value_name = vv;
@@ -275,6 +277,8 @@ static bool parse_attribute_value(
 
 	return true;
 }
+
+} // namespace
 
 int VoxelBlockyTypeLibrary::get_model_index_single_attribute(StringName type_name, Variant p_attrib_value) const {
 	ZN_PROFILE_SCOPE();
@@ -396,6 +400,8 @@ Array VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index(int 
 
 	return ret;
 }
+
+namespace {
 
 struct VoxelIDToken {
 	enum Type { //
@@ -562,6 +568,8 @@ private:
 	unsigned int _position;
 	Span<const char32_t> _str;
 };
+
+} // namespace
 
 bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id) {
 	Span<const char32_t> str(p_str.ptr(), p_str.length());

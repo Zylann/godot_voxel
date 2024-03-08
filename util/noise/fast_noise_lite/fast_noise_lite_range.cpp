@@ -6,7 +6,9 @@ namespace zylann {
 
 using namespace math;
 
-static Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
+namespace {
+
+Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	const float c0 = noise.get_noise_2d(x.min, y.min);
 	const float c1 = noise.get_noise_2d(x.max, y.min);
 	const float c2 = noise.get_noise_2d(x.min, y.max);
@@ -17,8 +19,7 @@ static Interval get_fnl_cellular_value_range_2d(const ZN_FastNoiseLite &noise, I
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_value_range_3d(
-		const fast_noise_lite::FastNoiseLite &fn, Interval x, Interval y, Interval z) {
+Interval get_fnl_cellular_value_range_3d(const fast_noise_lite::FastNoiseLite &fn, Interval x, Interval y, Interval z) {
 	const float c0 = fn.GetNoise(x.min, y.min, z.min);
 	const float c1 = fn.GetNoise(x.max, y.min, z.min);
 	const float c2 = fn.GetNoise(x.min, y.max, z.min);
@@ -33,7 +34,7 @@ static Interval get_fnl_cellular_value_range_3d(
 	return Interval{ -1, 1 };
 }
 
-static Interval get_fnl_cellular_range(const ZN_FastNoiseLite &noise) {
+Interval get_fnl_cellular_range(const ZN_FastNoiseLite &noise) {
 	// There are many combinations with Cellular noise so instead of implementing them with intervals,
 	// I used empiric tests to figure out some bounds.
 
@@ -299,6 +300,8 @@ Interval fnl_get_noise(const ZN_FastNoiseLite &noise, Interval x, Interval y, In
 			return Interval(-1.f, 1.f);
 	}
 }
+
+} // namespace
 
 Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, Interval x, Interval y) {
 	// TODO More precise analysis using derivatives

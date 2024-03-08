@@ -13,7 +13,9 @@
 
 namespace zylann::voxel {
 
-static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
+namespace {
+
+void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 	ZN_PROFILE_SCOPE();
 
 	static const int s_dx[4] = { -1, 1, 0, 0 };
@@ -58,6 +60,8 @@ static void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 		normals[nn.loc] = nn.normal;
 	}
 }
+
+} // namespace
 
 DetailTextureData::Tile compute_tile_info(
 		const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals, Span<const int> mesh_indices) {

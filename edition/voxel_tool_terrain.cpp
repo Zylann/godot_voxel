@@ -381,13 +381,15 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 	}
 }
 
-static Ref<VoxelBlockyLibraryBase> get_voxel_library(const VoxelTerrain &terrain) {
+namespace {
+Ref<VoxelBlockyLibraryBase> get_voxel_library(const VoxelTerrain &terrain) {
 	Ref<VoxelMesherBlocky> blocky_mesher = terrain.get_mesher();
 	if (blocky_mesher.is_valid()) {
 		return blocky_mesher->get_library();
 	}
 	return Ref<VoxelBlockyLibraryBase>();
 }
+} // namespace
 
 // TODO This function snaps the given AABB to blocks, this is not intuitive. Should figure out a way to respect the
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement

@@ -61,6 +61,23 @@ inline uint64_t get_ticks_msec() {
 	return Time::get_singleton()->get_ticks_msec();
 }
 
+inline void copy_param(ShaderMaterial &src, ShaderMaterial &dst, const StringName &name) {
+	dst.set_shader_parameter(name, src.get_shader_parameter(name));
+}
+
+void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
+	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
+
+	copy_param(src, dst, sn.u_voxel_normalmap_atlas);
+	copy_param(src, dst, sn.u_voxel_cell_lookup);
+	copy_param(src, dst, sn.u_voxel_virtual_texture_offset_scale);
+	copy_param(src, dst, sn.u_voxel_cell_size);
+	copy_param(src, dst, sn.u_voxel_virtual_texture_fade);
+	copy_param(src, dst, sn.u_transition_mask);
+	copy_param(src, dst, sn.u_lod_fade);
+	copy_param(src, dst, sn.u_voxel_lod_info);
+}
+
 } // namespace
 
 void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
@@ -82,23 +99,6 @@ void ShaderMaterialPoolVLT::recycle(Ref<ShaderMaterial> material) {
 	material->set_shader_parameter(sn.u_lod_fade, Vector2(0.0, 0.0));
 
 	godot::ShaderMaterialPool::recycle(material);
-}
-
-inline void copy_param(ShaderMaterial &src, ShaderMaterial &dst, const StringName &name) {
-	dst.set_shader_parameter(name, src.get_shader_parameter(name));
-}
-
-static void copy_vlt_block_params(ShaderMaterial &src, ShaderMaterial &dst) {
-	const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-
-	copy_param(src, dst, sn.u_voxel_normalmap_atlas);
-	copy_param(src, dst, sn.u_voxel_cell_lookup);
-	copy_param(src, dst, sn.u_voxel_virtual_texture_offset_scale);
-	copy_param(src, dst, sn.u_voxel_cell_size);
-	copy_param(src, dst, sn.u_voxel_virtual_texture_fade);
-	copy_param(src, dst, sn.u_transition_mask);
-	copy_param(src, dst, sn.u_lod_fade);
-	copy_param(src, dst, sn.u_voxel_lod_info);
 }
 
 void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
@@ -2029,7 +2029,9 @@ void VoxelLodTerrain::apply_detail_texture_update(VoxelEngine::BlockDetailTextur
 	apply_detail_texture_update_to_block(*block, *ob.detail_textures, ob.lod_index);
 }
 
-static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index,
+namespace {
+
+void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index,
 		ShaderMaterial &material, unsigned int mesh_block_size, const VoxelMeshBlockVLT &parent_block,
 		Vector3i parent_bpos, const DetailRenderingSettings &detail_texture_settings) {
 	//
@@ -2070,6 +2072,8 @@ static void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, V
 
 	block.detail_texture_fallback_level = fallback_level;
 }
+
+} // namespace
 
 void VoxelLodTerrain::try_apply_parent_detail_texture_to_block(
 		VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index) {

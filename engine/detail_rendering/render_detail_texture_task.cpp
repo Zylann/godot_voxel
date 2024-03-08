@@ -136,9 +136,11 @@ bool RenderDetailTextureTask::is_cancelled() {
 	return false;
 }
 
-static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count,
-		std::vector<int32_t> &cell_triangles, std::vector<RenderDetailTextureGPUTask::TileData> &tile_data,
-		const std::vector<int> &mesh_indices, const std::vector<Vector3f> &mesh_normals) {
+namespace {
+
+void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count, std::vector<int32_t> &cell_triangles,
+		std::vector<RenderDetailTextureGPUTask::TileData> &tile_data, const std::vector<int> &mesh_indices,
+		const std::vector<Vector3f> &mesh_normals) {
 	tile_data.reserve(tile_count);
 
 	CurrentCellInfo cell_info;
@@ -180,6 +182,8 @@ static void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile
 		tile_data.push_back(td);
 	}
 }
+
+} // namespace
 
 void RenderDetailTextureTask::run_on_gpu() {
 	ZN_PROFILE_SCOPE();

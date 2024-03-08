@@ -13,6 +13,8 @@
 
 namespace zylann::voxel {
 
+namespace {
+
 struct BlockLocation {
 	int16_t x;
 	int16_t y;
@@ -41,6 +43,8 @@ struct BlockLocation {
 		return b;
 	}
 };
+
+} // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

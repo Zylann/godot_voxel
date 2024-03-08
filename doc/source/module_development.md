@@ -181,6 +181,7 @@ For the most part, use `clang-format` and follow Godot conventions.
 - `mutable` must ONLY be used for thread synchronization primitives. Do not use it with "cache data" to make getters `const`, as it can be misleading in multi-threaded context.
 - Use `ZN_NEW` and `ZN_DELETE` instead of `new` and `delete` on types that don't derive from Godot `Object`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
 - Use `ZN_ALLOC` and `ZN_FREE` instead of `malloc` and `free`. This is intented for code that may be independent from Godot, yet be tracked in Godot's default allocator when used.
+- Prefer anonymous namespaces instead of `static` for internal functions that only appear within `.cpp` files.
 
 ### Error handling
 

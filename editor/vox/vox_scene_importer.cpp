@@ -66,8 +66,9 @@ bool VoxelVoxSceneImporter::_zn_get_option_visibility(
 	return true;
 }
 
-static void add_mesh_instance(
-		Ref<Mesh> mesh, ::Node *parent, ::Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
+namespace {
+
+void add_mesh_instance(Ref<Mesh> mesh, ::Node *parent, ::Node *owner, Vector3 offset, bool p_enable_baked_lighting) {
 	MeshInstance3D *mesh_instance = memnew(MeshInstance3D);
 	mesh_instance->set_mesh(mesh);
 	parent->add_child(mesh_instance);
@@ -84,7 +85,7 @@ struct VoxMesh {
 	Vector3 pivot;
 };
 
-static Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
+Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
 		int depth, const std::vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
@@ -151,7 +152,7 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 	return OK;
 }
 
-/*static Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
+/*Error save_stex(const Ref<Image> &p_image, const String &p_to_path,
 		bool p_mipmaps, int p_texture_flags, bool p_streamable,
 		bool p_detect_3d, bool p_detect_srgb) {
 	//
@@ -229,13 +230,15 @@ static Error process_scene_node_recursively(const Data &data, int node_id, Node3
 }*/
 
 // template <typename K, typename T>
-// static T try_get(const Map<K, T> &map, const K &key, T defval) {
+// T try_get(const Map<K, T> &map, const K &key, T defval) {
 // 	const Map<K, T>::Element *e = map.find(key);
 // 	if (e != nullptr) {
 // 		return e->value();
 // 	}
 // 	return defval;
 // }
+
+} // namespace
 
 Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const String &p_save_path,
 		const godot::KeyValueWrapper p_options, godot::StringListWrapper p_out_platform_variants,

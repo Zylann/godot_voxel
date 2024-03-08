@@ -453,36 +453,38 @@ bool VoxelTool::_b_is_area_editable(AABB box) const {
 	return is_area_editable(Box3i(math::floor_to_int(box.position), math::floor_to_int(box.size)));
 }
 
-static int _b_color_to_u16(Color col) {
+namespace {
+int _b_color_to_u16(Color col) {
 	return Color8(col).to_u16();
 }
 
-static int _b_vec4i_to_u16_indices(Vector4i v) {
+int _b_vec4i_to_u16_indices(Vector4i v) {
 	return encode_indices_to_packed_u16(v.x, v.y, v.z, v.w);
 }
 
-static int _b_color_to_u16_weights(Color cf) {
+int _b_color_to_u16_weights(Color cf) {
 	const Color8 c(cf);
 	return encode_weights_to_packed_u16_lossy(c.r, c.g, c.b, c.a);
 }
 
-static Vector4i _b_u16_indices_to_vec4i(int e) {
+Vector4i _b_u16_indices_to_vec4i(int e) {
 	FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(e);
 	return Vector4i(indices[0], indices[1], indices[2], indices[3]);
 }
 
-static Color _b_u16_weights_to_color(int e) {
+Color _b_u16_weights_to_color(int e) {
 	FixedArray<uint8_t, 4> indices = decode_weights_from_packed_u16(e);
 	return Color(indices[0] / 255.f, indices[1] / 255.f, indices[2] / 255.f, indices[3] / 255.f);
 }
 
-static Color _b_normalize_color(Color c) {
+Color _b_normalize_color(Color c) {
 	const float sum = c.r + c.g + c.b + c.a;
 	if (sum < 0.00001f) {
 		return Color();
 	}
 	return c / sum;
 }
+} // namespace
 
 void VoxelTool::_b_set_channel(gd::VoxelBuffer::ChannelId p_channel) {
 	set_channel(VoxelBufferInternal::ChannelId(p_channel));
