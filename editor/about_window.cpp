@@ -240,7 +240,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"ilievmark (Iliev Mark)\n"
 						"OrbitalHare\n"
 						"matthewhilton (Matthew Hilton)\n"
-						"SummitCollie";
+						"SummitCollie\n"
+						"nulshift";
 	{
 		Dictionary d;
 
