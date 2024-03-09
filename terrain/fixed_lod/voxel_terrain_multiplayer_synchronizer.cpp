@@ -132,7 +132,7 @@ void VoxelTerrainMultiplayerSynchronizer::_notification(int p_what) {
 }
 
 // template <typename T, typename F>
-// inline void for_chunks(const std::vector<T> &vec, unsigned int chunk_size, F f) {
+// inline void for_chunks(const StdVector<T> &vec, unsigned int chunk_size, F f) {
 // 	for (unsigned int i = 0; i < vec.size(); i += chunk_size) {
 // 		f(to_span_from_position_and_size(vec, i, i + chunk_size > vec.size() ? vec.size() - i : chunk_size));
 // 	}
@@ -142,7 +142,7 @@ void VoxelTerrainMultiplayerSynchronizer::process() {
 	ZN_PROFILE_SCOPE();
 
 	for (auto it = _deferred_block_messages_per_peer.begin(); it != _deferred_block_messages_per_peer.end(); ++it) {
-		std::vector<DeferredBlockMessage> &messages = it->second;
+		StdVector<DeferredBlockMessage> &messages = it->second;
 
 		if (messages.size() == 0) {
 			continue;

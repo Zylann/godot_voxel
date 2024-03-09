@@ -57,7 +57,7 @@ int VoxelVoxSceneImporter::_zn_get_import_order() const {
 }
 
 void VoxelVoxSceneImporter::_zn_get_import_options(
-		std::vector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
 	p_out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "enable_baked_lighting"), true));
@@ -88,7 +88,7 @@ struct VoxMesh {
 };
 
 Error process_scene_node_recursively(const Data &data, int node_id, Node3D *parent_node, Node3D *&out_root_node,
-		int depth, const std::vector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
+		int depth, const StdVector<VoxMesh> &meshes, float scale, bool p_enable_baked_lighting) {
 	//
 	ERR_FAIL_COND_V(depth > 10, ERR_INVALID_DATA);
 	const Node *vox_node = data.get_node(node_id);
@@ -255,7 +255,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	const Error load_err = data.load_from_file(p_source_file);
 	ERR_FAIL_COND_V(load_err != OK, load_err);
 
-	std::vector<VoxMesh> meshes;
+	StdVector<VoxMesh> meshes;
 	meshes.resize(data.get_model_count());
 
 	// Get color palette
@@ -299,7 +299,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 		copy_3d_region_zxy(dst_color_indices, voxels.get_size(), Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				src_color_indices, model.size, Vector3i(), model.size);
 
-		std::vector<unsigned int> surface_index_to_material;
+		StdVector<unsigned int> surface_index_to_material;
 		Ref<Image> atlas;
 		Ref<Mesh> mesh = magica::build_mesh(voxels, **mesher, surface_index_to_material, atlas, p_scale, Vector3());
 

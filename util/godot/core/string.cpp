@@ -5,7 +5,7 @@ namespace zylann::godot {
 
 #ifdef TOOLS_ENABLED
 
-PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
+PackedStringArray to_godot(const StdVector<std::string_view> &svv) {
 	PackedStringArray psa;
 	// Not resizing up-front, because in Godot core writing elements uses different code than GDExtension.
 	for (unsigned int i = 0; i < svv.size(); ++i) {
@@ -14,7 +14,7 @@ PackedStringArray to_godot(const std::vector<std::string_view> &svv) {
 	return psa;
 }
 
-PackedStringArray to_godot(const std::vector<std::string> &sv) {
+PackedStringArray to_godot(const StdVector<std::string> &sv) {
 	PackedStringArray psa;
 	// Not resizing up-front, because in Godot core writing elements uses different code than GDExtension.
 	for (unsigned int i = 0; i < sv.size(); ++i) {

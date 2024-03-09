@@ -2,7 +2,7 @@
 
 namespace zylann::godot {
 
-void get_graph_edit_connections(const GraphEdit &self, std::vector<GraphEditConnection> &out_connections) {
+void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnection> &out_connections) {
 #if defined(ZN_GODOT)
 
 #if GODOT_VERSION_MAJOR == 4 && GODOT_VERSION_MINOR <= 2

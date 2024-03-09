@@ -2,15 +2,15 @@
 #define ZN_CONTAINER_FUNCS_H
 
 #include "span.h"
+#include "std_vector.h"
 #include <cstdint>
-#include <vector>
 
 namespace zylann {
 
 // Takes elements starting from a given position and moves them at the beginning,
 // then shrink the array to fit them. Other elements are discarded.
-template <typename T>
-void shift_up(std::vector<T> &v, unsigned int pos) {
+template <typename T, typename TAllocator>
+void shift_up(std::vector<T, TAllocator> &v, unsigned int pos) {
 	unsigned int j = 0;
 	for (unsigned int i = pos; i < v.size(); ++i, ++j) {
 		v[j] = v[i];
@@ -21,16 +21,16 @@ void shift_up(std::vector<T> &v, unsigned int pos) {
 
 // Pops the last element of the vector and place it at the given position.
 // (The element that was at this position is the one removed).
-template <typename T>
-void unordered_remove(std::vector<T> &v, unsigned int pos) {
+template <typename T, typename TAllocator>
+void unordered_remove(std::vector<T, TAllocator> &v, unsigned int pos) {
 	v[pos] = v.back();
 	v.pop_back();
 }
 
 // Removes all items satisfying the given predicate.
 // This can change the size of the container, and original order of items is not preserved.
-template <typename T, typename F>
-inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
+template <typename T, typename TAllocator, typename F>
+inline void unordered_remove_if(std::vector<T, TAllocator> &vec, F predicate) {
 	for (unsigned int i = 0; i < vec.size(); ++i) {
 		if (predicate(vec[i])) {
 			vec[i] = vec.back();
@@ -42,8 +42,8 @@ inline void unordered_remove_if(std::vector<T> &vec, F predicate) {
 	}
 }
 
-template <typename T>
-inline bool unordered_remove_value(std::vector<T> &vec, T v) {
+template <typename T, typename TAllocator>
+inline bool unordered_remove_value(std::vector<T, TAllocator> &vec, T v) {
 	for (size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i] == v) {
 			vec[i] = vec.back();
@@ -54,8 +54,8 @@ inline bool unordered_remove_value(std::vector<T> &vec, T v) {
 	return false;
 }
 
-template <typename T>
-inline void append_array(std::vector<T> &dst, const std::vector<T> &src) {
+template <typename T, typename TAllocator1, typename TAllocator2>
+inline void append_array(std::vector<T, TAllocator1> &dst, const std::vector<T, TAllocator2> &src) {
 	dst.insert(dst.end(), src.begin(), src.end());
 }
 
@@ -186,8 +186,8 @@ bool find(Span<const T> items, size_t &out_index, TPredicate predicate) {
 	return false;
 }
 
-template <typename T, typename TPredicate>
-bool find(const std::vector<T> &vec, size_t &out_index, TPredicate predicate) {
+template <typename T, typename TPredicate, typename TAllocator>
+bool find(const std::vector<T, TAllocator> &vec, size_t &out_index, TPredicate predicate) {
 	return find(to_span_const(vec), out_index, predicate);
 }
 
@@ -211,8 +211,8 @@ bool contains(Span<const T> items, TPredicate predicate) {
 	return false;
 }
 
-template <typename T, typename TPredicate>
-bool contains(const std::vector<T> &vec, TPredicate predicate) {
+template <typename T, typename TPredicate, typename TAllocator>
+bool contains(const std::vector<T, TAllocator> &vec, TPredicate predicate) {
 	return contains(to_span_const(vec), predicate);
 }
 

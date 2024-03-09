@@ -8,8 +8,8 @@
 using namespace godot;
 #endif
 
+#include "../../containers/std_vector.h"
 #include "../../errors.h"
-#include <vector>
 
 namespace zylann::godot {
 
@@ -25,7 +25,7 @@ inline T *get_node_typed(const Node &self, const NodePath &path) {
 #endif
 }
 
-void get_node_groups(const Node &node, std::vector<StringName> &out_groups);
+void get_node_groups(const Node &node, StdVector<StringName> &out_groups);
 
 } // namespace zylann::godot
 

@@ -1,8 +1,8 @@
 #ifndef VOXEL_BUFFERED_TASK_SCHEDULER_H
 #define VOXEL_BUFFERED_TASK_SCHEDULER_H
 
+#include "../util/containers/std_vector.h"
 #include "../util/thread/thread.h"
-#include <vector>
 
 namespace zylann {
 
@@ -42,8 +42,8 @@ private:
 		return _main_tasks.size() > 0 || _io_tasks.size() > 0;
 	}
 
-	std::vector<IThreadedTask *> _main_tasks;
-	std::vector<IThreadedTask *> _io_tasks;
+	StdVector<IThreadedTask *> _main_tasks;
+	StdVector<IThreadedTask *> _io_tasks;
 	Thread::ID _thread_id;
 };
 

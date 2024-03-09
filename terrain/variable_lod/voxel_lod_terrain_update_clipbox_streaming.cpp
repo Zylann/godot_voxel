@@ -39,8 +39,7 @@ bool contains(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, View
 	return find_index(viewers, id, _unused);
 }
 
-bool find_index(
-		const std::vector<VoxelLodTerrainUpdateData::PairedViewer> &viewers, ViewerID id, unsigned int &out_index) {
+bool find_index(Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers, ViewerID id, unsigned int &out_index) {
 	for (unsigned int i = 0; i < viewers.size(); ++i) {
 		if (viewers[i].id == id) {
 			out_index = i;
@@ -127,7 +126,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
 		Box3i volume_bounds_in_voxels, int data_block_size_po2, bool can_mesh,
 		// Ordered by ascending index in paired viewers list
-		std::vector<unsigned int> &unpaired_viewers_to_remove) {
+		StdVector<unsigned int> &unpaired_viewers_to_remove) {
 	ZN_PROFILE_SCOPE();
 
 	// Destroyed viewers
@@ -190,7 +189,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 		const VoxelEngine::Viewer &viewer = viewer_and_id.second;
 
 		unsigned int paired_viewer_index;
-		if (!find_index(cs.paired_viewers, viewer_id, paired_viewer_index)) {
+		if (!find_index(to_span_const(cs.paired_viewers), viewer_id, paired_viewer_index)) {
 			// New viewer
 			VoxelLodTerrainUpdateData::PairedViewer pv;
 			pv.id = viewer_id;
@@ -342,8 +341,8 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 	}
 }
 
-void remove_unpaired_viewers(const std::vector<unsigned int> &unpaired_viewers_to_remove,
-		std::vector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers) {
+void remove_unpaired_viewers(const StdVector<unsigned int> &unpaired_viewers_to_remove,
+		StdVector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers) {
 	// Iterating backward so indexes of paired viewers that need removal will not change because of the removal itself
 	for (auto it = unpaired_viewers_to_remove.rbegin(); it != unpaired_viewers_to_remove.rend(); ++it) {
 		const unsigned int vi = *it;
@@ -633,7 +632,7 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 // 	}
 // }
 
-inline void schedule_mesh_load(std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
+inline void schedule_mesh_load(StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, bool require_visual) {
 	// ZN_PROFILE_SCOPE();
 
@@ -1426,7 +1425,7 @@ void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelDat
 	const bool streaming_enabled = data.is_streaming_enabled();
 	const bool full_load_completed = data.is_full_load_completed();
 
-	std::vector<unsigned int> unpaired_viewers_to_remove;
+	StdVector<unsigned int> unpaired_viewers_to_remove;
 
 	process_viewers(state.clipbox_streaming, settings, lod_count, viewers, volume_transform, bounds_in_voxels,
 			data_block_size_po2, can_mesh, unpaired_viewers_to_remove);

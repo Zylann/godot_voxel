@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_FUNCTION_H
 #define VOXEL_GRAPH_FUNCTION_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/thread/mutex.h"
 #include "program_graph.h"
@@ -136,7 +137,7 @@ public:
 	void add_connection(uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
 	void remove_connection(
 			uint32_t src_node_id, uint32_t src_port_index, uint32_t dst_node_id, uint32_t dst_port_index);
-	void get_connections(std::vector<ProgramGraph::Connection> &p_connections) const;
+	void get_connections(StdVector<ProgramGraph::Connection> &p_connections) const;
 
 	// Finds which source port is connected to the given destination.
 	// Returns false if `dst` has no inbound connection.
@@ -151,8 +152,8 @@ public:
 	Variant get_node_param(uint32_t node_id, int param_index) const;
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
 
-	static bool get_expression_variables(std::string_view code, std::vector<std::string_view> &vars);
-	void get_expression_node_inputs(uint32_t node_id, std::vector<std::string> &out_names) const;
+	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
+	void get_expression_node_inputs(uint32_t node_id, StdVector<std::string> &out_names) const;
 	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;
@@ -192,7 +193,7 @@ public:
 	// Internal
 
 	const ProgramGraph &get_graph() const;
-	void find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_dependencies) const;
+	void find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_dependencies) const;
 	Dictionary get_graph_as_variant_data() const;
 	bool load_graph_from_variant_data(Dictionary data);
 
@@ -226,7 +227,7 @@ public:
 	bool get_node_input_index_by_name(uint32_t node_id, String input_name, unsigned int &out_input_index) const;
 	bool get_node_param_index_by_name(uint32_t node_id, String param_name, unsigned int &out_param_index) const;
 
-	void update_function_nodes(std::vector<ProgramGraph::Connection> *removed_connections);
+	void update_function_nodes(StdVector<ProgramGraph::Connection> *removed_connections);
 
 	// Copies nodes into another graph, and connections between them only.
 	// Resources in node parameters will be duplicated if they don't have a file path.
@@ -290,8 +291,8 @@ private:
 	// If enabled, inputs and outputs will be automatically setup from nodes of the graph when compiling.
 	// However this doesn't give fine control over the order I/Os appear in, so it may be disabled if that's desired.
 	bool _automatic_io_setup_enabled = true;
-	std::vector<Port> _inputs;
-	std::vector<Port> _outputs;
+	StdVector<Port> _inputs;
+	StdVector<Port> _outputs;
 #ifdef TOOLS_ENABLED
 	// Godot doesn't make a difference between a resource newly created in the inspector, an existing empty one, or one
 	// created from script... It is necessary to know that in order to load a "hello world" graph in the editor when
@@ -311,8 +312,8 @@ private:
 ProgramGraph::Node *create_node_internal(ProgramGraph &graph, VoxelGraphFunction::NodeTypeID type_id, Vector2 position,
 		uint32_t id, bool create_default_instances);
 
-void auto_pick_inputs_and_outputs(const ProgramGraph &graph, std::vector<VoxelGraphFunction::Port> &inputs,
-		std::vector<VoxelGraphFunction::Port> &outputs);
+void auto_pick_inputs_and_outputs(const ProgramGraph &graph, StdVector<VoxelGraphFunction::Port> &inputs,
+		StdVector<VoxelGraphFunction::Port> &outputs);
 
 Array serialize_io_definitions(Span<const VoxelGraphFunction::Port> ports);
 

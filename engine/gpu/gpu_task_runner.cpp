@@ -59,7 +59,7 @@ void GPUTaskRunner::thread_func() {
 	ZN_PROFILE_SET_THREAD_NAME("Voxel GPU tasks");
 	ZN_DSTACK();
 
-	std::vector<IGPUTask *> tasks;
+	StdVector<IGPUTask *> tasks;
 
 	// We use a common output buffer for tasks that need to download results back to the CPU,
 	// because a single call to `buffer_get_data` is cheaper than multiple ones, due to Godot's API being synchronous.
@@ -69,7 +69,7 @@ void GPUTaskRunner::thread_func() {
 		unsigned int position;
 		unsigned int size;
 	};
-	std::vector<SBRange> shared_output_storage_buffer_segments;
+	StdVector<SBRange> shared_output_storage_buffer_segments;
 
 	// Godot does not support async compute, so in order to get results from a compute shader, the only way is to sync
 	// with the device, waiting for everything to complete. So instead of running one shader at a time, we run a few of

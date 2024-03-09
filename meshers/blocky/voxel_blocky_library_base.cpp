@@ -115,10 +115,10 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 
 	struct Pattern {
 		std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
-		// std::vector<TypeAndSide> occurrences;
+		// StdVector<TypeAndSide> occurrences;
 	};
 
-	std::vector<Pattern> patterns;
+	StdVector<Pattern> patterns;
 	uint32_t full_side_pattern_index = VoxelBlockyLibraryBase::NULL_INDEX;
 
 	// Gather patterns for each model
@@ -134,8 +134,8 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 			for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
 				const VoxelBlockyModel::BakedData::Surface &surface = model_data.model.surfaces[surface_index];
 
-				const std::vector<Vector3f> &positions = surface.side_positions[side];
-				const std::vector<int> &indices = surface.side_indices[side];
+				const StdVector<Vector3f> &positions = surface.side_positions[side];
+				const StdVector<int> &indices = surface.side_indices[side];
 				ERR_FAIL_COND(indices.size() % 3 != 0);
 
 				// For each triangle

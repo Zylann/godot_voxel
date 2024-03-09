@@ -6,16 +6,6 @@
 
 namespace zylann {
 
-// template <typename T>
-// static bool contains(const std::vector<T> vec, T v) {
-// 	for (size_t i = 0; i < vec.size(); ++i) {
-// 		if (vec[i] == v) {
-// 			return true;
-// 		}
-// 	}
-// 	return false;
-// }
-
 ThreadedTaskRunner::ThreadedTaskRunner() {}
 
 ThreadedTaskRunner::~ThreadedTaskRunner() {
@@ -179,9 +169,9 @@ void ThreadedTaskRunner::thread_func_static(void *p_data) {
 void ThreadedTaskRunner::thread_func(ThreadData &data) {
 	data.debug_state = STATE_RUNNING;
 
-	std::vector<TaskItem> tasks;
-	std::vector<TaskItem> postponed_tasks;
-	std::vector<IThreadedTask *> cancelled_tasks;
+	StdVector<TaskItem> tasks;
+	StdVector<TaskItem> postponed_tasks;
+	StdVector<IThreadedTask *> cancelled_tasks;
 
 	while (!data.stop) {
 		bool is_running_serial_task = false;

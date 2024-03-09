@@ -206,7 +206,7 @@ void VoxelGraphEditorIODialog::_notification(int p_what) {
 
 // Using polling instead of signals. Seems cleaner. We'll see how it holds later.
 
-void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, StdVector<VoxelGraphFunction::Port> &ports) {
 	const unsigned int item_count = ui.item_list->get_item_count();
 
 	if (ports.size() != item_count) {
@@ -229,7 +229,7 @@ void VoxelGraphEditorIODialog::copy_ui_to_data(const PortsUI &ui, std::vector<Vo
 	}
 }
 
-void VoxelGraphEditorIODialog::copy_data_to_ui(PortsUI &ui, const std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::copy_data_to_ui(PortsUI &ui, const StdVector<VoxelGraphFunction::Port> &ports) {
 	if (ui.item_list->get_item_count() != int(ports.size())) {
 		PackedInt32Array selection = ui.item_list->get_selected_items();
 
@@ -268,7 +268,7 @@ void VoxelGraphEditorIODialog::process() {
 	process_ui(_outputs_ui, _outputs);
 }
 
-void VoxelGraphEditorIODialog::process_ui(PortsUI &ui, std::vector<VoxelGraphFunction::Port> &ports) {
+void VoxelGraphEditorIODialog::process_ui(PortsUI &ui, StdVector<VoxelGraphFunction::Port> &ports) {
 	PackedInt32Array selection = ui.item_list->get_selected_items();
 	const int port_index = selection.size() == 0 ? -1 : selection[0];
 	if (port_index != ui.selected_item) {

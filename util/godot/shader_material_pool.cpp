@@ -14,7 +14,7 @@ void ShaderMaterialPool::set_template(Ref<ShaderMaterial> tpl) {
 		Ref<Shader> shader = _template_material->get_shader();
 
 		if (shader.is_valid()) {
-			std::vector<godot::ShaderParameterInfo> params;
+			StdVector<godot::ShaderParameterInfo> params;
 			get_shader_parameter_list(shader->get_rid(), params);
 
 			for (const godot::ShaderParameterInfo &pi : params) {

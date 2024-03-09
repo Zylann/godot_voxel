@@ -4,6 +4,7 @@
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
+#include "../util/containers/std_vector.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/collision_shape_3d.h"
 #include "../util/godot/classes/convex_polygon_shape_3d.h"
@@ -518,7 +519,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	// Compute bounds of each group
 
-	std::vector<Bounds> bounds_per_label;
+	StdVector<Bounds> bounds_per_label;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Bounds calculation");
 
@@ -597,7 +598,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		Vector3i world_pos;
 		unsigned int label;
 	};
-	std::vector<InstanceInfo> instances_info;
+	StdVector<InstanceInfo> instances_info;
 
 	const int min_padding = 2; // mesher->get_minimum_padding();
 	const int max_padding = 2; // mesher->get_maximum_padding();
@@ -674,7 +675,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	uint32_t materials_to_instance_mask = 0;
 	{
-		std::vector<zylann::godot::ShaderParameterInfo> params;
+		StdVector<zylann::godot::ShaderParameterInfo> params;
 		const String u_block_local_transform = VoxelStringNames::get_singleton().u_block_local_transform;
 
 		ZN_ASSERT_RETURN_V_MSG(materials.size() < 32, Array(),

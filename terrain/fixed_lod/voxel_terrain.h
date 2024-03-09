@@ -4,6 +4,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../engine/meshing_dependency.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/memory.h"
 #include "../../util/math/box3i.h"
 #include "../voxel_data_block_enter_info.h"
@@ -161,7 +162,7 @@ public:
 	// Internal
 
 	void set_instancer(VoxelInstancer *instancer);
-	void get_meshed_block_positions(std::vector<Vector3i> &out_positions) const;
+	void get_meshed_block_positions(StdVector<Vector3i> &out_positions) const;
 	Array get_mesh_block_surface(Vector3i block_pos) const;
 
 	VolumeID get_volume_id() const override {
@@ -286,7 +287,7 @@ private:
 		State prev_state;
 	};
 
-	std::vector<PairedViewer> _paired_viewers;
+	StdVector<PairedViewer> _paired_viewers;
 
 	// Voxel storage. Using a shared_ptr so threaded tasks can use it safely.
 	std::shared_ptr<VoxelData> _data;
@@ -303,17 +304,17 @@ private:
 	struct LoadingBlock {
 		RefCount viewers;
 		// TODO Optimize allocations here
-		std::vector<ViewerID> viewers_to_notify;
+		StdVector<ViewerID> viewers_to_notify;
 	};
 
 	// Blocks currently being loaded.
 	std::unordered_map<Vector3i, LoadingBlock> _loading_blocks;
 	// Blocks that should be loaded on the next process call.
 	// The order in that list does not matter.
-	std::vector<Vector3i> _blocks_pending_load;
+	StdVector<Vector3i> _blocks_pending_load;
 	// Block meshes that should be updated on the next process call.
 	// The order in that list does not matter.
-	std::vector<Vector3i> _blocks_pending_update;
+	StdVector<Vector3i> _blocks_pending_update;
 	// Blocks that should be saved on the next process call.
 	// The order in that list does not matter.
 	std::vector<VoxelData::BlockToSave> _blocks_to_save;
@@ -326,7 +327,7 @@ private:
 		std::shared_ptr<VoxelBuffer> voxels;
 		Vector3i position;
 	};
-	std::vector<QuickReloadingBlock> _quick_reloading_blocks;
+	StdVector<QuickReloadingBlock> _quick_reloading_blocks;
 
 	Ref<VoxelMesher> _mesher;
 

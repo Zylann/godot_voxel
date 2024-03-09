@@ -92,7 +92,7 @@ public:
 	bool begin_transaction();
 	bool end_transaction();
 
-	bool save_block(BlockLocation loc, const std::vector<uint8_t> &block_data, BlockType type);
+	bool save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type);
 	VoxelStream::ResultCode load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
 
 	bool load_all_blocks(void *callback_data,
@@ -301,7 +301,7 @@ bool VoxelStreamSQLiteInternal::end_transaction() {
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, const std::vector<uint8_t> &block_data, BlockType type) {
+bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type) {
 	ZN_PROFILE_SCOPE();
 
 	sqlite3 *db = _db;
@@ -978,12 +978,11 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 		// Save voxels
 		if (block.has_voxels) {
 			if (block.voxels_deleted) {
-				const std::vector<uint8_t> empty;
-				p_connection->save_block(loc, empty, VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, Span<const uint8_t>(), VoxelStreamSQLiteInternal::VOXELS);
 			} else {
 				BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block.voxels);
 				ERR_FAIL_COND(!res.success);
-				p_connection->save_block(loc, res.data, VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, to_span(res.data), VoxelStreamSQLiteInternal::VOXELS);
 			}
 		}
 
@@ -997,7 +996,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 			ERR_FAIL_COND(!CompressedData::compress(
 					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE));
 		}
-		p_connection->save_block(loc, temp_compressed_data, VoxelStreamSQLiteInternal::INSTANCES);
+		p_connection->save_block(loc, to_span(temp_compressed_data), VoxelStreamSQLiteInternal::INSTANCES);
 
 		// TODO Optimization: add a version of the query that can update both at once
 	});

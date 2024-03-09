@@ -3,6 +3,7 @@
 
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/macros.h"
 #include "../../util/math/vector3f.h"
@@ -15,8 +16,6 @@
 #endif
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/texture_2d.h"
-
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -58,17 +57,17 @@ unsigned int get_detail_texture_tile_resolution_for_lod(
 
 struct DetailTextureData {
 	// Encoded normals
-	std::vector<uint8_t> normals;
+	StdVector<uint8_t> normals;
 	struct Tile {
 		uint8_t x;
 		uint8_t y;
 		uint8_t z;
 		uint8_t axis;
 	};
-	std::vector<Tile> tiles;
+	StdVector<Tile> tiles;
 	// Optionally used in case of partial tiles data, when only getting edited tiles.
 	// If this is empty, it means indices are sequential so there is no need to store them here.
-	std::vector<uint32_t> tile_indices;
+	StdVector<uint32_t> tile_indices;
 
 	inline void clear() {
 		normals.clear();
@@ -122,7 +121,7 @@ struct DetailTextures {
 	Ref<Texture2D> lookup;
 };
 
-Ref<Image> store_lookup_to_image(const std::vector<DetailTextureData::Tile> &tiles, Vector3i block_size);
+Ref<Image> store_lookup_to_image(const StdVector<DetailTextureData::Tile> &tiles, Vector3i block_size);
 
 DetailImages store_normalmap_data_to_images(
 		const DetailTextureData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding);

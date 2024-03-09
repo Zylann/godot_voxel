@@ -2,6 +2,7 @@
 #define VOXEL_INSTANCE_LIBRARY_MULTIMESH_ITEM_H
 
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/geometry_instance_3d.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
@@ -90,9 +91,9 @@ public:
 
 		int collision_mask = 1;
 		int collision_layer = 1;
-		std::vector<CollisionShapeInfo> collision_shapes;
+		StdVector<CollisionShapeInfo> collision_shapes;
 		// Groups that will be added to colliders if they use nodes
-		std::vector<StringName> group_names;
+		StdVector<StringName> group_names;
 	};
 
 	// If a scene is assigned to the item, returns settings converted from it.

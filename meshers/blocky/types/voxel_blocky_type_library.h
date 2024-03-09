@@ -1,6 +1,7 @@
 #ifndef VOXEL_BLOCKY_TYPE_LIBRARY_H
 #define VOXEL_BLOCKY_TYPE_LIBRARY_H
 
+#include "../../../util/containers/std_vector.h"
 #include "../voxel_blocky_library_base.h"
 #include "voxel_blocky_type.h"
 
@@ -61,7 +62,7 @@ public:
 	bool load_id_map_from_json(String array);
 	String serialize_id_map_to_json() const;
 
-	void get_id_map_preview(PackedStringArray &out_ids, std::vector<uint16_t> &used_ids) const;
+	void get_id_map_preview(PackedStringArray &out_ids, StdVector<uint16_t> &used_ids) const;
 
 private:
 	// Fully qualified name identifying a specific model, as a type and the state of each attribute.
@@ -75,8 +76,8 @@ private:
 	};
 
 	void update_id_map();
-	void update_id_map(std::vector<VoxelID> &id_map, std::vector<uint16_t> *used_ids) const;
-	static PackedStringArray serialize_id_map_to_string_array(const std::vector<VoxelID> &id_map);
+	void update_id_map(StdVector<VoxelID> &id_map, StdVector<uint16_t> *used_ids) const;
+	static PackedStringArray serialize_id_map_to_string_array(const StdVector<VoxelID> &id_map);
 
 	static bool parse_voxel_id(const String &str, VoxelID &out_id);
 	static String to_string(const VoxelID &id);
@@ -92,13 +93,13 @@ private:
 	static void _bind_methods();
 
 	// Unordered. Can contain nulls.
-	std::vector<Ref<VoxelBlockyType>> _types;
+	StdVector<Ref<VoxelBlockyType>> _types;
 
 	// Maps voxel data indices to fully-qualified model names. This is used to make sure model IDs remain the same, as
 	// long as their type has the same name and attribute values are the same.
 	// Can refer to types that no longer exist.
 	// Indices and size match `_baked_data.models`.
-	std::vector<VoxelID> _id_map;
+	StdVector<VoxelID> _id_map;
 };
 
 } // namespace zylann::voxel

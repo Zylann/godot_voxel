@@ -2,13 +2,13 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/core/string_name.h"
 #include "../../util/thread/mutex.h"
 #include "voxel_instance_library_item.h"
 #include <map>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -60,7 +60,7 @@ public:
 		unsigned int id;
 	};
 
-	void get_packed_items_at_lod(std::vector<PackedItem> &out_items, unsigned int lod_index) const;
+	void get_packed_items_at_lod(StdVector<PackedItem> &out_items, unsigned int lod_index) const;
 
 protected:
 	void set_item(int id, Ref<VoxelInstanceLibraryItem> item);
@@ -83,11 +83,11 @@ private:
 	// Using a map keeps items ordered, so the last item has highest ID
 	std::map<int, Ref<VoxelInstanceLibraryItem>> _items;
 
-	std::vector<IListener *> _listeners;
+	StdVector<IListener *> _listeners;
 
 	struct PackedItems {
 		struct Lod {
-			std::vector<PackedItem> items;
+			StdVector<PackedItem> items;
 		};
 		FixedArray<Lod, constants::MAX_LOD> lods;
 		mutable Mutex mutex;

@@ -1,4 +1,6 @@
 #include "mesh_builder.h"
+#include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/godot/core/packed_arrays.h"
 
@@ -13,7 +15,7 @@ Array MeshBuilder::commit(bool wireframe) {
 
 	if (wireframe) {
 		// Debug purpose, no effort to be fast here
-		std::vector<int> wireframe_indices;
+		StdVector<int> wireframe_indices;
 
 		for (unsigned int i = 0; i < _indices.size(); i += 3) {
 			wireframe_indices.push_back(_indices[i]);
@@ -26,7 +28,8 @@ Array MeshBuilder::commit(bool wireframe) {
 			wireframe_indices.push_back(_indices[i]);
 		}
 
-		_indices = wireframe_indices;
+		_indices.clear();
+		append_array(_indices, wireframe_indices);
 	}
 
 	PackedVector3Array positions;

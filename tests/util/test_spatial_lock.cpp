@@ -1,4 +1,5 @@
 #include "test_spatial_lock.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/math/conv.h"
 #include "../../util/memory.h"
@@ -7,7 +8,11 @@
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../../util/thread/spatial_lock_3d.h"
 #include "../testing.h"
+
+// #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+#ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #include <fstream>
+#endif
 
 namespace zylann::tests {
 
@@ -104,7 +109,7 @@ void test_spatial_lock_spam() {
 		}
 
 	private:
-		std::vector<int> _cells;
+		StdVector<int> _cells;
 		Vector3i _size;
 	};
 
@@ -135,10 +140,10 @@ void test_spatial_lock_spam() {
 			}
 		}
 
-		static void read_cells(const Map &map, Box3i box, uint64_t microseconds, std::vector<int> &reusable_vector) {
+		static void read_cells(const Map &map, Box3i box, uint64_t microseconds, StdVector<int> &reusable_vector) {
 			const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
-			std::vector<int> &expected_values = reusable_vector;
+			StdVector<int> &expected_values = reusable_vector;
 			expected_values.clear();
 			expected_values.reserve(Vector3iUtil::get_volume(box.size));
 			box.for_each_cell([&map, &expected_values](Vector3i pos) { //
@@ -177,7 +182,7 @@ void test_spatial_lock_spam() {
 			RandomPCG rng;
 			rng.seed(ctx.thread_index + 42);
 
-			std::vector<int> reusable_vector;
+			StdVector<int> reusable_vector;
 
 			// Keep running for the duration of the test
 			while (Time::get_singleton()->get_ticks_msec() - time_before < THREAD_DURATION_MILLISECONDS) {
@@ -229,8 +234,6 @@ void test_spatial_lock_spam() {
 	ZN_TEST_ASSERT(spatial_lock.get_locked_boxes_count() == 0);
 }
 
-// #define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
-
 void test_spatial_lock_dependent_map_chunks() {
 	// Simulates a bunch of tasks that could be baking light in columns of chunks.
 	// Each task may write into its neighbors.
@@ -252,7 +255,7 @@ void test_spatial_lock_dependent_map_chunks() {
 
 	// To log what actually happened and visualize it
 	struct EventList {
-		std::vector<Event> events;
+		StdVector<Event> events;
 		Mutex mutex;
 
 		inline void push(Event event) {

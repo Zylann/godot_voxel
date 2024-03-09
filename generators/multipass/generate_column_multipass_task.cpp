@@ -2,7 +2,7 @@
 #include "../../engine/buffered_task_scheduler.h"
 #include "../../engine/voxel_engine.h"
 #include "../../storage/voxel_data.h"
-
+#include "../../util/containers/std_vector.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/string_funcs.h"
@@ -128,7 +128,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 	const unsigned int central_block_index =
 			Vector2iUtil::get_yx_index(Vector2iUtil::create(pass.dependency_extents), neighbors_box.size);
 
-	std::vector<Column *> columns;
+	StdVector<Column *> columns;
 	// TODO Cache memory
 	columns.reserve(Vector2iUtil::get_area(neighbors_box.size));
 
@@ -306,7 +306,7 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 					const int column_base_y_blocks = _generator_internal->column_base_y_blocks;
 
 					// TODO Cache memory
-					std::vector<Block *> blocks;
+					StdVector<Block *> blocks;
 					blocks.reserve(columns.size() * column_height_blocks);
 					// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).
 					// ZXY indexing is convenient here, since columns are indexed with YX (aka ZX, because Y in 2D is Z

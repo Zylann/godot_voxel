@@ -2,8 +2,8 @@
 #define ZYLANN_ASYNC_DEPENDENCY_TRACKER_H
 
 #include "../containers/span.h"
+#include "../containers/std_vector.h"
 #include <atomic>
-#include <vector>
 
 namespace zylann {
 
@@ -65,7 +65,7 @@ private:
 	std::atomic_bool _aborted;
 	std::atomic_bool _tasks_have_started;
 	bool _count_was_set = false;
-	std::vector<IThreadedTask *> _next_tasks;
+	StdVector<IThreadedTask *> _next_tasks;
 	ScheduleNextTasksCallback _next_tasks_schedule_callback = nullptr;
 };
 

@@ -1,9 +1,9 @@
 #ifndef ZN_GODOT_NODE_BUCKETS_STRATEGY_H
 #define ZN_GODOT_NODE_BUCKETS_STRATEGY_H
 
+#include "../containers/std_vector.h"
 #include "../errors.h"
 #include "macros.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Node)
 
@@ -48,8 +48,8 @@ public:
 
 private:
 	Node &_parent;
-	std::vector<TBucket *> _free_buckets;
-	std::vector<TBucket *> _used_buckets;
+	StdVector<TBucket *> _free_buckets;
+	StdVector<TBucket *> _used_buckets;
 };
 
 } // namespace zylann::godot

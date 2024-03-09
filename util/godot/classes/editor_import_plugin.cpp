@@ -48,7 +48,7 @@ int ZN_EditorImportPlugin::get_import_order() const {
 void ZN_EditorImportPlugin::get_import_options(
 		const String &p_path, List<ImportOption> *r_options, int p_preset) const {
 	ZN_ASSERT(r_options != nullptr);
-	std::vector<ImportOptionWrapper> options;
+	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, p_path, p_preset);
 	for (const ImportOptionWrapper &option : options) {
 		ImportOption opt(option.option, option.default_value);
@@ -109,7 +109,7 @@ int32_t ZN_EditorImportPlugin::_get_import_order() const {
 }
 
 TypedArray<Dictionary> ZN_EditorImportPlugin::_get_import_options(const String &path, int32_t preset_index) const {
-	std::vector<ImportOptionWrapper> options;
+	StdVector<ImportOptionWrapper> options;
 	_zn_get_import_options(options, path, preset_index);
 
 	TypedArray<Dictionary> output;
@@ -191,7 +191,7 @@ int ZN_EditorImportPlugin::_zn_get_import_order() const {
 }
 
 void ZN_EditorImportPlugin::_zn_get_import_options(
-		std::vector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
+		StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const {
 	ZN_PRINT_ERROR("Method is not implemented");
 }
 

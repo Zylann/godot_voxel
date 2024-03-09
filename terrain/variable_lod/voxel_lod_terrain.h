@@ -4,6 +4,7 @@
 #include "../../engine/voxel_engine.h"
 #include "../../meshers/mesh_block_task.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
 #include "../voxel_node.h"
@@ -261,7 +262,7 @@ public:
 	}
 
 	Array get_mesh_block_surface(Vector3i block_pos, int lod_index) const;
-	void get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const;
+	void get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const;
 
 	inline VoxelData &get_storage() const {
 		ZN_ASSERT(_data != nullptr);
@@ -373,14 +374,14 @@ private:
 	};
 
 	// These are "fire and forget"
-	std::vector<FadingOutMesh> _fading_out_meshes;
+	StdVector<FadingOutMesh> _fading_out_meshes;
 
 	unsigned int _collision_lod_count = 0;
 	unsigned int _collision_layer = 1;
 	unsigned int _collision_mask = 1;
 	float _collision_margin = constants::DEFAULT_COLLISION_MARGIN;
 	int _collision_update_delay = 0;
-	FixedArray<std::vector<Vector3i>, constants::MAX_LOD> _deferred_collision_updates_per_lod;
+	FixedArray<StdVector<Vector3i>, constants::MAX_LOD> _deferred_collision_updates_per_lod;
 
 	float _lod_fade_duration = 0.f;
 	// Note, direct pointers to mesh blocks should be safe because these blocks are always destroyed from the same
@@ -394,7 +395,7 @@ private:
 		float progress;
 	};
 
-	std::vector<FadingDetailTexture> _fading_detail_textures;
+	StdVector<FadingDetailTexture> _fading_detail_textures;
 
 	VoxelInstancer *_instancer = nullptr;
 
@@ -431,7 +432,7 @@ private:
 		uint32_t remaining_frames;
 	};
 
-	std::vector<DebugMeshUpdateItem> _debug_mesh_update_items;
+	StdVector<DebugMeshUpdateItem> _debug_mesh_update_items;
 
 	struct DebugEditItem {
 		static constexpr uint32_t LINGER_FRAMES = 10;
@@ -439,7 +440,7 @@ private:
 		uint32_t remaining_frames;
 	};
 
-	std::vector<DebugEditItem> _debug_edit_items;
+	StdVector<DebugEditItem> _debug_edit_items;
 #endif
 
 	Stats _stats;

@@ -4,6 +4,7 @@
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
 #include "../engine/streaming_dependency.h"
+#include "../util/containers/std_vector.h"
 #include "../util/tasks/threaded_task.h"
 #include "generate_block_gpu_task.h"
 
@@ -30,7 +31,7 @@ public:
 	bool is_cancelled() override;
 	void apply_result() override;
 
-	void set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) override;
+	void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) override;
 
 private:
 	void run_gpu_task(zylann::ThreadedTaskContext &ctx);
@@ -57,7 +58,7 @@ private:
 	bool _too_far = false;
 	bool _max_lod_hint = false;
 	uint8_t _stage = 0;
-	std::vector<GenerateBlockGPUTaskResult> _gpu_generation_results;
+	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
 
 } // namespace voxel

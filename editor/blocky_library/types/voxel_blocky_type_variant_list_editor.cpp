@@ -57,7 +57,7 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 
 	ZN_ASSERT_RETURN(_type.is_valid());
 
-	std::vector<VoxelBlockyType::VariantKey> keys;
+	StdVector<VoxelBlockyType::VariantKey> keys;
 	_type->generate_keys(keys, false);
 
 	const int displayed_count = keys.size() <= 1 ? 0 : keys.size();
@@ -67,7 +67,7 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 		return;
 	}
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	_type->get_checked_attributes(attributes);
 
 	GridContainer &container = *_grid_container;

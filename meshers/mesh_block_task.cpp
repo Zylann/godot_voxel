@@ -56,7 +56,7 @@ CubicAreaInfo get_cubic_area_info_from_size(unsigned int size) {
 // which includes enough neighbors for the mesher to avoid doing bound checks.
 void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBuffer &dst, int min_padding,
 		int max_padding, int channels_mask, Ref<VoxelGenerator> generator, const VoxelData &voxel_data,
-		uint8_t lod_index, Vector3i mesh_block_pos, std::vector<Box3i> *out_boxes_to_generate,
+		uint8_t lod_index, Vector3i mesh_block_pos, StdVector<Box3i> *out_boxes_to_generate,
 		Vector3i *out_origin_in_voxels) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
@@ -103,7 +103,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 	// This is the case of VoxelTerrain, which is now doing unnecessary box subtraction calculations...
 
 	// These boxes are in buffer coordinates (not world voxel coordinates)
-	std::vector<Box3i> boxes_to_generate;
+	StdVector<Box3i> boxes_to_generate;
 	const Box3i mesh_data_box = Box3i::from_min_max(min_pos, max_pos);
 	if (contains(blocks.to_const(), std::shared_ptr<VoxelBuffer>())) {
 		boxes_to_generate.push_back(mesh_data_box);
@@ -214,7 +214,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
 		// This vector indexes surfaces to the material they use (if a surface uses a material but is empty, it
 		// won't be added to the mesh)
-		std::vector<uint16_t> &mesh_material_indices) {
+		StdVector<uint16_t> &mesh_material_indices) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(mesh_material_indices.size() == 0);
 
@@ -317,7 +317,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	const unsigned int min_padding = mesher->get_minimum_padding();
 	const unsigned int max_padding = mesher->get_maximum_padding();
 
-	std::vector<Box3i> boxes_to_generate;
+	StdVector<Box3i> boxes_to_generate;
 	Vector3i origin_in_voxels;
 
 	copy_block_and_neighbors(to_span(blocks, blocks_count), _voxels, min_padding, max_padding,
@@ -351,7 +351,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	gpu_task->consumer_task = this;
 
 	const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(_voxels.get_size() << lod_index));
-	std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+	StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 	const VoxelModifierStack &modifiers = data->get_modifiers();
 	modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_BLOCK);
 	for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {
@@ -365,7 +365,7 @@ void MeshBlockTask::gather_voxels_gpu(zylann::ThreadedTaskContext &ctx) {
 	VoxelEngine::get_singleton().push_gpu_task(gpu_task);
 }
 
-void MeshBlockTask::set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) {
+void MeshBlockTask::set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) {
 	_gpu_generation_results = std::move(results);
 	_stage = 1;
 }
@@ -467,9 +467,10 @@ void MeshBlockTask::build_mesh() {
 
 		RenderDetailTextureTask *nm_task = ZN_NEW(RenderDetailTextureTask);
 		nm_task->cell_iterator = std::move(cell_iterator);
-		nm_task->mesh_vertices = mesh_arrays.vertices;
-		nm_task->mesh_normals = mesh_arrays.normals;
-		nm_task->mesh_indices = mesh_arrays.indices;
+		// Copy mesh data
+		append_array(nm_task->mesh_vertices, mesh_arrays.vertices);
+		append_array(nm_task->mesh_normals, mesh_arrays.normals);
+		append_array(nm_task->mesh_indices, mesh_arrays.indices);
 		if (detail_texture_generator_override.is_valid()) {
 			nm_task->generator = lod_index >= detail_texture_generator_override_begin_lod_index
 					? detail_texture_generator_override

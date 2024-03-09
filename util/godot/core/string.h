@@ -14,8 +14,8 @@ using namespace godot;
 #include <string_view>
 
 #ifdef TOOLS_ENABLED
+#include "../../containers/std_vector.h"
 #include "variant.h"
-#include <vector>
 #endif
 
 #include "../macros.h"
@@ -32,8 +32,8 @@ inline String to_godot(const std::string_view sv) {
 // They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
 #ifdef TOOLS_ENABLED
 
-PackedStringArray to_godot(const std::vector<std::string_view> &svv);
-PackedStringArray to_godot(const std::vector<std::string> &sv);
+PackedStringArray to_godot(const StdVector<std::string_view> &svv);
+PackedStringArray to_godot(const StdVector<std::string> &sv);
 
 template <typename T>
 String join_comma_separated(Span<const T> items) {

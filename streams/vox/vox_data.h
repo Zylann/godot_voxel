@@ -2,6 +2,7 @@
 #define VOX_DATA_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/basis.h"
 #include "../../util/math/color8.h"
@@ -13,7 +14,6 @@
 #endif
 
 #include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel::magica {
 
@@ -22,7 +22,7 @@ struct Model {
 	// TODO Optimization: implement lazy loading/streaming to reduce intermediary memory allocations?
 	// Loading a full 256^3 model needs 16 megabytes, but a lot of areas might actually be uniform,
 	// and we might not need the actual model immediately
-	std::vector<uint8_t> color_indexes;
+	StdVector<uint8_t> color_indexes;
 };
 
 struct Node {
@@ -60,7 +60,7 @@ struct TransformNode : public Node {
 };
 
 struct GroupNode : public Node {
-	std::vector<int> child_node_ids;
+	StdVector<int> child_node_ids;
 
 	GroupNode() : Node(Node::TYPE_GROUP) {}
 };
@@ -123,8 +123,8 @@ public:
 private:
 	Error _load_from_file(String fpath);
 
-	std::vector<UniquePtr<Model>> _models;
-	std::vector<UniquePtr<Layer>> _layers;
+	StdVector<UniquePtr<Model>> _models;
+	StdVector<UniquePtr<Layer>> _layers;
 	std::unordered_map<int, UniquePtr<Node>> _scene_graph;
 	// Material IDs are supposedly tied to palette indices
 	std::unordered_map<int, UniquePtr<Material>> _materials;

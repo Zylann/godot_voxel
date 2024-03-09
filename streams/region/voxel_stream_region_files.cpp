@@ -27,7 +27,7 @@ const char *META_FILE_NAME = "meta.vxrm";
 
 // Sorts a sequence without modifying it, returning a sorted list of pointers
 template <typename T, typename Comparer_T>
-void get_sorted_indices(Span<T> sequence, Comparer_T comparer, std::vector<unsigned int> &out_sorted_indices) {
+void get_sorted_indices(Span<T> sequence, Comparer_T comparer, StdVector<unsigned int> &out_sorted_indices) {
 	struct Compare {
 		Span<T> sequence;
 		Comparer_T comparer;
@@ -76,7 +76,7 @@ void VoxelStreamRegionFiles::load_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	// In order to minimize opening/closing files, requests are grouped according to their region.
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<unsigned int> sorted_block_indices;
+	StdVector<unsigned int> sorted_block_indices;
 	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
@@ -106,7 +106,7 @@ void VoxelStreamRegionFiles::save_voxel_blocks(Span<VoxelStream::VoxelQueryData>
 	ZN_PROFILE_SCOPE();
 
 	// Had to copy input to sort it, as some areas in the module break if they get responses in different order
-	std::vector<unsigned int> sorted_block_indices;
+	StdVector<unsigned int> sorted_block_indices;
 	BlockQueryComparator comparator;
 	comparator.self = this;
 	get_sorted_indices(p_blocks, comparator, sorted_block_indices);
@@ -627,7 +627,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 	ERR_FAIL_COND(old_stream->load_meta() != FILE_OK);
 
-	std::vector<PositionAndLod> old_region_list;
+	StdVector<PositionAndLod> old_region_list;
 	Meta old_meta = old_stream->_meta;
 
 	// Get list of all regions from the old stream

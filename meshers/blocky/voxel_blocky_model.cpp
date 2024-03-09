@@ -510,7 +510,7 @@ void VoxelBlockyModel::_b_rotate_90(Vector3i::Axis axis, bool clockwise) {
 	rotate_90(math::Axis(axis), clockwise);
 }
 
-// void ortho_simplify(Span<const Vector3f> vertices, Span<const int> indices, std::vector<int> &output) {
+// void ortho_simplify(Span<const Vector3f> vertices, Span<const int> indices, StdVector<int> &output) {
 // TODO Optimization: implement mesh simplification based on axis-aligned triangles.
 // It could be very effective on mesh collisions with the blocky mesher.
 // }

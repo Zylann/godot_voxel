@@ -133,7 +133,7 @@ Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
 	return Ref<Material>();
 }
 
-bool VoxelMesher::is_mesh_empty(const std::vector<Output::Surface> &surfaces) {
+bool VoxelMesher::is_mesh_empty(const StdVector<Output::Surface> &surfaces) {
 	if (surfaces.size() == 0) {
 		return true;
 	}

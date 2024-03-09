@@ -103,7 +103,7 @@ Ref<VoxelBlockyAttribute> VoxelBlockyType::get_rotation_attribute() const {
 	return rotation_attribute;
 }
 
-void VoxelBlockyType::get_checked_attributes(std::vector<Ref<VoxelBlockyAttribute>> &out_attribs) const {
+void VoxelBlockyType::get_checked_attributes(StdVector<Ref<VoxelBlockyAttribute>> &out_attribs) const {
 	gather_and_sort_attributes(_attributes, out_attribs);
 }
 
@@ -249,10 +249,10 @@ Ref<VoxelBlockyModel> VoxelBlockyType::get_variant(const VariantKey &key) const 
 /*void VoxelBlockyType::_get_property_list(List<PropertyInfo> *p_list) const {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
 
-	std::vector<VariantKey> keys;
+	StdVector<VariantKey> keys;
 	generate_keys(attributes, keys, !_automatic_rotations);
 
 	// Only show variants if there are more than one. If there is only one, it's just the base model (or there is only
@@ -295,7 +295,7 @@ math::OrthoBasis get_baking_rotation_ortho_basis(
 }
 
 // String variant_key_to_string(
-// 		const VoxelBlockyType::VariantKey &key, const std::vector<Ref<VoxelBlockyAttribute>> &attributes) {
+// 		const VoxelBlockyType::VariantKey &key, const StdVector<Ref<VoxelBlockyAttribute>> &attributes) {
 // 	String s;
 // 	unsigned int i = 0;
 // 	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
@@ -313,7 +313,7 @@ math::OrthoBasis get_baking_rotation_ortho_basis(
 
 } // namespace
 
-void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models, std::vector<VariantKey> &out_keys,
+void VoxelBlockyType::bake(StdVector<VoxelBlockyModel::BakedData> &out_models, StdVector<VariantKey> &out_keys,
 		VoxelBlockyModel::MaterialIndexer &material_indexer, const VariantKey *specific_key, bool bake_tangents) const {
 	ZN_PROFILE_SCOPE();
 
@@ -321,7 +321,7 @@ void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models,
 	// editing properties.
 	const bool print_warnings = (specific_key == nullptr);
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
 
 	// Find rotation attribute, if any
@@ -335,7 +335,7 @@ void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models,
 		++rotation_attribute_index;
 	}
 
-	std::vector<VariantKey> keys;
+	StdVector<VariantKey> keys;
 	if (specific_key != nullptr) {
 		// For previewing a single model
 		keys.push_back(*specific_key);
@@ -417,7 +417,7 @@ void VoxelBlockyType::bake(std::vector<VoxelBlockyModel::BakedData> &out_models,
 }
 
 bool try_get_attribute_index_from_name(
-		const std::vector<Ref<VoxelBlockyAttribute>> &attributes, const StringName &name, unsigned int &out_index) {
+		const StdVector<Ref<VoxelBlockyAttribute>> &attributes, const StringName &name, unsigned int &out_index) {
 	for (unsigned int i = 0; i < attributes.size(); ++i) {
 		const Ref<VoxelBlockyAttribute> &attrib = attributes[i];
 		if (attrib.is_valid() && attrib->get_attribute_name() == name) {
@@ -429,7 +429,7 @@ bool try_get_attribute_index_from_name(
 }
 
 template <typename T>
-unsigned int get_non_null_count(const std::vector<T> &objects) {
+unsigned int get_non_null_count(const StdVector<T> &objects) {
 	unsigned int count = 0;
 	for (const T &obj : objects) {
 		if (obj != nullptr) {
@@ -453,7 +453,7 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 		}
 	}
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
 
 	for (const Ref<VoxelBlockyAttribute> &attrib : attributes) {
@@ -461,7 +461,7 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 		attrib->get_configuration_warnings(out_warnings);
 	}
 
-	std::vector<VariantKey> keys;
+	StdVector<VariantKey> keys;
 	generate_keys(attributes, keys, false);
 
 	unsigned int unspecified_keys_count = 0;
@@ -481,10 +481,10 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 #endif
 
 Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
-	std::vector<VoxelBlockyModel::BakedData> baked_models;
-	std::vector<Ref<Material>> materials;
+	StdVector<VoxelBlockyModel::BakedData> baked_models;
+	StdVector<Ref<Material>> materials;
 	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
-	std::vector<VariantKey> keys;
+	StdVector<VariantKey> keys;
 
 	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview
 	const bool require_tangents = true;
@@ -505,7 +505,7 @@ Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 }
 
 template <typename T, typename F>
-void unordered_remove_duplicates(std::vector<T> &container, F equality) {
+void unordered_remove_duplicates(StdVector<T> &container, F equality) {
 	for (unsigned int i = 0; i < container.size(); ++i) {
 		const T &item1 = container[i];
 		for (unsigned int j = i + 1; j < container.size();) {
@@ -521,8 +521,8 @@ void unordered_remove_duplicates(std::vector<T> &container, F equality) {
 }
 
 void VoxelBlockyType::gather_and_sort_attributes(
-		const std::vector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
-		std::vector<Ref<VoxelBlockyAttribute>> &out_attributes) {
+		const StdVector<Ref<VoxelBlockyAttribute>> &attributes_with_maybe_nulls,
+		StdVector<Ref<VoxelBlockyAttribute>> &out_attributes) {
 	ZN_PROFILE_SCOPE();
 
 	// Gather non-null attributes
@@ -544,8 +544,8 @@ void VoxelBlockyType::gather_and_sort_attributes(
 	VoxelBlockyAttribute::sort_by_name(to_span(out_attributes));
 }
 
-void VoxelBlockyType::generate_keys(const std::vector<Ref<VoxelBlockyAttribute>> &attributes,
-		std::vector<VariantKey> &out_keys, bool include_rotations) {
+void VoxelBlockyType::generate_keys(const StdVector<Ref<VoxelBlockyAttribute>> &attributes,
+		StdVector<VariantKey> &out_keys, bool include_rotations) {
 	ZN_PROFILE_SCOPE();
 
 	for (unsigned int i = 0; i < attributes.size(); ++i) {
@@ -576,7 +576,7 @@ void VoxelBlockyType::generate_keys(const std::vector<Ref<VoxelBlockyAttribute>>
 	// inspector using a dummy property as indicator.
 	ZN_ASSERT_RETURN_MSG(variant_count < MAX_EDITING_VARIANTS, "Too many combinations");
 
-	std::vector<VariantKey> &keys = out_keys;
+	StdVector<VariantKey> &keys = out_keys;
 	keys.resize(variant_count);
 
 	// Generate combinations
@@ -612,8 +612,8 @@ void VoxelBlockyType::generate_keys(const std::vector<Ref<VoxelBlockyAttribute>>
 	}
 }
 
-void VoxelBlockyType::generate_keys(std::vector<VariantKey> &out_keys, bool include_rotations) const {
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+void VoxelBlockyType::generate_keys(StdVector<VariantKey> &out_keys, bool include_rotations) const {
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
 	generate_keys(attributes, out_keys, include_rotations);
 }
@@ -725,10 +725,10 @@ Array VoxelBlockyType::_b_get_variant_models_data() const {
 	ZN_PROFILE_SCOPE();
 	// Instead of just saving the constants of `_variants`, we only gather valid ones, and cleanup the others.
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	gather_and_sort_attributes(_attributes, attributes);
 
-	std::vector<VariantKey> keys;
+	StdVector<VariantKey> keys;
 	generate_keys(attributes, keys, !_automatic_rotations);
 
 	Array data;

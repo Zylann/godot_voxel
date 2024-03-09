@@ -32,7 +32,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::set_type(Ref<VoxelBlockyType> 
 VoxelBlockyType::VariantKey VoxelBlockyTypeAttributeCombinationSelector::get_variant_key() const {
 	ZN_ASSERT_RETURN_V(_type.is_valid(), VoxelBlockyType::VariantKey());
 
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	_type->get_checked_attributes(attributes);
 
 	VoxelBlockyType::VariantKey key;
@@ -87,7 +87,7 @@ void VoxelBlockyTypeAttributeCombinationSelector::remove_attribute_editor(unsign
 	_attribute_editors.erase(_attribute_editors.begin() + index);
 }
 
-bool contains_attribute_with_name(const std::vector<Ref<VoxelBlockyAttribute>> &attribs, const StringName &name) {
+bool contains_attribute_with_name(const StdVector<Ref<VoxelBlockyAttribute>> &attribs, const StringName &name) {
 	for (const Ref<VoxelBlockyAttribute> &attrib : attribs) {
 		if (attrib->get_attribute_name() == name) {
 			return true;
@@ -97,7 +97,7 @@ bool contains_attribute_with_name(const std::vector<Ref<VoxelBlockyAttribute>> &
 }
 
 void VoxelBlockyTypeAttributeCombinationSelector::update_attribute_editors() {
-	std::vector<Ref<VoxelBlockyAttribute>> attributes;
+	StdVector<Ref<VoxelBlockyAttribute>> attributes;
 	_type->get_checked_attributes(attributes);
 
 	GridContainer *attributes_container = this;

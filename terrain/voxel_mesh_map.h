@@ -2,10 +2,10 @@
 #define VOXEL_MESH_MAP_H
 
 #include "../engine/voxel_engine.h"
+#include "../util/containers/std_vector.h"
 #include "../util/macros.h"
 
 #include <unordered_map>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -193,7 +193,7 @@ private:
 	std::unordered_map<Vector3i, MapItem> _blocks_map;
 	// Blocks are stored in a vector to allow faster iteration over all of them.
 	// Use cases for this include updating the transform of the meshes
-	std::vector<MeshBlock_T *> _blocks;
+	StdVector<MeshBlock_T *> _blocks;
 
 	// Voxel access will most frequently be in contiguous areas, so the same blocks are accessed.
 	// To prevent too much hashing, this reference is checked before.

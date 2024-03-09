@@ -3,11 +3,10 @@
 
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
-
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -115,7 +114,7 @@ private:
 		// Location and size of blocks, indexed by flat position.
 		// This table always has the same size,
 		// and the same index always corresponds to the same 3D position.
-		std::vector<RegionBlockInfo> blocks;
+		StdVector<RegionBlockInfo> blocks;
 	};
 
 	Ref<FileAccess> _file_access;
@@ -135,7 +134,7 @@ private:
 	// List of sectors in the order they appear in the file,
 	// and which position their block is. The same block can span multiple sectors.
 	// This is essentially a reverse table of `Header::blocks`.
-	std::vector<Vector3u16> _sectors;
+	StdVector<Vector3u16> _sectors;
 	uint32_t _blocks_begin_offset;
 	String _file_path;
 };

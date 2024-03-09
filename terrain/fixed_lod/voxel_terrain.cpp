@@ -501,7 +501,7 @@ void VoxelTerrain::unview_mesh_block(Vector3i bpos, bool mesh_flag, bool collisi
 }
 
 void VoxelTerrain::unload_mesh_block(Vector3i bpos) {
-	std::vector<Vector3i> &blocks_pending_update = _blocks_pending_update;
+	StdVector<Vector3i> &blocks_pending_update = _blocks_pending_update;
 
 	bool was_loaded = false;
 	_mesh_map.remove_block(bpos, [&blocks_pending_update, &was_loaded](const VoxelMeshBlockVT &block) {
@@ -562,7 +562,7 @@ void VoxelTerrain::set_instancer(VoxelInstancer *instancer) {
 	_instancer = instancer;
 }
 
-void VoxelTerrain::get_meshed_block_positions(std::vector<Vector3i> &out_positions) const {
+void VoxelTerrain::get_meshed_block_positions(StdVector<Vector3i> &out_positions) const {
 	_mesh_map.for_each_block([&out_positions](const VoxelMeshBlock &mesh_block) {
 		if (mesh_block.has_mesh()) {
 			out_positions.push_back(mesh_block.position);
@@ -1148,7 +1148,7 @@ void VoxelTerrain::process_viewers() {
 	ProfilingClock profiling_clock;
 
 	// Ordered by ascending index in paired viewers list
-	std::vector<size_t> unpaired_viewer_indexes;
+	StdVector<size_t> unpaired_viewer_indexes;
 
 	// Update viewers
 	{
@@ -1786,7 +1786,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
-	std::vector<uint16_t> material_indices;
+	StdVector<uint16_t> material_indices;
 	if (ob.has_mesh_resource) {
 		// The mesh was already built as part of the threaded task
 		mesh = ob.mesh;

@@ -65,7 +65,7 @@ uint32_t get_header_size_v3(const RegionFormat &format) {
 }
 
 bool save_header(
-		FileAccess &f, uint8_t version, const RegionFormat &format, const std::vector<RegionBlockInfo> &block_infos) {
+		FileAccess &f, uint8_t version, const RegionFormat &format, const StdVector<RegionBlockInfo> &block_infos) {
 	// `f` could be anywhere in the file, we seek to ensure we start at the beginning
 	f.seek(0);
 
@@ -111,7 +111,7 @@ bool save_header(
 }
 
 bool load_header(
-		FileAccess &f, uint8_t &out_version, RegionFormat &out_format, std::vector<RegionBlockInfo> &out_block_infos) {
+		FileAccess &f, uint8_t &out_version, RegionFormat &out_format, StdVector<RegionBlockInfo> &out_block_infos) {
 	ERR_FAIL_COND_V(f.get_position() != 0, false);
 	ERR_FAIL_COND_V(f.get_length() < MAGIC_AND_VERSION_SIZE, false);
 
@@ -237,7 +237,7 @@ Error RegionFile::open(const String &fpath, bool create_if_not_found) {
 	};
 
 	// Filter only present blocks and keep the index around because it represents the 3D position of the block
-	std::vector<BlockInfoAndIndex> blocks_sorted_by_offset;
+	StdVector<BlockInfoAndIndex> blocks_sorted_by_offset;
 	for (unsigned int i = 0; i < _header.blocks.size(); ++i) {
 		const RegionBlockInfo b = _header.blocks[i];
 		if (b.data != 0) {
@@ -515,7 +515,7 @@ void RegionFile::remove_sectors_from_block(Vector3i block_pos, unsigned int p_se
 	CRASH_COND(p_sector_count > block_info.get_sector_count());
 	CRASH_COND(dst_offset < _blocks_begin_offset);
 
-	std::vector<uint8_t> temp;
+	StdVector<uint8_t> temp;
 	temp.resize(sector_size);
 
 	// TODO There might be a faster way to shrink a file

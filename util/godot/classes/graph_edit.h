@@ -8,9 +8,9 @@
 using namespace godot;
 #endif
 
+#include "../../containers/std_vector.h"
 #include "../core/string_name.h"
 #include "../core/version.h"
-#include <vector>
 
 namespace zylann::godot {
 
@@ -22,7 +22,7 @@ struct GraphEditConnection {
 	// float activity = 0.0;
 };
 
-void get_graph_edit_connections(const GraphEdit &self, std::vector<GraphEditConnection> &out_connections);
+void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnection> &out_connections);
 Vector2 get_graph_edit_scroll_offset(const GraphEdit &self);
 bool is_graph_edit_using_snapping(const GraphEdit &self);
 int get_graph_edit_snapping_distance(const GraphEdit &self);

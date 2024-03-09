@@ -27,16 +27,16 @@ inline void copy_to(TypedArray<T> &dst, Span<const Ref<T>> src) {
 	}
 }
 
-template <typename T>
-inline void copy_to(std::vector<T> &dst, const TypedArray<T> &src) {
+template <typename T, typename TAllocator>
+inline void copy_to(std::vector<T, TAllocator> &dst, const TypedArray<T> &src) {
 	dst.resize(src.size());
 	for (int i = 0; i < src.size(); ++i) {
 		dst[i] = src[i];
 	}
 }
 
-template <typename T>
-inline void copy_to(std::vector<Ref<T>> &dst, const TypedArray<T> &src) {
+template <typename T, typename TAllocator>
+inline void copy_to(std::vector<Ref<T>, TAllocator> &dst, const TypedArray<T> &src) {
 	dst.resize(src.size());
 	for (int i = 0; i < src.size(); ++i) {
 		dst[i] = src[i];

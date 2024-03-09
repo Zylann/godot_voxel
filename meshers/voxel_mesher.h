@@ -4,10 +4,10 @@
 #include "../constants/cube_tables.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/image.h"
 #include "../util/godot/classes/mesh.h"
 #include "../util/macros.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class ShaderMaterial)
 
@@ -53,15 +53,15 @@ public:
 			Array arrays;
 			uint16_t material_index = 0;
 		};
-		std::vector<Surface> surfaces;
-		FixedArray<std::vector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
+		StdVector<Surface> surfaces;
+		FixedArray<StdVector<Surface>, Cube::SIDE_COUNT> transition_surfaces;
 		Mesh::PrimitiveType primitive_type = Mesh::PRIMITIVE_TRIANGLES;
 		// Flags for creating the Godot mesh resource
 		uint32_t mesh_flags = 0;
 
 		struct CollisionSurface {
-			std::vector<Vector3f> positions;
-			std::vector<int> indices;
+			StdVector<Vector3f> positions;
+			StdVector<int> indices;
 			// If >= 0, the collision surface may actually be picked from a sub-section of arrays of the first surface
 			// in the render mesh (It may start from index 0).
 			// Used when transition meshes are combined with the main mesh.
@@ -75,7 +75,7 @@ public:
 		Ref<Image> atlas_image;
 	};
 
-	static bool is_mesh_empty(const std::vector<Output::Surface> &surfaces);
+	static bool is_mesh_empty(const StdVector<Output::Surface> &surfaces);
 
 	// This can be called from multiple threads at once. Make sure member vars are protected or thread-local.
 	virtual void build(Output &output, const Input &voxels);

@@ -162,7 +162,7 @@ bool VoxelBlockyLibrary::_set(const StringName &p_name, const Variant &p_value) 
 #ifdef TOOLS_ENABLED
 
 void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warnings) const {
-	std::vector<int> null_indices;
+	StdVector<int> null_indices;
 
 	bool has_solid_model = false;
 	for (unsigned int i = 0; i < _voxel_models.size() && !has_solid_model; ++i) {

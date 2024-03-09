@@ -1,6 +1,7 @@
 #ifndef VOXEL_STREAM_SQLITE_H
 #define VOXEL_STREAM_SQLITE_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/vector3i16.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
@@ -8,7 +9,6 @@
 #include "../voxel_stream_cache.h"
 
 #include <unordered_set>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -114,7 +114,7 @@ private:
 	static void _bind_methods();
 
 	String _connection_path;
-	std::vector<VoxelStreamSQLiteInternal *> _connection_pool;
+	StdVector<VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
 	// This cache stores blocks in memory, and gets flushed to the database when big enough.
 	// This is because save queries are more expensive.

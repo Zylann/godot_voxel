@@ -4,11 +4,11 @@
 #include "../engine/gpu/gpu_storage_buffer_pool.h"
 #include "../engine/gpu/gpu_task_runner.h"
 #include "../generators/voxel_generator.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
-#include "../util/tasks/threaded_task.h"
-
 #include "../util/memory.h"
+#include "../util/tasks/threaded_task.h"
 
 namespace zylann::voxel {
 
@@ -37,7 +37,7 @@ private:
 class IGeneratingVoxelsThreadedTask : public IThreadedTask {
 public:
 	// Called when the GPU task is complete.
-	virtual void set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) = 0;
+	virtual void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) = 0;
 };
 
 // Generates a block of voxels on the GPU. Must be scheduled from a threaded task, which will be resumed when this one
@@ -55,7 +55,7 @@ public:
 	// this case doesn't sound common enough.
 
 	// Boxes relative to the VoxelBuffer (not world voxel coordinates). They must not interesect.
-	std::vector<Box3i> boxes_to_generate;
+	StdVector<Box3i> boxes_to_generate;
 	// Position of the lower corner of the VoxelBuffer in world voxel coordinates
 	Vector3i origin_in_voxels;
 	uint8_t lod_index = 0;
@@ -71,7 +71,7 @@ public:
 		RID shader_rid;
 		std::shared_ptr<ComputeShaderParameters> params;
 	};
-	std::vector<ModifierData> modifiers;
+	StdVector<ModifierData> modifiers;
 
 private:
 	struct BoxData {
@@ -80,9 +80,9 @@ private:
 		Ref<RDUniform> output_uniform;
 	};
 
-	std::vector<BoxData> _boxes_data;
+	StdVector<BoxData> _boxes_data;
 	RID _generator_pipeline_rid;
-	std::vector<RID> _modifier_pipelines;
+	StdVector<RID> _modifier_pipelines;
 };
 
 } // namespace zylann::voxel

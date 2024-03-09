@@ -3,6 +3,7 @@
 
 #include "../../engine/ids.h"
 #include "../../storage/voxel_buffer_gd.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/vector2i.h"
 #include "../../util/memory.h"
@@ -116,7 +117,7 @@ public:
 		uint8_t viewer_count;
 	};
 
-	bool debug_try_get_column_states(std::vector<DebugColumnState> &out_states);
+	bool debug_try_get_column_states(StdVector<DebugColumnState> &out_states);
 
 protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
@@ -183,7 +184,7 @@ private:
 	// without having access to the list of paired viewers... if we don't, and if the user doesn't re-generate the
 	// terrain, moving around will start causing failed generation requests in a loop because the cache of
 	// partially-generated columns won't be in the right state...
-	std::vector<PairedViewer> _paired_viewers;
+	StdVector<PairedViewer> _paired_viewers;
 
 	// Threads can be very busy working on this data structure. Yet in the editor, users can modify its parameters
 	// anytime, which could break everything. So when any parameter changes, a copy of this structure is made, and the

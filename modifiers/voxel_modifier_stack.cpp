@@ -294,7 +294,7 @@ void VoxelModifierStack::apply(Span<const float> x_buffer, Span<const float> y_b
 }
 
 void VoxelModifierStack::apply_for_gpu_rendering(
-		std::vector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const {
+		StdVector<VoxelModifier::ShaderData> &out_data, AABB aabb, VoxelModifier::ShaderData::Type type) const {
 	ZN_PROFILE_SCOPE();
 	RWLockRead lock(_stack_lock);
 

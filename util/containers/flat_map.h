@@ -2,8 +2,8 @@
 #define ZN_FLAT_MAP_H
 
 #include "span.h"
+#include "std_vector.h"
 #include <algorithm>
-#include <vector>
 
 namespace zylann {
 
@@ -40,7 +40,7 @@ public:
 	// If the key already exists, the item is not inserted and returns false.
 	// If insertion was successful, returns true.
 	bool insert(K key, T value) {
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			// Item already exists
 			return false;
@@ -51,7 +51,7 @@ public:
 
 	// If the key already exists, the item will replace the previous value.
 	T &insert_or_assign(K key, T value) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			// Item already exists, assign it
 			it->value = value;
@@ -74,7 +74,7 @@ public:
 	}
 
 	const T *find(K key) const {
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			return &it->value;
 		}
@@ -82,7 +82,7 @@ public:
 	}
 
 	T *find(K key) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			return &it->value;
 		}
@@ -96,14 +96,14 @@ public:
 		// argument.
 		// Specifying a comparison lambda is also not viable because both arguments need to be convertible to K.
 		// Making it work would require passing a struct with two operators() with arguments in both orders...
-		//return std::binary_search(_items.cbegin(), _items.cend(), key);
+		// return std::binary_search(_items.cbegin(), _items.cend(), key);
 
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		return it != _items.end() && it->key == key;
 	}
 
 	bool erase(K key) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			_items.erase(it);
 			return true;
@@ -196,13 +196,13 @@ public:
 
 private:
 	// Sorted by key
-	std::vector<Pair> _items;
+	StdVector<Pair> _items;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // template <typename T>
-// void insert_default(std::vector<T> &vec, size_t pi) {
+// void insert_default(StdVector<T> &vec, size_t pi) {
 // 	ZN_ASSERT(pi <= vec.size());
 // 	const size_t prev_size = vec.size();
 // 	vec.resize(vec.size() + 1);
@@ -250,7 +250,7 @@ public:
 	// If the key already exists, the item is not inserted and returns false.
 	// If insertion was successful, returns true.
 	bool insert(K key, T &&value) {
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			// Item already exists
 			return false;
@@ -261,7 +261,7 @@ public:
 
 	// If the key already exists, the item will replace the previous value.
 	T &insert_or_assign(K key, T &&value) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			// Item already exists, assign it
 			it->value = std::move(value);
@@ -284,7 +284,7 @@ public:
 	}
 
 	const T *find(K key) const {
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			return &it->value;
 		}
@@ -292,7 +292,7 @@ public:
 	}
 
 	T *find(K key) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			return &it->value;
 		}
@@ -306,14 +306,14 @@ public:
 		// argument.
 		// Specifying a comparison lambda is also not viable because both arguments need to be convertible to K.
 		// Making it work would require passing a struct with two operators() with arguments in both orders...
-		//return std::binary_search(_items.cbegin(), _items.cend(), key);
+		// return std::binary_search(_items.cbegin(), _items.cend(), key);
 
-		typename std::vector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::const_iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		return it != _items.end() && it->key == key;
 	}
 
 	bool erase(K key) {
-		typename std::vector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
+		typename StdVector<Pair>::iterator it = std::lower_bound(_items.begin(), _items.end(), key);
 		if (it != _items.end() && it->key == key) {
 			_items.erase(it);
 			return true;
@@ -388,7 +388,7 @@ public:
 
 private:
 	// Sorted by key
-	std::vector<Pair> _items;
+	StdVector<Pair> _items;
 };
 
 } // namespace zylann

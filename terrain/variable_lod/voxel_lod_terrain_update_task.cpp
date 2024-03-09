@@ -307,7 +307,7 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerrainUpdat
 		unsigned int lod_index;
 	};
 
-	std::vector<TaskArguments> todo;
+	StdVector<TaskArguments> todo;
 
 	const unsigned int data_block_size = data.get_block_size();
 	const unsigned int lod_count = data.get_lod_count();
@@ -384,8 +384,8 @@ void process_async_edits(VoxelLodTerrainUpdateData::State &state, const VoxelLod
 	if (state.running_async_edits.size() == 0) {
 		// Schedule all next edits when the previous ones are done
 
-		std::vector<Box3i> boxes_to_preload;
-		std::vector<IThreadedTask *> tasks_to_schedule;
+		StdVector<Box3i> boxes_to_preload;
+		StdVector<IThreadedTask *> tasks_to_schedule;
 		std::shared_ptr<AsyncDependencyTracker> last_tracker = nullptr;
 
 		for (unsigned int edit_index = 0; edit_index < state.pending_async_edits.size(); ++edit_index) {

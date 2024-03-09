@@ -4,7 +4,7 @@
 
 namespace zylann::godot {
 
-void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, std::vector<Vector2i> &r_result, Vector2i &r_size) {
+void geometry_2d_make_atlas(Span<const Vector2i> p_sizes, StdVector<Vector2i> &r_result, Vector2i &r_size) {
 	ZN_PROFILE_SCOPE();
 
 #if defined(ZN_GODOT)

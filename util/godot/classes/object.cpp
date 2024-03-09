@@ -10,7 +10,7 @@ namespace zylann::godot {
 
 #ifdef TOOLS_ENABLED
 
-void get_property_list(const Object &obj, std::vector<PropertyInfoWrapper> &out_properties) {
+void get_property_list(const Object &obj, StdVector<PropertyInfoWrapper> &out_properties) {
 #if defined(ZN_GODOT)
 	List<PropertyInfo> properties;
 	obj.get_property_list(&properties, false);
@@ -44,7 +44,7 @@ uint64_t get_deep_hash(const Object &obj, uint32_t property_usage, uint64_t hash
 
 	hash = hash_djb2_one_64(obj.get_class().hash(), hash);
 
-	std::vector<PropertyInfoWrapper> properties;
+	StdVector<PropertyInfoWrapper> properties;
 	get_property_list(obj, properties);
 
 	// I'd like to use ConstIterator since I only read that list but that isn't possible :shrug:

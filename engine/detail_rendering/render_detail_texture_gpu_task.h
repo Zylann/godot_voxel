@@ -1,6 +1,7 @@
 #ifndef VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
 #define VOXEL_RENDER_DETAIL_TEXTURE_GPU_TASK_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/vector3f.h"
 #include "../../util/math/vector4f.h"
 #include "../gpu/gpu_storage_buffer_pool.h"
@@ -20,9 +21,9 @@ public:
 
 	// Using 4-component vectors to match alignment rules.
 	// See https://stackoverflow.com/a/38172697
-	std::vector<Vector4f> mesh_vertices;
-	std::vector<int32_t> mesh_indices;
-	std::vector<int32_t> cell_triangles;
+	StdVector<Vector4f> mesh_vertices;
+	StdVector<int32_t> mesh_indices;
+	StdVector<int32_t> cell_triangles;
 
 	struct TileData {
 		uint8_t cell_x = 0;
@@ -37,7 +38,7 @@ public:
 	};
 
 	// Should fit as an `ivec2[]`
-	std::vector<TileData> tile_data;
+	StdVector<TileData> tile_data;
 
 	struct Params {
 		Vector3f block_origin_world;
@@ -59,7 +60,7 @@ public:
 		RID shader_rid;
 		std::shared_ptr<ComputeShaderParameters> params;
 	};
-	std::vector<ModifierData> modifiers;
+	StdVector<ModifierData> modifiers;
 
 	// Stuff to carry over for the second CPU pass
 	std::shared_ptr<DetailTextureOutput> output;
@@ -83,7 +84,7 @@ private:
 	RID _detail_generator_pipeline_rid;
 	RID _detail_normalmap_pipeline_rid;
 	RID _normalmap_dilation_pipeline_rid;
-	std::vector<RID> _detail_modifier_pipelines;
+	StdVector<RID> _detail_modifier_pipelines;
 
 	GPUStorageBuffer _mesh_vertices_sb;
 	GPUStorageBuffer _mesh_indices_sb;

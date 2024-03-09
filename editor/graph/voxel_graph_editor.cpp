@@ -3,6 +3,7 @@
 #include "../../generators/graph/node_type_db.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../terrain/voxel_node.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/button.h"
 #include "../../util/godot/classes/canvas_item.h"
 #include "../../util/godot/classes/check_box.h"
@@ -400,7 +401,7 @@ void VoxelGraphEditor::build_gui_from_graph() {
 
 	// Connections
 
-	std::vector<ProgramGraph::Connection> all_connections;
+	StdVector<ProgramGraph::Connection> all_connections;
 	graph.get_connections(all_connections);
 
 	for (size_t i = 0; i < all_connections.size(); ++i) {
@@ -445,7 +446,7 @@ void VoxelGraphEditor::create_node_gui(uint32_t node_id) {
 
 void remove_connections_from_and_to(GraphEdit &graph_edit, StringName node_name) {
 	// Get copy of connection list
-	std::vector<GraphEditConnection> connections;
+	StdVector<GraphEditConnection> connections;
 	get_graph_edit_connections(graph_edit, connections);
 
 	for (const GraphEditConnection &con : connections) {
@@ -489,7 +490,7 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 
 	// Remove all GUI connections going to the node
 
-	std::vector<GraphEditConnection> old_connections;
+	StdVector<GraphEditConnection> old_connections;
 	get_graph_edit_connections(graph_edit, old_connections);
 
 	for (const GraphEditConnection &con : old_connections) {
@@ -513,7 +514,7 @@ void VoxelGraphEditor::update_node_layout(uint32_t node_id) {
 	// Add connections back by reading the graph
 
 	// TODO Optimize: the graph stores an adjacency list, we could use that
-	std::vector<ProgramGraph::Connection> all_connections;
+	StdVector<ProgramGraph::Connection> all_connections;
 	_graph->get_connections(all_connections);
 
 	for (size_t i = 0; i < all_connections.size(); ++i) {
@@ -631,7 +632,7 @@ void VoxelGraphEditor::_on_graph_edit_disconnection_request(
 }
 
 namespace {
-void get_selected_nodes(const GraphEdit &graph_edit, std::vector<VoxelGraphEditorNode *> &out_nodes) {
+void get_selected_nodes(const GraphEdit &graph_edit, StdVector<VoxelGraphEditorNode *> &out_nodes) {
 	for (int i = 0; i < graph_edit.get_child_count(); ++i) {
 		VoxelGraphEditorNode *node_view = Object::cast_to<VoxelGraphEditorNode>(graph_edit.get_child(i));
 		if (node_view != nullptr) {
@@ -648,7 +649,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(TypedArray<StringName
 #elif defined(ZN_GODOT_EXTENSION)
 void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 #endif
-	std::vector<VoxelGraphEditorNode *> to_erase;
+	StdVector<VoxelGraphEditorNode *> to_erase;
 
 	// The `node_names` argument is the result of Godot issue #61112. While it is less convenient than just getting
 	// the nodes themselves, it also has the downside of being always empty if you choose to not show "close" buttons
@@ -658,7 +659,7 @@ void VoxelGraphEditor::_on_graph_edit_delete_nodes_request(Array node_names) {
 
 	_undo_redo->create_action(ZN_TTR("Delete Nodes"));
 
-	std::vector<ProgramGraph::Connection> all_connections;
+	StdVector<ProgramGraph::Connection> all_connections;
 	_graph->get_connections(all_connections);
 
 	for (size_t i = 0; i < to_erase.size(); ++i) {
@@ -1082,7 +1083,7 @@ void VoxelGraphEditor::update_slice_previews() {
 		uint32_t node_id;
 	};
 
-	std::vector<PreviewInfo> previews;
+	StdVector<PreviewInfo> previews;
 
 	// Gather preview nodes
 	for (int i = 0; i < _graph_edit->get_child_count(); ++i) {
@@ -1113,9 +1114,9 @@ void VoxelGraphEditor::update_slice_previews() {
 		const int preview_size_x = VoxelGraphEditorNodePreview::RESOLUTION;
 		const int preview_size_y = VoxelGraphEditorNodePreview::RESOLUTION;
 		const int buffer_size = preview_size_x * preview_size_y;
-		std::vector<float> x_vec;
-		std::vector<float> y_vec;
-		std::vector<float> z_vec;
+		StdVector<float> x_vec;
+		StdVector<float> y_vec;
+		StdVector<float> z_vec;
 		x_vec.resize(buffer_size);
 		y_vec.resize(buffer_size);
 		z_vec.resize(buffer_size);
@@ -1200,7 +1201,7 @@ void VoxelGraphEditor::profile() {
 		return;
 	}
 
-	std::vector<VoxelGeneratorGraph::NodeProfilingInfo> nodes_profiling_info;
+	StdVector<VoxelGeneratorGraph::NodeProfilingInfo> nodes_profiling_info;
 	const float us = _generator->debug_measure_microseconds_per_voxel(false, &nodes_profiling_info);
 	_profile_label->set_text(String("{0} microseconds per voxel").format(varray(us)));
 
@@ -1209,7 +1210,7 @@ void VoxelGraphEditor::profile() {
 		float ratio;
 	};
 
-	std::vector<NodeRatio> node_ratios;
+	StdVector<NodeRatio> node_ratios;
 
 	// Deduplicate entries and get maximum
 	float max_individual_time = 0.f;
@@ -1358,7 +1359,7 @@ void VoxelGraphEditor::update_functions() {
 
 	ERR_FAIL_COND(_graph.is_null());
 
-	std::vector<ProgramGraph::Connection> removed_connections;
+	StdVector<ProgramGraph::Connection> removed_connections;
 	_graph->update_function_nodes(&removed_connections);
 	// TODO This can mess with undo/redo and remove connections, but I'm not sure if it's worth dealing with it.
 	// A way to workaround it is to introduce a concept of "invalid ports", where function nodes keep their old ports
@@ -1378,7 +1379,7 @@ void VoxelGraphEditor::update_functions() {
 void VoxelGraphEditor::copy_selected_nodes_to_clipboard() {
 	ZN_ASSERT_RETURN(_graph.is_valid());
 
-	std::vector<VoxelGraphEditorNode *> node_views;
+	StdVector<VoxelGraphEditorNode *> node_views;
 	get_selected_nodes(*_graph_edit, node_views);
 
 	if (node_views.size() == 0) {
@@ -1386,7 +1387,7 @@ void VoxelGraphEditor::copy_selected_nodes_to_clipboard() {
 		return;
 	}
 
-	std::vector<uint32_t> node_ids;
+	StdVector<uint32_t> node_ids;
 	node_ids.reserve(node_views.size());
 
 	for (VoxelGraphEditorNode *node_view : node_views) {

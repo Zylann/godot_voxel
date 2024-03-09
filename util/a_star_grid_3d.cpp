@@ -195,7 +195,7 @@ const Vector3i g_directions_2d[8] = {
 };
 }
 
-void AStarGrid3D::get_neighbor_positions(Vector3i pos, std::vector<Vector3i> &out_positions) {
+void AStarGrid3D::get_neighbor_positions(Vector3i pos, StdVector<Vector3i> &out_positions) {
 	// Implementation specialized for agents walking on top of solid surfaces
 
 	ZN_PROFILE_SCOPE();
@@ -318,7 +318,7 @@ float AStarGrid3D::evaluate_heuristic(Vector3i pos, Vector3i target_pos) const {
 	return Math::abs(diff.x) + Math::abs(diff.y) + Math::abs(diff.z);
 }
 
-void AStarGrid3D::debug_get_visited_points(std::vector<Vector3i> &out_positions) const {
+void AStarGrid3D::debug_get_visited_points(StdVector<Vector3i> &out_positions) const {
 	out_positions.reserve(out_positions.size() + _points_map.size());
 	for (auto it = _points_map.begin(); it != _points_map.end(); ++it) {
 		out_positions.push_back(it->first);

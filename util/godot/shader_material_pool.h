@@ -2,8 +2,8 @@
 #define ZN_SHADER_MATERIAL_POOL_H
 
 #include "../containers/span.h"
+#include "../containers/std_vector.h"
 #include "classes/shader_material.h"
-#include <vector>
 
 namespace zylann::godot {
 
@@ -28,8 +28,8 @@ public:
 
 private:
 	Ref<ShaderMaterial> _template_material;
-	std::vector<StringName> _shader_params_cache;
-	std::vector<Ref<ShaderMaterial>> _materials;
+	StdVector<StringName> _shader_params_cache;
+	StdVector<Ref<ShaderMaterial>> _materials;
 };
 
 void copy_shader_params(const ShaderMaterial &src, ShaderMaterial &dst, Span<const StringName> params);

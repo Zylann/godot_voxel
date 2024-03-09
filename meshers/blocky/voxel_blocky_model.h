@@ -3,14 +3,13 @@
 
 #include "../../constants/cube_tables.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/material.h"
 #include "../../util/godot/classes/mesh.h"
 #include "../../util/macros.h"
 #include "../../util/math/ortho_basis.h"
 #include "../../util/math/vector2f.h"
 #include "../../util/math/vector3f.h"
-
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -33,18 +32,18 @@ public:
 	struct BakedData {
 		struct Surface {
 			// Inside part of the model.
-			std::vector<Vector3f> positions;
-			std::vector<Vector3f> normals;
-			std::vector<Vector2f> uvs;
-			std::vector<int> indices;
-			std::vector<float> tangents;
+			StdVector<Vector3f> positions;
+			StdVector<Vector3f> normals;
+			StdVector<Vector2f> uvs;
+			StdVector<int> indices;
+			StdVector<float> tangents;
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<std::vector<Vector3f>, Cube::SIDE_COUNT> side_positions;
-			FixedArray<std::vector<Vector2f>, Cube::SIDE_COUNT> side_uvs;
-			FixedArray<std::vector<int>, Cube::SIDE_COUNT> side_indices;
-			FixedArray<std::vector<float>, Cube::SIDE_COUNT> side_tangents;
+			FixedArray<StdVector<Vector3f>, Cube::SIDE_COUNT> side_positions;
+			FixedArray<StdVector<Vector2f>, Cube::SIDE_COUNT> side_uvs;
+			FixedArray<StdVector<int>, Cube::SIDE_COUNT> side_indices;
+			FixedArray<StdVector<float>, Cube::SIDE_COUNT> side_tangents;
 
 			uint32_t material_id = 0;
 			bool collision_enabled = true;
@@ -96,7 +95,7 @@ public:
 		bool is_transparent;
 
 		uint32_t box_collision_mask;
-		std::vector<AABB> box_collision_aabbs;
+		StdVector<AABB> box_collision_aabbs;
 
 		inline void clear() {
 			model.clear();
@@ -163,7 +162,7 @@ public:
 	virtual bool is_empty() const;
 
 	struct MaterialIndexer {
-		std::vector<Ref<Material>> &materials;
+		StdVector<Ref<Material>> &materials;
 
 		unsigned int get_or_create_index(const Ref<Material> &p_material);
 	};
@@ -230,7 +229,7 @@ protected:
 	unsigned int _surface_count = 0;
 
 	// Used for AABB physics only, not classic physics
-	std::vector<AABB> _collision_aabbs;
+	StdVector<AABB> _collision_aabbs;
 	uint32_t _collision_mask = 1;
 
 private:

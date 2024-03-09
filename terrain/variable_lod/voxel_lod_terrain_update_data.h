@@ -6,6 +6,7 @@
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/safe_ref_count.h"
 #include "../../util/tasks/cancellation_token.h"
 #include "../voxel_mesh_map.h"
@@ -188,7 +189,7 @@ struct VoxelLodTerrainUpdateData {
 		BinaryMutex unloaded_saving_blocks_mutex;
 		// Blocks that will be loaded from the saving cache as if a loading task completed next time the terrain
 		// updates. It won't run while the threaded update runs so no locking is needed.
-		std::vector<QuickReloadingBlock> quick_reloading_blocks;
+		StdVector<QuickReloadingBlock> quick_reloading_blocks;
 
 		// These are relative to this LOD, in block coordinates
 		Vector3i last_viewer_data_block_pos;
@@ -197,20 +198,20 @@ struct VoxelLodTerrainUpdateData {
 		MeshMapState mesh_map_state;
 
 		// Positions of mesh blocks that will be scheduled for update next time the update task runs.
-		std::vector<MeshToUpdate> mesh_blocks_pending_update;
+		StdVector<MeshToUpdate> mesh_blocks_pending_update;
 		Vector3i last_viewer_mesh_block_pos;
 		int last_view_distance_mesh_blocks = 0;
 
 		// Deferred outputs to main thread. Should only be read once the task is finished, so no need to lock.
 		// TODO These output actions are not particularly serialized, that might cause issues (havent so far).
-		std::vector<Vector3i> mesh_blocks_to_unload;
-		std::vector<TransitionUpdate> mesh_blocks_to_update_transitions;
-		std::vector<Vector3i> mesh_blocks_to_activate_visuals;
-		std::vector<Vector3i> mesh_blocks_to_deactivate_visuals;
-		std::vector<Vector3i> mesh_blocks_to_activate_collision;
-		std::vector<Vector3i> mesh_blocks_to_deactivate_collision;
-		std::vector<Vector3i> mesh_blocks_to_drop_visual;
-		std::vector<Vector3i> mesh_blocks_to_drop_collision;
+		StdVector<Vector3i> mesh_blocks_to_unload;
+		StdVector<TransitionUpdate> mesh_blocks_to_update_transitions;
+		StdVector<Vector3i> mesh_blocks_to_activate_visuals;
+		StdVector<Vector3i> mesh_blocks_to_deactivate_visuals;
+		StdVector<Vector3i> mesh_blocks_to_activate_collision;
+		StdVector<Vector3i> mesh_blocks_to_deactivate_collision;
+		StdVector<Vector3i> mesh_blocks_to_drop_visual;
+		StdVector<Vector3i> mesh_blocks_to_drop_collision;
 
 		inline bool has_loading_block(const Vector3i &pos) const {
 			return loading_blocks.find(pos) != loading_blocks.end();
@@ -282,19 +283,19 @@ struct VoxelLodTerrainUpdateData {
 	};
 
 	struct ClipboxStreamingState {
-		std::vector<PairedViewer> paired_viewers;
+		StdVector<PairedViewer> paired_viewers;
 		// Vector3i viewer_pos_in_lod0_voxels_previous_update;
 		// int lod_distance_in_data_chunks_previous_update = 0;
 		// int lod_distance_in_mesh_chunks_previous_update = 0;
 
 		// Written by main thread when data blocks are received.
 		// Read by update thread to trigger meshing.
-		std::vector<BlockLocation> loaded_data_blocks;
+		StdVector<BlockLocation> loaded_data_blocks;
 		BinaryMutex loaded_data_blocks_mutex;
 
 		// Written by main thread when mesh blocks are received (and there was previously no mesh).
 		// Read by update thread to trigger visibility changes.
-		std::vector<LoadedMeshBlockEvent> loaded_mesh_blocks;
+		StdVector<LoadedMeshBlockEvent> loaded_mesh_blocks;
 		BinaryMutex loaded_mesh_blocks_mutex;
 	};
 
@@ -304,11 +305,11 @@ struct VoxelLodTerrainUpdateData {
 		// Scheduling is only done at LOD0 because it is the only editable LOD.
 
 		// Used specifically for lodding voxels
-		std::vector<Vector3i> edited_blocks_lod0;
+		StdVector<Vector3i> edited_blocks_lod0;
 		// Used specifically to update meshes
 		// TODO Maybe we could use only that? The reason we have edited blocks separately is because edits might affect
 		// only specific blocks and not the full area
-		std::vector<Box3i> edited_voxel_areas_lod0;
+		StdVector<Box3i> edited_voxel_areas_lod0;
 
 		BinaryMutex mutex;
 	};
@@ -322,12 +323,12 @@ struct VoxelLodTerrainUpdateData {
 
 		EditNotificationInputs edit_notifications;
 
-		std::vector<AsyncEdit> pending_async_edits;
+		StdVector<AsyncEdit> pending_async_edits;
 		BinaryMutex pending_async_edits_mutex;
-		std::vector<RunningAsyncEdit> running_async_edits;
+		StdVector<RunningAsyncEdit> running_async_edits;
 
 		// Areas where generated stuff has changed. Similar to an edit, but non-destructive.
-		std::vector<Box3i> changed_generated_areas;
+		StdVector<Box3i> changed_generated_areas;
 		BinaryMutex changed_generated_areas_mutex;
 
 		Stats stats;
@@ -342,7 +343,7 @@ struct VoxelLodTerrainUpdateData {
 	State state;
 
 	// Copy of all viewers, since accessing them directly in VoxelEngine is not thread safe at the moment
-	std::vector<std::pair<ViewerID, VoxelEngine::Viewer>> viewers;
+	StdVector<std::pair<ViewerID, VoxelEngine::Viewer>> viewers;
 
 	// After this call, no locking is necessary, as no other thread should be using the data.
 	// However it can stall for longer, so prefer using it when doing structural changes, such as changing LOD count,

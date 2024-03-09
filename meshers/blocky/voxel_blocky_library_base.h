@@ -2,6 +2,7 @@
 #define VOXEL_BLOCKY_LIBRARY_BASE_H
 
 #include "../../util/containers/dynamic_bitset.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/thread/rw_lock.h"
 #include "voxel_blocky_model.h"
@@ -31,14 +32,14 @@ public:
 		DynamicBitset side_pattern_culling;
 		unsigned int side_pattern_count = 0;
 		// Lots of data can get moved but it's only on load.
-		std::vector<VoxelBlockyModel::BakedData> models;
+		StdVector<VoxelBlockyModel::BakedData> models;
 
 		// struct VariantInfo {
 		// 	uint16_t type_index;
 		// 	FixedArray<uint8_t, 4> attributes;
 		// };
 
-		// std::vector<VariantInfo> variant_infos;
+		// StdVector<VariantInfo> variant_infos;
 
 		unsigned int indexed_materials_count = 0;
 
@@ -101,7 +102,7 @@ protected:
 	BakedData _baked_data;
 	// One of the entries can be null to represent "The default material". If all non-empty models have materials, there
 	// won't be a null entry.
-	std::vector<Ref<Material>> _indexed_materials;
+	StdVector<Ref<Material>> _indexed_materials;
 };
 
 void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data);

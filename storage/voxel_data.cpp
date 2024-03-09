@@ -1,4 +1,5 @@
 #include "voxel_data.h"
+#include "../util/containers/std_vector.h"
 #include "../util/dstack.h"
 #include "../util/math/conv.h"
 #include "../util/string_funcs.h"
@@ -401,7 +402,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	};
 
 	// TODO Optimize: thread_local pooling?
-	std::vector<Task> todo;
+	StdVector<Task> todo;
 	// We'll pack tasks per LOD so we'll have less locking to do
 	FixedArray<unsigned int, constants::MAX_LOD> count_per_lod;
 	fill(count_per_lod, 0u);
@@ -528,7 +529,7 @@ void VoxelData::clear_cached_blocks_in_voxel_area(Box3i p_voxel_box) {
 }
 
 void VoxelData::mark_area_modified(
-		Box3i p_voxel_box, std::vector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates) {
+		Box3i p_voxel_box, StdVector<Vector3i> *lod0_new_blocks_to_lod, bool require_lod_updates) {
 	// TODO We should probably merge this with edits, because that means two separate locks occur. There is some time in
 	// between where we end up with modified voxels yet not marked as modified yet.
 

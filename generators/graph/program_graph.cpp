@@ -12,7 +12,7 @@
 namespace zylann {
 
 template <typename T>
-inline bool range_contains(const std::vector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
+inline bool range_contains(const StdVector<T> &vec, const T &v, uint32_t begin, uint32_t end) {
 	ZN_ASSERT(end <= vec.size());
 	for (size_t i = begin; i < end; ++i) {
 		if (vec[i] == v) {
@@ -87,7 +87,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 			Node &src_node = get_node(src.node_id);
 			const uint32_t i = src_node.find_output_connection(src.port_index, PortLocation{ node_id, dst_port_index });
 			ZN_ASSERT(i != NULL_INDEX);
-			std::vector<PortLocation> &connections = src_node.outputs[src.port_index].connections;
+			StdVector<PortLocation> &connections = src_node.outputs[src.port_index].connections;
 			connections.erase(connections.begin() + i);
 		}
 	}
@@ -100,7 +100,7 @@ void ProgramGraph::remove_node(uint32_t node_id) {
 			Node &dst_node = get_node(dst.node_id);
 			const uint32_t i = dst_node.find_input_connection(PortLocation{ node_id, src_port_index }, dst.port_index);
 			ZN_ASSERT(i != NULL_INDEX);
-			std::vector<PortLocation> &connections = dst_node.inputs[dst.port_index].connections;
+			StdVector<PortLocation> &connections = dst_node.inputs[dst.port_index].connections;
 			connections.erase(connections.begin() + i);
 		}
 	}
@@ -178,8 +178,8 @@ bool ProgramGraph::disconnect(PortLocation src, PortLocation dst) {
 	}
 	const uint32_t dst_i = dst_node.find_input_connection(src, dst.port_index);
 	ZN_ASSERT(dst_i != NULL_INDEX);
-	std::vector<PortLocation> &src_connections = src_node.outputs[src.port_index].connections;
-	std::vector<PortLocation> &dst_connections = dst_node.inputs[dst.port_index].connections;
+	StdVector<PortLocation> &src_connections = src_node.outputs[src.port_index].connections;
+	StdVector<PortLocation> &dst_connections = dst_node.inputs[dst.port_index].connections;
 	src_connections.erase(src_connections.begin() + src_i);
 	dst_connections.erase(dst_connections.begin() + dst_i);
 	return true;
@@ -224,7 +224,7 @@ ProgramGraph::Node *ProgramGraph::try_get_node(uint32_t id) const {
 }
 
 bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const {
-	std::vector<uint32_t> nodes_to_process;
+	StdVector<uint32_t> nodes_to_process;
 	std::unordered_set<uint32_t> visited_nodes;
 
 	nodes_to_process.push_back(p_src_node_id);
@@ -259,7 +259,7 @@ bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) cons
 	return false;
 }
 
-void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
+void ProgramGraph::find_terminal_nodes(StdVector<uint32_t> &node_ids) const {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		const Node *node = it->second;
 		if (node->outputs.size() == 0) {
@@ -268,15 +268,15 @@ void ProgramGraph::find_terminal_nodes(std::vector<uint32_t> &node_ids) const {
 	}
 }
 
-void ProgramGraph::find_dependencies(uint32_t node_id, std::vector<uint32_t> &out_order) const {
-	std::vector<uint32_t> nodes_to_process;
+void ProgramGraph::find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_order) const {
+	StdVector<uint32_t> nodes_to_process;
 	nodes_to_process.push_back(node_id);
 	find_dependencies(nodes_to_process, out_order);
 }
 
 // Finds dependencies of the given nodes, and returns them in the order they should be processed.
 // Given nodes are included in the result.
-void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std::vector<uint32_t> &out_order) const {
+void ProgramGraph::find_dependencies(StdVector<uint32_t> nodes_to_process, StdVector<uint32_t> &out_order) const {
 	std::unordered_set<uint32_t> visited_nodes;
 
 	while (nodes_to_process.size() > 0) {
@@ -306,7 +306,7 @@ void ProgramGraph::find_dependencies(std::vector<uint32_t> nodes_to_process, std
 #endif
 }
 
-void ProgramGraph::find_immediate_dependencies(uint32_t node_id, std::vector<uint32_t> &deps) const {
+void ProgramGraph::find_immediate_dependencies(uint32_t node_id, StdVector<uint32_t> &deps) const {
 	const Node &node = get_node(node_id);
 	const size_t begin = deps.size();
 
@@ -382,7 +382,7 @@ void ProgramGraph::copy_from(const ProgramGraph &other, bool copy_subresources) 
 	}
 }
 
-void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connections) const {
+void ProgramGraph::get_connections(StdVector<ProgramGraph::Connection> &connections) const {
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
 		const Node *node = it->second;
 
@@ -399,7 +399,7 @@ void ProgramGraph::get_connections(std::vector<ProgramGraph::Connection> &connec
 	}
 }
 
-void ProgramGraph::get_node_ids(std::vector<uint32_t> &node_ids) const {
+void ProgramGraph::get_node_ids(StdVector<uint32_t> &node_ids) const {
 	ZN_ASSERT(node_ids.size() == 0);
 	node_ids.reserve(node_ids.size());
 	for (auto it = _nodes.begin(); it != _nodes.end(); ++it) {
@@ -427,7 +427,7 @@ uint32_t ProgramGraph::find_node_by_type(uint32_t type_id) const {
 	return NULL_ID;
 }
 
-// void ProgramGraph::get_connections_from_and_to(std::vector<ProgramGraph::Connection> &connections, uint32_t node_id)
+// void ProgramGraph::get_connections_from_and_to(StdVector<ProgramGraph::Connection> &connections, uint32_t node_id)
 // const { 	const Node *node = get_node(node_id); 	ERR_FAIL_COND(node == nullptr);
 
 //	for (size_t i = 0; i < node->outputs.size(); ++i) {

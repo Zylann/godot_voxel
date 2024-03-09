@@ -1,6 +1,7 @@
 #ifndef ZN_VOXEL_GENERATE_INSTANCES_BLOCK_TASK_H
 #define ZN_VOXEL_GENERATE_INSTANCES_BLOCK_TASK_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_instance_generator.h"
@@ -8,7 +9,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -24,7 +24,7 @@ public:
 	Array surface_arrays;
 	Ref<VoxelInstanceGenerator> generator;
 	// Can be pre-populated by edited transforms
-	std::vector<Transform3f> transforms;
+	StdVector<Transform3f> transforms;
 	std::shared_ptr<VoxelInstancerTaskOutputQueue> output_queue;
 
 	const char *get_debug_name() const override {

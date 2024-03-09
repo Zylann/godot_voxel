@@ -4,6 +4,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../streams/instance_data.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
@@ -21,7 +22,6 @@
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
@@ -209,8 +209,8 @@ private:
 		// Such instances may be less numerous.
 		// If the item associated to this block has no collisions, this will be empty.
 		// Indices in the vector correspond to index of the instance in multimesh.
-		std::vector<VoxelInstancerRigidBody *> bodies;
-		std::vector<SceneInstance> scene_instances;
+		StdVector<VoxelInstancerRigidBody *> bodies;
+		StdVector<SceneInstance> scene_instances;
 	};
 
 	struct Layer {
@@ -236,7 +236,7 @@ private:
 
 	struct Lod : public NonCopyable {
 		// Unordered list of layer IDs using this LOD level.
-		std::vector<int> layers;
+		StdVector<int> layers;
 
 		// Blocks that have have unsaved changes.
 		// Keys follows the data block coordinate system.
@@ -263,7 +263,7 @@ private:
 	FixedArray<Lod, MAX_LOD> _lods;
 
 	// Does not have nulls. Indices matter.
-	std::vector<UniquePtr<Block>> _blocks;
+	StdVector<UniquePtr<Block>> _blocks;
 
 	// Each layer corresponds to a library item. Addresses of values in the map are expected to be stable.
 	std::unordered_map<int, Layer> _layers;

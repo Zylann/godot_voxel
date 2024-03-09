@@ -1,4 +1,5 @@
 #include "noise_analysis_window.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/editor_scale.h"
 #include "chart_view.h"
@@ -256,11 +257,11 @@ void NoiseAnalysisWindow::_process() {
 	const float step_length = Math::lerp(_analysis_params.step_minimum_length, _analysis_params.step_maximum_length,
 			float(_current_step) / _analysis_params.step_count);
 
-	std::vector<float> x_cache;
-	std::vector<float> y_cache;
-	std::vector<float> z_cache;
-	std::vector<float> noise_cache;
-	std::vector<float> noise_cache2;
+	StdVector<float> x_cache;
+	StdVector<float> y_cache;
+	StdVector<float> z_cache;
+	StdVector<float> noise_cache;
+	StdVector<float> noise_cache2;
 
 	x_cache.clear();
 	y_cache.clear();

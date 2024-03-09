@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/point_mesh.h"
@@ -358,8 +359,8 @@ void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::Ba
 	const unsigned int surface_count =
 			math::min(uint32_t(mesh->get_surface_count()), VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
 
-	std::vector<Ref<Material>> materials;
-	std::vector<Array> surfaces;
+	StdVector<Ref<Material>> materials;
+	StdVector<Array> surfaces;
 
 	for (unsigned int i = 0; i < surface_count; ++i) {
 		surfaces.push_back(mesh->surface_get_arrays(i));
@@ -404,7 +405,7 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	const float bake_tangents = false;
 	VoxelBlockyModel::BakedData baked_data;
 	baked_data.color = get_color();
-	std::vector<Ref<Material>> materials;
+	StdVector<Ref<Material>> materials;
 	MaterialIndexer material_indexer{ materials };
 	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer);
 

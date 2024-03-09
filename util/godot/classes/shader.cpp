@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "../../containers/std_vector.h"
 #include "rendering_server.h"
 
 namespace zylann::godot {
@@ -8,7 +9,7 @@ namespace zylann::godot {
 // TODO Cannot use `Shader.has_uniform()` because it is unreliable.
 // See https://github.com/godotengine/godot/issues/64467
 bool shader_has_uniform(const Shader &shader, StringName uniform_name) {
-	std::vector<ShaderParameterInfo> params;
+	StdVector<ShaderParameterInfo> params;
 	get_shader_parameter_list(shader.get_rid(), params);
 	for (const ShaderParameterInfo &pi : params) {
 		if (pi.name == uniform_name) {
@@ -41,7 +42,7 @@ String get_missing_uniform_names(Span<const StringName> expected_uniforms, const
 	// 	}
 	// }
 
-	std::vector<ShaderParameterInfo> params;
+	StdVector<ShaderParameterInfo> params;
 	get_shader_parameter_list(shader.get_rid(), params);
 
 	for (const StringName &name : expected_uniforms) {

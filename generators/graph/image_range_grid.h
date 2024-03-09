@@ -2,9 +2,9 @@
 #define IMAGE_RANGE_GRID_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/macros.h"
 #include "../../util/math/interval.h"
-#include <vector>
 
 ZN_GODOT_FORWARD_DECLARE(class Image)
 
@@ -26,7 +26,7 @@ private:
 	static const int MAX_LODS = 16;
 
 	struct Lod {
-		std::vector<math::Interval> data;
+		StdVector<math::Interval> data;
 		int size_x = 0;
 		int size_y = 0;
 	};

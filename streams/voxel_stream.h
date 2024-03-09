@@ -2,6 +2,7 @@
 #define VOXEL_STREAM_H
 
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/resource.h"
 #include "../util/math/vector3.h"
 #include "../util/math/vector3i.h"
@@ -9,7 +10,6 @@
 #include "../util/thread/rw_lock.h"
 
 #include <cstdint>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -92,7 +92,7 @@ public:
 			Vector3i position;
 			unsigned int lod;
 		};
-		std::vector<Block> blocks;
+		StdVector<Block> blocks;
 	};
 
 	virtual bool supports_loading_all_blocks() const {

@@ -610,7 +610,7 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 	}
 }
 
-Ref<Image> store_lookup_to_image(const std::vector<DetailTextureData::Tile> &tiles, Vector3i block_size) {
+Ref<Image> store_lookup_to_image(const StdVector<DetailTextureData::Tile> &tiles, Vector3i block_size) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int sqri = get_square_grid_size_from_item_count(Vector3iUtil::get_volume(block_size));
@@ -652,7 +652,7 @@ Ref<Image> store_lookup_to_image(const std::vector<DetailTextureData::Tile> &til
 
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 
-Vector<Ref<Image>> store_atlas_to_image_array(const std::vector<uint8_t> normals, unsigned int tile_resolution,
+Vector<Ref<Image>> store_atlas_to_image_array(const StdVector<uint8_t> &normals, unsigned int tile_resolution,
 		unsigned int tile_count, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 
@@ -682,7 +682,7 @@ Vector<Ref<Image>> store_atlas_to_image_array(const std::vector<uint8_t> normals
 
 #endif
 
-Ref<Image> store_atlas_to_image(const std::vector<uint8_t> &normals, unsigned int tile_resolution,
+Ref<Image> store_atlas_to_image(const StdVector<uint8_t> &normals, unsigned int tile_resolution,
 		unsigned int tile_count, bool octahedral_encoding) {
 	ZN_PROFILE_SCOPE();
 

@@ -230,7 +230,7 @@ void VoxelInstancer::process_task_results() {
 	{
 		MutexLock mlock(_loading_results->mutex);
 		// Copy results to temporary buffer
-		std::vector<VoxelInstanceLoadingTaskOutput> &src = _loading_results->results;
+		StdVector<VoxelInstanceLoadingTaskOutput> &src = _loading_results->results;
 		results.resize(src.size());
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			results[i] = std::move(src[i]);
@@ -675,7 +675,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 
 	if (regenerate_blocks) {
 		// Create blocks
-		std::vector<Vector3i> positions;
+		StdVector<Vector3i> positions;
 
 		if (parent_vlt != nullptr) {
 			parent_vlt->get_meshed_block_positions_at_lod(layer.lod_index, positions);
@@ -1725,7 +1725,7 @@ void VoxelInstancer::on_area_edited(Box3i p_voxel_box) {
 
 		for (auto layer_it = lod.layers.begin(); layer_it != lod.layers.end(); ++layer_it) {
 			const Layer &layer = get_layer(*layer_it);
-			const std::vector<UniquePtr<Block>> &blocks = _blocks;
+			const StdVector<UniquePtr<Block>> &blocks = _blocks;
 			const int block_size_po2 = base_block_size_po2 + layer.lod_index;
 
 			render_blocks_box.for_each_cell([layer, &blocks, &voxel_tool, p_voxel_box, parent_transform, block_size_po2,

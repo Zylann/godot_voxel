@@ -19,7 +19,7 @@ protected:
 	String _zn_get_resource_type() const override;
 	double _zn_get_priority() const override;
 
-	void _zn_get_import_options(std::vector<zylann::godot::ImportOptionWrapper> &out_options, const String &path,
+	void _zn_get_import_options(StdVector<zylann::godot::ImportOptionWrapper> &out_options, const String &path,
 			int preset_index) const override;
 
 	bool _zn_get_option_visibility(const String &path, const StringName &option_name,

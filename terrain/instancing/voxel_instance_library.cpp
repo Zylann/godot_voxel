@@ -162,7 +162,7 @@ void VoxelInstanceLibrary::remove_listener(IListener *listener) {
 	_listeners.erase(it);
 }
 
-void VoxelInstanceLibrary::get_packed_items_at_lod(std::vector<PackedItem> &out_items, unsigned int lod_index) const {
+void VoxelInstanceLibrary::get_packed_items_at_lod(StdVector<PackedItem> &out_items, unsigned int lod_index) const {
 	const PackedItems::Lod &lod = _packed_items.lods[lod_index];
 	MutexLock mlock(_packed_items.mutex);
 	append_array(out_items, lod.items);

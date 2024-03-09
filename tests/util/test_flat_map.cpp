@@ -1,5 +1,6 @@
 #include "test_flat_map.h"
 #include "../../util/containers/flat_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../testing.h"
 
@@ -14,7 +15,7 @@ void test_flat_map() {
 	};
 	typedef FlatMap<int, Value>::Pair Pair;
 
-	std::vector<Pair> sorted_pairs;
+	StdVector<Pair> sorted_pairs;
 	for (int i = 0; i < 100; ++i) {
 		sorted_pairs.push_back(Pair{ i, Value{ 1000 * i } });
 	}
@@ -22,7 +23,7 @@ void test_flat_map() {
 	const int inexistent_key2 = -1;
 
 	struct L {
-		static bool validate_map(const FlatMap<int, Value> &map, const std::vector<Pair> &sorted_pairs) {
+		static bool validate_map(const FlatMap<int, Value> &map, const StdVector<Pair> &sorted_pairs) {
 			ZN_TEST_ASSERT_V(sorted_pairs.size() == map.size(), false);
 			for (size_t i = 0; i < sorted_pairs.size(); ++i) {
 				const Pair expected_pair = sorted_pairs[i];
@@ -36,7 +37,7 @@ void test_flat_map() {
 		}
 	};
 
-	std::vector<Pair> shuffled_pairs = sorted_pairs;
+	StdVector<Pair> shuffled_pairs = sorted_pairs;
 	RandomPCG rng;
 	rng.seed(131183);
 	for (size_t i = 0; i < shuffled_pairs.size(); ++i) {

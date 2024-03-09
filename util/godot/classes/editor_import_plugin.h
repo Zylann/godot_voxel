@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include <vector>
+#include "../../containers/std_vector.h"
 
 namespace zylann::godot {
 
@@ -132,7 +132,7 @@ protected:
 	virtual int _zn_get_import_order() const;
 
 	virtual void _zn_get_import_options(
-			std::vector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const;
+			StdVector<ImportOptionWrapper> &p_out_options, const String &p_path, int p_preset_index) const;
 
 	virtual bool _zn_get_option_visibility(
 			const String &p_path, const StringName &p_option_name, const KeyValueWrapper p_options) const;

@@ -1,5 +1,6 @@
 #include "file_utils.h"
 #include "../engine/voxel_engine.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/directory.h"
 
 namespace zylann::godot {
@@ -88,7 +89,7 @@ void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size) {
 
 	const size_t initial_bytes_to_move = prev_file_len - insert_pos;
 	size_t bytes_to_move = initial_bytes_to_move;
-	std::vector<uint8_t> temp;
+	StdVector<uint8_t> temp;
 	size_t src_pos = prev_file_len;
 	size_t dst_pos = f.get_length();
 

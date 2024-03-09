@@ -200,7 +200,7 @@ bool VoxelAStarGrid3D::is_running_async() const {
 
 TypedArray<Vector3i> VoxelAStarGrid3D::debug_get_visited_positions() const {
 	ZN_ASSERT_RETURN_V(_is_running_async == false, TypedArray<Vector3i>());
-	std::vector<Vector3i> positions;
+	StdVector<Vector3i> positions;
 	_path_finder.debug_get_visited_points(positions);
 	return to_typed_array(to_span(positions));
 }

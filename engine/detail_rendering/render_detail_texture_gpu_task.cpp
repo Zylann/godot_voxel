@@ -553,7 +553,7 @@ void RenderDetailTextureGPUTask::collect(GPUTaskContext &ctx) {
 	PackedByteArray texture_data = collect_texture_and_cleanup(ctx.rendering_device, ctx.storage_buffer_pool);
 
 	{
-		std::vector<DetailTextureData::Tile> tile_data2;
+		StdVector<DetailTextureData::Tile> tile_data2;
 		tile_data2.reserve(tile_data.size());
 		for (const TileData &td : tile_data) {
 			tile_data2.push_back(DetailTextureData::Tile{ td.cell_x, td.cell_y, td.cell_z, uint8_t(td.data & 0x3) });

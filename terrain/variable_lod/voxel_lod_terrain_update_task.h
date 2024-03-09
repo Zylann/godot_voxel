@@ -4,6 +4,7 @@
 #include "../../engine/ids.h"
 #include "../../engine/priority_dependency.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/tasks/threaded_task.h"
 #include "voxel_lod_terrain_update_data.h"
 
@@ -55,7 +56,7 @@ public:
 
 	// To use on loaded blocks
 	static inline void schedule_mesh_update(VoxelLodTerrainUpdateData::MeshBlockState &block, Vector3i bpos,
-			std::vector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update, bool require_visual) {
+			StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &blocks_pending_update, bool require_visual) {
 		if (block.state != VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT) {
 			if (block.visual_active || block.collision_active) {
 				// Schedule an update

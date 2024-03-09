@@ -106,12 +106,12 @@ struct ToConnect {
 };
 
 uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
-		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
+		StdVector<ToConnect> &to_connect, StdVector<uint32_t> &expanded_node_ids,
 		Span<const ExpressionParser::Function> functions);
 
 bool expand_input(ProgramGraph &graph, const ExpressionParser::Node &arg, ProgramGraph::Node &pg_node,
-		uint32_t pg_node_input_index, const NodeTypeDB &db, std::vector<ToConnect> &to_connect,
-		std::vector<uint32_t> &expanded_node_ids, Span<const ExpressionParser::Function> functions) {
+		uint32_t pg_node_input_index, const NodeTypeDB &db, StdVector<ToConnect> &to_connect,
+		StdVector<uint32_t> &expanded_node_ids, Span<const ExpressionParser::Function> functions) {
 	switch (arg.type) {
 		case ExpressionParser::Node::NUMBER: {
 			const ExpressionParser::NumberNode &arg_nn = reinterpret_cast<const ExpressionParser::NumberNode &>(arg);
@@ -148,7 +148,7 @@ ProgramGraph::Node &create_node(
 }
 
 uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node, const NodeTypeDB &db,
-		std::vector<ToConnect> &to_connect, std::vector<uint32_t> &expanded_node_ids,
+		StdVector<ToConnect> &to_connect, StdVector<uint32_t> &expanded_node_ids,
 		Span<const ExpressionParser::Function> functions) {
 	switch (ep_node.type) {
 		case ExpressionParser::Node::NUMBER: {
@@ -266,7 +266,7 @@ uint32_t expand_node(ProgramGraph &graph, const ExpressionParser::Node &ep_node,
 }
 
 CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_node_id,
-		ProgramGraph::PortLocation &expanded_output_port, std::vector<uint32_t> &expanded_nodes,
+		ProgramGraph::PortLocation &expanded_output_port, StdVector<uint32_t> &expanded_nodes,
 		const NodeTypeDB &type_db) {
 	ZN_PROFILE_SCOPE();
 	const ProgramGraph::Node &original_node = graph.get_node(original_node_id);
@@ -299,7 +299,7 @@ CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_
 		return result;
 	}
 
-	std::vector<ToConnect> to_connect;
+	StdVector<ToConnect> to_connect;
 
 	// Create nodes from the expression's AST and connect them together
 	const uint32_t expanded_root_node_id =
@@ -355,14 +355,14 @@ CompilationResult expand_expression_nodes(
 	const unsigned int initial_node_count = graph.get_nodes_count();
 
 	// Gather expression node IDs first, as expansion could invalidate the iterator
-	std::vector<uint32_t> expression_node_ids;
+	StdVector<uint32_t> expression_node_ids;
 	graph.for_each_node([&expression_node_ids](ProgramGraph::Node &node) {
 		if (node.type_id == VoxelGraphFunction::NODE_EXPRESSION) {
 			expression_node_ids.push_back(node.id);
 		}
 	});
 
-	std::vector<uint32_t> expanded_node_ids;
+	StdVector<uint32_t> expanded_node_ids;
 
 	for (const uint32_t node_id : expression_node_ids) {
 		ProgramGraph::PortLocation expanded_output_port;
@@ -395,7 +395,7 @@ struct NodePair {
 };
 
 bool is_node_equivalent(const ProgramGraph &graph, const ProgramGraph::Node &node1, const ProgramGraph::Node &node2,
-		std::vector<NodePair> &equivalences) {
+		StdVector<NodePair> &equivalences) {
 	if (node1.id == node2.id) {
 		// They are the same node (this can happen while processing ancestors).
 		return true;
@@ -482,7 +482,7 @@ void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, Graph
 	for (unsigned int output_index = 0; output_index < node2.outputs.size(); ++output_index) {
 		// Remove output connections, re-create them on the equivalent node.
 		// Copy output connections because they will get modified while iterating.
-		std::vector<ProgramGraph::PortLocation> dsts = node2.outputs[output_index].connections;
+		StdVector<ProgramGraph::PortLocation> dsts = node2.outputs[output_index].connections;
 		for (ProgramGraph::PortLocation dst : dsts) {
 			graph.disconnect(ProgramGraph::PortLocation{ node2_id, output_index }, dst);
 			graph.connect(ProgramGraph::PortLocation{ node1_id, output_index }, dst);
@@ -502,11 +502,11 @@ void merge_node(ProgramGraph &graph, uint32_t node1_id, uint32_t node2_id, Graph
 // can be delegated to an automated process.
 void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
-	std::vector<uint32_t> node_ids;
+	StdVector<uint32_t> node_ids;
 	graph.get_node_ids(node_ids);
 
 	// Declaring here so we dont reallocate memory too much
-	std::vector<NodePair> equivalences;
+	StdVector<NodePair> equivalences;
 
 	// For each unique pair of nodes
 	for (unsigned int i = 0; i < node_ids.size(); ++i) {
@@ -545,7 +545,7 @@ void merge_equivalences(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
 void apply_auto_connects(
 		ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs, const NodeTypeDB &type_db) {
 	// Copy ids first because we might create new nodes
-	std::vector<uint32_t> node_ids;
+	StdVector<uint32_t> node_ids;
 	graph.get_node_ids(node_ids);
 
 	for (const uint32_t node_id : node_ids) {
@@ -640,7 +640,7 @@ void try_simplify_clamp_node(ProgramGraph &graph, const ProgramGraph::Node &node
 		}
 
 		// Making a copy because we first need to disconnect those connections
-		const std::vector<ProgramGraph::PortLocation> clamp_output_connections =
+		const StdVector<ProgramGraph::PortLocation> clamp_output_connections =
 				node.outputs[clamp_output_id].connections;
 		for (const ProgramGraph::PortLocation &dst : clamp_output_connections) {
 			graph.disconnect(ProgramGraph::PortLocation{ node.id, clamp_output_id }, dst);
@@ -663,7 +663,7 @@ void try_simplify_clamp_node(ProgramGraph &graph, const ProgramGraph::Node &node
 }
 
 void replace_simplifiable_nodes(ProgramGraph &graph, const NodeTypeDB &type_db, GraphRemappingInfo *remap_info) {
-	std::vector<uint32_t> node_ids;
+	StdVector<uint32_t> node_ids;
 	// TODO Optimize: only gather node IDs we are interested in?
 	graph.get_node_ids(node_ids);
 
@@ -678,7 +678,7 @@ void replace_simplifiable_nodes(ProgramGraph &graph, const NodeTypeDB &type_db, 
 
 // If the passed node corresponds to a port, adds it to the list of nodes corresponding to the port.
 bool try_add_io_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGraph::Node &node,
-		Span<std::vector<uint32_t>> node_ids_per_port) {
+		Span<StdVector<uint32_t>> node_ids_per_port) {
 	ZN_ASSERT(ports.size() == node_ids_per_port.size());
 
 	for (unsigned int port_index = 0; port_index < ports.size(); ++port_index) {
@@ -694,14 +694,14 @@ bool try_add_io_node(Span<const VoxelGraphFunction::Port> ports, const ProgramGr
 }
 
 void get_input_and_output_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
-		Span<const VoxelGraphFunction::Port> output_defs, std::vector<std::vector<uint32_t>> &input_node_ids,
-		std::vector<std::vector<uint32_t>> &output_node_ids) {
+		Span<const VoxelGraphFunction::Port> output_defs, StdVector<StdVector<uint32_t>> &input_node_ids,
+		StdVector<StdVector<uint32_t>> &output_node_ids) {
 	input_node_ids.resize(input_defs.size());
-	for (std::vector<uint32_t> &node_ids : input_node_ids) {
+	for (StdVector<uint32_t> &node_ids : input_node_ids) {
 		node_ids.clear();
 	}
 	output_node_ids.resize(output_defs.size());
-	for (std::vector<uint32_t> &node_ids : output_node_ids) {
+	for (StdVector<uint32_t> &node_ids : output_node_ids) {
 		node_ids.clear();
 	}
 	graph.for_each_node_const(
@@ -716,9 +716,9 @@ void get_input_and_output_node_ids(const ProgramGraph &graph, Span<const VoxelGr
 }
 
 void get_input_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
-		std::vector<std::vector<uint32_t>> &input_node_ids) {
+		StdVector<StdVector<uint32_t>> &input_node_ids) {
 	input_node_ids.resize(input_defs.size());
-	for (std::vector<uint32_t> &node_ids : input_node_ids) {
+	for (StdVector<uint32_t> &node_ids : input_node_ids) {
 		node_ids.clear();
 	}
 	graph.for_each_node_const([&input_node_ids, &input_defs](const ProgramGraph::Node &node) {
@@ -729,9 +729,9 @@ void get_input_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction
 }
 
 bool find_port_index_from_node(
-		const std::vector<std::vector<uint32_t>> &ports_node_ids, uint32_t node_id, unsigned int &out_port_index) {
+		const StdVector<StdVector<uint32_t>> &ports_node_ids, uint32_t node_id, unsigned int &out_port_index) {
 	for (unsigned int port_index = 0; port_index < ports_node_ids.size(); ++port_index) {
-		const std::vector<uint32_t> &port_node_ids = ports_node_ids[port_index];
+		const StdVector<uint32_t> &port_node_ids = ports_node_ids[port_index];
 		for (const uint32_t id : port_node_ids) {
 			if (id == node_id) {
 				out_port_index = port_index;
@@ -774,7 +774,7 @@ CompilationResult expand_function(
 	}
 
 	std::unordered_map<uint32_t, uint32_t> fn_to_expanded_node_ids;
-	std::vector<uint32_t> nested_func_node_ids;
+	StdVector<uint32_t> nested_func_node_ids;
 
 	// Copy nodes. I/O nodes are replaced with relays temporarily, they will be simplified out in a later pass.
 	fgraph.for_each_node_const(
@@ -819,13 +819,13 @@ CompilationResult expand_function(
 	}
 
 	// Get nodes corresponding to each input and output
-	std::vector<std::vector<uint32_t>> inputs_node_ids;
-	std::vector<std::vector<uint32_t>> outputs_node_ids;
+	StdVector<StdVector<uint32_t>> inputs_node_ids;
+	StdVector<StdVector<uint32_t>> outputs_node_ids;
 	get_input_and_output_node_ids(fgraph, func_inputs, func_outputs, inputs_node_ids, outputs_node_ids);
 
 	// Disconnect outputs of the function node, because we are going to replace them.
 	// (destination ports are not allowed to have two connections at a given time)
-	std::vector<ProgramGraph::Port> fnode_outputs = fnode.outputs;
+	StdVector<ProgramGraph::Port> fnode_outputs = fnode.outputs;
 	for (unsigned int output_index = 0; output_index < fnode_outputs.size(); ++output_index) {
 		const ProgramGraph::Port &port = fnode_outputs[output_index];
 		ProgramGraph::PortLocation src{ fnode.id, output_index };
@@ -835,20 +835,20 @@ CompilationResult expand_function(
 	}
 
 	// Will tell which ports to lookup when inspecting outputs from the user-facing graph
-	std::vector<ProgramGraph::PortLocation> output_locations;
+	StdVector<ProgramGraph::PortLocation> output_locations;
 	if (remap_info != nullptr) {
 		output_locations.resize(fnode_outputs.size(), ProgramGraph::PortLocation{ ProgramGraph::NULL_ID, 0 });
 	}
 
 	// Find mappings between inputs of the function to unpacked nodes
-	std::vector<std::vector<ProgramGraph::PortLocation>> inputs_to_destinations;
+	StdVector<StdVector<ProgramGraph::PortLocation>> inputs_to_destinations;
 	inputs_to_destinations.resize(func_inputs.size());
 
 	for (unsigned int input_index = 0; input_index < fnode.inputs.size(); ++input_index) {
-		std::vector<ProgramGraph::PortLocation> &in_destinations = inputs_to_destinations[input_index];
+		StdVector<ProgramGraph::PortLocation> &in_destinations = inputs_to_destinations[input_index];
 
 		ZN_ASSERT(input_index < inputs_node_ids.size());
-		const std::vector<uint32_t> &inner_input_node_ids = inputs_node_ids[input_index];
+		const StdVector<uint32_t> &inner_input_node_ids = inputs_node_ids[input_index];
 
 		// For each inner node corresponding to this input
 		for (const uint32_t inner_input_node_id : inner_input_node_ids) {
@@ -861,7 +861,7 @@ CompilationResult expand_function(
 
 	// Create connections coming from nodes connected to inputs of the function.
 	for (unsigned int input_index = 0; input_index < inputs_to_destinations.size(); ++input_index) {
-		const std::vector<ProgramGraph::PortLocation> &destinations = inputs_to_destinations[input_index];
+		const StdVector<ProgramGraph::PortLocation> &destinations = inputs_to_destinations[input_index];
 		const ProgramGraph::Port &port = fnode.inputs[input_index];
 		if (port.connections.size() == 0) {
 			// Assign default input values
@@ -892,7 +892,7 @@ CompilationResult expand_function(
 			continue;
 		}
 		ZN_ASSERT(output_index < outputs_node_ids.size());
-		const std::vector<uint32_t> &output_node_ids = outputs_node_ids[output_index];
+		const StdVector<uint32_t> &output_node_ids = outputs_node_ids[output_index];
 		if (output_node_ids.size() == 0) {
 			// This output isn't actually bound to any node.
 			ZN_PRINT_VERBOSE("Function output isn't bound to an output node");
@@ -935,7 +935,7 @@ CompilationResult expand_function(
 	}
 
 	if (remap_info != nullptr) {
-		std::vector<uint32_t> expanded_node_ids;
+		StdVector<uint32_t> expanded_node_ids;
 		for (auto it = fn_to_expanded_node_ids.begin(); it != fn_to_expanded_node_ids.end(); ++it) {
 			const uint32_t ex_node_id = it->second;
 			const ProgramGraph::Node &node = graph.get_node(ex_node_id);
@@ -973,7 +973,7 @@ CompilationResult expand_function(
 }
 
 CompilationResult expand_functions(ProgramGraph &graph, const NodeTypeDB &type_db, GraphRemappingInfo *remap_info) {
-	std::vector<uint32_t> func_node_ids;
+	StdVector<uint32_t> func_node_ids;
 
 	graph.for_each_node_const([&func_node_ids](const ProgramGraph::Node &node) {
 		if (node.type_id == VoxelGraphFunction::NODE_FUNCTION) {
@@ -1018,7 +1018,7 @@ void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *rem
 	ZN_ASSERT(node_input.connections.size() == 1);
 	const ProgramGraph::PortLocation src = node_input.connections[0];
 
-	const std::vector<ProgramGraph::Port> node_outputs = node.outputs;
+	const StdVector<ProgramGraph::Port> node_outputs = node.outputs;
 
 	for (uint32_t output_index = 0; output_index < node_outputs.size(); ++output_index) {
 		const ProgramGraph::Port &port = node_outputs[output_index];
@@ -1048,7 +1048,7 @@ void remove_relay(ProgramGraph &graph, uint32_t node_id, GraphRemappingInfo *rem
 }
 
 void remove_relays(ProgramGraph &graph, GraphRemappingInfo *remap_info) {
-	std::vector<uint32_t> node_ids;
+	StdVector<uint32_t> node_ids;
 	graph.for_each_node([&node_ids](const ProgramGraph::Node &node) {
 		if (node.type_id == VoxelGraphFunction::NODE_RELAY) {
 			node_ids.push_back(node.id);
@@ -1069,12 +1069,12 @@ void combine_inputs(
 
 // Input nodes can appear more than once for convenience, but they should appear only once when we compile.
 CompilationResult combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunction::Port> input_defs,
-		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info, std::vector<uint32_t> *out_input_node_ids) {
-	std::vector<std::vector<uint32_t>> node_ids_per_port;
+		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info, StdVector<uint32_t> *out_input_node_ids) {
+	StdVector<StdVector<uint32_t>> node_ids_per_port;
 	get_input_node_ids(graph, input_defs, node_ids_per_port);
 
 	for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
-		const std::vector<uint32_t> &node_ids = node_ids_per_port[input_index];
+		const StdVector<uint32_t> &node_ids = node_ids_per_port[input_index];
 		if (node_ids.size() == 0) {
 			const VoxelGraphFunction::Port &input_def = input_defs[input_index];
 			const NodeType &type = type_db.get_type(input_def.type);
@@ -1095,7 +1095,7 @@ CompilationResult combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunct
 	if (out_input_node_ids != nullptr) {
 		out_input_node_ids->resize(input_defs.size());
 		for (unsigned int input_index = 0; input_index < input_defs.size(); ++input_index) {
-			const std::vector<uint32_t> &node_ids = node_ids_per_port[input_index];
+			const StdVector<uint32_t> &node_ids = node_ids_per_port[input_index];
 			ZN_ASSERT(node_ids.size() > 0);
 			(*out_input_node_ids)[input_index] = node_ids[0];
 		}
@@ -1107,8 +1107,8 @@ CompilationResult combine_inputs(ProgramGraph &graph, Span<const VoxelGraphFunct
 } // namespace
 
 CompilationResult expand_graph(const ProgramGraph &graph, ProgramGraph &expanded_graph,
-		Span<const VoxelGraphFunction::Port> input_defs, std::vector<uint32_t> *input_node_ids,
-		const NodeTypeDB &type_db, GraphRemappingInfo *remap_info) {
+		Span<const VoxelGraphFunction::Port> input_defs, StdVector<uint32_t> *input_node_ids, const NodeTypeDB &type_db,
+		GraphRemappingInfo *remap_info) {
 	ZN_PROFILE_SCOPE();
 	// First make a copy of the graph which we'll modify
 	expanded_graph.copy_from(graph, false);
@@ -1145,7 +1145,7 @@ CompilationResult Runtime::compile(const VoxelGraphFunction &function, bool debu
 
 	GraphRemappingInfo remap_info;
 	ProgramGraph expanded_graph;
-	std::vector<uint32_t> input_node_ids;
+	StdVector<uint32_t> input_node_ids;
 	Span<const VoxelGraphFunction::Port> input_defs = function.get_input_definitions();
 	CompilationResult expand_result =
 			expand_graph(function.get_graph(), expanded_graph, input_defs, &input_node_ids, type_db, &remap_info);
@@ -1188,12 +1188,12 @@ namespace {
 // so they can be moved in the outer loop when blocks are generated, running less times.
 // Moves them all at the beginning.
 // `order` is a previously computed order of execution of each node.
-uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, const ProgramGraph &graph) {
+uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const ProgramGraph &graph) {
 	ZN_PROFILE_SCOPE();
-	std::vector<uint32_t> immediate_deps;
+	StdVector<uint32_t> immediate_deps;
 	std::unordered_set<uint32_t> outer_group_node_ids;
-	std::vector<uint32_t> order_outer_group;
-	std::vector<uint32_t> order_inner_group;
+	StdVector<uint32_t> order_outer_group;
+	StdVector<uint32_t> order_inner_group;
 
 	for (const uint32_t node_id : order) {
 		const ProgramGraph::Node &node = graph.get_node(node_id);
@@ -1239,8 +1239,8 @@ uint32_t move_outer_group_operations_up(std::vector<uint32_t> &order, const Prog
 }
 
 void compute_node_execution_order(
-		std::vector<uint32_t> &order, const ProgramGraph &graph, bool debug, const NodeTypeDB &type_db) {
-	std::vector<uint32_t> terminal_nodes;
+		StdVector<uint32_t> &order, const ProgramGraph &graph, bool debug, const NodeTypeDB &type_db) {
+	StdVector<uint32_t> terminal_nodes;
 
 	// Not using the generic `get_terminal_nodes` function because our terminal nodes do have outputs
 	graph.for_each_node_const([&terminal_nodes, &type_db](const ProgramGraph::Node &node) {
@@ -1271,13 +1271,13 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 
 	program.inputs.resize(input_count);
 
-	std::vector<uint32_t> order;
+	StdVector<uint32_t> order;
 	compute_node_execution_order(order, graph, debug, type_db);
 
 	const uint32_t inner_group_start_index = move_outer_group_operations_up(order, graph);
 
 	struct MemoryHelper {
-		std::vector<BufferSpec> &buffer_specs;
+		StdVector<BufferSpec> &buffer_specs;
 		unsigned int next_address = 0;
 
 		uint16_t add_binding() {
@@ -1322,9 +1322,9 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 
 	MemoryHelper mem{ program.buffer_specs };
 
-	std::vector<uint16_t> &operations = program.operations;
+	StdVector<uint16_t> &operations = program.operations;
 	std::unordered_map<uint32_t, uint32_t> node_id_to_dependency_graph;
-	std::vector<uint16_t> input_buffer_indices;
+	StdVector<uint16_t> input_buffer_indices;
 
 	// Allocate input slots
 	// Note, even if an input isn't connected to anything, it still gets its binding space (but it won't be in `order`).
@@ -1500,7 +1500,7 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 		operations.push_back(0);
 
 		// Get params, copy resources when used, and hold a reference to them
-		std::vector<Variant> params_copy;
+		StdVector<Variant> params_copy;
 		params_copy.reserve(node.params.size());
 		for (size_t i = 0; i < node.params.size(); ++i) {
 			Variant v = node.params[i];
@@ -1628,12 +1628,12 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 	// Assign buffer datas
 	{
 		struct DataHelper {
-			std::vector<uint16_t> free_indices;
+			StdVector<uint16_t> free_indices;
 			struct Data {
 				uint16_t usages;
 				bool pinned;
 			};
-			std::vector<Data> datas;
+			StdVector<Data> datas;
 
 			uint16_t allocate(uint16_t users, bool pinned) {
 				ZN_ASSERT(users > 0);

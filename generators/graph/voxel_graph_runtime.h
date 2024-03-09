@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_RUNTIME_H
 
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/math/interval.h"
 #include "../../util/math/vector3f.h"
@@ -394,9 +395,9 @@ private:
 		};
 
 		// Indexes to the `nodes` array
-		std::vector<uint16_t> dependencies;
+		StdVector<uint16_t> dependencies;
 		// Nodes in the same order they would be in the default execution map (but indexes may not match)
-		std::vector<Node> nodes;
+		StdVector<Node> nodes;
 
 		inline void clear() {
 			dependencies.clear();
@@ -421,7 +422,7 @@ private:
 		//
 		// They should be laid out in the same order they will be run in, although it's not absolutely required.
 		// It's better to have it ordered because memory access will be more predictable.
-		std::vector<uint16_t> operations;
+		StdVector<uint16_t> operations;
 
 		// Describes dependencies between operations. It is generated at compile time.
 		// It is used to perform dynamic optimization in case some operations can be predicted as constant.
@@ -434,21 +435,21 @@ private:
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they can be freed when the program is cleared.
-		std::vector<HeapResource> heap_resources;
+		StdVector<HeapResource> heap_resources;
 
 		// Heap-allocated parameters data, when too large to fit in `operations`.
 		// We keep a reference to them so they won't be freed until the program is cleared.
-		std::vector<Ref<RefCounted>> ref_resources;
+		StdVector<Ref<RefCounted>> ref_resources;
 
 		// Describes the list of buffers to prepare in `State` before the program can be run
-		std::vector<BufferSpec> buffer_specs;
+		StdVector<BufferSpec> buffer_specs;
 
 		// Address in `operations` from which operations will start to not only depend on inputs tagged as "outer
 		// group". It is used to optimize away calculations that would otherwise be the same in planar terrain use
 		// cases.
 		uint32_t inner_group_start_op_index;
 
-		std::vector<InputInfo> inputs;
+		StdVector<InputInfo> inputs;
 
 		FixedArray<OutputInfo, MAX_OUTPUTS> outputs;
 		unsigned int outputs_count = 0;

@@ -138,9 +138,9 @@ bool RenderDetailTextureTask::is_cancelled() {
 
 namespace {
 
-void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count, std::vector<int32_t> &cell_triangles,
-		std::vector<RenderDetailTextureGPUTask::TileData> &tile_data, const std::vector<int> &mesh_indices,
-		const std::vector<Vector3f> &mesh_normals) {
+void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count, StdVector<int32_t> &cell_triangles,
+		StdVector<RenderDetailTextureGPUTask::TileData> &tile_data, const StdVector<int> &mesh_indices,
+		const StdVector<Vector3f> &mesh_normals) {
 	tile_data.reserve(tile_count);
 
 	CurrentCellInfo cell_info;
@@ -212,8 +212,8 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
 	const unsigned int pixels_across = tiles_across * tile_resolution;
 
-	std::vector<RenderDetailTextureGPUTask::TileData> tile_data;
-	std::vector<int32_t> cell_triangles;
+	StdVector<RenderDetailTextureGPUTask::TileData> tile_data;
+	StdVector<int32_t> cell_triangles;
 	cell_iterator->rewind();
 	build_gpu_tiles_data(*cell_iterator, tile_count, cell_triangles, tile_data, mesh_indices, mesh_normals);
 	ZN_ASSERT(cell_triangles.size() > 0);
@@ -235,7 +235,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	// TODO Mesh data need std::move or std::shared_ptr, we only read it
 	gpu_task->mesh_indices = mesh_indices;
 
-	std::vector<Vector4f> &dst_vertices = gpu_task->mesh_vertices;
+	StdVector<Vector4f> &dst_vertices = gpu_task->mesh_vertices;
 	dst_vertices.reserve(mesh_vertices.size());
 	for (const Vector3f v : mesh_vertices) {
 		dst_vertices.push_back(Vector4f(v.x, v.y, v.z, 0.f));
@@ -243,7 +243,7 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 
 	if (voxel_data != nullptr) {
 		const AABB aabb_voxels(to_vec3(origin_in_voxels), to_vec3(mesh_block_size << lod_index));
-		std::vector<VoxelModifier::ShaderData> modifiers_shader_data;
+		StdVector<VoxelModifier::ShaderData> modifiers_shader_data;
 		const VoxelModifierStack &modifiers = voxel_data->get_modifiers();
 		modifiers.apply_for_gpu_rendering(modifiers_shader_data, aabb_voxels, VoxelModifier::ShaderData::TYPE_DETAIL);
 		for (const VoxelModifier::ShaderData &d : modifiers_shader_data) {

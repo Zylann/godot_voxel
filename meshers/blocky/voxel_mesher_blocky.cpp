@@ -219,11 +219,11 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const std::vector<Vector3f> &side_positions = surface.side_positions[side];
+						const StdVector<Vector3f> &side_positions = surface.side_positions[side];
 						const unsigned int vertex_count = side_positions.size();
 
-						const std::vector<Vector2f> &side_uvs = surface.side_uvs[side];
-						const std::vector<float> &side_tangents = surface.side_tangents[side];
+						const StdVector<Vector2f> &side_uvs = surface.side_uvs[side];
+						const StdVector<float> &side_tangents = surface.side_tangents[side];
 
 						// Append vertices of the faces in one go, don't use push_back
 
@@ -301,7 +301,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 							}
 						}
 
-						const std::vector<int> &side_indices = surface.side_indices[side];
+						const StdVector<int> &side_indices = surface.side_indices[side];
 						const unsigned int index_count = side_indices.size();
 
 						{
@@ -314,8 +314,8 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 						}
 
 						if (collision_surface != nullptr && surface.collision_enabled) {
-							std::vector<Vector3f> &dst_positions = collision_surface->positions;
-							std::vector<int> &dst_indices = collision_surface->indices;
+							StdVector<Vector3f> &dst_positions = collision_surface->positions;
+							StdVector<int> &dst_indices = collision_surface->indices;
 
 							{
 								const unsigned int append_index = dst_positions.size();
@@ -355,13 +355,13 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 					ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 					int &index_offset = index_offsets[surface.material_id];
 
-					const std::vector<Vector3f> &positions = surface.positions;
+					const StdVector<Vector3f> &positions = surface.positions;
 					const unsigned int vertex_count = positions.size();
 					const Color modulate_color = voxel.color;
 
-					const std::vector<Vector3f> &normals = surface.normals;
-					const std::vector<Vector2f> &uvs = surface.uvs;
-					const std::vector<float> &tangents = surface.tangents;
+					const StdVector<Vector3f> &normals = surface.normals;
+					const StdVector<Vector2f> &uvs = surface.uvs;
+					const StdVector<float> &tangents = surface.tangents;
 
 					const Vector3f pos(x - 1, y - 1, z - 1);
 
@@ -380,7 +380,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 						arrays.colors.push_back(modulate_color);
 					}
 
-					const std::vector<int> &indices = surface.indices;
+					const StdVector<int> &indices = surface.indices;
 					const unsigned int index_count = indices.size();
 
 					for (unsigned int i = 0; i < index_count; ++i) {
@@ -388,8 +388,8 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 					}
 
 					if (collision_surface != nullptr && surface.collision_enabled) {
-						std::vector<Vector3f> &dst_positions = collision_surface->positions;
-						std::vector<int> &dst_indices = collision_surface->indices;
+						StdVector<Vector3f> &dst_positions = collision_surface->positions;
+						StdVector<int> &dst_indices = collision_surface->indices;
 
 						for (unsigned int i = 0; i < vertex_count; ++i) {
 							dst_positions.push_back(positions[i] + pos);

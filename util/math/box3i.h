@@ -2,9 +2,9 @@
 #define ZYLANN_BOX3I_H
 
 #include "../containers/small_vector.h"
+#include "../containers/std_vector.h"
 #include "vector3i.h"
 #include <iosfwd>
-#include <vector>
 
 namespace zylann {
 
@@ -215,7 +215,7 @@ public:
 
 	// Subtracts another box from the current box.
 	// If any, boxes composing the remaining volume are added to the given vector.
-	inline void difference_to_vec(const Box3i &b, std::vector<Box3i> &output) const {
+	inline void difference_to_vec(const Box3i &b, StdVector<Box3i> &output) const {
 		difference(b, [&output](const Box3i &sub_box) { output.push_back(sub_box); });
 	}
 

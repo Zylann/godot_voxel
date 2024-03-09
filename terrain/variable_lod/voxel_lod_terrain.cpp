@@ -2172,7 +2172,7 @@ void VoxelLodTerrain::process_deferred_collision_updates(uint32_t timeout_msec) 
 
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
-		std::vector<Vector3i> &deferred_collision_updates = _deferred_collision_updates_per_lod[lod_index];
+		StdVector<Vector3i> &deferred_collision_updates = _deferred_collision_updates_per_lod[lod_index];
 
 		for (unsigned int i = 0; i < deferred_collision_updates.size(); ++i) {
 			const Vector3i block_pos = deferred_collision_updates[i];
@@ -2377,7 +2377,7 @@ Array VoxelLodTerrain::get_mesh_block_surface(Vector3i block_pos, int lod_index)
 	return Array();
 }
 
-void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, std::vector<Vector3i> &out_positions) const {
+void VoxelLodTerrain::get_meshed_block_positions_at_lod(int lod_index, StdVector<Vector3i> &out_positions) const {
 	const int lod_count = get_lod_count();
 	ERR_FAIL_COND(lod_index < 0 || lod_index >= lod_count);
 

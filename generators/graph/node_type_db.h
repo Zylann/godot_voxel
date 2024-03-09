@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_NODE_TYPE_DB_H
 #define VOXEL_GRAPH_NODE_TYPE_DB_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/string.h" // For String hash
 #include "voxel_graph_compiler.h"
@@ -64,7 +65,7 @@ struct NodeType {
 		bool hidden = false;
 		Variant min_value;
 		Variant max_value;
-		std::vector<std::string> enum_items;
+		StdVector<std::string> enum_items;
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}
@@ -79,9 +80,9 @@ struct NodeType {
 	// Pseudo nodes are replaced during compilation with one or multiple real nodes, they have no logic on their own
 	bool is_pseudo_node = false;
 	Category category;
-	std::vector<Port> inputs;
-	std::vector<Port> outputs;
-	std::vector<Param> params;
+	StdVector<Port> inputs;
+	StdVector<Port> outputs;
+	StdVector<Param> params;
 	std::unordered_map<String, uint32_t> param_name_to_index;
 	std::unordered_map<String, uint32_t> input_name_to_index;
 	CompileFunc compile_func = nullptr;
@@ -132,7 +133,7 @@ public:
 private:
 	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> _types;
 	std::unordered_map<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
-	std::vector<ExpressionParser::Function> _expression_functions;
+	StdVector<ExpressionParser::Function> _expression_functions;
 };
 
 VoxelGraphFunction::Port make_port_from_io_node(const ProgramGraph::Node &node, const NodeType &type);

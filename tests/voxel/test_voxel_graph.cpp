@@ -3,6 +3,7 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -343,7 +344,7 @@ void test_voxel_graph_generator_expressions_2() {
 
 			generator_debug->generate_single(Vector3i(1, 2, 3), VoxelBuffer::CHANNEL_SDF);
 
-			std::vector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
+			StdVector<VoxelGeneratorGraph::NodeProfilingInfo> profiling_info;
 			generator_debug->debug_measure_microseconds_per_voxel(false, &profiling_info);
 			ZN_TEST_ASSERT(profiling_info.size() >= 4);
 			for (const VoxelGeneratorGraph::NodeProfilingInfo &info : profiling_info) {
@@ -1083,7 +1084,7 @@ void test_voxel_graph_issue461() {
 }
 
 template <typename T>
-void get_node_types(const NodeTypeDB &type_db, std::vector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
+void get_node_types(const NodeTypeDB &type_db, StdVector<VoxelGraphFunction::NodeTypeID> &types, T predicate) {
 	for (unsigned int i = 0; i < VoxelGraphFunction::NODE_TYPE_COUNT; ++i) {
 		const NodeType &type = type_db.get_type(i);
 		if (predicate(type)) {
@@ -1113,13 +1114,13 @@ void test_voxel_graph_fuzzing() {
 
 			const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
 
-			std::vector<VoxelGraphFunction::NodeTypeID> input_types;
+			StdVector<VoxelGraphFunction::NodeTypeID> input_types;
 			get_node_types(type_db, input_types,
 					[](const NodeType &t) { //
 						return t.category == CATEGORY_INPUT;
 					});
 
-			std::vector<VoxelGraphFunction::NodeTypeID> output_types;
+			StdVector<VoxelGraphFunction::NodeTypeID> output_types;
 			get_node_types(type_db, output_types,
 					[](const NodeType &t) { //
 						return t.category == CATEGORY_OUTPUT;
@@ -1142,7 +1143,7 @@ void test_voxel_graph_fuzzing() {
 				g.set_node_name(n, make_random_name(rng));
 			}
 
-			std::vector<VoxelGraphFunction::NodeTypeID> node_types;
+			StdVector<VoxelGraphFunction::NodeTypeID> node_types;
 			get_node_types(type_db, node_types,
 					[](const NodeType &t) { //
 						return t.category != CATEGORY_OUTPUT && t.category != CATEGORY_INPUT;
@@ -1397,7 +1398,7 @@ void test_voxel_graph_unused_single_texture_output() {
 	CompilationResult result = generator->compile(false);
 	ZN_TEST_ASSERT(result.success);
 
-	std::vector<Vector3i> block_positions;
+	StdVector<Vector3i> block_positions;
 	{
 		Vector3i bpos;
 		for (bpos.z = -4; bpos.z < 4; ++bpos.z) {
@@ -1711,7 +1712,7 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 			bool expect_spot;
 		};
 
-		std::vector<BlockTest> block_tests;
+		StdVector<BlockTest> block_tests;
 
 		generator->set_use_optimized_execution_map(false);
 
@@ -1819,10 +1820,10 @@ void test_voxel_graph_function_execute() {
 	const Vector3i block_size(16, 18, 20);
 	const int volume = Vector3iUtil::get_volume(block_size);
 
-	std::vector<float> x_buffer;
-	std::vector<float> y_buffer;
-	std::vector<float> z_buffer;
-	std::vector<float> sd_buffer;
+	StdVector<float> x_buffer;
+	StdVector<float> y_buffer;
+	StdVector<float> z_buffer;
+	StdVector<float> sd_buffer;
 
 	x_buffer.resize(volume);
 	y_buffer.resize(volume);

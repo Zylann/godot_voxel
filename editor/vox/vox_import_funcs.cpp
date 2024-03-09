@@ -5,8 +5,8 @@ namespace zylann {
 
 namespace voxel::magica {
 
-Ref<Mesh> build_mesh(const VoxelBuffer &voxels, VoxelMesher &mesher,
-		std::vector<unsigned int> &surface_index_to_material, Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
+Ref<Mesh> build_mesh(const VoxelBuffer &voxels, VoxelMesher &mesher, StdVector<unsigned int> &surface_index_to_material,
+		Ref<Image> &out_atlas, float p_scale, Vector3 p_offset) {
 	//
 	VoxelMesher::Output output;
 	VoxelMesher::Input input = { voxels, nullptr, nullptr, Vector3i(), 0, false };

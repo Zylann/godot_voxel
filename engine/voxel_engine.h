@@ -4,6 +4,8 @@
 #include "../meshers/voxel_mesher.h"
 #include "../streams/instance_data.h"
 #include "../util/containers/slot_map.h"
+#include "../util/containers/std_vector.h"
+#include "../util/godot/classes/rendering_device.h"
 #include "../util/io/file_locker.h"
 #include "../util/memory.h"
 #include "../util/tasks/progressive_task_runner.h"
@@ -15,8 +17,6 @@
 #include "gpu/gpu_task_runner.h"
 #include "ids.h"
 #include "priority_dependency.h"
-
-#include "../util/godot/classes/rendering_device.h"
 
 ZN_GODOT_FORWARD_DECLARE(class RenderingDevice);
 #ifdef ZN_GODOT_EXTENSION
@@ -44,7 +44,7 @@ public:
 		// Remaps Mesh surface indices to Mesher material indices. Only used if `has_mesh_resource` is true.
 		// TODO Optimize: candidate for small vector optimization. A big majority of meshes will have a handful of
 		// surfaces, which would fit here without allocating.
-		std::vector<uint16_t> mesh_material_indices;
+		StdVector<uint16_t> mesh_material_indices;
 		// In mesh block coordinates
 		Vector3i position;
 		// TODO Rename lod_index

@@ -50,8 +50,8 @@ void VoxelBlockyTypeLibrary::bake() {
 	_indexed_materials.clear();
 	_baked_data.models.clear();
 
-	std::vector<VoxelBlockyModel::BakedData> baked_models;
-	std::vector<VoxelBlockyType::VariantKey> keys;
+	StdVector<VoxelBlockyModel::BakedData> baked_models;
+	StdVector<VoxelBlockyType::VariantKey> keys;
 	VoxelBlockyModel::MaterialIndexer material_indexer{ _indexed_materials };
 
 	_baked_data.models.resize(_id_map.size());
@@ -106,8 +106,8 @@ void VoxelBlockyTypeLibrary::update_id_map() {
 	update_id_map(_id_map, nullptr);
 }
 
-void VoxelBlockyTypeLibrary::update_id_map(std::vector<VoxelID> &id_map, std::vector<uint16_t> *used_ids) const {
-	std::vector<VoxelBlockyType::VariantKey> keys;
+void VoxelBlockyTypeLibrary::update_id_map(StdVector<VoxelID> &id_map, StdVector<uint16_t> *used_ids) const {
+	StdVector<VoxelBlockyType::VariantKey> keys;
 
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
@@ -147,7 +147,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 	ZN_PROFILE_SCOPE();
 
 	// Check null indices
-	std::vector<unsigned int> null_indices;
+	StdVector<unsigned int> null_indices;
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		if (_types[i].is_null()) {
 			null_indices.push_back(i);
@@ -165,7 +165,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		unsigned int index1;
 		unsigned int index2;
 	};
-	std::vector<DuplicateName> duplicate_names;
+	StdVector<DuplicateName> duplicate_names;
 	for (unsigned int i = 0; i < _types.size(); ++i) {
 		const Ref<VoxelBlockyType> &type1 = _types[i];
 		if (type1.is_null()) {
@@ -630,7 +630,7 @@ bool VoxelBlockyTypeLibrary::load_id_map_from_string_array(PackedStringArray map
 			"The current ID map isn't empty. Make sure you're not accidentally overwriting data, or clear the library "
 			"first.");
 
-	std::vector<VoxelID> id_map;
+	StdVector<VoxelID> id_map;
 	id_map.resize(map_array.size());
 
 	for (int model_index = 0; model_index < map_array.size(); ++model_index) {
@@ -700,7 +700,7 @@ String VoxelBlockyTypeLibrary::to_string(const VoxelID &id) {
 	return s;
 }
 
-PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array(const std::vector<VoxelID> &id_map) {
+PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array(const StdVector<VoxelID> &id_map) {
 	ZN_PROFILE_SCOPE();
 
 	PackedStringArray array;
@@ -721,8 +721,8 @@ PackedStringArray VoxelBlockyTypeLibrary::serialize_id_map_to_string_array() con
 	return serialize_id_map_to_string_array(_id_map);
 }
 
-void VoxelBlockyTypeLibrary::get_id_map_preview(PackedStringArray &out_ids, std::vector<uint16_t> &used_ids) const {
-	std::vector<VoxelID> id_map = _id_map;
+void VoxelBlockyTypeLibrary::get_id_map_preview(PackedStringArray &out_ids, StdVector<uint16_t> &used_ids) const {
+	StdVector<VoxelID> id_map = _id_map;
 	update_id_map(id_map, &used_ids);
 	out_ids = serialize_id_map_to_string_array(id_map);
 }

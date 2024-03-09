@@ -91,9 +91,9 @@ void test_normalmap_render_gpu() {
 
 	RenderDetailTextureTask nm_task;
 	nm_task.cell_iterator = std::move(cell_iterator);
-	nm_task.mesh_vertices = mesh_arrays.vertices;
-	nm_task.mesh_normals = mesh_arrays.normals;
-	nm_task.mesh_indices = mesh_arrays.indices;
+	append_array(nm_task.mesh_vertices, mesh_arrays.vertices);
+	append_array(nm_task.mesh_normals, mesh_arrays.normals);
+	append_array(nm_task.mesh_indices, mesh_arrays.indices);
 	nm_task.generator = generator;
 	nm_task.voxel_data = nullptr;
 	nm_task.mesh_block_size = Vector3iUtil::create(block_size);

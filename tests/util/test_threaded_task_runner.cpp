@@ -1,4 +1,5 @@
 #include "test_threaded_task_runner.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/io/log.h"
@@ -9,7 +10,11 @@
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../testing.h"
 
+//#define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
+#ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #include <fstream>
+#endif
+
 #include <unordered_map>
 
 namespace zylann::tests {
@@ -278,8 +283,6 @@ void test_threaded_task_postponing() {
 	// There isn't really a test check in this function, for now we run it to detect if it crashes and that all tasks
 	// eventually run once.
 
-	//#define VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
-
 	struct Block {
 		std::atomic_bool is_locked;
 	};
@@ -298,7 +301,7 @@ void test_threaded_task_postponing() {
 
 	// To log what actually happened and visualize it
 	struct EventList {
-		std::vector<Event> events;
+		StdVector<Event> events;
 		Mutex mutex;
 
 		inline void push(Event event) {
@@ -318,7 +321,7 @@ void test_threaded_task_postponing() {
 		Task1(int p_sleep_amount_usec, Map &p_map, Vector3i p_bpos, EventList &p_events) :
 				sleep_amount_usec(p_sleep_amount_usec), map(p_map), bpos0(p_bpos), events(p_events) {}
 
-		bool try_lock_area(std::vector<Block *> &locked_blocks) {
+		bool try_lock_area(StdVector<Block *> &locked_blocks) {
 			Vector3i delta;
 			for (delta.z = -1; delta.z < 2; ++delta.z) {
 				for (delta.x = -1; delta.x < 2; ++delta.x) {
@@ -350,7 +353,7 @@ void test_threaded_task_postponing() {
 		void run(ThreadedTaskContext &ctx) override {
 			ZN_PROFILE_SCOPE();
 
-			static thread_local std::vector<Block *> locked_blocks;
+			static thread_local StdVector<Block *> locked_blocks;
 
 			if (!try_lock_area(locked_blocks)) {
 				ctx.status = ThreadedTaskContext::STATUS_POSTPONED;

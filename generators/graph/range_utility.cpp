@@ -9,7 +9,7 @@ using namespace math;
 
 // Curve ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSection> &sections) {
+void get_curve_monotonic_sections(Curve &curve, StdVector<CurveMonotonicSection> &sections) {
 	const int res = curve.get_bake_resolution();
 	float prev_y = curve.sample_baked(0.f);
 
@@ -61,7 +61,7 @@ void get_curve_monotonic_sections(Curve &curve, std::vector<CurveMonotonicSectio
 	sections.push_back(section);
 }
 
-Interval get_curve_range(Curve &curve, const std::vector<CurveMonotonicSection> &sections, Interval x) {
+Interval get_curve_range(Curve &curve, const StdVector<CurveMonotonicSection> &sections, Interval x) {
 	// This implementation is linear. It assumes curves usually don't have many points.
 	// If a curve has too many points, we may consider dynamically choosing a different algorithm.
 	Interval y;

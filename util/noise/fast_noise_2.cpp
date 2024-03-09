@@ -1,4 +1,5 @@
 #include "fast_noise_2.h"
+#include "../containers/std_vector.h"
 #include "../math/funcs.h"
 #include "../math/vector3.h"
 #include <core/io/image.h>
@@ -405,7 +406,7 @@ void FastNoise2::generate_image(Ref<Image> image, bool tileable) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(image.is_null());
 
-	std::vector<float> buffer;
+	StdVector<float> buffer;
 	buffer.resize(image->get_width() * image->get_height());
 
 	if (tileable) {

@@ -367,7 +367,7 @@ void VoxelGeneratorMultipassCB::clear_cache() {
 	*/
 }
 
-bool VoxelGeneratorMultipassCB::debug_try_get_column_states(std::vector<DebugColumnState> &out_states) {
+bool VoxelGeneratorMultipassCB::debug_try_get_column_states(StdVector<DebugColumnState> &out_states) {
 	ZN_PROFILE_SCOPE();
 
 	out_states.clear();
@@ -436,7 +436,7 @@ TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_co
 	// 		}
 	// 	}
 
-	// 	static void debug_print_blocks_with_stone(const std::vector<Column> &columns) {
+	// 	static void debug_print_blocks_with_stone(const StdVector<Column> &columns) {
 	// 		for (unsigned int column_index = 0; column_index < columns.size(); ++column_index) {
 	// 			const Column &column = columns[column_index];
 	// 			debug_print_blocks_with_stone(column, column_index);
@@ -458,7 +458,7 @@ TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_co
 	const int subpass_count = get_subpass_count_from_pass_count(internal->passes.size());
 	Box2i local_box(Vector2i(), grid_size);
 
-	std::vector<Column> columns;
+	StdVector<Column> columns;
 	columns.resize(Vector2iUtil::get_area(grid_size));
 
 	for (Column &column : columns) {
@@ -479,7 +479,7 @@ TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_co
 			if (pass_index == 0 || pass_index != prev_pass_index) {
 				const Box2i nbox = Box2i(local_bpos, Vector2i(1, 1)).padded(extent);
 
-				std::vector<Block *> ngrid;
+				StdVector<Block *> ngrid;
 				ngrid.reserve(Vector2iUtil::get_area(nbox.size));
 
 				// Compose grid of blocks indexed as ZXY (index+1 goes up along Y).

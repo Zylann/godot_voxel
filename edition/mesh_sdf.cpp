@@ -244,7 +244,7 @@ enum Flag { //
 };
 
 void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Span<uint8_t> flag_grid, Vector3i res, Vector3f min_pos,
-		Vector3f max_pos, std::vector<Vector3i> &seeds) {
+		Vector3f max_pos, StdVector<Vector3i> &seeds) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(sdf_grid.size() == flag_grid.size());
 
@@ -310,12 +310,12 @@ void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Span<uint8_t> flag_grid, V
 }
 
 void fix_sdf_sign_from_boundary(Span<float> sdf_grid, Vector3i res, Vector3f min_pos, Vector3f max_pos) {
-	std::vector<uint8_t> flag_grid;
+	StdVector<uint8_t> flag_grid;
 	flag_grid.resize(sdf_grid.size(), FLAG_NOT_VISITED);
 	// We'll start from the lower corner
 	flag_grid[0] = FLAG_VISITED;
 
-	std::vector<Vector3i> seeds;
+	StdVector<Vector3i> seeds;
 	seeds.push_back(Vector3i());
 
 	fix_sdf_sign_from_boundary(sdf_grid, to_span(flag_grid), res, min_pos, max_pos, seeds);
@@ -344,7 +344,7 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 	}
 
 	// Gather chunks containing triangles
-	std::vector<const Chunk *> nonempty_chunks;
+	StdVector<const Chunk *> nonempty_chunks;
 	for (auto it = chunk_grid.chunks.begin(); it != chunk_grid.chunks.end(); ++it) {
 		const Chunk &chunk = *it;
 		if (chunk.triangles.size() > 0) {
@@ -475,7 +475,7 @@ void partition_triangles(
 #ifdef DEBUG_ENABLED
 	{
 		// Make sure all triangles are picked up
-		std::vector<const Triangle *> checked_triangles;
+		StdVector<const Triangle *> checked_triangles;
 		for (const Chunk &chunk : chunk_grid.chunks) {
 			for (const Triangle *t : chunk.triangles) {
 				bool found = false;
@@ -754,7 +754,7 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 	const float node_size = node_size_cells * math::length(cell_size);
 	const float node_subdiv_threshold = 0.6f * node_size;
 
-	std::vector<float> node_grid;
+	StdVector<float> node_grid;
 	node_grid.resize(Vector3iUtil::get_volume(node_grid_size));
 
 	// Fill SDF grid with far distances as "infinity", we'll use that to check if we computed it already
@@ -1015,7 +1015,7 @@ void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, Span<cons
 	generate_mesh_sdf_naive(sdf_grid, res, Box3i(Vector3i(), res), triangles, min_pos, max_pos);
 }
 
-bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, std::vector<Triangle> &triangles,
+bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, StdVector<Triangle> &triangles,
 		Vector3f &out_min_pos, Vector3f &out_max_pos) {
 	ZN_PROFILE_SCOPE();
 
@@ -1237,7 +1237,7 @@ struct Seed {
 #ifdef ZN_MESH_SDF_DEBUG_SLICES
 
 void debug_print_sdf_image_slice(
-		Span<const float> sdf_grid, Vector3i res, const int y, int iteration, std::vector<Seed> *seeds) {
+		Span<const float> sdf_grid, Vector3i res, const int y, int iteration, StdVector<Seed> *seeds) {
 	Ref<Image> im;
 	im.instantiate();
 	im->create(res.x, res.z, false, Image::FORMAT_RGB8);
@@ -1286,7 +1286,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 		const ChunkGrid &chunk_grid, const Vector3f min_pos, const Vector3f max_pos, bool boundary_sign_fix) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> flag_grid;
+	StdVector<uint8_t> flag_grid;
 	flag_grid.resize(Vector3iUtil::get_volume(res));
 	memset(flag_grid.data(), FLAG_NOT_VISITED, sizeof(uint8_t) * flag_grid.size());
 
@@ -1298,7 +1298,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 	}
 #endif
 
-	std::vector<Seed> seeds0;
+	StdVector<Seed> seeds0;
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("Place seeds");
@@ -1355,10 +1355,10 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 	dds[0b011] = Math::sqrt(math::squared(cell_size.y) + math::squared(cell_size.z));
 	dds[0b111] = math::length(cell_size);
 
-	std::vector<Seed> seeds1;
+	StdVector<Seed> seeds1;
 
-	std::vector<Seed> *current_seeds = &seeds0;
-	std::vector<Seed> *next_seeds = &seeds1;
+	StdVector<Seed> *current_seeds = &seeds0;
+	StdVector<Seed> *next_seeds = &seeds1;
 
 	const Vector3i res_minus_one = res - Vector3i(1, 1, 1);
 
@@ -1465,7 +1465,7 @@ void generate_mesh_sdf_approx_floodfill(Span<float> sdf_grid, const Vector3i res
 
 		current_seeds->clear();
 
-		std::vector<Seed> *temp = current_seeds;
+		StdVector<Seed> *temp = current_seeds;
 		current_seeds = next_seeds;
 		next_seeds = temp;
 	}

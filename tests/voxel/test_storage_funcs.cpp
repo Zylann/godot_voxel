@@ -1,5 +1,6 @@
 #include "test_storage_funcs.h"
 #include "../../storage/funcs.h"
+#include "../../util/containers/std_vector.h"
 #include "../testing.h"
 
 namespace zylann::voxel::tests {
@@ -36,8 +37,8 @@ void test_copy_3d_region_zxy() {
 	};
 	// Sub-region
 	{
-		std::vector<uint16_t> src;
-		std::vector<uint16_t> dst;
+		StdVector<uint16_t> src;
+		StdVector<uint16_t> dst;
 		const Vector3i src_size(8, 8, 8);
 		const Vector3i dst_size(3, 4, 5);
 		src.resize(Vector3iUtil::get_volume(src_size), 0);
@@ -89,8 +90,8 @@ void test_copy_3d_region_zxy() {
 	}
 	// Same size, full region
 	{
-		std::vector<uint16_t> src;
-		std::vector<uint16_t> dst;
+		StdVector<uint16_t> src;
+		StdVector<uint16_t> dst;
 		const Vector3i src_size(3, 4, 5);
 		const Vector3i dst_size(3, 4, 5);
 		src.resize(Vector3iUtil::get_volume(src_size), 0);

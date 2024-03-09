@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_EDITOR_IO_DIALOG_H
 
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/confirmation_dialog.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/macros.h"
@@ -50,15 +51,15 @@ private:
 	static Control *create_ui(PortsUI &ui, String title, bool has_default_values);
 	static void set_enabled(PortsUI &ui, bool enabled);
 	static void clear(PortsUI &ui);
-	void copy_ui_to_data(const PortsUI &ui, std::vector<pg::VoxelGraphFunction::Port> &ports);
-	void copy_data_to_ui(PortsUI &ui, const std::vector<pg::VoxelGraphFunction::Port> &ports);
-	void process_ui(PortsUI &ui, std::vector<pg::VoxelGraphFunction::Port> &ports);
+	void copy_ui_to_data(const PortsUI &ui, StdVector<pg::VoxelGraphFunction::Port> &ports);
+	void copy_data_to_ui(PortsUI &ui, const StdVector<pg::VoxelGraphFunction::Port> &ports);
+	void process_ui(PortsUI &ui, StdVector<pg::VoxelGraphFunction::Port> &ports);
 
 	static void _bind_methods();
 
 	Ref<pg::VoxelGraphFunction> _graph;
-	std::vector<pg::VoxelGraphFunction::Port> _inputs;
-	std::vector<pg::VoxelGraphFunction::Port> _outputs;
+	StdVector<pg::VoxelGraphFunction::Port> _inputs;
+	StdVector<pg::VoxelGraphFunction::Port> _outputs;
 
 	PortsUI _inputs_ui;
 	PortsUI _outputs_ui;

@@ -2,6 +2,7 @@
 #include "../../engine/buffered_task_scheduler.h"
 #include "../../streams/instance_data.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/conv.h"
@@ -51,10 +52,10 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 	struct Layer {
 		int id = -1;
 		uint8_t edited_mask = 0;
-		std::vector<Transform3f> transforms;
+		StdVector<Transform3f> transforms;
 	};
 
-	std::vector<Layer> layers;
+	StdVector<Layer> layers;
 
 	// Try loading saved blocks
 	if (_stream.is_valid()) {
@@ -195,7 +196,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 		ZN_PROFILE_SCOPE();
 
 		// TODO Cache memory
-		std::vector<VoxelInstanceLibrary::PackedItem> items;
+		StdVector<VoxelInstanceLibrary::PackedItem> items;
 		_library->get_packed_items_at_lod(items, _lod_index);
 
 		if (items.size() > 0) {

@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include <vector>
+#include "../../containers/std_vector.h"
 
 namespace zylann::godot {
 
@@ -25,7 +25,7 @@ struct ShaderParameterInfo {
 	Variant::Type type;
 };
 
-void get_shader_parameter_list(const RID &shader_rid, std::vector<ShaderParameterInfo> &out_parameters);
+void get_shader_parameter_list(const RID &shader_rid, StdVector<ShaderParameterInfo> &out_parameters);
 
 } // namespace zylann::godot
 

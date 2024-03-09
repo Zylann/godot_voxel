@@ -2,6 +2,7 @@
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_vector.h"
 #include "voxel_terrain.h"
 
 namespace zylann::voxel {
@@ -87,7 +88,7 @@ Vector3 get_motion(AABB box, Vector3 motion, Span<const AABB> environment_boxes)
 	// This also makes the algorithm tunnelling-free
 	const AABB expanded_box = expand_with_vector(box, motion);
 
-	std::vector<AABB> colliding_boxes;
+	StdVector<AABB> colliding_boxes;
 	for (size_t i = 0; i < environment_boxes.size(); ++i) {
 		const AABB &other = environment_boxes[i];
 		if (expanded_box.intersects(other)) {

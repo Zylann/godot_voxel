@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-#include <vector>
 
 namespace zylann {
 namespace ExpressionParser {
@@ -263,7 +262,7 @@ struct OpEntry {
 };
 
 template <typename T>
-inline T pop(std::vector<T> &stack) {
+inline T pop(StdVector<T> &stack) {
 	ZN_ASSERT(stack.size() != 0);
 	T t = std::move(stack.back());
 	stack.pop_back();
@@ -284,7 +283,7 @@ unsigned int get_operator_argument_count(OperatorNode::Operation op_type) {
 	}
 }
 
-ErrorID pop_expression_operator(std::vector<OpEntry> &operations_stack, std::vector<UniquePtr<Node>> &operand_stack) {
+ErrorID pop_expression_operator(StdVector<OpEntry> &operations_stack, StdVector<UniquePtr<Node>> &operand_stack) {
 	OpEntry last_op = pop(operations_stack);
 	ZN_ASSERT(last_op.node != nullptr);
 	ZN_ASSERT(last_op.node->type == Node::OPERATOR);
@@ -343,8 +342,7 @@ const Function *find_function_by_name(std::string_view name, Span<const Function
 Result parse_expression(
 		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token);
 
-Error parse_function(
-		Tokenizer &tokenizer, std::vector<UniquePtr<Node>> &operand_stack, Span<const Function> functions) {
+Error parse_function(Tokenizer &tokenizer, StdVector<UniquePtr<Node>> &operand_stack, Span<const Function> functions) {
 	std::string_view fname;
 	{
 		// We'll replace the variable with a function call node
@@ -406,7 +404,7 @@ Error parse_function(
 	return Error();
 }
 
-// void free_nodes(std::vector<OpEntry> &operations_stack, std::vector<UniquePtr<Node>> operand_stack) {
+// void free_nodes(StdVector<OpEntry> &operations_stack, StdVector<UniquePtr<Node>> operand_stack) {
 // 	operand_stack.clear();
 // 	operations_stack.clear();
 // }
@@ -415,8 +413,8 @@ Result parse_expression(
 		Tokenizer &tokenizer, bool in_argument_list, Span<const Function> functions, Token *out_last_token) {
 	Token token;
 
-	std::vector<OpEntry> operations_stack;
-	std::vector<UniquePtr<Node>> operand_stack;
+	StdVector<OpEntry> operations_stack;
+	StdVector<UniquePtr<Node>> operand_stack;
 	int precedence_base = 0;
 	bool previous_was_operand = false;
 
@@ -541,7 +539,7 @@ Result parse_expression(
 	return result;
 }
 
-void find_variables(const Node &node, std::vector<std::string_view> &variables) {
+void find_variables(const Node &node, StdVector<std::string_view> &variables) {
 	switch (node.type) {
 		case Node::NUMBER:
 			break;
@@ -830,5 +828,5 @@ std::string to_string(const Error error) {
 	}
 }
 
-} //namespace ExpressionParser
-} //namespace zylann
+} // namespace ExpressionParser
+} // namespace zylann

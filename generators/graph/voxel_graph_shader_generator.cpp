@@ -31,8 +31,8 @@ std::string ShaderGenContext::add_uniform(ComputeShaderResource &&res) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelGraphFunction::Port> input_defs,
-		FwdMutableStdString source_code, std::vector<ShaderParameter> &shader_params,
-		std::vector<ShaderOutput> &outputs, Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs) {
+		FwdMutableStdString source_code, StdVector<ShaderParameter> &shader_params, StdVector<ShaderOutput> &outputs,
+		Span<const VoxelGraphFunction::NodeTypeID> restricted_outputs) {
 	ZN_PROFILE_SCOPE();
 
 	const NodeTypeDB &type_db = NodeTypeDB::get_singleton();
@@ -44,8 +44,8 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 		return expand_result;
 	}
 
-	std::vector<uint32_t> order;
-	std::vector<uint32_t> terminal_nodes;
+	StdVector<uint32_t> order;
+	StdVector<uint32_t> terminal_nodes;
 
 	expanded_graph.for_each_node_const([&terminal_nodes, restricted_outputs, &type_db](const ProgramGraph::Node &node) {
 		const NodeType &node_type = type_db.get_type(node.type_id);

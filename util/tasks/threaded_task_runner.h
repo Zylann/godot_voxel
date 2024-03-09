@@ -4,6 +4,7 @@
 #include "../containers/container_funcs.h"
 #include "../containers/fixed_array.h"
 #include "../containers/span.h"
+#include "../containers/std_vector.h"
 #include "../profiling.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
@@ -142,13 +143,13 @@ private:
 
 	// Scheduled tasks are put here first. They will be moved to the main waiting queue by the next available thread.
 	// This is because the main waiting queue can be locked for longer due to dynamic priority sorting.
-	std::vector<TaskItem> _staged_tasks;
+	StdVector<TaskItem> _staged_tasks;
 	Mutex _staged_tasks_mutex;
 
 	// Main waiting list. Tasks are picked from it by priority. Priority can also change while tasks are in this list,
 	// so we can't use a simple queue or sort at insertion. Every available thread has to find it and potentially update
 	// it every once in a while.
-	std::vector<TaskItem> _tasks;
+	StdVector<TaskItem> _tasks;
 	Mutex _tasks_mutex;
 	Semaphore _tasks_semaphore;
 
@@ -156,7 +157,7 @@ private:
 	std::queue<TaskItem> _spinning_tasks;
 	Mutex _spinning_tasks_mutex;
 
-	std::vector<IThreadedTask *> _completed_tasks;
+	StdVector<IThreadedTask *> _completed_tasks;
 	Mutex _completed_tasks_mutex;
 
 	uint32_t _priority_update_period_ms = 32;

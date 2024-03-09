@@ -1181,10 +1181,10 @@ void VoxelGeneratorGraph::bake_sphere_bumpmap(Ref<Image> im, float ref_radius, f
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
 	struct ProcessChunk {
-		std::vector<float> x_coords;
-		std::vector<float> y_coords;
-		std::vector<float> z_coords;
-		std::vector<float> in_sdf_cache;
+		StdVector<float> x_coords;
+		StdVector<float> y_coords;
+		StdVector<float> z_coords;
+		StdVector<float> in_sdf_cache;
 		Image &im;
 		const Runtime &runtime_wrapper;
 		pg::Runtime::State &state;
@@ -1282,13 +1282,13 @@ void VoxelGeneratorGraph::bake_sphere_normalmap(Ref<Image> im, float ref_radius,
 	// This process would use too much memory if run over the entire image at once,
 	// so we'll subdivide the load in smaller chunks
 	struct ProcessChunk {
-		std::vector<float> x_coords;
-		std::vector<float> y_coords;
-		std::vector<float> z_coords;
-		std::vector<float> sdf_values_p; // TODO Could be used at the same time to get bump?
-		std::vector<float> sdf_values_px;
-		std::vector<float> sdf_values_py;
-		std::vector<float> in_sdf_cache;
+		StdVector<float> x_coords;
+		StdVector<float> y_coords;
+		StdVector<float> z_coords;
+		StdVector<float> sdf_values_p; // TODO Could be used at the same time to get bump?
+		StdVector<float> sdf_values_px;
+		StdVector<float> sdf_values_py;
+		StdVector<float> in_sdf_cache;
 		Image &im;
 		const Runtime &runtime_wrapper;
 		pg::Runtime::State &state;
@@ -1433,8 +1433,8 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	const ProgramGraph &graph = _main_function->get_graph();
 
 	std::string code_utf8;
-	std::vector<pg::ShaderParameter> params;
-	std::vector<pg::ShaderOutput> outputs;
+	StdVector<pg::ShaderParameter> params;
+	StdVector<pg::ShaderOutput> outputs;
 	pg::CompilationResult result = pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8,
 			params, outputs, Span<const pg::VoxelGraphFunction::NodeTypeID>());
 
@@ -1576,7 +1576,7 @@ math::Interval VoxelGeneratorGraph::debug_analyze_range(
 // Debug land
 
 float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
-		bool singular, std::vector<NodeProfilingInfo> *node_profiling_info) {
+		bool singular, StdVector<NodeProfilingInfo> *node_profiling_info) {
 	std::shared_ptr<const Runtime> runtime_ptr;
 	{
 		RWLockRead rlock(_runtime_lock);
@@ -1615,10 +1615,10 @@ float VoxelGeneratorGraph::debug_measure_microseconds_per_voxel(
 
 	} else {
 		const unsigned int cube_volume = cube_size * cube_size * cube_size;
-		std::vector<float> src_x;
-		std::vector<float> src_y;
-		std::vector<float> src_z;
-		std::vector<float> src_sdf;
+		StdVector<float> src_x;
+		StdVector<float> src_y;
+		StdVector<float> src_z;
+		StdVector<float> src_sdf;
 		src_x.resize(cube_volume);
 		src_y.resize(cube_volume);
 		src_z.resize(cube_volume);

@@ -3,13 +3,13 @@
 
 #include "../storage/voxel_buffer.h"
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"
 #include "../util/tasks/threaded_task.h"
 
 #include <atomic>
 #include <memory>
-#include <vector>
 
 namespace zylann::voxel::mesh_sdf {
 
@@ -37,12 +37,12 @@ struct Triangle {
 
 struct Chunk {
 	Vector3i pos;
-	std::vector<const Chunk *> near_chunks;
-	std::vector<const Triangle *> triangles;
+	StdVector<const Chunk *> near_chunks;
+	StdVector<const Triangle *> triangles;
 };
 
 struct ChunkGrid {
-	std::vector<Chunk> chunks;
+	StdVector<Chunk> chunks;
 	Vector3i size; // Size of the grid in cells
 	Vector3f min_pos; // Position of the lower corner of the grid in space units
 	float chunk_size; // Size of a cubic cell in space units
@@ -51,7 +51,7 @@ struct ChunkGrid {
 class GenMeshSDFSubBoxTask : public IThreadedTask {
 public:
 	struct SharedData {
-		std::vector<Triangle> triangles;
+		StdVector<Triangle> triangles;
 		std::atomic_int pending_jobs = { 0 };
 		VoxelBuffer buffer;
 		Vector3f min_pos;
@@ -75,7 +75,7 @@ public:
 };
 
 // Computes a representation of the mesh that's more optimal to compute distance to triangles.
-bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, std::vector<Triangle> &triangles,
+bool prepare_triangles(Span<const Vector3> vertices, Span<const int> indices, StdVector<Triangle> &triangles,
 		Vector3f &out_min_pos, Vector3f &out_max_pos);
 
 // Partitions triangles of the mesh such that we can reduce the number of triangles to check when evaluating the SDF.

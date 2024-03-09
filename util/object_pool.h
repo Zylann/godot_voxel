@@ -1,8 +1,8 @@
 #ifndef OBJECT_POOL_H
 #define OBJECT_POOL_H
 
+#include "containers/std_vector.h"
 #include "memory.h"
-#include <vector>
 
 namespace zylann {
 
@@ -31,7 +31,7 @@ public:
 	}
 
 private:
-	std::vector<T *> _objects;
+	StdVector<T *> _objects;
 };
 
 } // namespace zylann

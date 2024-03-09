@@ -21,7 +21,7 @@ namespace zylann::voxel {
 
 namespace {
 bool prepare_triangles(
-		Mesh &mesh, std::vector<mesh_sdf::Triangle> &triangles, Vector3f &out_min_pos, Vector3f &out_max_pos) {
+		Mesh &mesh, StdVector<mesh_sdf::Triangle> &triangles, Vector3f &out_min_pos, Vector3f &out_max_pos) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(mesh.get_surface_count() == 0, false);
 	if (mesh.get_surface_count() > 1) {
@@ -106,7 +106,7 @@ void VoxelMeshSDF::bake() {
 	Ref<Mesh> mesh = _mesh;
 	ERR_FAIL_COND(mesh.is_null());
 
-	std::vector<mesh_sdf::Triangle> triangles;
+	StdVector<mesh_sdf::Triangle> triangles;
 	Vector3f min_pos;
 	Vector3f max_pos;
 	ERR_FAIL_COND(!prepare_triangles(**mesh, triangles, min_pos, max_pos));
@@ -381,7 +381,7 @@ Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 	ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, sdf_grid), result);
 
 	ZN_ASSERT_RETURN_V(mesh.is_valid(), result);
-	std::vector<mesh_sdf::Triangle> triangles;
+	StdVector<mesh_sdf::Triangle> triangles;
 	Vector3f min_pos;
 	Vector3f max_pos;
 	ZN_ASSERT_RETURN_V(prepare_triangles(**mesh, triangles, min_pos, max_pos), result);

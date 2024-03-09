@@ -12,7 +12,7 @@
 using namespace godot;
 #endif
 
-#include <vector>
+#include "../../containers/std_vector.h"
 
 #ifdef ZN_GODOT_EXTENSION
 // TODO GDX: `MAKE_RESOURCE_TYPE_HINT` is not available in GodotCpp
@@ -53,7 +53,7 @@ struct PropertyInfoWrapper {
 	String name;
 	uint32_t usage;
 };
-void get_property_list(const Object &obj, std::vector<PropertyInfoWrapper> &out_properties);
+void get_property_list(const Object &obj, StdVector<PropertyInfoWrapper> &out_properties);
 
 void set_object_edited(Object &obj);
 

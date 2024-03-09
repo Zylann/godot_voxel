@@ -8,6 +8,7 @@
 #include "../engine/priority_dependency.h"
 #include "../generators/generate_block_gpu_task.h"
 #include "../storage/voxel_buffer.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"
@@ -31,7 +32,7 @@ public:
 	bool is_cancelled() override;
 	void apply_result() override;
 
-	void set_gpu_results(std::vector<GenerateBlockGPUTaskResult> &&results) override;
+	void set_gpu_results(StdVector<GenerateBlockGPUTaskResult> &&results) override;
 
 	static int debug_get_running_count();
 
@@ -75,13 +76,13 @@ private:
 	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
-	std::vector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
+	StdVector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
 	std::shared_ptr<DetailTextureOutput> _detail_textures;
-	std::vector<GenerateBlockGPUTaskResult> _gpu_generation_results;
+	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
 
 Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		std::vector<uint16_t> &mesh_material_indices);
+		StdVector<uint16_t> &mesh_material_indices);
 
 } // namespace zylann::voxel
 

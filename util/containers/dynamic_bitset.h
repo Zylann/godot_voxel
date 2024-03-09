@@ -2,8 +2,8 @@
 #define ZN_DYNAMIC_BITSET_H
 
 #include "../errors.h"
+#include "std_vector.h"
 #include <cstdint>
-#include <vector>
 
 namespace zylann {
 
@@ -58,7 +58,7 @@ public:
 	}
 
 private:
-	std::vector<uint64_t> _bits;
+	StdVector<uint64_t> _bits;
 	unsigned int _size = 0;
 };
 

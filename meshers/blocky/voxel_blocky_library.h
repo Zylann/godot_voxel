@@ -1,6 +1,7 @@
 #ifndef VOXEL_BLOCKY_LIBRARY_H
 #define VOXEL_BLOCKY_LIBRARY_H
 
+#include "../../util/containers/std_vector.h"
 #include "voxel_blocky_library_base.h"
 
 namespace zylann::voxel {
@@ -61,7 +62,7 @@ private:
 
 private:
 	// Indices matter, they correspond to voxel data
-	std::vector<Ref<VoxelBlockyModel>> _voxel_models;
+	StdVector<Ref<VoxelBlockyModel>> _voxel_models;
 };
 
 } // namespace zylann::voxel

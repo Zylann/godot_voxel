@@ -2,9 +2,9 @@
 #define VOXEL_GPU_STORAGE_BUFFER_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/rendering_device.h"
 #include <array>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -42,7 +42,7 @@ private:
 	unsigned int get_pool_index_from_size(uint32_t p_size) const;
 
 	struct Pool {
-		std::vector<GPUStorageBuffer> buffers;
+		StdVector<GPUStorageBuffer> buffers;
 		unsigned int used_buffers = 0;
 	};
 

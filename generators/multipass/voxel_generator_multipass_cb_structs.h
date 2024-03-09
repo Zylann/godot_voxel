@@ -4,15 +4,15 @@
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/small_vector.h"
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/vector2i.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/ref_count.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/spatial_lock_2d.h"
 
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 // Data structures used internally in multipass generation.
 
@@ -88,7 +88,7 @@ struct Column {
 
 	// Vertical stack of blocks. Must never be resized, except when loaded or unloaded.
 	// TODO Maybe replace with a dynamic non-resizeable array?
-	std::vector<Block> blocks;
+	StdVector<Block> blocks;
 
 	// Column() {
 	// 	fill(subpass_iterations, uint8_t(0));
@@ -96,7 +96,7 @@ struct Column {
 };
 
 struct Map {
-	std::unordered_map<Vector2i, Column> columns;
+	StdUnorderedMap<Vector2i, Column> columns;
 	// Protects the hashmap itself
 	Mutex mutex;
 	// Protects columns

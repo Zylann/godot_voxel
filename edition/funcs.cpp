@@ -1,4 +1,5 @@
 #include "funcs.h"
+#include "../util/containers/std_vector.h"
 #include "../util/profiling.h"
 
 namespace zylann::voxel {
@@ -230,7 +231,7 @@ void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sph
 	// Since separated blur is 1-D, we can use a ring buffer to optimize reading/summing values since we are
 	// just moving an averaging window by 1 voxel on each iteration. So no need to gather all values to average them on
 	// each iteration, we just get one and remove one.
-	std::vector<float> ring_buffer;
+	StdVector<float> ring_buffer;
 	const unsigned int rb_power = math::get_next_power_of_two_32_shift(box_size);
 	const unsigned int rb_len = 1 << rb_power;
 	ring_buffer.resize(rb_len);
@@ -238,7 +239,7 @@ void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sph
 	ZN_ASSERT(static_cast<int>(ring_buffer.size()) >= box_size);
 
 	// Temporary buffer with extra length in two axes
-	std::vector<float> tmp;
+	StdVector<float> tmp;
 	const Vector3i tmp_size(dst_size.x + 2 * radius, dst_size.y, dst_size.z + 2 * radius);
 	tmp.resize(Vector3iUtil::get_volume(tmp_size));
 

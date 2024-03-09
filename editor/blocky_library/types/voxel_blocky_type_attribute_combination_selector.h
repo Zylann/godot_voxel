@@ -2,6 +2,7 @@
 #define VOXEL_BLOCKY_TYPE_ATTRIBUTE_COMBINATION_SELECTOR_H
 
 #include "../../../meshers/blocky/types/voxel_blocky_type.h"
+#include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/grid_container.h"
 
 ZN_GODOT_FORWARD_DECLARE(class OptionButton);
@@ -43,7 +44,7 @@ private:
 	};
 
 	Ref<VoxelBlockyType> _type;
-	std::vector<AttributeEditor> _attribute_editors;
+	StdVector<AttributeEditor> _attribute_editors;
 };
 
 } // namespace zylann::voxel

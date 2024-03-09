@@ -1,6 +1,7 @@
 #ifndef VOXEL_LOD_OCTREE_H
 #define VOXEL_LOD_OCTREE_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/math/box3i.h"
 
 namespace zylann::voxel {
@@ -262,8 +263,8 @@ private:
 	private:
 		// TODO If this grows too much, mayyybe could implement a paged vector to fight fragmentation.
 		// If we do so, that may also solve pointer invalidation since pages would remain stable
-		std::vector<Node> _nodes;
-		std::vector<unsigned int> _free_indexes;
+		StdVector<Node> _nodes;
+		StdVector<unsigned int> _free_indexes;
 	};
 
 	inline Node *get_node(unsigned int index) {

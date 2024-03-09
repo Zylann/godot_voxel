@@ -4,6 +4,7 @@
 #include "../storage/voxel_data.h"
 #include "../util/a_star_grid_3d.h"
 #include "../util/containers/dynamic_bitset.h"
+#include "../util/containers/std_vector.h"
 #include <atomic>
 
 namespace zylann::voxel {
@@ -42,7 +43,7 @@ private:
 	};
 
 	// Cached 3D bitmap
-	std::vector<Chunk> _grid_cache;
+	StdVector<Chunk> _grid_cache;
 	Vector3i _grid_cache_size;
 
 	// Tracks which chunks are loaded

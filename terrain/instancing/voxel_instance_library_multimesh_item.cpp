@@ -14,7 +14,7 @@ const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scen
 
 namespace {
 
-Array serialize_collision_shape_infos(const std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
+Array serialize_collision_shape_infos(const StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
 	Array a;
 	for (unsigned int i = 0; i < infos.size(); ++i) {
 		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
@@ -28,7 +28,7 @@ Array serialize_collision_shape_infos(const std::vector<VoxelInstanceLibraryMult
 }
 
 bool deserialize_collision_shape_infos(
-		Array a, std::vector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
+		Array a, StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
 	for (int i = 0; i < a.size(); i += 2) {
@@ -44,7 +44,7 @@ bool deserialize_collision_shape_infos(
 	return false;
 }
 
-TypedArray<StringName> serialize_group_names(const std::vector<StringName> &names) {
+TypedArray<StringName> serialize_group_names(const StdVector<StringName> &names) {
 	TypedArray<StringName> a;
 	a.resize(names.size());
 	int i = 0;
@@ -55,7 +55,7 @@ TypedArray<StringName> serialize_group_names(const std::vector<StringName> &name
 	return a;
 }
 
-void deserialize_group_names(const Array &src, std::vector<StringName> &dst) {
+void deserialize_group_names(const Array &src, StdVector<StringName> &dst) {
 	dst.reserve(src.size());
 	for (int i = 0; i < src.size(); ++i) {
 		StringName name = src[i];

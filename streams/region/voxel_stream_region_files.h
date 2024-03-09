@@ -2,6 +2,7 @@
 #define VOXEL_STREAM_REGION_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/thread/mutex.h"
 #include "../file_utils.h"
 #include "../voxel_stream.h"
@@ -129,7 +130,7 @@ private:
 	Meta _meta;
 	bool _meta_loaded = false;
 	bool _meta_saved = false;
-	std::vector<CachedRegion *> _region_cache;
+	StdVector<CachedRegion *> _region_cache;
 	// TODO Add memory caches to increase capacity.
 	unsigned int _max_open_regions = MIN(8, FOPEN_MAX);
 

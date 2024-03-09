@@ -62,8 +62,8 @@ private:
 
 	// "offline" means the class uses its own storage for testing purposes.
 	// bool _is_offline = false;
-	// std::vector<VoxelGeneratorMultipassCBStructs::Block> _offline_blocks;
-	// std::vector<VoxelGeneratorMultipassCBStructs::Block *> _offline_block_pointers;
+	// StdVector<VoxelGeneratorMultipassCBStructs::Block> _offline_blocks;
+	// StdVector<VoxelGeneratorMultipassCBStructs::Block *> _offline_block_pointers;
 };
 
 } // namespace zylann::voxel

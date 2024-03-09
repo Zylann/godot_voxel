@@ -381,7 +381,7 @@ void GenerateBlockGPUTask::collect(GPUTaskContext &ctx) {
 	RenderingDevice &rd = ctx.rendering_device;
 	GPUStorageBufferPool &storage_buffer_pool = ctx.storage_buffer_pool;
 
-	std::vector<GenerateBlockGPUTaskResult> results;
+	StdVector<GenerateBlockGPUTaskResult> results;
 	results.reserve(_boxes_data.size());
 
 	// Get span for that specific task

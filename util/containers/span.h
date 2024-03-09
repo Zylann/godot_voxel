@@ -209,32 +209,33 @@ private:
 	size_t _size;
 };
 
-template <typename T>
-Span<T> to_span(std::vector<T> &vec) {
-	return Span<T>(vec.data(), 0, vec.size());
+template <typename TValue, typename TAllocator>
+Span<TValue> to_span(std::vector<TValue, TAllocator> &vec) {
+	return Span<TValue>(vec.data(), 0, vec.size());
 }
 
-template <typename T>
-Span<const T> to_span(const std::vector<T> &vec) {
-	return Span<const T>(vec.data(), 0, vec.size());
+template <typename TValue, typename TAllocator>
+Span<const TValue> to_span(const std::vector<TValue, TAllocator> &vec) {
+	return Span<const TValue>(vec.data(), 0, vec.size());
 }
 
-template <typename T>
-Span<T> to_span_from_position_and_size(std::vector<T> &vec, unsigned int pos, unsigned int size) {
+template <typename TValue, typename TAllocator>
+Span<TValue> to_span_from_position_and_size(std::vector<TValue, TAllocator> &vec, unsigned int pos, unsigned int size) {
 	ZN_ASSERT(pos + size <= vec.size());
-	return Span<T>(vec.data(), pos, pos + size);
+	return Span<TValue>(vec.data(), pos, pos + size);
 }
 
-template <typename T>
-Span<const T> to_span_from_position_and_size(const std::vector<T> &vec, unsigned int pos, unsigned int size) {
+template <typename TValue, typename TAllocator>
+Span<const TValue> to_span_from_position_and_size(
+		const std::vector<TValue, TAllocator> &vec, unsigned int pos, unsigned int size) {
 	ZN_ASSERT(pos + size <= vec.size());
-	return Span<const T>(vec.data(), pos, pos + size);
+	return Span<const TValue>(vec.data(), pos, pos + size);
 }
 
 // TODO Deprecate, now Span has a conversion constructor that can allow doing that
-template <typename T>
-Span<const T> to_span_const(const std::vector<T> &vec) {
-	return Span<const T>(vec.data(), 0, vec.size());
+template <typename TValue, typename TAllocator>
+Span<const TValue> to_span_const(const std::vector<TValue, TAllocator> &vec) {
+	return Span<const TValue>(vec.data(), 0, vec.size());
 }
 
 template <typename T, unsigned int N>

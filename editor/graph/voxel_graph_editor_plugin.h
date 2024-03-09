@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_EDITOR_PLUGIN_H
 
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/editor_plugin.h"
 #include "../../util/godot/object_weak_ref.h"
 #include "../../util/macros.h"
@@ -54,7 +55,7 @@ private:
 	Button *_bottom_panel_button = nullptr;
 	bool _deferred_visibility_scheduled = false;
 	zylann::godot::ObjectWeakRef<VoxelNode> _voxel_node;
-	std::vector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
+	StdVector<Ref<VoxelGraphNodeInspectorWrapper>> _node_wrappers;
 	// Workaround for a new Godot 4 behavior:
 	// When we inspect an object, Godot calls `edit(nullptr)` on our plugin first, and `make_visible(false)`.
 	// But this plugin needs to allow inspecting nodes of the graph. When a node is selected, it tells Godot to

@@ -23,7 +23,8 @@ static const uint8_t BLOCK_FORMAT_VERSION = 4;
 
 struct SerializeResult {
 	// The lifetime of the pointed object is only valid in the calling thread,
-	// until another serialization or deserialization call is made
+	// until another serialization or deserialization call is made.
+	// TODO Eventually figure out allocators so the caller can decide
 	const std::vector<uint8_t> &data;
 	bool success;
 

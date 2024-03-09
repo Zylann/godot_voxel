@@ -5,6 +5,7 @@
 #include "../engine/ids.h"
 #include "../engine/priority_dependency.h"
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include "../util/godot/classes/resource.h"
 #include "../util/math/box3i.h"
 #include "../util/math/vector3f.h"
@@ -124,16 +125,16 @@ public:
 		// generated depending on where the code is integrated.
 		String glsl;
 		// Associated resources
-		std::vector<ShaderParameter> parameters;
+		StdVector<ShaderParameter> parameters;
 
 		// The generated source will contain a `generate` function starting with a `vec3 position` argument,
 		// followed by outputs like `out float out_sd, ...`, which determines what will be returned by the
 		// compute shader.
-		std::vector<ShaderOutput> outputs;
+		StdVector<ShaderOutput> outputs;
 	};
 
 	struct ShaderOutputs {
-		std::vector<ShaderOutput> outputs;
+		StdVector<ShaderOutput> outputs;
 	};
 
 	virtual bool get_shader_source(ShaderSourceData &out_data) const;

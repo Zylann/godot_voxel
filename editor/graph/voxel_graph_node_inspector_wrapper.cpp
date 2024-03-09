@@ -1,6 +1,7 @@
 #include "voxel_graph_node_inspector_wrapper.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/io/log.h"
 #include "voxel_graph_editor.h"
@@ -135,12 +136,12 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 		VoxelGraphEditor &graph_editor) {
 	//
 	const CharString code_utf8 = code.utf8();
-	std::vector<std::string_view> new_input_names;
+	StdVector<std::string_view> new_input_names;
 	if (!VoxelGraphFunction::get_expression_variables(code_utf8.get_data(), new_input_names)) {
 		// Error, the action will not include node input changes
 		return;
 	}
-	std::vector<std::string> old_input_names;
+	StdVector<std::string> old_input_names;
 	graph.get_expression_node_inputs(node_id, old_input_names);
 
 	struct Connection {
@@ -148,7 +149,7 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 		uint32_t dst_port_index;
 	};
 	// Find what we'll disconnect
-	std::vector<Connection> to_disconnect;
+	StdVector<Connection> to_disconnect;
 	for (uint32_t port_index = 0; port_index < old_input_names.size(); ++port_index) {
 		ProgramGraph::PortLocation src;
 		if (graph.try_get_connection_to({ node_id, port_index }, src)) {
@@ -156,7 +157,7 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 		}
 	}
 	// Find what we'll reconnect
-	std::vector<Connection> to_reconnect;
+	StdVector<Connection> to_reconnect;
 	for (uint32_t port_index = 0; port_index < old_input_names.size(); ++port_index) {
 		const std::string_view old_name = old_input_names[port_index];
 		auto new_input_name_it = std::find(new_input_names.begin(), new_input_names.end(), old_name);

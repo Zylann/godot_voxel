@@ -37,7 +37,7 @@ const GraphNodesDocData::Node *get_graph_node_documentation(String name) {
 	return nullptr;
 }
 
-void get_graph_node_documentation_category_names(std::vector<String> &out_category_names) {
+void get_graph_node_documentation_category_names(StdVector<String> &out_category_names) {
 	std::unordered_set<String> categories;
 	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
@@ -268,7 +268,7 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 	const String filter = _filter_line_edit->get_text().strip_edges();
 	const bool use_filter = !filter.is_empty();
 
-	std::vector<unsigned int> filtered_items;
+	StdVector<unsigned int> filtered_items;
 
 	for (unsigned int i = 0; i < _items.size(); ++i) {
 		const Item &item = _items[i];
@@ -279,7 +279,7 @@ void VoxelGraphNodeDialog::update_tree(bool autoselect) {
 
 	// Populate tree
 
-	std::vector<TreeItem *> category_tree_items;
+	StdVector<TreeItem *> category_tree_items;
 	category_tree_items.resize(_category_names.size(), nullptr);
 
 	bool autoselected = true;

@@ -627,11 +627,11 @@ Ref<Image> make_greedy_atlas(
 	ZN_PROFILE_SCOPE();
 
 	// Pack rectangles
-	std::vector<Vector2i> result_points;
+	StdVector<Vector2i> result_points;
 	Vector2i result_size;
 	{
 		ZN_PROFILE_SCOPE_NAMED("Packing");
-		std::vector<Vector2i> sizes;
+		StdVector<Vector2i> sizes;
 		sizes.resize(atlas_data.images.size());
 		for (unsigned int i = 0; i < atlas_data.images.size(); ++i) {
 			const VoxelMesherCubes::GreedyAtlasData::ImageInfo &im = atlas_data.images[i];

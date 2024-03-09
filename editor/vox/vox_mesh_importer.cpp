@@ -55,7 +55,7 @@ double VoxelVoxMeshImporter::_zn_get_priority() const {
 }
 
 void VoxelVoxMeshImporter::_zn_get_import_options(
-		std::vector<ImportOptionWrapper> &out_options, const String &path, int preset_index) const {
+		StdVector<ImportOptionWrapper> &out_options, const String &path, int preset_index) const {
 	// const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 	out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::BOOL, "store_colors_in_texture"), false));
 	out_options.push_back(ImportOptionWrapper(PropertyInfo(Variant::FLOAT, "scale"), 1.f));
@@ -142,7 +142,7 @@ struct ModelInstance {
 	Vector3i position;
 };
 
-void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &out_instances) {
+void extract_model_instances(const Data &vox_data, StdVector<ModelInstance> &out_instances) {
 	ZN_DSTACK();
 	// Gather all models and bake their rotations
 	for_each_model_instance(vox_data, [&out_instances](ForEachModelInstanceArgs args) {
@@ -153,7 +153,7 @@ void extract_model_instances(const Data &vox_data, std::vector<ModelInstance> &o
 		Vector3i dst_size = model.size;
 
 		// Using temporary copy to rotate the data
-		std::vector<uint8_t> temp_voxels;
+		StdVector<uint8_t> temp_voxels;
 
 		if (args.basis == Basis()) {
 			// No transformation
@@ -251,9 +251,9 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 
 	Ref<Image> atlas;
 	Ref<Mesh> mesh;
-	std::vector<unsigned int> surface_index_to_material;
+	StdVector<unsigned int> surface_index_to_material;
 	{
-		std::vector<ModelInstance> model_instances;
+		StdVector<ModelInstance> model_instances;
 		extract_model_instances(vox_data, model_instances);
 
 		// From this point we no longer need vox data so we can free some memory

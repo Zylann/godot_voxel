@@ -2,7 +2,7 @@
 
 namespace zylann::godot {
 
-void get_shader_parameter_list(const RID &shader_rid, std::vector<ShaderParameterInfo> &out_parameters) {
+void get_shader_parameter_list(const RID &shader_rid, StdVector<ShaderParameterInfo> &out_parameters) {
 #if defined(ZN_GODOT)
 	List<PropertyInfo> params;
 	RenderingServer::get_singleton()->get_shader_parameter_list(shader_rid, &params);
