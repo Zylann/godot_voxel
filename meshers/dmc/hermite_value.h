@@ -1,7 +1,7 @@
 #ifndef HERMITE_VALUE_H
 #define HERMITE_VALUE_H
 
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/math/funcs.h"
 #include "../../util/math/vector3f.h"
 
@@ -21,8 +21,7 @@ inline float get_isolevel_clamped(const VoxelBuffer &voxels, unsigned int x, uns
 	return voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);
 }
 
-inline HermiteValue get_hermite_value(
-		const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
+inline HermiteValue get_hermite_value(const VoxelBuffer &voxels, unsigned int x, unsigned int y, unsigned int z) {
 	HermiteValue v;
 
 	v.sdf = voxels.get_voxel_f(x, y, z, VoxelBuffer::CHANNEL_SDF);

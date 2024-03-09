@@ -452,7 +452,7 @@ Writing a custom C++ module directly in Godot is one way to access features of G
 You can include files from the voxel module by using `modules/voxel/` in your includes:
 
 ```cpp
-#include <modules/voxel/storage/voxel_buffer_internal.h>
+#include <modules/voxel/storage/voxel_buffer.h>
 ```
 
 You will also need to define preprocessor macros in your `SCsub` file:

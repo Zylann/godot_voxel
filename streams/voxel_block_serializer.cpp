@@ -1,5 +1,5 @@
 #include "voxel_block_serializer.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../storage/voxel_memory_pool.h"
 #include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"

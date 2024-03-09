@@ -2,7 +2,7 @@
 #define VOXEL_STREAM_MEMORY_H
 
 #include "../constants/voxel_constants.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
 #include "../util/math/vector3i.h"

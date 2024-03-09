@@ -1,5 +1,5 @@
 #include "test_util.h"
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 
 namespace zylann::voxel::tests {
 

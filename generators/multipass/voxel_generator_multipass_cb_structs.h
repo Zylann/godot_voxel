@@ -1,7 +1,7 @@
 #ifndef VOXEL_GENERATOR_MULTIPASS_CB_STRUCTS_H
 #define VOXEL_GENERATOR_MULTIPASS_CB_STRUCTS_H
 
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/containers/small_vector.h"
 #include "../../util/containers/span.h"
 #include "../../util/math/vector2i.h"

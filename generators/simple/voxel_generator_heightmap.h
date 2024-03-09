@@ -2,8 +2,8 @@
 #define VOXEL_GENERATOR_HEIGHTMAP_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/containers/span.h"
 #include "../../util/math/funcs.h"
 #include "../../util/math/vector3f.h"

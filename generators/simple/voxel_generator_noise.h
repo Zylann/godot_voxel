@@ -1,8 +1,8 @@
 #ifndef VOXEL_GENERATOR_NOISE_H
 #define VOXEL_GENERATOR_NOISE_H
 
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_buffer_internal.h"
 #include "../../util/godot/macros.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"

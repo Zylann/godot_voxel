@@ -1,7 +1,7 @@
 #include "vox_mesh_importer.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_memory_pool.h"
 #include "../../streams/vox/vox_data.h"
 #include "../../util/dstack.h"

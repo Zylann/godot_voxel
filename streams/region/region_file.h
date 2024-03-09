@@ -1,7 +1,7 @@
 #ifndef REGION_FILE_H
 #define REGION_FILE_H
 
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/godot/classes/file_access.h"
 #include "../../util/math/color8.h"

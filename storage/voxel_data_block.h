@@ -1,7 +1,7 @@
 #ifndef VOXEL_DATA_BLOCK_H
 #define VOXEL_DATA_BLOCK_H
 
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/ref_count.h"
 #include <memory>
 

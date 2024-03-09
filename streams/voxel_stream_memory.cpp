@@ -1,5 +1,5 @@
 #include "voxel_stream_memory.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/thread/thread.h"
 #include "instance_data.h"
 

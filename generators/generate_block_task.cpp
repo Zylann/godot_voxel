@@ -1,6 +1,6 @@
 #include "generate_block_task.h"
 #include "../engine/voxel_engine.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../storage/voxel_data.h"
 #include "../streams/save_block_data_task.h"
 #include "../util/dstack.h"

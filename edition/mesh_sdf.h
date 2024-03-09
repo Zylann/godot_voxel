@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESH_SDF_H
 #define VOXEL_MESH_SDF_H
 
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/containers/span.h"
 #include "../util/math/vector3f.h"
 #include "../util/math/vector3i.h"

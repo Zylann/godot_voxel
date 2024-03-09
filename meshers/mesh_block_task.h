@@ -7,7 +7,7 @@
 #include "../engine/meshing_dependency.h"
 #include "../engine/priority_dependency.h"
 #include "../generators/generate_block_gpu_task.h"
-#include "../storage/voxel_buffer_internal.h"
+#include "../storage/voxel_buffer.h"
 #include "../util/godot/classes/array_mesh.h"
 #include "../util/tasks/cancellation_token.h"
 #include "../util/tasks/threaded_task.h"

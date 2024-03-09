@@ -6,7 +6,7 @@
 #include "../util/godot/core/typed_array.h"
 #include "../util/macros.h"
 #include "../util/math/vector3i.h"
-#include "voxel_buffer_internal.h"
+#include "voxel_buffer.h"
 #include <cstdint>
 #include <memory>
 

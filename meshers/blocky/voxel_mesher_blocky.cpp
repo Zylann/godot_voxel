@@ -1,6 +1,6 @@
 #include "voxel_mesher_blocky.h"
 #include "../../constants/cube_tables.h"
-#include "../../storage/voxel_buffer_internal.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../util/containers/span.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/packed_arrays.h"
