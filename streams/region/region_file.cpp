@@ -414,7 +414,7 @@ Error RegionFile::save_block(Vector3i position, VoxelBuffer &block) {
 
 		BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block);
 		ERR_FAIL_COND_V(!res.success, ERR_INVALID_PARAMETER);
-		const std::vector<uint8_t> &data = res.data;
+		const StdVector<uint8_t> &data = res.data;
 		const size_t written_size = sizeof(uint32_t) + data.size();
 
 		const int new_sector_count = get_sector_count_from_bytes(written_size);

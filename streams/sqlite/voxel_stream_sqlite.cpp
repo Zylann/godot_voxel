@@ -93,7 +93,7 @@ public:
 	bool end_transaction();
 
 	bool save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type);
-	VoxelStream::ResultCode load_block(BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type);
+	VoxelStream::ResultCode load_block(BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type);
 
 	bool load_all_blocks(void *callback_data,
 			void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
@@ -353,7 +353,7 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t
 }
 
 VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
-		BlockLocation loc, std::vector<uint8_t> &out_block_data, BlockType type) {
+		BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type) {
 	sqlite3 *db = _db;
 
 	sqlite3_stmt *get_block_statement;
@@ -631,12 +631,12 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace {
-std::vector<uint8_t> &get_tls_temp_block_data() {
-	thread_local std::vector<uint8_t> tls_temp_block_data;
+StdVector<uint8_t> &get_tls_temp_block_data() {
+	thread_local StdVector<uint8_t> tls_temp_block_data;
 	return tls_temp_block_data;
 }
-std::vector<uint8_t> &get_tls_temp_compressed_block_data() {
-	thread_local std::vector<uint8_t> tls_temp_compressed_block_data;
+StdVector<uint8_t> &get_tls_temp_compressed_block_data() {
+	thread_local StdVector<uint8_t> tls_temp_compressed_block_data;
 	return tls_temp_compressed_block_data;
 }
 } // namespace
@@ -701,7 +701,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 	ZN_PROFILE_SCOPE();
 
 	// Check the cache first
-	std::vector<unsigned int> blocks_to_load;
+	StdVector<unsigned int> blocks_to_load;
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelStream::VoxelQueryData &q = p_blocks[i];
 		const Vector3i pos = q.position_in_blocks;
@@ -742,7 +742,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		loc.z = q.position_in_blocks.z;
 		loc.lod = q.lod_index;
 
-		std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
+		StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 
 		const ResultCode res = con->load_block(loc, temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
 
@@ -793,7 +793,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 	// const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
 
 	// Check the cache first
-	std::vector<unsigned int> blocks_to_load;
+	StdVector<unsigned int> blocks_to_load;
 	for (size_t i = 0; i < out_blocks.size(); ++i) {
 		VoxelStream::InstancesQueryData &q = out_blocks[i];
 
@@ -827,12 +827,12 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		loc.z = q.position_in_blocks.z;
 		loc.lod = q.lod_index;
 
-		std::vector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
+		StdVector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
 
 		const ResultCode res = con->load_block(loc, temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
-			std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
+			StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 
 			if (!CompressedData::decompress(to_span_const(temp_compressed_block_data), temp_block_data)) {
 				ERR_PRINT("Failed to decompress instance block");
@@ -915,7 +915,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			}
 
 			if (instances_data.size() > 0) {
-				std::vector<uint8_t> &temp_block_data = get_tls_temp_block_data();
+				StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 				if (!CompressedData::decompress(instances_data, temp_block_data)) {
 					ERR_PRINT("Failed to decompress instance block");
 					return;
@@ -962,8 +962,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 	ERR_FAIL_COND(p_connection == nullptr);
 	ERR_FAIL_COND(p_connection->begin_transaction() == false);
 
-	std::vector<uint8_t> &temp_data = get_tls_temp_block_data();
-	std::vector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
+	StdVector<uint8_t> &temp_data = get_tls_temp_block_data();
+	StdVector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
 
 	// TODO Needs better error rollback handling
 	_cache.flush([p_connection, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {

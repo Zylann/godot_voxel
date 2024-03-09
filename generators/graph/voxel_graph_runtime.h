@@ -83,13 +83,13 @@ public:
 			uint16_t constant_fill_count = 0;
 		};
 
-		std::vector<OperationInfo> operations;
+		StdVector<OperationInfo> operations;
 
 		// Stores node IDs referring to the user-facing graph.
 		// Each index corresponds to operation indices.
 		// The same node can appear twice, because sometimes a user-facing node compiles as multiple nodes.
 		// It can also include some nodes not explicitely present in the user graph (like auto-inputs).
-		std::vector<uint32_t> debug_nodes;
+		StdVector<uint32_t> debug_nodes;
 
 		// Every operation before this index in the `operations` list will only depend on inputs tagged as "outer
 		// group". This is the index from which operations won't only depend on the outer group.
@@ -104,7 +104,7 @@ public:
 		// This list must be read using an advancing cursor, that moves up by the amount specified in `OperationInfo`.
 		// Note, it is preferable to use this for dynamic optimizations. Compile-time constants should use pinned
 		// buffers, or better, single values.
-		std::vector<ConstantFill> constant_fills;
+		StdVector<ConstantFill> constant_fills;
 
 		void clear() {
 			operations.clear();
@@ -164,11 +164,11 @@ public:
 	private:
 		friend class Runtime; // TODO Why is friend needed? This class is nested inside
 
-		std::vector<math::Interval> ranges;
-		std::vector<Buffer> buffers;
-		std::vector<BufferData> buffer_datas;
+		StdVector<math::Interval> ranges;
+		StdVector<Buffer> buffers;
+		StdVector<BufferData> buffer_datas;
 		// [execution_map_index] => microseconds
-		std::vector<uint32_t> debug_profiler_times;
+		StdVector<uint32_t> debug_profiler_times;
 
 		unsigned int buffer_size = 0;
 		unsigned int buffer_capacity = 0;

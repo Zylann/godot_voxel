@@ -8,7 +8,7 @@
 
 namespace zylann::voxel::CompressedData {
 
-bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	const int decompressed_size = f.get_32();
 	ZN_ASSERT_RETURN_V(decompressed_size >= 0, false);
 
@@ -28,7 +28,7 @@ bool decompress_lz4(MemoryReader &f, Span<const uint8_t> src, std::vector<uint8_
 	return true;
 }
 
-bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool decompress(Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	ZN_PROFILE_SCOPE();
 
 	MemoryReader f(src, ENDIANESS_LITTLE_ENDIAN);
@@ -62,7 +62,7 @@ bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst) {
 	return true;
 }
 
-bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t> &dst) {
+bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, StdVector<uint8_t> &dst) {
 	ZN_ASSERT_RETURN_V(src.size() <= std::numeric_limits<uint32_t>::max(), false);
 
 	f.store_32(src.size());
@@ -81,7 +81,7 @@ bool compress_lz4(MemoryWriter &f, Span<const uint8_t> src, std::vector<uint8_t>
 	return true;
 }
 
-bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp) {
+bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, Compression comp) {
 	ZN_PROFILE_SCOPE();
 
 	switch (comp) {

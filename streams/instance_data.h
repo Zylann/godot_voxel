@@ -56,7 +56,7 @@ struct InstanceBlockData {
 	}
 };
 
-bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uint8_t> &dst);
+bool serialize_instance_block_data(const InstanceBlockData &src, StdVector<uint8_t> &dst);
 bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t> src);
 
 } // namespace zylann::voxel

@@ -173,7 +173,7 @@ public:
 		return _streaming_dependency;
 	}
 
-	void get_viewers_in_area(std::vector<ViewerID> &out_viewer_ids, Box3i voxel_box) const;
+	void get_viewers_in_area(StdVector<ViewerID> &out_viewer_ids, Box3i voxel_box) const;
 
 	void set_multiplayer_synchronizer(VoxelTerrainMultiplayerSynchronizer *synchronizer);
 	const VoxelTerrainMultiplayerSynchronizer *get_multiplayer_synchronizer() const;
@@ -317,7 +317,7 @@ private:
 	StdVector<Vector3i> _blocks_pending_update;
 	// Blocks that should be saved on the next process call.
 	// The order in that list does not matter.
-	std::vector<VoxelData::BlockToSave> _blocks_to_save;
+	StdVector<VoxelData::BlockToSave> _blocks_to_save;
 	// Data blocks that have been unloaded and needed saving. They are temporarily stored here until saving completes,
 	// and is checked first before loading new blocks. This is in case players leave an area and come back to it faster
 	// than saving, because otherwise loading from stream would return an outdated version.

@@ -7,17 +7,17 @@ namespace zylann::voxel {
 
 namespace {
 
-std::vector<float> &get_tls_sdf() {
-	thread_local std::vector<float> tls_sdf;
+StdVector<float> &get_tls_sdf() {
+	thread_local StdVector<float> tls_sdf;
 	return tls_sdf;
 }
 
-std::vector<Vector3> &get_tls_positions() {
-	thread_local std::vector<Vector3> tls_positions;
+StdVector<Vector3> &get_tls_positions() {
+	thread_local StdVector<Vector3> tls_positions;
 	return tls_positions;
 }
 
-void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, std::vector<Vector3> &positions) {
+void get_positions_buffer(Vector3i buffer_size, Vector3 origin, Vector3 size, StdVector<Vector3> &positions) {
 	positions.resize(Vector3iUtil::get_volume(buffer_size));
 
 	const Vector3 end = origin + size;
@@ -58,7 +58,7 @@ Span<const Vector3> get_positions_temporary(
 }
 
 // TODO Use VoxelBuffer helper function
-void decompress_sdf_to_buffer(VoxelBuffer &voxels, std::vector<float> &sdf) {
+void decompress_sdf_to_buffer(VoxelBuffer &voxels, StdVector<float> &sdf) {
 	ZN_DSTACK();
 
 	sdf.resize(Vector3iUtil::get_volume(voxels.get_size()));
@@ -185,11 +185,11 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 	// modify only the area that intersects the block, and we re-encode only what was modified.
 	// Another option later could be to use uncompressed blocks (32-bit float) when doing on-the-fly sampling?
 
-	thread_local std::vector<float> tls_block_sdf_initial;
-	thread_local std::vector<float> tls_block_sdf;
+	thread_local StdVector<float> tls_block_sdf_initial;
+	thread_local StdVector<float> tls_block_sdf;
 
-	std::vector<float> &area_sdf = get_tls_sdf();
-	std::vector<Vector3> &area_positions = get_tls_positions();
+	StdVector<float> &area_sdf = get_tls_sdf();
+	StdVector<Vector3> &area_positions = get_tls_positions();
 
 	const Vector3 v_to_w = aabb.size / Vector3(voxels.get_size());
 	const Vector3 w_to_v = Vector3(voxels.get_size()) / aabb.size;

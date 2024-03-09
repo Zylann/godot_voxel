@@ -486,7 +486,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 
 	// Label distinct voxel groups
 
-	static thread_local std::vector<uint8_t> ccl_output;
+	static thread_local StdVector<uint8_t> ccl_output;
 	ccl_output.resize(Vector3iUtil::get_volume(world_box.size));
 
 	unsigned int label_count = 0;
@@ -949,14 +949,14 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 	buffer.decompress_channel(channel_index);
 
 	// Convert input SDF
-	static thread_local std::vector<float> tls_in_sdf_full;
+	static thread_local StdVector<float> tls_in_sdf_full;
 	tls_in_sdf_full.resize(Vector3iUtil::get_volume(buffer.get_size()));
 	Span<float> in_sdf_full = to_span(tls_in_sdf_full);
 	get_unscaled_sdf(buffer, in_sdf_full);
 
-	static thread_local std::vector<float> tls_in_x;
-	static thread_local std::vector<float> tls_in_y;
-	static thread_local std::vector<float> tls_in_z;
+	static thread_local StdVector<float> tls_in_x;
+	static thread_local StdVector<float> tls_in_y;
+	static thread_local StdVector<float> tls_in_z;
 	const unsigned int deck_area = box.size.x * box.size.y;
 	tls_in_x.resize(deck_area);
 	tls_in_y.resize(deck_area);

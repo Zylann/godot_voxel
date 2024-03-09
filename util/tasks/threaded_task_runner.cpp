@@ -478,8 +478,8 @@ unsigned int ThreadedTaskRunner::get_debug_remaining_tasks() const {
 	return _debug_received_tasks - _debug_completed_tasks - _debug_taken_out_tasks;
 }
 
-std::vector<IThreadedTask *> &ThreadedTaskRunner::get_completed_tasks_temp_tls() {
-	static thread_local std::vector<IThreadedTask *> tls_temp;
+StdVector<IThreadedTask *> &ThreadedTaskRunner::get_completed_tasks_temp_tls() {
+	static thread_local StdVector<IThreadedTask *> tls_temp;
 	return tls_temp;
 }
 

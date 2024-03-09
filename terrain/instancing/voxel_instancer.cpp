@@ -38,8 +38,8 @@
 namespace zylann::voxel {
 
 namespace {
-std::vector<Transform3f> &get_tls_transform_cache() {
-	static thread_local std::vector<Transform3f> tls_transform_cache;
+StdVector<Transform3f> &get_tls_transform_cache() {
+	static thread_local StdVector<Transform3f> tls_transform_cache;
 	return tls_transform_cache;
 }
 } // namespace
@@ -220,8 +220,8 @@ void VoxelInstancer::process() {
 
 void VoxelInstancer::process_task_results() {
 	ZN_PROFILE_SCOPE();
-	static thread_local std::vector<VoxelInstanceLoadingTaskOutput> tls_results;
-	std::vector<VoxelInstanceLoadingTaskOutput> &results = tls_results;
+	static thread_local StdVector<VoxelInstanceLoadingTaskOutput> tls_results;
+	StdVector<VoxelInstanceLoadingTaskOutput> &results = tls_results;
 #ifdef DEBUG_ENABLED
 	if (results.size()) {
 		ZN_PRINT_ERROR("Results were not cleaned up?");
@@ -706,7 +706,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 		}
 
 		static inline void extract_octant_transforms(
-				const Block &render_block, std::vector<Transform3f> &dst, uint8_t octant_mask, int render_block_size) {
+				const Block &render_block, StdVector<Transform3f> &dst, uint8_t octant_mask, int render_block_size) {
 			if (!render_block.multimesh_instance.is_valid()) {
 				return;
 			}
@@ -760,7 +760,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 			}
 		}
 
-		std::vector<Transform3f> &transform_cache = get_tls_transform_cache();
+		StdVector<Transform3f> &transform_cache = get_tls_transform_cache();
 		transform_cache.clear();
 
 		Array surface_arrays;

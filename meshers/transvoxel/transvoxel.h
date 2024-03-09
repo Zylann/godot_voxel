@@ -62,11 +62,11 @@ struct LodAttrib {
 // };
 
 struct MeshArrays {
-	std::vector<Vector3f> vertices;
-	std::vector<Vector3f> normals;
-	std::vector<LodAttrib> lod_data;
-	std::vector<Vector2f> texturing_data; // TextureAttrib
-	std::vector<int32_t> indices;
+	StdVector<Vector3f> vertices;
+	StdVector<Vector3f> normals;
+	StdVector<LodAttrib> lod_data;
+	StdVector<Vector2f> texturing_data; // TextureAttrib
+	StdVector<int32_t> indices;
 
 	void clear() {
 		vertices.clear();
@@ -102,7 +102,7 @@ public:
 		_block_size = p_block_size;
 		const unsigned int deck_area = _block_size.x * _block_size.y;
 		for (unsigned int i = 0; i < _cache.size(); ++i) {
-			std::vector<ReuseCell> &deck = _cache[i];
+			StdVector<ReuseCell> &deck = _cache[i];
 			deck.resize(deck_area);
 			for (size_t j = 0; j < deck.size(); ++j) {
 				fill(deck[j].vertices, -1);
@@ -112,7 +112,7 @@ public:
 
 	void reset_reuse_cells_2d(Vector3i p_block_size) {
 		for (unsigned int i = 0; i < _cache_2d.size(); ++i) {
-			std::vector<ReuseTransitionCell> &row = _cache_2d[i];
+			StdVector<ReuseTransitionCell> &row = _cache_2d[i];
 			row.resize(p_block_size.x);
 			for (size_t j = 0; j < row.size(); ++j) {
 				fill(row[j].vertices, -1);
@@ -135,8 +135,8 @@ public:
 	}
 
 private:
-	FixedArray<std::vector<ReuseCell>, 2> _cache;
-	FixedArray<std::vector<ReuseTransitionCell>, 2> _cache_2d;
+	FixedArray<StdVector<ReuseCell>, 2> _cache;
+	FixedArray<StdVector<ReuseTransitionCell>, 2> _cache_2d;
 	Vector3i _block_size;
 };
 
@@ -158,12 +158,12 @@ struct CellInfo {
 	uint32_t triangle_count;
 };
 
-DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel,
-		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
-		const IDeepSDFSampler *deep_sdf_sampler, std::vector<CellInfo> *cell_infos);
+DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, uint32_t lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler,
+		StdVector<CellInfo> *cell_infos);
 
-void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction,
-		uint32_t lod_index, TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
+void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, int direction, uint32_t lod_index,
+		TexturingMode texturing_mode, Cache &cache, MeshArrays &output,
 		DefaultTextureIndicesData default_texture_indices_data);
 
 } // namespace zylann::voxel::transvoxel

@@ -2,6 +2,7 @@
 #define VOXEL_UTIL_SERIALIZATION_H
 
 #include "../containers/span.h"
+#include "../containers/std_vector.h"
 #include <cstring>
 
 namespace zylann {
@@ -99,7 +100,7 @@ struct MemoryWriterTemplate {
 };
 
 // Default
-typedef MemoryWriterTemplate<std::vector<uint8_t>> MemoryWriter;
+typedef MemoryWriterTemplate<StdVector<uint8_t>> MemoryWriter;
 
 struct ByteSpanWithPosition {
 	Span<uint8_t> data;

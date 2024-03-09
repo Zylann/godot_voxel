@@ -2,11 +2,11 @@
 #define ZN_GODOT_PACKED_ARRAYS_H
 
 #include "../../containers/span.h"
+#include "../../containers/std_vector.h"
 #include "../../math/vector2f.h"
 #include "../../math/vector3f.h"
 #include "variant.h"
 #include <cstdint>
-#include <vector>
 
 #ifdef TOOLS_ENABLED
 #include "../macros.h"
@@ -17,19 +17,19 @@
 namespace zylann::godot {
 
 // Specialized copy functions for vectors because they use `real_t`, which can be either `float` or `double`
-void copy_to(PackedVector3Array &dst, const std::vector<Vector3f> &src);
-void copy_to(PackedVector2Array &dst, const std::vector<Vector2f> &src);
+void copy_to(PackedVector3Array &dst, const StdVector<Vector3f> &src);
+void copy_to(PackedVector2Array &dst, const StdVector<Vector2f> &src);
 
 // Copy functions for matching types.
 // Can't have code using template Vector if we want to support compiling both as module and extension.
 // So the following are defined for every case instead of a template.
-void copy_to(PackedVector3Array &dst, const std::vector<Vector3> &src);
+void copy_to(PackedVector3Array &dst, const StdVector<Vector3> &src);
 void copy_to(PackedVector3Array &dst, Span<const Vector3> src);
-void copy_to(PackedInt32Array &dst, const std::vector<int32_t> &src);
+void copy_to(PackedInt32Array &dst, const StdVector<int32_t> &src);
 void copy_to(PackedInt32Array &dst, Span<const int32_t> src);
-void copy_to(PackedColorArray &dst, const std::vector<Color> &src);
+void copy_to(PackedColorArray &dst, const StdVector<Color> &src);
 void copy_to(PackedColorArray &dst, Span<const Color> src);
-void copy_to(PackedFloat32Array &dst, const std::vector<float> &src);
+void copy_to(PackedFloat32Array &dst, const StdVector<float> &src);
 void copy_to(PackedFloat32Array &dst, Span<const float> src);
 void copy_to(PackedByteArray &dst, Span<const uint8_t> src);
 void copy_to(Span<uint8_t> dst, const PackedByteArray &src);
@@ -55,7 +55,7 @@ inline void copy_bytes_to(PackedByteArray &dst, T src) {
 // TODO Can't have code using template Vector if we want to support compiling both as module and extension
 #ifdef ZN_GODOT
 template <typename T>
-void raw_copy_to(Vector<T> &to, const std::vector<T> &from) {
+void raw_copy_to(Vector<T> &to, const StdVector<T> &from) {
 	to.resize(from.size());
 	// resize can fail in case allocation was not possible
 	ERR_FAIL_COND(from.size() != static_cast<size_t>(to.size()));

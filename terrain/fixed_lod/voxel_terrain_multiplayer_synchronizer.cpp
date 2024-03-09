@@ -81,7 +81,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_terrain != nullptr);
 
-	std::vector<ViewerID> viewers;
+	StdVector<ViewerID> viewers;
 	_terrain->get_viewers_in_area(viewers, voxel_box);
 
 	// Not particularly efficient for single-voxel edits, but should scale ok with bigger boxes

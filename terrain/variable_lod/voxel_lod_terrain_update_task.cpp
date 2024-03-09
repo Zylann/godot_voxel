@@ -323,7 +323,7 @@ std::shared_ptr<AsyncDependencyTracker> preload_boxes_async(VoxelLodTerrainUpdat
 			// ZN_PRINT_VERBOSE(String("Preloading box {0} at lod {1}")
 			// 						.format(varray(block_box.to_string(), lod_index)));
 
-			static thread_local std::vector<Vector3i> tls_missing;
+			static thread_local StdVector<Vector3i> tls_missing;
 			tls_missing.clear();
 			data.get_missing_blocks(block_box, lod_index, tls_missing);
 
@@ -467,9 +467,9 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
-	static thread_local std::vector<Vector3i> tls_modified_lod0_blocks;
-	static thread_local std::vector<Box3i> tls_modified_voxel_areas_lod0;
-	// static thread_local std::vector<VoxelData::BlockLocation> tls_updated_block_locations;
+	static thread_local StdVector<Vector3i> tls_modified_lod0_blocks;
+	static thread_local StdVector<Box3i> tls_modified_voxel_areas_lod0;
+	// static thread_local StdVector<VoxelData::BlockLocation> tls_updated_block_locations;
 
 	tls_modified_lod0_blocks.clear();
 	tls_modified_voxel_areas_lod0.clear();
@@ -759,13 +759,13 @@ void VoxelLodTerrainUpdateTask::run(ThreadedTaskContext &ctx) {
 	// Other mesh updates
 	process_changed_generated_areas(state, settings, lod_count);
 
-	static thread_local std::vector<VoxelData::BlockToSave> tls_data_blocks_to_save;
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockToLoad> tls_data_blocks_to_load;
+	static thread_local StdVector<VoxelData::BlockToSave> tls_data_blocks_to_save;
+	static thread_local StdVector<VoxelLodTerrainUpdateData::BlockToLoad> tls_data_blocks_to_load;
 
-	std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load = tls_data_blocks_to_load;
+	StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load = tls_data_blocks_to_load;
 	data_blocks_to_load.clear();
 
-	std::vector<VoxelData::BlockToSave> *data_blocks_to_save = stream.is_valid() ? &tls_data_blocks_to_save : nullptr;
+	StdVector<VoxelData::BlockToSave> *data_blocks_to_save = stream.is_valid() ? &tls_data_blocks_to_save : nullptr;
 
 	profiling_clock.restart();
 	if (settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_LEGACY_OCTREE) {

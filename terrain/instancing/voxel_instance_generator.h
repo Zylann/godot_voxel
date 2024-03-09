@@ -3,13 +3,13 @@
 
 //#include "../../storage/voxel_buffer.h"
 #include "../../generators/graph/voxel_graph_function.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/noise.h"
 #include "../../util/math/transform3f.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/thread/short_lock.h"
 
 #include <limits>
-#include <vector>
 
 namespace zylann::voxel {
 
@@ -60,7 +60,7 @@ public:
 	// This API might change so for now it's not exposed to scripts.
 	// Using 32-bit float transforms because those transforms are chunked, so their origins never really need to hold
 	// large coordinates.
-	void generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position, int lod_index,
+	void generate_transforms(StdVector<Transform3f> &out_transforms, Vector3i grid_position, int lod_index,
 			int layer_id, Array surface_arrays, UpMode up_mode,
 			// When generating a 2x2x2 data block area, bits in `octant_mask` tell which octant should be generated.
 			// Bits set to zero will cause all instances in the corresponding octant to not be generated.

@@ -55,7 +55,7 @@ Error parse_string(FileAccess &f, String &s) {
 	ERR_FAIL_COND_V(size < 0, ERR_INVALID_DATA);
 	ERR_FAIL_COND_V(size > 4096, ERR_INVALID_DATA);
 
-	static thread_local std::vector<char> bytes;
+	static thread_local StdVector<char> bytes;
 	bytes.resize(size);
 	ERR_FAIL_COND_V(godot::get_buffer(f, Span<uint8_t>((uint8_t *)bytes.data(), bytes.size())) != bytes.size(),
 			ERR_PARSE_ERROR);

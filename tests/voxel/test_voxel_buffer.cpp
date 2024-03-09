@@ -110,7 +110,7 @@ void test_voxel_buffer_metadata() {
 
 		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb);
 		ZN_TEST_ASSERT(sresult.success);
-		std::vector<uint8_t> bytes = sresult.data;
+		StdVector<uint8_t> bytes = sresult.data;
 
 		VoxelBuffer rvb;
 		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), rvb));
@@ -187,7 +187,7 @@ void test_voxel_buffer_metadata_gd() {
 
 		BlockSerializer::SerializeResult sresult = BlockSerializer::serialize(vb->get_buffer());
 		ZN_TEST_ASSERT(sresult.success);
-		std::vector<uint8_t> bytes = sresult.data;
+		StdVector<uint8_t> bytes = sresult.data;
 
 		Ref<godot::VoxelBuffer> vb2;
 		vb2.instantiate();

@@ -353,7 +353,7 @@ void remove_unpaired_viewers(const StdVector<unsigned int> &unpaired_viewers_to_
 }
 
 void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, uint8_t lod_index,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
 	auto it = lod.loading_blocks.find(position);
 
 	if (it == lod.loading_blocks.end()) {
@@ -376,8 +376,7 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 
 void unreference_data_block_from_loading_lists(
 		std::unordered_map<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, Vector3i bpos,
-		unsigned int lod_index) {
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, Vector3i bpos, unsigned int lod_index) {
 	auto loading_block_it = loading_blocks.find(bpos);
 	if (loading_block_it == loading_blocks.end()) {
 		ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
@@ -413,9 +412,9 @@ void unreference_data_block_from_loading_lists(
 }
 
 void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		std::vector<VoxelData::BlockToSave> *blocks_to_save,
+		StdVector<VoxelData::BlockToSave> *blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, int lod_count, bool can_load) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
@@ -432,8 +431,8 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 	// 		// To account for the fact meshes need neighbor data chunks
 	// 		+ 1;
 
-	static thread_local std::vector<Vector3i> tls_missing_blocks;
-	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
+	static thread_local StdVector<Vector3i> tls_missing_blocks;
+	static thread_local StdVector<Vector3i> tls_found_blocks_positions;
 
 #ifdef DEV_ENABLED
 	Box3i debug_parent_box;
@@ -1072,7 +1071,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 	VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
 
 	// Get list of data blocks that were loaded since the last update
-	static thread_local std::vector<VoxelLodTerrainUpdateData::BlockLocation> tls_loaded_blocks;
+	static thread_local StdVector<VoxelLodTerrainUpdateData::BlockLocation> tls_loaded_blocks;
 	tls_loaded_blocks.clear();
 	{
 		MutexLock mlock(clipbox_streaming.loaded_data_blocks_mutex);
@@ -1371,7 +1370,7 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 	// Get list of mesh blocks that were loaded since the last update
 	// TODO Use the same pool buffer as data blocks?
-	static thread_local std::vector<VoxelLodTerrainUpdateData::LoadedMeshBlockEvent> tls_loaded_blocks;
+	static thread_local StdVector<VoxelLodTerrainUpdateData::LoadedMeshBlockEvent> tls_loaded_blocks;
 	tls_loaded_blocks.clear();
 	{
 		// If this has contention, we can afford trying to lock and skip if it fails
@@ -1414,8 +1413,8 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
-		std::vector<VoxelData::BlockToSave> *data_blocks_to_save,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, bool can_load, bool can_mesh) {
 	ZN_PROFILE_SCOPE();
 

@@ -316,7 +316,7 @@ void VoxelTerrain::set_mesher(Ref<VoxelMesher> mesher) {
 	update_configuration_warnings();
 }
 
-void VoxelTerrain::get_viewers_in_area(std::vector<ViewerID> &out_viewer_ids, Box3i voxel_box) const {
+void VoxelTerrain::get_viewers_in_area(StdVector<ViewerID> &out_viewer_ids, Box3i voxel_box) const {
 	const Box3i block_box = voxel_box.downscaled(get_data_block_size());
 
 	for (auto it = _paired_viewers.begin(); it != _paired_viewers.end(); ++it) {
@@ -1370,8 +1370,8 @@ void VoxelTerrain::process_viewer_data_box_change(
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(prev_data_box != new_data_box);
 
-	static thread_local std::vector<Vector3i> tls_missing_blocks;
-	static thread_local std::vector<Vector3i> tls_found_blocks_positions;
+	static thread_local StdVector<Vector3i> tls_missing_blocks;
+	static thread_local StdVector<Vector3i> tls_found_blocks_positions;
 
 	Ref<VoxelGenerator> generator = get_generator();
 	if (generator.is_valid()) {
@@ -1448,7 +1448,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 				VoxelEngine::get_singleton().viewer_exists(viewer_id) && // Could be a destroyed viewer
 				VoxelEngine::get_singleton().is_viewer_requiring_data_block_notifications(viewer_id);
 
-		static thread_local std::vector<VoxelDataBlock> tls_found_blocks;
+		static thread_local StdVector<VoxelDataBlock> tls_found_blocks;
 
 		tls_missing_blocks.clear();
 		tls_found_blocks.clear();
@@ -2085,8 +2085,8 @@ bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<godot::VoxelBuff
 }
 
 PackedInt32Array VoxelTerrain::_b_get_viewer_network_peer_ids_in_area(Vector3i area_origin, Vector3i area_size) const {
-	static thread_local std::vector<ViewerID> s_ids;
-	std::vector<ViewerID> &viewer_ids = s_ids;
+	static thread_local StdVector<ViewerID> s_ids;
+	StdVector<ViewerID> &viewer_ids = s_ids;
 	viewer_ids.clear();
 	get_viewers_in_area(viewer_ids, Box3i(area_origin, area_size));
 

@@ -300,7 +300,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 		uint64_t value;
 		Vector3i rpos;
 	};
-	static thread_local std::vector<Pick> picks;
+	static thread_local StdVector<Pick> picks;
 	picks.reserve(batch_count);
 
 	const float block_volume = math::cubed(block_size);

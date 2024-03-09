@@ -51,12 +51,12 @@ public:
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731
 	struct Arrays {
-		std::vector<Vector3f> positions;
-		std::vector<Vector3f> normals;
-		std::vector<Vector2f> uvs;
-		std::vector<Color> colors;
-		std::vector<int> indices;
-		std::vector<float> tangents;
+		StdVector<Vector3f> positions;
+		StdVector<Vector3f> normals;
+		StdVector<Vector2f> uvs;
+		StdVector<Color> colors;
+		StdVector<int> indices;
+		StdVector<float> tangents;
 
 		void clear() {
 			positions.clear();
@@ -87,7 +87,7 @@ private:
 	};
 
 	struct Cache {
-		std::vector<Arrays> arrays_per_material;
+		StdVector<Arrays> arrays_per_material;
 	};
 
 	// Parameters

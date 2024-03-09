@@ -256,7 +256,7 @@ public:
 	// Per-thread re-used memory for runtime executions
 	struct RuntimeCache {
 		pg::Runtime::State state;
-		std::vector<Span<float>> input_chunks;
+		StdVector<Span<float>> input_chunks;
 	};
 
 	static RuntimeCache &get_runtime_cache_tls();

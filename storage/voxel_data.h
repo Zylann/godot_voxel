@@ -221,7 +221,7 @@ public:
 
 	// Updates the LODs of all blocks at given positions, and resets their flags telling that they need LOD updates.
 	// Optionally, returns a list of affected block positions.
-	void update_lods(Span<const Vector3i> modified_lod0_blocks, std::vector<BlockLocation> *out_updated_blocks);
+	void update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector<BlockLocation> *out_updated_blocks);
 
 	struct BlockToSave {
 		std::shared_ptr<VoxelBuffer> voxels;
@@ -231,11 +231,11 @@ public:
 
 	// Unloads data blocks in the specified area. If some of them were modified and `to_save` is not null, their data
 	// will be returned for the caller to save.
-	void unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<BlockToSave> *to_save);
+	void unload_blocks(Box3i bbox, unsigned int lod_index, StdVector<BlockToSave> *to_save);
 
 	// Unloads data blocks at specified positions of LOD0. If some of them were modified and `to_save` is not null,
 	// their data will be returned for the caller to save.
-	// void unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save);
+	// void unload_blocks(Span<const Vector3i> positions, StdVector<BlockToSave> *to_save);
 
 	// If the block at the specified LOD0 position exists and is modified, marks it as non-modified and returns a copy
 	// of its data to save. Returns true if there is something to save.
@@ -243,7 +243,7 @@ public:
 
 	// Marks all modified blocks as unmodified and returns their data to save. if `with_copy` is true, the returned data
 	// will be a copy, otherwise it will reference voxel data. Prefer using references when about to quit for example.
-	void consume_all_modifications(std::vector<BlockToSave> &to_save, bool with_copy);
+	void consume_all_modifications(StdVector<BlockToSave> &to_save, bool with_copy);
 
 	// Gets missing blocks out of the given block positions.
 	// WARNING: positions outside bounds will be considered missing too.
@@ -251,11 +251,11 @@ public:
 	// code. It doesn't check this because the code using this function already does it (a bit more efficiently,
 	// but still).
 	void get_missing_blocks(
-			Span<const Vector3i> block_positions, unsigned int lod_index, std::vector<Vector3i> &out_missing) const;
+			Span<const Vector3i> block_positions, unsigned int lod_index, StdVector<Vector3i> &out_missing) const;
 
 	// Gets missing blocks out of the given area in block coordinates.
 	// If the area intersects the outside of the bounds, it will be clipped.
-	void get_missing_blocks(Box3i p_blocks_box, unsigned int lod_index, std::vector<Vector3i> &out_missing) const;
+	void get_missing_blocks(Box3i p_blocks_box, unsigned int lod_index, StdVector<Vector3i> &out_missing) const;
 
 	// Gets blocks with voxel data in the given area in block coordinates.
 	// Voxel data references are returned in an array big enough to contain a grid of the size of the area.
@@ -291,8 +291,8 @@ public:
 	// Returns positions where blocks were loaded, and where they were missing.
 	// Shallow copies of found blocks are returned (voxel data is referenced).
 	// Should only be used if refcounting is used, may fail otherwise.
-	void view_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *missing_blocks,
-			std::vector<Vector3i> *found_blocks_positions, std::vector<VoxelDataBlock> *found_blocks);
+	void view_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *missing_blocks,
+			StdVector<Vector3i> *found_blocks_positions, StdVector<VoxelDataBlock> *found_blocks);
 
 	// Decreases the reference count of loaded blocks in the area. Blocks reaching zero will be unloaded.
 	// Returns positions where blocks were unloaded, and where they were missing.
@@ -300,11 +300,11 @@ public:
 	// Should only be used if refcounting is used, may fail otherwise.
 	void unview_area(Box3i blocks_box, unsigned int lod_index,
 			// Blocks that actually got removed (some areas can have no block)
-			std::vector<Vector3i> *removed_blocks,
+			StdVector<Vector3i> *removed_blocks,
 			// Missing blocks are used in case the caller has a collection of loading blocks, so it can cancel them
-			std::vector<Vector3i> *missing_blocks,
+			StdVector<Vector3i> *missing_blocks,
 			// Blocks to save are those that had unsaved modifications
-			std::vector<BlockToSave> *to_save);
+			StdVector<BlockToSave> *to_save);
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Metadata queries.

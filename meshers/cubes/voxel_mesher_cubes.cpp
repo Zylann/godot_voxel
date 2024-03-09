@@ -204,7 +204,7 @@ void build_voxel_mesh_as_simple_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer, const Vector3i block_size, std::vector<uint8_t> &mask_memory_pool,
+		const Span<Voxel_T> voxel_buffer, const Vector3i block_size, StdVector<uint8_t> &mask_memory_pool,
 		Color_F color_func) {
 	//
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
@@ -394,7 +394,7 @@ template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes_atlased(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
 		VoxelMesherCubes::GreedyAtlasData &out_greedy_atlas_data, const Span<Voxel_T> voxel_buffer,
-		const Vector3i block_size, std::vector<uint8_t> &mask_memory_pool, Color_F color_func) {
+		const Vector3i block_size, StdVector<uint8_t> &mask_memory_pool, Color_F color_func) {
 	//
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||

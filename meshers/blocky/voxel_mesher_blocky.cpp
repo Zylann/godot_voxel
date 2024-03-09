@@ -49,15 +49,15 @@ inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint
 	return true;
 }
 
-std::vector<int> &get_tls_index_offsets() {
-	static thread_local std::vector<int> tls_index_offsets;
+StdVector<int> &get_tls_index_offsets() {
+	static thread_local StdVector<int> tls_index_offsets;
 	return tls_index_offsets;
 }
 
 } // namespace
 
 template <typename Type_T>
-void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
+void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
 		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
 		const Vector3i block_size, const VoxelBlockyLibraryBase::BakedData &library, bool bake_occlusion,
 		float baked_occlusion_darkness) {
@@ -79,7 +79,7 @@ void generate_blocky_mesh(std::vector<VoxelMesherBlocky::Arrays> &out_arrays_per
 	const Vector3i min = Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 	const Vector3i max = block_size - Vector3iUtil::create(VoxelMesherBlocky::PADDING);
 
-	std::vector<int> &index_offsets = get_tls_index_offsets();
+	StdVector<int> &index_offsets = get_tls_index_offsets();
 	index_offsets.clear();
 	index_offsets.resize(out_arrays_per_material.size(), 0);
 
@@ -468,7 +468,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 	Cache &cache = get_tls_cache();
 
-	std::vector<Arrays> &arrays_per_material = cache.arrays_per_material;
+	StdVector<Arrays> &arrays_per_material = cache.arrays_per_material;
 	for (unsigned int i = 0; i < arrays_per_material.size(); ++i) {
 		Arrays &a = arrays_per_material[i];
 		a.clear();

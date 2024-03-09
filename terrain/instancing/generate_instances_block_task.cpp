@@ -15,7 +15,7 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 	PackedVector3Array normals = surface_arrays[ArrayMesh::ARRAY_NORMAL];
 	ZN_ASSERT_RETURN(normals.size() > 0);
 
-	static thread_local std::vector<Transform3f> tls_generated_transforms;
+	static thread_local StdVector<Transform3f> tls_generated_transforms;
 	tls_generated_transforms.clear();
 
 	const uint8_t gen_octant_mask = ~edited_mask;

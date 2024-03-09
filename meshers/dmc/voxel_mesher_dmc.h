@@ -55,7 +55,7 @@ struct DualCell {
 };
 
 struct DualGrid {
-	std::vector<DualCell> cells;
+	StdVector<DualCell> cells;
 };
 
 } // namespace zylann::voxel::dmc

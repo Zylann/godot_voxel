@@ -71,7 +71,7 @@ public:
 	template <typename F>
 	void dequeue_completed_tasks(F f) {
 		ZN_PROFILE_SCOPE();
-		std::vector<IThreadedTask *> &temp = get_completed_tasks_temp_tls();
+		StdVector<IThreadedTask *> &temp = get_completed_tasks_temp_tls();
 		ZN_ASSERT(temp.size() == 0);
 		{
 			MutexLock lock(_completed_tasks_mutex);
@@ -97,7 +97,7 @@ public:
 	unsigned int get_debug_remaining_tasks() const;
 
 private:
-	static std::vector<IThreadedTask *> &get_completed_tasks_temp_tls();
+	static StdVector<IThreadedTask *> &get_completed_tasks_temp_tls();
 
 	struct TaskItem {
 		IThreadedTask *task = nullptr;

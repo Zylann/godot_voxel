@@ -55,7 +55,7 @@ struct CompressedQuaternion4b {
 	}
 };
 
-bool serialize_instance_block_data(const InstanceBlockData &src, std::vector<uint8_t> &dst) {
+bool serialize_instance_block_data(const InstanceBlockData &src, StdVector<uint8_t> &dst) {
 	const uint8_t instance_format = InstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
 	// TODO Apparently big-endian is dead

@@ -2,6 +2,7 @@
 #define VOXEL_COMPRESSED_DATA_H
 
 #include "../util/containers/span.h"
+#include "../util/containers/std_vector.h"
 #include <cstdint>
 
 namespace zylann::voxel::CompressedData {
@@ -25,8 +26,8 @@ enum Compression {
 	COMPRESSION_COUNT = 3
 };
 
-bool compress(Span<const uint8_t> src, std::vector<uint8_t> &dst, Compression comp);
-bool decompress(Span<const uint8_t> src, std::vector<uint8_t> &dst);
+bool compress(Span<const uint8_t> src, StdVector<uint8_t> &dst, Compression comp);
+bool decompress(Span<const uint8_t> src, StdVector<uint8_t> &dst);
 
 } // namespace zylann::voxel::CompressedData
 

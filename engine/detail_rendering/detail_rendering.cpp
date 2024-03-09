@@ -25,7 +25,7 @@ void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 		unsigned int loc;
 		Vector3f normal;
 	};
-	static thread_local std::vector<NewNormal> tls_new_normals;
+	static thread_local StdVector<NewNormal> tls_new_normals;
 	tls_new_normals.clear();
 
 	unsigned int loc = 0;
@@ -402,11 +402,11 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 		Vector3f direction;
 		direction[az] = 1.f;
 
-		static thread_local std::vector<Vector2i> tls_tile_sample_positions;
+		static thread_local StdVector<Vector2i> tls_tile_sample_positions;
 		tls_tile_sample_positions.clear();
 		tls_tile_sample_positions.reserve(math::squared(tile_resolution));
 
-		static thread_local std::vector<uint8_t> tls_tile_sample_triangle_index;
+		static thread_local StdVector<uint8_t> tls_tile_sample_triangle_index;
 		tls_tile_sample_triangle_index.clear();
 		tls_tile_sample_triangle_index.reserve(math::squared(tile_resolution));
 
@@ -417,10 +417,10 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 		// (x,   y,   z+s)
 		const unsigned int max_buffer_size = math::squared(tile_resolution) * 4;
 
-		static thread_local std::vector<float> tls_sdf_buffer;
-		static thread_local std::vector<float> tls_x_buffer;
-		static thread_local std::vector<float> tls_y_buffer;
-		static thread_local std::vector<float> tls_z_buffer;
+		static thread_local StdVector<float> tls_sdf_buffer;
+		static thread_local StdVector<float> tls_x_buffer;
+		static thread_local StdVector<float> tls_y_buffer;
+		static thread_local StdVector<float> tls_z_buffer;
 		tls_sdf_buffer.clear();
 		tls_x_buffer.clear();
 		tls_y_buffer.clear();
@@ -515,7 +515,7 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 					cell_origin_world + Vector3f(cell_size));
 		}
 
-		static thread_local std::vector<Vector3f> tls_tile_normals;
+		static thread_local StdVector<Vector3f> tls_tile_normals;
 		tls_tile_normals.clear();
 		tls_tile_normals.resize(math::squared(tile_resolution));
 

@@ -184,8 +184,7 @@ bool intersects(Span<const AABB> aabbs, const AABB &box) {
 	return false;
 }
 
-void collect_boxes(
-		VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, std::vector<AABB> &potential_boxes) {
+void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, StdVector<AABB> &potential_boxes) {
 	const VoxelData &voxels = p_terrain.get_storage();
 
 	const int min_x = int(Math::floor(query_box.position.x));
@@ -269,8 +268,8 @@ Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, 
 	const AABB box(aabb.position + pos, aabb.size);
 	const AABB expanded_box = expand_with_vector(box, motion);
 
-	static thread_local std::vector<AABB> s_colliding_boxes;
-	std::vector<AABB> &potential_boxes = s_colliding_boxes;
+	static thread_local StdVector<AABB> s_colliding_boxes;
+	StdVector<AABB> &potential_boxes = s_colliding_boxes;
 	potential_boxes.clear();
 
 	// Collect potential collisions with the terrain (broad phase)

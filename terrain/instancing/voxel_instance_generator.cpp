@@ -17,7 +17,7 @@ const float MAX_DENSITY = 1.f;
 const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
 
-void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_transforms, Vector3i grid_position,
+void VoxelInstanceGenerator::generate_transforms(StdVector<Transform3f> &out_transforms, Vector3i grid_position,
 		int lod_index, int layer_id, Array surface_arrays, UpMode up_mode, uint8_t octant_mask, float block_size) {
 	ZN_PROFILE_SCOPE();
 
@@ -57,16 +57,16 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 	// TODO This part might be moved to the meshing thread if it turns out to be too heavy
 
-	static thread_local std::vector<Vector3f> g_vertex_cache;
-	static thread_local std::vector<Vector3f> g_normal_cache;
-	static thread_local std::vector<float> g_noise_cache;
-	// static thread_local std::vector<float> g_noise_graph_output_cache;
-	static thread_local std::vector<float> g_noise_graph_x_cache;
-	static thread_local std::vector<float> g_noise_graph_y_cache;
-	static thread_local std::vector<float> g_noise_graph_z_cache;
+	static thread_local StdVector<Vector3f> g_vertex_cache;
+	static thread_local StdVector<Vector3f> g_normal_cache;
+	static thread_local StdVector<float> g_noise_cache;
+	// static thread_local StdVector<float> g_noise_graph_output_cache;
+	static thread_local StdVector<float> g_noise_graph_x_cache;
+	static thread_local StdVector<float> g_noise_graph_y_cache;
+	static thread_local StdVector<float> g_noise_graph_z_cache;
 
-	std::vector<Vector3f> &vertex_cache = g_vertex_cache;
-	std::vector<Vector3f> &normal_cache = g_normal_cache;
+	StdVector<Vector3f> &vertex_cache = g_vertex_cache;
+	StdVector<Vector3f> &normal_cache = g_normal_cache;
 
 	vertex_cache.clear();
 	normal_cache.clear();
@@ -155,8 +155,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 
 				const int triangle_count = indices.size() / 3;
 
-				// static thread_local std::vector<float> g_area_cache;
-				// std::vector<float> &area_cache = g_area_cache;
+				// static thread_local StdVector<float> g_area_cache;
+				// StdVector<float> &area_cache = g_area_cache;
 				// area_cache.resize(triangle_count);
 
 				// Does not assume triangles have the same size, so instead a "unit size" is used,
@@ -247,7 +247,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 	if (noise_graph.is_valid()) {
 		ZN_PROFILE_SCOPE_NAMED("Noise graph filter");
 
-		std::vector<float> &out_buffer = g_noise_cache;
+		StdVector<float> &out_buffer = g_noise_cache;
 		out_buffer.resize(vertex_cache.size());
 
 		// Check noise graph validity
@@ -281,8 +281,8 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		if (compiled_graph != nullptr) {
 			// Execute graph
 
-			std::vector<float> &x_buffer = g_noise_graph_x_cache;
-			std::vector<float> &z_buffer = g_noise_graph_z_cache;
+			StdVector<float> &x_buffer = g_noise_graph_x_cache;
+			StdVector<float> &z_buffer = g_noise_graph_z_cache;
 			x_buffer.resize(vertex_cache.size());
 			z_buffer.resize(vertex_cache.size());
 
@@ -305,7 +305,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 				} break;
 
 				case DIMENSION_3D: {
-					std::vector<float> &y_buffer = g_noise_graph_y_cache;
+					StdVector<float> &y_buffer = g_noise_graph_y_cache;
 					y_buffer.resize(vertex_cache.size());
 
 					for (size_t i = 0; i < vertex_cache.size(); ++i) {
@@ -335,7 +335,7 @@ void VoxelInstanceGenerator::generate_transforms(std::vector<Transform3f> &out_t
 		}
 	}
 
-	std::vector<float> &noise_cache = g_noise_cache;
+	StdVector<float> &noise_cache = g_noise_cache;
 
 	// Legacy noise (noise graph is more versatile, but this remains for compatibility)
 	if (noise.is_valid()) {

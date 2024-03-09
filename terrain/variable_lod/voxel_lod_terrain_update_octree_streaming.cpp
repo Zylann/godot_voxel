@@ -8,7 +8,7 @@ namespace zylann::voxel {
 namespace {
 
 void process_unload_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Vector3 p_viewer_pos, std::vector<VoxelData::BlockToSave> *blocks_to_save,
+		Vector3 p_viewer_pos, StdVector<VoxelData::BlockToSave> *blocks_to_save,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	ZN_PROFILE_SCOPE_NAMED("Sliding box data unload");
 	// TODO Could it actually be enough to have a rolling update on all blocks?
@@ -317,7 +317,7 @@ bool add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position) {
 
 bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const VoxelData &data,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, Vector3i mesh_block_pos, uint8_t lod_index,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings) {
 	// ZN_PROFILE_SCOPE();
 
@@ -354,7 +354,7 @@ bool check_block_mesh_updated(VoxelLodTerrainUpdateData::State &state, const Vox
 					}
 				});
 
-				static thread_local std::vector<Vector3i> tls_missing;
+				static thread_local StdVector<Vector3i> tls_missing;
 				tls_missing.clear();
 
 				// Check if neighbors are loaded
@@ -421,7 +421,7 @@ VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 
 bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, const VoxelData &data, const Vector3i &p_mesh_block_pos,
-		uint8_t lod_index, std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
+		uint8_t lod_index, StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
 	//
 
 	if (data.is_streaming_enabled()) {
@@ -435,7 +435,7 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 		// This is not known in advance when we stream it, it has to be requested.
 		// When not streaming, `block == null` is the same as `!block->has_voxels()` so we wouldn't need to enter here.
 
-		static thread_local std::vector<Vector3i> tls_missing;
+		static thread_local StdVector<Vector3i> tls_missing;
 		tls_missing.clear();
 
 		const int factor = mesh_block_size / data_block_size;
@@ -484,7 +484,7 @@ bool check_block_loaded_and_meshed(VoxelLodTerrainUpdateData::State &state,
 
 void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings, VoxelData &data, Vector3 p_viewer_pos,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load) {
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load) {
 	//
 	ZN_PROFILE_SCOPE();
 
@@ -520,7 +520,7 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 			VoxelLodTerrainUpdateData::State &state;
 			const VoxelLodTerrainUpdateData::Settings &settings;
 			VoxelData &data;
-			std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load;
+			StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load;
 			Vector3i block_offset_lod0;
 			unsigned int blocked_count = 0;
 			float lod_distance_octree_space;
@@ -692,8 +692,8 @@ void process_octrees_fitting(VoxelLodTerrainUpdateData::State &state,
 } // namespace
 
 void process_octree_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data, Vector3 viewer_pos,
-		std::vector<VoxelData::BlockToSave> *data_blocks_to_save,
-		std::vector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings, bool stream_enabled) {
 	ZN_PROFILE_SCOPE();
 

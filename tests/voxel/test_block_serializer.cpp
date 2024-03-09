@@ -20,7 +20,7 @@ void test_block_serializer() {
 		// Serialize without compression wrapper
 		BlockSerializer::SerializeResult result = BlockSerializer::serialize(voxel_buffer);
 		ZN_TEST_ASSERT(result.success);
-		std::vector<uint8_t> data = result.data;
+		StdVector<uint8_t> data = result.data;
 
 		ZN_TEST_ASSERT(data.size() > 0);
 		ZN_TEST_ASSERT(data[0] == BlockSerializer::BLOCK_FORMAT_VERSION);
@@ -36,7 +36,7 @@ void test_block_serializer() {
 		// Serialize
 		BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxel_buffer);
 		ZN_TEST_ASSERT(result.success);
-		std::vector<uint8_t> data = result.data;
+		StdVector<uint8_t> data = result.data;
 
 		ZN_TEST_ASSERT(data.size() > 0);
 

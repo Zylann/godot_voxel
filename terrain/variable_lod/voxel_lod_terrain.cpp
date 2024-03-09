@@ -2400,7 +2400,7 @@ void VoxelLodTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<A
 	VoxelLodTerrainUpdateTask::flush_pending_lod_edits(_update_data->state, *_data, get_mesh_block_size());
 
 	BufferedTaskScheduler &task_scheduler = BufferedTaskScheduler::get_for_current_thread();
-	std::vector<VoxelData::BlockToSave> blocks_to_save;
+	StdVector<VoxelData::BlockToSave> blocks_to_save;
 
 	Ref<VoxelStream> stream = get_stream();
 	if (stream.is_valid()) {

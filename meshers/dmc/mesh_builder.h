@@ -1,10 +1,10 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/vector3f.h"
 #include <map>
-#include <vector>
 
 namespace zylann::voxel::dmc {
 
@@ -42,9 +42,9 @@ public:
 	}
 
 private:
-	std::vector<Vector3f> _positions;
-	std::vector<Vector3f> _normals;
-	std::vector<int> _indices;
+	StdVector<Vector3f> _positions;
+	StdVector<Vector3f> _normals;
+	StdVector<int> _indices;
 	std::map<Vector3f, int> _position_to_index;
 	int _reused_vertices;
 };

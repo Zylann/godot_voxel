@@ -11,7 +11,7 @@ namespace zylann::voxel {
 
 namespace {
 struct BeforeUnloadSaveAction {
-	std::vector<VoxelData::BlockToSave> *to_save;
+	StdVector<VoxelData::BlockToSave> *to_save;
 	Vector3i position;
 	unsigned int lod_index;
 
@@ -31,7 +31,7 @@ struct BeforeUnloadSaveAction {
 };
 
 struct ScheduleSaveAction {
-	std::vector<VoxelData::BlockToSave> &blocks_to_save;
+	StdVector<VoxelData::BlockToSave> &blocks_to_save;
 	uint8_t lod_index;
 	bool with_copy;
 
@@ -616,7 +616,7 @@ unsigned int VoxelData::get_block_count() const {
 	return sum;
 }
 
-void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vector<BlockLocation> *out_updated_blocks) {
+void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector<BlockLocation> *out_updated_blocks) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 	// Propagates edits performed so far to other LODs.
@@ -631,11 +631,11 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	const bool streaming_enabled = is_streaming_enabled();
 	Ref<VoxelGenerator> generator = get_generator();
 
-	static thread_local FixedArray<std::vector<Vector3i>, constants::MAX_LOD> tls_blocks_to_process_per_lod;
+	static thread_local FixedArray<StdVector<Vector3i>, constants::MAX_LOD> tls_blocks_to_process_per_lod;
 
 	// Make sure LOD0 gets updates even if _lod_count is 1
 	{
-		std::vector<Vector3i> &dst_lod0 = tls_blocks_to_process_per_lod[0];
+		StdVector<Vector3i> &dst_lod0 = tls_blocks_to_process_per_lod[0];
 		dst_lod0.resize(modified_lod0_blocks.size());
 		// TODO Could use std::copy, but I'm unsure if Vector3i will be considered "trivial" enough for the copy to get
 		// optimized as a memcpy/memmove. Needs to be checked, and if possible should write a test for it.
@@ -645,7 +645,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 		Lod &data_lod0 = _lods[0];
 		RWLockRead rlock(data_lod0.map_lock);
 
-		std::vector<Vector3i> &blocks_pending_lodding_lod0 = tls_blocks_to_process_per_lod[0];
+		StdVector<Vector3i> &blocks_pending_lodding_lod0 = tls_blocks_to_process_per_lod[0];
 
 		for (const Vector3i data_block_pos : blocks_pending_lodding_lod0) {
 			VoxelDataBlock *data_block = data_lod0.map.get_block(data_block_pos);
@@ -666,8 +666,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	// Only LOD0 is editable at the moment, so we'll downscale from there
 	for (uint8_t dst_lod_index = 1; dst_lod_index < lod_count; ++dst_lod_index) {
 		const uint8_t src_lod_index = dst_lod_index - 1;
-		std::vector<Vector3i> &src_lod_blocks_to_process = tls_blocks_to_process_per_lod[src_lod_index];
-		std::vector<Vector3i> &dst_lod_blocks_to_process = tls_blocks_to_process_per_lod[dst_lod_index];
+		StdVector<Vector3i> &src_lod_blocks_to_process = tls_blocks_to_process_per_lod[src_lod_index];
+		StdVector<Vector3i> &dst_lod_blocks_to_process = tls_blocks_to_process_per_lod[dst_lod_index];
 
 		// VoxelLodTerrainUpdateData::Lod &dst_lod = state.lods[dst_lod_index];
 
@@ -796,7 +796,7 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, std::vect
 	//	}
 }
 
-void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<BlockToSave> *to_save) {
+void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, StdVector<BlockToSave> *to_save) {
 	Lod &lod = _lods[lod_index];
 	SpatialLock3D::Write swlock(lod.spatial_lock, bbox);
 	RWLockWrite wlock(lod.map_lock);
@@ -811,7 +811,7 @@ void VoxelData::unload_blocks(Box3i bbox, unsigned int lod_index, std::vector<Bl
 	}
 }
 
-// void VoxelData::unload_blocks(Span<const Vector3i> positions, std::vector<BlockToSave> *to_save) {
+// void VoxelData::unload_blocks(Span<const Vector3i> positions, StdVector<BlockToSave> *to_save) {
 // 	// Not efficient! We would have to also lock the spatial lock at every position to unload...
 // 	Lod &lod = _lods[0];
 // 	RWLockWrite wlock(lod.map_lock);
@@ -853,7 +853,7 @@ bool VoxelData::consume_block_modifications(Vector3i bpos, VoxelData::BlockToSav
 	return false;
 }
 
-void VoxelData::consume_all_modifications(std::vector<BlockToSave> &to_save, bool with_copy) {
+void VoxelData::consume_all_modifications(StdVector<BlockToSave> &to_save, bool with_copy) {
 	const unsigned int lod_count = get_lod_count();
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		Lod &lod = _lods[lod_index];
@@ -870,7 +870,7 @@ void VoxelData::consume_all_modifications(std::vector<BlockToSave> &to_save, boo
 }
 
 void VoxelData::get_missing_blocks(
-		Span<const Vector3i> block_positions, unsigned int lod_index, std::vector<Vector3i> &out_missing) const {
+		Span<const Vector3i> block_positions, unsigned int lod_index, StdVector<Vector3i> &out_missing) const {
 	const Lod &lod = _lods[lod_index];
 	RWLockRead rlock(lod.map_lock);
 	for (const Vector3i &pos : block_positions) {
@@ -880,8 +880,7 @@ void VoxelData::get_missing_blocks(
 	}
 }
 
-void VoxelData::get_missing_blocks(
-		Box3i p_blocks_box, unsigned int lod_index, std::vector<Vector3i> &out_missing) const {
+void VoxelData::get_missing_blocks(Box3i p_blocks_box, unsigned int lod_index, StdVector<Vector3i> &out_missing) const {
 	const Lod &data_lod = _lods[lod_index];
 
 	const Box3i bounds_in_blocks = get_bounds().downscaled(get_block_size());
@@ -972,8 +971,8 @@ bool VoxelData::has_blocks_with_voxels_in_area_broad_mip_test(Box3i box_in_voxel
 	return true;
 }
 
-void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *missing_blocks,
-		std::vector<Vector3i> *found_blocks_positions, std::vector<VoxelDataBlock> *found_blocks) {
+void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *missing_blocks,
+		StdVector<Vector3i> *found_blocks_positions, StdVector<VoxelDataBlock> *found_blocks) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(lod_index < _lods.size());
 
@@ -1005,8 +1004,8 @@ void VoxelData::view_area(Box3i blocks_box, unsigned int lod_index, std::vector<
 	});
 }
 
-void VoxelData::unview_area(Box3i blocks_box, unsigned int lod_index, std::vector<Vector3i> *removed_blocks,
-		std::vector<Vector3i> *missing_blocks, std::vector<BlockToSave> *to_save) {
+void VoxelData::unview_area(Box3i blocks_box, unsigned int lod_index, StdVector<Vector3i> *removed_blocks,
+		StdVector<Vector3i> *missing_blocks, StdVector<BlockToSave> *to_save) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(lod_index < _lods.size());
 

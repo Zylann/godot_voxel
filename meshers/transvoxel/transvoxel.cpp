@@ -155,7 +155,7 @@ inline uint32_t pack_bytes(const FixedArray<uint8_t, 4> &a) {
 }
 
 void add_texture_data(
-		std::vector<Vector2f> &uv, unsigned int packed_indices, FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights) {
+		StdVector<Vector2f> &uv, unsigned int packed_indices, FixedArray<uint8_t, MAX_TEXTURE_BLENDS> weights) {
 	struct IntUV {
 		uint32_t x;
 		uint32_t y;
@@ -315,7 +315,7 @@ template <typename Sdf_T, typename WeightSampler_T>
 void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_indices_data,
 		const WeightSampler_T &weights_sampler, const Vector3i block_size_with_padding, uint32_t lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler,
-		std::vector<CellInfo> *cell_info) {
+		StdVector<CellInfo> *cell_info) {
 	ZN_PROFILE_SCOPE();
 
 	// This function has some comments as quotes from the Transvoxel paper.
@@ -1249,8 +1249,7 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 }
 
 template <typename T>
-Span<const T> get_or_decompress_channel(
-		const VoxelBuffer &voxels, std::vector<T> &backing_buffer, unsigned int channel) {
+Span<const T> get_or_decompress_channel(const VoxelBuffer &voxels, StdVector<T> &backing_buffer, unsigned int channel) {
 	//
 	ZN_ASSERT_RETURN_V(
 			voxels.get_channel_depth(channel) == VoxelBuffer::get_depth_from_size(sizeof(T)), Span<const T>());
@@ -1316,9 +1315,9 @@ struct WeightSampler3U8 {
 	}
 };
 
-thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_0;
-thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_1;
-thread_local std::vector<uint8_t> s_weights_backing_buffer_u8_2;
+thread_local StdVector<uint8_t> s_weights_backing_buffer_u8_0;
+thread_local StdVector<uint8_t> s_weights_backing_buffer_u8_1;
+thread_local StdVector<uint8_t> s_weights_backing_buffer_u8_2;
 
 #else
 struct WeightSamplerPackedU16 {
@@ -1328,8 +1327,8 @@ struct WeightSamplerPackedU16 {
 	}
 };
 
-std::vector<uint16_t> &get_tls_weights_backing_buffer_u16() {
-	thread_local std::vector<uint16_t> tls_weights_backing_buffer_u16;
+StdVector<uint16_t> &get_tls_weights_backing_buffer_u16() {
+	thread_local StdVector<uint16_t> tls_weights_backing_buffer_u16;
 	return tls_weights_backing_buffer_u16;
 }
 #endif
@@ -1359,8 +1358,8 @@ std::vector<uint16_t> &get_tls_weights_backing_buffer_u16() {
 Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 	ZN_PROFILE_SCOPE();
 
-	static thread_local std::vector<Sdf_T> s_sdf_backing_buffer;
-	std::vector<Sdf_T> &sdf_data = s_sdf_backing_buffer;
+	static thread_local StdVector<Sdf_T> s_sdf_backing_buffer;
+	StdVector<Sdf_T> &sdf_data = s_sdf_backing_buffer;
 
 	sdf_data.resize(p_sdf_data.size());
 	memcpy(sdf_data.data(), p_sdf_data.data(), p_sdf_data.size());
@@ -1376,7 +1375,7 @@ Span<const Sdf_T> apply_zero_sdf_fix(Span<const Sdf_T> p_sdf_data) {
 
 DefaultTextureIndicesData build_regular_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, uint32_t lod_index,
 		TexturingMode texturing_mode, Cache &cache, MeshArrays &output, const IDeepSDFSampler *deep_sdf_sampler,
-		std::vector<CellInfo> *cell_infos) {
+		StdVector<CellInfo> *cell_infos) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 

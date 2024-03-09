@@ -32,8 +32,8 @@ MeshArrays &get_tls_mesh_arrays() {
 	thread_local MeshArrays tls_mesh_arrays;
 	return tls_mesh_arrays;
 }
-std::vector<CellInfo> &get_tls_cell_infos() {
-	thread_local std::vector<CellInfo> tls_cell_infos;
+StdVector<CellInfo> &get_tls_cell_infos() {
+	thread_local StdVector<CellInfo> tls_cell_infos;
 	return tls_cell_infos;
 }
 } // namespace transvoxel
@@ -113,8 +113,8 @@ void fill_surface_arrays(Array &arrays, const transvoxel::MeshArrays &src) {
 }
 
 template <typename T>
-void remap_vertex_array(const std::vector<T> &src_data, std::vector<T> &dst_data,
-		const std::vector<unsigned int> &remap_indices, unsigned int unique_vertex_count) {
+void remap_vertex_array(const StdVector<T> &src_data, StdVector<T> &dst_data,
+		const StdVector<unsigned int> &remap_indices, unsigned int unique_vertex_count) {
 	if (src_data.size() == 0) {
 		dst_data.clear();
 		return;
@@ -137,7 +137,7 @@ void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &ds
 
 	const unsigned int target_index_count = p_target_ratio * src_mesh.indices.size();
 
-	static thread_local std::vector<unsigned int> lod_indices;
+	static thread_local StdVector<unsigned int> lod_indices;
 	lod_indices.clear();
 	lod_indices.resize(src_mesh.indices.size());
 
@@ -161,7 +161,7 @@ void simplify(const transvoxel::MeshArrays &src_mesh, transvoxel::MeshArrays &ds
 	Array surface;
 	surface.resize(Mesh::ARRAY_MAX);
 
-	static thread_local std::vector<unsigned int> remap_indices;
+	static thread_local StdVector<unsigned int> remap_indices;
 	remap_indices.clear();
 	remap_indices.resize(src_mesh.vertices.size());
 
@@ -244,7 +244,7 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 	// const uint64_t time_before = Time::get_singleton()->get_ticks_usec();
 
 	transvoxel::DefaultTextureIndicesData default_texture_indices_data;
-	std::vector<transvoxel::CellInfo> *cell_infos = nullptr;
+	StdVector<transvoxel::CellInfo> *cell_infos = nullptr;
 	if (input.detail_texture_hint) {
 		transvoxel::get_tls_cell_infos().clear();
 		cell_infos = &transvoxel::get_tls_cell_infos();

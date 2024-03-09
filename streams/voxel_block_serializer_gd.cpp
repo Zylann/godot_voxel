@@ -32,7 +32,7 @@ void VoxelBlockSerializer::deserialize_from_stream_peer(
 	ERR_FAIL_COND(size <= 0);
 
 	if (decompress) {
-		std::vector<uint8_t> &compressed_data = BlockSerializer::get_tls_compressed_data();
+		StdVector<uint8_t> &compressed_data = BlockSerializer::get_tls_compressed_data();
 		compressed_data.resize(size);
 		const Error err = stream_peer_get_data(**peer, to_span(compressed_data));
 		ERR_FAIL_COND(err != OK);
@@ -41,7 +41,7 @@ void VoxelBlockSerializer::deserialize_from_stream_peer(
 		ERR_FAIL_COND(!success);
 
 	} else {
-		std::vector<uint8_t> &data = BlockSerializer::get_tls_data();
+		StdVector<uint8_t> &data = BlockSerializer::get_tls_data();
 		data.resize(size);
 		const Error err = stream_peer_get_data(**peer, to_span(data));
 		ERR_FAIL_COND(err != OK);

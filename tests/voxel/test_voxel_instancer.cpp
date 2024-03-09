@@ -44,7 +44,7 @@ void test_instance_data_serialization() {
 		}
 	}
 
-	std::vector<uint8_t> serialized_data;
+	StdVector<uint8_t> serialized_data;
 
 	ZN_TEST_ASSERT(serialize_instance_block_data(src_data, serialized_data));
 

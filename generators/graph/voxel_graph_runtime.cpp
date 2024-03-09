@@ -97,7 +97,7 @@ void Runtime::generate_optimized_execution_map(
 	// }
 
 	// This function will run a lot of times so better re-use the same vector
-	static thread_local std::vector<uint16_t> to_process;
+	static thread_local StdVector<uint16_t> to_process;
 	to_process.clear();
 
 	for (unsigned int i = 0; i < required_outputs.size(); ++i) {
@@ -108,7 +108,7 @@ void Runtime::generate_optimized_execution_map(
 
 	enum ProcessResult { NOT_PROCESSED, SKIPPABLE, REQUIRED };
 
-	static thread_local std::vector<ProcessResult> results;
+	static thread_local StdVector<ProcessResult> results;
 	results.clear();
 	results.resize(graph.nodes.size(), NOT_PROCESSED);
 
@@ -147,7 +147,7 @@ void Runtime::generate_optimized_execution_map(
 	}
 
 	if (debug) {
-		std::vector<uint32_t> &debug_nodes = execution_map.debug_nodes;
+		StdVector<uint32_t> &debug_nodes = execution_map.debug_nodes;
 		ZN_ASSERT(debug_nodes.size() == 0);
 
 		for (unsigned int node_index = 0; node_index < graph.nodes.size(); ++node_index) {
@@ -174,7 +174,7 @@ void Runtime::generate_optimized_execution_map(
 	Span<const uint16_t> operations(program.operations.data(), 0, program.operations.size());
 	bool inner_group_start_not_assigned = true;
 
-	static thread_local std::vector<ExecutionMap::ConstantFill> tls_constant_fills;
+	static thread_local StdVector<ExecutionMap::ConstantFill> tls_constant_fills;
 	tls_constant_fills.clear();
 
 	// Now we have to fill buffers with the local constants we may have found.

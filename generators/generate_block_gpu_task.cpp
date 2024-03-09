@@ -221,14 +221,14 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 
 namespace {
 
-std::vector<uint8_t> &get_temporary_conversion_memory_tls() {
-	static thread_local std::vector<uint8_t> mem;
+StdVector<uint8_t> &get_temporary_conversion_memory_tls() {
+	static thread_local StdVector<uint8_t> mem;
 	return mem;
 }
 
 template <typename T>
 inline Span<T> get_temporary_conversion_memory_tls(unsigned int count) {
-	std::vector<uint8_t> &mem = get_temporary_conversion_memory_tls();
+	StdVector<uint8_t> &mem = get_temporary_conversion_memory_tls();
 	mem.resize(count * sizeof(T));
 	return to_span(mem).reinterpret_cast_to<T>();
 }
@@ -292,7 +292,7 @@ void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_d
 }
 
 template <typename T>
-Span<const T> cast_floats(Span<const float> src_data_f, std::vector<uint8_t> &memory) {
+Span<const T> cast_floats(Span<const float> src_data_f, StdVector<uint8_t> &memory) {
 	memory.resize(src_data_f.size() * sizeof(T));
 	Span<T> dst = to_span(memory).reinterpret_cast_to<T>();
 	unsigned int dst_i = 0;
@@ -308,7 +308,7 @@ void convert_gpu_output_uint(
 	ZN_PROFILE_SCOPE();
 
 	const VoxelBuffer::Depth depth = dst.get_channel_depth(VoxelBuffer::CHANNEL_SDF);
-	std::vector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
+	StdVector<uint8_t> &tls_temp = get_temporary_conversion_memory_tls();
 
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT: {

@@ -25,18 +25,18 @@ const unsigned int BLOCK_METADATA_HEADER_SIZE = sizeof(uint32_t);
 
 // Temporary data buffers, re-used to reduce allocations
 
-std::vector<uint8_t> &get_tls_metadata_tmp() {
-	thread_local std::vector<uint8_t> tls_metadata_tmp;
+StdVector<uint8_t> &get_tls_metadata_tmp() {
+	thread_local StdVector<uint8_t> tls_metadata_tmp;
 	return tls_metadata_tmp;
 }
 
-std::vector<uint8_t> &get_tls_data() {
-	thread_local std::vector<uint8_t> tls_data;
+StdVector<uint8_t> &get_tls_data() {
+	thread_local StdVector<uint8_t> tls_data;
 	return tls_data;
 }
 
-std::vector<uint8_t> &get_tls_compressed_data() {
-	thread_local std::vector<uint8_t> tls_compressed_data;
+StdVector<uint8_t> &get_tls_compressed_data() {
+	thread_local StdVector<uint8_t> tls_compressed_data;
 	return tls_compressed_data;
 }
 
@@ -205,9 +205,9 @@ bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBuffer &buffer) {
 	ZN_ASSERT_RETURN_V(deserialize_metadata(buffer.get_block_metadata(), mr), false);
 
 	typedef FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair Pair;
-	static thread_local std::vector<Pair> tls_pairs;
+	static thread_local StdVector<Pair> tls_pairs;
 	// Clear when exiting scope (including cases of error) so we don't store dangling Variants
-	ClearOnExit<std::vector<Pair>> clear_tls_pairs{ tls_pairs };
+	ClearOnExit<StdVector<Pair>> clear_tls_pairs{ tls_pairs };
 
 	while (mr.pos < mr.data.size()) {
 		Vector3i pos;
@@ -273,8 +273,8 @@ size_t get_size_in_bytes(const VoxelBuffer &buffer, size_t &metadata_size) {
 SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &dst_data = get_tls_data();
-	std::vector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
+	StdVector<uint8_t> &dst_data = get_tls_data();
+	StdVector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
 	dst_data.clear();
 	metadata_tmp.clear();
 
@@ -361,7 +361,7 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 
 namespace legacy {
 
-bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
+bool migrate_v3_to_v4(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 	// In v3, metadata was always a Godot Variant. In v4, metadata uses an independent format.
 
 #if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
@@ -463,7 +463,7 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
 	return true;
 }
 
-bool migrate_v2_to_v3(Span<const uint8_t> p_data, std::vector<uint8_t> &dst) {
+bool migrate_v2_to_v3(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 	// In v2, SDF data was using a legacy arbitrary formula to encode fixed-point numbers.
 	// In v3, it now uses inorm8 and inorm16.
 	// Serialized size does not change.
@@ -556,7 +556,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 	ZN_DSTACK();
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
+	StdVector<uint8_t> &metadata_tmp = get_tls_metadata_tmp();
 
 	ERR_FAIL_COND_V(p_data.size() < sizeof(uint32_t), false);
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
@@ -573,13 +573,13 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 
 	switch (format_version) {
 		case 2: {
-			std::vector<uint8_t> migrated_data;
+			StdVector<uint8_t> migrated_data;
 			ERR_FAIL_COND_V(!legacy::migrate_v2_to_v3(p_data, migrated_data), false);
 			return deserialize(to_span(migrated_data), out_voxel_buffer);
 		} break;
 
 		case 3: {
-			std::vector<uint8_t> migrated_data;
+			StdVector<uint8_t> migrated_data;
 			ERR_FAIL_COND_V(!legacy::migrate_v3_to_v4(p_data, migrated_data), false);
 			return deserialize(to_span(migrated_data), out_voxel_buffer);
 		} break;
@@ -666,11 +666,11 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &compressed_data = get_tls_compressed_data();
+	StdVector<uint8_t> &compressed_data = get_tls_compressed_data();
 
 	SerializeResult res = serialize(voxel_buffer);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
-	const std::vector<uint8_t> &data = res.data;
+	const StdVector<uint8_t> &data = res.data;
 
 	res.success = CompressedData::compress(
 			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, CompressedData::COMPRESSION_LZ4);
@@ -682,7 +682,7 @@ SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer) {
 bool decompress_and_deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 	ZN_PROFILE_SCOPE();
 
-	std::vector<uint8_t> &data = get_tls_data();
+	StdVector<uint8_t> &data = get_tls_data();
 
 	const bool res = CompressedData::decompress(p_data, data);
 	ERR_FAIL_COND_V(!res, false);
@@ -699,7 +699,7 @@ bool decompress_and_deserialize(FileAccess &f, unsigned int size_to_read, VoxelB
 	ERR_FAIL_COND_V(size_to_read > remaining_file_size, false);
 #endif
 
-	std::vector<uint8_t> &compressed_data = get_tls_compressed_data();
+	StdVector<uint8_t> &compressed_data = get_tls_compressed_data();
 
 	compressed_data.resize(size_to_read);
 	const unsigned int read_size = zylann::godot::get_buffer(f, to_span(compressed_data));
