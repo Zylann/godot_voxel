@@ -4,6 +4,7 @@
 #include "../containers/container_funcs.h"
 #include "../containers/fixed_array.h"
 #include "../containers/span.h"
+#include "../containers/std_queue.h"
 #include "../containers/std_vector.h"
 #include "../profiling.h"
 #include "../thread/mutex.h"
@@ -19,7 +20,6 @@
 #endif
 
 #include <atomic>
-#include <queue>
 #include <string>
 
 namespace zylann {
@@ -154,7 +154,7 @@ private:
 	Semaphore _tasks_semaphore;
 
 	// Ongoing tasks that may take more than one iteration
-	std::queue<TaskItem> _spinning_tasks;
+	StdQueue<TaskItem> _spinning_tasks;
 	Mutex _spinning_tasks_mutex;
 
 	StdVector<IThreadedTask *> _completed_tasks;
