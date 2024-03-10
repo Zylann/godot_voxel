@@ -79,15 +79,8 @@ inline double maxf(double a, double b) {
 
 template <typename T>
 inline constexpr T clamp(const T x, const T min_value, const T max_value) {
-	// TODO Optimization: clang can optimize a min/max implementation. Worth changing to that?
 	// TODO Enforce T as being numeric
-	if (x < min_value) {
-		return min_value;
-	}
-	if (x > max_value) {
-		return max_value;
-	}
-	return x;
+	return min(max(x, min_value), max_value);
 }
 
 inline float clampf(float x, float min_value, float max_value) {
