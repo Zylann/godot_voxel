@@ -2220,6 +2220,19 @@ void VoxelTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 
+	ADD_GROUP("Debug Drawing", "debug_");
+
+	// Debug drawing is not persistent
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_draw_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_enabled", "debug_is_draw_enabled");
+
+#define ADD_DEBUG_DRAW_FLAG(m_name, m_flag)                                                                            \
+	ADD_PROPERTYI(PropertyInfo(Variant::BOOL, m_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),                  \
+			"debug_set_draw_flag", "debug_get_draw_flag", m_flag);
+
+	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
+
 	// TODO Add back access to block, but with an API securing multithreaded access
 	ADD_SIGNAL(MethodInfo("block_loaded", PropertyInfo(Variant::VECTOR3I, "position")));
 	ADD_SIGNAL(MethodInfo("block_unloaded", PropertyInfo(Variant::VECTOR3I, "position")));

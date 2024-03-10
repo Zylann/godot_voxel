@@ -21,10 +21,7 @@
 
 namespace zylann::voxel {
 
-VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {
-	_lod_terrain_debug_draw_flags = (1 << VoxelLodTerrain::DEBUG_DRAW_VOLUME_BOUNDS);
-	fill<int8_t>(_menu_id_to_lod_terrain_debug_flag_index, -1);
-}
+VoxelTerrainEditorPlugin::VoxelTerrainEditorPlugin() {}
 
 // TODO GDX: Can't initialize EditorPlugins in their constructor when they access EditorNode.
 // See https://github.com/godotengine/godot-cpp/issues/1179
@@ -65,12 +62,6 @@ void add_checkable_item(PopupMenu *popup, String text, int id, bool checked) {
 
 } // namespace
 
-void VoxelTerrainEditorPlugin::add_lod_terrain_debug_draw_option(
-		PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index) {
-	add_checkable_item(popup, text, menu_id, (_lod_terrain_debug_draw_flags & (1 << debug_flag_index)) != 0);
-	_menu_id_to_lod_terrain_debug_flag_index[menu_id] = debug_flag_index;
-}
-
 void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool is_lod_terrain) {
 	PopupMenu *popup = menu_button->get_popup();
 	popup->clear();
@@ -87,24 +78,6 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 	add_checkable_item(popup, ZN_TTR("Enable Editor Viewer"), MENU_ENABLE_EDITOR_VIEWER, _editor_viewer_enabled);
 
 	if (is_lod_terrain) {
-		popup->add_separator();
-
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree bounds"), //
-				MENU_SHOW_OCTREE_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_OCTREE_BOUNDS);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show octree nodes"), //
-				MENU_SHOW_OCTREE_NODES, VoxelLodTerrain::DEBUG_DRAW_OCTREE_NODES);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active mesh blocks"), //
-				MENU_SHOW_ACTIVE_MESH_BLOCKS, VoxelLodTerrain::DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show viewer clipboxes"), //
-				MENU_SHOW_VIEWER_CLIPBOXES, VoxelLodTerrain::DEBUG_DRAW_VIEWER_CLIPBOXES);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show mesh updates"), //
-				MENU_SHOW_MESH_UPDATES, VoxelLodTerrain::DEBUG_DRAW_MESH_UPDATES);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show modifier bounds"), //
-				MENU_SHOW_MODIFIER_BOUNDS, VoxelLodTerrain::DEBUG_DRAW_MODIFIER_BOUNDS);
-		add_lod_terrain_debug_draw_option(popup, ZN_TTR("Show active visual and collision blocks"), //
-				MENU_SHOW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS,
-				VoxelLodTerrain::DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
-
 		popup->add_separator();
 		popup->add_item(ZN_TTR("Dump as scene... (Debug)"), MENU_DUMP_AS_SCENE);
 	}
@@ -159,19 +132,6 @@ void VoxelTerrainEditorPlugin::_zn_edit(Object *p_object) {
 }
 
 void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
-	VoxelNode *prev_node = _terrain_node.get();
-
-	if (prev_node != nullptr) {
-		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(prev_node);
-		if (vlt != nullptr) {
-			vlt->debug_set_draw_enabled(false);
-		}
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(prev_node);
-		if (vt != nullptr) {
-			vt->debug_set_draw_enabled(false);
-		}
-	}
-
 	_terrain_node.set(node);
 
 	if (node != nullptr) {
@@ -179,15 +139,6 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(node);
 
 		generate_menu_items(_menu_button, vlt != nullptr);
-
-		if (vlt != nullptr) {
-			vlt->debug_set_draw_enabled(true);
-			vlt->debug_set_draw_flags(_lod_terrain_debug_draw_flags);
-
-		} else if (vt != nullptr) {
-			vt->debug_set_draw_enabled(true);
-			vt->debug_set_draw_flag(VoxelTerrain::DEBUG_DRAW_VOLUME_BOUNDS, true);
-		}
 	}
 }
 
@@ -195,19 +146,6 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 	_menu_button->set_visible(visible);
 	_task_indicator->set_visible(visible);
 	set_process(visible);
-
-	VoxelNode *node = _terrain_node.get();
-
-	if (node != nullptr) {
-		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
-		if (vlt != nullptr) {
-			vlt->debug_set_draw_enabled(visible);
-		}
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(node);
-		if (vt != nullptr) {
-			vt->debug_set_draw_enabled(visible);
-		}
-	}
 
 	// TODO There are deselection problems I cannot fix cleanly!
 
@@ -287,21 +225,6 @@ void VoxelTerrainEditorPlugin::_on_menu_item_selected(int id) {
 
 		default: {
 			ZN_ASSERT_RETURN(id >= 0 && id < MENU_COUNT);
-
-			// VoxelLodTerrain debug draw option?
-			int flag_index = _menu_id_to_lod_terrain_debug_flag_index[id];
-			if (flag_index != -1) {
-				VoxelNode *node = _terrain_node.get();
-				VoxelLodTerrain *lod_terrain = Object::cast_to<VoxelLodTerrain>(node);
-				ERR_FAIL_COND(lod_terrain == nullptr);
-
-				_lod_terrain_debug_draw_flags = _lod_terrain_debug_draw_flags ^ (1 << flag_index);
-				const bool enabled = (_lod_terrain_debug_draw_flags & (1 << flag_index)) != 0;
-				lod_terrain->debug_set_draw_flag(static_cast<VoxelLodTerrain::DebugDrawFlag>(flag_index), enabled);
-
-				const int i = _menu_button->get_popup()->get_item_index(id);
-				_menu_button->get_popup()->set_item_checked(i, enabled);
-			}
 		}
 	}
 }

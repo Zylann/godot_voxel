@@ -28,6 +28,7 @@ Primarily developped with Godot 4.2.
         - Adds secondary LOD distance parameter controlling the extents of LOD1 and beyond, separately from LOD0 (unused in the legacy system)
         - Has its own limitations and pending improvements, may be addressed over time
         - The original system is now referenced as "Legacy Octree".
+    - Debug drawing is now exposed as properties. Editor checkboxes were removed from the terrain menu
 - `VoxelToolLodTerrain`:
     - Improved quality of `separate_floating_chunks` on smooth terrains by expanding cutting-off area to include more gradients
 - `VoxelStream`:

@@ -3668,6 +3668,29 @@ void VoxelLodTerrain::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "streaming_system", PROPERTY_HINT_ENUM, "Octree (legacy),Clipbox"),
 			"set_streaming_system", "get_streaming_system");
+
+	ADD_GROUP("Debug Drawing", "debug_");
+
+	// Debug drawing is not persistent
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_draw_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_enabled", "debug_is_draw_enabled");
+
+#define ADD_DEBUG_DRAW_FLAG(m_name, m_flag)                                                                            \
+	ADD_PROPERTYI(PropertyInfo(Variant::BOOL, m_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),                  \
+			"debug_set_draw_flag", "debug_get_draw_flag", m_flag);
+
+	ADD_DEBUG_DRAW_FLAG("debug_draw_octree_nodes", DEBUG_DRAW_OCTREE_NODES);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_octree_bounds", DEBUG_DRAW_OCTREE_BOUNDS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_mesh_updates", DEBUG_DRAW_MESH_UPDATES);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_edit_boxes", DEBUG_DRAW_EDIT_BOXES);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_edited_blocks", DEBUG_DRAW_EDITED_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_modifier_bounds", DEBUG_DRAW_MODIFIER_BOUNDS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_active_mesh_blocks", DEBUG_DRAW_ACTIVE_MESH_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_viewer_clipboxes", DEBUG_DRAW_VIEWER_CLIPBOXES);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_loaded_visual_and_collision_blocks", DEBUG_DRAW_LOADED_VISUAL_AND_COLLISION_BLOCKS);
+	ADD_DEBUG_DRAW_FLAG("debug_draw_active_visual_and_collision_blocks", DEBUG_DRAW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS);
 }
 
 } // namespace zylann::voxel

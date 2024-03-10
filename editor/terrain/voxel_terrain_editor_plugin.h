@@ -36,11 +36,7 @@ protected:
 
 private:
 	void init();
-	void add_lod_terrain_debug_draw_option(
-			PopupMenu *popup, String text, unsigned int menu_id, unsigned int debug_flag_index);
-
 	void set_voxel_node(VoxelNode *node);
-
 	void generate_menu_items(MenuButton *menu_button, bool is_lod_terrain);
 
 	void _on_menu_item_selected(int id);
@@ -55,14 +51,6 @@ private:
 		MENU_STREAM_FOLLOW_CAMERA,
 		MENU_ENABLE_EDITOR_VIEWER,
 
-		MENU_SHOW_OCTREE_BOUNDS,
-		MENU_SHOW_OCTREE_NODES,
-		MENU_SHOW_MESH_UPDATES,
-		MENU_SHOW_MODIFIER_BOUNDS,
-		MENU_SHOW_ACTIVE_MESH_BLOCKS,
-		MENU_SHOW_VIEWER_CLIPBOXES,
-		MENU_SHOW_ACTIVE_VISUAL_AND_COLLISION_BLOCKS,
-
 		MENU_DUMP_AS_SCENE,
 		MENU_ABOUT,
 
@@ -75,9 +63,6 @@ private:
 	bool _editor_viewer_enabled = true;
 	Vector3 _editor_camera_last_position;
 	bool _editor_viewer_follows_camera = false;
-
-	uint16_t _lod_terrain_debug_draw_flags = 0;
-	FixedArray<int8_t, MENU_COUNT> _menu_id_to_lod_terrain_debug_flag_index;
 
 	MenuButton *_menu_button = nullptr;
 	VoxelAboutWindow *_about_window = nullptr;
