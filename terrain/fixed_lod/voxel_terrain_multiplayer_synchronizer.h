@@ -2,9 +2,9 @@
 #define VOXEL_NETWORK_TERRAIN_SYNC_H
 
 #include "../../storage/voxel_data_block.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node.h"
-#include <unordered_map>
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/version.h"
@@ -51,7 +51,7 @@ private:
 		PackedByteArray data;
 	};
 
-	std::unordered_map<int, StdVector<DeferredBlockMessage>> _deferred_block_messages_per_peer;
+	StdUnorderedMap<int, StdVector<DeferredBlockMessage>> _deferred_block_messages_per_peer;
 };
 
 } // namespace zylann::voxel

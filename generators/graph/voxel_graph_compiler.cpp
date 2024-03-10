@@ -1,5 +1,6 @@
 #include "voxel_graph_compiler.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/macros.h"
@@ -9,7 +10,6 @@
 #include "voxel_graph_function.h"
 
 #include <limits>
-#include <unordered_set>
 
 namespace zylann::voxel::pg {
 
@@ -773,7 +773,7 @@ CompilationResult expand_function(
 		apply_auto_connects(fgraph, func_inputs, type_db);
 	}
 
-	std::unordered_map<uint32_t, uint32_t> fn_to_expanded_node_ids;
+	StdUnorderedMap<uint32_t, uint32_t> fn_to_expanded_node_ids;
 	StdVector<uint32_t> nested_func_node_ids;
 
 	// Copy nodes. I/O nodes are replaced with relays temporarily, they will be simplified out in a later pass.
@@ -1323,7 +1323,7 @@ CompilationResult Runtime::compile_preprocessed_graph(Program &program, const Pr
 	MemoryHelper mem{ program.buffer_specs };
 
 	StdVector<uint16_t> &operations = program.operations;
-	std::unordered_map<uint32_t, uint32_t> node_id_to_dependency_graph;
+	StdUnorderedMap<uint32_t, uint32_t> node_id_to_dependency_graph;
 	StdVector<uint16_t> input_buffer_indices;
 
 	// Allocate input slots

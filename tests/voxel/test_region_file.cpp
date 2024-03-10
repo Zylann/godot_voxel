@@ -1,6 +1,7 @@
 #include "test_region_file.h"
 #include "../../streams/region/region_file.h"
 #include "../../streams/region/voxel_stream_region_files.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../testing.h"
 
@@ -116,7 +117,7 @@ void test_region_file() {
 
 		RandomPCG rng;
 
-		std::unordered_map<Vector3i, VoxelBuffer> buffers;
+		StdUnorderedMap<Vector3i, VoxelBuffer> buffers;
 		const Vector3i region_size = region_file.get_format().region_size;
 
 		for (int i = 0; i < 1000; ++i) {

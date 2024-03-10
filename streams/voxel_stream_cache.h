@@ -2,10 +2,10 @@
 #define VOXEL_STREAM_CACHE_H
 
 #include "../storage/voxel_buffer.h"
+#include "../util/containers/std_unordered_map.h"
 #include "../util/memory.h"
 #include "../util/thread/rw_lock.h"
 #include "instance_data.h"
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -58,7 +58,7 @@ public:
 private:
 	struct Lod {
 		// Not using pointers for values, since unordered_map does not invalidate pointers to values
-		std::unordered_map<Vector3i, Block> blocks;
+		StdUnorderedMap<Vector3i, Block> blocks;
 		RWLock rw_lock;
 	};
 

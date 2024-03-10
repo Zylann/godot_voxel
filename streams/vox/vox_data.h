@@ -2,6 +2,7 @@
 #define VOX_DATA_H
 
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/math/basis.h"
@@ -12,8 +13,6 @@
 #if defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/global_constants.hpp> // For `Error`
 #endif
-
-#include <unordered_map>
 
 namespace zylann::voxel::magica {
 
@@ -35,7 +34,7 @@ struct Node {
 	int id;
 	// Depending on the type, a node pointer can be casted to different structs
 	const Type type;
-	std::unordered_map<String, String> attributes;
+	StdUnorderedMap<String, String> attributes;
 
 	Node(Type p_type) : type(p_type) {}
 
@@ -67,14 +66,14 @@ struct GroupNode : public Node {
 
 struct ShapeNode : public Node {
 	int model_id; // corresponds to index in the array of models
-	std::unordered_map<String, String> model_attributes;
+	StdUnorderedMap<String, String> model_attributes;
 
 	ShapeNode() : Node(Node::TYPE_SHAPE) {}
 };
 
 struct Layer {
 	int id;
-	std::unordered_map<String, String> attributes;
+	StdUnorderedMap<String, String> attributes;
 	String name;
 	bool hidden;
 };
@@ -125,9 +124,9 @@ private:
 
 	StdVector<UniquePtr<Model>> _models;
 	StdVector<UniquePtr<Layer>> _layers;
-	std::unordered_map<int, UniquePtr<Node>> _scene_graph;
+	StdUnorderedMap<int, UniquePtr<Node>> _scene_graph;
 	// Material IDs are supposedly tied to palette indices
-	std::unordered_map<int, UniquePtr<Material>> _materials;
+	StdUnorderedMap<int, UniquePtr<Material>> _materials;
 	int _root_node_id = -1;
 	FixedArray<Color8, 256> _palette;
 };

@@ -2,6 +2,7 @@
 #define VOXEL_GRAPH_RUNTIME_H
 
 #include "../../util/containers/span.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/ref_counted.h"
 #include "../../util/math/interval.h"
@@ -462,14 +463,14 @@ private:
 
 		// Associates a port from the expanded graph to its corresponding address within the compiled program.
 		// This is used for debugging intermediate values.
-		std::unordered_map<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
+		StdUnorderedMap<ProgramGraph::PortLocation, uint16_t> output_port_addresses;
 
 		// If you have a port location from the original user graph, before querying `output_port_addresses`, remap
 		// it first, in case it got expanded to different nodes during compilation.
-		std::unordered_map<ProgramGraph::PortLocation, ProgramGraph::PortLocation> user_port_to_expanded_port;
+		StdUnorderedMap<ProgramGraph::PortLocation, ProgramGraph::PortLocation> user_port_to_expanded_port;
 
 		// Associates expanded graph ID to user graph node IDs.
-		std::unordered_map<uint32_t, uint32_t> expanded_node_id_to_user_node_id;
+		StdUnorderedMap<uint32_t, uint32_t> expanded_node_id_to_user_node_id;
 
 		// Result of the last compilation attempt. The program should not be run if it failed.
 		CompilationResult compilation_result;

@@ -375,7 +375,7 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 }
 
 void unreference_data_block_from_loading_lists(
-		std::unordered_map<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
+		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
 		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, Vector3i bpos, unsigned int lod_index) {
 	auto loading_block_it = loading_blocks.find(bpos);
 	if (loading_block_it == loading_blocks.end()) {
@@ -575,7 +575,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 
 // TODO Copypasta from octree streaming file
 VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
-		std::unordered_map<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map, Vector3i pos) {
+		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map, Vector3i pos) {
 #ifdef DEBUG_ENABLED
 	// We got here because the map didn't contain the element. If it did contain it already, that's a bug.
 	static VoxelLodTerrainUpdateData::MeshBlockState s_default;

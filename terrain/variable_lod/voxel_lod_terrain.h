@@ -4,6 +4,7 @@
 #include "../../engine/voxel_engine.h"
 #include "../../meshers/mesh_block_task.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/shader_material_pool.h"
 #include "../voxel_mesh_map.h"
@@ -416,7 +417,7 @@ private:
 		VoxelEngine::BlockMeshOutput data;
 	};
 
-	FixedArray<std::unordered_map<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
+	FixedArray<StdUnorderedMap<Vector3i, RefCount>, constants::MAX_LOD> _queued_main_thread_mesh_updates;
 
 #ifdef TOOLS_ENABLED
 	bool _debug_draw_enabled = false;

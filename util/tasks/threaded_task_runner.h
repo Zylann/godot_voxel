@@ -15,7 +15,7 @@
 // #define ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
 
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
-#include <unordered_map>
+#include "../containers/std_unordered_map.h"
 #endif
 
 #include <atomic>
@@ -174,7 +174,7 @@ private:
 	unsigned int _debug_taken_out_tasks = 0;
 
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
-	std::unordered_map<IThreadedTask *, std::string> _debug_owned_tasks;
+	StdUnorderedMap<IThreadedTask *, std::string> _debug_owned_tasks;
 	Mutex _debug_owned_tasks_mutex;
 #endif
 };

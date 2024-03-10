@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_mesh.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
@@ -10,8 +11,6 @@
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string_funcs.h"
 #include "voxel_blocky_library.h"
-
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -257,8 +256,8 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
 
-		FixedArray<std::unordered_map<int, int>, Cube::SIDE_COUNT> added_side_indices;
-		std::unordered_map<int, int> added_regular_indices;
+		FixedArray<StdUnorderedMap<int, int>, Cube::SIDE_COUNT> added_side_indices;
+		StdUnorderedMap<int, int> added_regular_indices;
 		FixedArray<Vector3f, 3> tri_positions;
 
 		for (int i = 0; i < indices.size(); i += 3) {
@@ -274,7 +273,7 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 
 				for (int j = 0; j < 3; ++j) {
 					const int src_index = indices[i + j];
-					std::unordered_map<int, int> &added_indices = added_side_indices[side];
+					StdUnorderedMap<int, int> &added_indices = added_side_indices[side];
 					const auto existing_dst_index_it = added_indices.find(src_index);
 
 					if (existing_dst_index_it == added_indices.end()) {

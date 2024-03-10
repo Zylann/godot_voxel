@@ -1,9 +1,9 @@
 #ifndef VOXEL_INSTANCER_STAT_VIEW_H
 #define VOXEL_INSTANCER_STAT_VIEW_H
 
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/macros.h"
-#include <unordered_map>
 
 ZN_GODOT_FORWARD_DECLARE(class Tree)
 
@@ -28,7 +28,7 @@ private:
 
 	Tree *_tree = nullptr;
 	const VoxelInstancer *_instancer = nullptr;
-	std::unordered_map<uint32_t, uint32_t> _count_per_layer;
+	StdUnorderedMap<uint32_t, uint32_t> _count_per_layer;
 };
 
 } // namespace zylann::voxel

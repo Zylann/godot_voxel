@@ -1,9 +1,9 @@
 #include "array_mesh.h"
+#include "../../containers/std_unordered_map.h"
 #include "../../containers/std_vector.h"
 #include "../core/packed_arrays.h"
 
 #include <map>
-#include <unordered_map>
 
 namespace zylann::godot {
 
@@ -30,7 +30,7 @@ Array generate_debug_seams_wireframe_surface(const ArrayMesh &src_mesh, int surf
 
 	// Using a map so we can have a comparator with floating error
 	std::map<Vector3, Dupe> vertex_to_dupe;
-	std::unordered_map<int, int> src_index_to_dst_index;
+	StdUnorderedMap<int, int> src_index_to_dst_index;
 	StdVector<Vector3> dst_positions;
 	{
 		// const Vector3 *src_positions_read = src_positions.ptr();

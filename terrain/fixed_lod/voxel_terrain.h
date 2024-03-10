@@ -4,6 +4,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../engine/meshing_dependency.h"
 #include "../../storage/voxel_data.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/memory.h"
 #include "../../util/math/box3i.h"
@@ -308,7 +309,7 @@ private:
 	};
 
 	// Blocks currently being loaded.
-	std::unordered_map<Vector3i, LoadingBlock> _loading_blocks;
+	StdUnorderedMap<Vector3i, LoadingBlock> _loading_blocks;
 	// Blocks that should be loaded on the next process call.
 	// The order in that list does not matter.
 	StdVector<Vector3i> _blocks_pending_load;
@@ -321,7 +322,7 @@ private:
 	// Data blocks that have been unloaded and needed saving. They are temporarily stored here until saving completes,
 	// and is checked first before loading new blocks. This is in case players leave an area and come back to it faster
 	// than saving, because otherwise loading from stream would return an outdated version.
-	std::unordered_map<Vector3i, std::shared_ptr<VoxelBuffer>> _unloaded_saving_blocks;
+	StdUnorderedMap<Vector3i, std::shared_ptr<VoxelBuffer>> _unloaded_saving_blocks;
 	// List of data blocks that will be used to simulate a loading response on the next process call.
 	struct QuickReloadingBlock {
 		std::shared_ptr<VoxelBuffer> voxels;

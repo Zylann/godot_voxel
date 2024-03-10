@@ -1,12 +1,11 @@
 #ifndef VOXEL_MODIFIER_STACK_H
 #define VOXEL_MODIFIER_STACK_H
 
+#include "../util/containers/std_unordered_map.h"
 #include "../util/containers/std_vector.h"
 #include "../util/math/vector3f.h"
 #include "../util/memory.h"
 #include "voxel_modifier.h"
-
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -54,7 +53,7 @@ public:
 private:
 	void move_from_noclear(VoxelModifierStack &other);
 
-	std::unordered_map<uint32_t, UniquePtr<VoxelModifier>> _modifiers;
+	StdUnorderedMap<uint32_t, UniquePtr<VoxelModifier>> _modifiers;
 	uint32_t _next_id = 1;
 	// TODO Later, replace this with a spatial acceleration structure based on AABBs, like BVH
 	StdVector<VoxelModifier *> _stack;

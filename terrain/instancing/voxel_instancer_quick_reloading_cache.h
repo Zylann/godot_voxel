@@ -1,10 +1,10 @@
 #ifndef VOXEL_INSTANCER_QUICK_RELOADING_CACHE_H
 #define VOXEL_INSTANCER_QUICK_RELOADING_CACHE_H
 
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/memory.h"
 #include "../../util/thread/mutex.h"
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -15,7 +15,7 @@ struct InstanceBlockData;
 // instead. Without this, chunks could be reloaded before getting saved, leading to loss of data. As confusing as it
 // sounds, this can happen because saving and loading is multi-threaded.
 struct VoxelInstancerQuickReloadingCache {
-	std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> map;
+	StdUnorderedMap<Vector3i, UniquePtr<InstanceBlockData>> map;
 	Mutex mutex;
 };
 

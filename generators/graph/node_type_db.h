@@ -1,6 +1,7 @@
 #ifndef VOXEL_GRAPH_NODE_TYPE_DB_H
 #define VOXEL_GRAPH_NODE_TYPE_DB_H
 
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/string.h" // For String hash
@@ -83,8 +84,8 @@ struct NodeType {
 	StdVector<Port> inputs;
 	StdVector<Port> outputs;
 	StdVector<Param> params;
-	std::unordered_map<String, uint32_t> param_name_to_index;
-	std::unordered_map<String, uint32_t> input_name_to_index;
+	StdUnorderedMap<String, uint32_t> param_name_to_index;
+	StdUnorderedMap<String, uint32_t> input_name_to_index;
 	CompileFunc compile_func = nullptr;
 	Runtime::ProcessBufferFunc process_buffer_func = nullptr;
 	Runtime::RangeAnalysisFunc range_analysis_func = nullptr;
@@ -132,7 +133,7 @@ public:
 
 private:
 	FixedArray<NodeType, VoxelGraphFunction::NODE_TYPE_COUNT> _types;
-	std::unordered_map<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
+	StdUnorderedMap<String, VoxelGraphFunction::NodeTypeID> _type_name_to_id;
 	StdVector<ExpressionParser::Function> _expression_functions;
 };
 

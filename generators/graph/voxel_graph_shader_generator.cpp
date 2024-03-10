@@ -2,6 +2,7 @@
 #include "../../engine/gpu/compute_shader_parameters.h"
 #include "../../engine/gpu/compute_shader_resource.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/godot/core/string.h"
 #include "../../util/profiling.h"
@@ -112,7 +113,7 @@ CompilationResult generate_shader(const ProgramGraph &p_graph, Span<const VoxelG
 	codegen.indent();
 
 	// This map only contains output ports.
-	std::unordered_map<ProgramGraph::PortLocation, std::string> port_to_var;
+	StdUnorderedMap<ProgramGraph::PortLocation, std::string> port_to_var;
 
 	FixedArray<std::string, 8> unconnected_input_var_names;
 

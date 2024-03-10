@@ -1,5 +1,6 @@
 #include "voxel_stream_memory.h"
 #include "../storage/voxel_buffer.h"
+#include "../util/containers/std_unordered_map.h"
 #include "../util/thread/thread.h"
 #include "instance_data.h"
 
@@ -85,7 +86,7 @@ bool VoxelStreamMemory::supports_loading_all_blocks() const {
 
 void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 	// The return value couples instances and voxels, but our storage is decoupled, so it complicates things a bit
-	std::unordered_map<Vector3i, unsigned int> bpos_to_index;
+	StdUnorderedMap<Vector3i, unsigned int> bpos_to_index;
 
 	for (unsigned int lod_index = 0; lod_index < _lods.size(); ++lod_index) {
 		const Lod &lod = _lods[lod_index];

@@ -2,10 +2,9 @@
 #define VOXEL_MESH_MAP_H
 
 #include "../engine/voxel_engine.h"
+#include "../util/containers/std_unordered_map.h"
 #include "../util/containers/std_vector.h"
 #include "../util/macros.h"
-
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -151,7 +150,7 @@ private:
 		unsigned int index;
 	};
 
-	void remove_block_internal(typename std::unordered_map<Vector3i, MapItem>::iterator rm_it, unsigned int index) {
+	void remove_block_internal(typename StdUnorderedMap<Vector3i, MapItem>::iterator rm_it, unsigned int index) {
 		// TODO `erase` can occasionally be very slow (milliseconds) if the map contains lots of items.
 		// This might be caused by internal rehashing/resizing.
 		// We should look for a faster container, or reduce the number of entries.
@@ -190,7 +189,7 @@ private:
 
 private:
 	// Blocks stored with a spatial hash in all 3D directions.
-	std::unordered_map<Vector3i, MapItem> _blocks_map;
+	StdUnorderedMap<Vector3i, MapItem> _blocks_map;
 	// Blocks are stored in a vector to allow faster iteration over all of them.
 	// Use cases for this include updating the transform of the meshes
 	StdVector<MeshBlock_T *> _blocks;

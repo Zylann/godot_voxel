@@ -6,6 +6,7 @@
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/safe_ref_count.h"
 #include "../../util/tasks/cancellation_token.h"
@@ -148,7 +149,7 @@ struct VoxelLodTerrainUpdateData {
 	// It contains states used to determine when to actually load/unload meshes.
 	struct MeshMapState {
 		// Values in this map are expected to have stable addresses.
-		std::unordered_map<Vector3i, MeshBlockState> map;
+		StdUnorderedMap<Vector3i, MeshBlockState> map;
 		// Locked for writing when blocks get inserted or removed from the map.
 		// If you need to lock more than one Lod, always do so in increasing order, to avoid deadlocks.
 		// IMPORTANT:
@@ -179,13 +180,13 @@ struct VoxelLodTerrainUpdateData {
 	// Each LOD works in a set of coordinates spanning 2x more voxels the higher their index is
 	struct Lod {
 		// Keeping track of asynchronously loading blocks so we don't try to redundantly load them
-		std::unordered_map<Vector3i, LoadingDataBlock> loading_blocks;
+		StdUnorderedMap<Vector3i, LoadingDataBlock> loading_blocks;
 		BinaryMutex loading_blocks_mutex;
 
 		// Blocks waiting to be saved after they got unloaded. This is to allow reloading them properly if a viewer
 		// needs them again before they even got saved. Items in this cache get removed when they are saved. Needs to be
 		// protected by mutex because the saved notification is received on the main thread at the moment.
-		std::unordered_map<Vector3i, std::shared_ptr<VoxelBuffer>> unloaded_saving_blocks;
+		StdUnorderedMap<Vector3i, std::shared_ptr<VoxelBuffer>> unloaded_saving_blocks;
 		BinaryMutex unloaded_saving_blocks_mutex;
 		// Blocks that will be loaded from the saving cache as if a loading task completed next time the terrain
 		// updates. It won't run while the threaded update runs so no locking is needed.

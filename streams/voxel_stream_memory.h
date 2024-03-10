@@ -5,13 +5,12 @@
 #include "../storage/voxel_buffer.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
+#include "../util/containers/std_unordered_map.h"
 #include "../util/math/vector3i.h"
 #include "../util/memory.h"
 #include "../util/thread/mutex.h"
 #include "instance_data.h"
-
 #include "voxel_stream.h"
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -43,8 +42,8 @@ private:
 	static void _bind_methods();
 
 	struct Lod {
-		std::unordered_map<Vector3i, VoxelBuffer> voxel_blocks;
-		std::unordered_map<Vector3i, InstanceBlockData> instance_blocks;
+		StdUnorderedMap<Vector3i, VoxelBuffer> voxel_blocks;
+		StdUnorderedMap<Vector3i, InstanceBlockData> instance_blocks;
 		Mutex mutex;
 	};
 

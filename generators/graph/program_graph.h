@@ -1,6 +1,7 @@
 #ifndef ZN_PROGRAM_GRAPH_H
 #define ZN_PROGRAM_GRAPH_H
 
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/variant.h"
 #include "../../util/hash_funcs.h"
@@ -9,7 +10,6 @@
 
 #include <string>
 #include <string_view>
-#include <unordered_map>
 
 namespace zylann {
 
@@ -147,7 +147,7 @@ public:
 	void debug_print_dot_file(String p_file_path) const;
 
 private:
-	std::unordered_map<uint32_t, Node *> _nodes;
+	StdUnorderedMap<uint32_t, Node *> _nodes;
 	uint32_t _next_node_id = 1;
 };
 

@@ -66,7 +66,7 @@ Error parse_string(FileAccess &f, String &s) {
 	return OK;
 }
 
-Error parse_dictionary(FileAccess &f, std::unordered_map<String, String> &dict) {
+Error parse_dictionary(FileAccess &f, StdUnorderedMap<String, String> &dict) {
 	const int item_count = f.get_32();
 
 	// Sanity checks
@@ -163,7 +163,7 @@ Basis parse_basis(uint8_t data) {
 	return b;
 }
 
-Error parse_node_common_header(Node &node, FileAccess &f, const std::unordered_map<int, UniquePtr<Node>> &scene_graph) {
+Error parse_node_common_header(Node &node, FileAccess &f, const StdUnorderedMap<int, UniquePtr<Node>> &scene_graph) {
 	//
 	const int node_id = f.get_32();
 	ERR_FAIL_COND_V_MSG(scene_graph.find(node_id) != scene_graph.end(), ERR_INVALID_DATA,
@@ -306,7 +306,7 @@ Error Data::_load_from_file(String fpath) {
 
 			// for (int frame_index = 0; frame_index < frame_count; ++frame_index) {
 
-			std::unordered_map<String, String> frame;
+			StdUnorderedMap<String, String> frame;
 			const Error frame_err = parse_dictionary(f, frame);
 			ERR_FAIL_COND_V(frame_err != OK, frame_err);
 
@@ -416,7 +416,7 @@ Error Data::_load_from_file(String fpath) {
 					String("Material ID {0} already exists").format(varray(material_id)));
 			material.id = material_id;
 
-			std::unordered_map<String, String> attributes;
+			StdUnorderedMap<String, String> attributes;
 			Error attributes_err = parse_dictionary(f, attributes);
 			ERR_FAIL_COND_V(attributes_err != OK, attributes_err);
 

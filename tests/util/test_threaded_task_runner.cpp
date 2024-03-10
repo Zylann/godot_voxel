@@ -1,4 +1,5 @@
 #include "test_threaded_task_runner.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/os.h"
 #include "../../util/godot/classes/time.h"
@@ -14,8 +15,6 @@
 #ifdef VOXEL_TEST_TASK_POSTPONING_DUMP_EVENTS
 #include <fstream>
 #endif
-
-#include <unordered_map>
 
 namespace zylann::tests {
 
@@ -289,7 +288,7 @@ void test_threaded_task_postponing() {
 
 	struct Map {
 		// Doesn't have to be a map but I chose it anyways since that's how the actual voxel map is stored
-		std::unordered_map<Vector3i, Block> blocks;
+		StdUnorderedMap<Vector3i, Block> blocks;
 	};
 
 	struct Event {

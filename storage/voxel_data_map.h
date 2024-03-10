@@ -2,10 +2,9 @@
 #define VOXEL_DATA_MAP_H
 
 #include "../util/containers/fixed_array.h"
+#include "../util/containers/std_unordered_map.h"
 #include "../util/profiling.h"
 #include "voxel_data_block.h"
-
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -196,7 +195,7 @@ private:
 	// defaults, but it sometimes has very long stalls on removal, which std::unordered_map doesn't seem to have
 	// (not as badly). Also overall performance is slightly better.
 	// Note: pointers to elements remain valid when inserting or removing others (only iterators may be invalidated)
-	std::unordered_map<Vector3i, VoxelDataBlock> _blocks_map;
+	StdUnorderedMap<Vector3i, VoxelDataBlock> _blocks_map;
 
 	// This was a possible optimization in a single-threaded scenario, but it's not in multithread.
 	// We want to be able to do shared read-accesses but this is a mutable variable.

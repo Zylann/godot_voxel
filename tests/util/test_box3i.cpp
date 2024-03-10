@@ -1,4 +1,5 @@
 #include "test_box3i.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/math/box3i.h"
 #include "../testing.h"
 
@@ -35,7 +36,7 @@ void test_box3i_intersects() {
 void test_box3i_for_inner_outline() {
 	const Box3i box(-1, 2, 3, 8, 6, 5);
 
-	std::unordered_map<Vector3i, bool> expected_coords;
+	StdUnorderedMap<Vector3i, bool> expected_coords;
 	const Box3i inner_box = box.padded(-1);
 	box.for_each_cell([&expected_coords, inner_box](Vector3i pos) {
 		if (!inner_box.contains(pos)) {

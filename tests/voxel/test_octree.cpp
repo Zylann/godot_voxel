@@ -1,13 +1,13 @@
 #include "test_octree.h"
 #include "../../constants/cube_tables.h"
 #include "../../terrain/variable_lod/lod_octree.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling_clock.h"
 #include "../testing.h"
 
 #include <core/string/print_string.h>
 #include <map>
-#include <unordered_map>
 #include <unordered_set>
 
 namespace zylann::voxel::tests {
@@ -179,7 +179,7 @@ void test_octree_find_in_box() {
 	SubdivideActions sa;
 	octree.subdivide(sa);
 
-	std::unordered_map<Vector3i, std::unordered_set<Vector3i>> expected_positions;
+	StdUnorderedMap<Vector3i, std::unordered_set<Vector3i>> expected_positions;
 
 	const Box3i full_box(Vector3i(), Vector3i(blocks_across, blocks_across, blocks_across));
 

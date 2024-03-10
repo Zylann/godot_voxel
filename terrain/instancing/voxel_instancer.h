@@ -4,6 +4,7 @@
 #include "../../constants/voxel_constants.h"
 #include "../../streams/instance_data.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
@@ -20,7 +21,6 @@
 #endif
 
 #include <limits>
-#include <unordered_map>
 #include <unordered_set>
 
 ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
@@ -98,7 +98,7 @@ public:
 	// Debug
 
 	int debug_get_block_count() const;
-	void debug_get_instance_counts(std::unordered_map<uint32_t, uint32_t> &counts_per_layer) const;
+	void debug_get_instance_counts(StdUnorderedMap<uint32_t, uint32_t> &counts_per_layer) const;
 	void debug_dump_as_scene(String fpath) const;
 	Node *debug_dump_as_nodes() const;
 
@@ -217,7 +217,7 @@ private:
 		unsigned int lod_index;
 		// Blocks indexed by grid position.
 		// Keys follow the mesh block coordinate system.
-		std::unordered_map<Vector3i, unsigned int> blocks;
+		StdUnorderedMap<Vector3i, unsigned int> blocks;
 	};
 
 	struct MeshLodDistances {
@@ -247,7 +247,7 @@ private:
 		// it will get generated instances.
 		// Keys follows the data block coordinate system.
 		// Can't use Godot's `HashMap` because it lacks move semantics.
-		// std::unordered_map<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
+		// StdUnorderedMap<Vector3i, UniquePtr<InstanceBlockData>> loaded_instances_data;
 
 		// Blocks that contain edited data (not generated).
 		// Keys follows the data block coordinate system.
@@ -266,7 +266,7 @@ private:
 	StdVector<UniquePtr<Block>> _blocks;
 
 	// Each layer corresponds to a library item. Addresses of values in the map are expected to be stable.
-	std::unordered_map<int, Layer> _layers;
+	StdUnorderedMap<int, Layer> _layers;
 
 	Ref<VoxelInstanceLibrary> _library;
 

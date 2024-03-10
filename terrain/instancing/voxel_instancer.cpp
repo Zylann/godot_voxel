@@ -1856,7 +1856,7 @@ int VoxelInstancer::debug_get_block_count() const {
 	return _blocks.size();
 }
 
-void VoxelInstancer::debug_get_instance_counts(std::unordered_map<uint32_t, uint32_t> &counts_per_layer) const {
+void VoxelInstancer::debug_get_instance_counts(StdUnorderedMap<uint32_t, uint32_t> &counts_per_layer) const {
 	ZN_PROFILE_SCOPE();
 
 	counts_per_layer.clear();
@@ -1879,7 +1879,7 @@ void VoxelInstancer::debug_get_instance_counts(std::unordered_map<uint32_t, uint
 
 Dictionary VoxelInstancer::_b_debug_get_instance_counts() const {
 	Dictionary d;
-	std::unordered_map<uint32_t, uint32_t> map;
+	StdUnorderedMap<uint32_t, uint32_t> map;
 	debug_get_instance_counts(map);
 	for (auto it = map.begin(); it != map.end(); ++it) {
 		d[it->first] = it->second;
@@ -1910,7 +1910,7 @@ Node *VoxelInstancer::debug_dump_as_nodes() const {
 	root->set_transform(get_transform());
 	root->set_name("VoxelInstancerRoot");
 
-	std::unordered_map<Ref<Mesh>, Ref<Mesh>> mesh_copies;
+	StdUnorderedMap<Ref<Mesh>, Ref<Mesh>> mesh_copies;
 
 	// For each layer
 	for (auto layer_it = _layers.begin(); layer_it != _layers.end(); ++layer_it) {

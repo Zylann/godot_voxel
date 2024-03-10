@@ -108,7 +108,7 @@ void VoxelLodTerrain::ApplyMeshUpdateTask::run(TimeSpreadTaskContext &ctx) {
 		return;
 	}
 
-	std::unordered_map<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[data.lod];
+	StdUnorderedMap<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[data.lod];
 	auto it = queued_tasks_in_lod.find(data.position);
 	if (it != queued_tasks_in_lod.end()) {
 		RefCount &count = it->second;
@@ -162,7 +162,7 @@ VoxelLodTerrain::VoxelLodTerrain() {
 		// This is for cases where creating the mesh is slower than the speed at which it is generated,
 		// which can cause a buildup that never seems to stop.
 		// This is at the expense of holes appearing until all tasks are done.
-		std::unordered_map<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[ob.lod];
+		StdUnorderedMap<Vector3i, RefCount> &queued_tasks_in_lod = self->_queued_main_thread_mesh_updates[ob.lod];
 		auto p = queued_tasks_in_lod.insert({ ob.position, RefCount(1) });
 		if (!p.second) {
 			p.first->second.add();

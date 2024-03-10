@@ -1,6 +1,7 @@
 #ifndef ZN_ASTAR_GRID_3D_H
 #define ZN_ASTAR_GRID_3D_H
 
+#include "../util/containers/std_unordered_map.h"
 #include "../util/containers/std_vector.h"
 #include "../util/godot/core/sort_array.h"
 #include "../util/math/box3i.h"
@@ -157,7 +158,7 @@ private:
 	// Only visited points will be in this map. Should use less memory than if we made a big 3D grid of points, because
 	// in practice we may only visit a fraction of them.
 	// Eventually we could try a chunked grid if that's faster?
-	std::unordered_map<Vector3i, uint32_t> _points_map;
+	StdUnorderedMap<Vector3i, uint32_t> _points_map;
 
 	StdVector<Vector3i> _path;
 	StdVector<Vector3i> _neighbor_positions;

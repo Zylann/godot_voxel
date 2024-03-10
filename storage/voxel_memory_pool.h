@@ -2,6 +2,9 @@
 #define VOXEL_MEMORY_POOL_H
 
 #include "../util/containers/fixed_array.h"
+#ifdef DEBUG_ENABLED
+#include "../util/containers/std_unordered_map.h"
+#endif
 #include "../util/containers/std_vector.h"
 #include "../util/dstack.h"
 #include "../util/math/funcs.h"
@@ -9,7 +12,6 @@
 
 #include <atomic>
 #include <limits>
-#include <unordered_map>
 
 namespace zylann::voxel {
 
@@ -23,7 +25,7 @@ private:
 #ifdef DEBUG_ENABLED
 	struct DebugUsedBlocks {
 		Mutex mutex;
-		std::unordered_map<void *, dstack::Info> blocks;
+		StdUnorderedMap<void *, dstack::Info> blocks;
 
 		void add(void *mem) {
 			MutexLock lock(mutex);
