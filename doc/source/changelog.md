@@ -16,6 +16,7 @@ Primarily developped with Godot 4.2.
 - Added `ZN_SpotNoise`, exposing the same algorithm as the `SpotNoise2D` and `SpotNoise3D` nodes of graph generators
 - Saving with `save_all_modified_blocks` now automatically flushes eventual caches implemented by `VoxelStream` upon completion
 - Added `VoxelStreamMemory`, which stores in memory instead of the filesystem. This is mainly for testing purposes.
+- More memory allocations are now tracked by Godot (you might notice `OS.get_static_memory_usage()` returns slightly more)
 - `VoxelTool`:
     - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
 - `VoxelLodTerrain`:
