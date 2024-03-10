@@ -4,7 +4,7 @@
 #include "../util/containers/std_unordered_map.h"
 #include "../util/containers/std_vector.h"
 #include "../util/math/vector3f.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "voxel_modifier.h"
 
 namespace zylann::voxel {

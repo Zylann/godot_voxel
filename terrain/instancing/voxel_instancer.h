@@ -10,7 +10,7 @@
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "generate_instances_block_task.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"

@@ -1,6 +1,6 @@
 #include "voxel_memory_pool.h"
 #include "../util/macros.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
 

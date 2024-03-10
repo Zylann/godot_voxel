@@ -3,7 +3,7 @@
 #include "../util/dstack.h"
 #include "../util/godot/classes/image.h"
 #include "../util/math/color.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "voxel_metadata_variant.h"
 
 namespace zylann::voxel::godot {

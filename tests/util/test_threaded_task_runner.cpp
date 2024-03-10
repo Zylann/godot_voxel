@@ -5,7 +5,7 @@
 #include "../../util/godot/classes/time.h"
 #include "../../util/io/log.h"
 #include "../../util/math/vector3i.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "../../util/tasks/threaded_task_runner.h"

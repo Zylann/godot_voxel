@@ -8,7 +8,7 @@
 #include "../../util/math/basis.h"
 #include "../../util/math/color8.h"
 #include "../../util/math/vector3i.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 
 #if defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/classes/global_constants.hpp> // For `Error`

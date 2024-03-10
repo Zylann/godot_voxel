@@ -2,7 +2,7 @@
 #define VOXEL_MESH_BLOCK_VLT_H
 
 #include "../../util/godot/classes/shader_material.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/tasks/time_spread_task_runner.h"
 #include "../voxel_mesh_block.h"
 

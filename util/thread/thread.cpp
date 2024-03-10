@@ -1,6 +1,6 @@
 #include "thread.h"
 #include "../godot/classes/os.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 
 #if defined(ZN_GODOT)
 #include <core/os/thread.h>

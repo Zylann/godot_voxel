@@ -11,7 +11,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "vox_import_funcs.h"
 

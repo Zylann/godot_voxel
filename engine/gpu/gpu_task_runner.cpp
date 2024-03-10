@@ -3,7 +3,7 @@
 #include "../../util/errors.h"
 #include "../../util/godot/classes/rendering_device.h"
 #include "../../util/math/funcs.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {

@@ -3,7 +3,7 @@
 
 #include "../engine/ids.h"
 #include "../engine/streaming_dependency.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/tasks/threaded_task.h"
 
 namespace zylann {

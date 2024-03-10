@@ -4,7 +4,7 @@
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_multimesh_instance.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 
 namespace zylann::godot {
 

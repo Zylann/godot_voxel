@@ -6,7 +6,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/vector2i.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/ref_count.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_generator.h"

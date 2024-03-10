@@ -7,7 +7,7 @@
 #include "../util/containers/std_vector.h"
 #include "../util/godot/classes/rd_uniform.h"
 #include "../util/math/box3i.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/tasks/threaded_task.h"
 
 namespace zylann::voxel {

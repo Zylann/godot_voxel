@@ -1,7 +1,7 @@
 #ifndef VOXEL_MESHER_DMC_H
 #define VOXEL_MESHER_DMC_H
 
-#include "../../util/object_pool.h"
+#include "../../util/memory/object_pool.h"
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_mesher.h"
 #include "hermite_value.h"

@@ -2,7 +2,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/math/conv.h"
-#include "../../util/memory.h"
+#include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
 #include "../../util/tasks/threaded_task_runner.h"

@@ -2,7 +2,7 @@
 #include "../constants/cube_tables.h"
 #include "../generators/voxel_generator.h"
 #include "../util/macros.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/string_funcs.h"
 
 #include <limits>

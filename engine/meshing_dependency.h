@@ -3,7 +3,7 @@
 
 #include "../generators/voxel_generator.h"
 #include "../meshers/voxel_mesher.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 
 namespace zylann::voxel {
 

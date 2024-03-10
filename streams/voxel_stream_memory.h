@@ -7,7 +7,7 @@
 #include "../util/containers/span.h"
 #include "../util/containers/std_unordered_map.h"
 #include "../util/math/vector3i.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/thread/mutex.h"
 #include "instance_data.h"
 #include "voxel_stream.h"

@@ -6,7 +6,7 @@
 #include "../util/godot/classes/resource.h"
 #include "../util/math/vector3.h"
 #include "../util/math/vector3i.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/thread/rw_lock.h"
 
 #include <cstdint>

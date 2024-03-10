@@ -3,7 +3,7 @@
 
 #include "../storage/voxel_buffer.h"
 #include "../util/containers/std_unordered_map.h"
-#include "../util/memory.h"
+#include "../util/memory/memory.h"
 #include "../util/thread/rw_lock.h"
 #include "instance_data.h"
 

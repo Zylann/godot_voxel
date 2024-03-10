@@ -1,7 +1,7 @@
 #ifndef ZN_STD_MAP_H
 #define ZN_STD_MAP_H
 
-#include "../std_allocator.h"
+#include "../memory/std_allocator.h"
 #include <map>
 
 namespace zylann {

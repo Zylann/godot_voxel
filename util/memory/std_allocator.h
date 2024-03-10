@@ -4,7 +4,7 @@
 #include <limits>
 // #include <new>
 
-#include "errors.h"
+#include "../errors.h"
 #include "memory.h"
 
 namespace zylann {
