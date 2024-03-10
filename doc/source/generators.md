@@ -167,6 +167,49 @@ A special `Relay` node exists to organize long connections between nodes. They d
 ![Screenshot of a relay node](images/relay_node.webp)
 
 
+### Preview nodes
+
+It is possible to preview the output of nodes with the `SdfPreview` node. This node will display a slice of the 3D data as a greyscale image, or a colored image depending on its settings. This is useful to check if a branch is outputting expected values.
+
+!!! note
+    - Preview nodes will only work if the output they are connected to is also connected to an actual output of the graph.
+
+![Screenshot of a preview node showing the output of a plane node](images/graph_preview_node_plane.webp)
+
+In the example above, the preview shows the output of a `SdfPlane` node. Values are negative below the surface, positive above the surface, and increase gradually along the Y axis. As a result, previews show white above, and black below.
+
+By default, the node shows a slice along the XY plane, but you can change it to the XZ plane in case you need a top-down view, in the `Debug -> Preview Axes` menu on top of the editor.
+
+Here is the output for a sphere of radius 50:
+
+![Screenshot of a preview node showing the output of a sphere node](images/graph_preview_node_sphere.webp)
+
+By default, each pixel of the preview corresponds to 1 unit of space. You can zoom by holding the `CTRL` key and using the mouse wheel on top of the preview. You can also move around by holding `CTRL` and dragging the preview's viewport holding the middle mouse button.
+Pan & zoom locations can be reset to defaults by using the menu `Debug -> Preview Axes -> Reset Location`.
+
+![Screenshot of a preview node showing the output of a sphere node, zoomed in](images/graph_preview_node_sphere_pan_and_zoom.webp)
+
+Previews show black and white based on a specific range defined in their properties. By default, -1 is black, 1 is white (so 0 is actually grey). You can change that range by selecting the preview node and using the inspector.
+
+![Screenshot of a selected preview node and its min/max properties in the inspector](images/graph_preview_node_min_max_inspector.webp)
+
+When working with signed distance fields (SDF), preview nodes can also display values in a more specialized way. In the inspector, you can change the `mode` to `SDF`:
+
+![Screenshot of a preview node in SDF mode](images/graph_preview_node_sdf_inspector.webp)
+
+This mode shows negative values as blue (inside shape) and positive values as yellow (outside shape).
+It also renders "bands" of repeating gradients to better visualize how they propagate away from the surface. The length of those bands is controlled by `fraction period`.
+
+![Screenshot of a preview node in SDF mode showing sphere gradient fractions](images/graph_preview_node_sphere_gradients.webp)
+
+With a sphere, gradients are quite regular, which is usually best. But when using noise as signed distance field, you can notice how gradients actually evolve below and above the surface:
+
+![Screenshot of a preview node in SDF mode showing noise gradients](images/graph_preview_node_noise_sdf.webp)
+
+Noise is a lot more inconsistent. However, most of the time, this isn't a big deal. It depends on what operations you do with the terrain.
+If the "speed" of gradients varies too sharply, especially near the surface, it can be the cause of precision loss or blockyness in generated meshes. It can also be a problem when approximating the surface solely from SDF voxels or using sphere tracing. 
+
+
 Custom generator
 -----------------
 
