@@ -1,10 +1,10 @@
 #ifndef MESH_BUILDER_H
 #define MESH_BUILDER_H
 
+#include "../../util/containers/std_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/vector3f.h"
-#include <map>
 
 namespace zylann::voxel::dmc {
 
@@ -16,7 +16,7 @@ public:
 	inline void add_vertex(Vector3f position, Vector3f normal) {
 		int i = 0;
 
-		std::map<Vector3f, int>::iterator it = _position_to_index.find(position);
+		StdMap<Vector3f, int>::iterator it = _position_to_index.find(position);
 
 		if (it != _position_to_index.end()) {
 			i = it->second;
@@ -45,7 +45,7 @@ private:
 	StdVector<Vector3f> _positions;
 	StdVector<Vector3f> _normals;
 	StdVector<int> _indices;
-	std::map<Vector3f, int> _position_to_index;
+	StdMap<Vector3f, int> _position_to_index;
 	int _reused_vertices;
 };
 

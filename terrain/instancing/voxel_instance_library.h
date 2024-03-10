@@ -2,13 +2,13 @@
 #define VOXEL_INSTANCE_MODEL_LIBRARY_H
 
 #include "../../constants/voxel_constants.h"
+#include "../../util/containers/std_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/core/string_name.h"
 #include "../../util/thread/mutex.h"
 #include "voxel_instance_library_item.h"
-#include <map>
 
 namespace zylann::voxel {
 
@@ -81,7 +81,7 @@ private:
 
 	// ID => Item
 	// Using a map keeps items ordered, so the last item has highest ID
-	std::map<int, Ref<VoxelInstanceLibraryItem>> _items;
+	StdMap<int, Ref<VoxelInstanceLibraryItem>> _items;
 
 	StdVector<IListener *> _listeners;
 

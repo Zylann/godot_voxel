@@ -1,13 +1,13 @@
 #include "test_octree.h"
 #include "../../constants/cube_tables.h"
 #include "../../terrain/variable_lod/lod_octree.h"
+#include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling_clock.h"
 #include "../testing.h"
 
 #include <core/string/print_string.h>
-#include <map>
 #include <unordered_set>
 
 namespace zylann::voxel::tests {
@@ -22,12 +22,12 @@ void test_octree_update() {
 	const int octree_size = block_size << (lod_count - 1);
 
 	// Testing as an octree forest, as it is the way they are used in VoxelLodTerrain
-	std::map<Vector3i, LodOctree> octrees;
+	StdMap<Vector3i, LodOctree> octrees;
 	const Box3i viewer_box_voxels =
 			Box3i::from_center_extents(math::floor_to_int(viewer_pos), Vector3iUtil::create(view_distance));
 	const Box3i viewer_box_octrees = viewer_box_voxels.downscaled(octree_size);
 	viewer_box_octrees.for_each_cell([&octrees](Vector3i pos) {
-		std::pair<std::map<Vector3i, LodOctree>::iterator, bool> p = octrees.insert({ pos, LodOctree() });
+		std::pair<StdMap<Vector3i, LodOctree>::iterator, bool> p = octrees.insert({ pos, LodOctree() });
 		ZN_ASSERT(p.second);
 		LodOctree &octree = p.first->second;
 		LodOctree::NoDestroyAction nda;
@@ -71,7 +71,7 @@ void test_octree_update() {
 	ProfilingClock profiling_clock;
 
 	// Initial
-	for (std::map<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
+	for (StdMap<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
 		LodOctree &octree = it->second;
 
 		const Vector3i block_pos_maxlod = it->first;
@@ -90,7 +90,7 @@ void test_octree_update() {
 	const int time_init = profiling_clock.restart();
 
 	int initial_block_count_rec = 0;
-	for (std::map<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
+	for (StdMap<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
 		const LodOctree &octree = it->second;
 		initial_block_count_rec += octree.get_node_count();
 	}
@@ -106,7 +106,7 @@ void test_octree_update() {
 		profiling_clock.restart();
 
 		created_block_count = 0;
-		for (std::map<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
+		for (StdMap<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
 			LodOctree &octree = it->second;
 
 			const Vector3i block_pos_maxlod = it->first;
@@ -132,7 +132,7 @@ void test_octree_update() {
 
 	// Clearing
 	int block_count = initial_block_count;
-	for (std::map<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
+	for (StdMap<Vector3i, LodOctree>::iterator it = octrees.begin(); it != octrees.end(); ++it) {
 		LodOctree &octree = it->second;
 
 		struct DestroyAction {

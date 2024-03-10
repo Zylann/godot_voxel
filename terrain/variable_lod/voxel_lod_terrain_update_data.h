@@ -6,6 +6,7 @@
 #include "../../generators/voxel_generator.h"
 #include "../../streams/voxel_stream.h"
 #include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/safe_ref_count.h"
@@ -13,7 +14,6 @@
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
 
-#include <map>
 #include <unordered_set>
 
 namespace zylann {
@@ -247,7 +247,7 @@ struct VoxelLodTerrainUpdateData {
 		// Indexed by a grid coordinate whose step is the size of the highest-LOD block.
 		// Not using a pointer because Map storage is stable.
 		// TODO Optimization: could be replaced with a grid data structure
-		std::map<Vector3i, OctreeItem> lod_octrees;
+		StdMap<Vector3i, OctreeItem> lod_octrees;
 		Box3i last_octree_region_box;
 		Vector3i local_viewer_pos_previous_octree_update;
 

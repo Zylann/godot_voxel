@@ -219,7 +219,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 			unsigned int lod_count;
 
 			void operator()(const Vector3i &pos) {
-				std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it =
+				StdMap<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator it =
 						state.octree_streaming.lod_octrees.find(pos);
 				if (it == state.octree_streaming.lod_octrees.end()) {
 					return;
@@ -256,7 +256,7 @@ void process_octrees_sliding_box(VoxelLodTerrainUpdateData::State &state, Vector
 
 				// Create new octree
 				// TODO Use ObjectPool to store them, deletion won't be cheap
-				std::pair<std::map<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator, bool> p =
+				std::pair<StdMap<Vector3i, VoxelLodTerrainUpdateData::OctreeItem>::iterator, bool> p =
 						state.octree_streaming.lod_octrees.insert({ pos, VoxelLodTerrainUpdateData::OctreeItem() });
 				CRASH_COND(p.second == false);
 				VoxelLodTerrainUpdateData::OctreeItem &item = p.first->second;
