@@ -5,6 +5,7 @@
 #include "../../streams/instance_data.h"
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node_3d.h"
 #include "../../util/godot/direct_multimesh_instance.h"
@@ -21,7 +22,6 @@
 #endif
 
 #include <limits>
-#include <unordered_set>
 
 ZN_GODOT_FORWARD_DECLARE(class PhysicsBody3D);
 
@@ -240,7 +240,7 @@ private:
 
 		// Blocks that have have unsaved changes.
 		// Keys follows the data block coordinate system.
-		std::unordered_set<Vector3i> modified_blocks;
+		StdUnorderedSet<Vector3i> modified_blocks;
 
 		// This is a temporary place to store loaded instances data while it's not visible yet.
 		// These instances are user-authored ones. If a block does not have an entry there,
@@ -251,7 +251,7 @@ private:
 
 		// Blocks that contain edited data (not generated).
 		// Keys follows the data block coordinate system.
-		std::unordered_set<Vector3i> edited_data_blocks;
+		StdUnorderedSet<Vector3i> edited_data_blocks;
 
 		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache;
 

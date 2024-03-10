@@ -1,13 +1,12 @@
 #include "program_graph.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/errors.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/memory.h"
 #include "../../util/string_funcs.h"
-
 #include <fstream>
-#include <unordered_set>
 
 namespace zylann {
 
@@ -225,7 +224,7 @@ ProgramGraph::Node *ProgramGraph::try_get_node(uint32_t id) const {
 
 bool ProgramGraph::has_path(uint32_t p_src_node_id, uint32_t p_dst_node_id) const {
 	StdVector<uint32_t> nodes_to_process;
-	std::unordered_set<uint32_t> visited_nodes;
+	StdUnorderedSet<uint32_t> visited_nodes;
 
 	nodes_to_process.push_back(p_src_node_id);
 
@@ -277,7 +276,7 @@ void ProgramGraph::find_dependencies(uint32_t node_id, StdVector<uint32_t> &out_
 // Finds dependencies of the given nodes, and returns them in the order they should be processed.
 // Given nodes are included in the result.
 void ProgramGraph::find_dependencies(StdVector<uint32_t> nodes_to_process, StdVector<uint32_t> &out_order) const {
-	std::unordered_set<uint32_t> visited_nodes;
+	StdUnorderedSet<uint32_t> visited_nodes;
 
 	while (nodes_to_process.size() > 0) {
 	found:

@@ -10,6 +10,7 @@
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../streams/load_all_blocks_data_task.h"
 #include "../../util/containers/container_funcs.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/godot/classes/base_material_3d.h" // For property hint in release mode in GDExtension...
 #include "../../util/godot/classes/camera_3d.h"
 #include "../../util/godot/classes/concave_polygon_shape_3d.h"
@@ -1315,7 +1316,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = _update_data->state.lods[lod_index];
 		VoxelMeshMap<VoxelMeshBlockVLT> &mesh_map = _mesh_maps_per_lod[lod_index];
-		std::unordered_set<const VoxelMeshBlockVLT *> activated_visual_blocks;
+		StdUnorderedSet<const VoxelMeshBlockVLT *> activated_visual_blocks;
 
 		const int mesh_block_size = get_mesh_block_size() << lod_index;
 
@@ -1381,7 +1382,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 
 		/*
 #ifdef DEBUG_ENABLED
-		std::unordered_set<Vector3i> debug_removed_blocks;
+		StdUnorderedSet<Vector3i> debug_removed_blocks;
 #endif
 		*/
 

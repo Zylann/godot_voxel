@@ -14,8 +14,6 @@
 #include "../voxel_mesh_map.h"
 #include "lod_octree.h"
 
-#include <unordered_set>
-
 namespace zylann {
 
 class AsyncDependencyTracker;

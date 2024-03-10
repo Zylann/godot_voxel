@@ -1,6 +1,7 @@
 #include "voxel_graph_node_dialog.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/godot/classes/button.h"
 #include "../../util/godot/classes/display_server.h"
 #include "../../util/godot/classes/editor_file_dialog.h"
@@ -21,8 +22,6 @@
 #include "../../util/godot/editor_scale.h"
 #include "graph_nodes_doc_data.h"
 
-#include <unordered_set>
-
 namespace zylann::voxel {
 
 namespace {
@@ -38,7 +37,7 @@ const GraphNodesDocData::Node *get_graph_node_documentation(String name) {
 }
 
 void get_graph_node_documentation_category_names(StdVector<String> &out_category_names) {
-	std::unordered_set<String> categories;
+	StdUnorderedSet<String> categories;
 	for (unsigned int i = 0; i < GraphNodesDocData::COUNT; ++i) {
 		const GraphNodesDocData::Node &node = GraphNodesDocData::g_data[i];
 		if (categories.insert(node.category).second) {

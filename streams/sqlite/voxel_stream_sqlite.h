@@ -1,14 +1,13 @@
 #ifndef VOXEL_STREAM_SQLITE_H
 #define VOXEL_STREAM_SQLITE_H
 
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/math/vector3i16.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
-
-#include <unordered_set>
 
 namespace zylann::voxel {
 
@@ -58,11 +57,11 @@ private:
 	void rebuild_key_cache();
 
 	struct BlockKeysCache {
-		FixedArray<std::unordered_set<Vector3i16>, constants::MAX_LOD> lods;
+		FixedArray<StdUnorderedSet<Vector3i16>, constants::MAX_LOD> lods;
 		RWLock rw_lock;
 
 		inline bool contains(Vector3i16 bpos, unsigned int lod_index) const {
-			const std::unordered_set<Vector3i16> &keys = lods[lod_index];
+			const StdUnorderedSet<Vector3i16> &keys = lods[lod_index];
 			RWLockRead rlock(rw_lock);
 			return keys.find(bpos) != keys.end();
 		}
@@ -86,7 +85,7 @@ private:
 		// inline size_t get_memory_usage() const {
 		// 	size_t mem = 0;
 		// 	for (unsigned int i = 0; i < lods.size(); ++i) {
-		// 		const std::unordered_set<Vector3i> &keys = lods[i];
+		// 		const StdUnorderedSet<Vector3i> &keys = lods[i];
 		// 		mem += sizeof(Vector3i) * keys.size();
 		// 	}
 		// 	return mem;

@@ -3,12 +3,12 @@
 #include "../../terrain/variable_lod/lod_octree.h"
 #include "../../util/containers/std_map.h"
 #include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling_clock.h"
 #include "../testing.h"
 
 #include <core/string/print_string.h>
-#include <unordered_set>
 
 namespace zylann::voxel::tests {
 
@@ -179,7 +179,7 @@ void test_octree_find_in_box() {
 	SubdivideActions sa;
 	octree.subdivide(sa);
 
-	StdUnorderedMap<Vector3i, std::unordered_set<Vector3i>> expected_positions;
+	StdUnorderedMap<Vector3i, StdUnorderedSet<Vector3i>> expected_positions;
 
 	const Box3i full_box(Vector3i(), Vector3i(blocks_across, blocks_across, blocks_across));
 
@@ -187,9 +187,9 @@ void test_octree_find_in_box() {
 	full_box.for_each_cell([full_box, &expected_positions](Vector3i pos) {
 		Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 		area_box.clip(full_box);
-		auto insert_result = expected_positions.insert(std::make_pair(pos, std::unordered_set<Vector3i>()));
+		auto insert_result = expected_positions.insert(std::make_pair(pos, StdUnorderedSet<Vector3i>()));
 		ERR_FAIL_COND(insert_result.second == false);
-		std::unordered_set<Vector3i> &area_positions = insert_result.first->second;
+		StdUnorderedSet<Vector3i> &area_positions = insert_result.first->second;
 		area_box.for_each_cell([&area_positions](Vector3i npos) {
 			auto it = area_positions.insert(npos);
 			ZN_TEST_ASSERT(it.second == true);
@@ -202,8 +202,8 @@ void test_octree_find_in_box() {
 		const Box3i area_box(pos - Vector3i(1, 1, 1), Vector3i(3, 3, 3));
 		auto it = expected_positions.find(pos);
 		ZN_TEST_ASSERT(it != expected_positions.end());
-		const std::unordered_set<Vector3i> &expected_area_positions = it->second;
-		std::unordered_set<Vector3i> found_positions;
+		const StdUnorderedSet<Vector3i> &expected_area_positions = it->second;
+		StdUnorderedSet<Vector3i> found_positions;
 		octree.for_leaves_in_box(area_box,
 				[&found_positions, &expected_area_positions, &checksum](
 						Vector3i node_pos, int lod, const LodOctree::NodeData &node_data) {

@@ -14,8 +14,6 @@
 #include "voxel_lod_terrain_update_data.h"
 #include "voxel_mesh_block_vlt.h"
 
-#include <unordered_set>
-
 #ifdef TOOLS_ENABLED
 #include "../../editor/voxel_debug.h"
 #endif

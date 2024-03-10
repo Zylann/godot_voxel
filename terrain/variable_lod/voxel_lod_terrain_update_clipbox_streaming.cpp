@@ -1,4 +1,5 @@
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
@@ -1080,7 +1081,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 	}
 
 	// TODO Pool memory
-	FixedArray<std::unordered_set<Vector3i>, constants::MAX_LOD> checked_mesh_blocks_per_lod;
+	FixedArray<StdUnorderedSet<Vector3i>, constants::MAX_LOD> checked_mesh_blocks_per_lod;
 
 	const int data_to_mesh_shift = mesh_block_size_po2 - data.get_block_size_po2();
 
@@ -1097,7 +1098,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 		const Box3i data_neighboring =
 				Box3i(bloc.position - Vector3i(1, 1, 1), Vector3i(3, 3, 3)).clipped(bounds_in_data_blocks);
 
-		std::unordered_set<Vector3i> &checked_mesh_blocks = checked_mesh_blocks_per_lod[bloc.lod];
+		StdUnorderedSet<Vector3i> &checked_mesh_blocks = checked_mesh_blocks_per_lod[bloc.lod];
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[bloc.lod];
 
 		const unsigned int lod_index = bloc.lod;

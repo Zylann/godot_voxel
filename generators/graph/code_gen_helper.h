@@ -1,9 +1,9 @@
 #ifndef ZN_CODE_GEN_HELPER_H
 #define ZN_CODE_GEN_HELPER_H
 
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/fwd_std_string.h"
 #include <iosfwd>
-#include <unordered_set>
 
 namespace zylann {
 
@@ -67,7 +67,7 @@ private:
 	std::stringstream &_lib_ss;
 	unsigned int _indent_level = 0;
 	unsigned int _next_var_name_id = 0;
-	std::unordered_set<const char *> _included_libs;
+	StdUnorderedSet<const char *> _included_libs;
 	bool _newline = true;
 };
 

@@ -1,6 +1,7 @@
 #include "voxel_graph_compiler.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_unordered_map.h"
+#include "../../util/containers/std_unordered_set.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
 #include "../../util/macros.h"
@@ -1191,7 +1192,7 @@ namespace {
 uint32_t move_outer_group_operations_up(StdVector<uint32_t> &order, const ProgramGraph &graph) {
 	ZN_PROFILE_SCOPE();
 	StdVector<uint32_t> immediate_deps;
-	std::unordered_set<uint32_t> outer_group_node_ids;
+	StdUnorderedSet<uint32_t> outer_group_node_ids;
 	StdVector<uint32_t> order_outer_group;
 	StdVector<uint32_t> order_inner_group;
 
