@@ -1432,7 +1432,7 @@ bool VoxelGeneratorGraph::get_shader_source(ShaderSourceData &out_data) const {
 	ERR_FAIL_COND_V(_main_function.is_null(), false);
 	const ProgramGraph &graph = _main_function->get_graph();
 
-	std::string code_utf8;
+	StdString code_utf8;
 	StdVector<pg::ShaderParameter> params;
 	StdVector<pg::ShaderOutput> outputs;
 	pg::CompilationResult result = pg::generate_shader(graph, _main_function->get_input_definitions(), code_utf8,

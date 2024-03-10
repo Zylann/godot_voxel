@@ -8,6 +8,7 @@
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/io/file_locker.h"
 #include "../util/memory/memory.h"
+#include "../util/std_string.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"
@@ -347,7 +348,7 @@ private:
 };
 
 struct VoxelFileLockerRead {
-	VoxelFileLockerRead(const std::string &path) : _path(path) {
+	VoxelFileLockerRead(const StdString &path) : _path(path) {
 		VoxelEngine::get_singleton().get_file_locker().lock_read(path);
 	}
 
@@ -355,11 +356,11 @@ struct VoxelFileLockerRead {
 		VoxelEngine::get_singleton().get_file_locker().unlock(_path);
 	}
 
-	std::string _path;
+	StdString _path;
 };
 
 struct VoxelFileLockerWrite {
-	VoxelFileLockerWrite(const std::string &path) : _path(path) {
+	VoxelFileLockerWrite(const StdString &path) : _path(path) {
 		VoxelEngine::get_singleton().get_file_locker().lock_write(path);
 	}
 
@@ -367,7 +368,7 @@ struct VoxelFileLockerWrite {
 		VoxelEngine::get_singleton().get_file_locker().unlock(_path);
 	}
 
-	std::string _path;
+	StdString _path;
 };
 
 } // namespace zylann::voxel

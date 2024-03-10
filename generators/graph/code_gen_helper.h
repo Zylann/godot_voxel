@@ -3,13 +3,13 @@
 
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/fwd_std_string.h"
-#include <iosfwd>
+#include "../../util/std_stringstream.h"
 
 namespace zylann {
 
 class CodeGenHelper {
 public:
-	CodeGenHelper(std::stringstream &main_ss, std::stringstream &lib_ss);
+	CodeGenHelper(StdStringStream &main_ss, StdStringStream &lib_ss);
 
 	void indent();
 	void dedent();
@@ -63,8 +63,8 @@ private:
 		return c;
 	}
 
-	std::stringstream &_main_ss;
-	std::stringstream &_lib_ss;
+	StdStringStream &_main_ss;
+	StdStringStream &_lib_ss;
 	unsigned int _indent_level = 0;
 	unsigned int _next_var_name_id = 0;
 	StdUnorderedSet<const char *> _included_libs;

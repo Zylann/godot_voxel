@@ -4,7 +4,7 @@
 #include "../containers/std_vector.h"
 #include "funcs.h"
 #include "vector2i.h"
-#include <iosfwd>
+#include "../std_stringstream.h"
 
 namespace zylann {
 
@@ -260,7 +260,7 @@ inline bool operator==(const Box2i &a, const Box2i &b) {
 	return a.pos == b.pos && a.size == b.size;
 }
 
-std::stringstream &operator<<(std::stringstream &ss, const Box2i &box);
+StdStringStream &operator<<(StdStringStream &ss, const Box2i &box);
 
 } // namespace zylann
 

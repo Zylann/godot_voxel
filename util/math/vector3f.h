@@ -2,8 +2,8 @@
 #define ZYLANN_VECTOR3F_H
 
 #include "../errors.h"
+#include "../std_stringstream.h"
 #include "vector3t.h"
-#include <iosfwd>
 
 namespace zylann {
 
@@ -60,7 +60,7 @@ inline bool is_normalized(const Vector3f &v) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector3f &v);
+StdStringStream &operator<<(StdStringStream &ss, const Vector3f &v);
 
 } // namespace zylann
 

@@ -507,7 +507,7 @@ bool VoxelGraphFunction::get_expression_variables(std::string_view code, StdVect
 	}
 }
 
-void VoxelGraphFunction::get_expression_node_inputs(uint32_t node_id, StdVector<std::string> &out_names) const {
+void VoxelGraphFunction::get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const {
 	ProgramGraph::Node *node = _graph.try_get_node(node_id);
 	ERR_FAIL_COND(node == nullptr);
 	ERR_FAIL_COND(node->type_id != NODE_EXPRESSION);
@@ -1294,7 +1294,7 @@ bool VoxelGraphFunction::get_node_input_index_by_name(
 
 	} else {
 		for (unsigned int i = 0; i < node.inputs.size(); ++i) {
-			const std::string &dynamic_name = node.inputs[i].dynamic_name;
+			const StdString &dynamic_name = node.inputs[i].dynamic_name;
 			if (!dynamic_name.empty() && godot::to_godot(dynamic_name) == input_name) {
 				out_input_index = i;
 				return true;

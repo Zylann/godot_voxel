@@ -15,7 +15,7 @@ using namespace godot;
 #endif
 
 #include "../godot/macros.h"
-#include <iosfwd>
+#include "../std_stringstream.h"
 
 namespace zylann {
 namespace Vector3iUtil {
@@ -158,7 +158,7 @@ inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector3i &v);
+StdStringStream &operator<<(StdStringStream &ss, const Vector3i &v);
 
 } // namespace zylann
 

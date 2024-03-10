@@ -283,7 +283,7 @@ CompilationResult expand_expression_node(ProgramGraph &graph, uint32_t original_
 
 	if (parse_result.error.id != ExpressionParser::ERROR_NONE) {
 		// Error in expression
-		const std::string error_message_utf8 = ExpressionParser::to_string(parse_result.error);
+		const StdString error_message_utf8 = ExpressionParser::to_string(parse_result.error);
 		CompilationResult result;
 		result.success = false;
 		result.node_id = original_node_id;

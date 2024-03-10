@@ -4,6 +4,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/io/log.h"
+#include "../../util/std_string.h"
 #include "voxel_graph_editor.h"
 
 #include <algorithm>
@@ -75,7 +76,7 @@ void VoxelGraphNodeInspectorWrapper::_get_property_list(List<PropertyInfo> *p_li
 				}
 
 			} else if (param.enum_items.size() > 0) {
-				std::string hint_string;
+				StdString hint_string;
 				for (unsigned int item_index = 0; item_index < param.enum_items.size(); ++item_index) {
 					if (item_index > 0) {
 						hint_string += ",";
@@ -141,7 +142,7 @@ void update_expression_inputs(VoxelGraphFunction &graph, uint32_t node_id, Strin
 		// Error, the action will not include node input changes
 		return;
 	}
-	StdVector<std::string> old_input_names;
+	StdVector<StdString> old_input_names;
 	graph.get_expression_node_inputs(node_id, old_input_names);
 
 	struct Connection {

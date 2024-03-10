@@ -1,27 +1,28 @@
 #ifndef ZN_STRING_FUNCS_H
 #define ZN_STRING_FUNCS_H
 
+#include "std_string.h"
+#include "std_stringstream.h"
 #include <sstream>
-#include <string>
 #include <string_view>
 
 namespace zylann {
 
 struct FwdConstStdString {
-	const std::string &s;
-	FwdConstStdString(const std::string &p_s) : s(p_s) {}
+	const StdString &s;
+	FwdConstStdString(const StdString &p_s) : s(p_s) {}
 };
 
 struct FwdMutableStdString {
-	std::string &s;
-	FwdMutableStdString(std::string &p_s) : s(p_s) {}
+	StdString &s;
+	FwdMutableStdString(StdString &p_s) : s(p_s) {}
 };
 
 namespace strfuncs_detail {
 
 // Not a big implementation, only what I need.
 template <typename T>
-std::string_view consume_next_format_placeholder(std::string_view fmt, std::stringstream &ss, const T &a) {
+std::string_view consume_next_format_placeholder(std::string_view fmt, StdStringStream &ss, const T &a) {
 	const size_t pi = fmt.find("{}");
 	if (pi == std::string_view::npos) {
 		// Too many arguments supplied?
@@ -34,12 +35,12 @@ std::string_view consume_next_format_placeholder(std::string_view fmt, std::stri
 }
 
 template <typename T0>
-std::string_view consume_placeholders(std::string_view fmt, std::stringstream &ss, const T0 &a0) {
+std::string_view consume_placeholders(std::string_view fmt, StdStringStream &ss, const T0 &a0) {
 	return consume_next_format_placeholder(fmt, ss, a0);
 }
 
 template <typename T0, typename... TN>
-std::string_view consume_placeholders(std::string_view fmt, std::stringstream &ss, const T0 &a0, const TN &...an) {
+std::string_view consume_placeholders(std::string_view fmt, StdStringStream &ss, const T0 &a0, const TN &...an) {
 	fmt = consume_next_format_placeholder(fmt, ss, a0);
 	return consume_placeholders(fmt, ss, an...);
 }
@@ -47,8 +48,8 @@ std::string_view consume_placeholders(std::string_view fmt, std::stringstream &s
 } // namespace strfuncs_detail
 
 template <typename... TN>
-std::string format(std::string_view fmt, const TN &...an) {
-	std::stringstream ss;
+StdString format(std::string_view fmt, const TN &...an) {
+	StdStringStream ss;
 	fmt = strfuncs_detail::consume_placeholders(fmt, ss, an...);
 	ss << fmt;
 	return ss.str();

@@ -324,8 +324,8 @@ void ProgramGraph::find_immediate_dependencies(uint32_t node_id, StdVector<uint3
 void ProgramGraph::debug_print_dot_file(String p_file_path) const {
 	// https://www.graphviz.org/pdf/dotguide.pdf
 
-	const std::string file_path = godot::to_std_string(p_file_path);
-	std::ofstream ofs(file_path, std::ios::binary | std::ios::trunc | std::ios::out);
+	const StdString file_path = godot::to_std_string(p_file_path);
+	std::ofstream ofs(file_path.c_str(), std::ios::binary | std::ios::trunc | std::ios::out);
 
 	if (!ofs.good()) {
 		ZN_PRINT_VERBOSE(format("Could not write ProgramGraph debug file as {}", file_path));

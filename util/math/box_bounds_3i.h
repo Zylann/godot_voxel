@@ -1,6 +1,7 @@
 #ifndef ZN_BOX_BOUNDS_3I_H
 #define ZN_BOX_BOUNDS_3I_H
 
+#include "../std_stringstream.h"
 #include "box3i.h"
 
 namespace zylann {
@@ -58,7 +59,7 @@ struct BoxBounds3i {
 	}
 };
 
-std::stringstream &operator<<(std::stringstream &ss, const BoxBounds3i &box);
+StdStringStream &operator<<(StdStringStream &ss, const BoxBounds3i &box);
 
 } // namespace zylann
 

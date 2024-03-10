@@ -7,6 +7,7 @@
 #include "../containers/std_queue.h"
 #include "../containers/std_vector.h"
 #include "../profiling.h"
+#include "../std_string.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
 #include "../thread/thread.h"
@@ -20,7 +21,6 @@
 #endif
 
 #include <atomic>
-#include <string>
 
 namespace zylann {
 
@@ -113,7 +113,7 @@ private:
 		bool stop = false;
 		bool waiting = false;
 		State debug_state = STATE_STOPPED;
-		std::string name;
+		StdString name;
 		std::atomic<const char *> debug_running_task_name = { nullptr };
 
 		void wait_to_finish_and_reset() {
@@ -167,14 +167,14 @@ private:
 	// Tasks marked as "serial" must be executed by only one thread at a time.
 	bool _is_serial_task_running = false;
 
-	std::string _name;
+	StdString _name;
 
 	unsigned int _debug_received_tasks = 0;
 	unsigned int _debug_completed_tasks = 0;
 	unsigned int _debug_taken_out_tasks = 0;
 
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
-	StdUnorderedMap<IThreadedTask *, std::string> _debug_owned_tasks;
+	StdUnorderedMap<IThreadedTask *, StdString> _debug_owned_tasks;
 	Mutex _debug_owned_tasks_mutex;
 #endif
 };

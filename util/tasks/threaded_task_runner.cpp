@@ -59,7 +59,7 @@ void ThreadedTaskRunner::destroy_all_threads() {
 #ifdef ZN_THREADED_TASK_RUNNER_CHECK_DUPLICATE_TASKS
 
 void ThreadedTaskRunner::debug_add_owned_task(IThreadedTask *task) {
-	std::string s;
+	StdString s;
 	dstack::Info info;
 	info.to_string(s);
 	println(format("Own {} t {}", uint64_t(task), Thread::get_caller_id()));

@@ -15,7 +15,7 @@ void Interval::_check_range_once() {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v) {
+StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v) {
 	ss << "[" << v.min << ", " << v.max << "]";
 	return ss;
 }

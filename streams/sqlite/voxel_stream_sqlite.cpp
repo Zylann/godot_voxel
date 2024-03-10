@@ -4,11 +4,11 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
+#include "../../util/std_string.h"
 #include "../../util/string_funcs.h"
 #include "../compressed_data.h"
 
 #include <limits>
-#include <string>
 #include <unordered_set>
 
 namespace zylann::voxel {
@@ -132,7 +132,7 @@ private:
 		}
 	}
 
-	std::string _opened_path;
+	StdString _opened_path;
 	sqlite3 *_db = nullptr;
 	sqlite3_stmt *_begin_statement = nullptr;
 	sqlite3_stmt *_end_statement = nullptr;

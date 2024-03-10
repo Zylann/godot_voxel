@@ -11,9 +11,9 @@ using namespace godot;
 #include "../errors.h"
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
+#include "../std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
-#include <iosfwd>
 
 ZN_GODOT_NAMESPACE_BEGIN
 
@@ -69,7 +69,7 @@ inline int chebyshev_distance(const Vector2i &a, const Vector2i &b) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector2i &v);
+StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v);
 
 } // namespace zylann
 

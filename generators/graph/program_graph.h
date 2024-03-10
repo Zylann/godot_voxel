@@ -7,8 +7,8 @@
 #include "../../util/hash_funcs.h"
 #include "../../util/math/vector2.h"
 #include "../../util/non_copyable.h"
+#include "../../util/std_string.h"
 
-#include <string>
 #include <string_view>
 
 namespace zylann {
@@ -37,7 +37,7 @@ public:
 		// Dynamic ports are ports that are not inherited from `type_id`, they exist solely for this node.
 		// Because it can't be deduced from `type_id`, they must be given a name.
 		// Initially needed for expression nodes.
-		std::string dynamic_name;
+		StdString dynamic_name;
 		uint32_t autoconnect_hint = 0;
 
 		inline bool is_dynamic() const {

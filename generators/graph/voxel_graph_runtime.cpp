@@ -11,6 +11,7 @@
 #include "node_type_db.h"
 #include "voxel_generator_graph.h"
 
+#include <sstream>
 #include <unordered_set>
 
 //#ifdef DEBUG_ENABLED
@@ -580,7 +581,7 @@ void Runtime::analyze_range(State &state, Span<math::Interval> p_inputs) const {
 void Runtime::debug_print_operations() {
 	const Span<const uint16_t> operations(_program.operations.data(), 0, _program.operations.size());
 
-	std::stringstream ss;
+	StdStringStream ss;
 	unsigned int op_index = 0;
 	uint32_t pc = 0;
 	while (pc < operations.size()) {

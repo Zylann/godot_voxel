@@ -7,9 +7,11 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../../util/std_string.h"
 #include "../../util/string_funcs.h"
 #include "../testing.h"
 #include "test_util.h"
+#include <sstream>
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "../../util/noise/fast_noise_2.h"
@@ -622,14 +624,31 @@ void test_voxel_graph_equivalence_merging() {
 	}
 }
 
+int get_decimal_integer_character_count(int n) {
+	if (n == 0) {
+		return 1;
+	}
+	int count = 0;
+	if (n < 0) {
+		n = -n;
+		++count;
+	}
+	while (n > 0) {
+		n /= 10;
+		++count;
+	}
+	return count;
+}
+
 void print_sdf_as_ascii(const VoxelBuffer &vb) {
 	Vector3i pos;
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
 		println(format("Y = {}", pos.y));
 		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
-			std::string s;
-			std::string s2;
+			// Prints two views of the same row side by side
+			StdStringStream ss;
+			StdStringStream ss2;
 			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
 				const float sd = vb.get_voxel_f(pos, channel);
 				char c;
@@ -644,18 +663,21 @@ void print_sdf_as_ascii(const VoxelBuffer &vb) {
 				} else {
 					c = '#';
 				}
-				s += c;
-				s += " ";
-				std::string n = std::to_string(math::clamp(int(sd * 1000.f), -999, 999));
-				while (n.size() < 4) {
-					n = " " + n;
+				ss << c;
+				ss << ' ';
+
+				const int n = math::clamp(int(sd * 1000.f), -999, 999);
+				const int n_char_length = get_decimal_integer_character_count(n);
+				const int space_count = 4 - n_char_length;
+				for (int i = 0; i < space_count; ++i) {
+					ss2 << ' ';
 				}
-				s2 += n;
-				s2 += " ";
+				ss2 << n;
+				ss2 << ' ';
 			}
-			s += " | ";
-			s += s2;
-			println(s);
+			ss << " | ";
+			ss << ss2.str();
+			println(ss.str());
 		}
 	}
 }
@@ -1633,9 +1655,9 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 			return false;
 		}
 
-		static std::string print_u16_hex(uint16_t x) {
+		static StdString print_u16_hex(uint16_t x) {
 			const char *s_chars = "0123456789abcdef";
-			std::string s;
+			StdString s;
 			for (int i = 3; i >= 0; --i) {
 				const unsigned int nibble = (x >> (i * 4)) & 0xf;
 				s += s_chars[nibble];
@@ -1645,7 +1667,7 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 
 		static void print_indices_and_weights(const VoxelBuffer &vb, int y) {
 			Vector3i pos(0, y, 0);
-			std::string s;
+			StdString s;
 			for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
 				for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
 					const uint16_t encoded_indices = vb.get_voxel(pos, VoxelBuffer::CHANNEL_INDICES);

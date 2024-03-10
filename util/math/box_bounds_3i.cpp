@@ -3,7 +3,7 @@
 
 namespace zylann {
 
-std::stringstream &operator<<(std::stringstream &ss, const BoxBounds3i &box) {
+StdStringStream &operator<<(StdStringStream &ss, const BoxBounds3i &box) {
 	ss << "(min:";
 	ss << box.min_pos;
 	ss << ", max:";

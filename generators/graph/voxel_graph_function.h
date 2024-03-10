@@ -3,6 +3,7 @@
 
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
+#include "../../util/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"
@@ -153,7 +154,7 @@ public:
 	void set_node_param(uint32_t node_id, int param_index, Variant value);
 
 	static bool get_expression_variables(std::string_view code, StdVector<std::string_view> &vars);
-	void get_expression_node_inputs(uint32_t node_id, StdVector<std::string> &out_names) const;
+	void get_expression_node_inputs(uint32_t node_id, StdVector<StdString> &out_names) const;
 	void set_expression_node_inputs(uint32_t node_id, PackedStringArray input_names);
 
 	Variant get_node_default_input(uint32_t node_id, int input_index) const;

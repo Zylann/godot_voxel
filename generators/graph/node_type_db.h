@@ -5,6 +5,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/expression_parser.h"
 #include "../../util/godot/core/string.h" // For String hash
+#include "../../util/std_string.h"
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"
@@ -66,7 +67,7 @@ struct NodeType {
 		bool hidden = false;
 		Variant min_value;
 		Variant max_value;
-		StdVector<std::string> enum_items;
+		StdVector<StdString> enum_items;
 
 		Param(String p_name, Variant::Type p_type, Variant p_default_value = Variant()) :
 				name(p_name), default_value(p_default_value), type(p_type) {}

@@ -1,11 +1,12 @@
 #include "container_funcs.h"
 #include "../io/log.h"
 #include "../string_funcs.h"
+#include <sstream>
 
 namespace zylann {
 
 void print_data_hex(Span<const uint8_t> data) {
-	std::stringstream ss;
+	StdStringStream ss;
 	struct L {
 		static inline char to_hex(uint8_t nibble) {
 			if (nibble < 10) {

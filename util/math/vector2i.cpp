@@ -3,7 +3,7 @@
 
 namespace zylann {
 
-std::stringstream &operator<<(std::stringstream &ss, const Vector2i &v) {
+StdStringStream &operator<<(StdStringStream &ss, const Vector2i &v) {
 	ss << "(" << v.x << ", " << v.y << ")";
 	return ss;
 }

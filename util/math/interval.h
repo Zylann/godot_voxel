@@ -1,8 +1,8 @@
 #ifndef ZN_INTERVAL_H
 #define ZN_INTERVAL_H
 
+#include "../std_stringstream.h"
 #include "funcs.h"
-#include <iosfwd>
 #include <limits>
 
 namespace zylann {
@@ -492,7 +492,7 @@ inline Interval pow(Interval x, Interval p) {
 
 } // namespace math
 
-std::stringstream &operator<<(std::stringstream &ss, const math::Interval &v);
+StdStringStream &operator<<(StdStringStream &ss, const math::Interval &v);
 
 } // namespace zylann
 

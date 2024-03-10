@@ -3,6 +3,7 @@
 
 #include "../util/godot/classes/file_access.h"
 #include "../util/math/vector3i.h"
+#include "../util/std_string.h"
 
 namespace zylann::godot {
 
@@ -54,7 +55,7 @@ void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size = 512);
 
 namespace zylann::voxel {
 // Specific to voxel because it uses a global lock found only in VoxelServer
-Error check_directory_created_using_file_locker(const std::string &directory_path);
+Error check_directory_created_using_file_locker(const StdString &directory_path);
 } // namespace zylann::voxel
 
 #endif // FILE_UTILS_H

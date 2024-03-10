@@ -1,8 +1,9 @@
 #include "expression_parser.h"
+#include "std_stringstream.h"
+#include <sstream>
 
 #include <algorithm>
 #include <cmath>
-#include <sstream>
 
 namespace zylann {
 namespace ExpressionParser {
@@ -742,7 +743,7 @@ const char *to_string(OperatorNode::Operation op) {
 	}
 }
 
-void tree_to_string(const Node &node, int depth, std::stringstream &output, Span<const Function> functions) {
+void tree_to_string(const Node &node, int depth, StdStringStream &output, Span<const Function> functions) {
 	for (int i = 0; i < depth; ++i) {
 		output << "  ";
 	}
@@ -789,13 +790,13 @@ void tree_to_string(const Node &node, int depth, std::stringstream &output, Span
 	}
 }
 
-std::string tree_to_string(const Node &node, Span<const Function> functions) {
-	std::stringstream ss;
+StdString tree_to_string(const Node &node, Span<const Function> functions) {
+	StdStringStream ss;
 	tree_to_string(node, 0, ss, functions);
 	return ss.str();
 }
 
-std::string to_string(const Error error) {
+StdString to_string(const Error error) {
 	switch (error.id) {
 		case ERROR_NONE:
 			return "";
@@ -810,7 +811,7 @@ std::string to_string(const Error error) {
 		case ERROR_UNEXPECTED_TOKEN:
 			return "Unexpected token";
 		case ERROR_UNKNOWN_FUNCTION: {
-			std::string s = "Unknown function: '";
+			StdString s = "Unknown function: '";
 			s += error.symbol;
 			s += '\'';
 			return s;

@@ -9,8 +9,8 @@
 using namespace godot;
 #endif
 
-#include <iosfwd>
-#include <string>
+#include "../../std_string.h"
+#include "../../std_stringstream.h"
 #include <string_view>
 
 #ifdef TOOLS_ENABLED
@@ -33,7 +33,7 @@ inline String to_godot(const std::string_view sv) {
 #ifdef TOOLS_ENABLED
 
 PackedStringArray to_godot(const StdVector<std::string_view> &svv);
-PackedStringArray to_godot(const StdVector<std::string> &sv);
+PackedStringArray to_godot(const StdVector<StdString> &sv);
 
 template <typename T>
 String join_comma_separated(Span<const T> items) {
@@ -54,9 +54,9 @@ inline bool is_resource_file(const String &path) {
 	return path.begins_with("res://") && path.find("::") == -1;
 }
 
-inline std::string to_std_string(const String &godot_string) {
+inline StdString to_std_string(const String &godot_string) {
 	const CharString cs = godot_string.utf8();
-	std::string s = cs.get_data();
+	StdString s = cs.get_data();
 	return s;
 }
 
@@ -91,12 +91,12 @@ ZN_GODOT_NAMESPACE_BEGIN
 // Needed for `zylann::format()`.
 // I gave up trying to nicely convert Godot's String here... it has non-explicit `const char*` constructor, that makes
 // other overloads ambiguous...
-// std::stringstream &operator<<(std::stringstream &ss, const String &s);
+// StdStringStream &operator<<(StdStringStream &ss, const String &s);
 struct GodotStringWrapper {
 	GodotStringWrapper(const String &p_s) : s(p_s) {}
 	const String &s;
 };
-std::stringstream &operator<<(std::stringstream &ss, GodotStringWrapper s);
+zylann::StdStringStream &operator<<(zylann::StdStringStream &ss, GodotStringWrapper s);
 
 ZN_GODOT_NAMESPACE_END
 

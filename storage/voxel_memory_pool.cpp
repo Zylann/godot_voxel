@@ -2,6 +2,7 @@
 #include "../util/macros.h"
 #include "../util/memory/memory.h"
 #include "../util/profiling.h"
+#include "../util/std_string.h"
 #include "../util/string_funcs.h"
 
 namespace zylann::voxel {
@@ -46,7 +47,7 @@ void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 				if (count > max_count) {
 					break;
 				}
-				std::string s;
+				StdString s;
 				const dstack::Info &info = it->second;
 				info.to_string(s);
 				if (mem_size == 0) {

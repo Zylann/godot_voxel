@@ -3,7 +3,7 @@
 
 namespace zylann {
 
-std::stringstream &operator<<(std::stringstream &ss, const Box2i &box) {
+StdStringStream &operator<<(StdStringStream &ss, const Box2i &box) {
 	ss << "(o:";
 	ss << box.pos;
 	ss << ", s:";

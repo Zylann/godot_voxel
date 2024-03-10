@@ -5,6 +5,7 @@
 #include "containers/span.h"
 #include "containers/std_vector.h"
 #include "memory.h"
+#include "std_string.h"
 #include <string_view>
 
 namespace zylann {
@@ -109,8 +110,8 @@ struct Function {
 // TODO `text` should be `const`
 Result parse(std::string_view text, Span<const Function> functions);
 bool is_tree_equal(const Node &root_a, const Node &root_b, Span<const Function> functions);
-std::string tree_to_string(const Node &node, Span<const Function> functions);
-std::string to_string(const Error error);
+StdString tree_to_string(const Node &node, Span<const Function> functions);
+StdString to_string(const Error error);
 void find_variables(const Node &node, StdVector<std::string_view> &variables);
 
 // TODO Just use indices in the span? Or pointers?
