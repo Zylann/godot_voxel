@@ -29,7 +29,7 @@ bool prepare_triangles(
 	}
 	Array surface;
 	{
-		ZN_PROFILE_SCOPE_NAMED("Get surface from Godot")
+		ZN_PROFILE_SCOPE_NAMED("Get surface from Godot");
 		surface = mesh.surface_get_arrays(0);
 	}
 	PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
@@ -317,7 +317,7 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 	ERR_FAIL_COND(mesh->get_surface_count() == 0);
 	Array surface;
 	{
-		ZN_PROFILE_SCOPE_NAMED("Get surface from Godot")
+		ZN_PROFILE_SCOPE_NAMED("Get surface from Godot");
 		surface = mesh->surface_get_arrays(0);
 	}
 
