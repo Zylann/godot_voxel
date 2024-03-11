@@ -7,7 +7,7 @@
 namespace zylann {
 
 float get_editor_scale() {
-	const EditorInterface *ei = EditorInterface::get_singleton();
+	const ::godot::EditorInterface *ei = ::godot::EditorInterface::get_singleton();
 	ZN_ASSERT_RETURN_V(ei != nullptr, 1.f);
 	return ei->get_editor_scale();
 }
