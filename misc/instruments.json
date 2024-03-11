@@ -1,0 +1,160 @@
+{
+    "//can't add these due to circular call to overriden new() in thread_local init": {
+        "core/os/memory.cpp": [
+            "void *Memory::alloc_static(",
+            "void *Memory::realloc_static(",
+            "void Memory::free_static("
+        ]
+    },
+    "//to_add_in_godot4.3": {
+        "editor/themes/editor_theme_manager.cpp": [
+            "> EditorThemeManager::generate_theme("
+        ]
+    },
+    "files": {
+        "core/io/resource_loader.cpp": [
+            "Ref<Resource> ResourceFormatLoader::load("
+        ],
+        "core/object/message_queue.cpp": [
+            "Error CallQueue::flush() {"
+        ],
+        "core/object/worker_thread_pool.cpp": [
+            "void WorkerThreadPool::_process_task("
+        ],
+        "core/os/memory.cpp": [
+            {
+                "markup": "TracyAlloc(mem, p_bytes + (prepad ? PAD_ALIGN : 0));",
+                "match_text": "void *mem = malloc(p_bytes + (prepad ? PAD_ALIGN : 0));",
+                "mode": "append"
+            },
+            {
+                "allow_multiple": true,
+                "markup": "TracyFree(mem);",
+                "match_text": "free(mem);",
+                "mode": "prepend"
+            },
+            {
+                "markup": "TracyFree(mem);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + PAD_ALIGN);",
+                "mode": "prepend"
+            },
+            {
+                "markup": "TracyAlloc(mem, p_bytes + PAD_ALIGN);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes + PAD_ALIGN);",
+                "mode": "append"
+            },
+            {
+                "markup": "TracyFree(mem);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes);",
+                "mode": "prepend"
+            },
+            {
+                "markup": "TracyAlloc(mem, p_bytes);",
+                "match_text": "mem = (uint8_t *)realloc(mem, p_bytes);",
+                "mode": "append"
+            }
+        ],
+        "drivers/gles3/rasterizer_scene_gles3.cpp": [
+            "void RasterizerSceneGLES3::render_scene("
+        ],
+        "drivers/gles3/storage/mesh_storage.cpp": [
+            "void MeshStorage::mesh_add_surface(",
+            "void MeshStorage::multimesh_set_buffer("
+        ],
+        "drivers/vulkan/rendering_device_vulkan.cpp": [
+            "RenderingDeviceVulkan::framebuffer_create(",
+            "RenderingDeviceVulkan::shader_compile_binary_from_spirv(",
+            "RenderingDeviceVulkan::shader_create_from_bytecode(",
+            "RenderingDeviceVulkan::render_pipeline_create("
+        ],
+        "drivers/vulkan/vulkan_context.cpp": [
+            "Error VulkanContext::swap_buffers() {",
+            "VulkanContext::_update_swap_chain("
+        ],
+        "editor/editor_file_system.cpp": [
+            "void EditorFileSystem::_scan_filesystem(",
+            "Error EditorFileSystem::_resource_import(",
+            "void EditorFileSystem::reimport_files(",
+            "Error EditorFileSystem::_reimport_file("
+        ],
+        "editor/editor_fonts.cpp": [
+            "void editor_register_fonts("
+        ],
+        "editor/editor_node.cpp": [
+            "EditorNode::EditorNode() {"
+        ],
+        "editor/editor_themes.cpp": [
+            "void editor_register_and_generate_icons(",
+            "> create_editor_theme("
+        ],
+        "main/main.cpp": [
+            "Error Main::setup(",
+            "Error Main::setup2() {",
+            "bool Main::iteration() {",
+            "for (int iters = 0; iters < advance.physics_steps; ++iters) {"
+        ],
+        "platform/windows/display_server_windows.cpp": [
+            "void DisplayServerWindows::swap_buffers() {"
+        ],
+        "scene/animation/animation_mixer.cpp": [
+            "void AnimationMixer::_process_animation("
+        ],
+        "scene/gui/label.cpp": [
+            "case NOTIFICATION_DRAW: {"
+        ],
+        "scene/main/node.cpp": [
+            {
+                "match_text": "GDVIRTUAL_CALL(_process,",
+                "mode": "wrap"
+            },
+            "case NOTIFICATION_PHYSICS_PROCESS: {",
+            "case NOTIFICATION_READY:",
+            "void Node::_propagate_enter_tree() {",
+            "void Node::_propagate_after_exit_tree() {"
+        ],
+        "scene/main/scene_tree.cpp": [
+            "bool SceneTree::process(",
+            "void SceneTree::_process(",
+            "void SceneTree::_call_input_pause("
+        ],
+        "scene/resources/concave_polygon_shape_3d.cpp": [
+            "void ConcavePolygonShape3D::_update_shape() {"
+        ],
+        "scene/resources/mesh.cpp": [
+            "void ArrayMesh::add_surface_from_arrays(",
+            "void ArrayMesh::add_surface(",
+            "void ArrayMesh::_recompute_aabb() {",
+            "ArrayMesh::surface_get_arrays("
+        ],
+        "scene/resources/packed_scene.cpp": [
+            "Node *PackedScene::instantiate(",
+            "void PackedScene::reload_from_file() {"
+        ],
+        "servers/audio_server.cpp": [
+            "void AudioDriver::audio_server_process("
+        ],
+        "servers/physics_3d/godot_physics_server_3d.cpp": [
+            "void GodotPhysicsServer3D::step("
+        ],
+        "servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp": [
+            "void RenderForwardClustered::_render_scene("
+        ],
+        "servers/rendering/renderer_rd/storage_rd/mesh_storage.cpp": [
+            "void MeshStorage::multimesh_set_buffer(",
+            "void MeshStorage::mesh_add_surface("
+        ],
+        "servers/rendering/renderer_rd/storage_rd/texture_storage.cpp": [
+            "TextureStorage::_texture_2d_update("
+        ],
+        "servers/rendering/renderer_scene_cull.cpp": [
+            "void RendererSceneCull::_scene_cull(",
+            "void RendererSceneCull::_render_scene("
+        ],
+        "servers/rendering/rendering_server_default.cpp": [
+            "void RenderingServerDefault::draw("
+        ],
+        "servers/rendering/shader_compiler.cpp": [
+            "Error ShaderCompiler::compile("
+        ]
+    }
+}

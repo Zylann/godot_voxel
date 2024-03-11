@@ -29,16 +29,27 @@ jobs:
             target: editor
             precision: single
             executable_name: godot.windows.editor.x86_64.exe
+            tracy: no
+          
+          - name: 4.2 Profiling Editor
+            target: editor
+            precision: single
+            # This is not a built-in feature of Godot so we have to do some changes manually
+            executable_name: godot.windows.tracy.editor.x86_64.exe
+            original_executable_name: godot.windows.editor.x86_64.exe
+            tracy: yes
 
           - name: 4.2 Editor Float64
             target: editor
             precision: double
             executable_name: godot.windows.editor.double.x86_64.exe
+            tracy: no
 
           - name: 4.2 Template
             target: template_release
             precision: single
             executable_name: godot.windows.template_release.x86_64.exe
+            tracy: no
 
     steps:
       # Clone Godot
@@ -83,6 +94,20 @@ jobs:
           python --version
           scons --version
 
+      - name: Install Tracy
+        if: ${{ matrix.tracy == 'yes' }}
+        uses: actions/checkout@v4
+        with:
+          repository: wolfpld/tracy
+          ref: v0.10
+          path: thirdparty/tracy
+
+      # This is to instrument specific parts of Godot. Our module already has built-in instrumentation.
+      - name: Instrument code
+        if: ${{ matrix.tracy == 'yes' }}
+        run:
+          python modules/voxel/misc/instrument.py -d . -c modules/voxel/misc/instruments.json
+
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       # TODO Enhancement: we'd like to use `warnings=extra` with MSVC but Godot doesn't compile yet with that level of warnings.
       # See https://github.com/godotengine/godot/issues/66537
@@ -90,7 +115,14 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}}
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}}
+
+      - name: "Rename executable"
+        if: ${{ matrix.tracy == 'yes' }}
+        run:
+          cd bin
+          rename ${{matrix.original_executable_name}} ${{ matrix.executable_name }}
+          cd ..
 
       # Make build available
       - uses: actions/upload-artifact@v4
