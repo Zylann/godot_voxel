@@ -343,7 +343,7 @@ Profile with Tracy
 
 This module contains macros to profile specific code sections. By default, these macros expand to [Tracy Profiler](https://github.com/wolfpld/tracy) zones. It allows to check how long code takes to run, and displays it in a timeline.
 
-It was tested with Tracy 0.7.8.
+It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0.10).
 
 ![Tracy screenshot](images/tracy.webp)
 
@@ -392,25 +392,20 @@ void process_every_frame() {
 }
 ```
 
-### Adding Tracy to Godot
+### Adding Tracy
 
-To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the voxel module). Then in `modules/voxel/SCsub`, add the following lines:
+To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the module).
+Then compile the engine by including `tracy=yes` in the SCons command line.
 
-```python
-# tracy library
-env.Append(CPPDEFINES="TRACY_ENABLE")
-env_voxel.Append(CPPDEFINES="TRACY_ENABLE")
-voxel_files += ["#thirdparty/tracy/TracyClient.cpp"]
-```
+Tracy isn't a feature of Godot's build system, so internally some of the work is actually done in the voxel module's build script.
 
-Those lines might already be there, if so just uncomment them.
-
-Once you are done profiling, don't forget to remove these lines, otherwise profiling data will accumulate in memory without being retrieved.
+Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
 
 !!! note
     Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
 
-This way of integrating Tracy was based on this [commit by vblanco](https://github.com/vblanco20-1/godot/commit/2c5613abb8c9fdb5c4bfe3b52fdb665a91b43579)
+!!! warning
+    Profiling data can use a lot of memory (can reach gigabytes of RAM), so make sure your computer has enough and keep your session duration in check.
 
 
 Preprocessor macros

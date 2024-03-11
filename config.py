@@ -15,6 +15,8 @@ def configure(env):
 
     env_vars.Add(BoolVariable("voxel_fast_noise_2", "Build FastNoise2 support (x86-only)", True))
 
+    env_vars.Add(BoolVariable("tracy", "Build with enabled Tracy Profiler integration", False))
+
     env_vars.Update(env)
     Help(env_vars.GenerateHelpText(env))
 
