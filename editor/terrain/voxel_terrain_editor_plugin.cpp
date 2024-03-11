@@ -136,8 +136,6 @@ void VoxelTerrainEditorPlugin::set_voxel_node(VoxelNode *node) {
 
 	if (node != nullptr) {
 		VoxelLodTerrain *vlt = Object::cast_to<VoxelLodTerrain>(node);
-		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(node);
-
 		generate_menu_items(_menu_button, vlt != nullptr);
 	}
 }
