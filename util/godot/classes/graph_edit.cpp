@@ -29,7 +29,7 @@ void get_graph_edit_connections(const GraphEdit &self, StdVector<GraphEditConnec
 	const List<Ref<GraphEdit::Connection>> &connections_list = self.get_connection_list();
 
 	for (const Ref<GraphEdit::Connection> &src_con : connections_list) {
-		GodotGraphEditConnection dst_con;
+		GraphEditConnection dst_con;
 
 		dst_con.from = src_con->from_node;
 		dst_con.to = src_con->to_node;
