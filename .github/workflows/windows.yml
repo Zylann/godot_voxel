@@ -120,9 +120,7 @@ jobs:
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}
         run:
-          cd bin
-          rename ${{matrix.original_executable_name}} ${{ matrix.executable_name }}
-          cd ..
+          mv bin/${{matrix.original_executable_name}} bin/${{matrix.executable_name}}
 
       # Make build available
       - uses: actions/upload-artifact@v4
