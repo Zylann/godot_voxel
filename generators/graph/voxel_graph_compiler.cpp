@@ -729,20 +729,6 @@ void get_input_node_ids(const ProgramGraph &graph, Span<const VoxelGraphFunction
 	});
 }
 
-bool find_port_index_from_node(
-		const StdVector<StdVector<uint32_t>> &ports_node_ids, uint32_t node_id, unsigned int &out_port_index) {
-	for (unsigned int port_index = 0; port_index < ports_node_ids.size(); ++port_index) {
-		const StdVector<uint32_t> &port_node_ids = ports_node_ids[port_index];
-		for (const uint32_t id : port_node_ids) {
-			if (id == node_id) {
-				out_port_index = port_index;
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
 // Replaces a function node with its contents in place, with equivalent connections to its surroundings.
 CompilationResult expand_function(
 		ProgramGraph &graph, uint32_t node_id, const NodeTypeDB &type_db, GraphRemappingInfo *remap_info) {
