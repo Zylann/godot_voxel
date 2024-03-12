@@ -52,7 +52,7 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, c
 	const float nz = z / d;
 	// TODO Could use fast atan2, it doesn't have to be precise
 	// https://github.com/ducha-aiki/fast_atan2/blob/master/fast_atan.cpp
-	const float uvx = -Math::atan2(nz, nx) * zylann::voxel::constants::INV_TAU + 0.5f;
+	const float uvx = -Math::atan2(nz, nx) * zylann::math::INV_TAU_32 + 0.5f;
 	// This is an approximation of asin(ny)/(PI/2)
 	// TODO It may be desirable to use the real function though,
 	// in cases where we want to combine the same map in shaders
@@ -85,11 +85,11 @@ inline math::Interval sdf_sphere_heightmap(math::Interval x, math::Interval y, m
 
 	Interval h;
 	{
-		const Interval uvx = -atan_r0 * zylann::voxel::constants::INV_TAU + 0.5f;
+		const Interval uvx = -atan_r0 * zylann::math::INV_TAU_32 + 0.5f;
 		h = im_range->get_range(uvx * norm_x, uvy * norm_y);
 	}
 	if (atan_r1.valid) {
-		const Interval uvx = -atan_r1.value * zylann::voxel::constants::INV_TAU + 0.5f;
+		const Interval uvx = -atan_r1.value * zylann::math::INV_TAU_32 + 0.5f;
 		h.add_interval(im_range->get_range(uvx * norm_x, uvy * norm_y));
 	}
 

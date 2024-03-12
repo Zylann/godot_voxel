@@ -26,8 +26,6 @@ static const int MAX_VOLUME_SIZE = 2 * MAX_VOLUME_EXTENT; // 1,073,741,822 voxel
 
 static const float INV_0x7f = 1.f / 0x7f;
 static const float INV_0x7fff = 1.f / 0x7fff;
-static const float INV_TAU = 1.f / math::TAU_32;
-static const float SQRT3 = 1.73205080757;
 
 // Below 32 bits, channels are normalized in -1..1, and can represent a limited number of values.
 // For storing SDF, we need a range of values that extends beyond that, in particular for better LOD.

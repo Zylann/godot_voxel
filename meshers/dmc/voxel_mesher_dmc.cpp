@@ -49,7 +49,7 @@ bool can_split(Vector3i node_origin, int node_size, const VoxelAccess &voxels, f
 	// Don't split if nothing is inside, i.e isolevel distance is greater than the size of the cube we are in
 	Vector3i center_pos = node_origin + Vector3iUtil::create(node_size / 2);
 	HermiteValue center_value = voxels.get_hermite_value(center_pos.x, center_pos.y, center_pos.z);
-	if (Math::abs(center_value.sdf) > constants::SQRT3 * (float)node_size) {
+	if (Math::abs(center_value.sdf) > math::SQRT3_32 * (float)node_size) {
 		return false;
 	}
 
@@ -783,7 +783,7 @@ inline bool is_surface_near(OctreeNode *node) {
 	if (node->center_value.sdf == 0) {
 		return true;
 	}
-	return Math::abs(node->center_value.sdf) < node->size * constants::SQRT3 * NEAR_SURFACE_FACTOR;
+	return Math::abs(node->center_value.sdf) < node->size * math::SQRT3_32 * NEAR_SURFACE_FACTOR;
 }
 
 void DualGridGenerator::vert_proc(OctreeNode *n0, OctreeNode *n1, OctreeNode *n2, OctreeNode *n3, OctreeNode *n4,

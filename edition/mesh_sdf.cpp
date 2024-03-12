@@ -91,7 +91,7 @@ const Triangle *raycast(const ChunkGrid &chunk_grid, Vector3f ray_position, Vect
 
 	// Compute a max distance for DDA
 	// const float max_distance_chunks = int(chunk_grid.size.length());
-	const float max_distance_chunks = (max_distance / chunk_grid.chunk_size) + 2.f * constants::SQRT3;
+	const float max_distance_chunks = (max_distance / chunk_grid.chunk_size) + 2.f * math::SQRT3_32;
 
 	const Triangle *hit_triangle = nullptr;
 
@@ -394,7 +394,7 @@ void compute_near_chunks(ChunkGrid &chunk_grid) {
 				// a closer triangle found in a farther chunk.
 
 				const int margin_distance_squared =
-						math::squared(sqrtf(closest_chunk_distance_squared) + constants::SQRT3);
+						math::squared(sqrtf(closest_chunk_distance_squared) + math::SQRT3_32);
 
 				for (auto it = nonempty_chunks.begin(); it != nonempty_chunks.end(); ++it) {
 					const Chunk &nchunk = **it;
