@@ -11,4 +11,14 @@
     </Expand>
   </Type>
 
+  <Type Name="zylann::SmallVector&lt;*&gt;">
+    <Expand>
+        <Item Name="[size]">_size</Item>
+        <ArrayItems>
+            <Size>_size</Size>
+            <ValuePointer>(ValueType*)_items</ValuePointer>
+        </ArrayItems>
+    </Expand>
+  </Type>
+
 </AutoVisualizer>
