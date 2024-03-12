@@ -18,6 +18,7 @@ const char *DENSITY_HINT_STRING = "0.0, 1.0, 0.01";
 } // namespace
 
 void VoxelInstanceGenerator::generate_transforms(StdVector<Transform3f> &out_transforms, Vector3i grid_position,
+		// TODO `lod_index` has become unused, remove?
 		int lod_index, int layer_id, Array surface_arrays, UpMode up_mode, uint8_t octant_mask, float block_size) {
 	ZN_PROFILE_SCOPE();
 

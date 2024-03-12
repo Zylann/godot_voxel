@@ -227,7 +227,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 						GenerateInstancesBlockTask *task = ZN_NEW(GenerateInstancesBlockTask);
 						task->mesh_block_grid_position = _render_grid_position;
 						task->layer_id = item.id;
-						task->mesh_block_size = _instance_block_size;
+						task->mesh_block_size = static_cast<int>(_instance_block_size) << _lod_index;
 						task->lod_index = _lod_index;
 						task->edited_mask = layer.edited_mask;
 						task->up_mode = _up_mode;

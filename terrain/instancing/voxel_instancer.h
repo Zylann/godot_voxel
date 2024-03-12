@@ -11,7 +11,6 @@
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory/memory.h"
-#include "generate_instances_block_task.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library.h"
 #include "voxel_instance_library_multimesh_item.h"
@@ -40,6 +39,7 @@ class SaveBlockDataTask;
 class BufferedTaskScheduler;
 struct InstanceBlockData;
 struct VoxelInstancerQuickReloadingCache;
+struct VoxelInstancerTaskOutputQueue;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
