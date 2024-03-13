@@ -157,9 +157,9 @@ public:
 	// Note: these functions don't include metadata on purpose.
 	// If you also want to copy metadata, use the specialized functions.
 	// TODO Rename `copy_channels_from`
-	void copy_from(const VoxelBuffer &other);
-	void copy_from(const VoxelBuffer &other, unsigned int channel_index);
-	void copy_from(
+	void copy_channels_from(const VoxelBuffer &other);
+	void copy_channel_from(const VoxelBuffer &other, unsigned int channel_index);
+	void copy_channel_from(
 			const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index);
 
 	// Copy a region from a box of values, passed as a raw array.
@@ -167,7 +167,7 @@ public:
 	// `src_min` and `src_max` are the sub-region of that box we want to copy.
 	// `dst_min` is the lower corner where we want the data to be copied into the destination.
 	template <typename T>
-	void copy_from(Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
+	void copy_channel_from(Span<const T> src, Vector3i src_size, Vector3i src_min, Vector3i src_max, Vector3i dst_min,
 			unsigned int channel_index) {
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
@@ -193,7 +193,7 @@ public:
 	// `dst_min` is the lower corner of where we want the source data to be stored.
 	// `src_min` and `src_max` is the sub-region of the source we want to copy.
 	template <typename T>
-	void copy_to(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
+	void copy_channel_to(Span<T> dst, Vector3i dst_size, Vector3i dst_min, Vector3i src_min, Vector3i src_max,
 			unsigned int channel_index) const {
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
@@ -377,7 +377,7 @@ public:
 		return channels;
 	}
 
-	void duplicate_to(VoxelBuffer &dst, bool include_metadata) const;
+	void copy_to(VoxelBuffer &dst, bool include_metadata) const;
 	void move_to(VoxelBuffer &dst);
 
 	inline bool is_position_valid(unsigned int x, unsigned int y, unsigned int z) const {

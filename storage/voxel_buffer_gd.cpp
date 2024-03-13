@@ -49,14 +49,14 @@ void VoxelBuffer::set_voxel_f(real_t value, int x, int y, int z, unsigned int ch
 void VoxelBuffer::copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel) {
 	ZN_DSTACK();
 	ERR_FAIL_COND(other.is_null());
-	_buffer->copy_from(other->get_buffer(), channel);
+	_buffer->copy_channel_from(other->get_buffer(), channel);
 }
 
 void VoxelBuffer::copy_channel_from_area(
 		Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel) {
 	ZN_DSTACK();
 	ERR_FAIL_COND(other.is_null());
-	_buffer->copy_from(other->get_buffer(), src_min, src_max, dst_min, channel);
+	_buffer->copy_channel_from(other->get_buffer(), src_min, src_max, dst_min, channel);
 }
 
 void VoxelBuffer::fill(uint64_t defval, int channel_index) {
@@ -94,7 +94,7 @@ void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i 
 Ref<VoxelBuffer> VoxelBuffer::duplicate(bool include_metadata) const {
 	Ref<VoxelBuffer> d;
 	d.instantiate();
-	_buffer->duplicate_to(d->get_buffer(), include_metadata);
+	_buffer->copy_to(d->get_buffer(), include_metadata);
 	return d;
 }
 

@@ -18,7 +18,7 @@ void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 
 		} else {
 			q.result = VoxelStream::RESULT_BLOCK_FOUND;
-			it->second.duplicate_to(q.voxel_buffer, true);
+			it->second.copy_to(q.voxel_buffer, true);
 		}
 	}
 }
@@ -32,7 +32,7 @@ void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 		{
 			MutexLock mlock(lod.mutex);
 			VoxelBuffer &dst = lod.voxel_blocks[q.position_in_blocks];
-			q.voxel_buffer.duplicate_to(dst, true);
+			q.voxel_buffer.copy_to(dst, true);
 		}
 	}
 }
@@ -106,7 +106,7 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 
 			const VoxelBuffer &src = it->second;
 			block.voxels = make_shared_instance<VoxelBuffer>();
-			src.duplicate_to(*block.voxels, true);
+			src.copy_to(*block.voxels, true);
 		}
 
 		for (auto it = lod.instance_blocks.begin(); it != lod.instance_blocks.end(); ++it) {

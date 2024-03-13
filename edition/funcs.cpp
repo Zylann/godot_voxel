@@ -33,7 +33,7 @@ void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsign
 						const uint8_t channel = channels[ci];
 						dst_buffer.set_channel_depth(channel, src_buffer->get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
-						dst_buffer.copy_from(
+						dst_buffer.copy_channel_from(
 								*src_buffer, min_pos - src_block_origin, src_buffer->get_size(), Vector3i(), channel);
 					}
 
@@ -105,7 +105,7 @@ void paste_to_chunked_storage(const VoxelBuffer &src_buffer, Vector3i min_pos, u
 						}
 
 					} else {
-						dst_buffer->copy_from(
+						dst_buffer->copy_channel_from(
 								src_buffer, Vector3i(), src_buffer.get_size(), min_pos - dst_block_origin, channel);
 					}
 				}

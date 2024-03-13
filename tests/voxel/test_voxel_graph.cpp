@@ -750,7 +750,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 			// Make a backup before running the generator
 			VoxelBuffer buffer_before;
 			buffer_before.create(buffer.get_size());
-			buffer_before.copy_from(buffer);
+			buffer_before.copy_channels_from(buffer);
 
 			generator->set_use_subdivision(subdivision_enabled);
 			generator->set_subdivision_size(subdivision_size);

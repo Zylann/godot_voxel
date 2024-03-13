@@ -43,7 +43,7 @@ struct ScheduleSaveAction {
 			if (block.has_voxels()) {
 				if (with_copy) {
 					b.voxels = make_shared_instance<VoxelBuffer>();
-					block.get_voxels_const().duplicate_to(*b.voxels, true);
+					block.get_voxels_const().copy_to(*b.voxels, true);
 				} else {
 					b.voxels = block.get_voxels_shared();
 				}
@@ -843,7 +843,7 @@ bool VoxelData::consume_block_modifications(Vector3i bpos, VoxelData::BlockToSav
 	if (block->is_modified()) {
 		if (block->has_voxels()) {
 			out_to_save.voxels = make_shared_instance<VoxelBuffer>();
-			block->get_voxels_const().duplicate_to(*out_to_save.voxels, true);
+			block->get_voxels_const().copy_to(*out_to_save.voxels, true);
 		}
 		out_to_save.position = bpos;
 		out_to_save.lod_index = 0;

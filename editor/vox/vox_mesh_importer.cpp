@@ -213,7 +213,7 @@ bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_o
 	for (unsigned int instance_index = 0; instance_index < instances.size(); ++instance_index) {
 		const ModelInstance &mi = instances[instance_index];
 		ERR_FAIL_COND_V(mi.voxels == nullptr, false);
-		out_voxels.copy_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
+		out_voxels.copy_channel_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
 				mi.position - bounding_box.pos + Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				VoxelBuffer::CHANNEL_COLOR);
 	}

@@ -977,7 +977,7 @@ void VoxelTerrain::send_data_load_requests() {
 				// back and forth or the task runner is overloaded.
 				std::shared_ptr<VoxelBuffer> voxel_data = make_shared_instance<VoxelBuffer>();
 				// Duplicating to make sure the saving version doesn't get altered by possible upcoming modifications.
-				saving_block_it->second->duplicate_to(*voxel_data, true);
+				saving_block_it->second->copy_to(*voxel_data, true);
 				_quick_reloading_blocks.push_back(QuickReloadingBlock{ voxel_data, block_pos });
 				// Don't erase it just yet, we may only do this once we know it is saved
 				// _unloaded_saving_blocks.erase(saving_block_it);

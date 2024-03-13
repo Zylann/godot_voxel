@@ -149,7 +149,7 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>();
-			_voxels->duplicate_to(*voxels_copy, true);
+			_voxels->copy_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.

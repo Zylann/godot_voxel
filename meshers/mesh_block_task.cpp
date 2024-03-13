@@ -135,7 +135,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 					const Vector3i src_max = max_pos - offset;
 
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_from(*src, src_min, src_max, Vector3i(), channels[ci]);
+						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channels[ci]);
 					}
 
 					if (boxes_to_generate.size() > 0) {
@@ -203,7 +203,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
 			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
+				dst.copy_channel_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
 			}
 		}
 	}

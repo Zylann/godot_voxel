@@ -213,7 +213,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 						const uint8_t channel = channels[ci];
 						dst_buffer.set_channel_depth(channel, src_buffer.get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
-						dst_buffer.copy_from(
+						dst_buffer.copy_channel_from(
 								src_buffer, min_pos - src_block_origin, src_buffer.get_size(), Vector3i(), channel);
 					}
 
@@ -227,7 +227,8 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 					gen_func(callback_data, temp, box.pos);
 
 					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst_buffer.copy_from(temp, Vector3i(), temp.get_size(), box.pos - min_pos, channels[ci]);
+						dst_buffer.copy_channel_from(
+								temp, Vector3i(), temp.get_size(), box.pos - min_pos, channels[ci]);
 					}
 
 				} else {
@@ -306,7 +307,7 @@ void VoxelDataMap::paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsign
 						}
 
 					} else {
-						dst_buffer.copy_from(
+						dst_buffer.copy_channel_from(
 								src_buffer, Vector3i(), src_buffer.get_size(), min_pos - dst_block_origin, channel);
 					}
 				}

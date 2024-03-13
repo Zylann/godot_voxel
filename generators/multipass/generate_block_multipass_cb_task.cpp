@@ -150,7 +150,8 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 			// (if we do, we need to change the column's spatial lock to WRITE)
 			voxels = make_shared_instance<VoxelBuffer>();
 			voxels->create(block.voxels.get_size());
-			voxels->copy_from(block.voxels);
+			voxels->copy_channels_from(block.voxels);
+			// TODO Metadata?
 
 			run_stream_saving_and_finish();
 		}
@@ -189,7 +190,7 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>();
-			voxels->duplicate_to(*voxels_copy, true);
+			voxels->copy_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.
 			// No priority data, saving doesn't need sorting.

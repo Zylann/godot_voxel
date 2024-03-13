@@ -541,14 +541,14 @@ void VoxelBuffer::copy_format(const VoxelBuffer &other) {
 	}
 }
 
-void VoxelBuffer::copy_from(const VoxelBuffer &other) {
+void VoxelBuffer::copy_channels_from(const VoxelBuffer &other) {
 	// Copy all channels, assuming sizes and formats match
 	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		copy_from(other, i);
+		copy_channel_from(other, i);
 	}
 }
 
-void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index) {
+void VoxelBuffer::copy_channel_from(const VoxelBuffer &other, unsigned int channel_index) {
 	ZN_DSTACK();
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 	ZN_ASSERT_RETURN(other._size == _size);
@@ -574,7 +574,7 @@ void VoxelBuffer::copy_from(const VoxelBuffer &other, unsigned int channel_index
 }
 
 // TODO Disallow copying from overlapping areas of the same buffer
-void VoxelBuffer::copy_from(
+void VoxelBuffer::copy_channel_from(
 		const VoxelBuffer &other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel_index) {
 	//
 	ZN_DSTACK();
@@ -615,13 +615,13 @@ void VoxelBuffer::copy_from(
 	}
 }
 
-void VoxelBuffer::duplicate_to(VoxelBuffer &dst, bool include_metadata) const {
+void VoxelBuffer::copy_to(VoxelBuffer &dst, bool include_metadata) const {
 	ZN_DSTACK();
 	dst.create(_size);
 	for (unsigned int i = 0; i < _channels.size(); ++i) {
 		dst.set_channel_depth(i, _channels[i].depth);
 	}
-	dst.copy_from(*this);
+	dst.copy_channels_from(*this);
 	if (include_metadata) {
 		dst.copy_voxel_metadata(*this);
 	}

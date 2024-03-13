@@ -36,7 +36,7 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Ref<godot::VoxelBuffer> buffer_wrapper;
 	buffer_wrapper.instantiate();
-	query_data.voxel_buffer.duplicate_to(buffer_wrapper->get_buffer(), true);
+	query_data.voxel_buffer.copy_to(buffer_wrapper->get_buffer(), true);
 #if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, query_data.position_in_blocks, query_data.lod_index)) {
 		WARN_PRINT_ONCE("VoxelStreamScript::_save_voxel_block is unimplemented!");

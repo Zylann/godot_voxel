@@ -20,7 +20,7 @@ bool VoxelStreamCache::load_voxel_block(Vector3i position, uint8_t lod_index, Vo
 
 		// Copying is required since the cache has ownership on its data,
 		// and the requests wants us to populate the buffer it provides
-		vb.duplicate_to(out_voxels, true);
+		vb.copy_to(out_voxels, true);
 
 		return true;
 	}
@@ -37,7 +37,7 @@ void VoxelStreamCache::save_voxel_block(Vector3i position, uint8_t lod_index, Vo
 		b.position = position;
 		b.lod = lod_index;
 		// TODO Optimization: if we know the buffer is not shared, we could use move instead
-		voxels.duplicate_to(b.voxels, true);
+		voxels.copy_to(b.voxels, true);
 		b.has_voxels = true;
 		lod.blocks.insert(std::make_pair(position, std::move(b)));
 		++_count;

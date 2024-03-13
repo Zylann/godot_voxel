@@ -74,7 +74,7 @@ void SaveBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 		// If this is not a copy, it means the map it came from is getting unloaded anyways.
 		// TODO Optimization: is that copy necessary? It's possible it was already done while issuing the
 		// request
-		_voxels->duplicate_to(voxels_copy, true);
+		_voxels->copy_to(voxels_copy, true);
 		_voxels = nullptr;
 		VoxelStream::VoxelQueryData q{ voxels_copy, _position, _lod, VoxelStream::RESULT_ERROR };
 		stream->save_voxel_block(q);

@@ -743,7 +743,8 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 					Vector3i dst_pos = rel * old_block.get_size();
 
 					for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
-						new_block.copy_from(old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
+						new_block.copy_channel_from(
+								old_block, Vector3i(), old_block.get_size(), dst_pos, channel_index);
 					}
 
 					new_block.compress_uniform_channels();
@@ -768,7 +769,7 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 
 								for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS;
 										++channel_index) {
-									new_block.copy_from(old_block, src_min, src_max, Vector3i(), channel_index);
+									new_block.copy_channel_from(old_block, src_min, src_max, Vector3i(), channel_index);
 								}
 
 								VoxelStream::VoxelQueryData new_block_save_query{ //
