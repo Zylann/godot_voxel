@@ -370,4 +370,6 @@ private:
 } // namespace voxel
 } // namespace zylann
 
+VARIANT_ENUM_CAST(zylann::voxel::VoxelTerrain::DebugDrawFlag)
+
 #endif // VOXEL_TERRAIN_H

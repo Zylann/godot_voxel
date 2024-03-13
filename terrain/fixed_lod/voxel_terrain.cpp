@@ -2173,6 +2173,11 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
 	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels"), &VoxelTerrain::_b_is_area_meshed);
 
+	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelTerrain::debug_set_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelTerrain::debug_is_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &VoxelTerrain::debug_set_draw_flag);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &VoxelTerrain::debug_get_draw_flag);
+
 #ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
 	GDVIRTUAL_BIND(_on_area_edited, "area_origin", "area_size");
@@ -2223,6 +2228,9 @@ void VoxelTerrain::_bind_methods() {
 	ADD_GROUP("Debug Drawing", "debug_");
 
 	// Debug drawing is not persistent
+
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
+	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_draw_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
 			"debug_set_draw_enabled", "debug_is_draw_enabled");
