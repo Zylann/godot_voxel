@@ -983,7 +983,7 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 			}
 		};
 		SortArray<WeightOutput, WeightOutputComparer> sorter;
-		CRASH_COND(r->weight_outputs_count >= r->weight_outputs.size());
+		ZN_ASSERT(r->weight_outputs_count <= r->weight_outputs.size());
 		sorter.sort(r->weight_outputs.data(), r->weight_outputs_count);
 	}
 
