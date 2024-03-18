@@ -31,6 +31,7 @@ void test_voxel_graph_spots2d_optimized_execution_map();
 void test_voxel_graph_unused_inner_output();
 void test_voxel_graph_function_execute();
 void test_voxel_graph_image();
+void test_voxel_graph_many_weight_outputs();
 
 } // namespace zylann::voxel::tests
 

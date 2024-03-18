@@ -1954,4 +1954,59 @@ void test_voxel_graph_image() {
 	}
 }
 
+void test_voxel_graph_many_weight_outputs() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	static constexpr unsigned int USED_WEIGHTS_COUNT = 13;
+	static constexpr unsigned int PEAKING_INDEX = 5;
+	{
+		Ref<VoxelGraphFunction> func = generator->get_main_function();
+		ZN_ASSERT(func.is_valid());
+
+		//
+		//  Y --- Sdf
+		//    |
+		//    --- * --- OutputWeight[PEAKING_INDEX]
+		//    |
+		//    --- OutputWeight1
+		//    |
+		//    --- OutputWeight2
+		//    |
+		//    [...]
+
+		const uint32_t n_y = func->create_node(VoxelGraphFunction::NODE_INPUT_Y, Vector2());
+		const uint32_t n_out_sdf = func->create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2());
+
+		const uint32_t n_mul = func->create_node(VoxelGraphFunction::NODE_MULTIPLY, Vector2());
+		func->set_node_default_input(n_mul, 1, 10.f);
+
+		FixedArray<uint32_t, USED_WEIGHTS_COUNT> weight_outs;
+		for (unsigned int i = 0; i < weight_outs.size(); ++i) {
+			const unsigned int n_out = func->create_node(VoxelGraphFunction::NODE_OUTPUT_WEIGHT, Vector2());
+			func->set_node_param(n_out, 0, i);
+			weight_outs[i] = n_out;
+		}
+
+		func->add_connection(n_y, 0, n_out_sdf, 0);
+
+		func->add_connection(n_y, 0, n_mul, 0);
+
+		for (unsigned int i = 0; i < weight_outs.size(); ++i) {
+			const uint32_t n_out = weight_outs[i];
+			if (i == PEAKING_INDEX) {
+				func->add_connection(n_mul, 0, n_out, 0);
+			} else {
+				func->add_connection(n_y, 0, n_out, 0);
+			}
+		}
+	}
+
+	// This used to crash/fail because the generator tried to compute spare indices when it doesnt actually make sense
+	// to do so when we have more than 4
+	const CompilationResult result = generator->compile(false);
+	ZN_TEST_ASSERT(result.success);
+
+	// TODO Also run that graph and test outputs?
+}
+
 } // namespace zylann::voxel::tests

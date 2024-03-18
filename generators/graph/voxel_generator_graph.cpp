@@ -992,8 +992,11 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 		FixedArray<bool, 16> used_indices_map;
 		FixedArray<uint8_t, 4> spare_indices;
 		fill(used_indices_map, false);
+		unsigned int used_indices_count = 0;
 		for (unsigned int i = 0; i < r->weight_outputs.size(); ++i) {
-			used_indices_map[r->weight_outputs[i].layer_index] = true;
+			const unsigned int layer_index = r->weight_outputs[i].layer_index;
+			used_indices_count += static_cast<unsigned int>(!used_indices_map[layer_index]);
+			used_indices_map[layer_index] = true;
 		}
 		unsigned int spare_indices_count = 0;
 		for (unsigned int i = 0; i < used_indices_map.size() && spare_indices_count < 4; ++i) {
@@ -1003,7 +1006,9 @@ pg::CompilationResult VoxelGeneratorGraph::compile(bool debug) {
 			}
 		}
 		// debug_check_texture_indices(spare_indices);
-		ERR_FAIL_COND_V(spare_indices_count != 4, pg::CompilationResult());
+		const unsigned int expected_spare_indices_count =
+				math::min(spare_indices.size(), used_indices_map.size() - used_indices_count);
+		ZN_ASSERT_RETURN_V(spare_indices_count == expected_spare_indices_count, pg::CompilationResult());
 		r->spare_texture_indices = spare_indices;
 	}
 

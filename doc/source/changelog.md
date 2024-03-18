@@ -44,6 +44,7 @@ Primarily developped with Godot 4.2.
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
         - Fixed default input values of output nodes were always 0 when using GPU generation
         - Fixed crash when using 16 weight output nodes (which is the maximum)
+        - Fixed error when using more than 12 weight output nodes
     - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
     - `VoxelToolLodTerrain`: 
         - `do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
