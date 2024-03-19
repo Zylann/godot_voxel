@@ -472,7 +472,7 @@ Array VoxelInstanceLibraryMultiMeshItem::serialize_multimesh_item_properties() c
 
 void VoxelInstanceLibraryMultiMeshItem::deserialize_multimesh_item_properties(Array a) {
 	Settings &settings = _manual_settings;
-	ERR_FAIL_COND(a.size() != int(settings.mesh_lods.size()) + 6);
+	ERR_FAIL_COND(a.size() != static_cast<int>(settings.mesh_lods.size()) + 9);
 	int ai = 0;
 	for (unsigned int i = 0; i < settings.mesh_lods.size(); ++i) {
 		settings.mesh_lods[i] = a[ai++];
