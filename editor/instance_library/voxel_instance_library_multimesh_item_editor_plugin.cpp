@@ -92,7 +92,10 @@ void update_multimesh_item_from_scene(
 	ur.create_action("Update Multimesh Item From Scene");
 	ur.add_do_method(&item, "_deserialize_multimesh_item_properties", data_after);
 	ur.add_undo_method(&item, "_deserialize_multimesh_item_properties", data_before);
-	ur.commit_action();
+	ur.commit_action(
+			// We used `setup_from_template` earlier, which does the same work as `do`, so no need to run it again when
+			// committing the action.
+			false);
 }
 
 } // namespace
