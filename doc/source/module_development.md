@@ -349,9 +349,38 @@ It was tested with [Tracy 0.10](https://github.com/wolfpld/tracy/releases/tag/v0
 
 Alternative profilers are also mentionned in the [Godot docs](https://docs.godotengine.org/en/latest/contributing/development/debugging/using_cpp_profilers.html). They profile everything and appear to be based on CPU sampling, while Tracy is an instrumenting profiler providing specific, live results on a timeline.
 
-### How to use profiler scopes
+A typical workflow is to launch Tracy, start a connection, and then launch the game, which will establish a connection and record all events. Tracy can also be launched and connect after the game, in which case the data will accumulate inside the game.
 
-A profiling scope bounds a section of code. It takes the time before, the time after, and records it into a timeline. In C++ we can use RAII to automatically close a section when we exit a function or block, so usually a single macro is needed at the beginning of the profiled zone.
+### Tracy-enabled builds
+
+As an experiment, builds of Godot with the module and Tracy integrated are available for Windows, on [Github Actions](https://github.com/Zylann/godot_voxel/actions/workflows/windows.yml). The file to download will have `tracy` in the name. Note, you will need a Github account to download it.
+
+These builds not only include a lot of instrumentation for the voxel module, but also include extra instrumentation in various Godot internals. These instrumentations are injected [using a script](https://github.com/Zylann/godot_voxel/blob/master/misc/instrument.py) prior to compilation.
+
+!!! warning
+    These builds start recording data immediately on startup. *That includes the project manager and the editor*. It can use a lot of memory (2 Gb just starting the editor). If you only want to profile the game, [use the command line](https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html#command-line-tutorial) to directly launch that build of Godot with your game, or just drop the executable at the root of your project and launch it.
+
+Outside of this case, you have to compile yourself to get Tracy support.
+
+### Adding Tracy
+
+To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the module).
+Then compile the engine by including `tracy=yes` in the SCons command line.
+
+Tracy isn't a feature of Godot's build system, so internally some of the work is actually done in the voxel module's build script.
+
+Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
+
+!!! note
+    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
+
+!!! warning
+    Profiling data can use a lot of memory (can reach gigabytes of RAM), so make sure your computer has enough and keep your session duration in check.
+
+
+### How to add profiler scopes
+
+A profiling scope bounds a section of code. It takes the time before, the time after, and records it into a timeline. In C++ we can use RAII to automatically close a section when we exit a function or block, so usually a single macro is needed at the beginning of the profiled zone. The module already have plenty of them, but you can add yours if you need more insight.
 
 The macros are profiler-agnostic, so if you want to use another profiler it is possible to change them.
 
@@ -391,22 +420,6 @@ void process_every_frame() {
     ZN_PROFILE_PLOT("Bunnies", bunnies.size());
 }
 ```
-
-### Adding Tracy
-
-To add Tracy support, clone it under `thirdparty/tracy` (Godot's `thirdparty` folder, not the module).
-Then compile the engine by including `tracy=yes` in the SCons command line.
-
-Tracy isn't a feature of Godot's build system, so internally some of the work is actually done in the voxel module's build script.
-
-Once you are done profiling, don't forget to switch back to a normal build, otherwise profiling data will accumulate in memory without being retrieved.
-
-!!! note
-    Tracy has a concept of frame mark, which is usually provided by the application, to tell the profiler when each frame begins. Godot does not provide profiling macros natively, so the frame mark was hacked into `VoxelEngine` process function. This allows to see frames of the main thread in the timeline, but they will be offset from their real beginning.
-
-!!! warning
-    Profiling data can use a lot of memory (can reach gigabytes of RAM), so make sure your computer has enough and keep your session duration in check.
-
 
 Preprocessor macros
 ---------------------
