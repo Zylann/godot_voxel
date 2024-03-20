@@ -7,7 +7,18 @@
 #include "../errors.h"
 #include "memory.h"
 
+#ifdef DEBUG_ENABLED
+#include <atomic>
+#endif
+
 namespace zylann {
+
+#ifdef DEBUG_ENABLED
+namespace StdDefaultAllocatorCounters {
+extern std::atomic_uint64_t g_allocated;
+extern std::atomic_uint64_t g_deallocated;
+} // namespace StdDefaultAllocatorCounters
+#endif
 
 // Default allocator matching standard library requirements.
 // When compiling with Godot or GDExtension, it will use Godot's default allocator.
@@ -27,6 +38,9 @@ struct StdDefaultAllocator {
 		// }
 
 		if (T *p = static_cast<T *>(ZN_ALLOC(n * sizeof(T)))) {
+#ifdef DEBUG_ENABLED
+			StdDefaultAllocatorCounters::g_allocated += n * sizeof(T);
+#endif
 			return p;
 		}
 
@@ -36,6 +50,9 @@ struct StdDefaultAllocator {
 	}
 
 	void deallocate(T *p, std::size_t n) noexcept {
+#ifdef DEBUG_ENABLED
+		StdDefaultAllocatorCounters::g_deallocated += n * sizeof(T);
+#endif
 		ZN_FREE(p);
 	}
 

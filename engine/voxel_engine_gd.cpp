@@ -103,6 +103,17 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats &stats) {
 	mem["voxel_total"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_total_memory());
 	mem["voxel_used"] = ZN_SIZE_T_TO_VARIANT(VoxelMemoryPool::get_singleton().debug_get_used_memory());
 	mem["block_count"] = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
+#ifdef DEBUG_ENABLED
+	const uint64_t std_allocated = static_cast<int64_t>(StdDefaultAllocatorCounters::g_allocated);
+	const uint64_t std_deallocated = static_cast<int64_t>(StdDefaultAllocatorCounters::g_deallocated);
+	mem["std_allocated"] = std_allocated;
+	mem["std_deallocated"] = std_deallocated;
+	mem["std_current"] = std_allocated - std_deallocated;
+#else
+	mem["std_allocated"] = -1;
+	mem["std_deallocated"] = -1;
+	mem["std_current"] = -1;
+#endif
 
 	Dictionary d;
 	d["thread_pools"] = pools;

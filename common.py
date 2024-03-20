@@ -66,6 +66,7 @@ def get_sources(env, is_editor_build):
         "util/*.cpp",
         "util/containers/*.cpp",
         "util/math/*.cpp",
+        "util/memory/*.cpp",
         "util/noise/fast_noise_lite/*.cpp",
         "util/noise/gd_noise_range.cpp",
         "util/noise/spot_noise_gd.cpp",
