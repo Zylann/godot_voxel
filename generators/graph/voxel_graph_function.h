@@ -121,11 +121,11 @@ public:
 	// Important: functions editing the graph are NOT thread-safe.
 	// They are expected to be used by the main thread (editor or game logic).
 
-	uint32_t create_node(NodeTypeID type_id, Vector2 position, uint32_t id = ProgramGraph::NULL_ID);
+	uint32_t create_node(NodeTypeID type_id, Vector2 position = Vector2(), uint32_t id = ProgramGraph::NULL_ID);
 	void remove_node(uint32_t node_id);
 
 	uint32_t create_function_node(
-			Ref<VoxelGraphFunction> func, Vector2 position, uint32_t p_id = ProgramGraph::NULL_ID);
+			Ref<VoxelGraphFunction> func, Vector2 position = Vector2(), uint32_t p_id = ProgramGraph::NULL_ID);
 
 	// Checks if the specified connection can be created
 	bool can_connect(
