@@ -45,6 +45,7 @@ Primarily developped with Godot 4.2.
         - Fixed default input values of output nodes were always 0 when using GPU generation
         - Fixed crash when using 16 weight output nodes (which is the maximum)
         - Fixed error when using more than 12 weight output nodes
+        - Fixed using a graph as brush wasn't working with some transforms
     - `VoxelInstanceLibraryMultimeshItem`: fixed error when using "Update From Scene" and trying to undo/redo it
     - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
     - `VoxelToolLodTerrain`: 

@@ -975,8 +975,8 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 	const float graph_scale = transform.basis.get_scale().length();
 	const float inv_graph_scale = 1.f / graph_scale;
 
-	for (unsigned int i = 0; i < in_sdf_full.size(); ++i) {
-		in_sdf_full[i] *= inv_graph_scale;
+	for (float &sd : in_sdf_full) {
+		sd *= inv_graph_scale;
 	}
 
 	const float op_strength = get_sdf_strength();
@@ -1006,7 +1006,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 			// Transform positions to be local to the graph
 			for (unsigned int i = 0; i < deck_area; ++i) {
 				Vector3 graph_local_pos(in_x[i], in_y[i], in_z[i]);
-				graph_local_pos = inv_transform.xform(pos);
+				graph_local_pos = inv_transform.xform(graph_local_pos);
 				in_x[i] = graph_local_pos.x;
 				in_y[i] = graph_local_pos.y;
 				in_z[i] = graph_local_pos.z;
