@@ -31,14 +31,13 @@ public:
 
 	static const int ALL_CHANNELS_MASK = 0xff;
 
-	enum Compression {
+	enum Compression : uint8_t {
 		COMPRESSION_NONE = 0,
-		COMPRESSION_UNIFORM,
-		// COMPRESSION_RLE,
+		COMPRESSION_UNIFORM, // aka "no voxels allocated"
 		COMPRESSION_COUNT
 	};
 
-	enum Depth { //
+	enum Depth : uint8_t { //
 		DEPTH_8_BIT,
 		DEPTH_16_BIT,
 		DEPTH_32_BIT,
@@ -82,15 +81,19 @@ public:
 	static const uint32_t MAX_SIZE = 65535;
 
 	struct Channel {
-		// Allocated when the channel is populated.
-		// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
-		uint8_t *data = nullptr;
+		union {
+			// Allocated when the channel is populated.
+			// Flat array, in order [z][x][y] because it allows faster vertical-wise access (the engine is Y-up).
+			uint8_t *data;
 
-		// Default value when data is null.
-		// This is an encoded value, so non-integer values may be obtained by converting it.
-		uint64_t defval = 0;
+			// Default value when the channel is not populated ().
+			// This is an encoded value, so non-integer values may be obtained by converting it.
+			uint64_t defval;
+		};
 
 		Depth depth = DEFAULT_CHANNEL_DEPTH;
+		Compression compression = COMPRESSION_UNIFORM;
+		// [...] 2 unused bytes
 
 		// Storing gigabytes in a single buffer is neither supported nor practical.
 		uint32_t size_in_bytes = 0;
@@ -203,7 +206,7 @@ public:
 		ZN_ASSERT_RETURN(channel.depth == get_depth_from_size(sizeof(T)));
 #endif
 
-		if (channel.data == nullptr) {
+		if (channel.compression == COMPRESSION_UNIFORM) {
 			fill_3d_region_zxy<T>(dst, dst_size, dst_min, dst_min + (src_max - src_min), channel.defval);
 		} else {
 			Span<const T> src(static_cast<const T *>(channel.data), channel.size_in_bytes / sizeof(T));
