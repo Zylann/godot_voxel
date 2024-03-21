@@ -43,7 +43,7 @@ void print_data_hex(Span<const uint8_t> data) {
 	}
 	ss << std::endl;
 	ss << "---";
-	println(ss.str());
+	print_line(ss.str());
 }
 
 } // namespace zylann

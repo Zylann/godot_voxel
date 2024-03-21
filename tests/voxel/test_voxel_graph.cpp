@@ -644,7 +644,7 @@ void print_sdf_as_ascii(const VoxelBuffer &vb) {
 	Vector3i pos;
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
-		println(format("Y = {}", pos.y));
+		print_line(format("Y = {}", pos.y));
 		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
 			// Prints two views of the same row side by side
 			StdStringStream ss;
@@ -677,7 +677,7 @@ void print_sdf_as_ascii(const VoxelBuffer &vb) {
 			}
 			ss << " | ";
 			ss << ss2.str();
-			println(ss.str());
+			print_line(ss.str());
 		}
 	}
 }
@@ -1682,8 +1682,8 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 				}
 				s += "\n";
 			}
-			println(format("Indices and weights at Y={}:", y));
-			println(s);
+			print_line(format("Indices and weights at Y={}:", y));
+			print_line(s);
 		}
 	};
 

@@ -51,11 +51,11 @@ void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 				const dstack::Info &info = it->second;
 				info.to_string(s);
 				if (mem_size == 0) {
-					println(format("--- Alloc {}:", count));
+					print_line(format("--- Alloc {}:", count));
 				} else {
-					println(format("--- Alloc {}, size {}:", count, mem_size));
+					print_line(format("--- Alloc {}, size {}:", count, mem_size));
 				}
-				println(s);
+				print_line(s);
 				++count;
 			}
 			count = initial_count + debug_used_blocks.blocks.size();
@@ -69,7 +69,7 @@ void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 	}
 	L::debug_print_used_blocks(_debug_nonpooled_used_blocks, count, max_count, 0);
 	if (count > 0 && count > max_count) {
-		println(format("[...] and {} more allocs.", max_count - count));
+		print_line(format("[...] and {} more allocs.", max_count - count));
 	}
 }
 #endif
@@ -205,11 +205,11 @@ void VoxelMemoryPool::clear() {
 }
 
 void VoxelMemoryPool::debug_print() {
-	println("-------- VoxelMemoryPool ----------");
+	print_line("-------- VoxelMemoryPool ----------");
 	for (unsigned int pot = 0; pot < _pot_pools.size(); ++pot) {
 		Pool &pool = _pot_pools[pot];
 		MutexLock lock(pool.mutex);
-		println(format("Pool {}: {} blocks (capacity {})", pot, pool.blocks.size(), pool.blocks.capacity()));
+		print_line(format("Pool {}: {} blocks (capacity {})", pot, pool.blocks.size(), pool.blocks.capacity()));
 	}
 }
 

@@ -621,7 +621,7 @@ void Runtime::debug_print_operations() {
 		++op_index;
 	}
 
-	println(ss.str());
+	print_line(ss.str());
 }
 
 #endif
