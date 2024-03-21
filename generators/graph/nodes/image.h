@@ -6,21 +6,21 @@
 
 namespace zylann::voxel::pg {
 
-inline float get_pixel_repeat(const Image &im, int x, int y) {
-	return im.get_pixel(math::wrap(x, im.get_width()), math::wrap(y, im.get_height())).r;
+inline float get_pixel_repeat(const Image &im, int x, int y, int w, int h) {
+	return im.get_pixel(math::wrap(x, w), math::wrap(y, h)).r;
 }
 
-inline float get_pixel_repeat_linear(const Image &im, float x, float y) {
+inline float get_pixel_repeat_linear(const Image &im, float x, float y, int im_w, int im_h) {
 	const int x0 = int(Math::floor(x));
 	const int y0 = int(Math::floor(y));
 
 	const float xf = x - x0;
 	const float yf = y - y0;
 
-	const float h00 = get_pixel_repeat(im, x0, y0);
-	const float h10 = get_pixel_repeat(im, x0 + 1, y0);
-	const float h01 = get_pixel_repeat(im, x0, y0 + 1);
-	const float h11 = get_pixel_repeat(im, x0 + 1, y0 + 1);
+	const float h00 = get_pixel_repeat(im, x0, y0, im_w, im_h);
+	const float h10 = get_pixel_repeat(im, x0 + 1, y0, im_w, im_h);
+	const float h01 = get_pixel_repeat(im, x0, y0 + 1, im_w, im_h);
+	const float h11 = get_pixel_repeat(im, x0 + 1, y0 + 1, im_w, im_h);
 
 	// Bilinear filter
 	const float h = Math::lerp(Math::lerp(h00, h10, xf), Math::lerp(h01, h11, xf), yf);
@@ -59,7 +59,7 @@ inline float sdf_sphere_heightmap(float x, float y, float z, float r, float m, c
 	const float ys = skew3(ny);
 	const float uvy = -0.5f * ys + 0.5f;
 	// TODO Could use bicubic interpolation when the image is sampled at lower resolution than voxels
-	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y);
+	const float h = get_pixel_repeat_linear(im, uvx * norm_x, uvy * norm_y, im.get_width(), im.get_height());
 	return sd - m * h;
 }
 
@@ -146,13 +146,17 @@ void register_image_nodes(Span<NodeType> types) {
 			Runtime::Buffer &out = ctx.get_output(0);
 			const Params p = ctx.get_params<Params>();
 			const Image &im = *p.image;
+			// Cache image size to reduce API calls in GDExtension
+			const int w = im.get_width();
+			const int h = im.get_width();
+			// TODO Optimized path for most used formats, `get_pixel` is kinda slow
 			if (p.filter == FILTER_NEAREST) {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i]);
+					out.data[i] = get_pixel_repeat(im, x.data[i], y.data[i], w, h);
 				}
 			} else {
 				for (uint32_t i = 0; i < out.size; ++i) {
-					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i]);
+					out.data[i] = get_pixel_repeat_linear(im, x.data[i], y.data[i], w, h);
 				}
 			}
 		};
