@@ -118,6 +118,12 @@ void register_misc_nodes(Span<NodeType> types) {
 				ctx.set_output(0, Interval::from_union(a, b));
 			}
 		};
+
+		t.shader_gen_func = [](ShaderGenContext &ctx) {
+			const float threshold = ctx.get_param(0);
+			ctx.add_format("{} = {} < {} ? {} : {};\n", ctx.get_output_name(0), ctx.get_input_name(2), threshold,
+					ctx.get_input_name(0), ctx.get_input_name(1));
+		};
 	}
 	{
 		NodeType &t = types[VoxelGraphFunction::NODE_EXPRESSION];
