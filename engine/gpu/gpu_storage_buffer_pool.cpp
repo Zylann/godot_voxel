@@ -1,10 +1,9 @@
 #include "gpu_storage_buffer_pool.h"
 #include "../../util/dstack.h"
-#include "../../util/godot/core/array.h" // for `varray` in GDExtension builds
-#include "../../util/godot/core/print_string.h"
-#include "../../util/godot/core/string.h" // for `+=` operator missing from String in GDExtension builds
+#include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
+#include "../../util/std_stringstream.h"
 #include "../../util/string_funcs.h"
 
 #include <algorithm>
@@ -146,19 +145,19 @@ void GPUStorageBufferPool::recycle(GPUStorageBuffer b) {
 }
 
 void GPUStorageBufferPool::debug_print() const {
-	String s = "---- GPUStorageBufferPool ----\n";
+	StdStringStream ss;
+	ss << "---- GPUStorageBufferPool ----\n";
 	for (unsigned int i = 0; i < _pools.size(); ++i) {
 		const Pool &pool = _pools[i];
 		if (pool.buffers.capacity() == 0) {
 			continue;
 		}
 		const unsigned int block_size = _pool_sizes[i];
-		s += String("Pool[{0}] block size: {1}, pooled buffers: {2}, capacity: {3}\n")
-					 .format(varray(i, block_size, ZN_SIZE_T_TO_VARIANT(pool.buffers.size()),
-							 ZN_SIZE_T_TO_VARIANT(pool.buffers.capacity())));
+		ss << "Pool[" << i << "] block size: " << block_size << ", pooled buffers: " << pool.buffers.size()
+		   << ", capacity: " << pool.buffers.capacity() << "\n";
 	}
-	s += "----";
-	print_line(s);
+	ss << "----";
+	print_line(ss.str());
 }
 
 } // namespace zylann::voxel
