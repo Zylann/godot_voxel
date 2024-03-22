@@ -1,6 +1,6 @@
 #include "expression_parser.h"
 #include "std_stringstream.h"
-#include <sstream>
+#include <sstream> // our alias only includes forward-declarations
 
 #include <algorithm>
 #include <cmath>
