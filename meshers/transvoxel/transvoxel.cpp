@@ -177,7 +177,7 @@ struct CellTextureDatas {
 
 template <unsigned int NVoxels, typename WeightSampler_T>
 CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		Span<const uint16_t> indices_data, const WeightSampler_T &weights_sampler) {
+		Span<const uint16_t> indices_data, const WeightSampler_T &weights_sampler, unsigned int case_code) {
 	// TODO Optimization: this function takes almost half of the time when polygonizing non-empty cells.
 	// I wonder how it can be optimized further?
 
@@ -196,12 +196,18 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 	for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
 		// ZN_PROFILE_SCOPE();
 
-		const unsigned int data_index = voxel_indices[ci];
-		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
-		const FixedArray<uint8_t, 4> weights = weights_sampler.get_weights(data_index);
-
 		FixedArray<uint8_t, MAX_TEXTURES> &weights_temp = cell_texture_weights_temp[ci];
 		fill(weights_temp, uint8_t(0));
+
+		// Air voxels should not contribute
+		if ((case_code & (1 << ci)) != 0) {
+			continue;
+		}
+
+		const unsigned int data_index = voxel_indices[ci];
+
+		const FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(indices_data[data_index]);
+		const FixedArray<uint8_t, 4> weights = weights_sampler.get_weights(data_index);
 
 		for (unsigned int j = 0; j < indices.size(); ++j) {
 			const unsigned int ti = indices[j];
@@ -234,8 +240,16 @@ CellTextureDatas<NVoxels> select_textures_4_per_voxel(const FixedArray<unsigned 
 	// Remap weights to follow the indices we selected
 	for (unsigned int ci = 0; ci < cell_texture_weights_temp.size(); ++ci) {
 		// ZN_PROFILE_SCOPE();
-		const FixedArray<uint8_t, MAX_TEXTURES> &src_weights = cell_texture_weights_temp[ci];
+
 		FixedArray<uint8_t, 4> &dst_weights = cell_textures.weights[ci];
+
+		// Skip air voxels
+		if ((case_code & (1 << ci)) != 0) {
+			fill(dst_weights, uint8_t(0));
+			continue;
+		}
+
+		const FixedArray<uint8_t, MAX_TEXTURES> &src_weights = cell_texture_weights_temp[ci];
 
 		for (unsigned int i = 0; i < cell_textures.indices.size(); ++i) {
 			const unsigned int ti = cell_textures.indices[i];
@@ -255,19 +269,25 @@ struct TextureIndicesData {
 template <unsigned int NVoxels, typename WeightSampler_T>
 inline void get_cell_texture_data(CellTextureDatas<NVoxels> &cell_textures,
 		const TextureIndicesData &texture_indices_data, const FixedArray<unsigned int, NVoxels> &voxel_indices,
-		const WeightSampler_T &weights_data) {
+		const WeightSampler_T &weights_data, unsigned int case_code) {
 	if (texture_indices_data.buffer.size() == 0) {
 		// Indices are known for the whole block, just read weights directly
 		cell_textures.indices = texture_indices_data.default_indices;
 		cell_textures.packed_indices = texture_indices_data.packed_default_indices;
 		for (unsigned int ci = 0; ci < voxel_indices.size(); ++ci) {
-			const unsigned int wi = voxel_indices[ci];
-			cell_textures.weights[ci] = weights_data.get_weights(wi);
+			if ((case_code & (1 << ci)) != 0) {
+				// Force air voxels to not contribute
+				fill(cell_textures.weights[ci], uint8_t(0));
+			} else {
+				const unsigned int wi = voxel_indices[ci];
+				cell_textures.weights[ci] = weights_data.get_weights(wi);
+			}
 		}
 
 	} else {
 		// There can be more than 4 indices or they are not known, so we have to select them
-		cell_textures = select_textures_4_per_voxel(voxel_indices, texture_indices_data.buffer, weights_data);
+		cell_textures =
+				select_textures_4_per_voxel(voxel_indices, texture_indices_data.buffer, weights_data, case_code);
 	}
 }
 
@@ -437,7 +457,8 @@ void build_regular_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData texture_i
 
 				CellTextureDatas<8> cell_textures;
 				if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
-					get_cell_texture_data(cell_textures, texture_indices_data, corner_data_indices, weights_sampler);
+					get_cell_texture_data(
+							cell_textures, texture_indices_data, corner_data_indices, weights_sampler, case_code);
 					current_reuse_cell.packed_texture_indices = cell_textures.packed_indices;
 				}
 
@@ -978,6 +999,11 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 			cell_samples[0xC] = cell_samples[8];
 
 			uint16_t case_code = sign_f(cell_samples[0]);
+			// The order chosen here is dependent on how the Transvoxel tables are laid out (see figures 4.16 and 4.17
+			// of the paper), which unfortunately is different from the sampling pattern. That prevents from re-using it
+			// in texture selection.
+			// The reason for that choice seems to stem from convenience when creating the lookup tables. Does that mean
+			// we could just re-order them?
 			case_code |= (sign_f(cell_samples[1]) << 1);
 			case_code |= (sign_f(cell_samples[2]) << 2);
 			case_code |= (sign_f(cell_samples[5]) << 3);
@@ -994,8 +1020,30 @@ void build_transition_mesh(Span<const Sdf_T> sdf_data, TextureIndicesData textur
 
 			CellTextureDatas<13> cell_textures;
 			if (texturing_mode == TEXTURES_BLEND_4_OVER_16) {
+				// Re-making an ordered case code...
+				//                       |436785210|
+				const uint16_t alt_case_code = 0 //
+						| ((case_code & 0b000000111)) // 210
+						| ((case_code & 0b110000000) >> 4) // 43
+						| ((case_code & 0b000001000) << 2) // 5
+						| ((case_code & 0b001000000)) // 6
+						| ((case_code & 0b000100000) << 2) // 7
+						| ((case_code & 0b000010000) << 4) // 8
+						;
+
+				// uint16_t alt_case_code = sign_f(cell_samples[0]);
+				// alt_case_code |= (sign_f(cell_samples[1]) << 1);
+				// alt_case_code |= (sign_f(cell_samples[2]) << 2);
+				// alt_case_code |= (sign_f(cell_samples[3]) << 3);
+				// alt_case_code |= (sign_f(cell_samples[4]) << 4);
+				// alt_case_code |= (sign_f(cell_samples[5]) << 5);
+				// alt_case_code |= (sign_f(cell_samples[6]) << 6);
+				// alt_case_code |= (sign_f(cell_samples[7]) << 7);
+				// alt_case_code |= (sign_f(cell_samples[8]) << 8);
+
 				CellTextureDatas<9> cell_textures_partial;
-				get_cell_texture_data(cell_textures_partial, texture_indices_data, cell_data_indices, weights_sampler);
+				get_cell_texture_data(
+						cell_textures_partial, texture_indices_data, cell_data_indices, weights_sampler, alt_case_code);
 
 				cell_textures.indices = cell_textures_partial.indices;
 				cell_textures.packed_indices = cell_textures_partial.packed_indices;

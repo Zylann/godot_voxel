@@ -30,6 +30,7 @@ Primarily developped with Godot 4.2.
         - Has its own limitations and pending improvements, may be addressed over time
         - The original system is now referenced as "Legacy Octree".
     - Debug drawing is now exposed as properties. Editor checkboxes were removed from the terrain menu
+- `VoxelMesherTransvoxel`: textures from air voxels (SDF>0) no longer contribute to the mesh
 - `VoxelToolLodTerrain`:
     - Improved quality of `separate_floating_chunks` on smooth terrains by expanding cutting-off area to include more gradients
 - `VoxelStream`:
