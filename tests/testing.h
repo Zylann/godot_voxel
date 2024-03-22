@@ -1,7 +1,7 @@
 #ifndef ZN_TEST_UTIL_H
 #define ZN_TEST_UTIL_H
 
-#include <core/string/ustring.h>
+#include "../util/godot/core/string.h"
 
 #define ZN_TEST_ASSERT(m_cond)                                                                                         \
 	if ((m_cond) == false) {                                                                                           \

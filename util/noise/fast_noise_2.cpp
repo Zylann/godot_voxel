@@ -32,7 +32,7 @@ FastNoise2::SIMDLevel FastNoise2::get_simd_level() const {
 	return SIMDLevel(_generator->GetSIMDLevel());
 }
 
-String FastNoise2::get_simd_level_name(SIMDLevel level) {
+const char *FastNoise2::get_simd_level_name_c_str(SIMDLevel level) {
 	switch (level) {
 		case SIMD_NULL:
 			return "Null";
@@ -60,6 +60,10 @@ String FastNoise2::get_simd_level_name(SIMDLevel level) {
 			ERR_PRINT(String("Unknown SIMD level {0}").format(varray(level)));
 			return "Error";
 	}
+}
+
+String FastNoise2::get_simd_level_name(SIMDLevel level) {
+	return get_simd_level_name_c_str(level);
 }
 
 void FastNoise2::set_seed(int seed) {

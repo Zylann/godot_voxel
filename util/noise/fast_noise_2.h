@@ -82,6 +82,7 @@ public:
 	FastNoise2();
 
 	SIMDLevel get_simd_level() const;
+	static const char *get_simd_level_name_c_str(SIMDLevel level);
 	static String get_simd_level_name(SIMDLevel level);
 
 	void set_seed(int seed);

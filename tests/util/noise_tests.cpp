@@ -1,6 +1,10 @@
 #include "../../util/godot/classes/image.h"
+#include "../../util/godot/core/array.h"
+#include "../../util/godot/core/print_string.h"
+#include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
+#include "../../util/string_funcs.h"
 #include "../tests.h"
 
 namespace zylann::voxel::noise_tests {
@@ -91,8 +95,8 @@ void test_min_max(F2 noise_func_2d, F3 noise_func_3d) {
 		max_value_3d = math::max(n, max_value_3d);
 	}
 
-	print_line(String("2D | Min: {0}, Max: {1}").format(varray(min_value_2d, max_value_2d)));
-	print_line(String("3D | Min: {0}, Max: {1}").format(varray(min_value_3d, max_value_3d)));
+	print_line(format("2D | Min: {}, Max: {}", min_value_2d, max_value_2d));
+	print_line(format("3D | Min: {}, Max: {}", min_value_3d, max_value_3d));
 }
 
 // Generic analysis for noise functions
@@ -103,11 +107,11 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 	const FloatT step_min = STEP_MIN;
 	const FloatT step_max = STEP_MAX;
 
-	print_line(String("Derivatives across step from {0} to {1}").format(varray(step_min, step_max)));
+	print_line(format("Derivatives across step from {} to {}", step_min, step_max));
 
 	const FloatT step_resolution_count_f = step_resolution_count;
 
-	print_line(String("2D:").format(varray(step_min, step_max)));
+	print_line("2D:");
 
 	FloatT min_max_derivative = std::numeric_limits<FloatT>::max();
 
@@ -127,16 +131,16 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 
 		max_derivative /= step;
 
-		print_line(String::num_real(max_derivative));
+		print_line(format("{}", max_derivative));
 
 		if (max_derivative < min_max_derivative) {
 			min_max_derivative = max_derivative;
 		}
 	}
 
-	print_line(String("Min max derivative: {0}").format(varray(min_max_derivative)));
+	print_line(format("Min max derivative: {}", min_max_derivative));
 
-	print_line(String("3D:").format(varray(step_min, step_max)));
+	print_line("3D:");
 
 	min_max_derivative = std::numeric_limits<FloatT>::max();
 
@@ -157,14 +161,14 @@ void test_derivatives_tpl(F2 noise_func_2d, F3 noise_func_3d) {
 
 		max_derivative /= step;
 
-		print_line(String::num_real(max_derivative));
+		print_line(format("{}", max_derivative));
 
 		if (max_derivative < min_max_derivative) {
 			min_max_derivative = max_derivative;
 		}
 	}
 
-	print_line(String("Min max derivative: {0}").format(varray(min_max_derivative)));
+	print_line(format("Min max derivative: {}", min_max_derivative));
 }
 
 template <typename F3>
@@ -196,7 +200,7 @@ void test_derivatives_with_image(String fpath, double step, F3 noise_func_3d) {
 		}
 	}
 
-	print_line(String("Saving {0}").format(varray(fpath)));
+	::print_line(String("Saving {0}").format(varray(fpath)));
 	im->save_png(fpath);
 }
 
@@ -212,7 +216,7 @@ void test_derivatives_with_image(String fname, int steps_resolution, F3 noise_fu
 
 template <typename F2, typename F3>
 void test_noise(String name, int tests, F2 noise_func_2d, F3 noise_func_3d) {
-	print_line(String("--- {0}:").format(varray(name)));
+	::print_line(String("--- {0}:").format(varray(name)));
 
 	if (tests & TEST_MIN_MAX) {
 		test_min_max<F2, F3, double>(noise_func_2d, noise_func_3d);
@@ -293,7 +297,7 @@ void test_noises() {
 						Math::lerp(0.0, 1.0, static_cast<double>(i) / static_cast<double>(jitter_resolution));
 
 				fn.SetCellularJitter(jitter);
-				print_line(String("Cell jitter: {0}").format(varray(jitter)));
+				::print_line(String("Cell jitter: {0}").format(varray(jitter)));
 
 				test_fnl_noise(fn, noise_name, TEST_MIN_MAX);
 			}
@@ -305,7 +309,7 @@ void test_noises() {
 	for (int i = 0; i < STEP_RESOLUTION_COUNT; ++i) {
 		const double step =
 				Math::lerp(STEP_MIN, STEP_MAX, static_cast<double>(i) / static_cast<double>(STEP_RESOLUTION_COUNT));
-		print_line(String::num_real(step));
+		print_line(format("{}", step));
 	}
 }
 

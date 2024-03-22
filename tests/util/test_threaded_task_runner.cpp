@@ -7,6 +7,7 @@
 #include "../../util/math/vector3i.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
+#include "../../util/std_stringstream.h"
 #include "../../util/string_funcs.h"
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../testing.h"
@@ -201,7 +202,7 @@ void test_threaded_task_runner_debug_names() {
 
 	unsigned int in_flight_count = 0;
 
-	Dictionary name_counts;
+	StdUnorderedMap<StdString, int> name_counts;
 
 	while (Time::get_singleton()->get_ticks_msec() - time_before < 5000) {
 		ZN_PROFILE_SCOPE();
@@ -228,7 +229,7 @@ void test_threaded_task_runner_debug_names() {
 		}
 
 		// Put task names into an array
-		Array task_names;
+		StdVector<StdString> task_names;
 		task_names.resize(test_thread_count);
 		for (unsigned int i = 0; i < active_task_names.size(); ++i) {
 			const char *name = active_task_names[i];
@@ -239,14 +240,13 @@ void test_threaded_task_runner_debug_names() {
 
 		// Count names
 		for (int i = 0; i < task_names.size(); ++i) {
-			Variant name = task_names[i];
-			Variant count = name_counts[name];
-			if (count.get_type() != Variant::INT) {
-				count = 1;
+			const StdString &name = task_names[i];
+			auto it = name_counts.find(name);
+			if (it == name_counts.end()) {
+				name_counts.insert({ name, 0 });
 			} else {
-				count = int64_t(count) + 1;
+				it->second++;
 			}
-			name_counts[name] = count;
 		}
 
 		L::dequeue_tasks(runner, in_flight_count);
@@ -259,14 +259,11 @@ void test_threaded_task_runner_debug_names() {
 
 	// Print how many times each name came up.
 	// Doing this to check if the test runs as expected and to prevent compiler optimization on getting the names
-	String s;
-	Array keys = name_counts.keys();
-	for (int i = 0; i < keys.size(); ++i) {
-		String name = keys[i];
-		Variant count = name_counts[name];
-		s += String("{0}: {1}; ").format(varray(name, count));
+	StdStringStream ss;
+	for (auto it = name_counts.begin(); it != name_counts.end(); ++it) {
+		ss << it->first << ": " << it->second << "; ";
 	}
-	print_line(s);
+	print_line(ss.str());
 }
 
 void test_task_priority_values() {

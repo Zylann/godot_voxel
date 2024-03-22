@@ -29,13 +29,11 @@
 #include "fast_noise_2/test_fast_noise_2.h"
 #endif
 
-#include <core/string/print_string.h>
-
 namespace zylann::voxel::tests {
 
 #define VOXEL_TEST(fname)                                                                                              \
 	{                                                                                                                  \
-		print_line(String("Running {0}").format(varray(#fname)));                                                      \
+		print_line("Running " #fname);                                                                                 \
 		ZN_PROFILE_SCOPE_NAMED(#fname);                                                                                \
 		fname();                                                                                                       \
 	}

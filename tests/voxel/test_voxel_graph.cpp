@@ -4,6 +4,9 @@
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/classes/fast_noise_lite.h"
+#include "../../util/godot/classes/image.h"
+#include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/sdf.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
@@ -16,9 +19,6 @@
 #ifdef VOXEL_ENABLE_FAST_NOISE_2
 #include "../../util/noise/fast_noise_2.h"
 #endif
-
-#include <core/io/resource_loader.h>
-#include <modules/noise/fastnoise_lite.h>
 
 namespace zylann::voxel::tests {
 
@@ -1229,7 +1229,7 @@ void test_voxel_graph_fuzzing() {
 	}
 
 	// print_line("--- End of zone with possible errors ---");
-	print_line(String("Successful random compiles: {0}/{1}").format(varray(successful_compiles_count, attempts)));
+	print_line(format("Successful random compiles: {}/{}", successful_compiles_count, attempts));
 }
 
 void test_voxel_graph_sphere_on_plane() {
@@ -1932,7 +1932,7 @@ void test_voxel_graph_image() {
 	};
 
 	{
-		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		Ref<Image> image = zylann::godot::create_empty_image(64, 64, false, Image::FORMAT_R8);
 		image->fill(Color(0.5f, 0, 0));
 		L::test_range(image, Box3i(Vector3i(0, -8, 0), Vector3i(16, 16, 16)),
 				math::Interval(0.5f, 0.5f)
@@ -1940,13 +1940,13 @@ void test_voxel_graph_image() {
 						.padded(0.01f));
 	}
 	{
-		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		Ref<Image> image = zylann::godot::create_empty_image(64, 64, false, Image::FORMAT_R8);
 		image->fill(Color(0.5f, 0, 0));
 		L::test_range(
 				image, Box3i(Vector3i(-24, -8, -8), Vector3i(16, 16, 16)), math::Interval(0.5f, 0.5f).padded(0.01f));
 	}
 	{
-		Ref<Image> image = Image::create_empty(64, 64, false, Image::FORMAT_R8);
+		Ref<Image> image = zylann::godot::create_empty_image(64, 64, false, Image::FORMAT_R8);
 		image->fill(Color(0.5f, 0, 0));
 		image->set_pixel(8, 8, Color(0.7f, 0, 0));
 		L::test_range(
