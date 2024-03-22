@@ -7,17 +7,6 @@
 #include <string_view>
 
 namespace zylann {
-
-struct FwdConstStdString {
-	const StdString &s;
-	FwdConstStdString(const StdString &p_s) : s(p_s) {}
-};
-
-struct FwdMutableStdString {
-	StdString &s;
-	FwdMutableStdString(StdString &p_s) : s(p_s) {}
-};
-
 namespace strfuncs_detail {
 
 // Not a big implementation, only what I need.
