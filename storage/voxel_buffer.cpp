@@ -186,11 +186,13 @@ void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 	}
 #endif
 
-	// Assign size first, because `create_channel` uses it
 	_size = Vector3i(sx, sy, sz);
-	for (unsigned int i = 0; i < _channels.size(); ++i) {
-		ZN_ASSERT_RETURN(create_channel(i, g_default_values[i]));
+
+#ifdef DEV_ENABLED
+	for (const Channel &channel : _channels) {
+		ZN_ASSERT(channel.compression == COMPRESSION_UNIFORM);
 	}
+#endif
 }
 
 void VoxelBuffer::create(Vector3i size) {
