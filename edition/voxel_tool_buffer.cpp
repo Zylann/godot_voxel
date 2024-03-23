@@ -9,6 +9,8 @@ namespace zylann::voxel {
 VoxelToolBuffer::VoxelToolBuffer(Ref<godot::VoxelBuffer> vb) {
 	ERR_FAIL_COND(vb.is_null());
 	_buffer = vb;
+	// Editing a buffer is easier if we can partially overlap outside.
+	_allow_out_of_bounds = true;
 }
 
 bool VoxelToolBuffer::is_area_editable(const Box3i &box) const {

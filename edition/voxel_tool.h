@@ -134,6 +134,9 @@ protected:
 	float _sdf_scale = 1.f;
 	float _sdf_strength = 1.f;
 	Mode _mode = MODE_ADD;
+	// If true, operations will be allowed even if the affected area is partially outside the bounds of editable voxels.
+	// Depending on the context, it may be useful, or cause iconsistent results.
+	bool _allow_out_of_bounds = false;
 
 	// Used on smooth terrain
 	ops::TextureParams _texture_params;

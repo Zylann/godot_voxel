@@ -191,7 +191,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
 
-	if (!is_area_editable(box)) {
+	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
@@ -249,7 +249,7 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	Vector3iUtil::sort_min_max(begin, end);
 	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
-	if (!is_area_editable(box)) {
+	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
@@ -313,7 +313,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
-	if (!is_area_editable(padded_voxel_box)) {
+	if (_allow_out_of_bounds == false && !is_area_editable(padded_voxel_box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
@@ -348,7 +348,7 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
 			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
 
-	if (!is_area_editable(voxel_box)) {
+	if (_allow_out_of_bounds == false && !is_area_editable(voxel_box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
 		return;
 	}
@@ -390,6 +390,8 @@ Variant VoxelTool::get_voxel_metadata(Vector3i pos) const {
 	ERR_PRINT("Not implemented");
 	return Variant();
 }
+
+// Binding land
 
 uint64_t VoxelTool::_b_get_voxel(Vector3i pos) {
 	return get_voxel(pos);
