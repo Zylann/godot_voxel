@@ -4,6 +4,11 @@
 #include "../util/godot/core/gdvirtual.h"
 #include "voxel_stream.h"
 
+#ifdef ZN_GODOT_EXTENSION
+// GodotCpp wants the full definition of the class in GDVIRTUAL
+#include "../storage/voxel_buffer_gd.h"
+#endif
+
 namespace zylann::voxel {
 
 // Provides access to a source of paged voxel data, which may load and save.
@@ -19,7 +24,6 @@ public:
 
 protected:
 	// TODO Why is it unable to convert `Result` into `Variant` even though a cast is defined in voxel_stream.h???
-	// GDVIRTUAL3R(VoxelStream::Result, _emerge_block, Ref<VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL3R(int, _load_voxel_block, Ref<godot::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL3(_save_voxel_block, Ref<godot::VoxelBuffer>, Vector3i, int)
 	GDVIRTUAL0RC(int, _get_used_channels_mask) // I think `C` means `const`?
