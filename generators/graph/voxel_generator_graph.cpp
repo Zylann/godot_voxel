@@ -7,7 +7,6 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/hash_funcs.h"
 #include "../../util/io/log.h"
@@ -26,7 +25,7 @@ const char *VoxelGeneratorGraph::SIGNAL_NODE_NAME_CHANGED = "node_name_changed";
 VoxelGeneratorGraph::VoxelGeneratorGraph() {
 	_main_function.instantiate();
 	_main_function->connect(VoxelStringNames::get_singleton().changed,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorGraph, _on_subresource_changed));
+			callable_mp(this, &VoxelGeneratorGraph::_on_subresource_changed));
 }
 
 VoxelGeneratorGraph::~VoxelGeneratorGraph() {
@@ -1854,10 +1853,6 @@ void VoxelGeneratorGraph::_bind_methods() {
 
 #ifdef TOOLS_ENABLED
 	ClassDB::bind_method(D_METHOD("_dummy_function"), &VoxelGeneratorGraph::_b_dummy_function);
-#endif
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_subresource_changed"), &VoxelGeneratorGraph::_on_subresource_changed);
 #endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "graph_data", PROPERTY_HINT_NONE, "",

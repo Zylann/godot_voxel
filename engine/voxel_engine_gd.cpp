@@ -3,7 +3,6 @@
 #include "../storage/voxel_memory_pool.h"
 #include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rendering_server.h"
-#include "../util/godot/core/callable.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/tasks/godot/threaded_task_gd.h"
@@ -64,7 +63,7 @@ VoxelEngine::VoxelEngine() {
 #ifdef ZN_PROFILER_ENABLED
 	CRASH_COND(RenderingServer::get_singleton() == nullptr);
 	RenderingServer::get_singleton()->connect(VoxelStringNames::get_singleton().frame_post_draw,
-			ZN_GODOT_CALLABLE_MP(this, VoxelEngine, _on_rendering_server_frame_post_draw));
+			callable_mp(this, &VoxelEngine::_on_rendering_server_frame_post_draw));
 #endif
 }
 
@@ -158,10 +157,6 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 
 void VoxelEngine::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(
-			D_METHOD("_on_rendering_server_frame_post_draw"), &VoxelEngine::_on_rendering_server_frame_post_draw);
-#endif
 }
 
 } // namespace zylann::voxel::godot

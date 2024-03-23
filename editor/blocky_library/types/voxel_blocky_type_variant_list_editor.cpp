@@ -8,7 +8,6 @@
 #include "../../../util/godot/classes/grid_container.h"
 #include "../../../util/godot/classes/label.h"
 #include "../../../util/godot/core/array.h"
-#include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 
 namespace zylann::voxel {
@@ -26,14 +25,14 @@ VoxelBlockyTypeVariantListEditor::VoxelBlockyTypeVariantListEditor() {
 void VoxelBlockyTypeVariantListEditor::set_type(Ref<VoxelBlockyType> type) {
 	if (_type.is_valid()) {
 		_type->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_type_changed));
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed));
 	}
 
 	_type = type;
 
 	if (_type.is_valid()) {
 		_type->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_type_changed));
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_type_changed));
 	}
 
 	update_list();
@@ -91,9 +90,9 @@ void VoxelBlockyTypeVariantListEditor::update_list() {
 		ed.resource_picker->set_edited_resource(model);
 		ed.resource_picker->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		ed.resource_picker->connect("resource_changed",
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_changed).bind(editor_index));
-		ed.resource_picker->connect("resource_selected",
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeVariantListEditor, _on_model_picker_selected));
+				callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_changed).bind(editor_index));
+		ed.resource_picker->connect(
+				"resource_selected", callable_mp(this, &VoxelBlockyTypeVariantListEditor::_on_model_picker_selected));
 
 		container.add_child(ed.key_label);
 		container.add_child(ed.resource_picker);
@@ -141,14 +140,6 @@ void VoxelBlockyTypeVariantListEditor::_on_model_picker_selected(Ref<VoxelBlocky
 	_editor_interface->call_deferred("inspect_object", model);
 }
 
-void VoxelBlockyTypeVariantListEditor::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_type_changed"), &VoxelBlockyTypeVariantListEditor::_on_type_changed);
-	ClassDB::bind_method(D_METHOD("_on_model_changed", "model", "editor_index"),
-			&VoxelBlockyTypeVariantListEditor::_on_model_changed);
-	ClassDB::bind_method(D_METHOD("_on_model_picker_selected", "model", "inspect"),
-			&VoxelBlockyTypeVariantListEditor::_on_model_picker_selected);
-#endif
-}
+void VoxelBlockyTypeVariantListEditor::_bind_methods() {}
 
 } // namespace zylann::voxel

@@ -9,7 +9,6 @@
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/resource_saver.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 #include "../../util/string_funcs.h"
@@ -34,15 +33,15 @@ void VoxelGraphEditorPlugin::init() {
 	_graph_editor = memnew(VoxelGraphEditor);
 	_graph_editor->set_custom_minimum_size(Size2(0, 300) * EDSCALE);
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODE_SELECTED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_node_selected));
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_node_selected));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NOTHING_SELECTED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_nothing_selected));
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODES_DELETED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_nodes_deleted));
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_regenerate_requested));
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested));
 	_graph_editor->connect(VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED,
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_popout_requested));
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested));
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, ZN_TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 
@@ -111,7 +110,7 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 
 	if (generator.is_valid()) {
 		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
-		Callable callable = ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_generator_changed);
+		Callable callable = callable_mp(this, &VoxelGraphEditorPlugin::_on_generator_changed);
 		if (!generator->is_connected(sn.changed, callable)) {
 			generator->connect(sn.changed, callable);
 		}
@@ -342,8 +341,8 @@ void VoxelGraphEditorPlugin::undock_graph_editor() {
 	_graph_editor_window = memnew(VoxelGraphEditorWindow);
 	update_graph_editor_window_title();
 	_graph_editor_window->add_child(_graph_editor);
-	_graph_editor_window->connect("close_requested",
-			ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorPlugin, _on_graph_editor_window_close_requested));
+	_graph_editor_window->connect(
+			"close_requested", callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested));
 
 	Node *base_control = get_editor_interface()->get_base_control();
 	base_control->add_child(_graph_editor_window);
@@ -407,21 +406,6 @@ void VoxelGraphEditorPlugin::edit_ios(Ref<VoxelGraphFunction> graph) {
 }
 
 void VoxelGraphEditorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_node_selected", "node_id"),
-			&VoxelGraphEditorPlugin::_on_graph_editor_node_selected);
-	ClassDB::bind_method(
-			D_METHOD("_on_graph_editor_nothing_selected"), &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected);
-	ClassDB::bind_method(
-			D_METHOD("_on_graph_editor_nodes_deleted"), &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted);
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_regenerate_requested"),
-			&VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested);
-	ClassDB::bind_method(
-			D_METHOD("_on_graph_editor_popout_requested"), &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested);
-	ClassDB::bind_method(D_METHOD("_on_graph_editor_window_close_requested"),
-			&VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested);
-	ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelGraphEditorPlugin::_on_generator_changed);
-#endif
 	ClassDB::bind_method(D_METHOD("_hide_deferred"), &VoxelGraphEditorPlugin::_hide_deferred);
 }
 

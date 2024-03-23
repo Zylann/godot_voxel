@@ -6,7 +6,6 @@
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "voxel_graph_editor_plugin.h"
 
@@ -62,8 +61,7 @@ bool VoxelGraphFunctionInspectorPlugin::_zn_parse_property(Object *p_object, con
 			edit_io_button->set_text(ZN_TTR("Edit inputs/outputs..."));
 
 			edit_io_button->connect("pressed",
-					ZN_GODOT_CALLABLE_MP(this, VoxelGraphFunctionInspectorPlugin, _on_edit_io_button_pressed)
-							.bind(graph_ref));
+					callable_mp(this, &VoxelGraphFunctionInspectorPlugin::_on_edit_io_button_pressed).bind(graph_ref));
 
 			add_custom_control(edit_io_button);
 		}
@@ -86,9 +84,6 @@ void VoxelGraphFunctionInspectorPlugin::set_listener(VoxelGraphEditorPlugin *plu
 	_listener = plugin;
 }
 
-void VoxelGraphFunctionInspectorPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_edit_io_button_pressed", "graph"),
-			&VoxelGraphFunctionInspectorPlugin::_on_edit_io_button_pressed);
-}
+void VoxelGraphFunctionInspectorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

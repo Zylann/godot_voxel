@@ -16,7 +16,6 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_split_container.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/keyboard.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
@@ -107,7 +106,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	set_exclusive(false);
 
 	set_ok_button_text(ZN_TTR("Create"));
-	get_ok_button()->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_ok_pressed));
+	get_ok_button()->connect("pressed", callable_mp(this, &VoxelGraphNodeDialog::_on_ok_pressed));
 	get_ok_button()->set_disabled(true);
 	// connect("canceled", callable_mp(this, &VisualShaderEditor::_member_cancel));
 
@@ -115,9 +114,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	vb_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 
 	LineEdit *filter_line_edit = memnew(LineEdit);
-	filter_line_edit->connect(
-			"text_changed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_filter_text_changed));
-	filter_line_edit->connect("gui_input", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_filter_gui_input));
+	filter_line_edit->connect("text_changed", callable_mp(this, &VoxelGraphNodeDialog::_on_filter_text_changed));
+	filter_line_edit->connect("gui_input", callable_mp(this, &VoxelGraphNodeDialog::_on_filter_gui_input));
 	filter_line_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	filter_line_edit->set_placeholder(ZN_TTR("Search"));
 	vb_container->add_child(filter_line_edit);
@@ -134,9 +132,9 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	tree->set_allow_reselect(true);
 	tree->set_hide_folding(false);
 	tree->set_custom_minimum_size(Size2(180 * editor_scale, 200 * editor_scale));
-	tree->connect("item_activated", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_tree_item_activated));
-	tree->connect("item_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_tree_item_selected));
-	tree->connect("nothing_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_tree_nothing_selected));
+	tree->connect("item_activated", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_item_activated));
+	tree->connect("item_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_item_selected));
+	tree->connect("nothing_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_tree_nothing_selected));
 	vsplit_container->add_child(tree);
 	_tree = tree;
 
@@ -145,7 +143,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	description_label->set_custom_minimum_size(Size2(0, 70 * editor_scale));
 	description_label->set_use_bbcode(true);
 	description_label->connect(
-			"meta_clicked", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_description_label_meta_clicked));
+			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked));
 	vsplit_container->add_child(description_label);
 	_description_label = description_label;
 
@@ -161,7 +159,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
 	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
 	_function_file_dialog->connect(
-			"file_selected", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_function_file_dialog_file_selected));
+			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected));
 	add_child(_function_file_dialog);
 
 	// TODO Replace QuickOpen with listing of project functions directly in the dialog
@@ -169,7 +167,7 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 #ifdef ZN_GODOT
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
-			"quick_open", ZN_GODOT_CALLABLE_MP(this, VoxelGraphNodeDialog, _on_function_quick_open_dialog_quick_open));
+			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open));
 	add_child(_function_quick_open_dialog);
 #endif
 
@@ -449,21 +447,6 @@ void VoxelGraphNodeDialog::_notification(int p_what) {
 }
 
 void VoxelGraphNodeDialog::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_ok_pressed"), &VoxelGraphNodeDialog::_on_ok_pressed);
-	ClassDB::bind_method(
-			D_METHOD("_on_filter_text_changed", "new_text"), &VoxelGraphNodeDialog::_on_filter_text_changed);
-	ClassDB::bind_method(D_METHOD("_on_filter_gui_input", "event"), &VoxelGraphNodeDialog::_on_filter_gui_input);
-	ClassDB::bind_method(D_METHOD("_on_tree_item_activated"), &VoxelGraphNodeDialog::_on_tree_item_activated);
-	ClassDB::bind_method(D_METHOD("_on_tree_item_selected"), &VoxelGraphNodeDialog::_on_tree_item_selected);
-	ClassDB::bind_method(D_METHOD("_on_tree_nothing_selected"), &VoxelGraphNodeDialog::_on_tree_nothing_selected);
-	ClassDB::bind_method(D_METHOD("_on_function_file_dialog_file_selected", "fpath"),
-			&VoxelGraphNodeDialog::_on_function_file_dialog_file_selected);
-	ClassDB::bind_method(D_METHOD("_on_function_quick_open_dialog_quick_open"),
-			&VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open);
-	ClassDB::bind_method(
-			D_METHOD("_on_description_label_meta_clicked"), &VoxelGraphNodeDialog::_on_description_label_meta_clicked);
-#endif
 	ADD_SIGNAL(MethodInfo(SIGNAL_NODE_SELECTED, PropertyInfo(Variant::INT, "node_type_id")));
 	ADD_SIGNAL(MethodInfo(SIGNAL_FILE_SELECTED, PropertyInfo(Variant::STRING, "file_path")));
 }

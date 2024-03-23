@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/display_server.h"
 #include "../../util/godot/classes/h_box_container.h"
 #include "../../util/godot/classes/v_box_container.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
@@ -28,7 +27,7 @@ VoxelGraphEditorShaderDialog::VoxelGraphEditorShaderDialog() {
 	Button *copy_to_clipboard_button = memnew(Button);
 	copy_to_clipboard_button->set_text(ZN_TTR("Copy to clipboard"));
 	copy_to_clipboard_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorShaderDialog, _on_copy_to_clipboard_button_pressed));
+			"pressed", callable_mp(this, &VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed));
 	buttons_container->add_child(copy_to_clipboard_button);
 
 	v_box_container->add_child(buttons_container);
@@ -53,11 +52,6 @@ void VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed() {
 	DisplayServer::get_singleton()->clipboard_set(_text_edit->get_text());
 }
 
-void VoxelGraphEditorShaderDialog::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_copy_to_clipboard_button_pressed"),
-			&VoxelGraphEditorShaderDialog::_on_copy_to_clipboard_button_pressed);
-#endif
-}
+void VoxelGraphEditorShaderDialog::_bind_methods() {}
 
 } // namespace zylann::voxel

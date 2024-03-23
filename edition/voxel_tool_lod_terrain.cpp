@@ -12,7 +12,6 @@
 #include "../util/godot/classes/mesh_instance_3d.h"
 #include "../util/godot/classes/rigid_body_3d.h"
 #include "../util/godot/classes/timer.h"
-#include "../util/godot/core/callable.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
 #include "../util/tasks/async_dependency_tracker.h"
@@ -810,7 +809,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			Timer *timer = memnew(Timer);
 			timer->set_wait_time(0.2);
 			timer->set_one_shot(true);
-			timer->connect("timeout", ZN_GODOT_CALLABLE_MP(rigid_body, RigidBody3D, set_freeze_enabled).bind(false));
+			timer->connect("timeout", callable_mp(rigid_body, &RigidBody3D::set_freeze_enabled).bind(false));
 			// Cannot use start() here because it requires to be inside the SceneTree,
 			// and we don't know if it will be after we add to the parent.
 			timer->set_autostart(true);

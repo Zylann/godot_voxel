@@ -6,7 +6,6 @@
 #include "../../util/godot/classes/spin_box.h"
 #include "../../util/godot/classes/texture_rect.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
@@ -20,8 +19,7 @@ VoxelMeshSDFViewer::VoxelMeshSDFViewer() {
 	add_child(_texture_rect);
 
 	_slice_spinbox = memnew(SpinBox);
-	_slice_spinbox->connect(
-			"value_changed", ZN_GODOT_CALLABLE_MP(this, VoxelMeshSDFViewer, _on_slice_spinbox_value_changed));
+	_slice_spinbox->connect("value_changed", callable_mp(this, &VoxelMeshSDFViewer::_on_slice_spinbox_value_changed));
 	add_child(_slice_spinbox);
 	update_slice_spinbox();
 
@@ -31,7 +29,7 @@ VoxelMeshSDFViewer::VoxelMeshSDFViewer() {
 	update_info_label();
 
 	Button *bake_button = memnew(Button);
-	bake_button->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelMeshSDFViewer, _on_bake_button_pressed));
+	bake_button->connect("pressed", callable_mp(this, &VoxelMeshSDFViewer::_on_bake_button_pressed));
 	add_child(bake_button);
 	_bake_button = bake_button;
 	update_bake_button();
@@ -41,7 +39,7 @@ void VoxelMeshSDFViewer::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 	Vector3i prev_size;
 
 	if (_mesh_sdf.is_valid()) {
-		_mesh_sdf->disconnect("baked", ZN_GODOT_CALLABLE_MP(this, VoxelMeshSDFViewer, _on_mesh_sdf_baked));
+		_mesh_sdf->disconnect("baked", callable_mp(this, &VoxelMeshSDFViewer::_on_mesh_sdf_baked));
 
 		if (_mesh_sdf->is_baked()) {
 			prev_size = _mesh_sdf->get_voxel_buffer()->get_size();
@@ -53,7 +51,7 @@ void VoxelMeshSDFViewer::set_mesh_sdf(Ref<VoxelMeshSDF> mesh_sdf) {
 	}
 
 	if (_mesh_sdf.is_valid()) {
-		_mesh_sdf->connect("baked", ZN_GODOT_CALLABLE_MP(this, VoxelMeshSDFViewer, _on_mesh_sdf_baked));
+		_mesh_sdf->connect("baked", callable_mp(this, &VoxelMeshSDFViewer::_on_mesh_sdf_baked));
 
 		if (_mesh_sdf->is_baked()) {
 			if (prev_size != _mesh_sdf->get_voxel_buffer()->get_size()) {
@@ -174,13 +172,6 @@ void VoxelMeshSDFViewer::center_slice_y() {
 // 	_slice_y = slice_y;
 // }
 
-void VoxelMeshSDFViewer::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_bake_button_pressed"), &VoxelMeshSDFViewer::_on_bake_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_mesh_sdf_baked"), &VoxelMeshSDFViewer::_on_mesh_sdf_baked);
-	ClassDB::bind_method(
-			D_METHOD("_on_slice_spinbox_value_changed", "value"), &VoxelMeshSDFViewer::_on_slice_spinbox_value_changed);
-#endif
-}
+void VoxelMeshSDFViewer::_bind_methods() {}
 
 } // namespace zylann::voxel

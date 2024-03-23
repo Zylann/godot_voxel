@@ -1,6 +1,5 @@
 #include "editor_property_text_change_on_submit.h"
 #include "../../util/godot/classes/line_edit.h"
-#include "../../util/godot/core/callable.h"
 
 namespace zylann {
 
@@ -8,14 +7,14 @@ ZN_EditorPropertyTextChangeOnSubmit::ZN_EditorPropertyTextChangeOnSubmit() {
 	_line_edit = memnew(LineEdit);
 	add_child(_line_edit);
 	add_focusable(_line_edit);
-	_line_edit->connect("text_submitted",
-			ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyTextChangeOnSubmit, _on_line_edit_text_submitted));
-	_line_edit->connect("text_changed",
-			ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyTextChangeOnSubmit, _on_line_edit_text_changed));
-	_line_edit->connect("focus_exited",
-			ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyTextChangeOnSubmit, _on_line_edit_focus_exited));
-	_line_edit->connect("focus_entered",
-			ZN_GODOT_CALLABLE_MP(this, ZN_EditorPropertyTextChangeOnSubmit, _on_line_edit_focus_entered));
+	_line_edit->connect(
+			"text_submitted", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_submitted));
+	_line_edit->connect(
+			"text_changed", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_changed));
+	_line_edit->connect(
+			"focus_exited", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_exited));
+	_line_edit->connect(
+			"focus_entered", callable_mp(this, &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_entered));
 }
 
 void ZN_EditorPropertyTextChangeOnSubmit::_zn_update_property() {
@@ -63,17 +62,6 @@ void ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_exited() {
 	}
 }
 
-void ZN_EditorPropertyTextChangeOnSubmit::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(
-			D_METHOD("_on_line_edit_focus_entered"), &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_entered);
-	ClassDB::bind_method(D_METHOD("_on_line_edit_text_changed", "new_text"),
-			&ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_changed);
-	ClassDB::bind_method(D_METHOD("_on_line_edit_text_submitted", "text"),
-			&ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_text_submitted);
-	ClassDB::bind_method(
-			D_METHOD("_on_line_edit_focus_exited"), &ZN_EditorPropertyTextChangeOnSubmit::_on_line_edit_focus_exited);
-#endif
-}
+void ZN_EditorPropertyTextChangeOnSubmit::_bind_methods() {}
 
 } // namespace zylann

@@ -2,7 +2,6 @@
 #include "../../hash_funcs.h"
 #include "../../profiling.h"
 #ifdef ZN_GODOT_EXTENSION
-#include "../core/callable.h"
 #include "undo_redo.h"
 #endif
 
@@ -87,7 +86,7 @@ void set_object_edited(Object &obj) {
 
 	UndoRedo *ur = memnew(UndoRedo);
 	ur->create_action("Dummy Action");
-	Callable callable = ZN_GODOT_CALLABLE_MP(&obj, Object, is_blocking_signals);
+	Callable callable = callable_mp(&obj, &Object::is_blocking_signals);
 	ur->add_do_method(callable);
 	ur->add_undo_method(callable);
 	ur->commit_action();

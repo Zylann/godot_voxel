@@ -6,7 +6,6 @@
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/style_box_empty.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
 #include "voxel_graph_editor_node_preview.h"
 

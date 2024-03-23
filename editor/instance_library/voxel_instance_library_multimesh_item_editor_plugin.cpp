@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/editor_interface.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
 #include "../../util/godot/classes/resource_loader.h"
-#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 
@@ -23,8 +22,7 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::init() {
 	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
 	_open_scene_dialog->connect("file_selected",
-			ZN_GODOT_CALLABLE_MP(
-					this, VoxelInstanceLibraryMultiMeshItemEditorPlugin, _on_open_scene_dialog_file_selected));
+			callable_mp(this, &VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_selected));
 }
 
 bool VoxelInstanceLibraryMultiMeshItemEditorPlugin::_zn_handles(const Object *p_object) const {
@@ -107,13 +105,6 @@ void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_s
 	_item.unref();
 }
 
-void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_update_from_scene_button_pressed", "item"),
-			&VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_update_from_scene_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "path"),
-			&VoxelInstanceLibraryMultiMeshItemEditorPlugin::_on_open_scene_dialog_file_selected);
-#endif
-}
+void VoxelInstanceLibraryMultiMeshItemEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

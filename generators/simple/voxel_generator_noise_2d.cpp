@@ -2,7 +2,6 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/curve.h"
 #include "../../util/godot/classes/fast_noise_lite.h"
-#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 
@@ -17,13 +16,13 @@ void VoxelGeneratorNoise2D::set_noise(Ref<Noise> noise) {
 
 	if (_noise.is_valid()) {
 		_noise->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise2D, _on_noise_changed));
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
 	}
 	_noise = noise;
 	Ref<Noise> copy;
 	if (_noise.is_valid()) {
 		_noise->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise2D, _on_noise_changed));
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_noise_changed));
 		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 		copy = _noise->duplicate();
 	}
@@ -41,13 +40,13 @@ void VoxelGeneratorNoise2D::set_curve(Ref<Curve> curve) {
 	}
 	if (_curve.is_valid()) {
 		_curve->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise2D, _on_curve_changed));
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_curve_changed));
 	}
 	_curve = curve;
 	RWLockWrite wlock(_parameters_lock);
 	if (_curve.is_valid()) {
 		_curve->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise2D, _on_curve_changed));
+				callable_mp(this, &VoxelGeneratorNoise2D::_on_curve_changed));
 		// The Curve resource is not thread-safe so we make a copy of it for use in threads
 		_parameters.curve = _curve->duplicate();
 		_parameters.curve->bake();
@@ -137,11 +136,6 @@ void VoxelGeneratorNoise2D::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_curve", "curve"), &VoxelGeneratorNoise2D::set_curve);
 	ClassDB::bind_method(D_METHOD("get_curve"), &VoxelGeneratorNoise2D::get_curve);
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise2D::_on_noise_changed);
-	ClassDB::bind_method(D_METHOD("_on_curve_changed"), &VoxelGeneratorNoise2D::_on_curve_changed);
-#endif
 
 	// TODO Accept `Noise` instead of `FastNoiseLite`?
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),

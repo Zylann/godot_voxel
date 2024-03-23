@@ -11,7 +11,6 @@
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/resource_loader.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 
 namespace zylann::voxel {
@@ -25,7 +24,7 @@ void VoxelInstanceLibraryEditorPlugin::init() {
 
 	_confirmation_dialog = memnew(ConfirmationDialog);
 	_confirmation_dialog->connect(
-			"confirmed", ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryEditorPlugin, _on_remove_item_confirmed));
+			"confirmed", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed));
 	base_control->add_child(_confirmation_dialog);
 
 	_info_dialog = memnew(AcceptDialog);
@@ -38,8 +37,8 @@ void VoxelInstanceLibraryEditorPlugin::init() {
 	}
 	_open_scene_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 	base_control->add_child(_open_scene_dialog);
-	_open_scene_dialog->connect("file_selected",
-			ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryEditorPlugin, _on_open_scene_dialog_file_selected));
+	_open_scene_dialog->connect(
+			"file_selected", callable_mp(this, &VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected));
 }
 
 bool VoxelInstanceLibraryEditorPlugin::_zn_handles(const Object *p_object) const {
@@ -205,19 +204,6 @@ void VoxelInstanceLibraryEditorPlugin::add_scene_item(String fpath) {
 	ur.commit_action();
 }
 
-void VoxelInstanceLibraryEditorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_add_multimesh_item_button_pressed"),
-			&VoxelInstanceLibraryEditorPlugin::_on_add_item_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_remove_item_button_pressed"),
-			&VoxelInstanceLibraryEditorPlugin::_on_remove_item_button_pressed);
-	// ClassDB::bind_method(D_METHOD("_on_button_pressed", "id"),
-	// &VoxelInstanceLibraryEditorPlugin::_on_button_pressed);
-	ClassDB::bind_method(
-			D_METHOD("_on_remove_item_confirmed"), &VoxelInstanceLibraryEditorPlugin::_on_remove_item_confirmed);
-	ClassDB::bind_method(D_METHOD("_on_open_scene_dialog_file_selected", "fpath"),
-			&VoxelInstanceLibraryEditorPlugin::_on_open_scene_dialog_file_selected);
-#endif
-}
+void VoxelInstanceLibraryEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

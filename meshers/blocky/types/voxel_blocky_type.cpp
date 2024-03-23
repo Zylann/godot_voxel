@@ -4,7 +4,6 @@
 #include "../../../util/godot/classes/engine.h"
 #include "../../../util/godot/classes/ref_counted.h"
 #include "../../../util/godot/core/array.h"
-#include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
 #ifdef ZN_GODOT_EXTENSION
@@ -61,7 +60,7 @@ void VoxelBlockyType::set_base_model(Ref<VoxelBlockyModel> model) {
 	}
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
-		Callable change_handler = ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_base_model_changed);
+		Callable change_handler = callable_mp(this, &VoxelBlockyType::_on_base_model_changed);
 		if (_base_model.is_valid()) {
 			_base_model->disconnect(VoxelStringNames::get_singleton().changed, change_handler);
 		}
@@ -179,7 +178,7 @@ void VoxelBlockyType::set_variant(const VariantKey &key, Ref<VoxelBlockyModel> m
 #ifdef TOOLS_ENABLED
 	if (Engine::get_singleton()->is_editor_hint()) {
 		Ref<VoxelBlockyModel> prev_model = get_variant(key);
-		Callable change_handler = ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_base_model_changed);
+		Callable change_handler = callable_mp(this, &VoxelBlockyType::_on_base_model_changed);
 		if (prev_model.is_valid()) {
 			prev_model->disconnect(VoxelStringNames::get_singleton().changed, change_handler);
 		}
@@ -666,7 +665,7 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 		for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
 			if (attrib.is_valid()) {
 				attrib->disconnect(VoxelStringNames::get_singleton().changed,
-						ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_attribute_changed));
+						callable_mp(this, &VoxelBlockyType::_on_attribute_changed));
 			}
 		}
 	}
@@ -679,7 +678,7 @@ void VoxelBlockyType::_b_set_attributes(TypedArray<VoxelBlockyAttribute> attribu
 		for (Ref<VoxelBlockyAttribute> &attrib : _attributes) {
 			if (attrib.is_valid()) {
 				attrib->connect(VoxelStringNames::get_singleton().changed,
-						ZN_GODOT_CALLABLE_MP(this, VoxelBlockyType, _on_attribute_changed));
+						callable_mp(this, &VoxelBlockyType::_on_attribute_changed));
 			}
 		}
 	}
@@ -763,11 +762,6 @@ void VoxelBlockyType::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_get_variant_models_data"), &VoxelBlockyType::_b_get_variant_models_data);
 	ClassDB::bind_method(D_METHOD("_set_variant_models_data", "data"), &VoxelBlockyType::_b_set_variant_models_data);
-
-#if defined(ZN_GODOT_EXTENSION)
-	ClassDB::bind_method(D_METHOD("_on_attribute_changed"), &VoxelBlockyType::_on_attribute_changed);
-	ClassDB::bind_method(D_METHOD("_on_base_model_changed"), &VoxelBlockyType::_on_base_model_changed);
-#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING_NAME, "unique_name"), "set_unique_name", "get_unique_name");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "base_model", PROPERTY_HINT_RESOURCE_TYPE,

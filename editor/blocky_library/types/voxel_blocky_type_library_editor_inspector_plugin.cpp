@@ -1,6 +1,5 @@
 #include "voxel_blocky_type_library_editor_inspector_plugin.h"
 #include "../../../util/godot/classes/button.h"
-#include "../../../util/godot/core/callable.h"
 #include "../../../util/godot/core/string.h"
 #include "voxel_blocky_type_library_ids_dialog.h"
 
@@ -19,7 +18,7 @@ void VoxelBlockyTypeLibraryEditorInspectorPlugin::_zn_parse_end(Object *p_object
 	button->set_text(ZN_TTR("Inspect IDs..."));
 
 	button->connect("pressed",
-			ZN_GODOT_CALLABLE_MP(this, VoxelBlockyTypeLibraryEditorInspectorPlugin, _on_inspect_ids_button_pressed)
+			callable_mp(this, &VoxelBlockyTypeLibraryEditorInspectorPlugin::_on_inspect_ids_button_pressed)
 					.bind(library));
 
 	// TODO I want to add this button at the end OF THE VoxelBlockyTypeLibrary PART OF THE INSPECTOR,
@@ -37,11 +36,6 @@ void VoxelBlockyTypeLibraryEditorInspectorPlugin::_on_inspect_ids_button_pressed
 	_ids_dialog->popup_centered();
 }
 
-void VoxelBlockyTypeLibraryEditorInspectorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_inspect_ids_button_pressed"),
-			&VoxelBlockyTypeLibraryEditorInspectorPlugin::_on_inspect_ids_button_pressed);
-#endif
-}
+void VoxelBlockyTypeLibraryEditorInspectorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

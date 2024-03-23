@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/label.h"
 #include "../../util/godot/classes/spin_box.h"
 #include "../../util/godot/classes/v_box_container.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
 
@@ -19,8 +18,7 @@ VoxelRangeAnalysisDialog::VoxelRangeAnalysisDialog() {
 
 	_enabled_checkbox = memnew(CheckBox);
 	_enabled_checkbox->set_text(ZN_TTR("Enabled"));
-	_enabled_checkbox->connect(
-			"toggled", ZN_GODOT_CALLABLE_MP(this, VoxelRangeAnalysisDialog, _on_enabled_checkbox_toggled));
+	_enabled_checkbox->connect("toggled", callable_mp(this, &VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled));
 	vb->add_child(_enabled_checkbox);
 
 	Label *tip = memnew(Label);
@@ -77,16 +75,10 @@ void VoxelRangeAnalysisDialog::add_row(String text, SpinBox *&sb, GridContainer 
 	label->set_text(text);
 	container->add_child(label);
 	container->add_child(sb);
-	sb->connect("value_changed", ZN_GODOT_CALLABLE_MP(this, VoxelRangeAnalysisDialog, _on_area_spinbox_value_changed));
+	sb->connect("value_changed", callable_mp(this, &VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed));
 }
 
 void VoxelRangeAnalysisDialog::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_enabled_checkbox_toggled", "enabled"),
-			&VoxelRangeAnalysisDialog::_on_enabled_checkbox_toggled);
-	ClassDB::bind_method(D_METHOD("_on_area_spinbox_value_changed", "value"),
-			&VoxelRangeAnalysisDialog::_on_area_spinbox_value_changed);
-#endif
 	ADD_SIGNAL(MethodInfo("analysis_toggled", PropertyInfo(Variant::BOOL, "enabled")));
 	ADD_SIGNAL(MethodInfo("area_changed"));
 }

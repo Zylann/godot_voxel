@@ -1,7 +1,6 @@
 #include "voxel_generator_noise.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/fast_noise_lite.h"
-#include "../../util/godot/core/callable.h"
 
 namespace zylann::voxel {
 
@@ -14,14 +13,14 @@ void VoxelGeneratorNoise::set_noise(Ref<Noise> noise) {
 		return;
 	}
 	if (_noise.is_valid()) {
-		_noise->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise, _on_noise_changed));
+		_noise->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
 	}
 	_noise = noise;
 	Ref<Noise> copy;
 	if (_noise.is_valid()) {
-		_noise->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelGeneratorNoise, _on_noise_changed));
+		_noise->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
 		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 		copy = _noise->duplicate();
 	}
@@ -251,10 +250,6 @@ void VoxelGeneratorNoise::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelGeneratorNoise::_on_noise_changed);
-#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");

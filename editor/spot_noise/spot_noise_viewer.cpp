@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/image_texture.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/texture_rect.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann {
@@ -24,13 +23,13 @@ void ZN_SpotNoiseViewer::set_noise(Ref<ZN_SpotNoise> noise) {
 	}
 
 	if (_noise.is_valid()) {
-		_noise->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_SpotNoiseViewer, _on_noise_changed));
+		_noise->disconnect("changed", callable_mp(this, &ZN_SpotNoiseViewer::_on_noise_changed));
 	}
 
 	_noise = noise;
 
 	if (_noise.is_valid()) {
-		_noise->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_SpotNoiseViewer, _on_noise_changed));
+		_noise->connect("changed", callable_mp(this, &ZN_SpotNoiseViewer::_on_noise_changed));
 		set_process(true);
 		update_preview();
 
@@ -117,10 +116,6 @@ void ZN_SpotNoiseViewer::update_preview() {
 	_texture_rect->set_texture(tex);
 }
 
-void ZN_SpotNoiseViewer::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &ZN_SpotNoiseViewer::_on_noise_changed);
-#endif
-}
+void ZN_SpotNoiseViewer::_bind_methods() {}
 
 } // namespace zylann

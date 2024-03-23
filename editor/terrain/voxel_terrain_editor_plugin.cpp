@@ -12,7 +12,6 @@
 #include "../../util/godot/classes/menu_button.h"
 #include "../../util/godot/classes/node.h"
 #include "../../util/godot/classes/popup_menu.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/keyboard.h"
 #include "../about_window.h"
 #include "../camera_cache.h"
@@ -29,7 +28,7 @@ void VoxelTerrainEditorPlugin::init() {
 	MenuButton *menu_button = memnew(MenuButton);
 	menu_button->set_text(ZN_TTR("Terrain"));
 	menu_button->get_popup()->connect(
-			"id_pressed", ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_menu_item_selected));
+			"id_pressed", callable_mp(this, &VoxelTerrainEditorPlugin::_on_menu_item_selected));
 	menu_button->hide();
 	add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, menu_button);
 	_menu_button = menu_button;
@@ -48,7 +47,7 @@ void VoxelTerrainEditorPlugin::init() {
 	_save_file_dialog->add_filter("*.scn", "Godot Scene File");
 	_save_file_dialog->set_access(EditorFileDialog::ACCESS_RESOURCES);
 	_save_file_dialog->connect(VoxelStringNames::get_singleton().file_selected,
-			ZN_GODOT_CALLABLE_MP(this, VoxelTerrainEditorPlugin, _on_save_file_dialog_file_selected));
+			callable_mp(this, &VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected));
 	base_control->add_child(_save_file_dialog);
 }
 
@@ -234,12 +233,6 @@ void VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected(String fpath) 
 	lod_terrain->debug_dump_as_scene(fpath, false);
 }
 
-void VoxelTerrainEditorPlugin::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_menu_item_selected", "id"), &VoxelTerrainEditorPlugin::_on_menu_item_selected);
-	ClassDB::bind_method(D_METHOD("_on_save_file_dialog_file_selected", "fpath"),
-			&VoxelTerrainEditorPlugin::_on_save_file_dialog_file_selected);
-#endif
-}
+void VoxelTerrainEditorPlugin::_bind_methods() {}
 
 } // namespace zylann::voxel

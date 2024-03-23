@@ -4,7 +4,6 @@
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/random_pcg.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
@@ -744,12 +743,12 @@ void VoxelInstanceGenerator::set_noise(Ref<Noise> noise) {
 		}
 		if (_noise.is_valid()) {
 			_noise->disconnect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed));
 		}
 		_noise = noise;
 		if (_noise.is_valid()) {
 			_noise->connect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_changed));
 		}
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
@@ -770,9 +769,9 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 		}
 		if (_noise_graph.is_valid()) {
 			_noise_graph->disconnect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed));
 			_noise_graph->disconnect(VoxelStringNames::get_singleton().compiled,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed));
 		}
 
 		_noise_graph = func;
@@ -782,9 +781,9 @@ void VoxelInstanceGenerator::set_noise_graph(Ref<pg::VoxelGraphFunction> func) {
 			func->compile(Engine::get_singleton()->is_editor_hint());
 
 			_noise_graph->connect(VoxelStringNames::get_singleton().changed,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed));
 			_noise_graph->connect(VoxelStringNames::get_singleton().compiled,
-					ZN_GODOT_CALLABLE_MP(this, VoxelInstanceGenerator, _on_noise_graph_changed));
+					callable_mp(this, &VoxelInstanceGenerator::_on_noise_graph_changed));
 		}
 	}
 	// Emit signal outside of the locked region to avoid eventual deadlocks if handlers want to access the property
@@ -911,11 +910,6 @@ void VoxelInstanceGenerator::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_noise_on_scale", "amount"), &VoxelInstanceGenerator::set_noise_on_scale);
 	ClassDB::bind_method(D_METHOD("get_noise_on_scale"), &VoxelInstanceGenerator::get_noise_on_scale);
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_noise_changed"), &VoxelInstanceGenerator::_on_noise_changed);
-	ClassDB::bind_method(D_METHOD("_on_noise_graph_changed"), &VoxelInstanceGenerator::_on_noise_graph_changed);
-#endif
 
 	ADD_GROUP("Emission", "");
 

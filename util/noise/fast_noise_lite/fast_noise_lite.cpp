@@ -1,6 +1,5 @@
 #include "fast_noise_lite.h"
 #include "../../godot/core/array.h"
-#include "../../godot/core/callable.h"
 #include "../../math/funcs.h"
 #include "../../string_funcs.h"
 
@@ -73,13 +72,13 @@ void ZN_FastNoiseLite::set_warp_noise(Ref<ZN_FastNoiseLiteGradient> warp_noise) 
 	}
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->disconnect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
+		_warp_noise->disconnect("changed", callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	_warp_noise = warp_noise;
 
 	if (_warp_noise.is_valid()) {
-		_warp_noise->connect("changed", ZN_GODOT_CALLABLE_MP(this, ZN_FastNoiseLite, _on_warp_noise_changed));
+		_warp_noise->connect("changed", callable_mp(this, &ZN_FastNoiseLite::_on_warp_noise_changed));
 	}
 
 	emit_changed();
@@ -280,10 +279,6 @@ void ZN_FastNoiseLite::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("get_noise_2dv", "position"), &ZN_FastNoiseLite::_b_get_noise_2dv);
 	ClassDB::bind_method(D_METHOD("get_noise_3dv", "position"), &ZN_FastNoiseLite::_b_get_noise_3dv);
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &ZN_FastNoiseLite::_on_warp_noise_changed);
-#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM,
 						 "OpenSimplex2,OpenSimplex2S,Cellular,Perlin,ValueCubic,Value"),

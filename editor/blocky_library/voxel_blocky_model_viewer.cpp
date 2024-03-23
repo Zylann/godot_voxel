@@ -8,7 +8,6 @@
 #include "../../util/godot/classes/standard_material_3d.h"
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/core/mouse_button.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
@@ -204,12 +203,9 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 	rotate_x_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around X (clockwise)"));
 	rotate_y_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Y (clockwise)"));
 	rotate_z_button->set_tooltip_text(ZN_TTR("Rotate 90 degrees around Z (clockwise)"));
-	rotate_x_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_x_button_pressed));
-	rotate_y_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_y_button_pressed));
-	rotate_z_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_rotate_z_button_pressed));
+	rotate_x_button->connect("pressed", callable_mp(this, &VoxelBlockyModelViewer::_on_rotate_x_button_pressed));
+	rotate_y_button->connect("pressed", callable_mp(this, &VoxelBlockyModelViewer::_on_rotate_y_button_pressed));
+	rotate_z_button->connect("pressed", callable_mp(this, &VoxelBlockyModelViewer::_on_rotate_z_button_pressed));
 	side_toolbar->add_child(rotate_x_button);
 	side_toolbar->add_child(rotate_y_button);
 	side_toolbar->add_child(rotate_z_button);
@@ -221,14 +217,14 @@ VoxelBlockyModelViewer::VoxelBlockyModelViewer() {
 void VoxelBlockyModelViewer::set_model(Ref<VoxelBlockyModel> model) {
 	if (_model.is_valid()) {
 		_model->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_model_changed));
+				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
 	}
 
 	_model = model;
 
 	if (_model.is_valid()) {
 		_model->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelBlockyModelViewer, _on_model_changed));
+				callable_mp(this, &VoxelBlockyModelViewer::_on_model_changed));
 	}
 
 	update_model();
@@ -320,12 +316,6 @@ void VoxelBlockyModelViewer::_on_rotate_z_button_pressed() {
 }
 
 void VoxelBlockyModelViewer::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_model_changed"), &VoxelBlockyModelViewer::_on_model_changed);
-	ClassDB::bind_method(D_METHOD("_on_rotate_x_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_x_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_rotate_y_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_y_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_rotate_z_button_pressed"), &VoxelBlockyModelViewer::_on_rotate_z_button_pressed);
-#endif
 	ClassDB::bind_method(D_METHOD("add_rotation_anim"), &VoxelBlockyModelViewer::add_rotation_anim);
 }
 

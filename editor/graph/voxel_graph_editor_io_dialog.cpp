@@ -12,7 +12,6 @@
 #include "../../util/godot/classes/v_box_container.h"
 #include "../../util/godot/classes/v_separator.h"
 #include "../../util/godot/core/array.h"
-#include "../../util/godot/core/callable.h"
 #include "../../util/godot/editor_scale.h"
 
 namespace zylann::voxel {
@@ -29,7 +28,7 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 	_auto_generate_button = memnew(Button);
 	_auto_generate_button->set_text(ZN_TTR("Auto-generate"));
 	_auto_generate_button->connect(
-			"pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_auto_generate_button_pressed));
+			"pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed));
 	vb->add_child(_auto_generate_button);
 
 	HBoxContainer *hb = memnew(HBoxContainer);
@@ -43,7 +42,7 @@ VoxelGraphEditorIODialog::VoxelGraphEditorIODialog() {
 
 	add_child(vb);
 
-	get_ok_button()->connect("pressed", ZN_GODOT_CALLABLE_MP(this, VoxelGraphEditorIODialog, _on_ok_pressed));
+	get_ok_button()->connect("pressed", callable_mp(this, &VoxelGraphEditorIODialog::_on_ok_pressed));
 
 	// Godot devs added more shadowing warnings around may 2023 but with MSVC it prevents us to use local variable names
 	// that are the same as PRIVATE variables from inherited classes (and Godot does not prefix members)... So sometimes
@@ -326,11 +325,6 @@ void VoxelGraphEditorIODialog::reshow(Ref<VoxelGraphFunction> graph) {
 }
 
 void VoxelGraphEditorIODialog::_bind_methods() {
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(
-			D_METHOD("_on_auto_generate_button_pressed"), &VoxelGraphEditorIODialog::_on_auto_generate_button_pressed);
-	ClassDB::bind_method(D_METHOD("_on_ok_pressed"), &VoxelGraphEditorIODialog::_on_ok_pressed);
-#endif
 	ClassDB::bind_method(D_METHOD("reshow"), &VoxelGraphEditorIODialog::reshow);
 }
 

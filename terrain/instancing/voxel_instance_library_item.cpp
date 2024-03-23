@@ -1,6 +1,5 @@
 #include "voxel_instance_library_item.h"
 #include "../../constants/voxel_string_names.h"
-#include "../../util/godot/core/callable.h"
 #include "voxel_instancer.h"
 
 #include <algorithm>
@@ -34,12 +33,12 @@ void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generat
 	}
 	if (_generator.is_valid()) {
 		_generator->disconnect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryItem, _on_generator_changed));
+				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed));
 	}
 	_generator = generator;
 	if (_generator.is_valid()) {
 		_generator->connect(VoxelStringNames::get_singleton().changed,
-				ZN_GODOT_CALLABLE_MP(this, VoxelInstanceLibraryItem, _on_generator_changed));
+				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed));
 	}
 	notify_listeners(CHANGE_GENERATOR);
 }
@@ -110,10 +109,6 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_persistent", "persistent"), &VoxelInstanceLibraryItem::set_persistent);
 	ClassDB::bind_method(D_METHOD("is_persistent"), &VoxelInstanceLibraryItem::is_persistent);
-
-#ifdef ZN_GODOT_EXTENSION
-	ClassDB::bind_method(D_METHOD("_on_generator_changed"), &VoxelInstanceLibraryItem::_on_generator_changed);
-#endif
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
 	ADD_PROPERTY(
