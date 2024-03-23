@@ -66,6 +66,9 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 #else
 	// ERR_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
 #endif
+
+	// The wrapper is discarded
+	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
 }
 
 int VoxelGeneratorMultipassCB::get_used_channels_mask() const {
