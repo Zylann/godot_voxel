@@ -62,11 +62,7 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 
-#if defined(ZN_GODOT)
 	GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
-#else
-	// ERR_PRINT_ONCE("VoxelGeneratorScript::_generate_block is not supported yet in GDExtension!");
-#endif
 
 	// The wrapper is discarded
 	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
@@ -74,13 +70,9 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 
 int VoxelGeneratorMultipassCB::get_used_channels_mask() const {
 	int mask = 0;
-#if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_get_used_channels_mask, mask)) {
 		// WARN_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is unimplemented!");
 	}
-#else
-	// ERR_PRINT_ONCE("VoxelGeneratorScript::_get_used_channels_mask is not supported yet in GDExtension!");
-#endif
 	return mask;
 }
 
@@ -203,8 +195,7 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 		Ref<VoxelToolMultipassGenerator> vt;
 		vt.instantiate();
 		vt->set_pass_input(input);
-		call("_generate_pass", vt, input.pass_index);
-		// GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+		GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compress uniform blocks");

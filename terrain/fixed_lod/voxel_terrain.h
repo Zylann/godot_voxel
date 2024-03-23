@@ -6,6 +6,7 @@
 #include "../../storage/voxel_data.h"
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/core/gdvirtual.h"
 #include "../../util/godot/memory.h"
 #include "../../util/math/box3i.h"
 #include "../voxel_data_block_enter_info.h"
@@ -242,7 +243,6 @@ private:
 	void process_debug_draw();
 #endif
 
-#ifdef ZN_GODOT
 	// Called each time a data block enters a viewer's area.
 	// This can be either when the block exists and the viewer gets close enough, or when it gets loaded.
 	// This only happens if data block enter notifications are enabled.
@@ -250,9 +250,6 @@ private:
 
 	// Called each time voxels are edited within a region.
 	GDVIRTUAL2(_on_area_edited, Vector3i, Vector3i);
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: Defining custom virtual functions is not supported...
-#endif
 
 	static void _bind_methods();
 

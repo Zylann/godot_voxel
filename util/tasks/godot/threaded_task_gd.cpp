@@ -32,34 +32,22 @@ public:
 };
 
 void ZN_ThreadedTask::run(int thread_index) {
-#ifdef ZN_GODOT
 	GDVIRTUAL_CALL(_run, thread_index);
-#else
-	ERR_PRINT_ONCE("ZN_ThreadedTask::_run is not supported yet in GDExtension!");
-#endif
 }
 
 int ZN_ThreadedTask::get_priority() {
 	int priority = 0;
-#ifdef ZN_GODOT
 	if (GDVIRTUAL_CALL(_get_priority, priority)) {
 		return priority;
 	}
-#else
-	ERR_PRINT_ONCE("ZN_ThreadedTask::_get_priority is not supported yet in GDExtension!");
-#endif
 	return 0;
 }
 
 bool ZN_ThreadedTask::is_cancelled() {
 	bool cancelled = false;
-#ifdef ZN_GODOT
 	if (GDVIRTUAL_CALL(_is_cancelled, cancelled)) {
 		return cancelled;
 	}
-#else
-	ERR_PRINT_ONCE("ZN_ThreadedTask::_is_cancelled is not supported yet in GDExtension!");
-#endif
 	return false;
 }
 
@@ -82,11 +70,9 @@ IThreadedTask *ZN_ThreadedTask::create_task() {
 void ZN_ThreadedTask::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("completed"));
 
-#ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_run, "thread_index");
 	GDVIRTUAL_BIND(_get_priority);
 	GDVIRTUAL_BIND(_is_cancelled);
-#endif
 }
 
 } // namespace zylann

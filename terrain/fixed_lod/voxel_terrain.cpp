@@ -769,11 +769,7 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels, bool update_mesh) {
 
 	// TODO Maybe remove this in preference for multiplayer synchronizer virtual functions?
 	if (_area_edit_notification_enabled) {
-#if defined(ZN_GODOT)
 		GDVIRTUAL_CALL(_on_area_edited, box_in_voxels.pos, box_in_voxels.size);
-#else
-		ERR_PRINT_ONCE("VoxelTerrain::_on_area_edited is not supported yet in GDExtension!");
-#endif
 	}
 
 	if (_multiplayer_synchronizer != nullptr && _multiplayer_synchronizer->is_server()) {
@@ -1088,14 +1084,10 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 	_data_block_enter_info_obj->voxel_block = block;
 	_data_block_enter_info_obj->block_position = bpos;
 
-#if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get()) &&
 			_multiplayer_synchronizer == nullptr) {
 		WARN_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is unimplemented!");
 	}
-#else
-	ERR_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is not supported yet in GDExtension!");
-#endif
 
 	if (_multiplayer_synchronizer != nullptr && !Engine::get_singleton()->is_editor_hint() &&
 			network_peer_id != MultiplayerPeer::TARGET_PEER_SERVER && _multiplayer_synchronizer->is_server()) {

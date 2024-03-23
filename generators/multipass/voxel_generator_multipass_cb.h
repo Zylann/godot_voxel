@@ -4,6 +4,7 @@
 #include "../../engine/ids.h"
 #include "../../storage/voxel_buffer_gd.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/core/gdvirtual.h"
 #include "../../util/math/box3i.h"
 #include "../../util/math/vector2i.h"
 #include "../../util/memory/memory.h"
@@ -12,11 +13,6 @@
 #include "../voxel_generator.h"
 #include "voxel_generator_multipass_cb_structs.h"
 #include "voxel_tool_multipass_generator.h" // Must be included so we can define GDVIRTUAL methods
-
-#if defined(ZN_GODOT)
-#include <core/object/script_language.h> // needed for GDVIRTUAL macro
-#include <core/object/gdvirtual.gen.inc> // Also needed for GDVIRTUAL macro...
-#endif
 
 namespace zylann {
 namespace voxel {
@@ -124,15 +120,12 @@ protected:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
-// TODO GDX: Defining custom virtual functions is not supported...
-#if defined(ZN_GODOT)
 	GDVIRTUAL2(_generate_pass, Ref<VoxelToolMultipassGenerator>, int)
 
 	// Called outside of the column region so it is possible to define what generates past the top and bottom
 	GDVIRTUAL2(_generate_block_fallback, Ref<godot::VoxelBuffer>, Vector3i)
 
 	GDVIRTUAL0RC(int, _get_used_channels_mask)
-#endif
 
 private:
 	void process_viewer_diff_internal(Box3i p_requested_box, Box3i p_prev_requested_box);
