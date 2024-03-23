@@ -49,7 +49,7 @@ void LoadBlockDataTask::run(zylann::ThreadedTaskContext &ctx) {
 	CRASH_COND(stream.is_null());
 
 	ERR_FAIL_COND(_voxels != nullptr);
-	_voxels = make_shared_instance<VoxelBuffer>();
+	_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 	_voxels->create(_block_size, _block_size, _block_size);
 
 	// TODO We should consider batching this again, but it needs to be done carefully.

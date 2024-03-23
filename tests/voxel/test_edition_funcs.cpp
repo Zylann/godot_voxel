@@ -46,7 +46,7 @@ void test_run_blocky_random_tick() {
 	{
 		// All blocks of this map will be the same,
 		// an interleaving of all block types
-		VoxelBuffer model_buffer;
+		VoxelBuffer model_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 		model_buffer.create(Vector3iUtil::create(data.get_block_size()));
 		for (int z = 0; z < model_buffer.get_size().z; ++z) {
 			for (int x = 0; x < model_buffer.get_size().x; ++x) {
@@ -59,7 +59,7 @@ void test_run_blocky_random_tick() {
 
 		const Box3i world_blocks_box(-4, -4, -4, 8, 8, 8);
 		world_blocks_box.for_each_cell_zxy([&data, &model_buffer](Vector3i block_pos) {
-			std::shared_ptr<VoxelBuffer> buffer = make_shared_instance<VoxelBuffer>();
+			std::shared_ptr<VoxelBuffer> buffer = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_DEFAULT);
 			buffer->create(model_buffer.get_size());
 			buffer->copy_channels_from(model_buffer);
 			VoxelDataBlock block(buffer, 0);
@@ -127,7 +127,7 @@ void test_run_blocky_random_tick() {
 }
 
 void test_box_blur() {
-	VoxelBuffer voxels;
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels.create(64, 64, 64);
 
 	Vector3i pos;
@@ -155,11 +155,11 @@ void test_box_blur() {
 
 	// L::save_image(voxels, 32, "test_box_blur_src.png");
 
-	VoxelBuffer voxels_blurred_1;
+	VoxelBuffer voxels_blurred_1(VoxelBuffer::ALLOCATOR_DEFAULT);
 	ops::box_blur_slow_ref(voxels, voxels_blurred_1, blur_radius, sphere_pos, sphere_radius);
 	// L::save_image(voxels_blurred_1, 32 - blur_radius, "test_box_blur_blurred_1.png");
 
-	VoxelBuffer voxels_blurred_2;
+	VoxelBuffer voxels_blurred_2(VoxelBuffer::ALLOCATOR_DEFAULT);
 	ops::box_blur(voxels, voxels_blurred_2, blur_radius, sphere_pos, sphere_radius);
 	// L::save_image(voxels_blurred_2, 32 - blur_radius, "test_box_blur_blurred_2.png");
 
@@ -287,7 +287,7 @@ void test_discord_soakil_copypaste() {
 			// No edits yet, so SDF won't be quantized...
 			1.f);
 
-	VoxelBuffer buffer_before_edit;
+	VoxelBuffer buffer_before_edit(VoxelBuffer::ALLOCATOR_DEFAULT);
 	buffer_before_edit.create(Vector3i(20, 20, 20));
 	const Vector3i undo_pos(-10, -10, -10);
 	voxel_data.copy(undo_pos, buffer_before_edit, 0xff);

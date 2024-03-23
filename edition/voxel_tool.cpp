@@ -318,7 +318,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 		return;
 	}
 
-	VoxelBuffer buffer;
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(padded_voxel_box.size);
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
@@ -326,7 +326,7 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 		copy(padded_voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		VoxelBuffer smooth_buffer;
+		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
@@ -353,7 +353,7 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 		return;
 	}
 
-	VoxelBuffer buffer;
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(voxel_box.size);
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {

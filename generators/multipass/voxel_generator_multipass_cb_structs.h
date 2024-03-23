@@ -48,9 +48,9 @@ struct Block {
 	// be multiple block requests for one column.
 	IThreadedTask *final_pending_task = nullptr;
 
-	Block() {}
+	Block() : voxels(VoxelBuffer::ALLOCATOR_POOL) {}
 
-	Block(Block &&other) {
+	Block(Block &&other) : Block() {
 		voxels = std::move(other.voxels);
 		final_pending_task = other.final_pending_task;
 	}

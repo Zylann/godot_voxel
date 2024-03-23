@@ -42,7 +42,7 @@ struct ScheduleSaveAction {
 			// If a modified block has no voxels, it is equivalent to removing the block from the stream
 			if (block.has_voxels()) {
 				if (with_copy) {
-					b.voxels = make_shared_instance<VoxelBuffer>();
+					b.voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 					block.get_voxels_const().copy_to(*b.voxels, true);
 				} else {
 					b.voxels = block.get_voxels_shared();
@@ -247,7 +247,7 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 		// The block is either loaded, or streaming is off (everything is loaded), so either way the block we want to
 		// edit is known
 
-		voxels = make_shared_instance<VoxelBuffer>();
+		voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 		voxels->create(Vector3iUtil::create(get_block_size()));
 
 		Ref<VoxelGenerator> generator = get_generator();
@@ -453,7 +453,7 @@ void VoxelData::pre_generate_box(Box3i voxel_box, Span<Lod> lods, unsigned int d
 	// Generate
 	for (unsigned int i = 0; i < todo.size(); ++i) {
 		Task &task = todo[i];
-		task.voxels = make_shared_instance<VoxelBuffer>();
+		task.voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 		task.voxels->create(block_size);
 		// TODO Format?
 		if (generator.is_valid()) {
@@ -707,7 +707,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 						int data_block_size, int data_block_size_po2, Ref<VoxelGenerator> generator,
 						const VoxelModifierStack &modifiers) {
 					//
-					std::shared_ptr<VoxelBuffer> voxels = make_shared_instance<VoxelBuffer>();
+					std::shared_ptr<VoxelBuffer> voxels =
+							make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 					voxels->create(Vector3iUtil::create(data_block_size));
 					VoxelGenerator::VoxelQueryData q{ //
 						*voxels, //
@@ -842,7 +843,7 @@ bool VoxelData::consume_block_modifications(Vector3i bpos, VoxelData::BlockToSav
 	}
 	if (block->is_modified()) {
 		if (block->has_voxels()) {
-			out_to_save.voxels = make_shared_instance<VoxelBuffer>();
+			out_to_save.voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 			block->get_voxels_const().copy_to(*out_to_save.voxels, true);
 		}
 		out_to_save.position = bpos;

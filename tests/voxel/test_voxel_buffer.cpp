@@ -9,7 +9,7 @@ namespace zylann::voxel::tests {
 void test_voxel_buffer_create() {
 	// This test was a repro for a memory corruption crash. The point of this test is to check it doesn't crash,
 	// so there is no particular conditions to check.
-	VoxelBuffer generated_voxels;
+	VoxelBuffer generated_voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 	generated_voxels.create(Vector3i(5, 5, 5));
 	generated_voxels.set_voxel_f(-0.7f, 3, 3, 3, VoxelBuffer::CHANNEL_SDF);
 	generated_voxels.create(Vector3i(16, 16, 18));
@@ -62,7 +62,7 @@ public:
 void test_voxel_buffer_metadata() {
 	// Basic get and set
 	{
-		VoxelBuffer vb;
+		VoxelBuffer vb(VoxelBuffer::ALLOCATOR_DEFAULT);
 		vb.create(10, 10, 10);
 
 		VoxelMetadata *meta = vb.get_or_create_voxel_metadata(Vector3i(1, 2, 3));
@@ -76,7 +76,7 @@ void test_voxel_buffer_metadata() {
 	}
 	// Serialization
 	{
-		VoxelBuffer vb;
+		VoxelBuffer vb(VoxelBuffer::ALLOCATOR_DEFAULT);
 		vb.create(10, 10, 10);
 
 		{
@@ -112,7 +112,7 @@ void test_voxel_buffer_metadata() {
 		ZN_TEST_ASSERT(sresult.success);
 		StdVector<uint8_t> bytes = sresult.data;
 
-		VoxelBuffer rvb;
+		VoxelBuffer rvb(VoxelBuffer::ALLOCATOR_DEFAULT);
 		ZN_TEST_ASSERT(BlockSerializer::deserialize(to_span(bytes), rvb));
 
 		const FlatMapMoveOnly<Vector3i, VoxelMetadata> &vb_meta_map = vb.get_voxel_metadata();

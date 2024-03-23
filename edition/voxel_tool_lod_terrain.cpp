@@ -477,7 +477,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	static const int channels_mask = (1 << VoxelBuffer::CHANNEL_SDF);
 	static const VoxelBuffer::ChannelId main_channel = VoxelBuffer::CHANNEL_SDF;
 
-	VoxelBuffer source_copy_buffer;
+	VoxelBuffer source_copy_buffer(VoxelBuffer::ALLOCATOR_POOL);
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer.create(world_box.size);
@@ -618,7 +618,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Vector3i size =
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
-			instances_info.push_back(InstanceInfo{ VoxelBuffer(), world_pos, label });
+			instances_info.push_back(InstanceInfo{ VoxelBuffer(VoxelBuffer::ALLOCATOR_POOL), world_pos, label });
 
 			VoxelBuffer &buffer = instances_info.back().voxels;
 			buffer.create(size.x, size.y, size.z);
@@ -942,7 +942,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	const unsigned int channel_index = VoxelBuffer::CHANNEL_SDF;
 
-	VoxelBuffer buffer;
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(box.size);
 	data.copy(box.pos, buffer, 1 << channel_index);
 

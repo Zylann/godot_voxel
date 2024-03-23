@@ -18,7 +18,7 @@ void VoxelStreamMemory::load_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 
 		} else {
 			q.result = VoxelStream::RESULT_BLOCK_FOUND;
-			it->second.copy_to(q.voxel_buffer, true);
+			it->second.voxels.copy_to(q.voxel_buffer, true);
 		}
 	}
 }
@@ -31,8 +31,8 @@ void VoxelStreamMemory::save_voxel_blocks(Span<VoxelQueryData> p_blocks) {
 		Lod &lod = _lods[q.lod_index];
 		{
 			MutexLock mlock(lod.mutex);
-			VoxelBuffer &dst = lod.voxel_blocks[q.position_in_blocks];
-			q.voxel_buffer.copy_to(dst, true);
+			VoxelChunk &dst = lod.voxel_blocks[q.position_in_blocks];
+			q.voxel_buffer.copy_to(dst.voxels, true);
 		}
 	}
 }
@@ -104,9 +104,9 @@ void VoxelStreamMemory::load_all_blocks(FullLoadingResult &result) {
 			block.position = bpos;
 			block.lod = lod_index;
 
-			const VoxelBuffer &src = it->second;
-			block.voxels = make_shared_instance<VoxelBuffer>();
-			src.copy_to(*block.voxels, true);
+			const VoxelChunk &src = it->second;
+			block.voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
+			src.voxels.copy_to(*block.voxels, true);
 		}
 
 		for (auto it = lod.instance_blocks.begin(); it != lod.instance_blocks.end(); ++it) {

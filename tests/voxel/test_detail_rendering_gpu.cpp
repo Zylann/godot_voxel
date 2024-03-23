@@ -57,7 +57,7 @@ void test_normalmap_render_gpu() {
 	mesher.instantiate();
 
 	const int block_size = 16;
-	VoxelBuffer voxels;
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels.create(Vector3iUtil::create(block_size + mesher->get_minimum_padding() + mesher->get_maximum_padding()));
 
 	const Vector3i origin_in_voxels;

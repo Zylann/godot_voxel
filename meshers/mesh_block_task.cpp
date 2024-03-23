@@ -185,7 +185,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 	} else {
 		// Complete data with generated voxels on the CPU
 		ZN_PROFILE_SCOPE_NAMED("Generate");
-		VoxelBuffer generated_voxels;
+		VoxelBuffer generated_voxels(VoxelBuffer::ALLOCATOR_POOL);
 
 		const VoxelModifierStack &modifiers = voxel_data.get_modifiers();
 
@@ -271,7 +271,7 @@ namespace {
 std::atomic_int g_debug_mesh_tasks_count = { 0 };
 } // namespace
 
-MeshBlockTask::MeshBlockTask() {
+MeshBlockTask::MeshBlockTask() : _voxels(VoxelBuffer::ALLOCATOR_POOL) {
 	++g_debug_mesh_tasks_count;
 }
 

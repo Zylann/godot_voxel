@@ -32,8 +32,8 @@ VoxelSingleValue VoxelGenerator::generate_single(Vector3i pos, unsigned int chan
 	// Default slow implementation
 	// TODO Optimize: a small part of the slowness is caused by the allocator.
 	// It is not a good use of `VoxelMemoryPool` for such a small size called so often.
-	// Instead it would be faster if it was a thread-local using the default allocator.
-	VoxelBuffer buffer;
+	// Instead it would be faster if it was using a temp allocator, or maybe stack-allocated.
+	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(1, 1, 1);
 	VoxelQueryData q{ buffer, pos, 0 };
 	generate_block(q);

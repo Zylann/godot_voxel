@@ -6,6 +6,8 @@
 
 namespace zylann::voxel {
 
+VoxelAStarGrid3DInternal::VoxelAStarGrid3DInternal() : _voxel_buffer(VoxelBuffer::ALLOCATOR_POOL) {}
+
 void VoxelAStarGrid3DInternal::init_cache() {
 	_grid_cache_size = math::ceildiv(get_region().size, Chunk::SIZE);
 	_grid_cache.resize(_grid_cache_size.x * _grid_cache_size.y * _grid_cache_size.z);

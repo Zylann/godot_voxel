@@ -289,7 +289,7 @@ Error VoxelVoxSceneImporter::_zn_import(const String &p_source_file, const Strin
 	for (unsigned int model_index = 0; model_index < data.get_model_count(); ++model_index) {
 		const magica::Model &model = data.get_model(model_index);
 
-		VoxelBuffer voxels;
+		VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 		voxels.create(model.size + Vector3iUtil::create(VoxelMesherCubes::PADDING * 2));
 		voxels.decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 

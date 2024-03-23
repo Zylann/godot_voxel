@@ -7,8 +7,8 @@ namespace zylann::voxel {
 void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data) {
 	Variant output;
 	// Create a temporary wrapper so Godot can pass it to scripts
-	Ref<godot::VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instantiate();
+	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
+			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))));
 	buffer_wrapper->get_buffer().copy_format(query_data.voxel_buffer);
 	buffer_wrapper->get_buffer().create(query_data.voxel_buffer.get_size());
 
@@ -34,8 +34,8 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 }
 
 void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
-	Ref<godot::VoxelBuffer> buffer_wrapper;
-	buffer_wrapper.instantiate();
+	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
+			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))));
 	query_data.voxel_buffer.copy_to(buffer_wrapper->get_buffer(), true);
 #if defined(ZN_GODOT)
 	if (!GDVIRTUAL_CALL(_save_voxel_block, buffer_wrapper, query_data.position_in_blocks, query_data.lod_index)) {

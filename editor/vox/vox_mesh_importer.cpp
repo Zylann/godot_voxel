@@ -172,7 +172,7 @@ void extract_model_instances(const Data &vox_data, StdVector<ModelInstance> &out
 		// TODO Optimization: implement transformation for VoxelBuffers so we can avoid using a temporary copy.
 		// Didn't do it yet because VoxelBuffers also have metadata and the `transform_3d_array_zxy` function only works
 		// on arrays.
-		UniquePtr<VoxelBuffer> voxels = make_unique_instance<VoxelBuffer>();
+		UniquePtr<VoxelBuffer> voxels = make_unique_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_DEFAULT);
 		voxels->create(dst_size);
 		voxels->decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
@@ -262,7 +262,7 @@ Error VoxelVoxMeshImporter::_zn_import(const String &p_source_file, const String
 		// TODO Optimization: this approach uses a lot of memory, might fail on scenes with a large bounding box.
 		// One workaround would be to mesh the scene incrementally in chunks, giving up greedy meshing beyond 256 or so.
 		Vector3i bounding_box_origin;
-		VoxelBuffer voxels;
+		VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 		const bool single_grid_succeeded =
 				make_single_voxel_grid(to_span_const(model_instances), bounding_box_origin, voxels);
 		ERR_FAIL_COND_V(!single_grid_succeeded, ERR_CANT_CREATE);

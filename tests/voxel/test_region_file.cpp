@@ -61,7 +61,7 @@ void test_region_file() {
 	RandomBlockGenerator generator;
 
 	// Create a block of voxels
-	VoxelBuffer voxel_buffer;
+	VoxelBuffer voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 	generator.generate(voxel_buffer);
 
 	{
@@ -84,7 +84,7 @@ void test_region_file() {
 		ZN_TEST_ASSERT(save_error == OK);
 
 		// Read back
-		VoxelBuffer loaded_voxel_buffer;
+		VoxelBuffer loaded_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ZN_TEST_ASSERT(load_error == OK);
 
@@ -100,7 +100,7 @@ void test_region_file() {
 		ZN_TEST_ASSERT(open_error == OK);
 
 		// Read back
-		VoxelBuffer loaded_voxel_buffer;
+		VoxelBuffer loaded_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 		const Error load_error = region_file.load_block(Vector3i(1, 2, 3), loaded_voxel_buffer);
 		ZN_TEST_ASSERT(load_error == OK);
 
@@ -117,7 +117,12 @@ void test_region_file() {
 
 		RandomPCG rng;
 
-		StdUnorderedMap<Vector3i, VoxelBuffer> buffers;
+		struct Chunk {
+			VoxelBuffer voxels;
+			Chunk() : voxels(VoxelBuffer::ALLOCATOR_DEFAULT) {}
+		};
+
+		StdUnorderedMap<Vector3i, Chunk> buffers;
 		const Vector3i region_size = region_file.get_format().region_size;
 
 		for (int i = 0; i < 1000; ++i) {
@@ -133,15 +138,15 @@ void test_region_file() {
 			ZN_TEST_ASSERT(save_error == OK);
 
 			// Note, the same position can occur twice, we just overwrite
-			buffers[pos] = std::move(voxel_buffer);
+			buffers[pos].voxels = std::move(voxel_buffer);
 		}
 
 		// Read back
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-			VoxelBuffer loaded_voxel_buffer;
+			VoxelBuffer loaded_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
 			ZN_TEST_ASSERT(load_error == OK);
-			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
+			ZN_TEST_ASSERT(it->second.voxels.equals(loaded_voxel_buffer));
 		}
 
 		const Error close_error = region_file.close();
@@ -153,10 +158,10 @@ void test_region_file() {
 
 		// Read back again
 		for (auto it = buffers.begin(); it != buffers.end(); ++it) {
-			VoxelBuffer loaded_voxel_buffer;
+			VoxelBuffer loaded_voxel_buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 			const Error load_error = region_file.load_block(it->first, loaded_voxel_buffer);
 			ZN_TEST_ASSERT(load_error == OK);
-			ZN_TEST_ASSERT(it->second.equals(loaded_voxel_buffer));
+			ZN_TEST_ASSERT(it->second.voxels.equals(loaded_voxel_buffer));
 		}
 	}
 }
@@ -177,7 +182,7 @@ void test_voxel_stream_region_files() {
 	RandomPCG rng;
 
 	for (int cycle = 0; cycle < 1000; ++cycle) {
-		VoxelBuffer buffer;
+		VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 		buffer.create(block_size, block_size, block_size);
 
 		// Make a block with enough data to take some significant space even if compressed

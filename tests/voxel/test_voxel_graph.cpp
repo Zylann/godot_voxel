@@ -55,10 +55,10 @@ bool check_graph_results_are_equal(VoxelGeneratorGraph &generator1, VoxelGenerat
 
 	const Vector3i block_size(16, 16, 16);
 
-	VoxelBuffer block1;
+	VoxelBuffer block1(VoxelBuffer::ALLOCATOR_DEFAULT);
 	block1.create(block_size);
 
-	VoxelBuffer block2;
+	VoxelBuffer block2(VoxelBuffer::ALLOCATOR_DEFAULT);
 	block2.create(block_size);
 
 	// Note, not every graph configuration can be considered invalid when inequal.
@@ -509,7 +509,7 @@ void test_voxel_graph_generator_texturing() {
 				ERR_FAIL_COND(generator.is_null());
 				{
 					// Block centered on origin
-					VoxelBuffer buffer;
+					VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 					buffer.create(Vector3i(16, 16, 16));
 
 					VoxelGenerator::VoxelQueryData query{ buffer, -buffer.get_size() / 2, 0 };
@@ -523,7 +523,7 @@ void test_voxel_graph_generator_texturing() {
 					// The point is to check possible bugs due to optimizations.
 
 					// Below 0
-					VoxelBuffer buffer0;
+					VoxelBuffer buffer0(VoxelBuffer::ALLOCATOR_DEFAULT);
 					{
 						buffer0.create(Vector3i(16, 16, 16));
 						VoxelGenerator::VoxelQueryData query{ buffer0, Vector3i(0, -16, 0), 0 };
@@ -531,7 +531,7 @@ void test_voxel_graph_generator_texturing() {
 					}
 
 					// Above 0
-					VoxelBuffer buffer1;
+					VoxelBuffer buffer1(VoxelBuffer::ALLOCATOR_DEFAULT);
 					{
 						buffer1.create(Vector3i(16, 16, 16));
 						VoxelGenerator::VoxelQueryData query{ buffer1, Vector3i(0, 0, 0), 0 };
@@ -732,7 +732,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 							.format(varray(compilation_result.node_id, compilation_result.message)));
 
 			// Create buffer containing part of a sphere
-			VoxelBuffer buffer;
+			VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 			buffer.create(Vector3i(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE));
 			const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 			const VoxelBuffer::Depth depth = buffer.get_channel_depth(channel);
@@ -748,7 +748,7 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 			}
 
 			// Make a backup before running the generator
-			VoxelBuffer buffer_before;
+			VoxelBuffer buffer_before(VoxelBuffer::ALLOCATOR_DEFAULT);
 			buffer_before.create(buffer.get_size());
 			buffer_before.copy_channels_from(buffer);
 
@@ -1440,7 +1440,7 @@ void test_voxel_graph_unused_single_texture_output() {
 		sorter.sort(block_positions.data(), block_positions.size());
 	}
 
-	VoxelBuffer voxels;
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 	const int BLOCK_SIZE = 16;
 	const int MIN_MARGIN = 1;
 	const int MAX_MARGIN = 2;
@@ -1689,9 +1689,9 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 
 	const int BLOCK_SIZE = 16;
 
-	VoxelBuffer voxels1;
+	VoxelBuffer voxels1(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels1.create(Vector3iUtil::create(BLOCK_SIZE));
-	VoxelBuffer voxels2;
+	VoxelBuffer voxels2(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels2.create(Vector3iUtil::create(BLOCK_SIZE));
 
 	// First do a run without the optimization
@@ -1708,9 +1708,9 @@ void test_voxel_graph_spots2d_optimized_execution_map() {
 		ZN_TEST_ASSERT(L::has_spot(voxels2) == false);
 	}
 
-	VoxelBuffer voxels3;
+	VoxelBuffer voxels3(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels3.create(Vector3iUtil::create(BLOCK_SIZE));
-	VoxelBuffer voxels4;
+	VoxelBuffer voxels4(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels4.create(Vector3iUtil::create(BLOCK_SIZE));
 
 	// Now do a run with the optimization, results must be the same

@@ -696,10 +696,10 @@ void VoxelStreamRegionFiles::_convert_files(Meta new_meta) {
 				continue;
 			}
 
-			VoxelBuffer old_block;
+			VoxelBuffer old_block(VoxelBuffer::ALLOCATOR_POOL);
 			old_block.create(old_block_size.x, old_block_size.y, old_block_size.z);
 
-			VoxelBuffer new_block;
+			VoxelBuffer new_block(VoxelBuffer::ALLOCATOR_POOL);
 			new_block.create(new_block_size.x, new_block_size.y, new_block_size.z);
 
 			// Load block from old stream

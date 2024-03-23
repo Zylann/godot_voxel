@@ -45,7 +45,7 @@ void GenerateBlockTask::run(zylann::ThreadedTaskContext &ctx) {
 	ERR_FAIL_COND(generator.is_null());
 
 	if (_voxels == nullptr) {
-		_voxels = make_shared_instance<VoxelBuffer>();
+		_voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 		_voxels->create(_block_size, _block_size, _block_size);
 	}
 
@@ -148,7 +148,7 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 					format("Requesting save of generator output for block {} lod {}", _position, int(_lod_index)));
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
-			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>();
+			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 			_voxels->copy_to(*voxels_copy, true);
 
 			// No instances, generators are not designed to produce them at this stage yet.

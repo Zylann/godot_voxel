@@ -1064,13 +1064,17 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 			!image->is_compressed(), Ref<Mesh>(), format("Image format not supported: {}", image->get_format()));
 
 	// Convert image
-	VoxelBuffer voxels;
+	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
 	voxels.set_channel_depth(VoxelBuffer::CHANNEL_COLOR, VoxelBuffer::DEPTH_32_BIT);
 	const int im_size_x = image->get_width();
 	const int im_size_y = image->get_height();
+
 	// Currently all meshers require pre-padded voxel data...
-	voxels.create(im_size_x + VoxelMesherCubes::PADDING * 2, im_size_y + VoxelMesherCubes::PADDING * 2,
+	voxels.create( //
+			im_size_x + VoxelMesherCubes::PADDING * 2, //
+			im_size_y + VoxelMesherCubes::PADDING * 2, //
 			1 + VoxelMesherCubes::PADDING * 2);
+
 	for (int y = 0; y < im_size_y; ++y) {
 		for (int x = 0; x < im_size_x; ++x) {
 			const Color cf = image->get_pixel(x, y);

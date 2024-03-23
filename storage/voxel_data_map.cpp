@@ -55,7 +55,7 @@ int VoxelDataMap::get_voxel(Vector3i pos, unsigned int c) const {
 }
 
 VoxelDataBlock *VoxelDataMap::create_default_block(Vector3i bpos) {
-	std::shared_ptr<VoxelBuffer> buffer = make_shared_instance<VoxelBuffer>();
+	std::shared_ptr<VoxelBuffer> buffer = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 	buffer->create(get_block_size(), get_block_size(), get_block_size());
 	// buffer->set_default_values(_default_voxel);
 #ifdef DEBUG_ENABLED
@@ -222,7 +222,7 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 											  .clipped(Box3i(min_pos, dst_buffer.get_size()));
 
 					// TODO Format?
-					VoxelBuffer temp;
+					VoxelBuffer temp(VoxelBuffer::ALLOCATOR_POOL);
 					temp.create(box.size);
 					gen_func(callback_data, temp, box.pos);
 

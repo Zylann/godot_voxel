@@ -41,8 +41,13 @@ public:
 private:
 	static void _bind_methods();
 
+	struct VoxelChunk {
+		VoxelBuffer voxels;
+		VoxelChunk() : voxels(VoxelBuffer::ALLOCATOR_POOL) {}
+	};
+
 	struct Lod {
-		StdUnorderedMap<Vector3i, VoxelBuffer> voxel_blocks;
+		StdUnorderedMap<Vector3i, VoxelChunk> voxel_blocks;
 		StdUnorderedMap<Vector3i, InstanceBlockData> instance_blocks;
 		Mutex mutex;
 	};

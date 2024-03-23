@@ -13,6 +13,8 @@ class VoxelTerrain;
 
 class VoxelAStarGrid3DInternal : public AStarGrid3D {
 public:
+	VoxelAStarGrid3DInternal();
+
 	// Referring to VoxelData instead of using a VoxelTool because it allows to run the search in a threaded task.
 	// VoxelTool can't be used yet in threads because it holds a pointer to a terrain node, which could get deleted at
 	// any time.

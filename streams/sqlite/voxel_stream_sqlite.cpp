@@ -909,7 +909,7 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			result_block.lod = location.lod;
 
 			if (voxel_data.size() > 0) {
-				std::shared_ptr<VoxelBuffer> voxels = make_shared_instance<VoxelBuffer>();
+				std::shared_ptr<VoxelBuffer> voxels = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
 				ERR_FAIL_COND(!BlockSerializer::decompress_and_deserialize(voxel_data, *voxels));
 				result_block.voxels = voxels;
 			}

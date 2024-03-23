@@ -25,6 +25,8 @@ public:
 
 		VoxelBuffer voxels;
 		UniquePtr<InstanceBlockData> instances;
+
+		Block() : voxels(VoxelBuffer::ALLOCATOR_POOL) {}
 	};
 
 	// Copies cached block into provided buffer

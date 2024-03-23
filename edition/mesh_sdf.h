@@ -59,6 +59,8 @@ public:
 		ChunkGrid chunk_grid;
 		bool use_chunk_grid = false;
 		bool boundary_sign_fix = false;
+
+		SharedData() : buffer(VoxelBuffer::ALLOCATOR_DEFAULT) {}
 	};
 
 	std::shared_ptr<SharedData> shared_data;

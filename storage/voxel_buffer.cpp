@@ -1,34 +1,38 @@
-#define VOXEL_BUFFER_USE_MEMORY_POOL
-
-#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
-#include "voxel_memory_pool.h"
-#endif
-
+#include "voxel_buffer.h"
 #include "../constants/voxel_constants.h"
 #include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/profiling.h"
 #include "../util/string_funcs.h"
-#include "voxel_buffer.h"
+#include "voxel_memory_pool.h"
 #include <cstring>
 
 namespace zylann::voxel {
 
-inline uint8_t *allocate_channel_data(size_t size) {
+inline uint8_t *allocate_channel_data(size_t size, VoxelBuffer::Allocator allocator) {
 	ZN_DSTACK();
-#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
-	return VoxelMemoryPool::get_singleton().allocate(size);
-#else
-	return (uint8_t *)ZN_ALLOC(size * sizeof(uint8_t));
-#endif
+	switch (allocator) {
+		case VoxelBuffer::ALLOCATOR_POOL:
+			return VoxelMemoryPool::get_singleton().allocate(size);
+		case VoxelBuffer::ALLOCATOR_DEFAULT:
+			return (uint8_t *)ZN_ALLOC(size * sizeof(uint8_t));
+		default:
+			ZN_CRASH();
+			return nullptr;
+	}
 }
 
-inline void free_channel_data(uint8_t *data, uint32_t size) {
-#ifdef VOXEL_BUFFER_USE_MEMORY_POOL
-	VoxelMemoryPool::get_singleton().recycle(data, size);
-#else
-	ZN_FREE(data);
-#endif
+inline void free_channel_data(uint8_t *data, uint32_t size, VoxelBuffer::Allocator allocator) {
+	switch (allocator) {
+		case VoxelBuffer::ALLOCATOR_POOL:
+			VoxelMemoryPool::get_singleton().recycle(data, size);
+			break;
+		case VoxelBuffer::ALLOCATOR_DEFAULT:
+			ZN_FREE(data);
+			break;
+		default:
+			ZN_CRASH();
+	}
 }
 
 // uint64_t g_depth_max_values[] = {
@@ -116,7 +120,7 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 }
 
 namespace {
-uint64_t g_default_values[VoxelBuffer::MAX_CHANNELS] = {
+const uint64_t g_default_values[VoxelBuffer::MAX_CHANNELS] = {
 	0, // TYPE
 
 	// Casted explicitly to avoid warning about narrowing conversion, the intent is to store all bits of the value
@@ -138,7 +142,24 @@ uint64_t VoxelBuffer::get_default_value_static(unsigned int channel_index) {
 	return g_default_values[channel_index];
 }
 
-VoxelBuffer::VoxelBuffer() {
+// VoxelBuffer::VoxelBuffer() {
+// 	init_channel_defaults();
+// }
+
+VoxelBuffer::VoxelBuffer(Allocator allocator) {
+	init_channel_defaults();
+	_allocator = allocator;
+}
+
+VoxelBuffer::VoxelBuffer(VoxelBuffer &&src) {
+	src.move_to(*this);
+}
+
+VoxelBuffer::~VoxelBuffer() {
+	clear();
+}
+
+void VoxelBuffer::init_channel_defaults() {
 	// By default the buffer is all COMPRESSION_UNIFORM, only one value represented in each channel.
 
 	// Minecraft uses way more than 255 block types and there is room for eventual metadata such as rotation
@@ -154,14 +175,6 @@ VoxelBuffer::VoxelBuffer() {
 
 	_channels[CHANNEL_WEIGHTS].depth = DEPTH_16_BIT;
 	_channels[CHANNEL_WEIGHTS].defval = g_default_values[CHANNEL_WEIGHTS];
-}
-
-VoxelBuffer::VoxelBuffer(VoxelBuffer &&src) {
-	src.move_to(*this);
-}
-
-VoxelBuffer::~VoxelBuffer() {
-	clear();
 }
 
 VoxelBuffer &VoxelBuffer::operator=(VoxelBuffer &&src) {
@@ -193,6 +206,7 @@ void VoxelBuffer::create(unsigned int sx, unsigned int sy, unsigned int sz) {
 		ZN_ASSERT(channel.compression == COMPRESSION_UNIFORM);
 	}
 #endif
+	// _allocator = allocator;
 }
 
 void VoxelBuffer::create(Vector3i size) {
@@ -200,11 +214,16 @@ void VoxelBuffer::create(Vector3i size) {
 }
 
 void VoxelBuffer::clear() {
-	for (unsigned int i = 0; i < MAX_CHANNELS; ++i) {
-		Channel &channel = _channels[i];
+	for (unsigned int channel_index = 0; channel_index < MAX_CHANNELS; ++channel_index) {
+		Channel &channel = _channels[channel_index];
 		if (channel.compression != COMPRESSION_UNIFORM) {
-			delete_channel(i);
+			delete_channel(channel_index);
 		}
+#ifdef DEV_ENABLED
+		ZN_ASSERT(channel.compression == COMPRESSION_UNIFORM);
+#endif
+		// Reset voxel values to defaults
+		channel.defval = g_default_values[channel_index];
 	}
 	_size = Vector3i();
 	clear_voxel_metadata();
@@ -213,12 +232,12 @@ void VoxelBuffer::clear() {
 void VoxelBuffer::clear_channel(unsigned int channel_index, uint64_t clear_value) {
 	ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 	Channel &channel = _channels[channel_index];
-	clear_channel(channel, clear_value);
+	clear_channel(channel, clear_value, _allocator);
 }
 
-void VoxelBuffer::clear_channel(Channel &channel, uint64_t clear_value) {
+void VoxelBuffer::clear_channel(Channel &channel, uint64_t clear_value, Allocator allocator) {
 	if (channel.compression != COMPRESSION_UNIFORM) {
-		delete_channel(channel);
+		delete_channel(channel, allocator);
 	}
 	channel.defval = clear_value;
 }
@@ -532,7 +551,7 @@ void VoxelBuffer::compress_uniform_channels() {
 void VoxelBuffer::compress_if_uniform(Channel &channel) {
 	if (channel.compression != COMPRESSION_UNIFORM && is_uniform(channel)) {
 		const uint64_t v = get_first_voxel(channel);
-		clear_channel(channel, v);
+		clear_channel(channel, v, _allocator);
 	}
 }
 
@@ -674,6 +693,7 @@ void VoxelBuffer::move_to(VoxelBuffer &dst) {
 
 	dst._channels = _channels;
 	dst._size = _size;
+	dst._allocator = _allocator;
 
 	dst._block_metadata = std::move(_block_metadata);
 	dst._voxel_metadata = std::move(_voxel_metadata);
@@ -723,7 +743,7 @@ bool VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
 	const size_t size_in_bytes = get_size_in_bytes_for_volume(size, channel.depth);
 	ZN_ASSERT_RETURN_V_MSG(size_in_bytes <= Channel::MAX_SIZE_IN_BYTES, false, "Buffer is too big");
 	ZN_ASSERT(channel.compression == COMPRESSION_UNIFORM); // The channel must not already be allocated
-	channel.data = allocate_channel_data(size_in_bytes);
+	channel.data = allocate_channel_data(size_in_bytes, _allocator);
 	ZN_ASSERT_RETURN_V(channel.data != nullptr, false); // Bad alloc?
 	channel.compression = COMPRESSION_NONE;
 	channel.size_in_bytes = size_in_bytes;
@@ -732,14 +752,14 @@ bool VoxelBuffer::create_channel_noinit(int i, Vector3i size) {
 
 void VoxelBuffer::delete_channel(int i) {
 	Channel &channel = _channels[i];
-	delete_channel(channel);
+	delete_channel(channel, _allocator);
 }
 
-void VoxelBuffer::delete_channel(Channel &channel) {
+void VoxelBuffer::delete_channel(Channel &channel, Allocator allocator) {
 	ZN_ASSERT_RETURN(channel.compression != COMPRESSION_UNIFORM);
 	// Don't use `_size` to obtain `data` byte count, since we could have changed `_size` up-front during a create().
 	// `size_in_bytes` reflects what is currently allocated inside `data`, regardless of anything else.
-	free_channel_data(channel.data, channel.size_in_bytes);
+	free_channel_data(channel.data, channel.size_in_bytes, allocator);
 	channel.data = nullptr;
 	channel.compression = COMPRESSION_UNIFORM;
 	channel.size_in_bytes = 0;

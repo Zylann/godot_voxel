@@ -45,6 +45,15 @@ public:
 		DEPTH_COUNT
 	};
 
+	enum Allocator : uint8_t { //
+		// General-purpose allocator. malloc, Godot's default allocator. Deallocated when the buffer is destroyed.
+		ALLOCATOR_DEFAULT,
+		// VoxelMemoryPool. Should be faster but remains allocated. Preferred if buffers of similar size are frequently
+		// created at runtime. Don't use for large, infrequent allocations or in-editor, to avoid hoarding memory.
+		ALLOCATOR_POOL,
+		ALLOCATOR_COUNT
+	};
+
 	static inline uint32_t get_depth_byte_count(VoxelBuffer::Depth d) {
 		ZN_ASSERT(d >= 0 && d < VoxelBuffer::DEPTH_COUNT);
 		return 1 << d;
@@ -101,7 +110,8 @@ public:
 		static const size_t MAX_SIZE_IN_BYTES = std::numeric_limits<uint32_t>::max();
 	};
 
-	VoxelBuffer();
+	// VoxelBuffer();
+	VoxelBuffer(Allocator allocator);
 	VoxelBuffer(VoxelBuffer &&src);
 
 	~VoxelBuffer();
@@ -110,9 +120,14 @@ public:
 
 	void create(unsigned int sx, unsigned int sy, unsigned int sz);
 	void create(Vector3i size);
+
 	void clear();
 	void clear_channel(unsigned int channel_index, uint64_t clear_value);
 	void clear_channel_f(unsigned int channel_index, real_t clear_value);
+
+	inline Allocator get_allocator() const {
+		return _allocator;
+	}
 
 	inline const Vector3i &get_size() const {
 		return _size;
@@ -467,12 +482,13 @@ public:
 	}
 
 private:
+	void init_channel_defaults();
 	bool create_channel_noinit(int i, Vector3i size);
 	bool create_channel(int i, uint64_t defval);
 	void delete_channel(int i);
 	void compress_if_uniform(Channel &channel);
-	static void delete_channel(Channel &channel);
-	static void clear_channel(Channel &channel, uint64_t clear_value);
+	static void delete_channel(Channel &channel, Allocator allocator);
+	static void clear_channel(Channel &channel, uint64_t clear_value, Allocator allocator);
 	static bool is_uniform(const Channel &channel);
 
 private:
@@ -482,6 +498,10 @@ private:
 
 	// How many voxels are there in the three directions. All populated channels have the same size.
 	Vector3i _size;
+
+	// Which allocator will be used when storing individual voxels is needed.
+	// The default is the least likely to be misused, though not necessarily the fastest.
+	Allocator _allocator = ALLOCATOR_DEFAULT;
 
 	// TODO Could we separate metadata from VoxelBuffer?
 	VoxelMetadata _block_metadata;

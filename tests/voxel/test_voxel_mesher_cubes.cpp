@@ -6,7 +6,7 @@
 namespace zylann::voxel::tests {
 
 void test_voxel_mesher_cubes() {
-	VoxelBuffer vb;
+	VoxelBuffer vb(VoxelBuffer::ALLOCATOR_DEFAULT);
 	vb.create(8, 8, 8);
 	vb.set_channel_depth(VoxelBuffer::CHANNEL_COLOR, VoxelBuffer::DEPTH_16_BIT);
 	vb.set_voxel(Color8(0, 255, 0, 255).to_u16(), Vector3i(3, 4, 4), VoxelBuffer::CHANNEL_COLOR);

@@ -3331,7 +3331,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 			continue;
 		}
 
-		VoxelBuffer buffer;
+		VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_DEFAULT);
 		buffer.create(world_box.size);
 
 		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {

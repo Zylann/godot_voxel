@@ -55,11 +55,18 @@ public:
 		DEPTH_COUNT = zylann::voxel::VoxelBuffer::DEPTH_COUNT
 	};
 
+	enum Allocator {
+		ALLOCATOR_DEFAULT = zylann::voxel::VoxelBuffer::ALLOCATOR_DEFAULT,
+		ALLOCATOR_POOL = zylann::voxel::VoxelBuffer::ALLOCATOR_POOL,
+		ALLOCATOR_COUNT
+	};
+
 	// Limit was made explicit for serialization reasons, and also because there must be a reasonable one
 	static const uint32_t MAX_SIZE = 65535;
 
 	// Constructs a new buffer
 	VoxelBuffer();
+	VoxelBuffer(VoxelBuffer::Allocator allocator);
 	// Reference an existing buffer
 	VoxelBuffer(std::shared_ptr<zylann::voxel::VoxelBuffer> &other);
 
@@ -95,9 +102,7 @@ public:
 		return _buffer->get_size();
 	}
 
-	void create(int x, int y, int z) {
-		_buffer->create(x, y, z);
-	}
+	void create(int x, int y, int z);
 	void clear();
 
 	uint64_t get_voxel(int x, int y, int z, unsigned int channel) const {
@@ -144,6 +149,8 @@ public:
 	// This returns that scale for a given depth configuration.
 	static float get_sdf_quantization_scale(Depth d);
 
+	Allocator get_allocator() const;
+
 	// Metadata
 
 	Variant get_block_metadata() const;
@@ -188,5 +195,6 @@ private:
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::ChannelId)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Depth)
 VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Compression)
+VARIANT_ENUM_CAST(zylann::voxel::godot::VoxelBuffer::Allocator)
 
 #endif // VOXEL_BUFFER_GD_H
