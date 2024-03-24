@@ -16,7 +16,7 @@
 		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="-50.0">
 			Minimum height where the surface will generate.
 		</member>
-		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="0.002">
+		<member name="iso_scale" type="float" setter="set_iso_scale" getter="get_iso_scale" default="1.0">
 			Scale applied to the signed distance field. This is useful when smooth voxels are used, to reduce blockyness over large distances.
 		</member>
 	</members>

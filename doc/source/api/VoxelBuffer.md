@@ -6,7 +6,7 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 ## Description: 
 
-This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers or normalized floats. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
+This contains dense voxels data storage (every single cell holds data, there is no sparse optimization of space). Works like a normal 3D grid containing a voxel value in each cell. Organized in channels of configurable bit depth. Values can be interpreted either as unsigned integers, fixed-point or floats. See [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) for more information.
 
 Arbitrary metadata can also be stored, either for the whole buffer, or per-voxel, at higher cost. This metadata can get saved and loaded along voxels, however you must make sure the data is serializable (i.e it should not contain nodes or arbitrary objects).
 
@@ -66,8 +66,8 @@ enum **ChannelId**:
 
 enum **Depth**: 
 
-- <span id="i_DEPTH_8_BIT"></span>**DEPTH_8_BIT** = **0** --- Voxels will be stored with 8 bits. Raw values will range from 0 to 255, and float values will be normalized between -1 and 1 (but will still take 255 possible values). Values outside the range will be clamped. If you use this for smooth voxels, you may take care of scaling SDF data with a small number like 0.1 to reduce precision artifacts.
-- <span id="i_DEPTH_16_BIT"></span>**DEPTH_16_BIT** = **1** --- Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535, and float values will be normalized between -1 and 1 (but will still take 65535 possible values). Values outside the range will be clamped.
+- <span id="i_DEPTH_8_BIT"></span>**DEPTH_8_BIT** = **0** --- Voxels will be stored with 8 bits. Raw values will range from 0 to 255. Float values can take 255 values distributed from -10.0 to 10.0. Values outside the range will be clamped.
+- <span id="i_DEPTH_16_BIT"></span>**DEPTH_16_BIT** = **1** --- Voxels will be stored with 16 bits. Raw values will range from 0 to 65,535. Float values can take 65,535 values distributed from -500.0 to 500.0. Values outside the range will be clamped.
 - <span id="i_DEPTH_32_BIT"></span>**DEPTH_32_BIT** = **2** --- Voxels will be stored with 32 bits. Raw values will range from 0 to 4,294,967,295, and float values will use regular IEEE 754 representation (`float`).
 - <span id="i_DEPTH_64_BIT"></span>**DEPTH_64_BIT** = **3** --- Voxels will be stored with 64 bits. Raw values will range from 0 to 18,446,744,073,709,551,615, and float values will use regular IEEE 754 representation (`double`).
 - <span id="i_DEPTH_COUNT"></span>**DEPTH_COUNT** = **4** --- How many depth configuration there are.

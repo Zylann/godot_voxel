@@ -76,7 +76,8 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	if (origin.y + (bs.y << lod) < params.height - margin) {
 		// The top of the block is below the lowest ground can go
 		if (use_sdf) {
-			out_buffer.clear_channel_f(params.channel, -1);
+			// Not consistent SDF but should work ok
+			out_buffer.clear_channel_f(params.channel, -100.0);
 		} else {
 			out_buffer.clear_channel(params.channel, params.voxel_type);
 		}
@@ -93,7 +94,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 			for (int x = 0; x < bs.x; ++x, gx += stride) {
 				int gy = origin.y;
 				for (int y = 0; y < bs.y; ++y, gy += stride) {
-					float sdf = params.iso_scale * (gy - params.height);
+					const float sdf = params.iso_scale * (gy - params.height);
 					out_buffer.set_voxel_f(sdf, x, y, z, channel);
 				}
 
@@ -107,7 +108,7 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 		for (int z = 0; z < bs.z; ++z, gz += stride) {
 			int gx = origin.x;
 			for (int x = 0; x < bs.x; ++x, gx += stride) {
-				float h = params.height - origin.y;
+				const float h = params.height - origin.y;
 				int ih = int(h);
 				if (ih > 0) {
 					if (ih > bs.y) {

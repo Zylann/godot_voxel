@@ -9,7 +9,7 @@
 namespace zylann::voxel {
 
 VoxelTool::VoxelTool() {
-	_sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
+	_sdf_scale = 1.f; // VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
 }
 
 void VoxelTool::set_value(uint64_t val) {
@@ -127,7 +127,8 @@ void VoxelTool::do_point(Vector3i pos) {
 		return;
 	}
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
-		_set_voxel_f(pos, _mode == MODE_REMOVE ? 1.0 : -1.0);
+		// Not consistent SDF, but should work
+		_set_voxel_f(pos, _mode == MODE_REMOVE ? constants::SDF_FAR_OUTSIDE : constants::SDF_FAR_INSIDE);
 	} else {
 		_set_voxel(pos, _mode == MODE_REMOVE ? _eraser_value : _value);
 	}
@@ -237,7 +238,8 @@ void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
 		const float dst_sdf =
 				stamp.get_voxel_f(pos_in_stamp.x, pos_in_stamp.y, pos_in_stamp.z, VoxelBuffer::CHANNEL_SDF);
 		if (dst_sdf <= 0.f) {
-			_set_voxel_f(pos_in_volume, 1.f);
+			// Not consistent SDF, but should work ok
+			_set_voxel_f(pos_in_volume, constants::SDF_FAR_OUTSIDE);
 		}
 	});
 
@@ -256,7 +258,10 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// TODO Better quality
-		box.for_each_cell([this](Vector3i pos) { _set_voxel_f(pos, sdf_blend(-1.0, get_voxel_f(pos), _mode)); });
+		// Not consistent SDF, but should work ok
+		box.for_each_cell([this](Vector3i pos) {
+			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), _mode));
+		});
 
 	} else {
 		int value = _mode == MODE_REMOVE ? _eraser_value : _value;

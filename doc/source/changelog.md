@@ -59,6 +59,7 @@ Primarily developped with Godot 4.2.
         - Fixed `separate_floating_chunks` was spawning chunks not exactly at the same place
 
 - Breaking changes
+    - `VoxelBuffer`: `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies)
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
     - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array

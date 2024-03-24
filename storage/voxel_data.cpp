@@ -271,7 +271,7 @@ bool VoxelData::try_set_voxel(uint64_t value, Vector3i pos, unsigned int channel
 
 float VoxelData::get_voxel_f(Vector3i pos, unsigned int channel_index) const {
 	VoxelSingleValue defval;
-	defval.f = 1.f;
+	defval.f = constants::SDF_FAR_OUTSIDE;
 	return get_voxel(pos, channel_index, defval).f;
 }
 

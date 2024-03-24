@@ -736,13 +736,12 @@ void test_voxel_graph_generate_block_with_input_sdf() {
 			buffer.create(Vector3i(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE));
 			const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 			const VoxelBuffer::Depth depth = buffer.get_channel_depth(channel);
-			const float sd_scale = VoxelBuffer::get_sdf_quantization_scale(depth);
 			for (int z = 0; z < buffer.get_size().z; ++z) {
 				for (int x = 0; x < buffer.get_size().x; ++x) {
 					for (int y = 0; y < buffer.get_size().y; ++y) {
 						// Sphere at origin
 						const float sd = math::sdf_sphere(Vector3(x, y, z), Vector3(), SPHERE_RADIUS);
-						buffer.set_voxel_f(sd * sd_scale, Vector3i(x, y, z), channel);
+						buffer.set_voxel_f(sd, Vector3i(x, y, z), channel);
 					}
 				}
 			}

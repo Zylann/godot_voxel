@@ -236,19 +236,17 @@ void test_discord_soakil_copypaste() {
 	});
 
 	struct L {
-		static void check_original(VoxelData &vd, float sdf_dequantize) {
+		static void check_original(VoxelData &vd) {
 			// Air above platform
-			const float sd_above_platform =
-					vd.get_voxel_f(Vector3i(0, 5, 0), VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+			const float sd_above_platform = vd.get_voxel_f(Vector3i(0, 5, 0), VoxelBuffer::CHANNEL_SDF);
 			ZN_TEST_ASSERT(sd_above_platform > 0.01f);
 
 			// Matter in platform
-			const float sd_in_platform = vd.get_voxel_f(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+			const float sd_in_platform = vd.get_voxel_f(Vector3i(0, 0, 0), VoxelBuffer::CHANNEL_SDF);
 			ZN_TEST_ASSERT(sd_in_platform < -0.01f);
 
 			// Air below platform
-			const float sd_below_platform =
-					vd.get_voxel_f(Vector3i(0, -5, 0), VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+			const float sd_below_platform = vd.get_voxel_f(Vector3i(0, -5, 0), VoxelBuffer::CHANNEL_SDF);
 			ZN_TEST_ASSERT(sd_below_platform > 0.01f);
 
 			// Material
@@ -283,32 +281,23 @@ void test_discord_soakil_copypaste() {
 	};
 
 	// Checks terrain is as we expect
-	L::check_original(voxel_data,
-			// No edits yet, so SDF won't be quantized...
-			1.f);
+	L::check_original(voxel_data);
 
 	VoxelBuffer buffer_before_edit(VoxelBuffer::ALLOCATOR_DEFAULT);
 	buffer_before_edit.create(Vector3i(20, 20, 20));
 	const Vector3i undo_pos(-10, -10, -10);
 	voxel_data.copy(undo_pos, buffer_before_edit, 0xff);
 
-	// TODO This sucks, eventually we should have an API that does this automatically?
-	const float sdf_dequantize = 1.f /
-			VoxelBuffer::get_sdf_quantization_scale(buffer_before_edit.get_channel_depth(VoxelBuffer::CHANNEL_SDF));
-
 	// Check the copy
 	{
-		const float sd_above_platform =
-				buffer_before_edit.get_voxel_f(Vector3i(10, 19, 10), VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+		const float sd_above_platform = buffer_before_edit.get_voxel_f(Vector3i(10, 19, 10), VoxelBuffer::CHANNEL_SDF);
 		ZN_TEST_ASSERT(sd_above_platform > 0.01f);
 
 		const Vector3i pos_in_platform(10, 10, 10);
-		const float sd_in_platform =
-				buffer_before_edit.get_voxel_f(pos_in_platform, VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+		const float sd_in_platform = buffer_before_edit.get_voxel_f(pos_in_platform, VoxelBuffer::CHANNEL_SDF);
 		ZN_TEST_ASSERT(sd_in_platform < -0.01f);
 
-		const float sd_below_platform =
-				buffer_before_edit.get_voxel_f(Vector3i(10, 0, 10), VoxelBuffer::CHANNEL_SDF) * sdf_dequantize;
+		const float sd_below_platform = buffer_before_edit.get_voxel_f(Vector3i(10, 0, 10), VoxelBuffer::CHANNEL_SDF);
 		ZN_TEST_ASSERT(sd_below_platform > 0.01f);
 
 		const uint16_t packed_indices_in_platform =
@@ -343,7 +332,7 @@ void test_discord_soakil_copypaste() {
 
 	// Checks terrain is still as we expect. Not relying on copy() followed by equals(), because copy() is part of what
 	// we are testing
-	L::check_original(voxel_data, sdf_dequantize);
+	L::check_original(voxel_data);
 }
 
 } // namespace zylann::voxel::tests

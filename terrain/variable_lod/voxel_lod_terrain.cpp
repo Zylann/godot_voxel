@@ -3316,7 +3316,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {
 			const Vector3i rpos = world_pos - world_box.pos;
 			VoxelSingleValue v;
-			v.f = 1.f;
+			v.f = constants::SDF_FAR_OUTSIDE;
 			v = voxel_data.get_voxel(world_pos, VoxelBuffer::CHANNEL_SDF, v);
 			buffer.set_voxel_f(v.f, rpos.x, rpos.y, rpos.z, VoxelBuffer::CHANNEL_SDF);
 		});

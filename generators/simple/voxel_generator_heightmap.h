@@ -77,7 +77,7 @@ protected:
 					float h = params.range.xform(height_func(gx, gz));
 					int gy = origin.y;
 					for (int y = 0; y < bs.y; ++y, gy += stride) {
-						float sdf = params.iso_scale * (gy - h);
+						const float sdf = params.iso_scale * (gy - h);
 						out_buffer.set_voxel_f(sdf, x, y, z, channel);
 					}
 
@@ -158,9 +158,7 @@ private:
 		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		int matter_type = 1;
 		Range range;
-		// TODO Get rid of that scale, apply it differently. It exists because of the compression format in 16-bit and
-		// 8-bit channels of VoxelBuffer
-		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;
+		float iso_scale = 1.f;
 	};
 
 	RWLock _parameters_lock;

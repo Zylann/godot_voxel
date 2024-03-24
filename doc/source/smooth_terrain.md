@@ -13,6 +13,8 @@ In order to represent smooth terrain, using a grid with points being either 0 or
 
 For any point in space, a signed distance field (SDF) is a distance to the closest surface. It is "signed" because if the point is below a surface ("inside of something"), that distance becomes negative. That means the surface is defined by all the points for which the SDF is 0. That `0` is usually called the `isolevel`.
 
+For example, `1` means we are 1 unit away from the shape. `-1` means we are 1 unit inside the shape. `0` means we are exactly on the shape's surface.
+
 SDF is commonly used in raymarching shaders as a way to define volumes. It is also used in the Transvoxel algorithm (a variant of Marching Cubes), which is implemented by this engine. So instead of discrete values, voxels store a sort of smooth "gradient" of distances.
 
 
@@ -51,7 +53,9 @@ Every voxel now contains a slowly changing gradient, so when Transvoxel marches 
 ![SDF sphere blocky](images/sdf_sphere_smooth.webp)
 
 
-### Scaling and clamping
+### SDF encoding
+
+#### Clamping
 
 This engine allows to edit voxels and save them. Storing true SDF can be expensive for games. For example, because it is a *distance*, if a player builds a small tower on the ground, we would have to keep voxels up to date far away in the sky, just because the tower made the ground slightly closer to them. So in practice, it is not required to deal with exact SDF. We only need something that's good enough, so the gradients can vary at different speeds and modifications can stay "local".
 
@@ -63,9 +67,23 @@ So the sphere SDF we've seen earlier would actually look like this in the data:
 
 Over multiple chunks, all regions without a gradient will take very little space in memory.
 
-To save further memory, this engine does not store SDF using 32-bit `float` numbers (not by default). Instead, it uses either 8-bit or 16-bit integers, which are interpreted as fixed-point decimal numbers between -1 and 1. Anything lower or higher is clamped. That means the distance we want to store has to be scaled to best exploit this interval.
+#### Quantization
 
-In practice, it means before storing SDF in a `VoxelBuffer`, we scale it by `0.1`, or lower when using 16-bit. The lower the scale, the longer the gradient will span before it gets clamped, but the more memory will be used to store that variation. It should not be too low either, because 16-bit cannot represent variations that are too small. This scale may need to be tweaked if you use a lot of LOD levels, because if voxels are seen from very far away, the gradient will need to extend for long enough to remain smooth.
+To save further memory, this engine does not store SDF using 32-bit `float` numbers (not by default). Instead, it uses either 8-bit or 16-bit integers, which are interpreted as fixed-point decimal numbers. Internally, a practical range of value is chosen to distribute a more limited amount of decimal values.
+By default, the engine uses 16-bit.
+
+Depth  | Minimum   | Maximum   | Step
+-------|-----------|-----------|-------
+8-bit  | -10.0     | 10.0      | ~0.078
+16-bit | -500.0    | 500.0     | ~0.015
+
+When set to 32-bit, buffers will use `float` numbers directly.
+
+In practice, it means that when you store signed distances into a `VoxelBuffer`, there will be a bit of imprecision when getting the values back.
+
+When using LOD, 16-bit ranges that can extend relatively far is useful to keep gradients going as chunks become larger and larger. With 8-bit, gradients would become so relatively small that the results would start to get clamped, resulting in blocky appearance.
+
+#### Links
 
 For more information about SDF and other domains where they are used, you can check out some of these videos:
 

@@ -452,8 +452,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	Span<float> y_cache = to_span(cache.y_cache);
 	Span<float> z_cache = to_span(cache.z_cache);
 
-	const float air_sdf = _debug_clipped_blocks ? -1.f : 1.f;
-	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
+	const float air_sdf = _debug_clipped_blocks ? constants::SDF_FAR_INSIDE : constants::SDF_FAR_OUTSIDE;
+	const float matter_sdf = _debug_clipped_blocks ? constants::SDF_FAR_OUTSIDE : constants::SDF_FAR_INSIDE;
 
 	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
 	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
@@ -725,8 +725,8 @@ bool VoxelGeneratorGraph::generate_broad_block(VoxelGenerator::VoxelQueryData &i
 	pg::Runtime &runtime = runtime_ptr->runtime;
 	runtime.prepare_state(cache.state, 1, false);
 
-	const float air_sdf = _debug_clipped_blocks ? -1.f : 1.f;
-	const float matter_sdf = _debug_clipped_blocks ? 1.f : -1.f;
+	const float air_sdf = _debug_clipped_blocks ? constants::SDF_FAR_INSIDE : constants::SDF_FAR_OUTSIDE;
+	const float matter_sdf = _debug_clipped_blocks ? constants::SDF_FAR_OUTSIDE : constants::SDF_FAR_INSIDE;
 
 	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
 	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
@@ -1085,7 +1085,7 @@ void VoxelGeneratorGraph::generate_series(Span<const float> positions_x, Span<co
 	switch (channel) {
 		case VoxelBuffer::CHANNEL_SDF:
 			buffer_index = runtime_ptr->sdf_output_buffer_index;
-			defval = 1.f;
+			defval = VoxelBuffer::get_default_value_static(channel);
 			break;
 		case VoxelBuffer::CHANNEL_TYPE:
 			buffer_index = runtime_ptr->type_output_buffer_index;

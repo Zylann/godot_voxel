@@ -119,7 +119,7 @@ float VoxelToolMultipassGenerator::_get_voxel_f(Vector3i pos) const {
 	Vector3i rpos;
 	Block *block = get_block_and_relative_position(pos, rpos);
 	if (block == nullptr) {
-		return 1.f;
+		return constants::SDF_FAR_OUTSIDE;
 	}
 	return block->voxels.get_voxel_f(rpos, _channel);
 }

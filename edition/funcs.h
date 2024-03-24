@@ -181,7 +181,8 @@ struct SdfOperation16bit {
 	Op op;
 	Shape shape;
 	inline int16_t operator()(Vector3i pos, int16_t sdf) const {
-		return snorm_to_s16(op(s16_to_snorm(sdf), shape(Vector3(pos))));
+		return snorm_to_s16(op(s16_to_snorm(sdf) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV, shape(Vector3(pos))) *
+				constants::QUANTIZED_SDF_16_BITS_SCALE);
 	}
 };
 
@@ -292,7 +293,7 @@ struct SdfBufferShape {
 		if (lpos.x < 0 || lpos.y < 0 || lpos.z < 0 || lpos.x >= buffer_size.x || lpos.y >= buffer_size.y ||
 				lpos.z >= buffer_size.z) {
 			// Outside the buffer
-			return 100;
+			return constants::SDF_FAR_OUTSIDE;
 		}
 		// TODO Trilinear looks bad when the shape is scaled up.
 		// Use Hermite in 3D https://www.researchgate.net/publication/360206102_Hermite_interpolation_of_heightmaps

@@ -169,7 +169,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 		result.max_lod_hint = true;
 
 	} else {
-		const float iso_scale = 0.1f;
+		// const float iso_scale = 0.1f;
 		const Vector3i size = buffer.get_size();
 		const float height_range_inv = 1.f / params.height_range;
 		// const float one_minus_persistence = 1.f - noise.get_persistence();
@@ -186,7 +186,8 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 					if (ly < isosurface_lower_bound) {
 						// Below is only matter
 						if (params.channel == VoxelBuffer::CHANNEL_SDF) {
-							buffer.set_voxel_f(-1, x, y, z, params.channel);
+							// Not consistent SDF but should work ok
+							buffer.set_voxel_f(constants::SDF_FAR_INSIDE, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 							buffer.set_voxel(matter_type, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
@@ -197,7 +198,8 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 					} else if (ly >= isosurface_upper_bound) {
 						// Above is only air
 						if (params.channel == VoxelBuffer::CHANNEL_SDF) {
-							buffer.set_voxel_f(1, x, y, z, params.channel);
+							// Not consistent SDF but should work ok
+							buffer.set_voxel_f(constants::SDF_FAR_OUTSIDE, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_TYPE) {
 							buffer.set_voxel(air_type, x, y, z, params.channel);
 						} else if (params.channel == VoxelBuffer::CHANNEL_COLOR) {
@@ -213,7 +215,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 					// We are near the isosurface, need to calculate noise value
 					// float n = get_shaped_noise(noise, lx, ly, lz, one_minus_persistence, bias);
 					const float n = noise.get_noise_3d(lx, ly, lz);
-					const float d = (n + bias) * iso_scale;
+					const float d = (n + bias); // * iso_scale;
 
 					if (params.channel == VoxelBuffer::CHANNEL_SDF) {
 						buffer.set_voxel_f(d, x, y, z, params.channel);

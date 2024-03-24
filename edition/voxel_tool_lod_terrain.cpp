@@ -95,7 +95,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 		bool operator()(const VoxelRaycastState &rs) {
 			// This is not particularly optimized, but runs fast enough for player raycasts
 			VoxelSingleValue defval;
-			defval.f = 1.f;
+			defval.f = constants::SDF_FAR_OUTSIDE;
 			const VoxelSingleValue v = data.get_voxel(rs.hit_position, VoxelBuffer::CHANNEL_SDF, defval);
 			return v.f < 0;
 		}
@@ -137,7 +137,7 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 
 				inline float operator()(const Vector3i &pos) const {
 					VoxelSingleValue defval;
-					defval.f = 1.f;
+					defval.f = constants::SDF_FAR_OUTSIDE;
 					const VoxelSingleValue value = data.get_voxel(pos, VoxelBuffer::CHANNEL_SDF, defval);
 					return value.f;
 				}
@@ -319,7 +319,7 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 	return get_sdf_interpolated(
 			[&data, channel](Vector3i ipos) {
 				VoxelSingleValue defval;
-				defval.f = 1.f;
+				defval.f = constants::SDF_FAR_OUTSIDE;
 				VoxelSingleValue value = data.get_voxel(ipos, channel, defval);
 				return value.f;
 			},
@@ -336,7 +336,7 @@ uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
 float VoxelToolLodTerrain::_get_voxel_f(Vector3i pos) const {
 	ERR_FAIL_COND_V(_terrain == nullptr, 0);
 	VoxelSingleValue defval;
-	defval.f = 1.f;
+	defval.f = constants::SDF_FAR_OUTSIDE;
 	return _terrain->get_storage().get_voxel(pos, _channel, defval).f;
 }
 
@@ -629,7 +629,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Box3i inner_box(Vector3iUtil::create(min_padding),
 					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding));
 			Box3i(Vector3i(), buffer.get_size()).difference(inner_box, [&buffer](Box3i box) {
-				buffer.fill_area_f(1.f, box.pos, box.pos + box.size, main_channel);
+				buffer.fill_area_f(constants::SDF_FAR_OUTSIDE, box.pos, box.pos + box.size, main_channel);
 			});
 
 			// Filter out voxels that don't belong to this label
@@ -641,7 +641,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 						const uint8_t label2 = ccl_output[ccl_index];
 
 						if (label2 != 0 && label != label2) {
-							buffer.set_voxel_f(1.f, min_padding + x - local_bounds.min_pos.x,
+							buffer.set_voxel_f(constants::SDF_FAR_OUTSIDE, min_padding + x - local_bounds.min_pos.x,
 									min_padding + y - local_bounds.min_pos.y, min_padding + z - local_bounds.min_pos.z,
 									main_channel);
 						}

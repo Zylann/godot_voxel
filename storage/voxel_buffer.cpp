@@ -71,10 +71,10 @@ union MarshallDouble {
 inline uint64_t real_to_raw_voxel(real_t value, VoxelBuffer::Depth depth) {
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return snorm_to_s8(value);
+			return snorm_to_s8(value * constants::QUANTIZED_SDF_8_BITS_SCALE);
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			return snorm_to_s16(value);
+			return snorm_to_s16(value * constants::QUANTIZED_SDF_16_BITS_SCALE);
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -96,10 +96,10 @@ inline real_t raw_voxel_to_real(uint64_t value, VoxelBuffer::Depth depth) {
 	// Depths below 32 are normalized between -1 and 1
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT:
-			return s8_to_snorm(value);
+			return s8_to_snorm(value) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
 
 		case VoxelBuffer::DEPTH_16_BIT:
-			return s16_to_snorm(value);
+			return s16_to_snorm(value) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			MarshallFloat m;
@@ -940,8 +940,9 @@ void VoxelBuffer::get_range_f(float &out_min, float &out_max, ChannelId channel_
 			CRASH_NOW();
 	}
 
-	out_min = min_value;
-	out_max = max_value;
+	const float q = get_sdf_quantization_scale(channel.depth);
+	out_min = min_value * q;
+	out_max = max_value * q;
 }
 
 const VoxelMetadata *VoxelBuffer::get_voxel_metadata(Vector3i pos) const {
@@ -1067,10 +1068,8 @@ void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 	const VoxelBuffer::Depth depth = voxels.get_channel_depth(channel);
 
-	const float inv_scale = 1.f / VoxelBuffer::get_sdf_quantization_scale(depth);
-
 	if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
-		const float uniform_value = inv_scale * voxels.get_voxel_f(0, 0, 0, channel);
+		const float uniform_value = voxels.get_voxel_f(0, 0, 0, channel);
 		sdf.fill(uniform_value);
 		return;
 	}
@@ -1110,8 +1109,10 @@ void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 			ZN_CRASH();
 	}
 
-	for (unsigned int i = 0; i < sdf.size(); ++i) {
-		sdf[i] *= inv_scale;
+	const float inv_scale = 1.f / VoxelBuffer::get_sdf_quantization_scale(depth);
+
+	for (float &sd : sdf) {
+		sd *= inv_scale;
 	}
 }
 

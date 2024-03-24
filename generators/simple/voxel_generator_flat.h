@@ -39,7 +39,7 @@ private:
 		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
 		int voxel_type = 1;
 		float height = 0;
-		float iso_scale = constants::QUANTIZED_SDF_16_BITS_SCALE;
+		float iso_scale = 1.f;
 	};
 
 	Parameters _parameters;
