@@ -62,6 +62,7 @@ Primarily developped with Godot 4.2.
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
     - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
+    - `VoxelGraphFunction`: some members of the `NodeTypeID` enum have changed value. However, this enum's values shouldn't be used raw, and shouldn't be used in saves.
 
 
 1.1 - 29/12/2023 - `1.1`

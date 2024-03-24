@@ -6,6 +6,7 @@
 	<description>
 		Contains a graph that can be used to generate voxel data (when used as main function of a generator), or to be re-used into other graphs (like a sub-graph).
 		Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph].
+		Note: node types are identified with the enum [enum VoxelGraphFunction.NodeTypeID]. This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
 	</description>
 	<tutorials>
 	</tutorials>

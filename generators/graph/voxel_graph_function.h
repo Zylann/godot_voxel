@@ -71,10 +71,6 @@ public:
 		NODE_FAST_NOISE_GRADIENT_3D,
 		NODE_OUTPUT_WEIGHT,
 		NODE_OUTPUT_TYPE,
-#ifdef VOXEL_ENABLE_FAST_NOISE_2
-		NODE_FAST_NOISE_2_2D,
-		NODE_FAST_NOISE_2_3D,
-#endif
 		NODE_OUTPUT_SINGLE_TEXTURE,
 		NODE_EXPRESSION,
 		NODE_POWI, // pow(x, constant positive integer)
@@ -87,6 +83,14 @@ public:
 		NODE_RELAY,
 		NODE_SPOTS_2D,
 		NODE_SPOTS_3D,
+
+	// Optional features down (to avoid diffs in docs when building both versions)
+	// Keep in mind this enum's values should not be used in persistent context (saves)
+
+#ifdef VOXEL_ENABLE_FAST_NOISE_2
+		NODE_FAST_NOISE_2_2D,
+		NODE_FAST_NOISE_2_3D,
+#endif
 
 		NODE_TYPE_COUNT
 	};
