@@ -608,7 +608,7 @@ void VoxelBuffer::copy_channel_from(const VoxelBuffer &other, unsigned int chann
 
 	} else {
 		// Other is uniform, deallocate our channel too
-		if (channel.data != nullptr) {
+		if (channel.compression != COMPRESSION_UNIFORM) {
 			delete_channel(channel_index);
 		}
 		channel.defval = other_channel.defval;
