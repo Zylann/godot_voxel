@@ -8,4 +8,6 @@ Implementation of the [VoxelTool](VoxelTool.md) API for [VoxelBuffer](VoxelBuffe
 
 There are no functions specific to [VoxelBuffer](VoxelBuffer.md). You may check generic ones in [VoxelTool](VoxelTool.md).
 
-_Generated on Feb 24, 2024_
+Note: contrary to other implementations, this one allows editing even if the area is partially out of bounds.
+
+_Generated on Mar 24, 2024_

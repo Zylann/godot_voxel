@@ -30,6 +30,7 @@ Return                                                                          
 [void](#)                                                                       | [fill_f](#i_fill_f) ( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 )                                                                                                                                                                                                                                                             
 [void](#)                                                                       | [for_each_voxel_metadata](#i_for_each_voxel_metadata) ( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback ) const                                                                                                                                                                                                                                                                                            
 [void](#)                                                                       | [for_each_voxel_metadata_in_area](#i_for_each_voxel_metadata_in_area) ( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min_pos, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max_pos )                                                                                                  
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_allocator](#i_get_allocator) ( ) const                                                                                                                                                                                                                                                                                                                                                                                                        
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)    | [get_block_metadata](#i_get_block_metadata) ( ) const                                                                                                                                                                                                                                                                                                                                                                                              
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_channel_compression](#i_get_channel_compression) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                       
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_channel_depth](#i_get_channel_depth) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                                   
@@ -76,6 +77,12 @@ enum **Compression**:
 - <span id="i_COMPRESSION_NONE"></span>**COMPRESSION_NONE** = **0** --- The channel is not compressed. Every value is stored individually inside an array in memory.
 - <span id="i_COMPRESSION_UNIFORM"></span>**COMPRESSION_UNIFORM** = **1** --- All voxels of the channel have the same value, so they are stored as one single value, to save space.
 - <span id="i_COMPRESSION_COUNT"></span>**COMPRESSION_COUNT** = **2** --- How many compression modes there are.
+
+enum **Allocator**: 
+
+- <span id="i_ALLOCATOR_DEFAULT"></span>**ALLOCATOR_DEFAULT** = **0**
+- <span id="i_ALLOCATOR_POOL"></span>**ALLOCATOR_POOL** = **1**
+- <span id="i_ALLOCATOR_COUNT"></span>**ALLOCATOR_COUNT** = **2**
 
 
 ## Constants: 
@@ -164,6 +171,9 @@ IMPORTANT: inserting new or removing metadata from inside this function is not a
 
 Executes a function on every voxel in this buffer which have associated metadata, within the specified area.
 
+- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_allocator"></span> **get_allocator**( ) 
+
+
 - [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_block_metadata"></span> **get_block_metadata**( ) 
 
 Gets metadata associated to this [VoxelBuffer](VoxelBuffer.md).
@@ -233,4 +243,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

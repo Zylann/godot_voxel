@@ -11,34 +11,46 @@ Renders large terrain using variable level of details. This is preferably used w
 ## Properties: 
 
 
-Type        | Name                                                                               | Default                                                                               
------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------
-`int`       | [collision_layer](#i_collision_layer)                                              | 1                                                                                     
-`int`       | [collision_lod_count](#i_collision_lod_count)                                      | 0                                                                                     
-`float`     | [collision_margin](#i_collision_margin)                                            | 0.04                                                                                  
-`int`       | [collision_mask](#i_collision_mask)                                                | 1                                                                                     
-`int`       | [collision_update_delay](#i_collision_update_delay)                                | 0                                                                                     
-`bool`      | [full_load_mode_enabled](#i_full_load_mode_enabled)                                | false                                                                                 
-`bool`      | [generate_collisions](#i_generate_collisions)                                      | true                                                                                  
-`int`       | [lod_count](#i_lod_count)                                                          | 4                                                                                     
-`float`     | [lod_distance](#i_lod_distance)                                                    | 48.0                                                                                  
-`float`     | [lod_fade_duration](#i_lod_fade_duration)                                          | 0.0                                                                                   
-`Material`  | [material](#i_material)                                                            |                                                                                       
-`int`       | [mesh_block_size](#i_mesh_block_size)                                              | 16                                                                                    
-`int`       | [normalmap_begin_lod_index](#i_normalmap_begin_lod_index)                          | 2                                                                                     
-`bool`      | [normalmap_enabled](#i_normalmap_enabled)                                          | false                                                                                 
-`int`       | [normalmap_max_deviation_degrees](#i_normalmap_max_deviation_degrees)              | 60                                                                                    
-`bool`      | [normalmap_octahedral_encoding_enabled](#i_normalmap_octahedral_encoding_enabled)  | false                                                                                 
-`int`       | [normalmap_tile_resolution_max](#i_normalmap_tile_resolution_max)                  | 8                                                                                     
-`int`       | [normalmap_tile_resolution_min](#i_normalmap_tile_resolution_min)                  | 4                                                                                     
-`bool`      | [normalmap_use_gpu](#i_normalmap_use_gpu)                                          | false                                                                                 
-`bool`      | [run_stream_in_editor](#i_run_stream_in_editor)                                    | true                                                                                  
-`float`     | [secondary_lod_distance](#i_secondary_lod_distance)                                | 48.0                                                                                  
-`int`       | [streaming_system](#i_streaming_system)                                            | 0                                                                                     
-`bool`      | [threaded_update_enabled](#i_threaded_update_enabled)                              | false                                                                                 
-`bool`      | [use_gpu_generation](#i_use_gpu_generation)                                        | false                                                                                 
-`int`       | [view_distance](#i_view_distance)                                                  | 512                                                                                   
-`AABB`      | [voxel_bounds](#i_voxel_bounds)                                                    | AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09) 
+Type        | Name                                                                                               | Default                                                                               
+----------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------
+`int`       | [collision_layer](#i_collision_layer)                                                              | 1                                                                                     
+`int`       | [collision_lod_count](#i_collision_lod_count)                                                      | 0                                                                                     
+`float`     | [collision_margin](#i_collision_margin)                                                            | 0.04                                                                                  
+`int`       | [collision_mask](#i_collision_mask)                                                                | 1                                                                                     
+`int`       | [collision_update_delay](#i_collision_update_delay)                                                | 0                                                                                     
+`bool`      | [debug_draw_active_mesh_blocks](#i_debug_draw_active_mesh_blocks)                                  | false                                                                                 
+`bool`      | [debug_draw_active_visual_and_collision_blocks](#i_debug_draw_active_visual_and_collision_blocks)  | false                                                                                 
+`bool`      | [debug_draw_edit_boxes](#i_debug_draw_edit_boxes)                                                  | false                                                                                 
+`bool`      | [debug_draw_edited_blocks](#i_debug_draw_edited_blocks)                                            | false                                                                                 
+`bool`      | [debug_draw_enabled](#i_debug_draw_enabled)                                                        | false                                                                                 
+`bool`      | [debug_draw_loaded_visual_and_collision_blocks](#i_debug_draw_loaded_visual_and_collision_blocks)  | false                                                                                 
+`bool`      | [debug_draw_mesh_updates](#i_debug_draw_mesh_updates)                                              | false                                                                                 
+`bool`      | [debug_draw_modifier_bounds](#i_debug_draw_modifier_bounds)                                        | false                                                                                 
+`bool`      | [debug_draw_octree_bounds](#i_debug_draw_octree_bounds)                                            | false                                                                                 
+`bool`      | [debug_draw_octree_nodes](#i_debug_draw_octree_nodes)                                              | false                                                                                 
+`bool`      | [debug_draw_viewer_clipboxes](#i_debug_draw_viewer_clipboxes)                                      | false                                                                                 
+`bool`      | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                                            | false                                                                                 
+`bool`      | [full_load_mode_enabled](#i_full_load_mode_enabled)                                                | false                                                                                 
+`bool`      | [generate_collisions](#i_generate_collisions)                                                      | true                                                                                  
+`int`       | [lod_count](#i_lod_count)                                                                          | 4                                                                                     
+`float`     | [lod_distance](#i_lod_distance)                                                                    | 48.0                                                                                  
+`float`     | [lod_fade_duration](#i_lod_fade_duration)                                                          | 0.0                                                                                   
+`Material`  | [material](#i_material)                                                                            |                                                                                       
+`int`       | [mesh_block_size](#i_mesh_block_size)                                                              | 16                                                                                    
+`int`       | [normalmap_begin_lod_index](#i_normalmap_begin_lod_index)                                          | 2                                                                                     
+`bool`      | [normalmap_enabled](#i_normalmap_enabled)                                                          | false                                                                                 
+`int`       | [normalmap_max_deviation_degrees](#i_normalmap_max_deviation_degrees)                              | 60                                                                                    
+`bool`      | [normalmap_octahedral_encoding_enabled](#i_normalmap_octahedral_encoding_enabled)                  | false                                                                                 
+`int`       | [normalmap_tile_resolution_max](#i_normalmap_tile_resolution_max)                                  | 8                                                                                     
+`int`       | [normalmap_tile_resolution_min](#i_normalmap_tile_resolution_min)                                  | 4                                                                                     
+`bool`      | [normalmap_use_gpu](#i_normalmap_use_gpu)                                                          | false                                                                                 
+`bool`      | [run_stream_in_editor](#i_run_stream_in_editor)                                                    | true                                                                                  
+`float`     | [secondary_lod_distance](#i_secondary_lod_distance)                                                | 48.0                                                                                  
+`int`       | [streaming_system](#i_streaming_system)                                                            | 0                                                                                     
+`bool`      | [threaded_update_enabled](#i_threaded_update_enabled)                                              | false                                                                                 
+`bool`      | [use_gpu_generation](#i_use_gpu_generation)                                                        | false                                                                                 
+`int`       | [view_distance](#i_view_distance)                                                                  | 512                                                                                   
+`AABB`      | [voxel_bounds](#i_voxel_bounds)                                                                    | AABB(-5.36871e+08, -5.36871e+08, -5.36871e+08, 1.07374e+09, 1.07374e+09, 1.07374e+09) 
 <p></p>
 
 ## Methods: 
@@ -53,10 +65,8 @@ Return                                                                          
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [debug_get_mesh_block_count](#i_debug_get_mesh_block_count) ( ) const                                                                                                                                                                                 
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [debug_get_mesh_block_info](#i_debug_get_mesh_block_info) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) block_pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod ) const                  
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_get_octrees_detailed](#i_debug_get_octrees_detailed) ( ) const                                                                                                                                                                                 
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [debug_is_draw_enabled](#i_debug_is_draw_enabled) ( ) const                                                                                                                                                                                           
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_print_sdf_top_down](#i_debug_print_sdf_top_down) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents )             
 [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)            | [debug_raycast_mesh_block](#i_debug_raycast_mesh_block) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) dir ) const               
-[void](#)                                                                           | [debug_set_draw_enabled](#i_debug_set_draw_enabled) ( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                                                                                
 [void](#)                                                                           | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                     
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_region_extent](#i_get_data_block_region_extent) ( ) const                                                                                                                                                                             
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                               
@@ -130,6 +140,42 @@ Collision mask used by generated colliders. Check Godot documentation for more i
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_update_delay"></span> **collision_update_delay** = 0
 
 How long to wait before updating colliders after an edit, in milliseconds. Collider generation is expensive, so the intent is to smooth it out.
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_active_mesh_blocks"></span> **debug_draw_active_mesh_blocks** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_active_visual_and_collision_blocks"></span> **debug_draw_active_visual_and_collision_blocks** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_edit_boxes"></span> **debug_draw_edit_boxes** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_edited_blocks"></span> **debug_draw_edited_blocks** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_enabled"></span> **debug_draw_enabled** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_loaded_visual_and_collision_blocks"></span> **debug_draw_loaded_visual_and_collision_blocks** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_mesh_updates"></span> **debug_draw_mesh_updates** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_modifier_bounds"></span> **debug_draw_modifier_bounds** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_octree_bounds"></span> **debug_draw_octree_bounds** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_octree_nodes"></span> **debug_draw_octree_nodes** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_viewer_clipboxes"></span> **debug_draw_viewer_clipboxes** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_volume_bounds"></span> **debug_draw_volume_bounds** = false
+
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_full_load_mode_enabled"></span> **full_load_mode_enabled** = false
 
@@ -303,12 +349,6 @@ The array after positions contains info about one octree:
 ```
 When children info is not null, it contains 8 arrays structured the same way, and may be recursively traversed to obtain the state of every node of the octree.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_is_draw_enabled"></span> **debug_is_draw_enabled**( ) 
-
-Gets whether debug drawing is enabled.
-
-This method always returns false in exported games.
-
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_print_sdf_top_down"></span> **debug_print_sdf_top_down**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) center, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) extents ) 
 
 Captures a top-down representation of the signed distance field (SDF) at multiple LOD levels within a specific area. The returned array contains an image for each LOD.
@@ -328,12 +368,6 @@ The returned array contains:
 	...
 ]
 ```
-
-- [void](#)<span id="i_debug_set_draw_enabled"></span> **debug_set_draw_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
-
-Enables or disables debug drawing.
-
-This method does nothing in exported games.
 
 - [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
@@ -381,7 +415,7 @@ The returned dictionary has the following structure:
 
 - [VoxelTool](VoxelTool.md)<span id="i_get_voxel_tool"></span> **get_voxel_tool**( ) 
 
-Gets an instance of [VoxelTool](VoxelTool.md) bound to this volume. Allows to query and edit voxels.
+Creates an instance of [VoxelTool](VoxelTool.md) bound to this volume. Allows to query and edit voxels.
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_meshed"></span> **is_area_meshed**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) area_in_voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) lod_index ) 
 
@@ -417,4 +451,4 @@ Converts a voxel position into a data block position for a specific LOD index.
 
 Converts a voxel position into a mesh block position for a specific LOD index.
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

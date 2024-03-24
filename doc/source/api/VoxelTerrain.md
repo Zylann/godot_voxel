@@ -16,6 +16,8 @@ Type        | Name                                                              
 `int`       | [collision_layer](#i_collision_layer)                                    | 1                                                                                     
 `float`     | [collision_margin](#i_collision_margin)                                  | 0.04                                                                                  
 `int`       | [collision_mask](#i_collision_mask)                                      | 1                                                                                     
+`bool`      | [debug_draw_enabled](#i_debug_draw_enabled)                              | false                                                                                 
+`bool`      | [debug_draw_volume_bounds](#i_debug_draw_volume_bounds)                  | false                                                                                 
 `bool`      | [generate_collisions](#i_generate_collisions)                            | true                                                                                  
 `Material`  | [material_override](#i_material_override)                                |                                                                                       
 `int`       | [max_view_distance](#i_max_view_distance)                                | 128                                                                                   
@@ -32,6 +34,8 @@ Return                                                                          
 [void](#)                                                                                       | [_on_area_edited](#i__on_area_edited) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) virtual                                       
 [void](#)                                                                                       | [_on_data_block_entered](#i__on_data_block_entered) ( [VoxelDataBlockEnterInfo](VoxelDataBlockEnterInfo.md) info ) virtual                                                                                                                                                   
 [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)                  | [data_block_to_voxel](#i_data_block_to_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) const                                                                                                                             
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)                          | [debug_get_draw_flag](#i_debug_get_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) const                                                                                                                                      
+[void](#)                                                                                       | [debug_set_draw_flag](#i_debug_set_draw_flag) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled )                                                            
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)                            | [get_data_block_size](#i_get_data_block_size) ( ) const                                                                                                                                                                                                                      
 [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)              | [get_statistics](#i_get_statistics) ( ) const                                                                                                                                                                                                                                
 [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html)  | [get_viewer_network_peer_ids_in_area](#i_get_viewer_network_peer_ids_in_area) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_origin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) area_size ) const 
@@ -62,6 +66,14 @@ Emitted when a mesh block receives its first update since it was added in the ra
 
 Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](VoxelTerrain.md#signals).
 
+## Enumerations: 
+
+enum **DebugDrawFlag**: 
+
+- <span id="i_DEBUG_DRAW_VOLUME_BOUNDS"></span>**DEBUG_DRAW_VOLUME_BOUNDS** = **0**
+- <span id="i_DEBUG_DRAW_FLAGS_COUNT"></span>**DEBUG_DRAW_FLAGS_COUNT** = **1**
+
+
 ## Property Descriptions
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_area_edit_notification_enabled"></span> **area_edit_notification_enabled** = false
@@ -85,6 +97,12 @@ Defines the bounds within which the terrain is allowed to have voxels. If an inf
 
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_collision_mask"></span> **collision_mask** = 1
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_enabled"></span> **debug_draw_enabled** = false
+
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_draw_volume_bounds"></span> **debug_draw_volume_bounds** = false
 
 
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_generate_collisions"></span> **generate_collisions** = true
@@ -128,6 +146,12 @@ Enables GPU block generation, which can speed it up. This is only valid for gene
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_data_block_to_voxel"></span> **data_block_to_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) block_pos ) 
 
 Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
+
+- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index ) 
+
+
+- [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag_index, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_data_block_size"></span> **get_data_block_size**( ) 
 
@@ -202,4 +226,4 @@ Note that blocks getting unloaded as the viewer moves around can also trigger sa
 - [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html)<span id="i_voxel_to_data_block"></span> **voxel_to_data_block**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) voxel_pos ) 
 
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

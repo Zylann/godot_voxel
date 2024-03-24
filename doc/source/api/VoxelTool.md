@@ -10,7 +10,9 @@ Helper class to easily access and modify voxels
 
 Abstract interface to access and edit voxels. It allows accessing individual voxels, or doing bulk operations such as carving large chunks or copy/paste boxes.
 
-It's not a class to instantiate alone, you may get it from the voxel objects you want to work with.
+It's not a class to instantiate alone, you may get it from the voxel objects you want to work with, because it has multiple derived implementations.
+
+By default, if an operation overlaps a non-editable area (if not loaded yet for example), the operation will be cancelled. This behavior may vary in derived classes.
 
 ## Properties: 
 
@@ -232,4 +234,4 @@ Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-floa
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

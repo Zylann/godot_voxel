@@ -38,9 +38,12 @@ The returned dictionary has the following structure:
 	"memory_pools": {
 		"voxel_used": int,
 		"voxel_total": int,
-		"block_count": int
+		"block_count": int,
+		"std_allocated": int,
+		"std_deallocated": int,
+		"std_current": int
 	}
 }
 ```
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

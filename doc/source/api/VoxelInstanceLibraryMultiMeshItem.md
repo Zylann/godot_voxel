@@ -65,6 +65,7 @@ Return                                                                          
 
 - [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_collision_shapes"></span> **collision_shapes** = []
 
+Alternating list of [CollisionShape](https://docs.godotengine.org/en/stable/classes/class_collisionshape.html) and [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html). Shape comes first, followed by its local transform relative to the instance. Setting up collision shapes in the editor may require using a scene instead.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_gi_mode"></span> **gi_mode** = 1
 
@@ -124,4 +125,4 @@ Sets the list of group names that will be added to collider nodes generated for 
 - [void](#)<span id="i_setup_from_template"></span> **setup_from_template**( [Node](https://docs.godotengine.org/en/stable/classes/class_node.html) node ) 
 
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

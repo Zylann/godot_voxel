@@ -28,4 +28,4 @@ Orthogonal rotation applied to the mesh when baking. Values are taken from the s
 
 ([GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) provides a conversion method from [Basis](https://docs.godotengine.org/en/stable/classes/class_basis.html), unfortunately it is not a static method so it requires a [GridMap](https://docs.godotengine.org/en/stable/classes/class_gridmap.html) instance to exist. A helper method could be added in the future if requested)
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

@@ -10,6 +10,8 @@ Contains a graph that can be used to generate voxel data (when used as main func
 
 Currently this class only stores a graph, it cannot run actual processing on its own. To generate voxels with it, see [VoxelGeneratorGraph](VoxelGeneratorGraph.md).
 
+Note: node types are identified with the enum [VoxelGraphFunction.NodeTypeID](VoxelGraphFunction.md#enumerations). This enum shouldn't be used in persistent contexts (such as save files) as its values may change between versions.
+
 ## Properties: 
 
 
@@ -71,8 +73,8 @@ enum **NodeTypeID**:
 - <span id="i_NODE_INPUT_Y"></span>**NODE_INPUT_Y** = **2**
 - <span id="i_NODE_INPUT_Z"></span>**NODE_INPUT_Z** = **3**
 - <span id="i_NODE_OUTPUT_SDF"></span>**NODE_OUTPUT_SDF** = **4**
-- <span id="i_NODE_CUSTOM_INPUT"></span>**NODE_CUSTOM_INPUT** = **54**
-- <span id="i_NODE_CUSTOM_OUTPUT"></span>**NODE_CUSTOM_OUTPUT** = **55**
+- <span id="i_NODE_CUSTOM_INPUT"></span>**NODE_CUSTOM_INPUT** = **52**
+- <span id="i_NODE_CUSTOM_OUTPUT"></span>**NODE_CUSTOM_OUTPUT** = **53**
 - <span id="i_NODE_ADD"></span>**NODE_ADD** = **5**
 - <span id="i_NODE_SUBTRACT"></span>**NODE_SUBTRACT** = **6**
 - <span id="i_NODE_MULTIPLY"></span>**NODE_MULTIPLY** = **7**
@@ -111,19 +113,19 @@ enum **NodeTypeID**:
 - <span id="i_NODE_FAST_NOISE_GRADIENT_2D"></span>**NODE_FAST_NOISE_GRADIENT_2D** = **41**
 - <span id="i_NODE_FAST_NOISE_GRADIENT_3D"></span>**NODE_FAST_NOISE_GRADIENT_3D** = **42**
 - <span id="i_NODE_OUTPUT_WEIGHT"></span>**NODE_OUTPUT_WEIGHT** = **43**
-- <span id="i_NODE_FAST_NOISE_2_2D"></span>**NODE_FAST_NOISE_2_2D** = **45**
-- <span id="i_NODE_FAST_NOISE_2_3D"></span>**NODE_FAST_NOISE_2_3D** = **46**
-- <span id="i_NODE_OUTPUT_SINGLE_TEXTURE"></span>**NODE_OUTPUT_SINGLE_TEXTURE** = **47**
-- <span id="i_NODE_EXPRESSION"></span>**NODE_EXPRESSION** = **48**
-- <span id="i_NODE_POWI"></span>**NODE_POWI** = **49**
-- <span id="i_NODE_POW"></span>**NODE_POW** = **50**
-- <span id="i_NODE_INPUT_SDF"></span>**NODE_INPUT_SDF** = **51**
-- <span id="i_NODE_COMMENT"></span>**NODE_COMMENT** = **52**
-- <span id="i_NODE_FUNCTION"></span>**NODE_FUNCTION** = **53**
-- <span id="i_NODE_RELAY"></span>**NODE_RELAY** = **56**
-- <span id="i_NODE_SPOTS_2D"></span>**NODE_SPOTS_2D** = **57**
-- <span id="i_NODE_SPOTS_3D"></span>**NODE_SPOTS_3D** = **58**
+- <span id="i_NODE_OUTPUT_SINGLE_TEXTURE"></span>**NODE_OUTPUT_SINGLE_TEXTURE** = **45**
+- <span id="i_NODE_EXPRESSION"></span>**NODE_EXPRESSION** = **46**
+- <span id="i_NODE_POWI"></span>**NODE_POWI** = **47**
+- <span id="i_NODE_POW"></span>**NODE_POW** = **48**
+- <span id="i_NODE_INPUT_SDF"></span>**NODE_INPUT_SDF** = **49**
+- <span id="i_NODE_COMMENT"></span>**NODE_COMMENT** = **50**
+- <span id="i_NODE_FUNCTION"></span>**NODE_FUNCTION** = **51**
+- <span id="i_NODE_RELAY"></span>**NODE_RELAY** = **54**
+- <span id="i_NODE_SPOTS_2D"></span>**NODE_SPOTS_2D** = **55**
+- <span id="i_NODE_SPOTS_3D"></span>**NODE_SPOTS_3D** = **56**
 - <span id="i_NODE_TYPE_COUNT"></span>**NODE_TYPE_COUNT** = **59**
+- <span id="i_NODE_FAST_NOISE_2_2D"></span>**NODE_FAST_NOISE_2_2D** = **57**
+- <span id="i_NODE_FAST_NOISE_2_3D"></span>**NODE_FAST_NOISE_2_3D** = **58**
 
 
 ## Property Descriptions
@@ -199,6 +201,32 @@ Get the ID of the type of a node in the graph.
 
 - [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_get_node_type_info"></span> **get_node_type_info**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) type_id ) 
 
+Gets information about a node type from [VoxelGraphFunction.NodeTypeID](VoxelGraphFunction.md#enumerations).
+
+The returned data has this structure:
+
+```
+{
+	"name": String,
+	"inputs": [
+		{"name": String},
+		...
+	],
+	"outputs": [
+		{"name": String},
+		...
+	],
+	"params": [
+		{
+			"name": String,
+			"type": int (Variant::Type),
+			"class_name": String,
+			"default_value": Variant
+		},
+		...
+	]
+}
+```
 
 - [void](#)<span id="i_paste_graph_with_pre_generated_ids"></span> **paste_graph_with_pre_generated_ids**( [VoxelGraphFunction](VoxelGraphFunction.md) graph, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) node_ids, [Vector2](https://docs.godotengine.org/en/stable/classes/class_vector2.html) gui_offset ) 
 
@@ -248,4 +276,4 @@ Sets a custom name for a node.
 - [void](#)<span id="i_set_node_param_null"></span> **set_node_param_null**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) param_index ) 
 
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_

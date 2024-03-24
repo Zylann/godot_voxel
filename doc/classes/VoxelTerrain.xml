@@ -28,6 +28,19 @@
 				Converts data block coordinates into voxel coordinates. Voxel coordinates of a block correspond to its lowest corner.
 			</description>
 		</method>
+		<method name="debug_get_draw_flag" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="flag_index" type="int" enum="VoxelTerrain.DebugDrawFlag" />
+			<description>
+			</description>
+		</method>
+		<method name="debug_set_draw_flag">
+			<return type="void" />
+			<param index="0" name="flag_index" type="int" enum="VoxelTerrain.DebugDrawFlag" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
 		<method name="get_data_block_size" qualifiers="const">
 			<return type="int" />
 			<description>
@@ -134,6 +147,10 @@
 		</member>
 		<member name="collision_mask" type="int" setter="set_collision_mask" getter="get_collision_mask" default="1">
 		</member>
+		<member name="debug_draw_enabled" type="bool" setter="debug_set_draw_enabled" getter="debug_is_draw_enabled" default="false">
+		</member>
+		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
 		<member name="generate_collisions" type="bool" setter="set_generate_collisions" getter="get_generate_collisions" default="true">
 			Enables the generation of collision shapes using the classic physics engine. Use this feature if you need realistic or non-trivial collisions or physics.
 			Note 1: you also need [VoxelViewer] to request collisions, otherwise they won't generate.
@@ -181,4 +198,10 @@
 			</description>
 		</signal>
 	</signals>
+	<constants>
+		<constant name="DEBUG_DRAW_VOLUME_BOUNDS" value="0" enum="DebugDrawFlag">
+		</constant>
+		<constant name="DEBUG_DRAW_FLAGS_COUNT" value="1" enum="DebugDrawFlag">
+		</constant>
+	</constants>
 </class>

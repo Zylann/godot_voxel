@@ -95,13 +95,6 @@
 				When children info is not null, it contains 8 arrays structured the same way, and may be recursively traversed to obtain the state of every node of the octree.
 			</description>
 		</method>
-		<method name="debug_is_draw_enabled" qualifiers="const">
-			<return type="bool" />
-			<description>
-				Gets whether debug drawing is enabled.
-				This method always returns false in exported games.
-			</description>
-		</method>
 		<method name="debug_print_sdf_top_down">
 			<return type="Array" />
 			<param index="0" name="center" type="Vector3i" />
@@ -126,14 +119,6 @@
 					...
 				]
 				[/codeblock]
-			</description>
-		</method>
-		<method name="debug_set_draw_enabled">
-			<return type="void" />
-			<param index="0" name="enabled" type="bool" />
-			<description>
-				Enables or disables debug drawing.
-				This method does nothing in exported games.
 			</description>
 		</method>
 		<method name="debug_set_draw_flag">
@@ -268,6 +253,30 @@
 		</member>
 		<member name="collision_update_delay" type="int" setter="set_collision_update_delay" getter="get_collision_update_delay" default="0">
 			How long to wait before updating colliders after an edit, in milliseconds. Collider generation is expensive, so the intent is to smooth it out.
+		</member>
+		<member name="debug_draw_active_mesh_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_active_visual_and_collision_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_edit_boxes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_edited_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_enabled" type="bool" setter="debug_set_draw_enabled" getter="debug_is_draw_enabled" default="false">
+		</member>
+		<member name="debug_draw_loaded_visual_and_collision_blocks" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_mesh_updates" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_modifier_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_octree_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_octree_nodes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_viewer_clipboxes" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
+		</member>
+		<member name="debug_draw_volume_bounds" type="bool" setter="debug_set_draw_flag" getter="debug_get_draw_flag" default="false">
 		</member>
 		<member name="full_load_mode_enabled" type="bool" setter="set_full_load_mode_enabled" getter="is_full_load_mode_enabled" default="false">
 			If enabled, data streaming will be turned off, and all voxel data will be loaded from the [member stream] into memory.

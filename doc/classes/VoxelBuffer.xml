@@ -143,6 +143,11 @@
 				Executes a function on every voxel in this buffer which have associated metadata, within the specified area.
 			</description>
 		</method>
+		<method name="get_allocator" qualifiers="const">
+			<return type="int" enum="VoxelBuffer.Allocator" />
+			<description>
+			</description>
+		</method>
 		<method name="get_block_metadata" qualifiers="const">
 			<return type="Variant" />
 			<description>
@@ -328,6 +333,12 @@
 		</constant>
 		<constant name="COMPRESSION_COUNT" value="2" enum="Compression">
 			How many compression modes there are.
+		</constant>
+		<constant name="ALLOCATOR_DEFAULT" value="0" enum="Allocator">
+		</constant>
+		<constant name="ALLOCATOR_POOL" value="1" enum="Allocator">
+		</constant>
+		<constant name="ALLOCATOR_COUNT" value="2" enum="Allocator">
 		</constant>
 		<constant name="MAX_SIZE" value="65535">
 		</constant>

@@ -37,4 +37,4 @@ Return                                                                          
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_rotation"></span> **is_rotation**( ) 
 
 
-_Generated on Feb 24, 2024_
+_Generated on Mar 24, 2024_
