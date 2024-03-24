@@ -3081,7 +3081,7 @@ void VoxelLodTerrain::update_gizmos() {
 		for (auto it = state.octree_streaming.lod_octrees.begin(); it != state.octree_streaming.lod_octrees.end();
 				++it) {
 			const Transform3D local_transform(local_octree_basis, it->first * octree_size);
-			dr.draw_box(parent_transform * local_transform, DebugColors::ID_OCTREE_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, Color(0.5, 0.5, 0.5));
 		}
 	}
 
@@ -3095,7 +3095,7 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
-			dr.draw_box(parent_transform * local_transform, DebugColors::ID_VOXEL_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
 	}
 
@@ -3121,7 +3121,7 @@ void VoxelLodTerrain::update_gizmos() {
 				// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 				// Also this might be better with sRGB?
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
-				dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
+				dr.draw_box(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 			});
 		}
 	}
@@ -3143,7 +3143,7 @@ void VoxelLodTerrain::update_gizmos() {
 					// Squaring because lower lod indexes are more interesting to see, so we give them more contrast.
 					// Also this might be better with sRGB?
 					const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
-					dr.draw_box_mm(t, Color8(255, uint8_t(g * 254.f), 0, 255));
+					dr.draw_box(t, Color8(255, uint8_t(g * 254.f), 0, 255));
 				}
 			}
 		}
@@ -3171,7 +3171,7 @@ void VoxelLodTerrain::update_gizmos() {
 				const Transform3D local_transform(
 						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
 				const Transform3D t = parent_transform * local_transform;
-				dr.draw_box_mm(t, color);
+				dr.draw_box(t, color);
 			});
 		}
 	}
@@ -3197,7 +3197,7 @@ void VoxelLodTerrain::update_gizmos() {
 				const Transform3D local_transform(
 						Basis().scaled(Vector3(lod_block_size, lod_block_size, lod_block_size)), voxel_pos);
 				const Transform3D t = parent_transform * local_transform;
-				dr.draw_box_mm(t, color);
+				dr.draw_box(t, color);
 			});
 		}
 	}
@@ -3214,7 +3214,7 @@ void VoxelLodTerrain::update_gizmos() {
 						Vector3(box.pos * lod_mesh_block_size));
 				const Transform3D t = parent_transform * lt;
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
-				dr.draw_box_mm(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
+				dr.draw_box(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
 			}
 		}
 	}
@@ -3232,7 +3232,7 @@ void VoxelLodTerrain::update_gizmos() {
 						const Transform3D local_transform(basis, bpos * data_block_size);
 						const Transform3D t = parent_transform * local_transform;
 						const Color8 c = block.is_modified() ? Color8(255, 255, 0, 255) : Color8(0, 255, 0, 255);
-						dr.draw_box_mm(t, c);
+						dr.draw_box(t, c);
 					}
 				},
 				_edited_blocks_gizmos_lod_index);
@@ -3249,7 +3249,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 		const Color color = math::lerp(
 				Color(0, 0, 0), Color(0, 1, 1), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
-		dr.draw_box_mm(t, Color8(color));
+		dr.draw_box(t, Color8(color));
 
 		--item.remaining_frames;
 		if (item.remaining_frames == 0) {
@@ -3269,7 +3269,7 @@ void VoxelLodTerrain::update_gizmos() {
 
 		const Color color = math::lerp(
 				Color(0, 0, 0), Color(1, 1, 0), item.remaining_frames / float(DebugMeshUpdateItem::LINGER_FRAMES));
-		dr.draw_box_mm(t, Color8(color));
+		dr.draw_box(t, Color8(color));
 
 		--item.remaining_frames;
 		if (item.remaining_frames == 0) {
@@ -3286,7 +3286,7 @@ void VoxelLodTerrain::update_gizmos() {
 		modifiers.for_each_modifier([&dr](const VoxelModifier &modifier) {
 			const AABB aabb = modifier.get_aabb();
 			const Transform3D t(Basis().scaled(aabb.size), aabb.get_center() - aabb.size * 0.5);
-			dr.draw_box_mm(t, Color8(0, 0, 255, 255));
+			dr.draw_box(t, Color8(0, 0, 255, 255));
 		});
 	}
 

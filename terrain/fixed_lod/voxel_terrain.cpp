@@ -2013,7 +2013,7 @@ void VoxelTerrain::process_debug_draw() {
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
 					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
-			dr.draw_box(parent_transform * local_transform, zylann::godot::DebugColors::ID_VOXEL_BOUNDS);
+			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
 	}
 

@@ -324,7 +324,7 @@ void VoxelInstancer::process_gizmos() {
 			const Transform3D box_transform(
 					parent_transform.basis * (Basis().scaled(Vector3(block_size, block_size, block_size))),
 					parent_transform.xform(block_local_pos));
-			dr.draw_box_mm(box_transform, color);
+			dr.draw_box(box_transform, color);
 		}
 	};
 

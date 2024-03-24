@@ -520,7 +520,6 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef TOOLS_ENABLED
 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-		zylann::godot::free_debug_resources();
 		VoxelGraphEditorNodePreview::unload_resources();
 
 		// Plugins are automatically unregistered since https://github.com/godotengine/godot-cpp/pull/1138

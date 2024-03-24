@@ -1062,8 +1062,8 @@ void VoxelGraphEditor::update_range_analysis_gizmo() {
 	const Transform3D parent_transform = terrain_node->get_global_transform();
 	const AABB aabb = _range_analysis_dialog->get_aabb();
 	_debug_renderer.begin();
-	_debug_renderer.draw_box(parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position),
-			DebugColors::ID_VOXEL_GRAPH_DEBUG_BOUNDS);
+	_debug_renderer.draw_box(
+			parent_transform * Transform3D(Basis().scaled(aabb.size), aabb.position), Color(1.0, 1.0, 0.0));
 	_debug_renderer.end();
 }
 
