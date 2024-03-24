@@ -128,6 +128,30 @@
 			<return type="Dictionary" />
 			<param index="0" name="type_id" type="int" />
 			<description>
+				Gets information about a node type from [enum VoxelGraphFunction.NodeTypeID].
+				The returned data has this structure:
+				[codeblock]
+				{
+					"name": String,
+					"inputs": [
+						{"name": String},
+						...
+					],
+					"outputs": [
+						{"name": String},
+						...
+					],
+					"params": [
+						{
+							"name": String,
+							"type": int (Variant::Type),
+							"class_name": String,
+							"default_value": Variant
+						},
+						...
+					]
+				}
+				[/codeblock]
 			</description>
 		</method>
 		<method name="paste_graph_with_pre_generated_ids">
