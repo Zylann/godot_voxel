@@ -61,12 +61,24 @@ def make_custom_internal_anchor(name):
     return '<span id="i_' + name + '"></span>'
 
 
+class ClassDoc:
+    def __init__(self, name):
+        self.name = name
+        self.parent_name = ""
+        self.children = []
+        self.is_module = False
+        self.xml_tree = None
+        self.xml_file_path = ""
+
+
 # `xml_tree` is the XML tree obtained with `ET.parse(filepath)`
 # `f_out` is the path to the destination file. Use '-' for to print to stdout.
 # `module_class_names` is a list of strings. Each string is a class name.
 # `derived_classes_map` is a dictionary where keys are class names, and values are list of derived class names.
-def process_xml(xml_tree, f_out, module_class_names, derived_classes_map):
+def process_xml(klass, f_out, module_class_names):
     #print("Parsing", f_xml)
+
+    xml_tree = klass.xml_tree
 
     root = xml_tree.getroot()
     if root.tag != "class":
@@ -79,11 +91,10 @@ def process_xml(xml_tree, f_out, module_class_names, derived_classes_map):
     out = "# " + current_class_name + "\n\n"
     out += "Inherits: " + markdown.make_type(root.attrib['inherits'], '', module_class_names) + "\n\n"
 
-    derived_class_names = derived_classes_map.get(current_class_name, [])
-    if len(derived_class_names) > 0:
+    if len(klass.children) > 0:
         links = []
-        for cname in derived_class_names:
-            links.append(markdown.make_type(cname, '', module_class_names))
+        for child in klass.children:
+            links.append(markdown.make_type(child.name, '', module_class_names))
         out += "Inherited by: " + ', '.join(links) + "\n\n"
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
@@ -274,6 +285,40 @@ def process_xml(xml_tree, f_out, module_class_names, derived_classes_map):
         outfile.write(out)
 
 
+# Generates a Markdown file containing a list of all the classes, organized in a hierarchy
+def generate_classes_index(output_path, classes_by_name, verbose, module_class_names):
+    root_classes = []
+    for class_name, klass in classes_by_name.items():
+        if klass.parent_name == "":
+            root_classes.append(klass)
+
+    lines = ["# All classes", ""]
+    indent = "    "
+
+    def do_branch(lines, classes, level, indent, module_class_names):
+        for klass in classes:
+            # TODO Format for abstract classes? XML files don't contain that information...
+            link = klass.name
+            if klass.is_module:
+                link = markdown.make_type(klass.name, '', module_class_names)
+            lines.append(level * indent + "- " + link)
+            
+            if len(klass.children) > 0:
+                do_branch(lines, klass.children, level + 1, indent, module_class_names)
+
+    for klass in root_classes:
+        lines.append("- " + klass.name)
+        do_branch(lines, klass.children, 1, indent, module_class_names)
+    
+    out = "\n".join(lines)
+
+    if verbose:
+        print("Writing", output_path)
+
+    with open(output_path, mode='w', encoding='utf-8') as f:
+        f.write(out)
+
+
 def process_xml_folder(src_dir, dst_dir, verbose):
     # Make output dir and remove old files
     if not os.path.isdir(dst_dir):
@@ -291,9 +336,9 @@ def process_xml_folder(src_dir, dst_dir, verbose):
     doc_files = []
     count = 0
 
-    class_names = []
+    module_class_names = []
     for xml_file in xml_files:
-        class_names.append(xml_file.stem)
+        module_class_names.append(xml_file.stem)
     
     # Parse all XML files
     class_xml_trees = {}
@@ -307,28 +352,58 @@ def process_xml_folder(src_dir, dst_dir, verbose):
 
         class_xml_trees[src_filepath] = xml_tree
 
-    # Build a map of derived classes
-    # class_name => [derived class names]
-    derived_classes_map = {}
+    # Build class objects
+    classes_by_name = {}
+
     for filename, xml_tree in class_xml_trees.items():
         root = xml_tree.getroot()
-        class_name = root.attrib['name']
-        parent_class_name = root.attrib['inherits']
-        derived_classes_map.setdefault(parent_class_name, []).append(class_name)
-    
-    for derived_class_names in derived_classes_map.values():
-        derived_class_names.sort()
+
+        klass = ClassDoc(root.attrib['name'])
+        klass.xml_tree = xml_tree
+        klass.xml_file_path = filename
+        klass.parent_name = root.attrib['inherits']
+        klass.is_module = True
+
+        classes_by_name[klass.name] = klass
+            
+    # Complete hierarchy with Godot base classes
+    # TODO It would be nice to load this from Godot's own XML files?
+    godot_classes = [
+        ["Object", ""],
+        ["Node", "Object"],
+        ["RefCounted", "Object"],
+        ["Resource", "RefCounted"],
+        ["Node3D", "Node"],
+        ["RigidBody3D", "Node3D"]
+    ]
+    for gdclass in godot_classes:
+        klass = ClassDoc(gdclass[0])
+        klass.parent_name = gdclass[1]
+        klass.is_module = False
+        classes_by_name[klass.name] = klass
+
+    # Populate children
+    for class_name, klass in classes_by_name.items():
+        if klass.parent_name != "":
+            if klass.parent_name in classes_by_name:
+                parent = classes_by_name[klass.parent_name]
+                parent.children.append(klass)
+
+    # Sort
+    for class_name, klass in classes_by_name.items():
+        klass.children.sort(key = lambda x: x.name)
 
     # Generate Markdown files
-    for src_filepath, xml_tree in class_xml_trees.items():
-        dest = dst_dir / (src_filepath.stem + ".md")
-        if verbose:
-            print("Converting ", src_filepath, dest)
-        process_xml(xml_tree, dest, class_names, derived_classes_map)
-        count += 1
-        doc_files.append(dest)
+    for class_name, klass in classes_by_name.items():
+        if klass.is_module:
+            dest = dst_dir / (klass.xml_file_path.stem + ".md")
+            if verbose:
+                print("Converting ", klass.xml_file_path, dest)
+            process_xml(klass, dest, module_class_names)
+            count += 1
+            doc_files.append(dest)
 
-    #generate_class_index(output_path, doc_files, verbose)
+    generate_classes_index(dst_dir / "all_classes.md", classes_by_name, verbose, module_class_names)
     #count += 1
 
     print("Generated %d files in %s." % (count, dst_dir))

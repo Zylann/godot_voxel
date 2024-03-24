@@ -92,7 +92,15 @@ def update_mkdocs_file(mkdocs_config_fpath, md_classes_dir):
     docs_folder = mkdocs_config_fpath.parents[0] / SOURCES
     for absolute_path in absolute_paths:
         class_files.append(str(absolute_path.relative_to(docs_folder)).replace('\\', '/'))
-    class_files = sorted(class_files)
+    class_files.sort()
+
+    # Put special item at the beginning
+    for i in range(0, len(class_files)):
+        fname = class_files[i]
+        if "all_classes" in fname:
+            class_files.pop(i)
+            class_files.insert(0, fname)
+            break
 
     with open(mkdocs_config_fpath, 'r', encoding='utf-8') as f:
         lines = f.readlines()

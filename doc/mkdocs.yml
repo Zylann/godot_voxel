@@ -33,6 +33,7 @@ nav:
   - '___.md'
   - 'Scripting API':
     # <generated_class_list>
+    - api/all_classes.md
     - api/FastNoise2.md
     - api/VoxelAStarGrid3D.md
     - api/VoxelBlockSerializer.md
