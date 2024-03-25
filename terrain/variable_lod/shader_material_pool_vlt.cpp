@@ -1,5 +1,6 @@
 #include "shader_material_pool_vlt.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../util/godot/classes/texture_2d.h"
 #include "../../util/profiling.h"
 
 namespace zylann::voxel {
