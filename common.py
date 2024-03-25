@@ -124,6 +124,8 @@ def get_sources(env, is_editor_build):
             "editor/blocky_library/types/*.cpp",
             "editor/multipass/*.cpp",
 
+            "util/godot/debug_renderer.cpp",
+
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_import_plugin.cpp",
             "util/godot/classes/editor_inspector_plugin.cpp",

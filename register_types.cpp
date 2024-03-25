@@ -98,7 +98,6 @@
 #include "editor/spot_noise/spot_noise_editor_plugin.h"
 #include "editor/terrain/voxel_terrain_editor_plugin.h"
 #include "editor/vox/vox_editor_plugin.h"
-#include "editor/voxel_debug.h"
 #include "util/godot/classes/os.h"
 
 #ifdef VOXEL_ENABLE_FAST_NOISE_2

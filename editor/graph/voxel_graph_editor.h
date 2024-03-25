@@ -4,9 +4,9 @@
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../util/godot/classes/control.h"
 #include "../../util/godot/classes/editor_undo_redo_manager.h"
+#include "../../util/godot/debug_renderer.h"
 #include "../../util/godot/object_weak_ref.h"
 #include "../../util/math/vector2f.h"
-#include "../voxel_debug.h"
 
 ZN_GODOT_FORWARD_DECLARE(class GraphEdit)
 ZN_GODOT_FORWARD_DECLARE(class PopupMenu)

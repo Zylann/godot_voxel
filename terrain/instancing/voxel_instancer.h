@@ -16,8 +16,8 @@
 #include "voxel_instance_library_multimesh_item.h"
 
 #ifdef TOOLS_ENABLED
-#include "../../editor/voxel_debug.h"
 #include "../../util/godot/core/version.h"
+#include "../../util/godot/debug_renderer.h"
 #endif
 
 #include <limits>

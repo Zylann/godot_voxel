@@ -1,9 +1,9 @@
 #ifndef VOXEL_DEBUG_H
 #define VOXEL_DEBUG_H
 
-#include "../util/containers/std_vector.h"
-#include "../util/godot/classes/standard_material_3d.h"
-#include "../util/godot/direct_multimesh_instance.h"
+#include "../containers/std_vector.h"
+#include "classes/standard_material_3d.h"
+#include "direct_multimesh_instance.h"
 
 namespace zylann::godot {
 

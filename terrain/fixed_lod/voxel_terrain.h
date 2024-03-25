@@ -16,7 +16,7 @@
 #include "voxel_terrain_multiplayer_synchronizer.h"
 
 #ifdef TOOLS_ENABLED
-#include "../../editor/voxel_debug.h"
+#include "../../util/godot/debug_renderer.h"
 #endif
 
 namespace zylann {
