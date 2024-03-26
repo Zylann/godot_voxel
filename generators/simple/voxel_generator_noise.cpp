@@ -1,6 +1,7 @@
 #include "voxel_generator_noise.h"
 #include "../../constants/voxel_string_names.h"
 #include "../../util/godot/classes/fast_noise_lite.h"
+#include "../../util/math/funcs.h"
 
 namespace zylann::voxel {
 
@@ -8,7 +9,7 @@ VoxelGeneratorNoise::VoxelGeneratorNoise() {}
 
 VoxelGeneratorNoise::~VoxelGeneratorNoise() {}
 
-void VoxelGeneratorNoise::set_noise(Ref<Noise> noise) {
+void VoxelGeneratorNoise::set_noise(Ref<FastNoiseLite> noise) {
 	if (_noise == noise) {
 		return;
 	}
@@ -17,7 +18,7 @@ void VoxelGeneratorNoise::set_noise(Ref<Noise> noise) {
 				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
 	}
 	_noise = noise;
-	Ref<Noise> copy;
+	Ref<FastNoiseLite> copy;
 	if (_noise.is_valid()) {
 		_noise->connect(
 				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
@@ -60,7 +61,7 @@ int VoxelGeneratorNoise::get_used_channels_mask() const {
 	return (1 << _parameters.channel);
 }
 
-Ref<Noise> VoxelGeneratorNoise::get_noise() const {
+Ref<FastNoiseLite> VoxelGeneratorNoise::get_noise() const {
 	return _noise;
 }
 
@@ -131,10 +132,14 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 
 	ERR_FAIL_COND_V(params.noise.is_null(), Result());
 
-	Noise &noise = **params.noise;
+	FastNoiseLite &noise = **params.noise;
 	VoxelBuffer &buffer = input.voxel_buffer;
 	Vector3i origin_in_voxels = input.origin_in_voxels;
 	int lod = input.lod;
+
+	// We need the period to properly produce a signed distance. That's why we can't just take any Noise, or we'd need
+	// an extra property the user has to tweak manually.
+	const float noise_period = 1.0 / math::max(noise.get_frequency(), real_t(0.0001));
 
 	int isosurface_lower_bound = static_cast<int>(Math::floor(params.height_start));
 	int isosurface_upper_bound = static_cast<int>(Math::ceil(params.height_start + params.height_range));
@@ -215,7 +220,10 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 					// We are near the isosurface, need to calculate noise value
 					// float n = get_shaped_noise(noise, lx, ly, lz, one_minus_persistence, bias);
 					const float n = noise.get_noise_3d(lx, ly, lz);
-					const float d = (n + bias); // * iso_scale;
+					// We have to multiply -1..1 noise by its period in order to obtain a better signed distance. Not
+					// multiplying leads to gradients moving way too slowly, leading to blockyness because 16-bit
+					// encoding is tuned for proper distance fields
+					const float d = ((n + bias) * noise_period); // * iso_scale;
 
 					if (params.channel == VoxelBuffer::CHANNEL_SDF) {
 						buffer.set_voxel_f(d, x, y, z, params.channel);
@@ -255,7 +263,6 @@ void VoxelGeneratorNoise::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
 			"set_channel", "get_channel");
-	// TODO Accept `Noise` instead of `FastNoiseLite`?
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_noise", "get_noise");

@@ -7,7 +7,7 @@
 #include "../../util/thread/rw_lock.h"
 #include "../voxel_generator.h"
 
-ZN_GODOT_FORWARD_DECLARE(class Noise)
+ZN_GODOT_FORWARD_DECLARE(class FastNoiseLite)
 
 namespace zylann::voxel {
 
@@ -23,8 +23,8 @@ public:
 
 	int get_used_channels_mask() const override;
 
-	void set_noise(Ref<Noise> noise);
-	Ref<Noise> get_noise() const;
+	void set_noise(Ref<FastNoiseLite> noise);
+	Ref<FastNoiseLite> get_noise() const;
 
 	void set_height_start(real_t y);
 	real_t get_height_start() const;
@@ -42,11 +42,11 @@ private:
 
 	static void _bind_methods();
 
-	Ref<Noise> _noise;
+	Ref<FastNoiseLite> _noise;
 
 	struct Parameters {
 		VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_SDF;
-		Ref<Noise> noise;
+		Ref<FastNoiseLite> noise;
 		float height_start = 0;
 		float height_range = 300;
 	};
