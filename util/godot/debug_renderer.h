@@ -1,5 +1,5 @@
-#ifndef VOXEL_DEBUG_H
-#define VOXEL_DEBUG_H
+#ifndef ZN_GODOT_DEBUG_RENDERER_H
+#define ZN_GODOT_DEBUG_RENDERER_H
 
 #include "../containers/std_vector.h"
 #include "classes/standard_material_3d.h"
@@ -46,4 +46,4 @@ private:
 
 } // namespace zylann::godot
 
-#endif // VOXEL_DEBUG_H
+#endif // ZN_GODOT_DEBUG_RENDERER_H
