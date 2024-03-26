@@ -1,7 +1,6 @@
 #include "file_utils.h"
-#include "../engine/voxel_engine.h"
-#include "../util/containers/std_vector.h"
-#include "../util/godot/classes/directory.h"
+#include "../containers/std_vector.h"
+#include "classes/directory.h"
 
 namespace zylann::godot {
 
@@ -15,10 +14,6 @@ const char *to_string(FileResult res) {
 			return "Doesn't exist";
 		case FILE_UNEXPECTED_EOF:
 			return "Unexpected end of file";
-		case FILE_INVALID_MAGIC:
-			return "Invalid magic";
-		case FILE_INVALID_VERSION:
-			return "Invalid version";
 		case FILE_INVALID_DATA:
 			return "Invalid data";
 		default:
@@ -27,40 +22,17 @@ const char *to_string(FileResult res) {
 	}
 }
 
-FileResult check_magic_and_version(
-		FileAccess &f, uint8_t expected_version, const char *expected_magic, uint8_t &out_version) {
-	uint8_t magic[5] = { '\0' };
-	const size_t count = get_buffer(f, Span<uint8_t>(magic, 4));
-	if (count != 4) {
-		return FILE_UNEXPECTED_EOF;
-	}
-	for (int i = 0; i < 4; ++i) {
-		if (magic[i] != expected_magic[i]) {
-			return FILE_INVALID_MAGIC;
-		}
-	}
-
-	out_version = f.get_8();
-	if (out_version != expected_version) {
-		return FILE_INVALID_VERSION;
-	}
-
-	return FILE_OK;
-}
-
-Error check_directory_created(const StdString &p_directory_path) {
-	const String directory_path(p_directory_path.c_str());
-
-	Ref<DirAccess> d = open_directory(directory_path);
+Error check_directory_created(const String &p_directory_path) {
+	Ref<DirAccess> d = open_directory(p_directory_path);
 
 	if (d.is_null()) {
 		ERR_PRINT("Could not access to filesystem");
 		return ERR_FILE_CANT_OPEN;
 	}
 
-	if (!directory_exists(**d, directory_path)) {
+	if (!directory_exists(**d, p_directory_path)) {
 		// Create if not exist
-		const Error err = d->make_dir_recursive(directory_path);
+		const Error err = d->make_dir_recursive(p_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not create directory");
 			return err;
@@ -111,12 +83,3 @@ void insert_bytes(FileAccess &f, size_t count, size_t temp_chunk_size) {
 }
 
 } // namespace zylann::godot
-
-namespace zylann::voxel {
-
-Error check_directory_created_using_file_locker(const StdString &directory_path) {
-	VoxelFileLockerWrite file_wlock(directory_path);
-	return zylann::godot::check_directory_created(directory_path);
-}
-
-} // namespace zylann::voxel

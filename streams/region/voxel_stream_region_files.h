@@ -3,8 +3,8 @@
 
 #include "../../util/containers/fixed_array.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/godot/file_utils.h"
 #include "../../util/thread/mutex.h"
-#include "../file_utils.h"
 #include "../voxel_stream.h"
 #include "region_file.h"
 

@@ -9,6 +9,7 @@
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
 #include "../../util/string_funcs.h"
+#include "file_utils.h"
 
 #include <algorithm>
 
@@ -290,8 +291,7 @@ zylann::godot::FileResult VoxelStreamRegionFiles::save_meta() {
 
 	// Make sure the directory exists
 	{
-		const CharString directory_path_utf8 = _directory_path.utf8();
-		Error err = check_directory_created_using_file_locker(directory_path_utf8.get_data());
+		const Error err = check_directory_created_with_file_locker(_directory_path);
 		if (err != OK) {
 			ERR_PRINT("Could not save meta");
 			return FILE_CANT_OPEN;

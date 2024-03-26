@@ -98,6 +98,7 @@ def get_sources(env, is_editor_build):
         "util/godot/direct_mesh_instance.cpp",
         "util/godot/direct_multimesh_instance.cpp",
         "util/godot/direct_static_body.cpp",
+        "util/godot/file_utils.cpp",
         "util/godot/shader_material_pool.cpp",
 
         "util/io/*.cpp",
