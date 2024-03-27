@@ -88,8 +88,16 @@ inline Span<const float> to_span(const PackedFloat32Array &a) {
 	return Span<const float>(a.ptr(), a.size());
 }
 
+inline Span<float> to_span(PackedFloat32Array &a) {
+	return Span<float>(a.ptrw(), a.size());
+}
+
 inline Span<const int32_t> to_span(const PackedInt32Array &a) {
 	return Span<const int32_t>(a.ptr(), a.size());
+}
+
+inline Span<int32_t> to_span(PackedInt32Array &a) {
+	return Span<int32_t>(a.ptrw(), a.size());
 }
 
 inline Span<const uint8_t> to_span(const PackedByteArray &a) {

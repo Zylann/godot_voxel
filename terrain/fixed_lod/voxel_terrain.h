@@ -166,6 +166,12 @@ public:
 	void set_instancer(VoxelInstancer *instancer);
 	void get_meshed_block_positions(StdVector<Vector3i> &out_positions) const;
 	Array get_mesh_block_surface(Vector3i block_pos) const;
+	const VoxelMeshMap<VoxelMeshBlockVT> &get_mesh_map() const {
+		return _mesh_map;
+	}
+	unsigned int get_mesh_updates_count() const {
+		return _mesh_updates_count;
+	}
 
 	VolumeID get_volume_id() const override {
 		return _volume_id;
@@ -293,6 +299,7 @@ private:
 	// Mesh storage
 	VoxelMeshMap<VoxelMeshBlockVT> _mesh_map;
 	uint32_t _mesh_block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	unsigned int _mesh_updates_count = 0;
 
 	unsigned int _max_view_distance_voxels = 128;
 

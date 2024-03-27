@@ -1798,6 +1798,9 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 			Ref<Material> material = _mesher->get_material_by_index(material_index);
 			mesh->surface_set_material(surface_index, material);
 		}
+
+		// TODO We need to count collision-only terrains too
+		++_mesh_updates_count;
 	}
 
 	if (mesh.is_null() && block->has_mesh()) {

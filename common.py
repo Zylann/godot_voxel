@@ -51,6 +51,7 @@ def get_sources(env, is_editor_build):
         "terrain/instancing/*.cpp",
         "terrain/fixed_lod/*.cpp",
         "terrain/variable_lod/*.cpp",
+        "terrain/navigation/*.cpp",
 
         "engine/*.cpp",
         "engine/gpu/*.cpp",
