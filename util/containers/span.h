@@ -12,7 +12,7 @@ namespace zylann {
 // View into an array, referencing a pointer and a size.
 // STL equivalent would be std::span<T> in C++20
 template <typename T>
-class Span {
+class [[nodiscard]] Span {
 public:
 	inline Span() : _ptr(nullptr), _size(0) {}
 
