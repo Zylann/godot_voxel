@@ -51,7 +51,7 @@ public:
 	}
 
 	inline Span<T> sub(size_t from) const {
-		ZN_ASSERT(from < _size);
+		ZN_ASSERT(from <= _size);
 		return Span<T>(_ptr + from, _size - from);
 	}
 
