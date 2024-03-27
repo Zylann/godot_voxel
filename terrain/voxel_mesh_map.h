@@ -123,9 +123,8 @@ public:
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			MeshBlock_T *block = *it;
-#ifdef DEBUG_ENABLED
+		for (MeshBlock_T *block : _blocks) {
+#ifdef DEV_ENABLED
 			CRASH_COND(block == nullptr);
 #endif
 			op(*block);
@@ -134,9 +133,8 @@ public:
 
 	template <typename Op_T>
 	inline void for_each_block(Op_T op) const {
-		for (auto it = _blocks.begin(); it != _blocks.end(); ++it) {
-			const MeshBlock_T *block = *it;
-#ifdef DEBUG_ENABLED
+		for (const MeshBlock_T *block : _blocks) {
+#ifdef DEV_ENABLED
 			CRASH_COND(block == nullptr);
 #endif
 			op(*block);
