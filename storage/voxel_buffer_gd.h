@@ -127,6 +127,9 @@ public:
 	void fill_area(uint64_t defval, Vector3i min, Vector3i max, unsigned int channel_index) {
 		_buffer->fill_area(defval, min, max, channel_index);
 	}
+	void fill_area_f(real_t value, Vector3i min, Vector3i max, unsigned int channel_index) {
+		_buffer->fill_area_f(value, min, max, channel_index);
+	}
 
 	bool is_uniform(int channel_index) const;
 
