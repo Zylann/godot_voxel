@@ -2155,7 +2155,7 @@ void VoxelTerrain::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelTerrain::get_generator_use_gpu);
 
 	// TODO Rename `_voxel_bounds`
-	ClassDB::bind_method(D_METHOD("set_bounds"), &VoxelTerrain::_b_set_bounds);
+	ClassDB::bind_method(D_METHOD("set_bounds", "bounds"), &VoxelTerrain::_b_set_bounds);
 	ClassDB::bind_method(D_METHOD("get_bounds"), &VoxelTerrain::_b_get_bounds);
 
 	ClassDB::bind_method(D_METHOD("try_set_block_data", "position", "voxels"), &VoxelTerrain::_b_try_set_block_data);
