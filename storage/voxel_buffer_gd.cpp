@@ -4,6 +4,7 @@
 #include "../util/godot/classes/image.h"
 #include "../util/math/color.h"
 #include "../util/memory/memory.h"
+#include "../util/string_funcs.h"
 #include "voxel_metadata_variant.h"
 
 namespace zylann::voxel::godot {
@@ -18,8 +19,8 @@ VoxelBuffer::VoxelBuffer() {
 }
 
 VoxelBuffer::VoxelBuffer(VoxelBuffer::Allocator allocator) {
-	if (allocator >= 0 && allocator < ALLOCATOR_COUNT) {
-		ZN_PRINT_ERROR("Out of bounds allocator");
+	if (allocator < 0 || allocator >= ALLOCATOR_COUNT) {
+		ZN_PRINT_ERROR(format("Out of bounds allocator {}", allocator));
 		allocator = ALLOCATOR_DEFAULT;
 	}
 	_buffer = make_shared_instance<zylann::voxel::VoxelBuffer>(

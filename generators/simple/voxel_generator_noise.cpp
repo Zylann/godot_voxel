@@ -139,7 +139,7 @@ VoxelGenerator::Result VoxelGeneratorNoise::generate_block(VoxelGenerator::Voxel
 
 	// We need the period to properly produce a signed distance. That's why we can't just take any Noise, or we'd need
 	// an extra property the user has to tweak manually.
-	const float noise_period = 1.0 / math::max(noise.get_frequency(), real_t(0.0001));
+	const float noise_period = 1.0 / math::max<real_t>(noise.get_frequency(), 0.0001);
 
 	int isosurface_lower_bound = static_cast<int>(Math::floor(params.height_start));
 	int isosurface_upper_bound = static_cast<int>(Math::ceil(params.height_start + params.height_range));
