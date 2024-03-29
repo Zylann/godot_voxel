@@ -7,6 +7,10 @@
 #include "../../util/profiling.h"
 #include "../fixed_lod/voxel_terrain.h"
 
+#ifdef DEV_ENABLED
+#include "../../util/string_funcs.h"
+#endif
+
 namespace zylann::voxel {
 
 namespace {
@@ -60,6 +64,14 @@ void check_navmesh_source_data(
 	ZN_ASSERT(used_vertices_count > (10 * vertex_count / 11));
 }
 
+size_t get_geometry_cache_estimated_size_in_bytes(const VoxelMeshMap<VoxelMeshBlockVT> &map) {
+	size_t size = 0;
+	map.for_each_block([&size](const VoxelMeshBlockVT &block) { //
+		size += get_estimated_size_in_bytes(block.geometry_cache);
+	});
+	return size;
+}
+
 #endif
 
 void copy_navigation_mesh_settings(NavigationMesh &dst, const NavigationMesh &src) {
@@ -92,6 +104,13 @@ void copy_navigation_mesh_settings(NavigationMesh &dst, const NavigationMesh &sr
 	dst.set_vertices_per_polygon(src.get_vertices_per_polygon());
 }
 
+void flip_triangle_indices_winding(Span<int32_t> indices) {
+	ZN_PROFILE_SCOPE();
+	for (unsigned int i0 = 1; i0 < indices.size(); i0 += 3) {
+		std::swap(indices[i0], indices[i0 + 1]);
+	}
+}
+
 Ref<NavigationMeshSourceGeometryData3D> gather_geometry(const VoxelTerrain &terrain) {
 	ZN_PROFILE_SCOPE();
 
@@ -103,89 +122,101 @@ Ref<NavigationMeshSourceGeometryData3D> gather_geometry(const VoxelTerrain &terr
 
 	StdVector<VoxelMeshGeometry> geoms;
 
-	const VoxelMeshMap<VoxelMeshBlockVT> &mesh_map = terrain.get_mesh_map();
-	// TODO Could benefit from TempAllocator
-	geoms.reserve(100);
+	{
+		ZN_PROFILE_SCOPE_NAMED("Gather from terrain");
 
-	// Gather geometry from voxel terrain
-	mesh_map.for_each_block([&geoms](const VoxelMeshBlockVT &block) {
-		// TODO Don't query the render mesh, cache the info we need instead
-		Ref<Mesh> mesh = block.get_mesh();
-		if (mesh.is_null()) {
-			return;
+		const VoxelMeshMap<VoxelMeshBlockVT> &mesh_map = terrain.get_mesh_map();
+		// TODO Could benefit from TempAllocator
+		geoms.reserve(100);
+
+		// Gather geometry from voxel terrain
+		mesh_map.for_each_block([&geoms](const VoxelMeshBlockVT &block) {
+			for (const VoxelMeshGeometryCache::Surface &surface : block.geometry_cache.surfaces) {
+				geoms.push_back(VoxelMeshGeometry{ surface.vertices, surface.indices, block.position });
+			}
+		});
+
+#ifdef DEBUG_ENABLED
+		{
+			ZN_PROFILE_SCOPE_NAMED("Size estimation");
+			const size_t cache_size = get_geometry_cache_estimated_size_in_bytes(mesh_map);
+			ZN_PRINT_VERBOSE(format("Mesh map geometry cache size: {}", cache_size));
 		}
-
-		Array arrays = mesh->surface_get_arrays(0);
-		PackedVector3Array vertices = arrays[Mesh::ARRAY_VERTEX];
-		PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
-
-		geoms.push_back(VoxelMeshGeometry{ vertices, indices, block.position });
-	});
+#endif
+	}
 
 	// TODO Also gather props
-	// TODO Have the option to combine data with Godot's scene tree parser
+	// TODO Have the option to combine data with Godot's scene tree parser?
 	// `NavigationServer::parse_source_geometry_data`
 
-	unsigned int vertex_count = 0;
-	for (const VoxelMeshGeometry &geom : geoms) {
-		vertex_count += geom.vertices.size();
-	}
+	Ref<NavigationMeshSourceGeometryData3D> navmesh_source_data;
+	{
+		ZN_PROFILE_SCOPE_NAMED("Processing");
 
-	unsigned int index_count = 0;
-	for (const VoxelMeshGeometry &geom : geoms) {
-		index_count += geom.indices.size();
-	}
-
-	PackedFloat32Array vertices;
-	PackedInt32Array indices;
-
-	vertices.resize(vertex_count * 3);
-	indices.resize(index_count);
-
-	Span<Vector3f> vertices_w = to_span(vertices).reinterpret_cast_to<Vector3f>();
-	Span<int32_t> indices_w = to_span(indices);
-
-	const int block_size = terrain.get_mesh_block_size();
-	int32_t vertex_start = 0;
-
-	// Combine meshes
-	for (const VoxelMeshGeometry &geom : geoms) {
-		Span<const Vector3> vertices_r = to_span(geom.vertices);
-		Span<const int32_t> indices_r = to_span(geom.indices);
-
-		const Vector3f origin = to_vec3f(geom.block_position * block_size);
-
-		for (unsigned int vi = 0; vi < vertices_r.size(); ++vi) {
-			const Vector3f v = to_vec3f(vertices_r[vi]) + origin;
-			vertices_w[vi] = v;
+		unsigned int vertex_count = 0;
+		for (const VoxelMeshGeometry &geom : geoms) {
+			vertex_count += geom.vertices.size();
 		}
 
-		for (unsigned int ii = 0; ii < indices_r.size(); ++ii) {
-			indices_w[ii] = indices_r[ii] + vertex_start;
+		unsigned int index_count = 0;
+		for (const VoxelMeshGeometry &geom : geoms) {
+			index_count += geom.indices.size();
 		}
 
-		vertex_start += vertices_r.size();
-		// Move spans forward by the amount of vertices and indices we just added
-		vertices_w = vertices_w.sub(vertices_r.size());
-		indices_w = indices_w.sub(indices_r.size());
-	}
+		PackedFloat32Array vertices;
+		PackedInt32Array indices;
 
-	// Reset span to cover all indices
-	indices_w = to_span(indices);
+		// Resize in one go, it's faster than many push_backs
+		vertices.resize(vertex_count * 3);
+		indices.resize(index_count);
 
-	// Flip winding
-	for (unsigned int i0 = 1; i0 < indices_w.size(); i0 += 3) {
-		std::swap(indices_w[i0], indices_w[i0 + 1]);
-	}
+		Span<Vector3f> vertices_w = to_span(vertices).reinterpret_cast_to<Vector3f>();
+		Span<int32_t> indices_w = to_span(indices);
+
+		const int block_size = terrain.get_mesh_block_size();
+		int32_t vertex_start = 0;
+
+		// Combine meshes
+		for (const VoxelMeshGeometry &geom : geoms) {
+			Span<const Vector3> vertices_r = to_span(geom.vertices);
+			Span<const int32_t> indices_r = to_span(geom.indices);
+
+			// Chunk meshes are all aligned in a grid, so transforming vertices is simple
+			const Vector3f origin = to_vec3f(geom.block_position * block_size);
+
+			for (unsigned int vi = 0; vi < vertices_r.size(); ++vi) {
+				const Vector3f v = to_vec3f(vertices_r[vi]) + origin;
+				vertices_w[vi] = v;
+			}
+
+			for (unsigned int ii = 0; ii < indices_r.size(); ++ii) {
+				indices_w[ii] = indices_r[ii] + vertex_start;
+			}
+
+			vertex_start += vertices_r.size();
+			// Move spans forward by the amount of vertices and indices we just added
+			vertices_w = vertices_w.sub(vertices_r.size());
+			indices_w = indices_w.sub(indices_r.size());
+		}
+
+		// Reset span to cover all indices
+		indices_w = to_span(indices);
+
+		// For some reason winding is flipped, perhaps that's a requirement from Recast
+		flip_triangle_indices_winding(indices_w);
 
 #ifdef DEV_ENABLED
-	check_navmesh_source_data(vertices, indices, vertex_count);
+		if (geoms.size() > 0) {
+			check_navmesh_source_data(vertices, indices, vertex_count);
+		}
 #endif
 
-	Ref<NavigationMeshSourceGeometryData3D> navmesh_source_data;
-	navmesh_source_data.instantiate();
-	navmesh_source_data->set_vertices(vertices);
-	navmesh_source_data->set_indices(indices);
+		navmesh_source_data.instantiate();
+		// Directly set vertices, don't use any of the other methods, they do more work and aren't specialized to our
+		// case
+		navmesh_source_data->set_vertices(vertices);
+		navmesh_source_data->set_indices(indices);
+	}
 
 	return navmesh_source_data;
 }

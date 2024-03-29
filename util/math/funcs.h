@@ -216,6 +216,20 @@ inline unsigned int get_next_power_of_two_32(unsigned int x) {
 	return ++x;
 }
 
+inline uint64_t get_next_power_of_two_64(uint64_t x) {
+	if (x == 0) {
+		return 0;
+	}
+	--x;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	x |= x >> 32;
+	return ++x;
+}
+
 // Function to find the previous power of 2 to an integer.
 inline unsigned int get_previous_power_of_two_32(unsigned int x) {
 	x |= x >> 1;

@@ -67,6 +67,25 @@ void raw_copy_to(Vector<T> &to, const StdVector<T> &from) {
 Array to_array(const PackedStringArray &src);
 #endif
 
+template <typename TPackedArray, typename TElement>
+inline size_t get_estimated_packed_pod_array_size_in_bytes(const TPackedArray &array) {
+	// Capacity is not stored and seems to be recomputed from size each time.
+	// return sizeof(void *) + sizeof(size_t) + sizeof(size_t) + array.size() * sizeof(TElement);
+	return sizeof(TPackedArray) // self
+			+ sizeof(size_t) // refcount (part of dynamic allocation)
+			+ sizeof(size_t) // size (part of dynamic allocation)
+			// elements (CowData rounds capacity to powers of 2)
+			+ math::get_next_power_of_two_64(array.size() * sizeof(TElement));
+}
+
+inline size_t get_estimated_size_in_bytes(const PackedInt32Array &array) {
+	return get_estimated_packed_pod_array_size_in_bytes<PackedInt32Array, int32_t>(array);
+}
+
+inline size_t get_estimated_size_in_bytes(const PackedVector3Array &array) {
+	return get_estimated_packed_pod_array_size_in_bytes<PackedVector3Array, Vector3>(array);
+}
+
 } // namespace zylann::godot
 
 namespace zylann {

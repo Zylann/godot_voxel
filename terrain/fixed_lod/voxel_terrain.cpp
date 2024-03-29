@@ -1801,6 +1801,14 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 
 		// TODO We need to count collision-only terrains too
 		++_mesh_updates_count;
+
+		block->geometry_cache.surfaces.resize(ob.surfaces.surfaces.size());
+		for (unsigned int surface_index = 0; surface_index < ob.surfaces.surfaces.size(); ++surface_index) {
+			const VoxelMesher::Output::Surface &src = ob.surfaces.surfaces[surface_index];
+			VoxelMeshGeometryCache::Surface &dst = block->geometry_cache.surfaces[surface_index];
+			dst.vertices = src.arrays[Mesh::ARRAY_VERTEX];
+			dst.indices = src.arrays[Mesh::ARRAY_INDEX];
+		}
 	}
 
 	if (mesh.is_null() && block->has_mesh()) {

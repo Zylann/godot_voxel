@@ -3,9 +3,11 @@
 
 #include "../constants/cube_tables.h"
 #include "../meshers/voxel_mesher.h"
+#include "../util/containers/container_funcs.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/span.h"
 #include "../util/godot/classes/world_3d.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/godot/direct_mesh_instance.h"
 #include "../util/godot/direct_static_body.h"
 #include "../util/ref_count.h"
@@ -17,6 +19,27 @@ ZN_GODOT_FORWARD_DECLARE(class ConcavePolygonShape3D);
 
 namespace zylann::voxel {
 
+struct VoxelMeshGeometryCache {
+	struct Surface {
+		// TODO In double-precision builds, caching doubles is a ridiculous waste of space
+		PackedVector3Array vertices;
+		// TODO Indices could be conditionally 16-bit
+		PackedInt32Array indices;
+		// TODO Info about surface type
+	};
+
+	StdVector<Surface> surfaces;
+};
+
+inline size_t get_estimated_size_in_bytes(const VoxelMeshGeometryCache::Surface &surface) {
+	return zylann::godot::get_estimated_size_in_bytes(surface.vertices) +
+			zylann::godot::get_estimated_size_in_bytes(surface.indices);
+}
+
+inline size_t get_estimated_size_in_bytes(const VoxelMeshGeometryCache &cache) {
+	return get_estimated_size_in_bytes(cache.surfaces);
+}
+
 // Stores mesh and collider for one chunk of the rendered volume.
 // It doesn't store voxel data, because it may be using different block size, or different data structure.
 // IMPORTANT: This is not an abstract class. It exists to share common code between variants of it.
@@ -24,6 +47,7 @@ namespace zylann::voxel {
 class VoxelMeshBlock : public NonCopyable {
 public:
 	Vector3i position; // In blocks
+	VoxelMeshGeometryCache geometry_cache;
 
 protected:
 	VoxelMeshBlock(Vector3i bpos);

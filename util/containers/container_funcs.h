@@ -216,6 +216,22 @@ bool contains(const std::vector<T, TAllocator> &vec, TPredicate predicate) {
 	return contains(to_span_const(vec), predicate);
 }
 
+template <typename TElement, typename TAllocator>
+size_t get_estimated_pod_vector_size_in_bytes(const std::vector<TElement, TAllocator> &vec) {
+	return sizeof(vec) + vec.capacity() * sizeof(TElement);
+}
+
+template <typename TElement, typename TAllocator>
+size_t get_estimated_size_in_bytes(const std::vector<TElement, TAllocator> &vec) {
+	// Note, if we need estination from primitive types, we may create corresponding overloads
+	size_t size = sizeof(vec);
+	for (const TElement &elem : vec) {
+		size += get_estimated_size_in_bytes(elem);
+	}
+	size += (vec.capacity() - vec.size()) * sizeof(TElement);
+	return size;
+}
+
 } // namespace zylann
 
 #endif // ZN_CONTAINER_FUNCS_H
