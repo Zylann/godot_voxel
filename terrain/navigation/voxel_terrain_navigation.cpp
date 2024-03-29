@@ -9,7 +9,7 @@
 #include "../../util/profiling.h"
 #include "../fixed_lod/voxel_terrain.h"
 
-#ifdef DEV_ENABLED
+#ifdef DEBUG_ENABLED
 #include "../../util/string_funcs.h"
 #endif
 
@@ -138,7 +138,7 @@ Ref<NavigationMeshSourceGeometryData3D> gather_geometry(const VoxelTerrain &terr
 			}
 		});
 
-#ifdef DEBUG_ENABLED
+#ifdef DEV_ENABLED
 		{
 			ZN_PROFILE_SCOPE_NAMED("Size estimation");
 			const size_t cache_size = get_geometry_cache_estimated_size_in_bytes(mesh_map);
