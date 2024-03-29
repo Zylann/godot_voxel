@@ -347,11 +347,7 @@ void VoxelTerrainNavigation::bake(const VoxelTerrain &terrain) {
 	// Not using `duplicate` because it is much slower. We could also recycle navmeshes?
 	copy_navigation_mesh_settings(**navmesh, **_template_navmesh);
 
-	print_line(String("Navmesh cell_size: {0}").format(varray(navmesh->get_cell_size())));
-	print_line(String("Navmesh cell_height: {0}").format(varray(navmesh->get_cell_height())));
 
-	print_line(String("Map cell_size: {0}").format(varray(map_cell_size)));
-	print_line(String("Map cell_height: {0}").format(varray(map_cell_height)));
 
 	{
 		ZN_PROFILE_SCOPE_NAMED("bake_from_source_geometry_data");
