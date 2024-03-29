@@ -228,6 +228,9 @@ Ref<NavigationMeshSourceGeometryData3D> gather_geometry(const VoxelTerrain &terr
 VoxelTerrainNavigation::VoxelTerrainNavigation() {
 	// TODO Eventually get rid of this node and use the server directly
 	_navigation_region = memnew(NavigationRegion3D);
+	// Turn edge connections off for now, it's very slow on large terrains and creates "sync errors" due to the wild
+	// nature of procedural terrain.
+	_navigation_region->set_use_edge_connections(false);
 	add_child(_navigation_region);
 
 	update_processing_state();
