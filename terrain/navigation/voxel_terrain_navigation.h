@@ -42,6 +42,8 @@ protected:
 private:
 	void process(float delta_time);
 	void bake(const VoxelTerrain &terrain);
+	static void on_async_bake_complete_static(uint64_t p_object_id, Ref<NavigationMesh> navmesh);
+	void on_async_bake_complete(Ref<NavigationMesh> navmesh);
 
 	static void _bind_methods();
 
