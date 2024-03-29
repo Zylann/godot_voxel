@@ -12,7 +12,7 @@ namespace zylann::voxel {
 class VoxelTerrain;
 
 // Bakes a single navigation mesh at runtime when terrain loads or changes.
-// TODO Rename VoxelTerrainNavigationSingle
+// TODO Rename VoxelTerrainNavigationGDSingle
 class VoxelTerrainNavigation : public Node3D {
 	GDCLASS(VoxelTerrainNavigation, Node3D)
 public:
@@ -23,6 +23,9 @@ public:
 
 	void set_template_navigation_mesh(Ref<NavigationMesh> navmesh);
 	Ref<NavigationMesh> get_template_navigation_mesh() const;
+
+	void debug_set_regions_visible_in_editor(bool enable);
+	bool debug_get_regions_visible_in_editor() const;
 
 #ifdef TOOLS_ENABLED
 #if defined(ZN_GODOT)
@@ -50,6 +53,7 @@ private:
 	unsigned int _prev_mesh_updates_count = 0;
 	bool _enabled = true;
 	bool _baking = false;
+	bool _visible_regions_in_editor = false;
 };
 
 } // namespace zylann::voxel

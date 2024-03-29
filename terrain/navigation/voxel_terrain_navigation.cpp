@@ -221,6 +221,38 @@ Ref<NavigationMesh> VoxelTerrainNavigation::get_template_navigation_mesh() const
 	return _template_navmesh;
 }
 
+void VoxelTerrainNavigation::debug_set_regions_visible_in_editor(bool enable) {
+	if (_visible_regions_in_editor == enable) {
+		return;
+	}
+	_visible_regions_in_editor = enable;
+#ifdef TOOLS_ENABLED
+	// Don't forget to turn this off before saving, or you'll end up saving runtime-generated nodes.
+	if (is_inside_tree()) {
+		if (_visible_regions_in_editor) {
+			_navigation_region->set_owner(get_tree()->get_edited_scene_root());
+		} else {
+			_navigation_region->set_owner(nullptr);
+		}
+
+		// TODO The Godot Editor doesn't update the scene tree dock when the owner of a node changes.
+		// One workaround is to switch to another scene tab and back.
+		// Another workaround is to instantiate a node owned by the edited scene, and delete it immediately after,
+		// which does update the scene tree, but DOES NOT update navmesh previews. And when I set the owner back to
+		// null, navmesh previews don't go away until I tab in and out of the scene...
+		//
+		// Node *temp_node = memnew(Node);
+		// add_child(temp_node);
+		// temp_node->set_owner(get_tree()->get_edited_scene_root());
+		// temp_node->queue_free();
+	}
+#endif
+}
+
+bool VoxelTerrainNavigation::debug_get_regions_visible_in_editor() const {
+	return _visible_regions_in_editor;
+}
+
 void VoxelTerrainNavigation::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_INTERNAL_PROCESS:
@@ -334,12 +366,22 @@ void VoxelTerrainNavigation::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("get_template_navigation_mesh"), &VoxelTerrainNavigation::get_template_navigation_mesh);
 
+	ClassDB::bind_method(D_METHOD("debug_get_regions_visible_in_editor"),
+			&VoxelTerrainNavigation::debug_get_regions_visible_in_editor);
+	ClassDB::bind_method(D_METHOD("debug_set_regions_visible_in_editor", "enabled"),
+			&VoxelTerrainNavigation::debug_set_regions_visible_in_editor);
+
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "is_enabled");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "template_navigation_mesh", PROPERTY_HINT_RESOURCE_TYPE,
 						 NavigationMesh::get_class_static(),
 						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
 			"set_template_navigation_mesh", "get_template_navigation_mesh");
+
+	ADD_GROUP("Debug", "debug_");
+
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_regions_visible_in_editor"), "debug_set_regions_visible_in_editor",
+			"debug_get_regions_visible_in_editor");
 }
 
 } // namespace zylann::voxel
