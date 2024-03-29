@@ -18,8 +18,11 @@ class VoxelTerrainNavigation : public Node3D {
 public:
 	VoxelTerrainNavigation();
 
-	void set_enabled(bool enabled);
+	void set_enabled(bool p_enabled);
 	bool is_enabled() const;
+
+	void set_run_in_editor(bool enable);
+	bool get_run_is_editor() const;
 
 	void set_template_navigation_mesh(Ref<NavigationMesh> navmesh);
 	Ref<NavigationMesh> get_template_navigation_mesh() const;
@@ -40,6 +43,7 @@ protected:
 	void _notification(int p_what);
 
 private:
+	void update_processing_state();
 	void process(float delta_time);
 	void bake(const VoxelTerrain &terrain);
 	static void on_async_bake_complete_static(uint64_t p_object_id, Ref<NavigationMesh> navmesh);
@@ -56,6 +60,7 @@ private:
 	bool _enabled = true;
 	bool _baking = false;
 	bool _visible_regions_in_editor = false;
+	bool _run_in_editor = false;
 };
 
 } // namespace zylann::voxel

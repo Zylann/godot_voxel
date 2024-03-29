@@ -1,7 +1,9 @@
 #include "voxel_terrain_navigation.h"
+#include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/navigation_mesh_source_geometry_data_3d.h"
 #include "../../util/godot/classes/navigation_region_3d.h"
 #include "../../util/godot/classes/navigation_server_3d.h"
+#include "../../util/godot/classes/object.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
@@ -228,13 +230,32 @@ VoxelTerrainNavigation::VoxelTerrainNavigation() {
 	_navigation_region = memnew(NavigationRegion3D);
 	add_child(_navigation_region);
 
-	set_process_internal(_enabled);
+	update_processing_state();
 }
 
-void VoxelTerrainNavigation::set_enabled(bool enabled) {
-	_enabled = enabled;
-	_navigation_region->set_enabled(enabled);
-	set_process_internal(_enabled);
+void VoxelTerrainNavigation::set_enabled(bool p_enabled) {
+	_enabled = p_enabled;
+	_navigation_region->set_enabled(p_enabled);
+	update_processing_state();
+}
+
+void VoxelTerrainNavigation::set_run_in_editor(bool enable) {
+	_run_in_editor = enable;
+	update_processing_state();
+}
+
+bool VoxelTerrainNavigation::get_run_is_editor() const {
+	return _run_in_editor;
+}
+
+void VoxelTerrainNavigation::update_processing_state() {
+	bool enabled = _enabled;
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint() && !_run_in_editor) {
+		enabled = false;
+	}
+#endif
+	set_process_internal(enabled);
 }
 
 bool VoxelTerrainNavigation::is_enabled() const {
@@ -300,6 +321,12 @@ void VoxelTerrainNavigation::process(float delta_time) {
 	if (!_enabled) {
 		return;
 	}
+
+#ifdef TOOLS_ENABLED
+	if (Engine::get_singleton()->is_editor_hint() && !_run_in_editor) {
+		return;
+	}
+#endif
 
 	if (_template_navmesh.is_null()) {
 		return;
@@ -424,6 +451,9 @@ void VoxelTerrainNavigation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_enabled", "enabled"), &VoxelTerrainNavigation::set_enabled);
 	ClassDB::bind_method(D_METHOD("is_enabled"), &VoxelTerrainNavigation::is_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_run_in_editor", "enabled"), &VoxelTerrainNavigation::set_run_in_editor);
+	ClassDB::bind_method(D_METHOD("get_run_in_editor"), &VoxelTerrainNavigation::get_run_is_editor);
+
 	ClassDB::bind_method(
 			D_METHOD("set_template_navigation_mesh", "navmesh"), &VoxelTerrainNavigation::set_template_navigation_mesh);
 	ClassDB::bind_method(
@@ -435,6 +465,7 @@ void VoxelTerrainNavigation::_bind_methods() {
 			&VoxelTerrainNavigation::debug_set_regions_visible_in_editor);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "is_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_in_editor"), "set_run_in_editor", "get_run_in_editor");
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "template_navigation_mesh", PROPERTY_HINT_RESOURCE_TYPE,
 						 NavigationMesh::get_class_static(),
