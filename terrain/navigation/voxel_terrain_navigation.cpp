@@ -384,6 +384,27 @@ void VoxelTerrainNavigation::get_configuration_warnings(PackedStringArray &warni
 	if (_template_navmesh.is_null()) {
 		warnings.append("No template is assigned, can't determine settings for baking.");
 	}
+
+	if (_template_navmesh.is_valid()) {
+		// TODO These warnings can't be updated once the user fixes them.
+		// NavigationMesh doesn't emit the `changed` signal when its properties are changed.
+		const real_t default_cell_size = 0.25;
+		const real_t default_cell_height = 0.25;
+		if (!Math::is_equal_approx(_template_navmesh->get_cell_size(), default_cell_size)) {
+			warnings.append(String(
+					"{0} template cell_size has been modified. It won't be used: {1} automatically sets it to the "
+					"map's cell size when baking.")
+									.format(varray(NavigationMesh::get_class_static(),
+											VoxelTerrainNavigation::get_class_static())));
+		}
+		if (!Math::is_equal_approx(_template_navmesh->get_cell_height(), default_cell_height)) {
+			warnings.append(String(
+					"{0} template cell_height has been modified. It won't be used: {1} automatically sets it to the "
+					"map's cell height when baking.")
+									.format(varray(NavigationMesh::get_class_static(),
+											VoxelTerrainNavigation::get_class_static())));
+		}
+	}
 }
 
 #endif
