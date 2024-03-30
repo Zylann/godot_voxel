@@ -1,5 +1,7 @@
 #include "test_voxel_graph.h"
+#include "../../generators/graph/image_range_grid.h"
 #include "../../generators/graph/node_type_db.h"
+#include "../../generators/graph/range_utility.h"
 #include "../../generators/graph/voxel_generator_graph.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
@@ -2006,6 +2008,70 @@ void test_voxel_graph_many_weight_outputs() {
 	ZN_TEST_ASSERT(result.success);
 
 	// TODO Also run that graph and test outputs?
+}
+
+void test_image_range_grid() {
+	Ref<Image> image_ref = Image::create_empty(300, 400, false, Image::FORMAT_RF);
+	Image &image = **image_ref;
+
+	for (int y = 0; y < image.get_height(); ++y) {
+		for (int x = 0; x < image.get_width(); ++x) {
+			const float h = 10.f + 0.3 * x + 0.1 * y;
+			image.set_pixel(x, y, Color(h, h, h));
+		}
+	}
+
+	using namespace math;
+
+	struct L {
+		static Color get_pixel_repeat(const Image &im, int x, int y) {
+			return im.get_pixel(math::wrap(x, im.get_width()), math::wrap(y, im.get_height()));
+		}
+
+		static Interval get_range_repeat(const Image &im, Interval x, Interval y) {
+			const int min_x = Math::floor(x.min);
+			const int min_y = Math::floor(y.min);
+			const int max_x = Math::ceil(x.max);
+			const int max_y = Math::ceil(y.max);
+
+			Interval i = Interval::from_single_value(get_pixel_repeat(im, min_x, min_y).r);
+			for (int y = min_y; y < max_y; ++y) {
+				for (int x = min_x; x < max_x; ++x) {
+					const float h = get_pixel_repeat(im, x, y).r;
+					i.add_point(h);
+				}
+			}
+
+			return i;
+		}
+
+		static void test_range(const Image &im, const ImageRangeGrid &range_grid, Interval x, Interval y) {
+			const Interval accurate_range = L::get_range_repeat(im, x, y);
+			const Interval estimated_range = range_grid.get_range(x, y);
+			ZN_TEST_ASSERT(estimated_range.contains(accurate_range));
+		}
+	};
+
+	zylann::ImageRangeGrid image_range_grid;
+	image_range_grid.generate(image);
+
+	const int image_width = image.get_width();
+	const int image_height = image.get_height();
+
+	L::test_range(image, image_range_grid, Interval(0, 20), Interval(0, 10));
+	L::test_range(image, image_range_grid, Interval(50, 200), Interval(105, 240));
+	// Decimal
+	L::test_range(image, image_range_grid, Interval(100, 100.5), Interval(100, 100.5));
+	// Power of two
+	L::test_range(image, image_range_grid, Interval(16, 32), Interval(64, 80));
+	L::test_range(image, image_range_grid, Interval(0, image_width), Interval(0, image_height));
+	// Larger than image size
+	L::test_range(image, image_range_grid, Interval(-image_width, image_width), Interval(-image_height, image_height));
+	L::test_range(image, image_range_grid, Interval(-10 * image_width, 10 * image_width),
+			Interval(-5 * image_height, 5 * image_height));
+	// Cross boundary
+	L::test_range(image, image_range_grid, Interval(image_width - 10, image_width + 10),
+			Interval(image_height - 5, image_height + 20));
 }
 
 } // namespace zylann::voxel::tests
