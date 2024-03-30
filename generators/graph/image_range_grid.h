@@ -20,8 +20,10 @@ public:
 	inline math::Interval get_range() const {
 		return _total_range;
 	}
-	// TODO Rename `get_range_repeat`
-	math::Interval get_range(math::Interval xr, math::Interval yr) const;
+
+	// Gets a quick upper bound of the range of values within an area of the image. If the area goes out of bounds of
+	// the image, evaluation will be done as if the image repeats infinitely.
+	math::Interval get_range_repeat(math::Interval xr, math::Interval yr) const;
 
 private:
 	static const int MAX_LODS = 16;

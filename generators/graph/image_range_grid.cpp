@@ -160,7 +160,7 @@ void interval_to_pixels_repeat(Interval i, int &out_min, int &out_max, int image
 
 } // namespace
 
-Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
+Interval ImageRangeGrid::get_range_repeat(Interval xr, Interval yr) const {
 	ZN_ASSERT(_lod_count > 0);
 
 	int pixel_min_x, pixel_max_x, pixel_min_y, pixel_max_y;

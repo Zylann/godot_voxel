@@ -2047,7 +2047,7 @@ void test_image_range_grid() {
 
 		static void test_range(const Image &im, const ImageRangeGrid &range_grid, Interval x, Interval y) {
 			const Interval accurate_range = L::get_range_repeat(im, x, y);
-			const Interval estimated_range = range_grid.get_range(x, y);
+			const Interval estimated_range = range_grid.get_range_repeat(x, y);
 			ZN_TEST_ASSERT(estimated_range.contains(accurate_range));
 		}
 	};

@@ -86,11 +86,11 @@ inline math::Interval sdf_sphere_heightmap(math::Interval x, math::Interval y, m
 	Interval h;
 	{
 		const Interval uvx = -atan_r0 * zylann::math::INV_TAU_32 + 0.5f;
-		h = im_range->get_range(uvx * norm_x, uvy * norm_y);
+		h = im_range->get_range_repeat(uvx * norm_x, uvy * norm_y);
 	}
 	if (atan_r1.valid) {
 		const Interval uvx = -atan_r1.value * zylann::math::INV_TAU_32 + 0.5f;
-		h.add_interval(im_range->get_range(uvx * norm_x, uvy * norm_y));
+		h.add_interval(im_range->get_range_repeat(uvx * norm_x, uvy * norm_y));
 	}
 
 	return sd - m * h;
@@ -165,9 +165,9 @@ void register_image_nodes(Span<NodeType> types) {
 			const Interval y = ctx.get_input(1);
 			const Params p = ctx.get_params<Params>();
 			if (p.filter == FILTER_NEAREST) {
-				ctx.set_output(0, p.image_range_grid->get_range(x, y));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat(x, y));
 			} else {
-				ctx.set_output(0, p.image_range_grid->get_range({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
+				ctx.set_output(0, p.image_range_grid->get_range_repeat({ x.min, x.max + 1 }, { y.min, y.max + 1 }));
 			}
 		};
 	}
