@@ -898,6 +898,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 
 	// TODO Support other depths, format should be accessible from the volume
 	ops::SdfOperation16bit<ops::SdfUnion, ops::SdfBufferShape> op;
+	op.op.strength = get_sdf_strength();
 	op.shape.world_to_buffer = buffer_to_world.affine_inverse();
 	op.shape.buffer_size = buffer.get_size();
 	op.shape.isolevel = isolevel;
