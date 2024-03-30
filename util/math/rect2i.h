@@ -2,7 +2,7 @@
 #define ZN_GODOT_RECT2I_H
 
 #if defined(ZN_GODOT)
-#include <core/math/rect2.h>
+#include <core/math/rect2i.h>
 #elif defined(ZN_GODOT_EXTENSION)
 #include <godot_cpp/variant/rect2i.hpp>
 using namespace godot;
