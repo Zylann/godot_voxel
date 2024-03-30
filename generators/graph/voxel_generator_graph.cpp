@@ -425,7 +425,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	const int stride = 1 << input.lod;
 
 	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
-	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
+	const float clip_threshold = _sdf_clip_threshold * stride;
 
 	// Block size must be a multiple of section size, as all sections must have the same size
 	const bool can_use_subdivision =
@@ -507,7 +507,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				bool sdf_is_air = true;
 				bool sdf_is_uniform = true;
 				if (sdf_output_buffer_index != -1) {
-					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index);
 					bool sdf_is_matter = false;
 
 					if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
