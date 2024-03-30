@@ -2067,11 +2067,20 @@ void test_image_range_grid() {
 	L::test_range(image, image_range_grid, Interval(0, image_width), Interval(0, image_height));
 	// Larger than image size
 	L::test_range(image, image_range_grid, Interval(-image_width, image_width), Interval(-image_height, image_height));
-	L::test_range(image, image_range_grid, Interval(-10 * image_width, 10 * image_width),
+	L::test_range(image, image_range_grid, //
+			Interval(-10 * image_width, 10 * image_width), //
 			Interval(-5 * image_height, 5 * image_height));
+	// Far away
+	L::test_range(image, image_range_grid, //
+			Interval(-10 * image_width + 50, -10 * image_width + 100),
+			Interval(-5 * image_height + 80, -5 * image_height + 90));
 	// Cross boundary
-	L::test_range(image, image_range_grid, Interval(image_width - 10, image_width + 10),
+	L::test_range(image, image_range_grid, //
+			Interval(image_width - 10, image_width + 10), //
 			Interval(image_height - 5, image_height + 20));
+	L::test_range(image, image_range_grid, //
+			Interval(10 * image_width + image_width - 10, 10 * image_width + image_width + 10), //
+			Interval(5 * image_height + image_height - 5, 5 * image_height + image_height + 20));
 }
 
 } // namespace zylann::voxel::tests
