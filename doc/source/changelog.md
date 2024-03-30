@@ -59,6 +59,7 @@ Primarily developped with Godot 4.2.
         - `copy` would return incorrect buffers when used on non-edited areas when data streaming is on and a generator is assigned
         - Fixed errors printed when moving away from edited chunks while no stream is assigned
         - Fixed `separate_floating_chunks` was spawning chunks not exactly at the same place
+        - Fixed `stamp_sdf` was randomly not working correctly
 
 - Breaking changes
     - `VoxelBuffer`: `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies)
