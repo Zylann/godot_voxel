@@ -159,8 +159,11 @@ inline int ceildiv(unsigned int x, unsigned int d) {
 // TODO Rename `wrapi`
 // `Math::wrapi` with zero min
 inline int wrap(int x, int d) {
-	return ((unsigned int)x - (x < 0)) % (unsigned int)d;
-	// return ((x % d) + d) % d;
+#ifdef DEV_ENABLED
+	ZN_ASSERT(d > 0);
+#endif
+	// return x % d; // Positive only
+	return ((x % d) + d) % d;
 }
 
 // Math::wrapf with zero min

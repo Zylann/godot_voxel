@@ -50,6 +50,7 @@ Primarily developped with Godot 4.2.
         - Fixed crash when using 16 weight output nodes (which is the maximum)
         - Fixed error when using more than 12 weight output nodes
         - Fixed using a graph as brush wasn't working with some transforms
+        - Fixed wrapping error with the `Image` node in negative coordinates
     - `VoxelInstanceLibraryMultimeshItem`: fixed error when using "Update From Scene" and trying to undo/redo it
     - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
     - `VoxelToolLodTerrain`: 
@@ -65,6 +66,7 @@ Primarily developped with Godot 4.2.
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
     - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
     - `VoxelGraphFunction`: some members of the `NodeTypeID` enum have changed value. However, this enum's values shouldn't be used raw, and shouldn't be used in saves.
+    - `VoxelGeneratorGraph`: the fix to `Image` coordinate wrapping means results will be different than the previous broken version (the broken version was partially offsetting the image in negative coordinates)
 
 
 1.1 - 29/12/2023 - `1.1`
