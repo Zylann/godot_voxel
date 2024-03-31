@@ -1,6 +1,6 @@
 #include "container_funcs.h"
 #include "../io/log.h"
-#include "../string/string_funcs.h"
+#include "../string/format.h"
 #include <sstream>
 
 namespace zylann {

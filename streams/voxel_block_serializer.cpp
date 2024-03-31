@@ -7,7 +7,7 @@
 #include "../util/io/serialization.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
-#include "../util/string/string_funcs.h"
+#include "../util/string/format.h"
 #include "compressed_data.h"
 
 #if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)

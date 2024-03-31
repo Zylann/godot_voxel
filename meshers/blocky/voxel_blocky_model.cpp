@@ -6,7 +6,7 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "voxel_blocky_library.h"
 
 // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency

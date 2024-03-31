@@ -9,7 +9,7 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 

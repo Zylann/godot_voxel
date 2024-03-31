@@ -3,7 +3,7 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/math/rect2i.h"
 #include "../../util/math/vector2i.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann {
 

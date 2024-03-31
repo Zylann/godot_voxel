@@ -4,7 +4,7 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/io/log.h"
 #include "../../util/profiling.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "file_utils.h"
 #include <algorithm>
 

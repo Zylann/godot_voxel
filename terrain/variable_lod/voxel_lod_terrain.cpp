@@ -28,7 +28,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"

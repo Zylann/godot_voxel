@@ -13,7 +13,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "voxel_lod_terrain_update_clipbox_streaming.h"
 #include "voxel_lod_terrain_update_octree_streaming.h"

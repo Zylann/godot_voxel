@@ -31,7 +31,7 @@
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
 #include "voxel_graph_editor_shader_dialog.h"

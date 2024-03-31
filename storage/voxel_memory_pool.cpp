@@ -2,8 +2,8 @@
 #include "../util/macros.h"
 #include "../util/memory/memory.h"
 #include "../util/profiling.h"
+#include "../util/string/format.h"
 #include "../util/string/std_string.h"
-#include "../util/string/string_funcs.h"
 
 namespace zylann::voxel {
 

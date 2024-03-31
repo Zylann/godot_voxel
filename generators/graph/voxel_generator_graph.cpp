@@ -14,7 +14,7 @@
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
 #include "../../util/string/expression_parser.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "node_type_db.h"
 #include "voxel_graph_function.h"
 

@@ -16,7 +16,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../fixed_lod/voxel_terrain.h"
 #include "../variable_lod/voxel_lod_terrain.h"
 #include "load_instance_block_task.h"

@@ -11,7 +11,7 @@
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/editor_scale.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "editor_property_text_change_on_submit.h"
 #include "voxel_graph_editor.h"
 #include "voxel_graph_editor_inspector_plugin.h"

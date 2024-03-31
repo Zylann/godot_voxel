@@ -3,7 +3,7 @@
 #include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/profiling.h"
-#include "../util/string/string_funcs.h"
+#include "../util/string/format.h"
 #include "voxel_memory_pool.h"
 #include <cstring>
 

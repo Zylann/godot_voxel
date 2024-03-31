@@ -4,7 +4,7 @@
 #include "../util/godot/classes/image.h"
 #include "../util/math/color.h"
 #include "../util/memory/memory.h"
-#include "../util/string/string_funcs.h"
+#include "../util/string/format.h"
 #include "voxel_metadata_variant.h"
 
 namespace zylann::voxel::godot {

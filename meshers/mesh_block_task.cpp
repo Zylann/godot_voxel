@@ -8,7 +8,7 @@
 #include "../util/io/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-//#include "../util/string/string_funcs.h" // Debug
+//#include "../util/string/format.h" // Debug
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_gpu_task.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"

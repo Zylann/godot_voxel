@@ -1,5 +1,5 @@
-#ifndef ZN_STRING_FUNCS_H
-#define ZN_STRING_FUNCS_H
+#ifndef ZN_STRING_FORMAT_H
+#define ZN_STRING_FORMAT_H
 
 #include "std_string.h"
 #include "std_stringstream.h"
@@ -46,4 +46,4 @@ StdString format(std::string_view fmt, const TN &...an) {
 
 } // namespace zylann
 
-#endif // ZN_STRING_FUNCS_H
+#endif // ZN_STRING_FORMAT_H

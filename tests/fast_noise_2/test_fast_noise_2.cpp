@@ -2,7 +2,7 @@
 #include "../../util/godot/classes/image.h"
 #include "../../util/io/log.h"
 #include "../../util/noise/fast_noise_2.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann::tests {
 

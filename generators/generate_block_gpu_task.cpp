@@ -8,7 +8,7 @@
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string/string_funcs.h"
+#include "../util/string/format.h"
 
 #include "../util/godot/classes/rendering_device.h"
 

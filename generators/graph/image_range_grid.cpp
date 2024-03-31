@@ -1,6 +1,6 @@
 #include "image_range_grid.h"
 #include "../../util/godot/classes/image.h"
-#include "../../util/string/string_funcs.h"
+#include "../../util/string/format.h"
 #include "range_utility.h"
 
 namespace zylann {
