@@ -63,7 +63,8 @@ Primarily developped with Godot 4.2.
         - Fixed `stamp_sdf` was randomly not working correctly
 
 - Breaking changes
-    - `VoxelBuffer`: `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies)
+    - `VoxelBuffer`: `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies).
+    - `VoxelTool`: due to the automatic internal SDF rescaling, if you modify `sdf_scale`, you may have to adjust it (or remove it if you set it to 0.002).
     - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
     - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
