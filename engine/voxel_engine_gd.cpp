@@ -1,4 +1,5 @@
 #include "voxel_engine_gd.h"
+#include "../constants/version.gen.h"
 #include "../constants/voxel_string_names.h"
 #include "../storage/voxel_memory_pool.h"
 #include "../util/godot/classes/project_settings.h"
@@ -65,6 +66,18 @@ VoxelEngine::VoxelEngine() {
 	RenderingServer::get_singleton()->connect(VoxelStringNames::get_singleton().frame_post_draw,
 			callable_mp(this, &VoxelEngine::_on_rendering_server_frame_post_draw));
 #endif
+}
+
+int VoxelEngine::get_version_major() const {
+	return VOXEL_VERSION_MAJOR;
+}
+
+int VoxelEngine::get_version_minor() const {
+	return VOXEL_VERSION_MINOR;
+}
+
+int VoxelEngine::get_version_patch() const {
+	return VOXEL_VERSION_PATCH;
 }
 
 Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats::ThreadPoolStats &stats) {
@@ -156,6 +169,9 @@ Vector3 VoxelEngine::get_editor_camera_direction() const {
 #endif
 
 void VoxelEngine::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_version_major"), &VoxelEngine::get_version_major);
+	ClassDB::bind_method(D_METHOD("get_version_minor"), &VoxelEngine::get_version_minor);
+	ClassDB::bind_method(D_METHOD("get_version_patch"), &VoxelEngine::get_version_patch);
 	ClassDB::bind_method(D_METHOD("get_stats"), &VoxelEngine::get_stats);
 }
 
