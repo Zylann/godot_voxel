@@ -8,7 +8,7 @@
 using namespace godot;
 #endif
 
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 
 namespace zylann {
 

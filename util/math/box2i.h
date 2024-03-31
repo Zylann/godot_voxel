@@ -2,9 +2,9 @@
 #define ZYLANN_BOX2I_H
 
 #include "../containers/std_vector.h"
+#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include "vector2i.h"
-#include "../std_stringstream.h"
 
 namespace zylann {
 

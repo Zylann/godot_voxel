@@ -4,7 +4,7 @@
 #include "../storage/voxel_buffer.h"
 #include "../util/io/log.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/string_funcs.h"
 #include "../util/tasks/async_dependency_tracker.h"
 
 namespace zylann::voxel {

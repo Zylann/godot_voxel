@@ -1,7 +1,7 @@
 #ifndef ZN_STD_STRING_H
 #define ZN_STD_STRING_H
 
-#include "memory/std_allocator.h"
+#include "../memory/std_allocator.h"
 #include <string>
 
 #ifdef __GNUC__

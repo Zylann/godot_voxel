@@ -3,7 +3,7 @@
 #include "../../util/dstack.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/string_funcs.h"
 #include "generate_block_multipass_cb_task.h"
 
 #include "../../util/godot/classes/time.h"

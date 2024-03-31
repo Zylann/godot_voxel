@@ -3,7 +3,7 @@
 
 #include "../containers/small_vector.h"
 #include "../containers/std_vector.h"
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "vector3i.h"
 
 namespace zylann {

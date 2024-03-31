@@ -1,6 +1,6 @@
 #include "spatial_lock_2d.h"
 #include "../io/log.h"
-#include "../string_funcs.h"
+#include "../string/string_funcs.h"
 
 namespace zylann::voxel {
 

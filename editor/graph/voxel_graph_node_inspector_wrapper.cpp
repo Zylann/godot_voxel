@@ -4,7 +4,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/io/log.h"
-#include "../../util/std_string.h"
+#include "../../util/string/std_string.h"
 #include "voxel_graph_editor.h"
 
 #include <algorithm>

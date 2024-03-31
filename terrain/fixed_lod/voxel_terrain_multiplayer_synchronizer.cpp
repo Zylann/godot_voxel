@@ -8,7 +8,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/io/serialization.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/string_funcs.h"
 #include "voxel_terrain.h"
 
 #ifdef TOOLS_ENABLED

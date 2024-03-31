@@ -9,8 +9,8 @@
 using namespace godot;
 #endif
 
-#include "../../std_string.h"
-#include "../../std_stringstream.h"
+#include "../../string/std_string.h"
+#include "../../string/std_stringstream.h"
 #include <string_view>
 
 #ifdef TOOLS_ENABLED

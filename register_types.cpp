@@ -61,7 +61,7 @@
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
 #include "util/noise/spot_noise_gd.h"
-#include "util/string_funcs.h"
+#include "util/string/string_funcs.h"
 #include "util/tasks/async_dependency_tracker.h"
 #include "util/tasks/godot/threaded_task_gd.h"
 

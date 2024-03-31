@@ -3,9 +3,9 @@
 
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
-#include "../../util/expression_parser.h"
 #include "../../util/godot/core/string.h" // For String hash
-#include "../../util/std_string.h"
+#include "../../util/string/expression_parser.h"
+#include "../../util/string/std_string.h"
 #include "voxel_graph_compiler.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_shader_generator.h"

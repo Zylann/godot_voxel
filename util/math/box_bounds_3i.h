@@ -1,7 +1,7 @@
 #ifndef ZN_BOX_BOUNDS_3I_H
 #define ZN_BOX_BOUNDS_3I_H
 
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "box3i.h"
 
 namespace zylann {

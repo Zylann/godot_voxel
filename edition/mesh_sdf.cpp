@@ -4,7 +4,7 @@
 #include "../util/math/triangle.h"
 #include "../util/math/vector3d.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h" // Debug
+#include "../util/string/string_funcs.h" // Debug
 #include "../util/voxel_raycast.h"
 
 // Debug

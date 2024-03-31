@@ -3,7 +3,7 @@
 
 #include "../containers/std_unordered_map.h"
 #include "../errors.h"
-#include "../std_string.h"
+#include "../string/std_string.h"
 #include "../thread/mutex.h"
 #include "../thread/rw_lock.h"
 

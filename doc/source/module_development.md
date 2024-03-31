@@ -315,7 +315,7 @@ Non-Godot:
 
 ```cpp
 #include "util/io/log.h"
-#include "util/string_funcs.h"
+#include "util/string/string_funcs.h"
 
 println(format("Hello {}, my age is {}", name, age));
 ```

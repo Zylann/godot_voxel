@@ -1,6 +1,6 @@
 #include "voxel_a_star_grid_3d.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
-// #include "../util/string_funcs.h"
+// #include "../util/string/string_funcs.h"
 #include "../constants/voxel_string_names.h"
 #include "../util/math/conv.h"
 

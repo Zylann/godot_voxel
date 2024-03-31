@@ -1,6 +1,6 @@
 #include "voxel_metadata.h"
 #include "../util/errors.h"
-#include "../util/string_funcs.h"
+#include "../util/string/string_funcs.h"
 
 namespace zylann::voxel {
 

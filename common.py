@@ -70,6 +70,7 @@ def get_sources(env, is_editor_build):
         "util/noise/fast_noise_lite/*.cpp",
         "util/noise/gd_noise_range.cpp",
         "util/noise/spot_noise_gd.cpp",
+        "util/string/*.cpp",
         "util/thread/thread.cpp",
         "util/thread/spatial_lock_2d.cpp",
         "util/thread/spatial_lock_3d.cpp",

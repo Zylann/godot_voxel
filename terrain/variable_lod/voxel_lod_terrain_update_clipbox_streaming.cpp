@@ -2,7 +2,7 @@
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/string_funcs.h"
 #include "voxel_lod_terrain_update_task.h"
 
 // #include <fstream>

@@ -3,7 +3,7 @@
 #include "../util/io/serialization.h"
 #include "../util/math/basis.h"
 #include "../util/math/funcs.h"
-#include "../util/string_funcs.h"
+#include "../util/string/string_funcs.h"
 
 namespace zylann::voxel {
 

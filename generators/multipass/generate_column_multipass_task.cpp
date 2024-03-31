@@ -5,7 +5,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/string_funcs.h"
 
 namespace zylann::voxel {
 

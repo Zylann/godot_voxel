@@ -4,8 +4,8 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/std_string.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/std_string.h"
+#include "../../util/string/string_funcs.h"
 #include "../compressed_data.h"
 
 #include <limits>

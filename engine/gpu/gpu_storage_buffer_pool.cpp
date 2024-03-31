@@ -3,8 +3,8 @@
 #include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
-#include "../../util/std_stringstream.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/std_stringstream.h"
+#include "../../util/string/string_funcs.h"
 
 #include <algorithm>
 #include <limits>

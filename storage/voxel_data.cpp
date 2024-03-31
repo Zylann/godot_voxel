@@ -2,7 +2,7 @@
 #include "../util/containers/std_vector.h"
 #include "../util/dstack.h"
 #include "../util/math/conv.h"
-#include "../util/string_funcs.h"
+#include "../util/string/string_funcs.h"
 #include "../util/thread/mutex.h"
 #include "voxel_data_grid.h"
 #include "voxel_metadata_variant.h"

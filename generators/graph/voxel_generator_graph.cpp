@@ -2,7 +2,6 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
-#include "../../util/expression_parser.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/object.h"
@@ -14,7 +13,8 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/expression_parser.h"
+#include "../../util/string/string_funcs.h"
 #include "node_type_db.h"
 #include "voxel_graph_function.h"
 

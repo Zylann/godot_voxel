@@ -9,7 +9,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/string_funcs.h"
 
 namespace zylann::voxel {
 
