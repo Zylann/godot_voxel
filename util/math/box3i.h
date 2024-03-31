@@ -11,6 +11,7 @@ namespace zylann {
 // Axis-aligned 3D box using integer coordinates
 class Box3i {
 public:
+	// TODO Rename `position`
 	Vector3i pos;
 	Vector3i size;
 
@@ -322,6 +323,10 @@ public:
 		Box3i copy(*this);
 		copy.clip(lim);
 		return copy;
+	}
+
+	inline Box3i clipped(const Vector3i &lim_size) const {
+		return clipped(Box3i(Vector3i(), lim_size));
 	}
 
 	inline bool encloses(const Box3i &other) const {

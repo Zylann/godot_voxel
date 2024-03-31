@@ -305,6 +305,29 @@ struct SdfBufferShape {
 	}
 };
 
+struct SdfAxisAlignedBox {
+	Vector3 center;
+	Vector3 half_size;
+	real_t sdf_scale;
+
+	inline real_t operator()(Vector3 pos) const {
+		return sdf_scale * math::sdf_box(pos - center, half_size);
+	}
+
+	inline bool is_inside(Vector3 pos) const {
+		return AABB(center - half_size, 2 * half_size).has_point(pos);
+	}
+
+	inline Box3i get_box() {
+		return Box3i::from_min_max( //
+				math::floor_to_int(center - half_size), math::ceil_to_int(center + half_size))
+				// That padding is for SDF to have some margin
+				// TODO Don't add padding from here, it must be done at higher level, where we know the type of
+				// operation
+				.padded(2);
+	}
+};
+
 Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1);
 
 struct SdfRoundCone {
@@ -378,7 +401,32 @@ enum Mode { //
 	MODE_TEXTURE_PAINT
 };
 
-// This one is implemented manually for a fast-path in texture paint
+// Single-value helper. Prefer using bulk APIs otherwise.
+inline float sdf_blend(float src_value, float dst_value, Mode mode) {
+	float res;
+	switch (mode) {
+		case MODE_ADD:
+			res = zylann::math::sdf_union(src_value, dst_value);
+			break;
+
+		case MODE_REMOVE:
+			// Relative complement (or difference)
+			res = zylann::math::sdf_subtract(dst_value, src_value);
+			break;
+
+		case MODE_SET:
+			res = src_value;
+			break;
+
+		default:
+			res = 0;
+			break;
+	}
+	return res;
+}
+
+// This one is implemented manually for a fast-path in texture paint.
+// Also handles locking...
 // TODO Find a nicer way to do this without copypasta
 struct DoSphere {
 	SdfSphere shape;
@@ -560,6 +608,69 @@ struct DoShapeChunked {
 			op.shape = shape;
 			op.value = blocky_value;
 			write_box_in_chunked_storage_1_channel(op, block_access, box, channel);
+		}
+	}
+};
+
+template <typename TShape>
+struct DoShapeSingleBuffer {
+	TShape shape;
+	Mode mode;
+	VoxelBuffer *buffer = nullptr;
+	Box3i box; // Should be clipped by the user
+	VoxelBuffer::ChannelId channel;
+	TextureParams texture_params;
+	uint32_t blocky_value;
+	float strength;
+
+	void operator()() {
+		ZN_PROFILE_SCOPE();
+		ZN_ASSERT(buffer != nullptr);
+
+		// const Box3i clipped_box = box.clip(Box3i(Vector3i(), buffer.get_size()));
+
+		if (channel == VoxelBuffer::CHANNEL_SDF) {
+			switch (mode) {
+				case MODE_ADD: {
+					// TODO Support other depths, format should be accessible from the volume. Or separate encoding?
+					SdfOperation16bit<SdfUnion, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_REMOVE: {
+					SdfOperation16bit<SdfSubtract, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_SET: {
+					SdfOperation16bit<SdfSet, TShape> op;
+					op.shape = shape;
+					op.op.strength = strength;
+					buffer->write_box(box, channel, op, Vector3i());
+				} break;
+
+				case MODE_TEXTURE_PAINT: {
+					TextureBlendOp<TShape> op;
+					op.shape = shape;
+					op.texture_params = texture_params;
+					buffer->write_box_2_template<TextureBlendOp<TShape>, uint16_t, uint16_t>(
+							box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i());
+				} break;
+
+				default:
+					ERR_PRINT("Unknown mode");
+					break;
+			}
+
+		} else {
+			BlockySetOperation<uint32_t, TShape> op;
+			op.shape = shape;
+			op.value = blocky_value;
+			buffer->write_box(box, channel, op, Vector3i());
 		}
 	}
 };

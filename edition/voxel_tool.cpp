@@ -8,9 +8,7 @@
 
 namespace zylann::voxel {
 
-VoxelTool::VoxelTool() {
-	_sdf_scale = 1.f; // VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
-}
+VoxelTool::VoxelTool() {}
 
 void VoxelTool::set_value(uint64_t val) {
 	_value = val;
@@ -153,41 +151,13 @@ void VoxelTool::_set_voxel_f(Vector3i pos, float v) {
 	ERR_PRINT("Not implemented");
 }
 
-// TODO May be worth using VoxelBuffer::read_write_action() in the future with a lambda,
-// so we avoid the burden of going through get/set, validation and rehash access to blocks.
-// Would work well by avoiding virtual as well using a specialized implementation.
-
-namespace {
-inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
-	float res;
-	switch (mode) {
-		case VoxelTool::MODE_ADD:
-			res = zylann::math::sdf_union(src_value, dst_value);
-			break;
-
-		case VoxelTool::MODE_REMOVE:
-			// Relative complement (or difference)
-			res = zylann::math::sdf_subtract(dst_value, src_value);
-			break;
-
-		case VoxelTool::MODE_SET:
-			res = src_value;
-			break;
-
-		default:
-			res = 0;
-			break;
-	}
-	return res;
-}
-} // namespace
-
 // The following are default legacy implementations. They may be slower than specialized ones, so they can often be
 // defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
 // definition in all specialized classes.
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
+	// Default, suboptimal implementation
 
 	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
@@ -200,7 +170,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
-			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
+			_set_voxel_f(pos, ops::sdf_blend(d, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
@@ -248,8 +218,10 @@ void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	ZN_PROFILE_SCOPE();
+	// Default, suboptimal implementation
+
 	Vector3iUtil::sort_min_max(begin, end);
-	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
+	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
 	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -260,11 +232,11 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 		// TODO Better quality
 		// Not consistent SDF, but should work ok
 		box.for_each_cell([this](Vector3i pos) {
-			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), _mode));
+			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
-		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
+		const int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
 	}
 

@@ -22,6 +22,7 @@ Primarily developped with Godot 4.2.
 - `VoxelGeneratorGraph`: Added GPU support for the `Select` node
 - `VoxelTool`:
     - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
+    - `do_box` with smooth voxels now uses a proper box SDF, to improve quality. Before it was a solid fill, which could cause artifacts
 - `VoxelToolBuffer`: edits are now allowed even if the affected area is partially out of bounds of the target buffer. Results will be clipped.
 - `VoxelLodTerrain`:
     - `save_all_modified_blocks` now returns a completion tracker similar to `VoxelTerrain`

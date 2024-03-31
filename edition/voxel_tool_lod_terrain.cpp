@@ -158,6 +158,42 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 	return res;
 }
 
+void VoxelToolLodTerrain::do_box(Vector3i begin, Vector3i end) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	ops::DoShapeChunked<ops::SdfAxisAlignedBox, ops::VoxelDataGridAccess> op;
+	op.shape.center = to_vec3(begin + end) * 0.5;
+	op.shape.half_size = to_vec3(end - begin) * 0.5;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
+	op.mode = static_cast<ops::Mode>(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+
+	if (!is_area_editable(op.box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelData &data = _terrain->get_storage();
+
+	data.pre_generate_box(op.box);
+
+	VoxelDataGrid grid;
+	data.get_blocks_grid(grid, op.box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
+
+	_post_edit(op.box);
+}
+
 void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -167,7 +203,7 @@ void VoxelToolLodTerrain::do_sphere(Vector3 center, float radius) {
 	op.shape.radius = radius;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
-	op.mode = ops::Mode(get_mode());
+	op.mode = static_cast<ops::Mode>(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
 	op.channel = get_channel();
@@ -199,7 +235,7 @@ void VoxelToolLodTerrain::do_hemisphere(Vector3 center, float radius, Vector3 fl
 	op.shape.smoothness = smoothness;
 	op.shape.sdf_scale = get_sdf_scale();
 	op.box = op.shape.get_box().clipped(_terrain->get_voxel_bounds());
-	op.mode = ops::Mode(get_mode());
+	op.mode = static_cast<ops::Mode>(get_mode());
 	op.texture_params = _texture_params;
 	op.blocky_value = _value;
 	op.channel = get_channel();

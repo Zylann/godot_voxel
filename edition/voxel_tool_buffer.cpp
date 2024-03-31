@@ -20,22 +20,68 @@ bool VoxelToolBuffer::is_area_editable(const Box3i &box) const {
 
 void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_buffer.is_null());
-
-	if (_mode != MODE_TEXTURE_PAINT) {
-		// TODO Eventually all specialized voxel tools should use lambda writing functions
-		VoxelTool::do_sphere(center, radius);
-		return;
-	}
-
 	ZN_PROFILE_SCOPE();
 
-	Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
-	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
+	VoxelBuffer &vb = _buffer->get_buffer();
 
-	_buffer->get_buffer().write_box_2_template<ops::TextureBlendSphereOp, uint16_t, uint16_t>(box,
-			VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-			ops::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
+	ops::DoShapeSingleBuffer<ops::SdfSphere> op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(vb.get_size());
+	op.mode = static_cast<ops::Mode>(get_mode());
+	op.buffer = &vb;
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+
+	op();
+
+	_post_edit(op.box);
+}
+
+void VoxelToolBuffer::do_box(Vector3i begin, Vector3i end) {
+	ERR_FAIL_COND(_buffer.is_null());
+	ZN_PROFILE_SCOPE();
+
+	VoxelBuffer &vb = _buffer->get_buffer();
+
+	Vector3iUtil::sort_min_max(begin, end);
+	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1)).clipped(vb.get_size());
+
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+#if 0
+		const float sdf_scale = get_sdf_scale();
+		const VoxelBuffer::ChannelId channel = _channel;
+		const ops::Mode mode = static_cast<ops::Mode>(_mode);
+
+		// TODO Better quality
+		// Not consistent SDF, but should work ok
+		box.for_each_cell([&vb, sdf_scale, channel, mode](Vector3i pos) {
+			vb.set_voxel_f(ops::sdf_blend(constants::SDF_FAR_INSIDE * sdf_scale, vb.get_voxel_f(pos, channel), mode),
+					pos, channel);
+		});
+#else
+		ops::DoShapeSingleBuffer<ops::SdfAxisAlignedBox> op;
+		op.shape.center = to_vec3(begin + end) * 0.5;
+		op.shape.half_size = to_vec3(end - begin) * 0.5;
+		op.shape.sdf_scale = get_sdf_scale();
+		op.box = op.shape.get_box().clipped(vb.get_size());
+		op.mode = static_cast<ops::Mode>(get_mode());
+		op.buffer = &vb;
+		op.texture_params = _texture_params;
+		op.blocky_value = _value;
+		op.channel = get_channel();
+		op.strength = get_sdf_strength();
+
+		op();
+#endif
+
+	} else {
+		const int value = _mode == MODE_REMOVE ? _eraser_value : _value;
+		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
+	}
 
 	_post_edit(box);
 }
