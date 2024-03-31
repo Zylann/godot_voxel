@@ -1,7 +1,6 @@
 #include "voxel_block_serializer.h"
 #include "../storage/voxel_buffer.h"
 #include "../storage/voxel_memory_pool.h"
-#include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file_access.h"
 #include "../util/io/serialization.h"
@@ -562,7 +561,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
 #if DEV_ENABLED
 	if (magic != BLOCK_TRAILING_MAGIC) {
-		print_data_hex(p_data);
+		print_line(to_hex_table(p_data));
 	}
 #endif
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);

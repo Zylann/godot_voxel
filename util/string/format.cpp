@@ -1,11 +1,10 @@
-#include "container_funcs.h"
-#include "../io/log.h"
-#include "../string/format.h"
-#include <sstream>
+#include "format.h"
 
 namespace zylann {
 
-void print_data_hex(Span<const uint8_t> data) {
+#ifdef DEV_ENABLED
+
+StdString to_hex_table(Span<const uint8_t> data) {
 	StdStringStream ss;
 	struct L {
 		static inline char to_hex(uint8_t nibble) {
@@ -43,7 +42,9 @@ void print_data_hex(Span<const uint8_t> data) {
 	}
 	ss << std::endl;
 	ss << "---";
-	print_line(ss.str());
+	return ss.str();
 }
+
+#endif
 
 } // namespace zylann

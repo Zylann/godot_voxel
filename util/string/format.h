@@ -1,6 +1,9 @@
 #ifndef ZN_STRING_FORMAT_H
 #define ZN_STRING_FORMAT_H
 
+#ifdef DEV_ENABLED
+#include "../containers/span.h"
+#endif
 #include "std_string.h"
 #include "std_stringstream.h"
 #include <sstream>
@@ -43,6 +46,10 @@ StdString format(std::string_view fmt, const TN &...an) {
 	ss << fmt;
 	return ss.str();
 }
+
+#ifdef DEV_ENABLED
+StdString to_hex_table(Span<const uint8_t> data);
+#endif
 
 } // namespace zylann
 
