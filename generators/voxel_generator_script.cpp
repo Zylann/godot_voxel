@@ -1,6 +1,7 @@
 #include "voxel_generator_script.h"
 #include "../constants/voxel_string_names.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/check_ref_ownership.h"
 
 namespace zylann::voxel {
 
@@ -16,8 +17,11 @@ VoxelGenerator::Result VoxelGeneratorScript::generate_block(VoxelGenerator::Voxe
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 
-	if (!GDVIRTUAL_CALL(_generate_block, buffer_wrapper, input.origin_in_voxels, input.lod)) {
-		WARN_PRINT_ONCE("VoxelGeneratorScript::_generate_block is unimplemented!");
+	{
+		ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(buffer_wrapper);
+		if (!GDVIRTUAL_CALL(_generate_block, buffer_wrapper, input.origin_in_voxels, input.lod)) {
+			WARN_PRINT_ONCE("VoxelGeneratorScript::_generate_block is unimplemented!");
+		}
 	}
 
 	// The wrapper is discarded

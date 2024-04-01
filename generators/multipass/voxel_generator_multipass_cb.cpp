@@ -2,12 +2,12 @@
 #include "../../engine/buffered_task_scheduler.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/check_ref_ownership.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "generate_block_multipass_cb_task.h"
-
 
 namespace zylann::voxel {
 
@@ -63,7 +63,10 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 
-	GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+	{
+		ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(buffer_wrapper);
+		GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+	}
 
 	// The wrapper is discarded
 	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
@@ -195,7 +198,11 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 		Ref<VoxelToolMultipassGenerator> vt;
 		vt.instantiate();
 		vt->set_pass_input(input);
-		GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+
+		{
+			ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(vt);
+			GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+		}
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compress uniform blocks");

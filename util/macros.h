@@ -13,4 +13,10 @@
 #define ZN_UNLIKELY(x) x
 #endif
 
+#define ZN_INTERNAL_CONCAT(x, y) x##y
+// Helper to concatenate macro arguments if one of them is itself a macro like `__LINE__`,
+// otherwise doing `x##y` directly would not expand the arguments that are a macro
+// https://stackoverflow.com/questions/1597007/creating-c-macro-with-and-line-token-concatenation-with-positioning-macr
+#define ZN_CONCAT(x, y) ZN_INTERNAL_CONCAT(x, y)
+
 #endif // ZYLANN_MACROS_H
