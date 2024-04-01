@@ -1,12 +1,13 @@
 #include "voxel_generator_multipass_cb.h"
 #include "../../engine/buffered_task_scheduler.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "generate_block_multipass_cb_task.h"
 
-#include "../../util/godot/classes/time.h"
 
 namespace zylann::voxel {
 
@@ -540,7 +541,7 @@ bool VoxelGeneratorMultipassCB::_set(const StringName &p_name, const Variant &p_
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 
@@ -558,7 +559,7 @@ bool VoxelGeneratorMultipassCB::_get(const StringName &p_name, Variant &r_ret) c
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 

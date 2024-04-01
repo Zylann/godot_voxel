@@ -46,6 +46,7 @@ Primarily developped with Godot 4.2.
     - Fixed error `Unimplemented _get_import_order in add-on` when importing `.vox` files
     - Fixed some corner cases where quickly leaving and coming back to an edited area would revert edits to their previous state, due to chunks reloading before those edits got saved asynchronously
     - Fixed possible artifacts near terrain borders when using generators that sometimes avoid filling the output buffer, assuming they are initialized to defaults (issue #603)
+    - `VoxelBlockyModel`: Fixed `material_override_*` properties all acting like the same material
     - `VoxelGeneratorGraph`: 
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
         - Fixed default input values of output nodes were always 0 when using GPU generation

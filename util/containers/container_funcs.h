@@ -214,6 +214,20 @@ bool contains(const std::vector<T, TAllocator> &vec, TPredicate predicate) {
 	return contains(to_span_const(vec), predicate);
 }
 
+// Gets the number of elements in a compile-time known array
+template <typename T, int N>
+constexpr size_t count_of(const T (&)[N]) {
+	return N;
+}
+
+// Gets the number of characters in a compile-time known string
+template <int N>
+constexpr size_t string_literal_length(const char (&)[N]) {
+	// -1 to exclude the null-terminating character '\0'
+	static_assert(N > 0);
+	return N - 1;
+}
+
 } // namespace zylann
 
 #endif // ZN_CONTAINER_FUNCS_H
