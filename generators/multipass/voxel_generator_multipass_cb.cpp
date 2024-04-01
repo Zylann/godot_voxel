@@ -189,7 +189,6 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 
 	// Note: must not access _internal from here, only use `input`
 
-	Variant v = get_script();
 	if (get_script() != Variant()) {
 		// TODO Cache it?
 		Ref<VoxelToolMultipassGenerator> vt;
