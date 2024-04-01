@@ -156,13 +156,27 @@ float get_sdf_interpolated(const Volume_F &f, Vector3 pos) {
 }
 
 // Standalone helper function to copy voxels from any 3D chunked container
-void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		uint32_t channels_mask, const VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx);
+void copy_from_chunked_storage( //
+		VoxelBuffer &dst_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		uint32_t channels_mask, //
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+);
 
 // Standalone helper function to paste voxels to any 3D chunked container
-void paste_to_chunked_storage(const VoxelBuffer &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		unsigned int channels_mask, bool use_mask, uint8_t mask_channel, uint64_t mask_value,
-		VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx);
+void paste_to_chunked_storage( //
+		const VoxelBuffer &src_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		unsigned int channels_mask, //
+		bool use_mask, //
+		uint8_t mask_channel, //
+		uint64_t mask_value, //
+		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+);
 
 AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
 
