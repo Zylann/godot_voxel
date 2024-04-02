@@ -1,4 +1,5 @@
 #include "voxel_blocky_model_cube.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
 
 namespace zylann::voxel {
@@ -44,7 +45,7 @@ bool VoxelBlockyModelCube::_set(const StringName &p_name, const Variant &p_value
 	const String property_name = p_name;
 
 	if (property_name.begins_with("tile_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("tile_"), property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2i v = p_value;
@@ -60,7 +61,7 @@ bool VoxelBlockyModelCube::_get(const StringName &p_name, Variant &r_ret) const 
 	const String property_name = p_name;
 
 	if (property_name.begins_with("tile_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("tile_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("tile_"), property_name.length());
 		Cube::Side side = name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			r_ret = get_tile(VoxelBlockyModel::Side(side));

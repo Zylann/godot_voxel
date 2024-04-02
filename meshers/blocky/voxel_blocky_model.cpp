@@ -1,10 +1,10 @@
 #include "voxel_blocky_model.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/base_material_3d.h"
 #include "../../util/godot/classes/shader_material.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
-#include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/string/format.h"
 #include "voxel_blocky_library.h"
@@ -41,12 +41,12 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 	String property_name = p_name;
 
 	if (property_name.begins_with("material_override_")) {
-		const int index = property_name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
+		const int index = property_name.substr(string_literal_length("material_override_")).to_int();
 		set_material_override(index, p_value);
 		return true;
 
 	} else if (property_name.begins_with("collision_enabled_")) {
-		const int index = property_name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+		const int index = property_name.substr(string_literal_length("collision_enabled_")).to_int();
 		set_mesh_collision_enabled(index, p_value);
 		return true;
 	}
@@ -54,7 +54,7 @@ bool VoxelBlockyModel::_set(const StringName &p_name, const Variant &p_value) {
 	// LEGACY
 
 	if (property_name.begins_with("cube_tiles_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("cube_tiles_"), property_name.length());
 		Cube::Side side = VoxelBlockyModelCube::name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			Vector2 v = p_value;
@@ -87,12 +87,12 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 	String property_name = p_name;
 
 	if (property_name.begins_with("material_override_")) {
-		const int index = property_name.substr(ZN_ARRAY_LENGTH("material_override_")).to_int();
+		const int index = property_name.substr(string_literal_length("material_override_")).to_int();
 		r_ret = get_material_override(index);
 		return true;
 
 	} else if (property_name.begins_with("collision_enabled_")) {
-		const int index = property_name.substr(ZN_ARRAY_LENGTH("collision_enabled_")).to_int();
+		const int index = property_name.substr(string_literal_length("collision_enabled_")).to_int();
 		r_ret = is_mesh_collision_enabled(index);
 		return true;
 	}
@@ -100,7 +100,7 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 	// LEGACY
 
 	if (property_name.begins_with("cube_tiles_")) {
-		String s = property_name.substr(ZN_ARRAY_LENGTH("cube_tiles_") - 1, property_name.length());
+		String s = property_name.substr(string_literal_length("cube_tiles_"), property_name.length());
 		Cube::Side side = VoxelBlockyModelCube::name_to_side(s);
 		if (side != Cube::SIDE_COUNT) {
 			const Vector2f f = _legacy_properties.cube_tiles[side];

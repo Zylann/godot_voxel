@@ -1,12 +1,13 @@
 #include "voxel_generator_multipass_cb.h"
 #include "../../engine/buffered_task_scheduler.h"
+#include "../../util/containers/container_funcs.h"
 #include "../../util/dstack.h"
+#include "../../util/godot/check_ref_ownership.h"
+#include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 #include "generate_block_multipass_cb_task.h"
-
-#include "../../util/godot/classes/time.h"
 
 namespace zylann::voxel {
 
@@ -62,7 +63,10 @@ void VoxelGeneratorMultipassCB::generate_block_fallback_script(VoxelQueryData &i
 	buffer_wrapper->get_buffer().copy_format(input.voxel_buffer);
 	buffer_wrapper->get_buffer().create(input.voxel_buffer.get_size());
 
-	GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+	{
+		ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(buffer_wrapper);
+		GDVIRTUAL_CALL(_generate_block_fallback, buffer_wrapper, input.origin_in_voxels);
+	}
 
 	// The wrapper is discarded
 	buffer_wrapper->get_buffer().move_to(input.voxel_buffer);
@@ -189,13 +193,16 @@ void VoxelGeneratorMultipassCB::generate_pass(PassInput input) {
 
 	// Note: must not access _internal from here, only use `input`
 
-	Variant v = get_script();
 	if (get_script() != Variant()) {
 		// TODO Cache it?
 		Ref<VoxelToolMultipassGenerator> vt;
 		vt.instantiate();
 		vt->set_pass_input(input);
-		GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+
+		{
+			ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(vt);
+			GDVIRTUAL_CALL(_generate_pass, vt, input.pass_index);
+		}
 
 		{
 			ZN_PROFILE_SCOPE_NAMED("Compress uniform blocks");
@@ -541,7 +548,7 @@ bool VoxelGeneratorMultipassCB::_set(const StringName &p_name, const Variant &p_
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 
@@ -559,7 +566,7 @@ bool VoxelGeneratorMultipassCB::_get(const StringName &p_name, Variant &r_ret) c
 	const String property_name = p_name;
 
 	if (property_name.begins_with("pass_")) {
-		const int index_pos = ZN_ARRAY_LENGTH("pass_") - 1; // -1 to exclude the '\0'
+		const int index_pos = string_literal_length("pass_");
 		const int index_end_pos = property_name.find("_", index_pos);
 		const int index = property_name.substr(index_pos, index_end_pos - index_pos).to_int();
 
