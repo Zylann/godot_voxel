@@ -319,7 +319,6 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	// see: https://github.com/Zylann/godot_voxel/pull/594
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(sphere_radius >= 0.01f);
-	ZN_ASSERT_RETURN(strength >= 0.0f && strength <= 1.0f);
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
@@ -341,7 +340,7 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
-		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
+		ops::grow_sphere(buffer, _sdf_scale * signed_strength, relative_sphere_center, sphere_radius);
 
 		paste(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
