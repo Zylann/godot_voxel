@@ -1,6 +1,7 @@
 #include "voxel_stream_sqlite.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/errors.h"
+#include "../../util/godot/classes/project_settings.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
@@ -160,7 +161,7 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 
 	int rc = sqlite3_open_v2(fpath, &_db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
 	if (rc != 0) {
-		ERR_PRINT(String("Could not open database: {0}").format(varray(sqlite3_errmsg(_db))));
+		ZN_PRINT_ERROR(format("Could not open database at path \"{}\": {}", fpath, sqlite3_errmsg(_db)));
 		close();
 		return false;
 	}
@@ -666,7 +667,9 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks, we are already locked.
 		VoxelStreamSQLiteInternal con;
-		const CharString cpath = _connection_path.utf8();
+		// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
+		const String globalized_connection_path = ProjectSettings::get_singleton()->globalize_path(_connection_path);
+		const CharString cpath = globalized_connection_path.utf8();
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
@@ -1025,7 +1028,9 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
-	const CharString fpath_utf8 = fpath.utf8();
+	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
+	const String globalized_fpath = ProjectSettings::get_singleton()->globalize_path(fpath);
+	const CharString fpath_utf8 = globalized_fpath.utf8();
 	if (!con->open(fpath_utf8.get_data())) {
 		delete con;
 		con = nullptr;
