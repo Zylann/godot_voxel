@@ -239,8 +239,8 @@ public:
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 		box.clip(Box3i(Vector3i(), _size));
-		Vector3i min_pos = box.pos;
-		Vector3i max_pos = box.pos + box.size;
+		const Vector3i min_pos = box.pos;
+		const Vector3i max_pos = box.pos + box.size;
 		Vector3i pos;
 		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
