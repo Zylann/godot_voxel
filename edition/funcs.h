@@ -3,6 +3,7 @@
 
 #include "../storage/funcs.h"
 #include "../storage/voxel_data_grid.h"
+#include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
