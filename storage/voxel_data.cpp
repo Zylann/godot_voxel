@@ -739,8 +739,8 @@ void VoxelData::update_lods(Span<const Vector3i> modified_lod0_blocks, StdVector
 					}
 
 				} else {
-					ZN_PRINT_ERROR(format(
-							"Destination block {} not found when cascading edits on LOD {}", dst_bpos, dst_lod_index));
+					ZN_PRINT_ERROR(format("Destination block {} not found when cascading edits on LOD {}", dst_bpos,
+							static_cast<int>(dst_lod_index)));
 					continue;
 				}
 			}
