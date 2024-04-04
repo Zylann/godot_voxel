@@ -1310,7 +1310,7 @@ void paste_src_masked_dst_predicate(Span<const uint8_t> channels, //
 		if (channel == src_mask_channel && channel == dst_mask_channel) {
 			// Common path for blocky games
 			dst_buffer.read_write_action(dst_box, channel,
-					[&src_buffer, src_mask_value, dst_base_pos, channel, &dst_buffer, &dst_predicate](
+					[&src_buffer, src_mask_value, dst_base_pos, channel, &dst_predicate](
 							const Vector3i pos, uint64_t dst_v) {
 						const uint64_t src_v = src_buffer.get_voxel(pos - dst_base_pos, channel);
 						if (src_v == src_mask_value) {
