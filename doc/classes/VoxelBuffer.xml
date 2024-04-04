@@ -225,7 +225,7 @@
 				Checks if every voxel within a channel has the same value.
 			</description>
 		</method>
-		<method name="optimize" is_deprecated="true">
+		<method name="optimize" is_deprecated="true" deprecated="Use [method compress_uniform_channels] instead.">
 			<return type="void" />
 			<description>
 			</description>
