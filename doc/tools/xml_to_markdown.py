@@ -46,10 +46,28 @@ def make_constants(constants, module_class_names, current_class_name):
         s += make_custom_internal_anchor(constant.name)
 
         s += "**" + constant.name + "** = **" + constant.value + "**"
+
+        desc = ""
+        
+        if constant.is_deprecated:
+            desc += "*This constant is deprecated."
+            if constant.deprecated_message != "":
+                desc += " "
+                desc += constant.deprecated_message
+            desc += "*"
+
         text = constant.description.strip()
-        if text != "":
-            s += " --- " + make_text(constant.description, module_class_names, current_class_name)
+        if text != "" or desc != "":
+            if desc != "":
+                desc += " "
+            desc += make_text(constant.description, module_class_names, current_class_name)
+
+        if desc != "":
+            s += " --- "
+            s += desc
+
         s += "\n"
+
     return s
 
 
@@ -69,9 +87,8 @@ class ClassDoc:
         self.short_description = ""
         self.description = ""
         self.is_experimental = False
-        # TODO Class deprecation
-        # self.is_deprecated = False
-        # self.deprecated_message = ""
+        self.is_deprecated = False
+        self.deprecated_message = ""
         self.parent_name = ""
         self.children = [] # Array[ClassDoc]
         self.tutorials = [] # Array[TutorialDoc]
@@ -101,9 +118,8 @@ class MemberDoc:
     def __init__(self, name):
         self.name = name
         self.description = ""
-        # TODO Class deprecation
-        # self.is_deprecated = False
-        # self.deprecated_message = ""
+        self.is_deprecated = False
+        self.deprecated_message = ""
 
 
 class MethodDoc(MemberDoc):
@@ -155,6 +171,16 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
 
     if 'is_experimental' in root.attrib and root.attrib['is_experimental'] == 'true':
         klass.is_experimental = True
+    
+    def parse_deprecation(item, xml_node):
+        # Godot 4.3 changed `is_deprecated="true"` to `deprecated="message"`
+        if 'is_deprecated' in xml_node.attrib and xml_node.attrib['is_deprecated'] == 'true':
+            item.is_deprecated = True
+        if 'deprecated' in xml_node.attrib:
+            item.is_deprecated = True
+            item.deprecated_message = xml_node.attrib['deprecated']
+
+    parse_deprecation(klass, root)
 
     # Tutorials
     tutorials_xml = root.find('tutorials')
@@ -180,6 +206,8 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
             
             if member_xml.text is not None:
                 prop.description = member_xml.text
+            
+            parse_deprecation(prop, member_xml)
             
             klass.properties.append(prop)
 
@@ -214,6 +242,8 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
             if desc_xml is not None:
                 method.description = desc_xml.text
             
+            parse_deprecation(method, method_xml)
+
             klass.methods.append(method)
 
     # Signals
@@ -230,7 +260,9 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
             desc_xml = signal_xml.find('description')
             if desc_xml is not None:
                 signal.description = desc_xml.text
-            
+
+            parse_deprecation(signal, signal_xml)
+
             klass.signals.append(signal)
 
     # Enumerations and constants
@@ -244,7 +276,9 @@ def parse_class_from_xml_tree(xml_tree, xml_file_path): # -> ClassDoc
             constant = ConstantDoc(generic_constant_xml.attrib['name'])
             constant.value = generic_constant_xml.attrib['value']
             constant.description = generic_constant_xml.text
-            
+
+            parse_deprecation(constant, generic_constant_xml)
+
             if 'enum' in generic_constant_xml.attrib:
                 enum_name = generic_constant_xml.attrib['enum']
                 if enum_name in enums:
@@ -280,9 +314,19 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
     if klass.is_experimental:
         out += ("!!! warning\n    This class is marked as experimental. "
             "It is subject to likely change or possible removal in future versions. Use at your own discretion.")
-        out += "\n"
+        out += "\n\n"
+    
+    if klass.is_deprecated:
+        out += "!!! warning\n    This class is deprecated."
+        if klass.deprecated_message != "":
+            out += " "
+            out += make_text(klass.deprecated_message, module_class_names, current_class_name)
+        out += "\n\n"
 
-    out += make_text(klass.short_description, module_class_names, current_class_name) + "\n\n"
+    class_desc = make_text(klass.short_description, module_class_names, current_class_name)
+    if class_desc != "":
+        out += class_desc
+        out += "\n\n"
 
     text = make_text(klass.description, module_class_names, current_class_name)
     if text.strip() != "":
@@ -303,6 +347,8 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 "`" + prop.type + "`",
                 make_custom_internal_link(prop.name)
             ]
+            if prop.is_deprecated:
+                row[1] += " *(deprecated)*"
             if prop.default_value is not None:
                 row.append(prop.default_value)
             else:
@@ -329,6 +375,10 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 markdown.make_type(method.return_type, '', module_class_names),
                 signature
             ]
+
+            if method.is_deprecated:
+                row[1] += " *(deprecated)*"
+
             table.append(row)
 
         out += markdown.make_table(table)
@@ -345,11 +395,21 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
             out += make_parameter_list(signal.parameters, module_class_names)
             out += " \n\n"
 
+            desc = ""
+
+            if signal.is_deprecated:
+                desc += "*This signal is deprecated."
+                if signal.deprecated_message != "":
+                    desc += " "
+                    desc += make_text(signal.deprecated_message, module_class_names, current_class_name)
+                desc += "*\n"
+
             if signal.description != "":
-                text = make_text(signal.description, module_class_names, current_class_name)
-                if text != "":
-                    out += text
-                    out += "\n\n"
+                desc += make_text(signal.description, module_class_names, current_class_name)
+            
+            if desc != "":
+                out += desc
+                out += "\n\n"
     
     # Enums
     if len(klass.enums) > 0:
@@ -379,6 +439,13 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 out += " = " + prop.default_value
             out += "\n\n"
 
+            if prop.is_deprecated:
+                out += "*This property is deprecated."
+                if prop.deprecated_message != "":
+                    out += " "
+                    out += make_text(prop.deprecated_message, module_class_names, current_class_name)
+                out += "*\n"
+
             if prop.description != "":
                 text = make_text(prop.description, module_class_names, current_class_name)
                 if text.strip() != "":
@@ -400,6 +467,13 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 signature += method.qualifiers
 
             out += "\n\n"
+
+            if method.is_deprecated:
+                out += "*This method is deprecated."
+                if method.deprecated_message != "":
+                    out += " "
+                    out += make_text(method.deprecated_message, module_class_names, current_class_name)
+                out += "*\n"
 
             if method.description != "":
                 text = make_text(method.description, module_class_names, current_class_name)
