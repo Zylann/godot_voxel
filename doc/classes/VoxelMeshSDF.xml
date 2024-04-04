@@ -31,9 +31,9 @@
 			<param index="0" name="mesh" type="Mesh" />
 			<description>
 				Experimental.
-				
+
 				Runs some checks to verify if the baked SDF contains errors. The mesh to pass should be the mesh that was used for baking.
-				
+
 				If there are errors, the returned array will contain information about up to 2 cells of the buffer containing wrong values, in the following format:
 				[codeblock]
 				[
