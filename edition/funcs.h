@@ -178,6 +178,138 @@ void paste_to_chunked_storage( //
 		void *get_block_func_ctx //
 );
 
+template <typename FGetBlock, typename FPaste>
+void paste_to_chunked_storage_tp( //
+		const VoxelBuffer &src_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		unsigned int channels_mask, //
+		FGetBlock get_block_func, // (position) -> VoxelBuffer*
+		FPaste paste_func // (channels, src_buffer, dst_buffer, dst_base_pos) -> void
+) {
+	const Vector3i max_pos = min_pos + src_buffer.get_size();
+
+	const Vector3i min_block_pos = min_pos >> block_size_po2;
+	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
+
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
+
+	Vector3i bpos;
+	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
+		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
+			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
+				VoxelBuffer *dst_buffer = get_block_func(bpos);
+
+				if (dst_buffer == nullptr) {
+					continue;
+				}
+
+				const Vector3i dst_block_origin = bpos << block_size_po2;
+				const Vector3i dst_base_pos = min_pos - dst_block_origin;
+
+				paste_func(to_span(channels), src_buffer, *dst_buffer, dst_base_pos);
+			}
+		}
+	}
+}
+
+namespace paste_functors {
+
+// Wraps calls to paste functions due to a few differences for now.
+
+struct Default {
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste(channels, src, dst, dst_base_pos, true);
+	}
+};
+
+struct SrcMasked {
+	uint8_t src_mask_channel;
+	uint64_t src_mask_value;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked(channels, src, src_mask_channel, src_mask_value, dst, dst_base_pos, true);
+	}
+};
+
+struct SrcMasked_DstWritableValue {
+	const uint8_t src_mask_channel;
+	const uint8_t dst_mask_channel;
+	const uint64_t src_mask_value;
+	const uint64_t dst_mask_value;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked_dst_writable_value( //
+				channels, //
+				src, //
+				src_mask_channel, //
+				src_mask_value, //
+				dst, //
+				dst_base_pos, //
+				dst_mask_channel, //
+				dst_mask_value, //
+				true //
+		);
+	}
+};
+
+struct SrcMasked_DstWritableBitArray {
+	const uint8_t src_mask_channel;
+	const uint8_t dst_mask_channel;
+	const uint64_t src_mask_value;
+	const DynamicBitset &bitarray;
+
+	void operator()(Span<const uint8_t> channels, const VoxelBuffer &src, VoxelBuffer &dst, Vector3i dst_base_pos) {
+		paste_src_masked_dst_writable_bitarray( //
+				channels, //
+				src, //
+				src_mask_channel, //
+				src_mask_value, //
+				dst, //
+				dst_base_pos, //
+				dst_mask_channel, //
+				bitarray, //
+				true //
+		);
+	}
+};
+
+} // namespace paste_functors
+
+bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray);
+
+template <typename FGetBlock>
+void paste_to_chunked_storage_masked_writable_list( //
+		const VoxelBuffer &src, //
+		Vector3i min_pos, //
+		uint8_t block_size_po2, //
+		uint8_t channels_mask, //
+		FGetBlock get_block_func, // (position) -> VoxelBuffer*
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		Span<const int32_t> dst_writable_values //
+) {
+	using namespace paste_functors;
+
+	if (dst_writable_values.size() == 1) {
+		const uint64_t dst_mask_value = dst_writable_values[0];
+		paste_to_chunked_storage_tp(src, min_pos, block_size_po2, channels_mask, //
+				get_block_func, //
+				SrcMasked_DstWritableValue{ src_mask_channel, dst_mask_channel, src_mask_value, dst_mask_value } //
+		);
+
+	} else {
+		// TODO Candidate for TempAllocator
+		DynamicBitset bitarray;
+		indices_to_bitarray_u16(dst_writable_values, bitarray);
+		paste_to_chunked_storage_tp(src, min_pos, block_size_po2, channels_mask, //
+				get_block_func, //
+				SrcMasked_DstWritableBitArray{ src_mask_channel, dst_mask_channel, src_mask_value, bitarray } //
+		);
+	}
+}
+
 AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
 
 } // namespace zylann::voxel

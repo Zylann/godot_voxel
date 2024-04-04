@@ -340,11 +340,13 @@ void VoxelData::paste(
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
 	if (create_new_blocks) {
+		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, false, 0, 0, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
 	} else {
+		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, false, 0, 0, create_new_blocks);
+		data_lod0.map.paste(min_pos, src_buffer, channels_mask, create_new_blocks);
 	}
 }
 
@@ -358,11 +360,83 @@ void VoxelData::paste_masked(Vector3i min_pos, const VoxelBuffer &src_buffer, un
 	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
 
 	if (create_new_blocks) {
+		// We will modify the hashmap so no other threads can perform lookups while we do that
 		RWLockWrite wlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, true, mask_channel, mask_value, create_new_blocks);
+		data_lod0.map.paste_masked( //
+				min_pos, //
+				src_buffer, //
+				channels_mask, //
+				true, //
+				mask_channel, //
+				mask_value, //
+				false, // Unused dst mask
+				0, //
+				Span<const int32_t>(), //
+				create_new_blocks //
+		);
 	} else {
+		// We won't modify the hashmap so other threads can still perform lookups in different areas
 		RWLockRead rlock(data_lod0.map_lock);
-		data_lod0.map.paste(min_pos, src_buffer, channels_mask, true, mask_channel, mask_value, create_new_blocks);
+		data_lod0.map.paste_masked( //
+				min_pos, //
+				src_buffer, //
+				channels_mask, //
+				true, //
+				mask_channel, //
+				mask_value, //
+				false, // Unused dst mask
+				0, //
+				Span<const int32_t>(), //
+				create_new_blocks //
+		);
+	}
+}
+
+void VoxelData::paste_masked_writable_list( //
+		Vector3i min_pos, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int channels_mask, //
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		Span<const int32_t> dst_writable_values, //
+		bool create_new_blocks //
+) {
+	Lod &data_lod0 = _lods[0];
+
+	const Box3i blocks_box = Box3i(min_pos, src_buffer.get_size()).downscaled(data_lod0.map.get_block_size());
+	SpatialLock3D::Write swlock(data_lod0.spatial_lock, BoxBounds3i(blocks_box));
+
+	if (create_new_blocks) {
+		// We will modify the hashmap so no other threads can perform lookups while we do that
+		RWLockWrite wlock(data_lod0.map_lock);
+		data_lod0.map.paste_masked( //
+				min_pos, //
+				src_buffer, //
+				channels_mask, //
+				true, //
+				src_mask_channel, //
+				src_mask_value, //
+				true, //
+				dst_mask_channel, //
+				dst_writable_values, //
+				create_new_blocks //
+		);
+	} else {
+		// We won't modify the hashmap so other threads can still perform lookups in different areas
+		RWLockRead rlock(data_lod0.map_lock);
+		data_lod0.map.paste_masked( //
+				min_pos, //
+				src_buffer, //
+				channels_mask, //
+				true, //
+				src_mask_channel, //
+				src_mask_value, //
+				true, //
+				dst_mask_channel, //
+				dst_writable_values, //
+				create_new_blocks //
+		);
 	}
 }
 

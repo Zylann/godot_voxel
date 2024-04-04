@@ -62,9 +62,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 	ZN_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
-	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBuffer::mask_to_channels_list(channels_mask, channels_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	// Determine size of the cube of blocks
 	const CubicAreaInfo area_info = get_cubic_area_info_from_size(blocks.size());
@@ -134,8 +132,8 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 					const Vector3i src_min = min_pos - offset;
 					const Vector3i src_max = max_pos - offset;
 
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channels[ci]);
+					for (const uint8_t channel_index : channels) {
+						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channel_index);
 					}
 
 					if (boxes_to_generate.size() > 0) {
@@ -202,8 +200,9 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 			}
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
-			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_channel_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
+			for (const uint8_t channel_index : channels) {
+				dst.copy_channel_from(
+						generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channel_index);
 			}
 		}
 	}

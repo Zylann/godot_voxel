@@ -245,10 +245,12 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 
 void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask) const {
@@ -263,6 +265,7 @@ void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_
 
 void VoxelTool::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::paste(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask) {
@@ -277,6 +280,20 @@ void VoxelTool::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, u
 		uint8_t mask_channel, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
+}
+
+void VoxelTool::paste_masked_writable_list( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		PackedInt32Array dst_writable_list //
+) {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius) {
@@ -522,6 +539,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
 			&VoxelTool::_b_paste_masked);
+	ClassDB::bind_method(D_METHOD("paste_masked_writable_list", "position", "voxels", "channels_mask",
+								 "src_mask_channel", "src_mask_value", "dst_mask_channel", "dst_writable_list"),
+			&VoxelTool::paste_masked_writable_list);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));

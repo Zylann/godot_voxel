@@ -2,6 +2,7 @@
 #define ZN_SMALL_VECTOR_H
 
 #include "../errors.h"
+#include "span.h"
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -83,6 +84,10 @@ public:
 
 	inline constexpr unsigned int capacity() const {
 		return N;
+	}
+
+	inline const T *data() const {
+		return &(*this)[0];
 	}
 
 	inline T &operator[](unsigned int i) {
@@ -202,6 +207,11 @@ private:
 
 	Item _items[N];
 };
+
+template <typename T, unsigned int N>
+Span<const T> to_span(const SmallVector<T, N> &v) {
+	return Span<const T>(v.data(), v.size());
+}
 
 } // namespace zylann
 

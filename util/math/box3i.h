@@ -319,6 +319,12 @@ public:
 		clip_range(pos.z, size.z, lim.pos.z, lim.size.z);
 	}
 
+	inline void clip(const Vector3i &lim_size) {
+		clip_range(pos.x, size.x, 0, lim_size.x);
+		clip_range(pos.y, size.y, 0, lim_size.y);
+		clip_range(pos.z, size.z, 0, lim_size.z);
+	}
+
 	inline Box3i clipped(const Box3i lim) const {
 		Box3i copy(*this);
 		copy.clip(lim);
@@ -326,7 +332,9 @@ public:
 	}
 
 	inline Box3i clipped(const Vector3i &lim_size) const {
-		return clipped(Box3i(Vector3i(), lim_size));
+		Box3i copy(*this);
+		copy.clip(lim_size);
+		return copy;
 	}
 
 	inline bool encloses(const Box3i &other) const {

@@ -3,13 +3,18 @@
 
 #include "../util/containers/fixed_array.h"
 #include "../util/containers/flat_map.h"
+#include "../util/containers/small_vector.h"
 #include "../util/math/box3i.h"
 #include "funcs.h"
 #include "voxel_metadata.h"
 
 #include <limits>
 
-namespace zylann::voxel {
+namespace zylann {
+
+class DynamicBitset;
+
+namespace voxel {
 
 // Dense voxels data storage.
 // Organized in channels of configurable bit depth.
@@ -379,19 +384,13 @@ public:
 		}
 	}*/
 
-	static inline FixedArray<uint8_t, MAX_CHANNELS> mask_to_channels_list(
-			uint8_t channels_mask, unsigned int &out_count) {
-		FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels;
-		unsigned int channel_count = 0;
-
+	static inline SmallVector<uint8_t, MAX_CHANNELS> mask_to_channels_list(uint8_t channels_mask) {
+		SmallVector<uint8_t, MAX_CHANNELS> channels;
 		for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
 			if (((1 << channel_index) & channels_mask) != 0) {
-				channels[channel_count] = channel_index;
-				++channel_count;
+				channels.push_back(channel_index);
 			}
 		}
-
-		out_count = channel_count;
 		return channels;
 	}
 
@@ -466,6 +465,11 @@ public:
 		}
 	}
 
+	template <typename F>
+	inline void erase_voxel_metadata_if(F predicate) {
+		_voxel_metadata.remove_if(predicate);
+	}
+
 	// #ifdef ZN_GODOT
 	// 	// TODO Move out of here
 	// 	void for_each_voxel_metadata(const Callable &callback) const;
@@ -525,6 +529,44 @@ void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf(VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf_if_modified(VoxelBuffer &voxels, Span<float> sdf, Span<const float> comparand);
 
-} // namespace zylann::voxel
+void paste(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		bool with_metadata);
+
+// Paste if the source is not a certain value
+void paste_src_masked(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		bool with_metadata); //
+
+// Paste if the source is not a certain value, and the destination is a certain value
+void paste_src_masked_dst_writable_value(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		unsigned int dst_mask_channel, //
+		uint64_t dst_mask_value, //
+		bool with_metadata); //
+
+// Paste if the source is not a certain value, and the specified bitset contains the destination value
+void paste_src_masked_dst_writable_bitarray(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		unsigned int dst_mask_channel, //
+		const DynamicBitset &bitarray, //
+		bool with_metadata);
+
+} // namespace voxel
+} // namespace zylann
 
 #endif // VOXEL_BUFFER_INTERNAL_H
