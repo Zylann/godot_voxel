@@ -114,8 +114,8 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
 }
 
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray) {
-	const int32_t max_supported_value = 65535;
 #ifdef DEBUG_ENABLED
+	const int32_t max_supported_value = 65535;
 	// Validate
 	for (const int32_t i : indices) {
 		ZN_ASSERT_RETURN_V_MSG(i >= 0 && i <= max_supported_value, false,
