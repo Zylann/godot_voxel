@@ -22,6 +22,15 @@ public:
 	// TODO Bunch of features not supported, not needed for now.
 	// constexpr is not possible due to `reinterpret_cast`. However we have no need for it at the moment.
 
+	SmallVector() = default;
+
+	SmallVector(const SmallVector<T, N> &other) {
+		while (_size < other._size) {
+			::new (&_items[_size]) T(other[_size]);
+			++_size;
+		}
+	}
+
 	~SmallVector() {
 		for (unsigned int i = 0; i < _size; ++i) {
 			std::destroy_at(std::launder(reinterpret_cast<T *>(&_items[i])));
@@ -105,10 +114,12 @@ public:
 	}
 
 	SmallVector<T, N> &operator=(const SmallVector<T, N> &other) {
-		clear();
+		if ((void *)this != (void *)&other) {
+			clear();
 
-		for (; _size < other.size(); ++_size) {
-			::new (&_items[_size]) T(other[_size]);
+			for (; _size < other.size(); ++_size) {
+				::new (&_items[_size]) T(other[_size]);
+			}
 		}
 
 		return *this;
