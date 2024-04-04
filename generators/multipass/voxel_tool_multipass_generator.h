@@ -19,8 +19,14 @@ public:
 
 	void copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const override;
 	void paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) override;
-	void paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
-			uint64_t mask_value) override;
+
+	void paste_masked( //
+			Vector3i pos, //
+			Ref<godot::VoxelBuffer> p_voxels, //
+			uint8_t channels_mask, //
+			uint8_t mask_channel,
+			uint64_t mask_value //
+			) override;
 
 	bool is_area_editable(const Box3i &box) const override;
 

@@ -80,8 +80,13 @@ void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, ui
 			src, pos, _block_size_po2, channels_mask, false, 0, 0, get_pass_input_block_w, &_pass_input);
 }
 
-void VoxelToolMultipassGenerator::paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
-		uint8_t mask_channel, uint64_t mask_value) {
+void VoxelToolMultipassGenerator::paste_masked( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t mask_channel, //
+		uint64_t mask_value //
+) {
 	ZN_ASSERT_RETURN(p_voxels.is_valid());
 	const VoxelBuffer &src = p_voxels->get_buffer();
 	paste_to_chunked_storage(src, pos, _block_size_po2, channels_mask, true, mask_channel, mask_value,
