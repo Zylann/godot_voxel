@@ -128,7 +128,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 
 	Box3i box(p_pos, src.get_size());
 	const Vector3i min_noclamp = box.pos;
-	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
+	box.clip(Box3i(Vector3i(), dst.get_size()));
 
 	if (channels_mask == 0) {
 		channels_mask = (1 << get_channel());
@@ -163,7 +163,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 		}
 	}
 
-	_buffer->get_buffer().copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
+	dst.copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
 }
 
 void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
