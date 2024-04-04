@@ -5,7 +5,6 @@ Inherits: [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
-
 ## Properties: 
 
 
@@ -68,4 +67,4 @@ Return                                                                          
 - [PackedStringArray](https://docs.godotengine.org/en/stable/classes/class_packedstringarray.html)<span id="i_serialize_id_map_to_string_array"></span> **serialize_id_map_to_string_array**( ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

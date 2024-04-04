@@ -2,8 +2,6 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
-
 ## Description: 
 
 Low-level utility to save and load the data within a [VoxelBuffer](VoxelBuffer.md). This can be useful to send data over the network, or to store it in a file.
@@ -73,4 +71,4 @@ Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [PackedByteArray](http
 
 Stores the data of a [VoxelBuffer](VoxelBuffer.md) into a [StreamPeer](https://docs.godotengine.org/en/stable/classes/class_streampeer.html). Returns the number of written bytes.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

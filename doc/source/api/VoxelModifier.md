@@ -4,8 +4,6 @@ Inherits: [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.h
 
 Inherited by: [VoxelModifierMesh](VoxelModifierMesh.md), [VoxelModifierSphere](VoxelModifierSphere.md)
 
-
-
 ## Properties: 
 
 
@@ -31,4 +29,4 @@ enum **Operation**:
 - [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_smoothness"></span> **smoothness** = 0.0
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

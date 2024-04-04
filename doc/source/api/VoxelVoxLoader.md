@@ -2,8 +2,6 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
-
 ## Methods: 
 
 
@@ -17,4 +15,4 @@ Return                                                                | Signatur
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_load_from_file"></span> **load_from_file**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath, [VoxelBuffer](VoxelBuffer.md) voxels, [VoxelColorPalette](VoxelColorPalette.md) palette, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_channel=2 ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

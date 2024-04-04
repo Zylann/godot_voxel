@@ -4,6 +4,7 @@ Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refc
 
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
+
 Grid-based A* pathfinding algorithm adapted to blocky voxel terrain.
 
 ## Description: 
@@ -55,4 +56,4 @@ Return                                                                          
 - [void](#)<span id="i_set_terrain"></span> **set_terrain**( [VoxelTerrain](VoxelTerrain.md) terrain ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

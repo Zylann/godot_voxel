@@ -5,7 +5,6 @@ Inherits: [Resource](https://docs.godotengine.org/en/stable/classes/class_resour
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
-
 ## Properties: 
 
 
@@ -52,4 +51,4 @@ Return                                           | Signature
 - [void](#)<span id="i_set_variant_model"></span> **set_variant_model**( [Array](https://docs.godotengine.org/en/stable/classes/class_array.html) _unnamed_arg0, [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg1 ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

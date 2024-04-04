@@ -2,8 +2,6 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
-
 ## Description: 
 
 Utility class allowing to reproduce simple move-and-slide logic using only voxel AABBs, similar to Minecraft physics. This class may only be used with blocky voxels.
@@ -72,4 +70,4 @@ Sets the maximum height that can be climbed like "stairs".
 
 When enabled, [VoxelBoxMover.get_motion](VoxelBoxMover.md#i_get_motion) will attempt to climb up small steps. This allows to implement Minecraft-like stairs.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

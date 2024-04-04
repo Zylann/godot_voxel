@@ -5,7 +5,6 @@ Inherits: [VoxelBlockyAttribute](VoxelBlockyAttribute.md)
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
-
 ## Properties: 
 
 
@@ -40,4 +39,4 @@ Return     | Signature
 - [void](#)<span id="i_set_value_name"></span> **set_value_name**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [StringName](https://docs.godotengine.org/en/stable/classes/class_stringname.html) value_name ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

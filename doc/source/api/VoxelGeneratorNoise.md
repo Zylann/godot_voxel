@@ -7,12 +7,12 @@ Voxel generator producing overhanging shapes using 3D noise.
 ## Properties: 
 
 
-Type     | Name                             | Default 
--------- | -------------------------------- | --------
-`int`    | [channel](#i_channel)            | 1       
-`float`  | [height_range](#i_height_range)  | 300.0   
-`float`  | [height_start](#i_height_start)  | 0.0     
-`Noise`  | [noise](#i_noise)                |         
+Type             | Name                             | Default 
+---------------- | -------------------------------- | --------
+`int`            | [channel](#i_channel)            | 1       
+`float`          | [height_range](#i_height_range)  | 300.0   
+`float`          | [height_start](#i_height_start)  | 0.0     
+`FastNoiseLite`  | [noise](#i_noise)                |         
 <p></p>
 
 ## Property Descriptions
@@ -31,8 +31,8 @@ Shapes will start at maximum density near the base of the shape (low probability
 
 Base of the shape. Everything below it will be filled with ground.
 
-- [Noise](https://docs.godotengine.org/en/stable/classes/class_noise.html)<span id="i_noise"></span> **noise**
+- [FastNoiseLite](https://docs.godotengine.org/en/stable/classes/class_fastnoiselite.html)<span id="i_noise"></span> **noise**
 
 Noise used as density function. It is required for the generator to work.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

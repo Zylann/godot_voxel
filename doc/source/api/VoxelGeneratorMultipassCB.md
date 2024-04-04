@@ -4,6 +4,7 @@ Inherits: [VoxelGenerator](VoxelGenerator.md)
 
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
+
 Scriptable generator working on columns of blocks and multiple passes.
 
 ## Description: 
@@ -96,4 +97,4 @@ Following passes are designed to access at least 1 block away. Such passes don't
 
 Increasing extent will also increase the cost of the generator, both in memory and processing time, so it should be balanced with caution.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

@@ -68,4 +68,4 @@ Return                                                                          
 - [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html)<span id="i_get_spot_positions_in_area_3d"></span> **get_spot_positions_in_area_3d**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) aabb ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

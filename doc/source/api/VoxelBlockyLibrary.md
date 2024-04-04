@@ -28,7 +28,7 @@ Return                                                                | Signatur
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [add_model](#i_add_model) ( [VoxelBlockyModel](VoxelBlockyModel.md) _unnamed_arg0 )                                                                                   
 [VoxelBlockyModel](VoxelBlockyModel.md)                               | [get_model](#i_get_model) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) index ) const                                                        
 [int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_model_index_from_resource_name](#i_get_model_index_from_resource_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_voxel_index_from_name](#i_get_voxel_index_from_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const                   
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [get_voxel_index_from_name](#i_get_voxel_index_from_name) ( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) const *(deprecated)*    
 <p></p>
 
 ## Property Descriptions
@@ -53,6 +53,7 @@ Finds the index of the first model having the specified resource name. If not fo
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel_index_from_name"></span> **get_voxel_index_from_name**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) name ) 
 
+*This method is deprecated. Use [VoxelBlockyLibrary.get_model_index_from_resource_name](VoxelBlockyLibrary.md#i_get_model_index_from_resource_name) instead.*
 Finds the index of the first model having the specified resource name. If not found, returns `null`.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

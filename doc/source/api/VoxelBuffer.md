@@ -27,6 +27,7 @@ Return                                                                          
 [void](#)                                                                       | [downscale_to](#i_downscale_to) ( [VoxelBuffer](VoxelBuffer.md) dst, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_min, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_max, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_min ) const                                                                                                
 [void](#)                                                                       | [fill](#i_fill) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 )                                                                                                                                                                                                                                                                     
 [void](#)                                                                       | [fill_area](#i_fill_area) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 )                                                                                   
+[void](#)                                                                       | [fill_area_f](#i_fill_area_f) ( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel )                                                                             
 [void](#)                                                                       | [fill_f](#i_fill_f) ( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 )                                                                                                                                                                                                                                                             
 [void](#)                                                                       | [for_each_voxel_metadata](#i_for_each_voxel_metadata) ( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback ) const                                                                                                                                                                                                                                                                                            
 [void](#)                                                                       | [for_each_voxel_metadata_in_area](#i_for_each_voxel_metadata_in_area) ( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min_pos, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max_pos )                                                                                                  
@@ -40,7 +41,7 @@ Return                                                                          
 [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)    | [get_voxel_metadata](#i_get_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) const                                                                                                                                                                                                                                                                                                           
 [VoxelTool](VoxelTool.md)                                                       | [get_voxel_tool](#i_get_voxel_tool) ( )                                                                                                                                                                                                                                                                                                                                                                                                            
 [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_uniform](#i_is_uniform) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) const                                                                                                                                                                                                                                                                                                                                 
-[void](#)                                                                       | [optimize](#i_optimize) ( )                                                                                                                                                                                                                                                                                                                                                                                                                        
+[void](#)                                                                       | [optimize](#i_optimize) ( )  *(deprecated)*                                                                                                                                                                                                                                                                                                                                                                                                        
 [void](#)                                                                       | [remap_values](#i_remap_values) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) map )                                                                                                                                                                                                                               
 [void](#)                                                                       | [set_block_metadata](#i_set_block_metadata) ( [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta )                                                                                                                                                                                                                                                                                                                  
 [void](#)                                                                       | [set_channel_depth](#i_set_channel_depth) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) depth )                                                                                                                                                                                                                                             
@@ -155,9 +156,13 @@ Fills one channel of this buffer with a specific raw value.
 
 Fills an area of a channel in this buffer with a specific raw value.
 
+- [void](#)<span id="i_fill_area_f"></span> **fill_area_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel ) 
+
+Fills an area of a channel in this buffer with a specific SDF value.
+
 - [void](#)<span id="i_fill_f"></span> **fill_f**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
-Fills one channel of this buffer with a specific float value.
+Fills one channel of this buffer with a specific SDF value.
 
 - [void](#)<span id="i_for_each_voxel_metadata"></span> **for_each_voxel_metadata**( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback ) 
 
@@ -170,6 +175,8 @@ IMPORTANT: inserting new or removing metadata from inside this function is not a
 - [void](#)<span id="i_for_each_voxel_metadata_in_area"></span> **for_each_voxel_metadata_in_area**( [Callable](https://docs.godotengine.org/en/stable/classes/class_callable.html) callback, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) min_pos, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) max_pos ) 
 
 Executes a function on every voxel in this buffer which have associated metadata, within the specified area.
+
+IMPORTANT: inserting new or removing metadata from inside this function is not allowed.
 
 - [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_allocator"></span> **get_allocator**( ) 
 
@@ -212,6 +219,7 @@ Checks if every voxel within a channel has the same value.
 
 - [void](#)<span id="i_optimize"></span> **optimize**( ) 
 
+*This method is deprecated. Use [VoxelBuffer.compress_uniform_channels](VoxelBuffer.md#i_compress_uniform_channels) instead.*
 
 - [void](#)<span id="i_remap_values"></span> **remap_values**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) map ) 
 
@@ -243,4 +251,4 @@ If this [VoxelBuffer](VoxelBuffer.md) is saved, this metadata will also be saved
 - [void](#)<span id="i_set_voxel_v"></span> **set_voxel_v**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) value, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channel=0 ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

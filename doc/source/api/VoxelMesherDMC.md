@@ -2,9 +2,10 @@
 
 Inherits: [VoxelMesher](VoxelMesher.md)
 
-Implements isosurface generation (smooth voxels) using [Dual Marching Cubes](https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/).
+!!! warning
+    This class is deprecated. Prefer using [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) instead.
 
-*Deprecated.* Use [VoxelMesherTransvoxel](VoxelMesherTransvoxel.md) instead.
+Implements isosurface generation (smooth voxels) using [Dual Marching Cubes](https://www.volume-gfx.com/volume-rendering/dual-marching-cubes/).
 
 ## Properties: 
 
@@ -73,4 +74,4 @@ enum **SeamMode**:
 - [void](#)<span id="i_set_geometric_error"></span> **set_geometric_error**( [float](https://docs.godotengine.org/en/stable/classes/class_float.html) error ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

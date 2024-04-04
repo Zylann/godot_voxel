@@ -7,7 +7,6 @@ Inherited by: [VoxelBlockyAttributeAxis](VoxelBlockyAttributeAxis.md), [VoxelBlo
 !!! warning
     This class is marked as experimental. It is subject to likely change or possible removal in future versions. Use at your own discretion.
 
-
 ## Methods: 
 
 
@@ -37,4 +36,4 @@ Return                                                                          
 - [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_rotation"></span> **is_rotation**( ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_

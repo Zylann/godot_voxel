@@ -56,4 +56,4 @@ This algorithm can become expensive quickly, so the box should not be too big. A
 - [void](#)<span id="i_stamp_sdf"></span> **stamp_sdf**( [VoxelMeshSDF](VoxelMeshSDF.md) mesh_sdf, [Transform3D](https://docs.godotengine.org/en/stable/classes/class_transform3d.html) transform, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) isolevel, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sdf_scale ) 
 
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 04, 2024_
