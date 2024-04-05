@@ -149,8 +149,8 @@
 				[code]channels_mask[/code] is a bitmask where each bit tells which channels will be modified. Example: [code]1 &lt;&lt; VoxelBuffer.CHANNEL_SDF[/code] only write SDF data. Use [code]0xff[/code] if you want them all.
 				[code]src_mask_channel[/code] channel from the source buffer that will be used to lookup mask values.
 				[code]src_mask_value[/code] if voxels of the source buffer have this value in the channel specified for masking, then they won't be pasted.
-				[code]dst_mask_value[/code] channel from the destination that will be used to select writable voxels.
-				[code]dst_writable_list[/code] List of values the destination voxels must have in order to be written to. Values in that list must not exceed 65535. A very large amount of values can affect performance.
+				[code]dst_mask_channel[/code] channel from the destination that will be used to select writable voxels.
+				[code]dst_writable_list[/code] List of values the destination voxels must have in order to be written to. Values in that list must be between 0 and 65535. A very large amount of values can also affect performance.
 			</description>
 		</method>
 		<method name="raycast">
