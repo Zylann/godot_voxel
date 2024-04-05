@@ -614,27 +614,3 @@ def process_xml_folder(src_dir, dst_dir, verbose):
 
     print("Generated %d files in %s." % (count, dst_dir))
 
-
-###########################
-## Main()
-
-# If called from command line
-if __name__ == "__main__":
-    # Print usage if no args
-    if len(sys.argv) < 2:
-        print("Usage: %s infile [outfile]" % sys.argv[0])
-        print("Prints to stdout if outfile is not specified.\n")
-        sys.exit(0)
-
-    # Input file
-    infile = sys.argv[1]
-
-    # Print to screen if no output
-    if len(sys.argv) < 3:
-        outfile = "-"
-    else: 
-        outfile = sys.argv[2]
-
-    xml_tree = ET.parse(infile)
-    process_xml(xml_tree, outfile, [], {})
-
