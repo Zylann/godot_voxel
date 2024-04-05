@@ -31,9 +31,7 @@
 			<param index="0" name="mesh" type="Mesh" />
 			<description>
 				Experimental.
-
 				Runs some checks to verify if the baked SDF contains errors. The mesh to pass should be the mesh that was used for baking.
-
 				If there are errors, the returned array will contain information about up to 2 cells of the buffer containing wrong values, in the following format:
 				[codeblock]
 				[
@@ -47,9 +45,7 @@
 					cell1_triangle_v2: Vector3,
 				]
 				[/codeblock]
-
 				If there are no errors, the returned array will be empty. 
-
 				This method is a leftover from when this resource was initially implemented, as an attempt to automate checks when debugging. Errors might not always indicate an unusable SDF, depending on the use case. It might be removed or changed in the future.
 			</description>
 		</method>
