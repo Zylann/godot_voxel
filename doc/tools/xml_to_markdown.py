@@ -344,7 +344,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         table = [["Type", "Name", "Default"]]
         for prop in klass.properties:
             row = [
-                "`" + prop.type + "`",
+                markdown.make_type(prop.type, '', module_class_names),
                 make_custom_internal_link(prop.name)
             ]
             if prop.is_deprecated:
