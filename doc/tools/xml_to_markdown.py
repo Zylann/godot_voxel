@@ -20,6 +20,10 @@ def make_text(text, module_class_names, current_class_name):
     return bbcode_to_markdown.format_text(text, module_class_names, current_class_name, '')
 
 
+def make_text_single_line(text, module_class_names, current_class_name):
+    return bbcode_to_markdown.format_text_for_table(text, module_class_names, current_class_name, '')
+
+
 # params: Array[ParameterDoc]
 def make_parameter_list(params, module_class_names):
     s = "("
@@ -60,7 +64,7 @@ def make_constants(constants, module_class_names, current_class_name):
         if text != "" or desc != "":
             if desc != "":
                 desc += " "
-            desc += make_text(constant.description, module_class_names, current_class_name)
+            desc += make_text_single_line(constant.description, module_class_names, current_class_name)
 
         if desc != "":
             s += " --- "

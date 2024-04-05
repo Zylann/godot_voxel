@@ -22,6 +22,10 @@ def _extract_member_and_class(symbol, current_class_name):
     return class_name, member_name
 
 
+def without_empty_lines(lines):
+    return [s for s in lines if s]
+
+
 def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current_class_name, local_link_prefix):
     bb_nodes = bbcode.parse(text)
 
@@ -40,7 +44,8 @@ def format_doc_bbcodes_for_markdown(text, multiline, module_class_names, current
                     # so let's remove newlines and use commas.
                     node_text = ' ' + ', '.join(node_text.strip().splitlines())
                 else:
-                    node_text = ' '.join(node_text.splitlines())
+                    # Prevent unwanted empty spaces in case the node's text contains empty lines.
+                    node_text = ' '.join(without_empty_lines(node_text.splitlines()))
 
             elif not in_codeblock:
                 # Godot's BBCode docs don't have an explicit way to define paragraphs.
