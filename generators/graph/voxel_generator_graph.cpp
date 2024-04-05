@@ -1,5 +1,6 @@
 #include "voxel_generator_graph.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../storage/materials_4i4w.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/engine.h"

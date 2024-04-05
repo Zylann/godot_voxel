@@ -513,18 +513,6 @@ private:
 	FlatMapMoveOnly<Vector3i, VoxelMetadata> _voxel_metadata;
 };
 
-inline void debug_check_texture_indices_packed_u16(const VoxelBuffer &voxels) {
-	for (int z = 0; z < voxels.get_size().z; ++z) {
-		for (int x = 0; x < voxels.get_size().x; ++x) {
-			for (int y = 0; y < voxels.get_size().y; ++y) {
-				uint16_t pi = voxels.get_voxel(x, y, z, VoxelBuffer::CHANNEL_INDICES);
-				FixedArray<uint8_t, 4> indices = decode_indices_from_packed_u16(pi);
-				debug_check_texture_indices(indices);
-			}
-		}
-	}
-}
-
 void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf(VoxelBuffer &voxels, Span<float> sdf);
 void scale_and_store_sdf_if_modified(VoxelBuffer &voxels, Span<float> sdf, Span<const float> comparand);
