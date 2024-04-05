@@ -1,6 +1,7 @@
 #ifndef VOXEL_DATA_GRID_H
 #define VOXEL_DATA_GRID_H
 
+#include "../storage/voxel_buffer.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
 

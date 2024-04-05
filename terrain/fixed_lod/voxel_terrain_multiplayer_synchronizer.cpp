@@ -1,5 +1,6 @@
 #include "voxel_terrain_multiplayer_synchronizer.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../streams/voxel_block_serializer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/multiplayer_api.h"

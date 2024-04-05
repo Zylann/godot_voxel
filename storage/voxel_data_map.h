@@ -1,8 +1,11 @@
 #ifndef VOXEL_DATA_MAP_H
 #define VOXEL_DATA_MAP_H
 
+#include "../constants/voxel_constants.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/containers/span.h"
 #include "../util/containers/std_unordered_map.h"
+#include "../util/math/box3i.h"
 #include "../util/profiling.h"
 #include "voxel_data_block.h"
 
@@ -65,8 +68,8 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c);
 
 	inline void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);

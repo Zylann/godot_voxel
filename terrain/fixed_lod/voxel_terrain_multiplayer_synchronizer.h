@@ -5,6 +5,7 @@
 #include "../../util/containers/std_unordered_map.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/node.h"
+#include "../../util/math/box3i.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/version.h"

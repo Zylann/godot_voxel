@@ -1,4 +1,5 @@
 #include "test_voxel_data_map.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data_map.h"
 #include "../testing.h"
 

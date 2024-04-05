@@ -1,6 +1,7 @@
 #include "voxel_box_mover.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/profiling.h"
