@@ -457,13 +457,13 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                     out += "\n"
 
             out += "\n"
-    
+
     # Method descriptions
     if len(klass.methods) > 0:
         out += "## Method Descriptions\n\n"
 
         for method in klass.methods:
-            out += "- " + markdown.make_type(method.return_type, '', module_class_names) \
+            out += "### " + markdown.make_type(method.return_type, '', module_class_names) \
                 + make_custom_internal_anchor(method.name) + " **" + method.name + "**"
             out += make_parameter_list(method.parameters, module_class_names)
             out += " "
@@ -483,7 +483,9 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 text = make_text(method.description, module_class_names, current_class_name)
                 if text.strip() != "":
                     out += text
-                    out += "\n"
+                elif not method.is_deprecated:
+                    out += "*(This method has no documentation)*"
+                out += "\n"
             
             out += "\n"
 
