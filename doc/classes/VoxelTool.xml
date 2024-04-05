@@ -179,7 +179,7 @@
 			<param index="0" name="pos" type="Vector3i" />
 			<param index="1" name="v" type="float" />
 			<description>
-				Sets the normalized decimal value of a specific voxel. This should preferably be used when modifying voxels on the SDF channel.
+				Sets the signed distance field (SDF) value a specific voxel. This should preferably be used on the SDF channel.
 			</description>
 		</method>
 		<method name="set_voxel_metadata">
