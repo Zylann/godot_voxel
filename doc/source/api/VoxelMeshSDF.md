@@ -17,15 +17,15 @@ Note 2: not all meshes can be baked. Best meshes should be manifold and represen
 ## Properties: 
 
 
-Type          | Name                                                       | Default 
-------------- | ---------------------------------------------------------- | --------
-`Dictionary`  | [_data](#i__data)                                          | {}      
-`int`         | [bake_mode](#i_bake_mode)                                  | 1       
-`bool`        | [boundary_sign_fix_enabled](#i_boundary_sign_fix_enabled)  | true    
-`int`         | [cell_count](#i_cell_count)                                | 64      
-`float`       | [margin_ratio](#i_margin_ratio)                            | 0.25    
-`Mesh`        | [mesh](#i_mesh)                                            |         
-`int`         | [partition_subdiv](#i_partition_subdiv)                    | 32      
+Type                                                                                | Name                                                       | Default 
+----------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------
+[Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)  | [_data](#i__data)                                          | {}      
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [bake_mode](#i_bake_mode)                                  | 1       
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)              | [boundary_sign_fix_enabled](#i_boundary_sign_fix_enabled)  | true    
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [cell_count](#i_cell_count)                                | 64      
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)            | [margin_ratio](#i_margin_ratio)                            | 0.25    
+[Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)              | [mesh](#i_mesh)                                            |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)                | [partition_subdiv](#i_partition_subdiv)                    | 32      
 <p></p>
 
 ## Methods: 
@@ -61,24 +61,25 @@ enum **BakeMode**:
 
 ## Property Descriptions
 
-- [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i__data"></span> **_data** = {}
+### [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i__data"></span> **_data** = {}
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_bake_mode"></span> **bake_mode** = 1
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_bake_mode"></span> **bake_mode** = 1
 
 Selects the algorithm that will be used to compute SDF from the mesh.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_boundary_sign_fix_enabled"></span> **boundary_sign_fix_enabled** = true
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_boundary_sign_fix_enabled"></span> **boundary_sign_fix_enabled** = true
 
 Some algorithms might fail to properly compute the sign of distances on their own. Usually outside the shape has positive sign, and inside the shape has negative sign. Errors can cause the wrong sign to "leak" and propagate outside the shape.
 
 This option attempts to fix this when it happens by assuming that the border of the baked region is always outside, and propagates positive signs inwards to ensure no negative signs leak.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cell_count"></span> **cell_count** = 64
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_cell_count"></span> **cell_count** = 64
 
 Controls the resolution of the baked SDF, proportionally to one side of the 3D voxel buffer. Higher increases quality, but is slower to bake and uses more memory.
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_margin_ratio"></span> **margin_ratio** = 0.25
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_margin_ratio"></span> **margin_ratio** = 0.25
 
 Controls the addition of extra space around the mesh's baking area.
 
@@ -86,33 +87,31 @@ Proper SDF buffers should have some margin in order to capture outside gradients
 
 This property adds margin based on a ratio of the size of the mesh. For example, if the mesh is 100 units wide, a margin of 0.1 will add 10 extra units of space around it.
 
-- [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh"></span> **mesh**
+### [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_mesh"></span> **mesh**
 
 Mesh that will be baked when calling the [VoxelMeshSDF.bake](VoxelMeshSDF.md#i_bake) function, or when pressing the Bake button in the editor.
 
 Setting this property back to null will not erase the baked result, so you don't need the original mesh to be loaded in order to use the SDF.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_partition_subdiv"></span> **partition_subdiv** = 32
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_partition_subdiv"></span> **partition_subdiv** = 32
 
 Controls how many subdivisions to use across the baking area when using the BAKE_MODE_ACCURATE_PARTITIONED mode.
 
 ## Method Descriptions
 
-- [void](#)<span id="i_bake"></span> **bake**( ) 
+### [void](#)<span id="i_bake"></span> **bake**( ) 
 
 Bakes the SDF on the calling thread, using the currently assigned [VoxelMeshSDF.mesh](VoxelMeshSDF.md#i_mesh). Might cause the game to stall if done on the main thread.
 
-- [void](#)<span id="i_bake_async"></span> **bake_async**( [SceneTree](https://docs.godotengine.org/en/stable/classes/class_scenetree.html) scene_tree ) 
+### [void](#)<span id="i_bake_async"></span> **bake_async**( [SceneTree](https://docs.godotengine.org/en/stable/classes/class_scenetree.html) scene_tree ) 
 
 Bakes the SDF on a separate thread, using the currently assigned [VoxelMeshSDF.mesh](VoxelMeshSDF.md#i_mesh). See also [VoxelMeshSDF.is_baking](VoxelMeshSDF.md#i_is_baking), [VoxelMeshSDF.is_baked](VoxelMeshSDF.md#i_is_baked) and [VoxelMeshSDF.baked](VoxelMeshSDF.md#signals).
 
-- [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_check_sdf"></span> **debug_check_sdf**( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh ) 
+### [Array](https://docs.godotengine.org/en/stable/classes/class_array.html)<span id="i_debug_check_sdf"></span> **debug_check_sdf**( [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html) mesh ) 
 
 Experimental.
 
-
 Runs some checks to verify if the baked SDF contains errors. The mesh to pass should be the mesh that was used for baking.
-
 
 If there are errors, the returned array will contain information about up to 2 cells of the buffer containing wrong values, in the following format:
 
@@ -128,28 +127,26 @@ If there are errors, the returned array will contain information about up to 2 c
 	cell1_triangle_v2: Vector3,
 ]
 ```
-
 If there are no errors, the returned array will be empty. 
-
 
 This method is a leftover from when this resource was initially implemented, as an attempt to automate checks when debugging. Errors might not always indicate an unusable SDF, depending on the use case. It might be removed or changed in the future.
 
-- [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_get_aabb"></span> **get_aabb**( ) 
+### [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html)<span id="i_get_aabb"></span> **get_aabb**( ) 
 
 Get the reference bounding box of the baked shape. This may be a bit larger than the original mesh's AABB because of the [VoxelMeshSDF.margin](VoxelMeshSDF.md#i_margin) property.
 
-- [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
+### [VoxelBuffer](VoxelBuffer.md)<span id="i_get_voxel_buffer"></span> **get_voxel_buffer**( ) 
 
 Get the [VoxelBuffer](VoxelBuffer.md) containing the baked distance field. Results will be stored in the SDF channel.
 
 This buffer should not be modified.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baked"></span> **is_baked**( ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baked"></span> **is_baked**( ) 
 
 Gets whether the resource contains baked SDF data.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_baking"></span> **is_baking**( ) 
 
 Gets whether a asynchronous baking operation is pending.
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_

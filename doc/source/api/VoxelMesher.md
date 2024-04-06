@@ -22,16 +22,16 @@ Return                                                                  | Signat
 
 ## Method Descriptions
 
-- [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_build_mesh"></span> **build_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html) materials, [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) additional_data={} ) 
+### [Mesh](https://docs.godotengine.org/en/stable/classes/class_mesh.html)<span id="i_build_mesh"></span> **build_mesh**( [VoxelBuffer](VoxelBuffer.md) voxel_buffer, [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html) materials, [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) additional_data={} ) 
 
 Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_maximum_padding"></span> **get_maximum_padding**( ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_maximum_padding"></span> **get_maximum_padding**( ) 
 
 Gets by how much voxels must be padded before their lower corner in order for the mesher to work.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_minimum_padding"></span> **get_minimum_padding**( ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_minimum_padding"></span> **get_minimum_padding**( ) 
 
 Gets by how much voxels must be padded after their upper corner in order for the mesher to work.
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_

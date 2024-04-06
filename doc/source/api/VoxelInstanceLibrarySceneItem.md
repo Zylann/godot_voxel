@@ -11,14 +11,15 @@ This model will spawn scene instances, which may be suited for sparse and comple
 ## Properties: 
 
 
-Type           | Name               | Default 
--------------- | ------------------ | --------
-`PackedScene`  | [scene](#i_scene)  |         
+Type                                                                                  | Name               | Default 
+------------------------------------------------------------------------------------- | ------------------ | --------
+[PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)  | [scene](#i_scene)  |         
 <p></p>
 
 ## Property Descriptions
 
-- [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
+### [PackedScene](https://docs.godotengine.org/en/stable/classes/class_packedscene.html)<span id="i_scene"></span> **scene**
 
+*(This property has no documentation)*
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_

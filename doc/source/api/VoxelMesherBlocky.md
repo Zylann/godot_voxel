@@ -11,22 +11,25 @@ Occluded faces are removed from the result, and some degree of ambient occlusion
 ## Properties: 
 
 
-Type                      | Name                                         | Default 
-------------------------- | -------------------------------------------- | --------
-`VoxelBlockyLibraryBase`  | [library](#i_library)                        |         
-`float`                   | [occlusion_darkness](#i_occlusion_darkness)  | 0.8     
-`bool`                    | [occlusion_enabled](#i_occlusion_enabled)    | true    
+Type                                                                      | Name                                         | Default 
+------------------------------------------------------------------------- | -------------------------------------------- | --------
+[VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)                       | [library](#i_library)                        |         
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [occlusion_darkness](#i_occlusion_darkness)  | 0.8     
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)    | [occlusion_enabled](#i_occlusion_enabled)    | true    
 <p></p>
 
 ## Property Descriptions
 
-- [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)<span id="i_library"></span> **library**
+### [VoxelBlockyLibraryBase](VoxelBlockyLibraryBase.md)<span id="i_library"></span> **library**
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_occlusion_darkness"></span> **occlusion_darkness** = 0.8
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_occlusion_darkness"></span> **occlusion_darkness** = 0.8
 
+*(This property has no documentation)*
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_occlusion_enabled"></span> **occlusion_enabled** = true
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_occlusion_enabled"></span> **occlusion_enabled** = true
 
+*(This property has no documentation)*
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_

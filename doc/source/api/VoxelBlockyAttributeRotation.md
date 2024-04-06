@@ -8,14 +8,15 @@ Inherits: [VoxelBlockyAttribute](VoxelBlockyAttribute.md)
 ## Properties: 
 
 
-Type    | Name                                   | Default 
-------- | -------------------------------------- | --------
-`bool`  | [horizontal_only](#i_horizontal_only)  | false   
+Type                                                                    | Name                                   | Default 
+----------------------------------------------------------------------- | -------------------------------------- | --------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [horizontal_only](#i_horizontal_only)  | false   
 <p></p>
 
 ## Property Descriptions
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_horizontal_only"></span> **horizontal_only** = false
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_horizontal_only"></span> **horizontal_only** = false
 
+*(This property has no documentation)*
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_

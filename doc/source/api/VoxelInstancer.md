@@ -11,10 +11,10 @@ Add-on to voxel nodes, allowing to spawn elements on the surface. These elements
 ## Properties: 
 
 
-Type                    | Name                   | Default 
------------------------ | ---------------------- | --------
-`VoxelInstanceLibrary`  | [library](#i_library)  |         
-`int`                   | [up_mode](#i_up_mode)  | 0       
+Type                                                                  | Name                   | Default 
+--------------------------------------------------------------------- | ---------------------- | --------
+[VoxelInstanceLibrary](VoxelInstanceLibrary.md)                       | [library](#i_library)  |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)  | [up_mode](#i_up_mode)  | 0       
 <p></p>
 
 ## Methods: 
@@ -51,33 +51,42 @@ enum **DebugDrawFlag**:
 
 ## Property Descriptions
 
-- [VoxelInstanceLibrary](VoxelInstanceLibrary.md)<span id="i_library"></span> **library**
+### [VoxelInstanceLibrary](VoxelInstanceLibrary.md)<span id="i_library"></span> **library**
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_up_mode"></span> **up_mode** = 0
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_up_mode"></span> **up_mode** = 0
 
+*(This property has no documentation)*
 
 ## Method Descriptions
 
-- [void](#)<span id="i_debug_dump_as_scene"></span> **debug_dump_as_scene**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath ) 
+### [void](#)<span id="i_debug_dump_as_scene"></span> **debug_dump_as_scene**( [String](https://docs.godotengine.org/en/stable/classes/class_string.html) fpath ) 
 
+*(This method has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_block_count"></span> **debug_get_block_count**( ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_debug_get_block_count"></span> **debug_get_block_count**( ) 
 
+*(This method has no documentation)*
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_get_draw_flag"></span> **debug_get_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag ) 
 
+*(This method has no documentation)*
 
-- [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_instance_counts"></span> **debug_get_instance_counts**( ) 
+### [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html)<span id="i_debug_get_instance_counts"></span> **debug_get_instance_counts**( ) 
 
+*(This method has no documentation)*
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_is_draw_enabled"></span> **debug_is_draw_enabled**( ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_debug_is_draw_enabled"></span> **debug_is_draw_enabled**( ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_debug_set_draw_enabled"></span> **debug_set_draw_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+### [void](#)<span id="i_debug_set_draw_enabled"></span> **debug_set_draw_enabled**( [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
+### [void](#)<span id="i_debug_set_draw_flag"></span> **debug_set_draw_flag**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) flag, [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html) enabled ) 
 
+*(This method has no documentation)*
 
-_Generated on Apr 04, 2024_
+_Generated on Apr 06, 2024_
