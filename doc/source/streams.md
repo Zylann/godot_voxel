@@ -33,6 +33,25 @@ Saving only occurs under the following conditions:
 - The block gets unloaded when too far away
 - [save_modified_blocks()](api/VoxelTerrain.md#i_save_modified_blocks) is called on the terrain node (you may want to call this when the player saves, on a timer, or when quitting the game)
 
+You can add minimal saving with this script:
+
+```
+extends VoxelTerrain
+
+func _ready():
+    stream = VoxelStreamSQLite.new()
+    stream.database_path = "path/to/save.file" # Note, the directory must exist
+
+func _on_tree_exited():
+    save_modified_blocks()
+```
+
+It can get more complex as development progresses. See following sections for details.
+
+See also this demo game, which includes one save: [https://github.com/Zylann/voxelgame/tree/master/project/blocky_game](https://github.com/Zylann/voxelgame/tree/master/project/blocky_game)
+
+TODO: Demo handling multiple saves
+
 
 Asynchronous saving
 ---------------------
