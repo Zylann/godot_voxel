@@ -57,7 +57,7 @@ You should also consider *NOT embedding a stream resource inside your scene (lik
 
 ### File locking
 
-"streams" are called this way mainly because they remain open, in order to continuously save and load blocks of terrain. Closing and re-opening to save each block would be much slower due to system API calls, and some platforms have to do a lot of filesystem work under the hood.
+Streams remain open, in order to continuously save and load blocks of terrain. Closing and re-opening to save each block would be much slower due to system API calls, and some platforms have to do a lot of filesystem work under the hood.
 
 The consequence is that save files will often be locked while they are in use. Notably, they can't be deleted.
 
