@@ -393,7 +393,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         out += "## Signals: \n\n"
 
         for signal in klass.signals:
-            out += "- "
+            out += "### "
             out += signal.name
 
             out += make_parameter_list(signal.parameters, module_class_names)
@@ -408,8 +408,10 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                     desc += make_text(signal.deprecated_message, module_class_names, current_class_name)
                 desc += "*\n"
 
-            if signal.description != "":
+            if signal.description.strip() != "":
                 desc += make_text(signal.description, module_class_names, current_class_name)
+            elif not signal.is_deprecated:
+                desc += "*(This signal has no documentation)*"
             
             if desc != "":
                 out += desc
