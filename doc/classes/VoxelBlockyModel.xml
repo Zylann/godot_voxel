@@ -66,11 +66,10 @@
 		</member>
 		<member name="transparency_index" type="int" setter="set_transparency_index" getter="get_transparency_index" default="0">
 			Determines how transparency is handled when the sides of the model are culled by neighbor voxels.
-			Equal indices culls the face, different indexes doesn't.
+			If the neighbor voxel at a given side has a transparency index lower or equal to the current voxel, the side will be culled.
 		</member>
-		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false">
+		<member name="transparent" type="bool" setter="set_transparent" getter="is_transparent" default="false" is_deprecated="true" deprecated="Use [member transparency_index] instead.">
 			Tells if the model is transparent in the context of sides being culled by neighbor voxels.
-			This is a legacy property, [member transparency_index] may be used instead.
 		</member>
 	</members>
 	<constants>
