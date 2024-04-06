@@ -58,11 +58,13 @@ Return                                                                          
 
 ## Signals: 
 
-- compiled( ) 
+### compiled( ) 
 
 Emitted after the graph finished compiling, even if compiling failed.
 
-- node_name_changed( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
+### node_name_changed( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
+
+*(This signal has no documentation)*
 
 ## Enumerations: 
 

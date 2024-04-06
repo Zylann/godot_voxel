@@ -44,7 +44,9 @@ Return                                                                          
 
 ## Signals: 
 
-- node_name_changed( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
+### node_name_changed( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) node_id ) 
+
+*(This signal has no documentation)*
 
 ## Property Descriptions
 

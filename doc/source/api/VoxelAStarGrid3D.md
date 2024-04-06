@@ -31,7 +31,9 @@ Return                                                                          
 
 ## Signals: 
 
-- async_search_completed( [Vector3i[]](https://docs.godotengine.org/en/stable/classes/class_vector3i[].html) name ) 
+### async_search_completed( [Vector3i[]](https://docs.godotengine.org/en/stable/classes/class_vector3i[].html) name ) 
+
+*(This signal has no documentation)*
 
 ## Method Descriptions
 

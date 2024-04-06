@@ -17,7 +17,9 @@ Return                                                                  | Signat
 
 ## Signals: 
 
-- completed( ) 
+### completed( ) 
+
+*(This signal has no documentation)*
 
 ## Method Descriptions
 

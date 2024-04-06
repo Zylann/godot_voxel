@@ -44,7 +44,7 @@ Return                                                                    | Sign
 
 ## Signals: 
 
-- baked( ) 
+### baked( ) 
 
 Emitted when asynchronous baking is complete.
 

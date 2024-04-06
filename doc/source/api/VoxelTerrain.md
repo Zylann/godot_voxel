@@ -50,19 +50,19 @@ Return                                                                          
 
 ## Signals: 
 
-- block_loaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+### block_loaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a new data block is loaded from stream. This can happen before the mesh or collider becomes available.
 
-- block_unloaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+### block_unloaded( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a data block is unloaded due to being outside view distance.
 
-- mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+### mesh_block_entered( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a mesh block receives its first update since it was added in the range of viewers. This is regardless of the mesh being empty or not. It tracks changes of the same state obtained with [VoxelTerrain.is_area_meshed](VoxelTerrain.md#i_is_area_meshed).
 
-- mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
+### mesh_block_exited( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position ) 
 
 Emitted when a mesh block gets unloaded. It is the counterpart of [VoxelTerrain.mesh_block_entered](VoxelTerrain.md#signals).
 
