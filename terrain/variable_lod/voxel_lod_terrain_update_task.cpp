@@ -496,12 +496,13 @@ void VoxelLodTerrainUpdateTask::flush_pending_lod_edits(
 	const unsigned int lod_count = data.get_lod_count();
 	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+		const int mesh_block_size_at_lod = mesh_block_size << lod_index;
 
 		for (const Box3i voxel_box : tls_modified_voxel_areas_lod0) {
 			// Padding is required for edits near chunk borders, which can affect multiple meshes despite only affecting
 			// one data block
 			const Box3i padded_voxel_box = voxel_box.padded(1);
-			const Box3i mesh_block_box = padded_voxel_box.downscaled(mesh_block_size);
+			const Box3i mesh_block_box = padded_voxel_box.downscaled(mesh_block_size_at_lod);
 
 			mesh_block_box.for_each_cell([&lod](Vector3i mesh_block_pos) {
 				auto mesh_block_it = lod.mesh_map_state.map.find(mesh_block_pos);
