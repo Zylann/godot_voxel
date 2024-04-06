@@ -240,7 +240,7 @@ void VoxelAStarGrid3D::_bind_methods() {
 			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed);
 
 	ADD_SIGNAL(MethodInfo(
-			"async_search_completed", PropertyInfo(Variant::ARRAY, "name", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
+			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
 }
 
 } // namespace zylann::voxel
