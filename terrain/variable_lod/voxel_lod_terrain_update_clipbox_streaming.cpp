@@ -905,8 +905,8 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs)
 					if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
 						mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-						mesh_block.update_list_index = lod.mesh_blocks_pending_update.size();
-						lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
+						mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
+						parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
 								bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
 					}
 				}
