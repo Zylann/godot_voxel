@@ -437,7 +437,7 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
         out += "## Property Descriptions\n\n"
 
         for prop in klass.properties:
-            out += "- " + markdown.make_type(prop.type, '', module_class_names) \
+            out += "### " + markdown.make_type(prop.type, '', module_class_names) \
                 + make_custom_internal_anchor(prop.name) + " **" + prop.name + "**"
             if prop.default_value is not None:
                 out += " = " + prop.default_value
@@ -454,7 +454,9 @@ def class_doc_to_markdown(klass, f_out, module_class_names):
                 text = make_text(prop.description, module_class_names, current_class_name)
                 if text.strip() != "":
                     out += text
-                    out += "\n"
+                elif not prop.is_deprecated:
+                    out += "*(This property has no documentation)*"
+                out += "\n"
 
             out += "\n"
 
