@@ -11,7 +11,7 @@ VoxelAStarGrid3DInternal::VoxelAStarGrid3DInternal() : _voxel_buffer(VoxelBuffer
 void VoxelAStarGrid3DInternal::init_cache() {
 	_grid_cache_size = math::ceildiv(get_region().size, Chunk::SIZE);
 	_grid_cache.resize(_grid_cache_size.x * _grid_cache_size.y * _grid_cache_size.z);
-	_grid_chunk_states.resize(_grid_cache.size());
+	_grid_chunk_states.resize_no_init(_grid_cache.size());
 	_grid_chunk_states.fill(false);
 	_voxel_buffer.create(Vector3iUtil::create(Chunk::SIZE));
 

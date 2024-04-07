@@ -129,7 +129,7 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 		max_value = math::max(i, max_value);
 	}
 
-	bitarray.resize(indices.size() / 8);
+	bitarray.resize_no_init(indices.size() / 8);
 
 	for (const int32_t i : indices) {
 		bitarray.set(i);

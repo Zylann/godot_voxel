@@ -226,7 +226,7 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 	// Find which pattern occludes which
 
 	baked_data.side_pattern_count = patterns.size();
-	baked_data.side_pattern_culling.resize(baked_data.side_pattern_count * baked_data.side_pattern_count);
+	baked_data.side_pattern_culling.resize_no_init(baked_data.side_pattern_count * baked_data.side_pattern_count);
 	baked_data.side_pattern_culling.fill(false);
 
 	for (unsigned int ai = 0; ai < patterns.size(); ++ai) {
