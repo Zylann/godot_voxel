@@ -38,6 +38,7 @@ def get_sources(env, is_editor_build):
         "streams/vox/*.cpp",
 
         "storage/*.cpp",
+        "storage/metadata/*.cpp",
 
         "generators/*.cpp",
         "generators/graph/*.cpp",

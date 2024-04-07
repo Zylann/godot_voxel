@@ -5,7 +5,7 @@
 #include "../util/math/color.h"
 #include "../util/memory/memory.h"
 #include "../util/string/format.h"
-#include "voxel_metadata_variant.h"
+#include "metadata/voxel_metadata_variant.h"
 
 namespace zylann::voxel::godot {
 

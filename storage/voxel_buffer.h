@@ -6,7 +6,7 @@
 #include "../util/containers/small_vector.h"
 #include "../util/math/box3i.h"
 #include "funcs.h"
-#include "voxel_metadata.h"
+#include "metadata/voxel_metadata.h"
 
 #include <limits>
 

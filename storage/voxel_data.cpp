@@ -4,8 +4,8 @@
 #include "../util/math/conv.h"
 #include "../util/string/format.h"
 #include "../util/thread/mutex.h"
+#include "metadata/voxel_metadata_variant.h"
 #include "voxel_data_grid.h"
-#include "voxel_metadata_variant.h"
 
 namespace zylann::voxel {
 
