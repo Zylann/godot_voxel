@@ -17,6 +17,7 @@ Primarily developped with Godot 4.2.
 - Saving with `save_all_modified_blocks` now automatically flushes eventual caches implemented by `VoxelStream` upon completion
 - Added `VoxelStreamMemory`, which stores in memory instead of the filesystem. This is mainly for testing purposes.
 - More memory allocations are now tracked by Godot (you might notice `OS.get_static_memory_usage()` returns slightly more)
+- `VoxelBlockyModelMesh`: exposed `side_vertex_tolerance` to tune when geometry is considered on sides of the voxel
 - `VoxelBuffer`: exposed `fill_area_f`
 - `VoxelEngine`: added methods to get the version of the voxel engine
 - `VoxelGeneratorGraph`: Added GPU support for the `Select` node
