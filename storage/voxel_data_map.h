@@ -7,6 +7,7 @@
 #include "../util/containers/std_unordered_map.h"
 #include "../util/math/box3i.h"
 #include "../util/profiling.h"
+#include "voxel_buffer.h" // Used in template methods
 #include "voxel_data_block.h"
 
 namespace zylann::voxel {
