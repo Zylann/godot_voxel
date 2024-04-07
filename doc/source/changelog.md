@@ -21,12 +21,6 @@ Primarily developped with Godot 4.2.
 - `VoxelBuffer`: exposed `fill_area_f`
 - `VoxelEngine`: added methods to get the version of the voxel engine
 - `VoxelGeneratorGraph`: Added GPU support for the `Select` node
-- `VoxelStreamSQLite`: Added support for `user://` paths (via internal call to `ProjectSettings.globalize_path()`)
-- `VoxelTool`:
-    - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
-    - `do_box` with smooth voxels now uses a proper box SDF, to improve quality. Before it was a solid fill, which could cause artifacts
-    - Added `paste_masked_writable_list`, which also determines what is copied based the destination voxels
-- `VoxelToolBuffer`: edits are now allowed even if the affected area is partially out of bounds of the target buffer. Results will be clipped.
 - `VoxelLodTerrain`:
     - `save_all_modified_blocks` now returns a completion tracker similar to `VoxelTerrain`
     - Added new optional LOD streaming system `Clipbox` (advanced settings):
@@ -39,10 +33,16 @@ Primarily developped with Godot 4.2.
         - The original system is now referenced as "Legacy Octree".
     - Debug drawing is now exposed as properties. Editor checkboxes were removed from the terrain menu
 - `VoxelMesherTransvoxel`: textures from air voxels (SDF>0) no longer contribute to the mesh
-- `VoxelToolLodTerrain`:
-    - Improved quality of `separate_floating_chunks` on smooth terrains by expanding cutting-off area to include more gradients
 - `VoxelStream`:
     - Added `flush` method to force writing to the filesystem in case the stream's implementation uses caching
+- `VoxelStreamSQLite`: Added support for `user://` paths (via internal call to `ProjectSettings.globalize_path()`)
+- `VoxelTool`:
+    - Added `grow_sphere` as alternate way to progressively grow or shrink matter in a spherical region with smooth voxels (thanks to Piratux)
+    - `do_box` with smooth voxels now uses a proper box SDF, to improve quality. Before it was a solid fill, which could cause artifacts
+    - Added `paste_masked_writable_list`, which also determines what is copied based the destination voxels
+- `VoxelToolBuffer`: edits are now allowed even if the affected area is partially out of bounds of the target buffer. Results will be clipped.
+- `VoxelToolLodTerrain`:
+    - Improved quality of `separate_floating_chunks` on smooth terrains by expanding cutting-off area to include more gradients
 
 - Fixes
     - Fixed chunk loading was prioritized incorrectly around the player in specific game start conditions
@@ -70,13 +70,14 @@ Primarily developped with Godot 4.2.
         - Fixed `stamp_sdf` was randomly not working correctly
 
 - Breaking changes
-    - `VoxelBuffer`: `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies).
-    - `VoxelTool`: due to the automatic internal SDF rescaling, if you modify `sdf_scale`, you may have to adjust it (or remove it if you set it to 0.002).
-    - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
-    - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
-    - `VoxelBuffer`: `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
-    - `VoxelGraphFunction`: some members of the `NodeTypeID` enum have changed value. However, this enum's values shouldn't be used raw, and shouldn't be used in saves.
+    - `VoxelBuffer`:
+        - `get_voxel_f` and `set_voxel_f` now automatically rescale quantized values. They are no longer normalized in -1..1 and may represent signed distances, so no need to scale manually (imprecisions caused by fixed-point encoding still applies).
+        - `debug_print_sdf_y_slices` now returns a typed array instead of untyped array
     - `VoxelGeneratorGraph`: the fix to `Image` coordinate wrapping means results will be different than the previous broken version (the broken version was partially offsetting the image in negative coordinates)
+    - `VoxelGraphFunction`: some members of the `NodeTypeID` enum have changed value. However, this enum's values shouldn't be used raw, and shouldn't be used in saves.
+    - `VoxelStream`: save and load methods for voxels now take a position in blocks instead of a position in voxels
+    - `VoxelTool`: due to the automatic internal SDF rescaling, if you modify `sdf_scale`, you may have to adjust it (or remove it if you set it to 0.002).
+    - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
 
 
 1.1 - 29/12/2023 - `1.1`
@@ -198,31 +199,34 @@ Godot 4 is required from this version.
     - Mesh resources are now fully built on threads with the Godot Vulkan renderer
     - Editor: terrain bounds are now shown in the inspector as min/max instead of position/size
     - Added `do_hemisphere` to `VoxelToolTerrain` and `VoxelToolLodTerrain`, which can be used as flattening brush
-    - `VoxelGeneratorGraph`: added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
-    - `VoxelGeneratorGraph`: editor: unconnected inputs show their default value directly on the node
-    - `VoxelGeneratorGraph`: editor: allow to change the axes on preview nodes 3D slices
-    - `VoxelGeneratorGraph`: editor: replace existing connection if dragging from/to an input port having one already
-    - `VoxelGeneratorGraph`: editor: creating noise and curve nodes now auto-create their resource instead of coming up null
-    - `VoxelGeneratorGraph`: editor: added pin button to keep the graph editor shown even after deselecting the terrain.
-    - `VoxelGeneratorGraph`: editor: added popout button to open the graph editor in a separate window
-    - `VoxelGeneratorGraph`: added comment nodes
-    - `VoxelGeneratorGraph`: added relay nodes
-    - `VoxelGeneratorGraph`: added custom functions with the new `VoxelGraphFunction` resource (initial implementation, has limitations)
-    - `VoxelGeneratorGraph`: added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
-    - `VoxelGeneratorGraph`: added math expression node
-    - `VoxelGeneratorGraph`: added Pow and Powi nodes
-    - `VoxelGeneratorGraph`: Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
-    - `VoxelGeneratorGraph`: Added per-node profiling detail to see which ones take most of the time
-    - `VoxelGeneratorGraph`: Added "live update" option, to automatically re-generate the terrain when the graph is modified
-    - `VoxelGeneratorGraph`: Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
-    - `VoxelGeneratorGraph`: Added minor optimization to share branches of nodes doing the same calculations
-    - `VoxelInstancer`: Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
-    - `VoxelInstancer`: Editor: added basic UI to see how many instances exist
-    - `VoxelInstancer`: Allow to dump VoxelInstancer as scene for debug inspection
-    - `VoxelInstancer`: Editor: instance chunks are shown when the node is selected
-    - `VoxelInstancer`: Changing mesh block size should no longer make saved instances invalid if they were saved with a different mesh block size
-    - `VoxelInstanceLibraryMultiMeshItem`: Support setting up mesh LODs from a scene with name `LODx` suffixes
-    - `VoxelInstanceLibraryMultiMeshItem`: Support setting a scene directly, which is converted to multimesh at runtime (fixes a few workflow issues: updates automatically when scene changes, doesn't create mesh and texture copies in the `.tres` file when using imported scenes)
+    - `VoxelGeneratorGraph`:
+        - added support for outputting to the TYPE channel, allowing use with `VoxelMesherBlocky`
+        - editor: unconnected inputs show their default value directly on the node
+        - editor: allow to change the axes on preview nodes 3D slices
+        - editor: replace existing connection if dragging from/to an input port having one already
+        - editor: creating noise and curve nodes now auto-create their resource instead of coming up null
+        - editor: added pin button to keep the graph editor shown even after deselecting the terrain.
+        - editor: added popout button to open the graph editor in a separate window
+        - added comment nodes
+        - added relay nodes
+        - added custom functions with the new `VoxelGraphFunction` resource (initial implementation, has limitations)
+        - added `OutputSingleTexture` node for outputting a single texture index per voxel, as an alternative to weights. This is specific to smooth voxels.
+        - added math expression node
+        - added Pow and Powi nodes
+        - Clamp now accepts min and max as inputs. For the version with constant parameters, use ClampC (might be faster in the current state of things).
+        - Added per-node profiling detail to see which ones take most of the time
+        - Added "live update" option, to automatically re-generate the terrain when the graph is modified
+        - Some nodes have default input connections, so it's no longer required to connect them manually to (X,Y,Z) inputs
+        - Added minor optimization to share branches of nodes doing the same calculations
+    - `VoxelInstancer`:
+        - Added support for `VoxelTerrain`. This means only LOD0 works, but mesh-LODs should work.
+        - Editor: added basic UI to see how many instances exist
+        - Allow to dump VoxelInstancer as scene for debug inspection
+        - Editor: instance chunks are shown when the node is selected
+        - Changing mesh block size should no longer make saved instances invalid if they were saved with a different mesh block size
+    - `VoxelInstanceLibraryMultiMeshItem`:
+        - Support setting up mesh LODs from a scene with name `LODx` suffixes
+        - Support setting a scene directly, which is converted to multimesh at runtime (fixes a few workflow issues: updates automatically when scene changes, doesn't create mesh and texture copies in the `.tres` file when using imported scenes)
     - `VoxelLodTerrain`: exposed debug drawing options for development versions
 
 - Smooth voxels
@@ -230,50 +234,60 @@ Godot 4 is required from this version.
     - `VoxelTool`: Added `set_sdf_strength()` to control brush strength when sculpting smooth voxels (previously acted as if it was 1.0)
     - `VoxelLodTerrain`: added *experimental* `full_load_mode`, in which all edited data is loaded at once, allowing any area to be edited anytime. Useful for some fixed-size volumes.
     - `VoxelLodTerrain`: Added optional calculation of distant normalmaps to improve LOD quality. It can also run on the GPU for faster execution (`VoxelGeneratorGraph` only).
-    - `VoxelLodTerrain`: Editor: added option to show octree nodes in editor
-    - `VoxelLodTerrain`: Editor: added option to show octree grid in editor, now off by default
-    - `VoxelLodTerrain`: Added option to run a major part of the process logic into another thread
-    - `VoxelLodTerrain`: added debug gizmos to see mesh updates
-    - `VoxelToolLodTerrain`: added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
-    - `VoxelToolLodTerrain`: added `stamp_sdf` function to place a baked mesh SDF on the terrain
-    - `VoxelToolLodTerrain`: added `do_graph` to run a custom brush based on `VoxelGeneratorGraph` in a specific area. An `InputSDF` node was added in order to support SDF modifications.
-    - `VoxelMesherTransvoxel`: initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
-    - `VoxelMesherTransvoxel`: Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
+    - `VoxelLodTerrain`:
+        - Editor: added option to show octree nodes in editor
+        - Editor: added option to show octree grid in editor, now off by default
+        - Added option to run a major part of the process logic into another thread
+        - added debug gizmos to see mesh updates
+    - `VoxelToolLodTerrain`:
+        - added *experimental* `do_sphere_async`, an alternative version of `do_sphere` which defers the task on threads to reduce stutter if the affected area is big.
+        - added `stamp_sdf` function to place a baked mesh SDF on the terrain
+        - added `do_graph` to run a custom brush based on `VoxelGeneratorGraph` in a specific area. An `InputSDF` node was added in order to support SDF modifications.
+    - `VoxelMesherTransvoxel`:
+        - initial support for deep SDF sampling, to affine vertex positions at low levels of details (slow and limited proof of concept for now).
+        - Variable LOD: regular and transition meshes are now combined in one single mesh per chunk. A shader is required to render it, but creates far less mesh resources and reduces the amount of draw calls.
 
 - Blocky voxels
-    - `VoxelMesherBlocky`: materials are now unlimited and specified in each model, either as overrides or directly from mesh (You still need to consider draw calls when using many materials)
-    - `VoxelMesherBlocky`: each model can have up to 2 materials (aka surfaces)
-    - `VoxelMesherBlocky`: mesh collisions: added support for specifying which surfaces have collision
+    - `VoxelMesherBlocky`:
+        - materials are now unlimited and specified in each model, either as overrides or directly from mesh (You still need to consider draw calls when using many materials)
+        - each model can have up to 2 materials (aka surfaces)
+        - mesh collisions: added support for specifying which surfaces have collision
     - `VoxelBoxMover`: added basic support for stair climbing
 
 - Fixes
     - `VoxelBlockyLibrary`: the editor no longer crashes some time after having null model entries.
     - `VoxelBlockyModel`: properties of the inspector were not refreshed when changing `geometry_type`
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
-    - `VoxelGeneratorGraph`: editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
-    - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
-    - `VoxelGeneratorGraph`: editor: fixed wrong position of context menu in some dual monitor configurations
-    - `VoxelGeneratorGraph`: editor: fixed an occasional random crash happening when nodes UI layouts are updated
-    - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
-    - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
-    - `VoxelGeneratorGraph`: some specific node graphs were not ordered properly
-    - `VoxelGeneratorGraph`: SmoothUnion and SmoothSubtract were causing branches to be incorrectly skipped by runtime optimization, leading to empty blocks
+    - `VoxelGeneratorGraph`:
+        - editor: fix inspector starting to throw errors after deleting a node, as it is still inspecting it
+        - editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
+        - editor: fixed wrong position of context menu in some dual monitor configurations
+        - editor: fixed an occasional random crash happening when nodes UI layouts are updated
+        - fixed Image2D node not accepting image formats L8 and LA8
+        - fixed memory leaks when the graph contains resources
+        - some specific node graphs were not ordered properly
+        - SmoothUnion and SmoothSubtract were causing branches to be incorrectly skipped by runtime optimization, leading to empty blocks
     - `VoxelGeneratorFlat`: fixed underground SDF values being 0 instead of negative
-    - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
-    - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
-    - `VoxelInstancer`: fix errors when removing scene instances
-    - `VoxelInstancer`: fix position issues when scene instances are saved
-    - `VoxelInstancer`: fix position issues when instances are saved while mesh block size is set to 32
-    - `VoxelLodTerrain`: fix `lod_fade_duration` property was not accepting decimal numbers
-    - `VoxelLodTerrain`: Cracks no longer appear at seams when LOD fading is enabled
-    - `VoxelMesherCubes`: editor: color mode is now a proper dropdown
-    - `VoxelMesherCubes`: fixed raw color mode not working properly
-    - `VoxelMesherCubes`: wrong alpha check between transparent and solid cubes
-    - `VoxelMesherTransvoxel`: fixed surface not appearing if it lines up exactly at integer coordinates
-    - `VoxelMesherTransvoxel`: fixed occasional holes and "spikes" in geometry in some specific configurations
+    - `VoxelInstancer`:
+        - fix instances not refreshing when an item is modified and the mesh block size is 32
+        - fix crash when removing an item from the library while an instancer node is using it
+        - fix errors when removing scene instances
+        - fix position issues when scene instances are saved
+        - fix position issues when instances are saved while mesh block size is set to 32
+    - `VoxelLodTerrain`:    
+        - fix `lod_fade_duration` property was not accepting decimal numbers
+        - Cracks no longer appear at seams when LOD fading is enabled
+    - `VoxelMesherCubes`:
+        - editor: color mode is now a proper dropdown
+        - fixed raw color mode not working properly
+        - wrong alpha check between transparent and solid cubes
+    - `VoxelMesherTransvoxel`:
+        - fixed surface not appearing if it lines up exactly at integer coordinates
+        - fixed occasional holes and "spikes" in geometry in some specific configurations
     - `VoxelStreamScript`: fix voxel data not getting retrieved when `BLOCK_FOUND` is returned
-    - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
-    - `VoxelTerrain`: changing a material now updates existing meshes instead of only new ones
+    - `VoxelTerrain`:
+        - fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
+        - changing a material now updates existing meshes instead of only new ones
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelToolLodTerrain`: fix inconsistent result with integer `do_sphere` radius
     - `VoxelToolTerrain`: `run_blocky_random_tick` no longer snaps area borders to chunk borders in unintuitive ways
@@ -291,10 +305,12 @@ Godot 4 is required from this version.
     - `VoxelInstanceLibraryItem` was renamed `VoxelInstanceLibraryMultiMeshItem`
     - `VoxelInstanceLibraryItemBase` was renamed `VoxelInstanceLibraryItem`
     - `VoxelServer`: renamed `VoxelEngine`
-    - `VoxelStream`: renamed `emerge_block` => `load_voxel_block`
-    - `VoxelStream`: renamed `immerge_block` => `save_voxel_block`
-    - `VoxelStreamScript`: renamed `_emerge_block` => `_load_voxel_block`
-    - `VoxelStreamScript`: renamed `_immerge_block` => `_save_voxel_block`
+    - `VoxelStream`:
+        - renamed `emerge_block` => `load_voxel_block`
+        - renamed `immerge_block` => `save_voxel_block`
+    - `VoxelStreamScript`:
+        - renamed `_emerge_block` => `_load_voxel_block`
+        - renamed `_immerge_block` => `_save_voxel_block`
     - `VoxelGeneratorGraph`: the `Select` node's `threshold` port is now a parameter instead.
     - `FastNoiseLite` was renamed `ZN_FastNoiseLite`, as now Godot 4 comes with its own implementation, with a few differences.
     - Removed `VoxelStreamBlockFiles`
@@ -317,15 +333,17 @@ This branch is the last supporting Godot 3
 - Fixes
     - `VoxelBuffer`: frequently creating buffers with always different sizes no longer wastes memory
     - `Voxel`: properties were not refreshed when changing `geometry_type`
-    - `VoxelGeneratorGraph`: fixed Image2D node not accepting image formats L8 and LA8
-    - `VoxelGeneratorGraph`: editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
-    - `VoxelGeneratorGraph`: fixed memory leaks when the graph contains resources
+    - `VoxelGeneratorGraph`:
+        - fixed Image2D node not accepting image formats L8 and LA8
+        - editor: fixed crash when connecting an SdfPreview node to an input. However this is not supported yet.
+        - fixed memory leaks when the graph contains resources
     - `VoxelTerrain`: fixed `Condition "mesh_block == nullptr" is true` which could happen in some conditions
     - `VoxelTool`: `raycast` locking up if you send a Vector3 containing NaN
     - `VoxelToolLodTerrain`: fix inconsistent result with integer `do_sphere` radius
-    - `VoxelInstancer`: fix instances not refreshing when an item is modified and the mesh block size is 32
-    - `VoxelInstancer`: fix crash when removing an item from the library while an instancer node is using it
-    - `VoxelInstancer`: fix errors when removing scene instances
+    - `VoxelInstancer`:
+        - fix instances not refreshing when an item is modified and the mesh block size is 32
+        - fix crash when removing an item from the library while an instancer node is using it
+        - fix errors when removing scene instances
     - `VoxelStreamScript`: fix voxel data not getting retrieved when `BLOCK_FOUND` is returned
     - Terrain was not visible if a room/portals system was used. For now it is not culled by rooms.
 
@@ -346,16 +364,20 @@ This branch is the last supporting Godot 3
     - Added *.vox importers to import MagicaVoxel files as scenes or meshes
 
 - Smooth voxels
-    - `VoxelMesherTransvoxel`: Initial support for texturing data in voxels, using 4-bit indices and weights
-    - `VoxelMesherTransvoxel`: optimized hot path, making it about 20% faster
-    - `VoxelMesherTransvoxel`: added option to simplify meshes using MeshOptimizer
-    - `VoxelToolLodTerrain`: added `copy` function
-    - `VoxelToolLodTerrain`: added `get_voxel_f_interpolated` function, useful to obtain interpolated SDF
-    - `VoxelToolLodTerrain`: added a function to separate floating chunks as rigid-bodies in a specified region
+    - `VoxelMesherTransvoxel`:
+        - Initial support for texturing data in voxels, using 4-bit indices and weights
+    - `VoxelMesherTransvoxel`:
+        - optimized hot path, making it about 20% faster
+        - added option to simplify meshes using MeshOptimizer
+    - `VoxelToolLodTerrain`: 
+        - added `copy` function
+        - added `get_voxel_f_interpolated` function, useful to obtain interpolated SDF
+        - added a function to separate floating chunks as rigid-bodies in a specified region
     - `VoxelInstanceGenerator`: added extra option to emit from faces more precisely, especially when meshes got simplified (slower than the other options)
-    - `VoxelInstancer`: added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
-    - `VoxelInstancer`: added initial support for instancing regular scenes (slower than multimeshes)
-    - `VoxelInstancer`: added option to turn off random rotation
+    - `VoxelInstancer`:
+        - added menu to setup a multimesh item from a scene (similarly to GridMap), which also allows to set up colliders
+        - added initial support for instancing regular scenes (slower than multimeshes)
+        - added option to turn off random rotation
     - `VoxelInstanceLibrary`: moved menu to add/remove/update items to the inspector, instead of the 3D editor toolbar
 
 - Breaking changes
@@ -368,19 +390,23 @@ This branch is the last supporting Godot 3
     - `VoxelViewer`: `requires_collisions` is now `true` by default
 
 - Fixes
-    - `VoxelGeneratorGraph`: changes to node properties are now saved properly
-    - `VoxelGeneratorGraph`: fix some per-thread memory not freed on exit
-    - `VoxelGeneratorGraph`: `debug_analyze_range` was crashing when given a negative-size area
-    - `VoxelBuffer`: `copy_voxel_metadata_in_area` was checking the source box incorrectly
-    - `VoxelBuffer`: multiple calls to `create()` with different sizes could lead to heap corruption if a channel was not uniform
-    - `VoxelBuffer`: `copy_channel_from_area` could lead to heap corruption if the source and destination had the same size and were copied entirely
+    - `VoxelGeneratorGraph`:
+        - changes to node properties are now saved properly
+        - fix some per-thread memory not freed on exit
+        - `debug_analyze_range` was crashing when given a negative-size area
+    - `VoxelBuffer`:
+        - `copy_voxel_metadata_in_area` was checking the source box incorrectly
+        - multiple calls to `create()` with different sizes could lead to heap corruption if a channel was not uniform
+        - `copy_channel_from_area` could lead to heap corruption if the source and destination had the same size and were copied entirely
     - `VoxelMesherTransvoxel`: no longer crashes when the input buffer is not cubic
-    - `VoxelLodTerrain`: fixed errors and crashes when editing voxels near loading borders
-    - `VoxelLodTerrain`: fixed crash occurring after a few edits when LOD count is set to 1
-    - `VoxelLodTerrain`: fixed crash when `run stream in editor` is turned off while the terrain is loading in editor
+    - `VoxelLodTerrain`:
+        - fixed errors and crashes when editing voxels near loading borders
+        - fixed crash occurring after a few edits when LOD count is set to 1
+        - fixed crash when `run stream in editor` is turned off while the terrain is loading in editor
     - `VoxelTool` channel no longer defaults to 7 when using `get_voxel_tool` from a terrain with a stream assigned. Instead it picks first used channel of the mesher (fallback order is mesher, then generator, then stream).
-    - `VoxelInstancer`: fixed error when node visibility changes
-    - `VoxelInstancer`: fixed no instances generated when density is 1 in vertex emission mode 
+    - `VoxelInstancer`:
+        - fixed error when node visibility changes
+        - fixed no instances generated when density is 1 in vertex emission mode 
     - `VoxelInstanceLibraryItem`: fixed collision shapes setup in editor not being saved
     - `VoxelInstanceLibrarySceneItem`: fixed associated scene not being saved
     - `VoxelTerrain`: fixed materials shown under the wrong inspector category
