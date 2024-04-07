@@ -169,7 +169,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 
 	// Undo padding to go back to proper buffer coordinates
 	for (Box3i &box : boxes_to_generate) {
-		box.pos += Vector3iUtil::create(min_padding);
+		box.position += Vector3iUtil::create(min_padding);
 	}
 
 	if (out_origin_in_voxels != nullptr) {
@@ -193,7 +193,11 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
 			// VoxelBuffer::CHANNEL_SDF);
-			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
+			VoxelGenerator::VoxelQueryData q{
+				generated_voxels, //
+				(box.position << lod_index) + origin_in_voxels, //
+				lod_index //
+			};
 
 			if (generator.is_valid()) {
 				generator->generate_block(q);
@@ -202,7 +206,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 
 			for (const uint8_t channel_index : channels) {
 				dst.copy_channel_from(
-						generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channel_index);
+						generated_voxels, Vector3i(), generated_voxels.get_size(), box.position, channel_index);
 			}
 		}
 	}

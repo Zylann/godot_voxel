@@ -1920,7 +1920,7 @@ void test_voxel_graph_image() {
 			CompilationResult result = generator->compile(true);
 			ZN_TEST_ASSERT(result.success);
 
-			generator->debug_analyze_range(box.pos, box.pos + box.size, true);
+			generator->debug_analyze_range(box.position, box.position + box.size, true);
 
 			uint32_t image_output_address;
 			ZN_TEST_ASSERT(generator->try_get_output_port_address(

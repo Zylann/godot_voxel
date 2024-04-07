@@ -392,7 +392,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = block_box.pos + L::urand_vec3i(random, block_box.size);
+		const Vector3i block_pos = block_box.position + L::urand_vec3i(random, block_box.size);
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
 
@@ -421,14 +421,14 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 				const Box3i block_voxel_box(block_origin, Vector3iUtil::create(block_size));
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
-				local_voxel_box.pos -= block_origin;
+				local_voxel_box.position -= block_origin;
 				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
 				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
 				for (int vi = 0; vi < local_batch_count; ++vi) {
-					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(random, local_voxel_box.size);
+					const Vector3i rpos = local_voxel_box.position + L::urand_vec3i(random, local_voxel_box.size);
 
 					const uint64_t v = voxels.get_voxel(rpos, channel);
 					picks.push_back(Pick{ v, rpos });
@@ -536,7 +536,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		}
 
 		const Vector3i block_origin = block_pos * data.get_block_size();
-		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
+		const Box3i rel_voxel_box(voxel_box.position - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 		// For read or write? We'd have to specify as argument and trust the user... since metadata can contain
 		// reference types.

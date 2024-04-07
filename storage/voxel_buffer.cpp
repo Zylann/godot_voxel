@@ -1034,8 +1034,8 @@ void VoxelBuffer::clear_voxel_metadata_in_area(Box3i box) {
 void VoxelBuffer::copy_voxel_metadata_in_area(const VoxelBuffer &src_buffer, Box3i src_box, Vector3i dst_origin) {
 	ZN_ASSERT_RETURN(src_buffer.is_box_valid(src_box));
 
-	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
-	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
+	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.position - dst_origin, _size));
+	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.position - src_box.position;
 
 	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
 			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
@@ -1275,7 +1275,7 @@ void paste_src_masked(Span<const uint8_t> channels, //
 			return dst_box.contains(p.key) && src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value;
 		});
 
-		const Box3i src_box(dst_box.pos - dst_base_pos, dst_box.size);
+		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
 
 		src_buffer.for_each_voxel_metadata_in_area(src_box,
 				[&src_buffer, src_mask_channel, src_mask_value, &dst_buffer, dst_box, dst_base_pos](
@@ -1351,7 +1351,7 @@ void paste_src_masked_dst_predicate(Span<const uint8_t> channels, //
 							&& dst_predicate(dst_buffer.get_voxel(p.key, dst_mask_channel));
 				});
 
-		const Box3i src_box(dst_box.pos - dst_base_pos, dst_box.size);
+		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
 
 		src_buffer.for_each_voxel_metadata_in_area(src_box,
 				[&src_buffer, src_mask_channel, src_mask_value, &dst_buffer, dst_box, dst_base_pos, dst_mask_channel,

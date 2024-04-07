@@ -127,7 +127,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 	VoxelBuffer &dst = _buffer->get_buffer();
 
 	Box3i box(p_pos, src.get_size());
-	const Vector3i min_noclamp = box.pos;
+	const Vector3i min_noclamp = box.position;
 	box.clip(Box3i(Vector3i(), dst.get_size()));
 
 	if (channels_mask == 0) {
@@ -136,16 +136,16 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 
 	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
-	const Vector3i box_max = box.pos + box.size;
+	const Vector3i box_max = box.position + box.size;
 
 	for (const uint8_t channel_index : channels) {
-		for (int z = box.pos.z; z < box_max.z; ++z) {
+		for (int z = box.position.z; z < box_max.z; ++z) {
 			const int bz = z - min_noclamp.z;
 
-			for (int x = box.pos.x; x < box_max.x; ++x) {
+			for (int x = box.position.x; x < box_max.x; ++x) {
 				const int bx = x - min_noclamp.x;
 
-				for (int y = box.pos.y; y < box_max.y; ++y) {
+				for (int y = box.position.y; y < box_max.y; ++y) {
 					const int by = y - min_noclamp.y;
 
 					const uint64_t v = src.get_voxel(bx, by, bz, channel_index);

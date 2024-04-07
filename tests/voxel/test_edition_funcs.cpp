@@ -118,9 +118,9 @@ void test_run_blocky_random_tick() {
 	// and we only check the enclosing area.
 	const int error_margin = 0;
 	for (int axis_index = 0; axis_index < Vector3iUtil::AXIS_COUNT; ++axis_index) {
-		const int nd = cb.pick_box.pos[axis_index] - voxel_box.pos[axis_index];
-		const int pd = cb.pick_box.pos[axis_index] + cb.pick_box.size[axis_index] -
-				(voxel_box.pos[axis_index] + voxel_box.size[axis_index]);
+		const int nd = cb.pick_box.position[axis_index] - voxel_box.position[axis_index];
+		const int pd = cb.pick_box.position[axis_index] + cb.pick_box.size[axis_index] -
+				(voxel_box.position[axis_index] + voxel_box.size[axis_index]);
 		ZN_TEST_ASSERT(Math::abs(nd) <= error_margin);
 		ZN_TEST_ASSERT(Math::abs(pd) <= error_margin);
 	}

@@ -516,7 +516,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 	{
 		ZN_PROFILE_SCOPE_NAMED("Copy");
 		source_copy_buffer.create(world_box.size);
-		voxel_tool.copy(world_box.pos, source_copy_buffer, channels_mask);
+		voxel_tool.copy(world_box.position, source_copy_buffer, channels_mask);
 	}
 
 	// Label distinct voxel groups
@@ -649,7 +649,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 				continue;
 			}
 
-			const Vector3i world_pos = world_box.pos + local_bounds.min_pos - Vector3iUtil::create(min_padding);
+			const Vector3i world_pos = world_box.position + local_bounds.min_pos - Vector3iUtil::create(min_padding);
 			const Vector3i size =
 					local_bounds.max_pos - local_bounds.min_pos + Vector3iUtil::create(1 + max_padding + min_padding);
 
@@ -665,7 +665,7 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			const Box3i inner_box(Vector3iUtil::create(min_padding),
 					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding));
 			Box3i(Vector3i(), buffer.get_size()).difference(inner_box, [&buffer](Box3i box) {
-				buffer.fill_area_f(constants::SDF_FAR_OUTSIDE, box.pos, box.pos + box.size, main_channel);
+				buffer.fill_area_f(constants::SDF_FAR_OUTSIDE, box.position, box.position + box.size, main_channel);
 			});
 
 			// Filter out voxels that don't belong to this label
@@ -980,7 +980,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	VoxelBuffer buffer(VoxelBuffer::ALLOCATOR_POOL);
 	buffer.create(box.size);
-	data.copy(box.pos, buffer, 1 << channel_index);
+	data.copy(box.position, buffer, 1 << channel_index);
 
 	buffer.decompress_channel(channel_index);
 
@@ -1022,16 +1022,16 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 		// For each deck of the box (doing this to reduce memory usage since the graph will allocate temporary buffers
 		// for each operation, which can be a lot depending on the complexity of the graph)
 		Vector3i pos;
-		const Vector3i endpos = box.pos + box.size;
-		for (pos.z = box.pos.z; pos.z < endpos.z; ++pos.z) {
+		const Vector3i endpos = box.position + box.size;
+		for (pos.z = box.position.z; pos.z < endpos.z; ++pos.z) {
 			// Set positions
 			for (unsigned int i = 0; i < deck_area; ++i) {
 				in_z[i] = pos.z;
 			}
 			{
 				unsigned int i = 0;
-				for (pos.x = box.pos.x; pos.x < endpos.x; ++pos.x) {
-					for (pos.y = box.pos.y; pos.y < endpos.y; ++pos.y) {
+				for (pos.x = box.position.x; pos.x < endpos.x; ++pos.x) {
+					for (pos.y = box.position.y; pos.y < endpos.y; ++pos.y) {
 						in_x[i] = pos.x;
 						in_y[i] = pos.y;
 						++i;
@@ -1049,7 +1049,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 			}
 
 			// Get SDF input
-			Span<float> in_sdf = in_sdf_full.sub(deck_area * (pos.z - box.pos.z), deck_area);
+			Span<float> in_sdf = in_sdf_full.sub(deck_area * (pos.z - box.position.z), deck_area);
 
 			// Run graph
 			graph->generate_series(in_x, in_y, in_z, in_sdf);
@@ -1067,7 +1067,7 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	scale_and_store_sdf(buffer, in_sdf_full);
 
-	data.paste(box.pos, buffer, 1 << channel_index, false);
+	data.paste(box.position, buffer, 1 << channel_index, false);
 
 	_post_edit(box);
 }

@@ -214,11 +214,11 @@ bool make_single_voxel_grid(Span<const ModelInstance> instances, Vector3i &out_o
 		const ModelInstance &mi = instances[instance_index];
 		ERR_FAIL_COND_V(mi.voxels == nullptr, false);
 		out_voxels.copy_channel_from(*mi.voxels, Vector3i(), mi.voxels->get_size(),
-				mi.position - bounding_box.pos + Vector3iUtil::create(VoxelMesherCubes::PADDING),
+				mi.position - bounding_box.position + Vector3iUtil::create(VoxelMesherCubes::PADDING),
 				VoxelBuffer::CHANNEL_COLOR);
 	}
 
-	out_origin = bounding_box.pos;
+	out_origin = bounding_box.position;
 	return true;
 }
 

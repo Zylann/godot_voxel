@@ -79,7 +79,7 @@ Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
 	const int min_pad = 1;
 	// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
 	// zero when converted to the parent LOD's coordinate system.
-	Box3i min_box = Box3i(child_lod_box.pos >> 1, child_lod_box.size >> 1)
+	Box3i min_box = Box3i(child_lod_box.position >> 1, child_lod_box.size >> 1)
 							// Enforce neighboring rule by padding boxes outwards by a minimum amount,
 							// so there is at least N chunks in the current LOD between LOD+1 and LOD-1
 							.padded(min_pad);
@@ -279,7 +279,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 				const Box3i volume_bounds_in_data_blocks = Box3i( //
-						volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
+						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
 						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
 				// const int ld =
@@ -297,7 +297,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 				const Box3i &mesh_box = paired_viewer.state.mesh_box_per_lod[lod_index];
 
 				const Box3i data_box =
-						Box3i(mesh_box.pos * mesh_to_data_factor, mesh_box.size * mesh_to_data_factor)
+						Box3i(mesh_box.position * mesh_to_data_factor, mesh_box.size * mesh_to_data_factor)
 								// To account for meshes requiring neighbor data chunks.
 								// It technically breaks the subdivision rule (where every parent block always has 8
 								// children), but it should only matter in areas where meshes must actually spawn
@@ -318,7 +318,7 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 				const Box3i volume_bounds_in_data_blocks = Box3i( //
-						volume_bounds_in_voxels.pos >> lod_data_block_size_po2, //
+						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
 						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
 				const int ld = get_relative_lod_distance_in_chunks(lod_index, lod_count, lod0_distance_in_data_chunks,
@@ -452,7 +452,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 
 			// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 			const Box3i bounds_in_data_blocks = Box3i( //
-					bounds_in_voxels.pos >> lod_data_block_size_po2, //
+					bounds_in_voxels.position >> lod_data_block_size_po2, //
 					bounds_in_voxels.size >> lod_data_block_size_po2);
 
 			// const Box3i new_data_box = get_lod_box_in_chunks(
@@ -464,7 +464,7 @@ void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, Vo
 
 #ifdef DEV_ENABLED
 			if (lod_index + 1 != lod_count) {
-				const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
+				const Box3i debug_parent_box_in_current_lod(debug_parent_box.position << 1, debug_parent_box.size << 1);
 				ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_data_box));
 			}
 			debug_parent_box = new_data_box;
@@ -846,7 +846,7 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 	if (parent_lod_index < lod_count) {
 		// Should always work without reaching zero size because non-max LODs are always
 		// multiple of 2 due to subdivision rules
-		const Box3i parent_box = Box3i(out_of_range_box.pos >> 1, out_of_range_box.size >> 1);
+		const Box3i parent_box = Box3i(out_of_range_box.position >> 1, out_of_range_box.size >> 1);
 
 		VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
@@ -968,7 +968,7 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 
 #ifdef DEV_ENABLED
 		if (lod_index + 1 != lod_count) {
-			const Box3i debug_parent_box_in_current_lod(debug_parent_box.pos << 1, debug_parent_box.size << 1);
+			const Box3i debug_parent_box_in_current_lod(debug_parent_box.position << 1, debug_parent_box.size << 1);
 			ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_mesh_box));
 		}
 		debug_parent_box = new_mesh_box;
@@ -1108,7 +1108,7 @@ void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodT
 		// We could group loaded blocks by LOD so we could compute a few things less times?
 		const int lod_data_block_size_po2 = data.get_block_size_po2() + bloc.lod;
 		const Box3i bounds_in_data_blocks = Box3i( //
-				bounds_in_voxels.pos >> lod_data_block_size_po2, //
+				bounds_in_voxels.position >> lod_data_block_size_po2, //
 				bounds_in_voxels.size >> lod_data_block_size_po2);
 
 		const Box3i data_neighboring =

@@ -537,11 +537,11 @@ void process_chunked_storage(Box3i voxel_box,
 		// void(VoxelBuffer &vb, Box3i local_box, Vector3i origin)
 		FBlockAction op_func) {
 	//
-	const Vector3i max_pos = voxel_box.pos + voxel_box.size;
+	const Vector3i max_pos = voxel_box.position + voxel_box.size;
 
 	const unsigned int block_size_po2 = block_access.get_block_size_po2();
 
-	const Vector3i min_block_pos = voxel_box.pos >> block_size_po2;
+	const Vector3i min_block_pos = voxel_box.position >> block_size_po2;
 	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
 
 	Vector3i bpos;
@@ -553,7 +553,7 @@ void process_chunked_storage(Box3i voxel_box,
 					continue;
 				}
 				const Vector3i block_origin = bpos << block_size_po2;
-				const Box3i local_box = Box3i(voxel_box.pos - block_origin, voxel_box.size)
+				const Box3i local_box = Box3i(voxel_box.position - block_origin, voxel_box.size)
 												.clipped(Box3i(Vector3i(), Vector3iUtil::create(1 << block_size_po2)));
 
 				op_func(*block, local_box, block_origin);

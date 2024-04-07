@@ -769,7 +769,7 @@ void VoxelTerrain::post_edit_area(Box3i box_in_voxels, bool update_mesh) {
 
 	// TODO Maybe remove this in preference for multiplayer synchronizer virtual functions?
 	if (_area_edit_notification_enabled) {
-		GDVIRTUAL_CALL(_on_area_edited, box_in_voxels.pos, box_in_voxels.size);
+		GDVIRTUAL_CALL(_on_area_edited, box_in_voxels.position, box_in_voxels.size);
 	}
 
 	if (_multiplayer_synchronizer != nullptr && _multiplayer_synchronizer->is_server()) {
@@ -1698,7 +1698,7 @@ void VoxelTerrain::process_meshing() {
 #ifdef DEBUG_ENABLED
 		// We must have picked up a valid data block
 		{
-			const Vector3i anchor_pos = data_box.pos + Vector3i(1, 1, 1);
+			const Vector3i anchor_pos = data_box.position + Vector3i(1, 1, 1);
 			ZN_ASSERT_CONTINUE(_data->has_block(anchor_pos, 0));
 		}
 #endif
@@ -2012,7 +2012,7 @@ void VoxelTerrain::process_debug_draw() {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
-					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
+					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.position) - margin);
 			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
 	}
@@ -2054,7 +2054,7 @@ void VoxelTerrain::_b_set_bounds(AABB aabb) {
 
 AABB VoxelTerrain::_b_get_bounds() const {
 	const Box3i b = get_bounds();
-	return AABB(b.pos, b.size);
+	return AABB(b.position, b.size);
 }
 
 bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<godot::VoxelBuffer> voxel_data) {

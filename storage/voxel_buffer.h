@@ -244,8 +244,8 @@ public:
 		ZN_ASSERT_RETURN(channel_index < MAX_CHANNELS);
 
 		box.clip(Box3i(Vector3i(), _size));
-		const Vector3i min_pos = box.pos;
-		const Vector3i max_pos = box.pos + box.size;
+		const Vector3i min_pos = box.position;
+		const Vector3i max_pos = box.position + box.size;
 		Vector3i pos;
 		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {
@@ -271,8 +271,8 @@ public:
 
 	template <typename F>
 	inline void for_each_index_and_pos(const Box3i &box, F f) {
-		const Vector3i min_pos = box.pos;
-		const Vector3i max_pos = box.pos + box.size;
+		const Vector3i min_pos = box.position;
+		const Vector3i max_pos = box.position + box.size;
 		Vector3i pos;
 		for (pos.z = min_pos.z; pos.z < max_pos.z; ++pos.z) {
 			for (pos.x = min_pos.x; pos.x < max_pos.x; ++pos.x) {

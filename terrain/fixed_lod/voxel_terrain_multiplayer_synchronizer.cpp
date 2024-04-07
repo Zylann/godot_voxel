@@ -88,7 +88,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	// Not particularly efficient for single-voxel edits, but should scale ok with bigger boxes
 	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_POOL);
 	voxels.create(voxel_box.size);
-	_terrain->get_storage().copy(voxel_box.pos, voxels, 0xff);
+	_terrain->get_storage().copy(voxel_box.position, voxels, 0xff);
 
 	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxels);
 	ZN_ASSERT_RETURN(result.success);
@@ -99,9 +99,9 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	ByteSpanWithPosition mw_span(Span<uint8_t>(pba.ptrw(), pba.size()), 0);
 	MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
 
-	mw.store_32(voxel_box.pos.x);
-	mw.store_32(voxel_box.pos.y);
-	mw.store_32(voxel_box.pos.z);
+	mw.store_32(voxel_box.position.x);
+	mw.store_32(voxel_box.position.y);
+	mw.store_32(voxel_box.position.z);
 	mw.store_32(result.data.size());
 	mw.store_buffer(to_span(result.data));
 	for (const ViewerID viewer_id : viewers) {

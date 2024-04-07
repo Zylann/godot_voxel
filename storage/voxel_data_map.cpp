@@ -223,10 +223,11 @@ void VoxelDataMap::copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int 
 					// TODO Format?
 					VoxelBuffer temp(VoxelBuffer::ALLOCATOR_POOL);
 					temp.create(box.size);
-					gen_func(callback_data, temp, box.pos);
+					gen_func(callback_data, temp, box.position);
 
 					for (const uint8_t channel : channels) {
-						dst_buffer.copy_channel_from(temp, Vector3i(), temp.get_size(), box.pos - min_pos, channel);
+						dst_buffer.copy_channel_from(
+								temp, Vector3i(), temp.get_size(), box.position - min_pos, channel);
 					}
 
 				} else {

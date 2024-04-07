@@ -43,7 +43,7 @@ public:
 				for (pos.y = 0; pos.y < box.size.y; ++pos.y) {
 					int label = 0;
 
-					if (volume_predicate_func(box.pos + pos)) {
+					if (volume_predicate_func(box.position + pos)) {
 						if (pos.z > 0) {
 							back_label =
 									output[Vector3iUtil::get_zxy_index(Vector3i(pos.x, pos.y, pos.z - 1), box.size)];

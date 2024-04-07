@@ -179,11 +179,11 @@ inline Vector2i to_vec2i_xz(Vector3i p) {
 }
 
 Box2i to_box2i_in_height_range(Box3i box3, int min_y, int height) {
-	if (box3.pos.y + box3.size.y <= min_y || box3.pos.y >= min_y + height) {
+	if (box3.position.y + box3.size.y <= min_y || box3.position.y >= min_y + height) {
 		// Empty box because it doesn't intersect the height range
-		return Box2i(to_vec2i_xz(box3.pos), Vector2i());
+		return Box2i(to_vec2i_xz(box3.position), Vector2i());
 	}
-	return Box2i(to_vec2i_xz(box3.pos), to_vec2i_xz(box3.size));
+	return Box2i(to_vec2i_xz(box3.position), to_vec2i_xz(box3.size));
 }
 
 } // namespace
@@ -495,7 +495,7 @@ TypedArray<godot::VoxelBuffer> VoxelGeneratorMultipassCB::debug_generate_test_co
 					}
 				});
 
-				const Vector2i grid_origin_2d = grid_origin + nbox.pos;
+				const Vector2i grid_origin_2d = grid_origin + nbox.position;
 				const Vector2i main_origin_2d =
 						grid_origin_2d + Vector2iUtil::create(extent); // grid_origin + local_bpos
 

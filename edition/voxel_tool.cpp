@@ -318,13 +318,13 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
-		copy(padded_voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		paste(voxel_box.position, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -352,14 +352,14 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
 
-		copy(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
 		ops::grow_sphere(buffer, _sdf_scale * signed_strength, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		paste(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");

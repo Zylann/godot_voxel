@@ -34,7 +34,7 @@ void VoxelAStarGrid3DInternal::init_cache() {
 
 bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 	// TODO We could align the cache with the voxel chunk grid to avoid more expensive copies across chunk borders
-	const Vector3i gpos = pos - get_region().pos;
+	const Vector3i gpos = pos - get_region().position;
 	const Vector3i cpos = gpos >> Chunk::SIZE_PO2;
 	const Vector3i rpos = gpos & Chunk::SIZE_MASK;
 
@@ -49,7 +49,7 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 		ZN_ASSERT(data != nullptr);
 
 		const VoxelBuffer::ChannelId channel_index = VoxelBuffer::CHANNEL_TYPE;
-		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().pos;
+		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().position;
 		data->copy(copy_origin, _voxel_buffer, 1 << channel_index);
 
 		if (_voxel_buffer.get_channel_compression(channel_index) == VoxelBuffer::COMPRESSION_UNIFORM) {
@@ -213,7 +213,7 @@ void VoxelAStarGrid3D::_b_set_region(AABB aabb) {
 
 AABB VoxelAStarGrid3D::_b_get_region() {
 	const Box3i region = get_region();
-	return AABB(to_vec3(region.pos), to_vec3(region.size));
+	return AABB(to_vec3(region.position), to_vec3(region.size));
 }
 
 // Intermediate method to enforce the signal to be emitted on the main thread
