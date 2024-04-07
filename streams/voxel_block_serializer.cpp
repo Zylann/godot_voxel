@@ -10,6 +10,7 @@
 #include "compressed_data.h"
 
 #if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
+#include "../storage/metadata/voxel_metadata_factory.h"
 #include "../storage/metadata/voxel_metadata_variant.h"
 #endif
 

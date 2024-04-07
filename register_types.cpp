@@ -36,6 +36,7 @@
 #include "modifiers/godot/voxel_modifier_gd.h"
 #include "modifiers/godot/voxel_modifier_mesh_gd.h"
 #include "modifiers/godot/voxel_modifier_sphere_gd.h"
+#include "storage/metadata/voxel_metadata_factory.h"
 #include "storage/metadata/voxel_metadata_variant.h"
 #include "storage/voxel_buffer_gd.h"
 #include "storage/voxel_memory_pool.h"

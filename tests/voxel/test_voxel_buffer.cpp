@@ -1,6 +1,7 @@
 #include "test_voxel_buffer.h"
+#include "../../storage/metadata/voxel_metadata_factory.h"
+#include "../../storage/metadata/voxel_metadata_variant.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_metadata_variant.h"
 #include "../../streams/voxel_block_serializer.h"
 #include "../../util/string/std_stringstream.h"
 #include "../testing.h"

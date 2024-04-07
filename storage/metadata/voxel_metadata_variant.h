@@ -2,6 +2,7 @@
 #define VOXEL_METADATA_VARIANT_H
 
 #include "../../util/godot/core/variant.h"
+#include "custom_voxel_metadata.h"
 #include "voxel_metadata.h"
 
 namespace zylann::voxel::godot {
