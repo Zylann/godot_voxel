@@ -902,7 +902,21 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 				}
 
 				if (activated) {
-					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs)
+					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs), so
+					// trigger an update.
+					//
+					// TODO This approach causes minor flickering. It would be nice to find a way to avoid that.
+					// After an edit and moving away from it, LOD1 meshes that don't have been updated immediately show
+					// up, and then they update, causing the flicker.
+					// The most naive option would be to update parent LOD meshes when they are inactive, but that would
+					// make edits unnecessarily expensive (and technically triggers physics updates too). Perhaps those
+					// updates could be given much lower task priority, but it remains work that isn't immediately
+					// needed.
+					// I tried to "delay" blocks switching up LODs when a clipbox moves away, but that ended up
+					// in a lot of headaches and corner cases due to states having to persist over time.
+					// That problem doesn't occur with Octree because it waits for parent meshes to be ready
+					// individually, it doesn't exploit the shape of the loaded area at all (which is partly what makes
+					// it slower)
 					if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
 						mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
 						mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
