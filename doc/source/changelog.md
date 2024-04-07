@@ -31,6 +31,7 @@ Primarily developped with Godot 4.2.
     - `save_all_modified_blocks` now returns a completion tracker similar to `VoxelTerrain`
     - Added new optional LOD streaming system `Clipbox` (advanced settings):
         - Uses concentric boxes instead of octree traversal, although some logic remains similar to what an octree does
+        - Uses less CPU
         - Supports multiple viewers
         - Supports collision-only viewers
         - Adds secondary LOD distance parameter controlling the extents of LOD1 and beyond, separately from LOD0 (unused in the legacy system)
