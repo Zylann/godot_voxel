@@ -858,71 +858,73 @@ void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lo
 		](Vector3i bpos) {
 			auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
 
-			if (mesh_it != parent_lod.mesh_map_state.map.end()) {
-				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
+			if (mesh_it == parent_lod.mesh_map_state.map.end()) {
+				return;
+			}
 
-				bool activated = false;
+			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
 
-				if (visual_flag) {
-					if (!mesh_block.visual_active) {
-						// Only do merging logic if child chunks were ACTUALLY removed.
-						// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
-						// child LOD, but another viewer could still reference them, so we should not merge
-						// them yet.
-						// This check assumes there is always 8 children or no children
-						const Vector3i child_bpos0 = bpos << 1;
-						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+			bool activated = false;
 
-						if (child_mesh0_it == lod.mesh_map_state.map.end() ||
-								child_mesh0_it->second.mesh_viewers.get() == 0) {
-							mesh_block.visual_active = true;
-							parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
-							activated = true;
-						}
+			if (visual_flag) {
+				if (!mesh_block.visual_active) {
+					// Only do merging logic if child chunks were ACTUALLY removed.
+					// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
+					// child LOD, but another viewer could still reference them, so we should not merge
+					// them yet.
+					// This check assumes there is always 8 children or no children
+					const Vector3i child_bpos0 = bpos << 1;
+					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
 
-						// We know parent_lod_index must be > 0
-						// if (parent_lod_index > 0) {
-						// This would actually do nothing because children were removed
-						// hide_children_recursive(state, parent_lod_index, bpos);
-						// }
+					if (child_mesh0_it == lod.mesh_map_state.map.end() ||
+							child_mesh0_it->second.mesh_viewers.get() == 0) {
+						mesh_block.visual_active = true;
+						parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+						activated = true;
+					}
+
+					// We know parent_lod_index must be > 0
+					// if (parent_lod_index > 0) {
+					// This would actually do nothing because children were removed
+					// hide_children_recursive(state, parent_lod_index, bpos);
+					// }
+				}
+			}
+			if (collision_flag) {
+				if (!mesh_block.collision_active) {
+					const Vector3i child_bpos0 = bpos << 1;
+					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+
+					if (child_mesh0_it == lod.mesh_map_state.map.end() ||
+							child_mesh0_it->second.collision_viewers.get() == 0) {
+						mesh_block.collision_active = true;
+						parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
+						activated = true;
 					}
 				}
-				if (collision_flag) {
-					if (!mesh_block.collision_active) {
-						const Vector3i child_bpos0 = bpos << 1;
-						auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
+			}
 
-						if (child_mesh0_it == lod.mesh_map_state.map.end() ||
-								child_mesh0_it->second.collision_viewers.get() == 0) {
-							mesh_block.collision_active = true;
-							parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
-							activated = true;
-						}
-					}
-				}
-
-				if (activated) {
-					// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs), so
-					// trigger an update.
-					//
-					// TODO This approach causes minor flickering. It would be nice to find a way to avoid that.
-					// After an edit and moving away from it, LOD1 meshes that don't have been updated immediately show
-					// up, and then they update, causing the flicker.
-					// The most naive option would be to update parent LOD meshes when they are inactive, but that would
-					// make edits unnecessarily expensive (and technically triggers physics updates too). Perhaps those
-					// updates could be given much lower task priority, but it remains work that isn't immediately
-					// needed.
-					// I tried to "delay" blocks switching up LODs when a clipbox moves away, but that ended up
-					// in a lot of headaches and corner cases due to states having to persist over time.
-					// That problem doesn't occur with Octree because it waits for parent meshes to be ready
-					// individually, it doesn't exploit the shape of the loaded area at all (which is partly what makes
-					// it slower)
-					if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
-						mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-						mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
-						parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
-								bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
-					}
+			if (activated) {
+				// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs), so
+				// trigger an update.
+				//
+				// TODO This approach causes minor flickering. It would be nice to find a way to avoid that.
+				// After an edit and moving away from it, LOD1 meshes that don't have been updated immediately show
+				// up, and then they update, causing the flicker.
+				// The most naive option would be to update parent LOD meshes when they are inactive, but that would
+				// make edits unnecessarily expensive (and technically triggers physics updates too). Perhaps those
+				// updates could be given much lower task priority, but it remains work that isn't immediately
+				// needed.
+				// I tried to "delay" blocks switching up LODs when a clipbox moves away, but that ended up
+				// in a lot of headaches and corner cases due to states having to persist over time.
+				// That problem doesn't occur with Octree because it waits for parent meshes to be ready
+				// individually, it doesn't exploit the shape of the loaded area at all (which is partly what makes
+				// it slower)
+				if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
+					mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+					mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
+					parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
+							bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
 				}
 			}
 		});
