@@ -1367,9 +1367,10 @@ void update_mesh_block_load(VoxelLodTerrainUpdateData::State &state, Vector3i bp
 					set_active(sibling, feature_index, lod, sibling_bpos);
 
 					if (lod_index > 0) {
+						// Check if children are loaded too
 						const unsigned int child_lod_index = lod_index - 1;
 						for (unsigned int child_index = 0; child_index < 8; ++child_index) {
-							const Vector3i child_bpos = get_child_position(sibling_bpos, sibling_index);
+							const Vector3i child_bpos = get_child_position(sibling_bpos, child_index);
 							update_mesh_block_load(state, child_bpos, child_lod_index, lod_count, feature_index);
 						}
 					}
