@@ -97,7 +97,7 @@ bool save_header(
 		f.store_8(0x00);
 	}
 
-	// TODO Deal with endianess, this should be little-endian
+	// TODO Deal with endianness, this should be little-endian
 	zylann::godot::store_buffer(f,
 			Span<const uint8_t>(reinterpret_cast<const uint8_t *>(block_infos.data()),
 					block_infos.size() * sizeof(RegionBlockInfo)));
@@ -162,7 +162,7 @@ bool load_header(
 	out_version = version;
 	out_block_infos.resize(Vector3iUtil::get_volume(out_format.region_size));
 
-	// TODO Deal with endianess
+	// TODO Deal with endianness
 	const size_t blocks_len = out_block_infos.size() * sizeof(RegionBlockInfo);
 	const size_t read_size = zylann::godot::get_buffer(f, Span<uint8_t>((uint8_t *)out_block_infos.data(), blocks_len));
 	ERR_FAIL_COND_V(read_size != blocks_len, false);

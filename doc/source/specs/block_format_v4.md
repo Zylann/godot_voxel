@@ -13,7 +13,7 @@ This page describes the binary format used by default in this module to serializ
 Specification
 ----------------
 
-### Endianess
+### Endianness
 
 By default, little-endian.
 
@@ -120,11 +120,11 @@ At the very end, block data finishes with a sequence of 4 bytes, which once read
 Current Issues
 ----------------
 
-### Endianess
+### Endianness
 
 The format is intented to use little-endian, however the implementation of the engine does not fully guarantee this.
 
-Godot's `encode_variant` doesn't seem to care about endianess across architectures, so it's possible it becomes a problem in the future and gets changed to a custom format.
+Godot's `encode_variant` doesn't seem to care about endianness across architectures, so it's possible it becomes a problem in the future and gets changed to a custom format.
 The implementation of block channels with depth greater than 8-bit currently doesn't consider this either. This might be refined in a later iteration.
 
 This will become important to address if voxel games require communication between mobile and desktop.
