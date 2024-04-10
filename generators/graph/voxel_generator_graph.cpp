@@ -461,7 +461,6 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
 
 	FixedArray<unsigned int, pg::Runtime::MAX_OUTPUTS> required_outputs;
-	unsigned int required_outputs_count = 0;
 
 	bool all_sdf_is_air = (sdf_output_buffer_index != -1) && (type_output_buffer_index == -1);
 	bool all_sdf_is_matter = all_sdf_is_air;
@@ -504,6 +503,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 							math::Interval(gmin.y, gmax.y), math::Interval(gmin.z, gmax.z), sdf_input_range);
 					runtime.analyze_range(cache.state, range_inputs.get());
 				}
+
+				unsigned int required_outputs_count = 0;
 
 				bool sdf_is_air = true;
 				bool sdf_is_uniform = true;

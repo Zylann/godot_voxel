@@ -33,6 +33,7 @@ void test_voxel_graph_function_execute();
 void test_voxel_graph_image();
 void test_voxel_graph_many_weight_outputs();
 void test_image_range_grid();
+void test_voxel_graph_many_subdivisions();
 
 } // namespace zylann::voxel::tests
 

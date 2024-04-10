@@ -2084,4 +2084,34 @@ void test_image_range_grid() {
 			Interval(5 * image_height + image_height - 5, 5 * image_height + image_height + 20));
 }
 
+void test_voxel_graph_many_subdivisions() {
+	Ref<VoxelGeneratorGraph> generator;
+	generator.instantiate();
+	{
+		VoxelGraphFunction &g = **generator->get_main_function();
+
+		//  FastNoise3D --- OutSDF
+
+		const uint32_t n_out_sdf = g.create_node(VoxelGraphFunction::NODE_OUTPUT_SDF, Vector2(0, 0));
+		const uint32_t n_noise = g.create_node(VoxelGraphFunction::NODE_FAST_NOISE_3D, Vector2());
+
+		Ref<ZN_FastNoiseLite> noise;
+		noise.instantiate();
+		g.set_node_param(n_noise, 0, noise);
+
+		g.add_connection(n_noise, 0, n_out_sdf, 0);
+
+		CompilationResult result = generator->compile(false);
+		ZN_TEST_ASSERT(result.success);
+	}
+
+	VoxelBuffer vb(VoxelBuffer::ALLOCATOR_DEFAULT);
+	vb.create(16, 512, 16);
+
+	// Just checking that it doesn't crash.
+	// There was an issue with subdivisions where we gathered "required outputs" filling a small array before running
+	// the graph, but it didn't reset that process at next subdivisions so eventually overran the array
+	generator->generate_block(VoxelGenerator::VoxelQueryData{ vb, Vector3i(0, 0, 0), 0 });
+}
+
 } // namespace zylann::voxel::tests

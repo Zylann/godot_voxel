@@ -83,6 +83,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_function_execute);
 	VOXEL_TEST(test_voxel_graph_image);
 	VOXEL_TEST(test_voxel_graph_many_weight_outputs);
+	VOXEL_TEST(test_voxel_graph_many_subdivisions);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

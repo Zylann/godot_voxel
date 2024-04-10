@@ -59,6 +59,7 @@ Primarily developped with Godot 4.2.
         - Fixed error when using more than 12 weight output nodes
         - Fixed using a graph as brush wasn't working with some transforms
         - Fixed wrapping error with the `Image` node in negative coordinates
+        - Fixed wrong behavior and crashes when generating chunks large enough to trigger the "subdivision" feature
     - `VoxelInstanceLibraryMultimeshItem`: fixed error when using "Update From Scene" and trying to undo/redo it
     - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
     - `VoxelToolLodTerrain`: 
