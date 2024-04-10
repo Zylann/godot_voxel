@@ -103,8 +103,14 @@ inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mes
 }
 
 // Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
-int get_relative_lod_distance_in_chunks(int lod_index, int lod_count, int lod0_distance_in_chunks,
-		int lodn_distance_in_chunks, int lod_chunk_size, int max_view_distance_voxels) {
+int get_relative_lod_distance_in_chunks( //
+		int lod_index, //
+		int lod_count, //
+		int lod0_distance_in_chunks, //
+		int lodn_distance_in_chunks, //
+		int lod_chunk_size, //
+		int max_view_distance_voxels //
+) {
 	int ld;
 	if (lod_index == 0) {
 		// First LOD uses dedicated distance
@@ -122,12 +128,18 @@ int get_relative_lod_distance_in_chunks(int lod_index, int lod_count, int lod0_d
 	return ld;
 }
 
-void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
-		const VoxelLodTerrainUpdateData::Settings &volume_settings, unsigned int lod_count,
-		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
-		Box3i volume_bounds_in_voxels, int data_block_size_po2, bool can_mesh,
+void process_viewers( //
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs, //
+		const VoxelLodTerrainUpdateData::Settings &volume_settings, //
+		unsigned int lod_count, //
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, //
+		const Transform3D &volume_transform, //
+		Box3i volume_bounds_in_voxels, //
+		int data_block_size_po2, //
+		bool can_mesh, //
 		// Ordered by ascending index in paired viewers list
-		StdVector<unsigned int> &unpaired_viewers_to_remove) {
+		StdVector<unsigned int> &unpaired_viewers_to_remove //
+) {
 	ZN_PROFILE_SCOPE();
 
 	// Destroyed viewers
@@ -342,8 +354,10 @@ void process_viewers(VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
 	}
 }
 
-void remove_unpaired_viewers(const StdVector<unsigned int> &unpaired_viewers_to_remove,
-		StdVector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers) {
+void remove_unpaired_viewers( //
+		const StdVector<unsigned int> &unpaired_viewers_to_remove, //
+		StdVector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers //
+) {
 	// Iterating backward so indexes of paired viewers that need removal will not change because of the removal itself
 	for (auto it = unpaired_viewers_to_remove.rbegin(); it != unpaired_viewers_to_remove.rend(); ++it) {
 		const unsigned int vi = *it;
@@ -353,8 +367,12 @@ void remove_unpaired_viewers(const StdVector<unsigned int> &unpaired_viewers_to_
 	}
 }
 
-void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, uint8_t lod_index,
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load) {
+void add_loading_block( //
+		VoxelLodTerrainUpdateData::Lod &lod, //
+		Vector3i position, //
+		uint8_t lod_index, //
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load //
+) {
 	auto it = lod.loading_blocks.find(position);
 
 	if (it == lod.loading_blocks.end()) {
@@ -365,9 +383,10 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 
 		lod.loading_blocks.insert({ position, new_loading_block });
 
-		blocks_to_load.push_back(
-				VoxelLodTerrainUpdateData::BlockToLoad{ VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
-						new_loading_block.cancellation_token });
+		blocks_to_load.push_back(VoxelLodTerrainUpdateData::BlockToLoad{
+				VoxelLodTerrainUpdateData::BlockLocation{ position, lod_index },
+				new_loading_block.cancellation_token //
+		});
 
 	} else {
 		// Already loaded
@@ -375,9 +394,12 @@ void add_loading_block(VoxelLodTerrainUpdateData::Lod &lod, Vector3i position, u
 	}
 }
 
-void unreference_data_block_from_loading_lists(
-		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, Vector3i bpos, unsigned int lod_index) {
+void unreference_data_block_from_loading_lists( //
+		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks, //
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
+		Vector3i bpos, //
+		unsigned int lod_index //
+) {
 	auto loading_block_it = loading_blocks.find(bpos);
 	if (loading_block_it == loading_blocks.end()) {
 		ZN_PRINT_VERBOSE("Request to unview a loading block that was never requested");
@@ -412,11 +434,16 @@ void unreference_data_block_from_loading_lists(
 	}
 }
 
-void process_data_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		StdVector<VoxelData::BlockToSave> *blocks_to_save,
+void process_data_blocks_sliding_box( //
+		VoxelLodTerrainUpdateData::State &state, //
+		VoxelData &data, //
+		StdVector<VoxelData::BlockToSave> *blocks_to_save, //
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, int lod_count, bool can_load) {
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
+		const VoxelLodTerrainUpdateData::Settings &settings, //
+		int lod_count, //
+		bool can_load //
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
 
@@ -632,8 +659,12 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 // 	}
 // }
 
-inline void schedule_mesh_load(StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, Vector3i bpos,
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, bool require_visual) {
+inline void schedule_mesh_load( //
+		StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, //
+		Vector3i bpos, //
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		bool require_visual //
+) {
 	// ZN_PROFILE_SCOPE();
 
 	if (mesh_block.update_list_index != -1) {
@@ -935,10 +966,17 @@ inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State
 	return viewer_state.requires_collisions || viewer_state.requires_visuals;
 }
 
-void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state, int mesh_block_size_po2,
-		int lod_count, const Box3i &volume_bounds_in_voxels,
-		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer, bool can_load, bool is_full_load_mode,
-		int mesh_to_data_factor, const VoxelData &data) {
+void process_viewer_mesh_blocks_sliding_box( //
+		VoxelLodTerrainUpdateData::State &state, //
+		int mesh_block_size_po2, //
+		int lod_count, //
+		const Box3i &volume_bounds_in_voxels, //
+		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer, //
+		bool can_load, //
+		bool is_full_load_mode, //
+		int mesh_to_data_factor, //
+		const VoxelData &data //
+) {
 	ZN_PROFILE_SCOPE();
 
 #ifdef DEV_ENABLED
@@ -1049,9 +1087,16 @@ void process_viewer_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &st
 	}
 }
 
-void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const Box3i bounds_in_voxels, int lod_count,
-		bool is_full_load_mode, bool can_load, const VoxelData &data, int data_block_size) {
+void process_mesh_blocks_sliding_box( //
+		VoxelLodTerrainUpdateData::State &state, //
+		const VoxelLodTerrainUpdateData::Settings &settings, //
+		const Box3i bounds_in_voxels, //
+		int lod_count, //
+		bool is_full_load_mode, //
+		bool can_load, //
+		const VoxelData &data, //
+		int data_block_size //
+) {
 	ZN_PROFILE_SCOPE();
 
 	const int mesh_block_size_po2 = settings.mesh_block_size_po2;
@@ -1074,8 +1119,12 @@ void process_mesh_blocks_sliding_box(VoxelLodTerrainUpdateData::State &state,
 	// clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = lod_distance_in_mesh_chunks;
 }
 
-void process_loaded_data_blocks_trigger_meshing(const VoxelData &data, VoxelLodTerrainUpdateData::State &state,
-		const VoxelLodTerrainUpdateData::Settings &settings, const Box3i bounds_in_voxels) {
+void process_loaded_data_blocks_trigger_meshing( //
+		const VoxelData &data, //
+		VoxelLodTerrainUpdateData::State &state, //
+		const VoxelLodTerrainUpdateData::Settings &settings, //
+		const Box3i bounds_in_voxels //
+) {
 	ZN_PROFILE_SCOPE();
 	// This function should only be used when data streaming is on.
 	// When everything is loaded, there is also the assumption that blocks can be generated on the fly, so loading
@@ -1281,8 +1330,13 @@ void set_inactive(VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, MeshBlo
 
 // Activates mesh blocks when they are loaded. Activates higher LODs and hides lower LODs when possible.
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
-void update_mesh_block_load(VoxelLodTerrainUpdateData::State &state, Vector3i bpos, unsigned int lod_index,
-		unsigned int lod_count, MeshBlockFeatureIndex feature_index) {
+void update_mesh_block_load( //
+		VoxelLodTerrainUpdateData::State &state, //
+		Vector3i bpos, //
+		unsigned int lod_index, //
+		unsigned int lod_count, //
+		MeshBlockFeatureIndex feature_index //
+) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto mesh_it = lod.mesh_map_state.map.find(bpos);
 
@@ -1380,14 +1434,16 @@ void update_mesh_block_load(VoxelLodTerrainUpdateData::State &state, Vector3i bp
 	}
 }
 
-void process_loaded_mesh_blocks_trigger_visibility_changes(
-		VoxelLodTerrainUpdateData::State &state, unsigned int lod_count) {
+void process_loaded_mesh_blocks_trigger_visibility_changes( //
+		VoxelLodTerrainUpdateData::State &state, //
+		unsigned int lod_count //
+) {
 	ZN_PROFILE_SCOPE();
 
 	VoxelLodTerrainUpdateData::ClipboxStreamingState &clipbox_streaming = state.clipbox_streaming;
 
 	// Get list of mesh blocks that were loaded since the last update
-	// TODO Use the same pool buffer as data blocks?
+	// TODO Candidate for TempAllocator
 	static thread_local StdVector<VoxelLodTerrainUpdateData::LoadedMeshBlockEvent> tls_loaded_blocks;
 	tls_loaded_blocks.clear();
 	{
@@ -1429,11 +1485,17 @@ void process_loaded_mesh_blocks_trigger_visibility_changes(
 
 } // namespace
 
-void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
-		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, bool can_load, bool can_mesh) {
+void process_clipbox_streaming( //
+		VoxelLodTerrainUpdateData::State &state, //
+		VoxelData &data, //
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, //
+		const Transform3D &volume_transform, //
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save, //
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
+		const VoxelLodTerrainUpdateData::Settings &settings, //
+		bool can_load, //
+		bool can_mesh //
+) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int lod_count = data.get_lod_count();
