@@ -134,8 +134,7 @@ struct VoxelLodTerrainUpdateData {
 		// The current block is waiting for an update and will be shown once that happens.
 		// Its children won't have any viewer referencing it for visuals.
 		bool pending_visual_merge;
-		// TODO Implement for collision too
-		// bool pending_collision_merge;
+		bool pending_collision_merge;
 
 		// Tells whether the first meshing was done since this block was added.
 		// Written by the main thread only, when it receives mesh updates or when it unloads resources.
@@ -154,7 +153,7 @@ struct VoxelLodTerrainUpdateData {
 				visual_active(false),
 				collision_active(false),
 				pending_visual_merge(false),
-				// pending_collision_merge(false),
+				pending_collision_merge(false),
 				visual_loaded(false),
 				collision_loaded(false) {}
 	};

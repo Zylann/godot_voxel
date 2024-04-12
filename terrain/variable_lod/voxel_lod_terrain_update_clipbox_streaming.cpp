@@ -635,30 +635,6 @@ inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_
 	return parent_position * 2 + get_relative_child_position(child_index);
 }
 
-// void hide_children_recursive(
-// 		VoxelLodTerrainUpdateData::State &state, unsigned int parent_lod_index, Vector3i parent_cpos) {
-// 	ZN_ASSERT_RETURN(parent_lod_index > 0);
-// 	const unsigned int lod_index = parent_lod_index - 1;
-// 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
-
-// 	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
-// 		const Vector3i cpos = get_child_position(parent_cpos, child_index);
-// 		auto mesh_it = lod.mesh_map_state.map.find(cpos);
-
-// 		if (mesh_it != lod.mesh_map_state.map.end()) {
-// 			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
-
-// 			if (mesh_block.active) {
-// 				mesh_block.active = false;
-// 				lod.mesh_blocks_to_deactivate.push_back(cpos);
-
-// 			} else if (lod_index > 0) {
-// 				hide_children_recursive(state, lod_index, cpos);
-// 			}
-// 		}
-// 	}
-// }
-
 inline void schedule_mesh_load( //
 		StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, //
 		Vector3i bpos, //
@@ -839,6 +815,9 @@ void view_mesh_box(const Box3i box_to_add,
 		if (require_visuals) {
 			parent_block_it->second.pending_visual_merge = false;
 		}
+		if (require_collisions) {
+			parent_block_it->second.pending_collision_merge = false;
+		}
 	});
 }
 
@@ -997,7 +976,7 @@ void set_pending_merge( //
 			mesh_block.pending_visual_merge = pending;
 			break;
 		case MESH_COLLIDER:
-			// TODO
+			mesh_block.pending_collision_merge = pending;
 			break;
 		default:
 			ZN_CRASH();
@@ -1013,8 +992,7 @@ bool is_pending_merge( //
 		case MESH_VISUAL:
 			return mesh_block.pending_visual_merge;
 		case MESH_COLLIDER:
-			// TODO
-			return false;
+			return mesh_block.pending_collision_merge;
 		default:
 			ZN_CRASH();
 			return false;
@@ -1039,42 +1017,6 @@ bool all_children_loaded_and_active( //
 	}
 	return true;
 }
-
-// int decrease_refcount(VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
-// 	switch (feature) {
-// 		case MESH_VISUAL:
-// 			return block.mesh_viewers.remove();
-// 		case MESH_COLLIDER:
-// 			return block.collision_viewers.remove();
-// 		default:
-// 			ZN_CRASH();
-// 			return -1;
-// 	}
-// }
-
-// int add_refcount(VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
-// 	switch (feature) {
-// 		case MESH_VISUAL:
-// 			return block.mesh_viewers.add();
-// 		case MESH_COLLIDER:
-// 			return block.collision_viewers.add();
-// 		default:
-// 			ZN_CRASH();
-// 			return -1;
-// 	}
-// }
-
-// int get_refcount(const VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
-// 	switch (feature) {
-// 		case MESH_VISUAL:
-// 			return block.mesh_viewers.get();
-// 		case MESH_COLLIDER:
-// 			return block.collision_viewers.get();
-// 		default:
-// 			ZN_CRASH();
-// 			return -1;
-// 	}
-// }
 
 // Deactivates a block in the context of a merge, and removes it if nothing uses it.
 void deactivate_or_remove_recursive( //
@@ -1216,8 +1158,7 @@ bool try_merge( //
 							parent_block.mesh_viewers.get() > 0 //
 					});
 
-			// TODO Temporarily only visual, need to add collision so we can remove this check
-			if (feature == MESH_VISUAL && !is_active(parent_block, feature)) {
+			if (!is_active(parent_block, feature)) {
 				if (all_children_loaded_and_active(parent_bpos, child_lod, feature)) {
 					// Defer the merge
 					set_pending_merge(parent_block, feature, true);
@@ -1484,8 +1425,17 @@ void process_mesh_blocks_sliding_box( //
 		// Only update around viewers that need meshes.
 		// Check previous state too in case we have to handle them changing
 		if (requires_meshes(paired_viewer.state) || requires_meshes(paired_viewer.prev_state)) {
-			process_viewer_mesh_blocks_sliding_box(state, mesh_block_size_po2, lod_count, bounds_in_voxels,
-					paired_viewer, can_load, is_full_load_mode, mesh_to_data_factor, data);
+			process_viewer_mesh_blocks_sliding_box( //
+					state, //
+					mesh_block_size_po2, //
+					lod_count, //
+					bounds_in_voxels, //
+					paired_viewer, //
+					can_load, //
+					is_full_load_mode, //
+					mesh_to_data_factor, //
+					data //
+			);
 		}
 	}
 
@@ -1652,8 +1602,6 @@ void update_mesh_block_load( //
 		return;
 	}
 
-	// TODO Handle deferred merges
-
 	// The mesh is loaded in specified flags
 
 	const unsigned int parent_lod_index = lod_index + 1;
@@ -1716,7 +1664,8 @@ void update_mesh_block_load( //
 				// Hide parent
 				set_inactive_hide(parent_mesh_block, feature_index, parent_lod, parent_bpos);
 
-				// TODO Cancel deferred merge?
+				// Cancel deferred merge
+				set_pending_merge(parent_mesh_block, feature_index, false);
 
 				// Show siblings
 				for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
@@ -1793,9 +1742,9 @@ void process_loaded_mesh_blocks_trigger_visibility_changes( //
 				merge(block, event.position, lod, event.lod_index - 1, state, MESH_VISUAL);
 			}
 		}
-		// TODO
-		// if(block.pending_collision_merge) {
-		// }
+		if (block.pending_collision_merge) {
+			merge(block, event.position, lod, event.lod_index - 1, state, MESH_COLLIDER);
+		}
 	}
 
 	{
