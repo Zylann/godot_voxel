@@ -154,6 +154,26 @@ public:
 
 	Allocator get_allocator() const;
 
+	// Operations
+
+	void op_add_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_sub_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_mul_value_f(float scale, VoxelBuffer::ChannelId channel);
+	void op_min_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+	void op_max_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId channel);
+
+	// Checks if float/SDF values from a channel of the source buffer are lower than a threshold, and sets an integer
+	// value into the destination buffer depending on the result of that comparison.
+	void op_select_less_src_f_dst_i_values( //
+			Ref<VoxelBuffer> src_ref, //
+			VoxelBuffer::ChannelId src_channel, //
+			float threshold, //
+			int value_if_less, //
+			int value_if_more, //
+			VoxelBuffer::ChannelId dst_channel //
+	);
+
 	// Metadata
 
 	Variant get_block_metadata() const;
