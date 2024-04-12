@@ -156,6 +156,10 @@ inline int chebyshev_distance(const Vector3i &a, const Vector3i &b) {
 	return math::max(math::max(Math::abs(a.x - b.x), Math::abs(a.y - b.y)), Math::abs(a.z - b.z));
 }
 
+inline bool is_even(const Vector3i &v) {
+	return math::is_even(v.x) && math::is_even(v.y) && math::is_even(v.z);
+}
+
 } // namespace math
 
 StdStringStream &operator<<(StdStringStream &ss, const Vector3i &v);

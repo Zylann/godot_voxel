@@ -103,6 +103,9 @@ struct VoxelLodTerrainUpdateData {
 
 		// Refcount here to support multiple viewers, we can't do it on the main thread's mesh map since the
 		// streaming logic is in the update task.
+		// Only counts how many viewers are interested in the chunk at a given time.
+		// Can reach zero yet the chunk can be removed later (deferred merges).
+		//
 		// TODO Optimize: this could almost not need to be atomic.
 		// This is an atomic refcount only because the main thread needs to read it when receiving mesh updates. It
 		// could be made non-atomic if mesh updates were handled in the threaded update, but that has a more
@@ -123,6 +126,17 @@ struct VoxelLodTerrainUpdateData {
 		bool visual_active;
 		bool collision_active;
 
+		// Used by Clipbox:
+		// By default, when a group of 2x2x2 blocks leaves all viewer areas, it immediately merges and the parent is
+		// activated. Sometimes this isn't desired, for example if edits have been made and updating the parent mesh
+		// should be done before showing it (otherwise it would flicker/cause physics snags)
+		//
+		// The current block is waiting for an update and will be shown once that happens.
+		// Its children won't have any viewer referencing it for visuals.
+		bool pending_visual_merge;
+		// TODO Implement for collision too
+		// bool pending_collision_merge;
+
 		// Tells whether the first meshing was done since this block was added.
 		// Written by the main thread only, when it receives mesh updates or when it unloads resources.
 		// Read by threaded update to decide when to subdivide LODs.
@@ -139,6 +153,8 @@ struct VoxelLodTerrainUpdateData {
 				transition_mask(0),
 				visual_active(false),
 				collision_active(false),
+				pending_visual_merge(false),
+				// pending_collision_merge(false),
 				visual_loaded(false),
 				collision_loaded(false) {}
 	};
@@ -281,6 +297,12 @@ struct VoxelLodTerrainUpdateData {
 		bool collision;
 	};
 
+	struct UpdatedMeshBlockEvent {
+		Vector3i position;
+		uint8_t lod_index;
+		bool visual_was_required;
+	};
+
 	struct ClipboxStreamingState {
 		StdVector<PairedViewer> paired_viewers;
 		// Vector3i viewer_pos_in_lod0_voxels_previous_update;
@@ -296,6 +318,9 @@ struct VoxelLodTerrainUpdateData {
 		// Read by update thread to trigger visibility changes.
 		StdVector<LoadedMeshBlockEvent> loaded_mesh_blocks;
 		BinaryMutex loaded_mesh_blocks_mutex;
+
+		StdVector<UpdatedMeshBlockEvent> updated_mesh_blocks;
+		BinaryMutex updated_mesh_blocks_mutex;
 	};
 
 	struct EditNotificationInputs {

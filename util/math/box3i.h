@@ -368,6 +368,10 @@ public:
 		position = min_pos;
 		size = max_pos - min_pos;
 	}
+
+	inline bool is_even_position_and_size() const {
+		return math::is_even(position) && math::is_even(size);
+	}
 };
 
 inline bool operator!=(const Box3i &a, const Box3i &b) {

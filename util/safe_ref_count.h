@@ -12,10 +12,12 @@ public:
 	SafeRefCount() {}
 	SafeRefCount(int initial_count) : _count(initial_count) {}
 
+	// Adds 1 to the count and returns the previous count
 	inline int add() {
 		return _count.fetch_add(1, std::memory_order_acq_rel);
 	}
 
+	// Subtracts 1 to the count and returns the previous count
 	inline int remove() {
 		const int previous_count = _count.fetch_sub(1, std::memory_order_acq_rel);
 		ZN_ASSERT_RETURN_V_MSG(

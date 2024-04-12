@@ -923,6 +923,7 @@ void VoxelLodTerrain::reset_mesh_maps() {
 	state.clipbox_streaming.paired_viewers.clear();
 	state.clipbox_streaming.loaded_data_blocks.clear();
 	state.clipbox_streaming.loaded_mesh_blocks.clear();
+	state.clipbox_streaming.updated_mesh_blocks.clear();
 }
 
 int VoxelLodTerrain::get_lod_count() const {
@@ -1390,6 +1391,7 @@ void VoxelLodTerrain::apply_main_thread_update_tasks() {
 			}
 			block->drop_collision();
 			block->set_collision_enabled(false);
+			// TODO Not resetting collision loaded flag? Maybe it's not needed so far? Though for correctess it should?
 		}
 		lod.mesh_blocks_to_drop_collision.clear();
 
@@ -1775,6 +1777,7 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 		visual_expected = mesh_block_state.mesh_viewers.get() > 0;
 		collision_expected = mesh_block_state.collision_viewers.get() > 0;
 
+		// TODO Do we really need this if we notify of ALL mesh updates?
 		if (visual_expected && ob.visual_was_required) {
 			// Mark visuals loaded for the streaming system to subdivide LODs.
 			// First mesh load? (note, no mesh being present counts as load too. Before that we would not know)
@@ -1786,13 +1789,21 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 			first_collision_load = (mesh_block_state.collision_loaded.exchange(true) == false);
 		}
 	}
-	if ((first_visual_load || first_collision_load) &&
-			_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
-		// Notify streaming system so it can subdivide LODs as they load
-		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
-		MutexLock mlock(cs.loaded_mesh_blocks_mutex);
-		cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
-				ob.position, ob.lod, first_visual_load, first_collision_load });
+	if (_update_data->settings.streaming_system == VoxelLodTerrainUpdateData::STREAMING_SYSTEM_CLIPBOX) {
+		if (first_visual_load || first_collision_load) {
+			// Notify streaming system so it can subdivide LODs as they load
+			VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+			MutexLock mlock(cs.loaded_mesh_blocks_mutex);
+			cs.loaded_mesh_blocks.push_back(VoxelLodTerrainUpdateData::LoadedMeshBlockEvent{
+					ob.position, ob.lod, first_visual_load, first_collision_load });
+		}
+		// This is only used for deferred merges for now, which always act on LOD>0
+		if (ob.lod > 0) {
+			VoxelLodTerrainUpdateData::ClipboxStreamingState &cs = _update_data->state.clipbox_streaming;
+			MutexLock mlock(cs.updated_mesh_blocks_mutex);
+			cs.updated_mesh_blocks.push_back(
+					VoxelLodTerrainUpdateData::UpdatedMeshBlockEvent{ ob.position, ob.lod, ob.visual_was_required });
+		}
 	}
 
 	// -------- Part where we invoke Godot functions ---------

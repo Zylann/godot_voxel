@@ -683,9 +683,17 @@ inline void schedule_mesh_load( //
 	// mesh_block.pending_update_has_visuals = require_visual;
 }
 
-void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		bool is_full_load_mode, int mesh_to_data_factor, const VoxelData &voxel_data, bool require_visuals,
-		bool require_collisions) {
+void view_mesh_box(const Box3i box_to_add,
+		VoxelLodTerrainUpdateData::Lod &lod, //
+		unsigned int lod_index, //
+		unsigned int lod_count, //
+		VoxelLodTerrainUpdateData::State &state, //
+		bool is_full_load_mode, //
+		int mesh_to_data_factor, //
+		const VoxelData &voxel_data, //
+		bool require_visuals, //
+		bool require_collisions //
+) {
 	ZN_PROFILE_SCOPE();
 
 	const Box3i bounds_in_data_blocks = voxel_data.get_bounds().downscaled(voxel_data.get_block_size() << lod_index);
@@ -696,7 +704,8 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 									 &voxel_data, lod_index, //
 									 require_visuals, //
 									 require_collisions, //
-									 bounds_in_data_blocks](Vector3i bpos) {
+									 bounds_in_data_blocks //
+	](Vector3i bpos) {
 		VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
 
@@ -716,14 +725,12 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 
 		bool first_visuals = false;
 		if (require_visuals) {
-			first_visuals = mesh_block->mesh_viewers.get() == 0;
-			mesh_block->mesh_viewers.add();
+			first_visuals = mesh_block->mesh_viewers.add() == 0; // Note: returns the previous count
 		}
 
 		bool first_collision = false;
 		if (require_collisions) {
-			first_collision = mesh_block->collision_viewers.get() == 0;
-			mesh_block->collision_viewers.add();
+			first_collision = mesh_block->collision_viewers.add() == 0;
 		}
 
 		if (first_visuals || first_collision) {
@@ -767,6 +774,8 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 				}
 				// Else, we'll react to when data is loaded
 			}
+
+			// mesh_block->pending_visual_merge = false;
 		}
 
 #if 0
@@ -806,160 +815,523 @@ void view_mesh_box(const Box3i box_to_add, VoxelLodTerrainUpdateData::Lod &lod, 
 		}
 #endif
 	});
+
+	const unsigned int parent_lod_index = lod_index + 1;
+	if (parent_lod_index == lod_count) {
+		return;
+	}
+
+	// Cancel parent merge flags, since we are now interested in children.
+
+#ifdef DEV_ENABLED
+	ZN_ASSERT(box_to_add.is_even_position_and_size());
+#endif
+	// Should always work without reaching zero size because non-max LODs are always
+	// multiple of 2 due to subdivision rules
+	const Box3i parent_box(box_to_add.position >> 1, box_to_add.size >> 1);
+	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
+
+	parent_box.for_each_cell([&parent_lod, require_visuals, require_collisions](const Vector3i bpos) {
+		auto parent_block_it = parent_lod.mesh_map_state.map.find(bpos);
+		if (parent_block_it == parent_lod.mesh_map_state.map.end()) {
+			return;
+		}
+		if (require_visuals) {
+			parent_block_it->second.pending_visual_merge = false;
+		}
+	});
 }
 
-void unview_mesh_box(const Box3i out_of_range_box, VoxelLodTerrainUpdateData::Lod &lod, unsigned int lod_index,
-		unsigned int lod_count, VoxelLodTerrainUpdateData::State &state, bool visual_flag, bool collision_flag) {
+#ifdef DEV_ENABLED
+
+// Verifies some invariants for blocks with children, as we assume they are respected
+void debug_check_children_group(const VoxelLodTerrainUpdateData::Lod &child_lod, const Vector3i parent_bpos) {
+	const Vector3i child0_bpos = get_child_position(parent_bpos, 0);
+
+	auto child0_it = child_lod.mesh_map_state.map.find(child0_bpos);
+	// We expect either 8 children, or no children
+	const bool expect_children = (child0_it != child_lod.mesh_map_state.map.end());
+
+	for (unsigned int child_index = 1; child_index < 8; ++child_index) {
+		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+
+		auto child_it = child_lod.mesh_map_state.map.find(child_bpos);
+
+		if (expect_children) {
+			ZN_ASSERT(child_it != child_lod.mesh_map_state.map.end());
+
+			const VoxelLodTerrainUpdateData::MeshBlockState &child0 = child0_it->second;
+			const VoxelLodTerrainUpdateData::MeshBlockState &child = child_it->second;
+
+			// Refcounts must match because viewer boxes must have even position and size (except on the last LOD)
+			ZN_ASSERT(child0.collision_viewers.get() == child.collision_viewers.get());
+			ZN_ASSERT(child0.mesh_viewers.get() == child.mesh_viewers.get());
+
+		} else {
+			ZN_ASSERT(child_it == child_lod.mesh_map_state.map.end());
+		}
+	}
+}
+
+#endif
+
+enum MeshBlockFeatureIndex { //
+	MESH_VISUAL = 0,
+	MESH_COLLIDER = 1,
+	MESH_FEATURE_COUNT = 2
+};
+
+// TODO The following is not ideal. May be refactored at some point?
+// Probably introduce masks/arrays so we don't have to use switches?
+
+bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+	switch (i) {
+		case MESH_VISUAL:
+			return ms.visual_loaded;
+		case MESH_COLLIDER:
+			return ms.collision_loaded;
+		default:
+			ZN_CRASH();
+			return false;
+	}
+}
+
+bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+	switch (i) {
+		case MESH_VISUAL:
+			return ms.visual_active;
+		case MESH_COLLIDER:
+			return ms.collision_active;
+		default:
+			ZN_CRASH();
+			return false;
+	}
+}
+
+void set_active( //
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		MeshBlockFeatureIndex feature_index, //
+		VoxelLodTerrainUpdateData::Lod &lod, //
+		const Vector3i bpos //
+) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			if (!mesh_block.visual_active) {
+				mesh_block.visual_active = true;
+				lod.mesh_blocks_to_activate_visuals.push_back(bpos);
+			}
+			break;
+		case MESH_COLLIDER:
+			if (!mesh_block.collision_active) {
+				mesh_block.collision_active = true;
+				lod.mesh_blocks_to_activate_collision.push_back(bpos);
+			}
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+void set_inactive_hide( //
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		MeshBlockFeatureIndex feature_index, //
+		VoxelLodTerrainUpdateData::Lod &lod, //
+		const Vector3i bpos //
+) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			if (mesh_block.visual_active) {
+				mesh_block.visual_active = false;
+				lod.mesh_blocks_to_deactivate_visuals.push_back(bpos);
+			}
+			break;
+		case MESH_COLLIDER:
+			if (mesh_block.collision_active) {
+				mesh_block.collision_active = false;
+				lod.mesh_blocks_to_deactivate_collision.push_back(bpos);
+			}
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+void set_inactive_drop( //
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		MeshBlockFeatureIndex feature_index, //
+		VoxelLodTerrainUpdateData::Lod &lod, //
+		const Vector3i bpos //
+) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			if (mesh_block.visual_active) {
+				mesh_block.visual_active = false;
+				// The `*loaded` flag should also be reset, but we don't do it here because that's done later on the
+				// thread that actually unloads the data.
+				// Though I'm not sure if it would also work to just do it here, assuming operations we post to the main
+				// thread execute sequentially?
+				lod.mesh_blocks_to_drop_visual.push_back(bpos);
+			}
+			break;
+		case MESH_COLLIDER:
+			if (mesh_block.collision_active) {
+				mesh_block.collision_active = false;
+				lod.mesh_blocks_to_drop_collision.push_back(bpos);
+			}
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+void set_pending_merge( //
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		MeshBlockFeatureIndex feature_index, //
+		bool pending //
+) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			mesh_block.pending_visual_merge = pending;
+			break;
+		case MESH_COLLIDER:
+			// TODO
+			break;
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+bool is_pending_merge( //
+		const VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
+		MeshBlockFeatureIndex feature_index //
+) {
+	switch (feature_index) {
+		case MESH_VISUAL:
+			return mesh_block.pending_visual_merge;
+		case MESH_COLLIDER:
+			// TODO
+			return false;
+		default:
+			ZN_CRASH();
+			return false;
+	}
+}
+
+bool all_children_loaded_and_active( //
+		const Vector3i parent_bpos, //
+		const VoxelLodTerrainUpdateData::Lod &child_lod, //
+		MeshBlockFeatureIndex feature //
+) {
+	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+
+		auto child_it = child_lod.mesh_map_state.map.find(child_bpos);
+		ZN_ASSERT(child_it != child_lod.mesh_map_state.map.end());
+		const VoxelLodTerrainUpdateData::MeshBlockState &child = child_it->second;
+
+		if (!(is_loaded(child, feature) && is_active(child, feature))) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// int decrease_refcount(VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
+// 	switch (feature) {
+// 		case MESH_VISUAL:
+// 			return block.mesh_viewers.remove();
+// 		case MESH_COLLIDER:
+// 			return block.collision_viewers.remove();
+// 		default:
+// 			ZN_CRASH();
+// 			return -1;
+// 	}
+// }
+
+// int add_refcount(VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
+// 	switch (feature) {
+// 		case MESH_VISUAL:
+// 			return block.mesh_viewers.add();
+// 		case MESH_COLLIDER:
+// 			return block.collision_viewers.add();
+// 		default:
+// 			ZN_CRASH();
+// 			return -1;
+// 	}
+// }
+
+// int get_refcount(const VoxelLodTerrainUpdateData::MeshBlockState &block, MeshBlockFeatureIndex feature) {
+// 	switch (feature) {
+// 		case MESH_VISUAL:
+// 			return block.mesh_viewers.get();
+// 		case MESH_COLLIDER:
+// 			return block.collision_viewers.get();
+// 		default:
+// 			ZN_CRASH();
+// 			return -1;
+// 	}
+// }
+
+// Deactivates a block in the context of a merge, and removes it if nothing uses it.
+void deactivate_or_remove_recursive( //
+		const Vector3i bpos, //
+		unsigned int lod_index, //
+		VoxelLodTerrainUpdateData::State &state, //
+		MeshBlockFeatureIndex feature, //
+		const VoxelLodTerrainUpdateData::MeshBlockState *parent_block //
+) {
+	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+	auto block_it = lod.mesh_map_state.map.find(bpos);
+	ZN_ASSERT(block_it != lod.mesh_map_state.map.end());
+	VoxelLodTerrainUpdateData::MeshBlockState &block = block_it->second;
+
+	if (lod_index > 0) {
+		if (is_pending_merge(block, feature)) {
+			// Cancel pending merge.
+			set_pending_merge(block, feature, false);
+
+			// This block has children that are no longer referenced by viewers due to the pending merge.
+			// In this case we have to deactivate them manually, and go recursive.
+			const unsigned int child_lod_index = lod_index - 1;
+			for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+				const Vector3i child_bpos = get_child_position(bpos, child_index);
+				deactivate_or_remove_recursive(child_bpos, child_lod_index, state, feature, &block);
+			}
+		}
+	}
+
+	set_inactive_drop(block, feature, lod, bpos);
+
+	// Check if we can remove the block
+
+	if (parent_block != nullptr && (parent_block->pending_visual_merge)) {
+		return;
+	}
+
+	if (block.collision_viewers.get() == 0 && block.mesh_viewers.get() == 0) {
+		// Whole mesh block not needed anymore.
+
+		if (block.cancellation_token.is_valid()) {
+			block.cancellation_token.cancel();
+		}
+
+		if (block.update_list_index != -1) {
+			unordered_remove(lod.mesh_blocks_pending_update, block.update_list_index);
+			block.update_list_index = -1;
+		}
+
+		// TODO What if a viewer causes unload, then another one updates afterward and would have kept the mesh
+		// loaded? That will trigger a reload, but if mesh load is fast, what if the main thread unloads the new
+		// mesh due to the old momentary unload? Very edge case, but keeping a note in case something weird
+		// happens in practice.
+		lod.mesh_map_state.map.erase(block_it);
+		lod.mesh_blocks_to_unload.push_back(bpos);
+	}
+}
+
+// Unreferences block features and deactivates if it reaches zero. Meant for the last LOD.
+void unview_mesh_block_no_merge( //
+		const Vector3i bpos, //
+		unsigned int lod_index, //
+		VoxelLodTerrainUpdateData::State &state,
+		bool visual_flag, //
+		bool collision_flag //
+) {
+	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
+	auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
+
+	if (mesh_block_it == lod.mesh_map_state.map.end()) {
+		// ?
+		return;
+	}
+
+	VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
+
+	if (visual_flag) {
+		// Note, remove() returns the previous count
+		const bool visual_dropped = (mesh_block.mesh_viewers.remove() == 1);
+		if (visual_dropped) {
+			deactivate_or_remove_recursive(bpos, lod_index, state, MESH_VISUAL, nullptr);
+		}
+	}
+
+	if (collision_flag) {
+		const bool collision_dropped = (mesh_block.collision_viewers.remove() == 1);
+		if (collision_dropped) {
+			deactivate_or_remove_recursive(bpos, lod_index, state, MESH_COLLIDER, nullptr);
+		}
+	}
+}
+
+// Deactivates/drops children and activates parent. Children must exist.
+void merge( //
+		VoxelLodTerrainUpdateData::MeshBlockState &parent_block, //
+		const Vector3i parent_bpos, //
+		VoxelLodTerrainUpdateData::Lod &parent_lod, //
+		unsigned int child_lod_index, //
+		VoxelLodTerrainUpdateData::State &state, //
+		MeshBlockFeatureIndex feature //
+) {
+	set_pending_merge(parent_block, feature, false);
+
+	// Deactivate children
+	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+		deactivate_or_remove_recursive(child_bpos, child_lod_index, state, feature, &parent_block);
+	}
+
+	// Activate parent
+	set_active(parent_block, feature, parent_lod, parent_bpos);
+}
+
+// When a feature refcount of children drops to 0, we may consider merging them.
+// This can fail however if the parent is not ready yet. In that case, an update will be scheduled and the merge will
+// happen later.
+bool try_merge( //
+		VoxelLodTerrainUpdateData::MeshBlockState &parent_block, //
+		const Vector3i parent_bpos, //
+		unsigned int parent_lod_index, //
+		VoxelLodTerrainUpdateData::State &state, //
+		MeshBlockFeatureIndex feature //
+) {
+	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
+
+	const unsigned int child_lod_index = parent_lod_index - 1;
+	VoxelLodTerrainUpdateData::Lod &child_lod = state.lods[child_lod_index];
+
+	if (is_loaded(parent_block, feature)) {
+		// TODO Need to check more states
+		if (parent_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
+			// The parent isn't up to date
+			parent_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
+			parent_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
+			parent_lod.mesh_blocks_pending_update.push_back( //
+					VoxelLodTerrainUpdateData::MeshToUpdate{
+							parent_bpos, //
+							TaskCancellationToken(), //
+							parent_block.mesh_viewers.get() > 0 //
+					});
+
+			// TODO Temporarily only visual, need to add collision so we can remove this check
+			if (feature == MESH_VISUAL && !is_active(parent_block, feature)) {
+				if (all_children_loaded_and_active(parent_bpos, child_lod, feature)) {
+					// Defer the merge
+					set_pending_merge(parent_block, feature, true);
+					return false;
+				}
+				// If one child isn't loaded/active, we'll override and merge anyways.
+				// That also means we don't support deferred merges more than one level...
+			}
+		}
+	}
+
+	merge(parent_block, parent_bpos, parent_lod, child_lod_index, state, feature);
+	return true;
+}
+
+// Unreferences a group of 8 child blocks under a specific parent block.
+// If they reach zero, attempts to do a "merge" (deactivate children and activate the parent).
+void unview_mesh_blocks_with_merge( //
+		VoxelLodTerrainUpdateData::Lod &parent_lod, //
+		unsigned int parent_lod_index, //
+		Vector3i parent_bpos, //
+		VoxelLodTerrainUpdateData::State &state, //
+		bool visual_flag, //
+		bool collision_flag //
+) {
+	auto parent_block_it = parent_lod.mesh_map_state.map.find(parent_bpos);
+#ifdef DEV_ENABLED
+	ZN_ASSERT(parent_block_it != parent_lod.mesh_map_state.map.end());
+#else
+	ZN_ASSERT_RETURN(parent_block_it != parent_lod.mesh_map_state.map.end());
+#endif
+	VoxelLodTerrainUpdateData::MeshBlockState &parent_block = parent_block_it->second;
+
+	ZN_ASSERT(parent_lod_index > 0);
+	const unsigned int child_lod_index = parent_lod_index - 1;
+	VoxelLodTerrainUpdateData::Lod &child_lod = state.lods[child_lod_index];
+
+#ifdef DEV_ENABLED
+	debug_check_children_group(child_lod, parent_bpos);
+#endif
+
+	const Vector3i child0_bpos = get_child_position(parent_bpos, 0);
+	auto child0_it = child_lod.mesh_map_state.map.find(child0_bpos);
+
+	if (child0_it != child_lod.mesh_map_state.map.end()) {
+		// TODO Optimize: potentially redundant children lookups
+
+		if (visual_flag) {
+			bool visual_dropped = false;
+			// Decrease refcounts
+			for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+				const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+				auto child_it = child_lod.mesh_map_state.map.find(child_bpos);
+				ZN_ASSERT(child_it != child_lod.mesh_map_state.map.end());
+				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = child_it->second;
+				visual_dropped = (mesh_block.mesh_viewers.remove() == 1); // Note, remove() returns the previous count
+			}
+
+			if (visual_dropped) {
+				try_merge(parent_block, parent_bpos, parent_lod_index, state, MESH_VISUAL);
+			}
+		}
+
+		if (collision_flag) {
+			bool collision_dropped = false;
+			for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+				const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+				auto child_it = child_lod.mesh_map_state.map.find(child_bpos);
+				ZN_ASSERT(child_it != child_lod.mesh_map_state.map.end());
+				VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = child_it->second;
+				collision_dropped = (mesh_block.collision_viewers.remove() == 1);
+			}
+
+			if (collision_dropped) {
+				try_merge(parent_block, parent_bpos, parent_lod_index, state, MESH_COLLIDER);
+			}
+		}
+	}
+}
+
+void unview_mesh_box(const Box3i out_of_range_box, //
+		unsigned int lod_index, //
+		unsigned int lod_count, //
+		VoxelLodTerrainUpdateData::State &state, //
+		bool visual_flag, //
+		bool collision_flag //
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(collision_flag || visual_flag);
 
-	out_of_range_box.for_each_cell([&lod, visual_flag, collision_flag](Vector3i bpos) {
-		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
-
-		if (mesh_block_it != lod.mesh_map_state.map.end()) {
-			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_block_it->second;
-
-			bool visual_needed;
-			if (visual_flag) {
-				visual_needed = (mesh_block.mesh_viewers.remove() > 1); // Note, remove() returns the previous count
-			} else {
-				visual_needed = mesh_block.mesh_viewers.get() > 0;
-			}
-
-			bool collision_needed;
-			if (collision_flag) {
-				collision_needed = (mesh_block.collision_viewers.remove() > 1);
-			} else {
-				collision_needed = mesh_block.collision_viewers.get() > 0;
-			}
-
-			if (collision_needed == false && visual_needed == false) {
-				// No viewer needs this mesh anymore
-
-				if (mesh_block.cancellation_token.is_valid()) {
-					mesh_block.cancellation_token.cancel();
-				}
-
-				if (mesh_block.update_list_index != -1) {
-					unordered_remove(lod.mesh_blocks_pending_update, mesh_block.update_list_index);
-					mesh_block.update_list_index = -1;
-				}
-
-				// TODO What if a viewer causes unload, then another one updates afterward and would have kept the mesh
-				// loaded? That will trigger a reload, but if mesh load is fast, what if the main thread unloads the new
-				// mesh due to the old momentary unload? Very edge case, but keeping a note in case something weird
-				// happens in practice.
-				lod.mesh_map_state.map.erase(mesh_block_it);
-				lod.mesh_blocks_to_unload.push_back(bpos);
-
-			} else {
-				// The block remains but we may unload one of its resources
-
-				if (visual_flag && !visual_needed) {
-					// Unload graphics to save memory
-					lod.mesh_blocks_to_drop_visual.push_back(bpos);
-					// Note, `visuals_loaded` will remain true until they are actually unloaded.
-				}
-
-				if (collision_flag && !collision_needed) {
-					// Unload colliders to save memory
-					lod.mesh_blocks_to_drop_collision.push_back(bpos);
-				}
-			}
-		}
-	});
-
-	// Immediately show parent when children are removed.
-	// This is a cheap approach as the parent mesh will be available most of the time.
-	// However, at high speeds, if loading can't keep up, holes and overlaps will start happening in the
-	// opposite direction of movement.
 	const unsigned int parent_lod_index = lod_index + 1;
-	if (parent_lod_index < lod_count) {
-		// Should always work without reaching zero size because non-max LODs are always
-		// multiple of 2 due to subdivision rules
-		const Box3i parent_box = Box3i(out_of_range_box.position >> 1, out_of_range_box.size >> 1);
-
-		VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
-
-		// Show parents when children are removed
-		parent_box.for_each_cell([&parent_lod, //
-										 &lod, //
-										 visual_flag, //
-										 collision_flag //
-		](Vector3i bpos) {
-			auto mesh_it = parent_lod.mesh_map_state.map.find(bpos);
-
-			if (mesh_it == parent_lod.mesh_map_state.map.end()) {
-				return;
-			}
-
-			VoxelLodTerrainUpdateData::MeshBlockState &mesh_block = mesh_it->second;
-
-			bool activated = false;
-
-			if (visual_flag) {
-				if (!mesh_block.visual_active) {
-					// Only do merging logic if child chunks were ACTUALLY removed.
-					// In multi-viewer scenarios, the clipbox might have moved away from chunks of the
-					// child LOD, but another viewer could still reference them, so we should not merge
-					// them yet.
-					// This check assumes there is always 8 children or no children
-					const Vector3i child_bpos0 = bpos << 1;
-					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-
-					if (child_mesh0_it == lod.mesh_map_state.map.end() ||
-							child_mesh0_it->second.mesh_viewers.get() == 0) {
-						mesh_block.visual_active = true;
-						parent_lod.mesh_blocks_to_activate_visuals.push_back(bpos);
-						activated = true;
-					}
-
-					// We know parent_lod_index must be > 0
-					// if (parent_lod_index > 0) {
-					// This would actually do nothing because children were removed
-					// hide_children_recursive(state, parent_lod_index, bpos);
-					// }
-				}
-			}
-			if (collision_flag) {
-				if (!mesh_block.collision_active) {
-					const Vector3i child_bpos0 = bpos << 1;
-					auto child_mesh0_it = lod.mesh_map_state.map.find(child_bpos0);
-
-					if (child_mesh0_it == lod.mesh_map_state.map.end() ||
-							child_mesh0_it->second.collision_viewers.get() == 0) {
-						mesh_block.collision_active = true;
-						parent_lod.mesh_blocks_to_activate_collision.push_back(bpos);
-						activated = true;
-					}
-				}
-			}
-
-			if (activated) {
-				// Voxels of the mesh could have been modified while the mesh was inactive (notably LODs), so
-				// trigger an update.
-				//
-				// TODO This approach causes minor flickering. It would be nice to find a way to avoid that.
-				// After an edit and moving away from it, LOD1 meshes that don't have been updated immediately show
-				// up, and then they update, causing the flicker.
-				// The most naive option would be to update parent LOD meshes when they are inactive, but that would
-				// make edits unnecessarily expensive (and technically triggers physics updates too). Perhaps those
-				// updates could be given much lower task priority, but it remains work that isn't immediately
-				// needed.
-				// I tried to "delay" blocks switching up LODs when a clipbox moves away, but that ended up
-				// in a lot of headaches and corner cases due to states having to persist over time.
-				// That problem doesn't occur with Octree because it waits for parent meshes to be ready
-				// individually, it doesn't exploit the shape of the loaded area at all (which is partly what makes
-				// it slower)
-				if (mesh_block.state == VoxelLodTerrainUpdateData::MESH_NEED_UPDATE) {
-					mesh_block.state = VoxelLodTerrainUpdateData::MESH_UPDATE_NOT_SENT;
-					mesh_block.update_list_index = parent_lod.mesh_blocks_pending_update.size();
-					parent_lod.mesh_blocks_pending_update.push_back(VoxelLodTerrainUpdateData::MeshToUpdate{
-							bpos, TaskCancellationToken(), mesh_block.mesh_viewers.get() > 0 });
-				}
-			}
+	if (parent_lod_index == lod_count) {
+		// Top-level: no parent to merge into, we just remove everything when refcounts reach 0
+		out_of_range_box.for_each_cell([&state, lod_index, visual_flag, collision_flag](Vector3i bpos) {
+			unview_mesh_block_no_merge(bpos, lod_index, state, visual_flag, collision_flag);
 		});
+		return;
 	}
+
+#ifdef DEV_ENABLED
+	ZN_ASSERT(out_of_range_box.is_even_position_and_size());
+#endif
+
+	// Should always work without reaching zero size because non-max LODs are always
+	// multiple of 2 due to subdivision rules
+	const Box3i parent_box(out_of_range_box.position >> 1, out_of_range_box.size >> 1);
+	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
+
+	// Attempt to remove children and activate parents
+	parent_box.for_each_cell([&parent_lod, parent_lod_index, &state, visual_flag, collision_flag](
+									 const Vector3i parent_bpos) {
+		// Trigger merges: when refcounts reach 0, groups of 8 blocks merge into one from the parent LOD.
+		unview_mesh_blocks_with_merge(parent_lod, parent_lod_index, parent_bpos, state, visual_flag, collision_flag);
+	});
 }
 
 inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State &viewer_state) {
@@ -1031,8 +1403,8 @@ void process_viewer_mesh_blocks_sliding_box( //
 				new_mesh_box.difference_to_vec(prev_mesh_box, new_mesh_boxes);
 
 				for (const Box3i &box_to_add : new_mesh_boxes) {
-					view_mesh_box(box_to_add, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data,
-							paired_viewer.state.requires_visuals, paired_viewer.state.requires_collisions);
+					view_mesh_box(box_to_add, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor,
+							data, paired_viewer.state.requires_visuals, paired_viewer.state.requires_collisions);
 				}
 			}
 
@@ -1042,7 +1414,7 @@ void process_viewer_mesh_blocks_sliding_box( //
 				prev_mesh_box.difference_to_vec(new_mesh_box, old_mesh_boxes);
 
 				for (const Box3i &out_of_range_box : old_mesh_boxes) {
-					unview_mesh_box(out_of_range_box, lod, lod_index, lod_count, state,
+					unview_mesh_box(out_of_range_box, lod_index, lod_count, state,
 							// Use previous state because old boxes were loaded because of them
 							paired_viewer.prev_state.requires_visuals, paired_viewer.prev_state.requires_collisions);
 				}
@@ -1059,19 +1431,21 @@ void process_viewer_mesh_blocks_sliding_box( //
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 				if (paired_viewer.state.requires_collisions) {
 					// Add refcount to just collisions
-					view_mesh_box(box, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data, false, true);
+					view_mesh_box(box, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor, data,
+							false, true);
 				} else {
 					// Remove refcount to just collisions
-					unview_mesh_box(box, lod, lod_index, lod_count, state, false, true);
+					unview_mesh_box(box, lod_index, lod_count, state, false, true);
 				}
 			}
 
 			if (paired_viewer.state.requires_visuals != paired_viewer.prev_state.requires_visuals) {
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 				if (paired_viewer.state.requires_visuals) {
-					view_mesh_box(box, lod, lod_index, is_full_load_mode, mesh_to_data_factor, data, true, false);
+					view_mesh_box(box, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor, data,
+							true, false);
 				} else {
-					unview_mesh_box(box, lod, lod_index, lod_count, state, true, false);
+					unview_mesh_box(box, lod_index, lod_count, state, true, false);
 				}
 			}
 		}
@@ -1257,77 +1631,6 @@ void process_loaded_data_blocks_trigger_meshing( //
 // 	ofs.close();
 // }
 
-enum MeshBlockFeatureIndex { //
-	MESH_VISUAL = 0,
-	MESH_COLLIDER = 1
-};
-
-bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
-	switch (i) {
-		case MESH_VISUAL:
-			return ms.visual_loaded;
-		case MESH_COLLIDER:
-			return ms.collision_loaded;
-		default:
-			ZN_CRASH();
-			return false;
-	}
-}
-
-bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
-	switch (i) {
-		case MESH_VISUAL:
-			return ms.visual_active;
-		case MESH_COLLIDER:
-			return ms.collision_active;
-		default:
-			ZN_CRASH();
-			return false;
-	}
-}
-
-void set_active(VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, MeshBlockFeatureIndex feature_index,
-		VoxelLodTerrainUpdateData::Lod &lod, const Vector3i bpos) {
-	switch (feature_index) {
-		case MESH_VISUAL:
-			if (!mesh_block.visual_active) {
-				mesh_block.visual_active = true;
-				lod.mesh_blocks_to_activate_visuals.push_back(bpos);
-			}
-			break;
-		case MESH_COLLIDER:
-			if (!mesh_block.collision_active) {
-				mesh_block.collision_active = true;
-				lod.mesh_blocks_to_activate_collision.push_back(bpos);
-			}
-			break;
-		default:
-			ZN_CRASH();
-			break;
-	}
-}
-
-void set_inactive(VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, MeshBlockFeatureIndex feature_index,
-		VoxelLodTerrainUpdateData::Lod &lod, const Vector3i bpos) {
-	switch (feature_index) {
-		case MESH_VISUAL:
-			if (mesh_block.visual_active) {
-				mesh_block.visual_active = false;
-				lod.mesh_blocks_to_deactivate_visuals.push_back(bpos);
-			}
-			break;
-		case MESH_COLLIDER:
-			if (mesh_block.collision_active) {
-				mesh_block.collision_active = false;
-				lod.mesh_blocks_to_deactivate_collision.push_back(bpos);
-			}
-			break;
-		default:
-			ZN_CRASH();
-			break;
-	}
-}
-
 // Activates mesh blocks when they are loaded. Activates higher LODs and hides lower LODs when possible.
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
 void update_mesh_block_load( //
@@ -1348,6 +1651,8 @@ void update_mesh_block_load( //
 	if (!is_loaded(mesh_block, feature_index)) {
 		return;
 	}
+
+	// TODO Handle deferred merges
 
 	// The mesh is loaded in specified flags
 
@@ -1409,7 +1714,9 @@ void update_mesh_block_load( //
 
 			if (all_siblings_loaded) {
 				// Hide parent
-				set_inactive(parent_mesh_block, feature_index, parent_lod, parent_bpos);
+				set_inactive_hide(parent_mesh_block, feature_index, parent_lod, parent_bpos);
+
+				// TODO Cancel deferred merge?
 
 				// Show siblings
 				for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
@@ -1462,6 +1769,33 @@ void process_loaded_mesh_blocks_trigger_visibility_changes( //
 		if (event.collision) {
 			update_mesh_block_load(state, event.position, event.lod_index, lod_count, MESH_COLLIDER);
 		}
+	}
+
+	// TODO Candidate for TempAllocator
+	static thread_local StdVector<VoxelLodTerrainUpdateData::UpdatedMeshBlockEvent> tls_updated_blocks;
+	tls_updated_blocks.clear();
+	{
+		// If this has contention, we can afford trying to lock and skip if it fails
+		MutexLock mlock(clipbox_streaming.updated_mesh_blocks_mutex);
+		append_array(tls_updated_blocks, clipbox_streaming.updated_mesh_blocks);
+		clipbox_streaming.updated_mesh_blocks.clear();
+	}
+
+	for (const VoxelLodTerrainUpdateData::UpdatedMeshBlockEvent event : tls_updated_blocks) {
+		VoxelLodTerrainUpdateData::Lod &lod = state.lods[event.lod_index];
+		auto block_it = lod.mesh_map_state.map.find(event.position);
+		if (block_it == lod.mesh_map_state.map.end()) {
+			continue;
+		}
+		VoxelLodTerrainUpdateData::MeshBlockState &block = block_it->second;
+		if (block.pending_visual_merge) {
+			if (event.visual_was_required) {
+				merge(block, event.position, lod, event.lod_index - 1, state, MESH_VISUAL);
+			}
+		}
+		// TODO
+		// if(block.pending_collision_merge) {
+		// }
 	}
 
 	{

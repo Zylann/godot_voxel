@@ -12,6 +12,7 @@ using namespace godot;
 
 #include "constants.h"
 #include <cmath>
+#include <type_traits>
 
 namespace zylann::math {
 
@@ -405,6 +406,12 @@ inline int32_t arithmetic_rshift(int32_t a, unsigned int b) {
 	static_assert(-4 >> 1 == -2, "Signed right-shift is not arithmetic, patch needed to support current compiler.");
 
 	return a >> b;
+}
+
+template <typename TInt>
+inline bool is_even(TInt i) {
+	static_assert(std::is_integral<TInt>::value, "TInt must be an integral type");
+	return (i & 1) == 0;
 }
 
 } // namespace zylann::math
