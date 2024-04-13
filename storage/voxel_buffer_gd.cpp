@@ -186,12 +186,72 @@ VoxelBuffer::Allocator VoxelBuffer::get_allocator() const {
 }
 
 template <typename F>
+void op_buffer_value_f( //
+		zylann::voxel::VoxelBuffer &dst, //
+		const float b, //
+		VoxelBuffer::ChannelId channel, //
+		F f // (float a, float b) -> float
+) {
+	if (dst.get_channel_compression(channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+		const float a = dst.get_voxel_f(0, 0, 0, channel);
+		dst.fill_f(f(a, b), channel);
+		return;
+	}
+
+	switch (dst.get_channel_depth(channel)) {
+		case VoxelBuffer::DEPTH_8_BIT: {
+			Span<int8_t> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (int8_t &d : dst_data) {
+				const float a = s8_to_snorm(d) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
+				d = snorm_to_s8(f(a, b) * constants::QUANTIZED_SDF_8_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_16_BIT: {
+			Span<int16_t> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (int16_t &d : dst_data) {
+				const float a = s16_to_snorm(d) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
+				d = snorm_to_s16(f(a, b) * constants::QUANTIZED_SDF_16_BITS_SCALE);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_32_BIT: {
+			Span<float> dst_data;
+			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
+			for (float &d : dst_data) {
+				d = f(d, b);
+			}
+		} break;
+
+		case VoxelBuffer::DEPTH_64_BIT:
+			ZN_PRINT_ERROR("Unsupported depth for operation");
+			break;
+
+		default:
+			ZN_CRASH();
+			break;
+	}
+}
+
+template <typename F>
 void op_buffer_buffer_f( //
 		zylann::voxel::VoxelBuffer &dst, //
 		const zylann::voxel::VoxelBuffer &src, //
 		VoxelBuffer::ChannelId channel, //
 		F f // (float a, float b) -> float
 ) {
+	if (src.get_channel_compression(channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+		const float value = src.get_voxel_f(0, 0, 0, channel);
+		op_buffer_value_f(dst, value, channel, f);
+		return;
+	}
+
+	if (dst.get_channel_compression(channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+		dst.decompress_channel(channel);
+	}
+
 	switch (src.get_channel_depth(channel)) {
 		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<const int8_t> src_data;
@@ -229,50 +289,6 @@ void op_buffer_buffer_f( //
 
 		case VoxelBuffer::DEPTH_64_BIT:
 			ZN_PRINT_ERROR("Non-implemented depth for operation");
-			break;
-
-		default:
-			ZN_CRASH();
-			break;
-	}
-}
-
-template <typename F>
-void op_buffer_value_f( //
-		zylann::voxel::VoxelBuffer &dst, //
-		const float b, //
-		VoxelBuffer::ChannelId channel, //
-		F f // (float a, float b) -> float
-) {
-	switch (dst.get_channel_depth(channel)) {
-		case VoxelBuffer::DEPTH_8_BIT: {
-			Span<int8_t> dst_data;
-			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
-			for (unsigned int i = 0; i < dst_data.size(); ++i) {
-				const float a = s8_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
-				dst_data[i] = snorm_to_s8(f(a, b) * constants::QUANTIZED_SDF_8_BITS_SCALE);
-			}
-		} break;
-
-		case VoxelBuffer::DEPTH_16_BIT: {
-			Span<int16_t> dst_data;
-			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
-			for (unsigned int i = 0; i < dst_data.size(); ++i) {
-				const float a = s16_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
-				dst_data[i] = snorm_to_s16(f(a, b) * constants::QUANTIZED_SDF_16_BITS_SCALE);
-			}
-		} break;
-
-		case VoxelBuffer::DEPTH_32_BIT: {
-			Span<float> dst_data;
-			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
-			for (unsigned int i = 0; i < dst_data.size(); ++i) {
-				dst_data[i] = f(dst_data[i], b);
-			}
-		} break;
-
-		case VoxelBuffer::DEPTH_64_BIT:
-			ZN_PRINT_ERROR("Unsupported depth for operation");
 			break;
 
 		default:
@@ -326,6 +342,11 @@ void VoxelBuffer::op_max_buffer_f(Ref<VoxelBuffer> other, VoxelBuffer::ChannelId
 	op_buffer_buffer_f(*_buffer, other->get_buffer(), channel, [](float a, float b) { return math::max(a, b); });
 }
 
+template <typename TIn, typename TOut>
+inline TOut select_less(TIn src, TIn threshold, TOut value_if_less, TOut value_if_more) {
+	return src < threshold ? value_if_less : value_if_more;
+}
+
 void VoxelBuffer::op_select_less_src_f_dst_i_values( //
 		Ref<VoxelBuffer> src_ref, //
 		VoxelBuffer::ChannelId src_channel, //
@@ -348,27 +369,38 @@ void VoxelBuffer::op_select_less_src_f_dst_i_values( //
 	if (src.get_channel_depth(src_channel) == zylann::voxel::VoxelBuffer::DEPTH_32_BIT &&
 			dst.get_channel_depth(dst_channel) == zylann::voxel::VoxelBuffer::DEPTH_16_BIT) {
 		//
-		Span<const float> src_data;
-		src.get_channel_data(src_channel, src_data);
-
-		Span<uint16_t> dst_data;
-		dst.get_channel_data(dst_channel, dst_data);
-
 		const uint16_t value_if_less_16 = math::clamp(value_if_less, 0, 65535);
 		const uint16_t value_if_more_16 = math::clamp(value_if_more, 0, 65535);
 
-		for (unsigned int i = 0; i < src_data.size(); ++i) {
-			dst_data[i] = src_data[i] < threshold ? value_if_less_16 : value_if_more_16;
+		if (src.get_channel_compression(src_channel) == zylann::voxel::VoxelBuffer::COMPRESSION_UNIFORM) {
+			const float src_v = src.get_voxel_f(0, 0, 0, src_channel);
+			const int16_t dst_v = select_less(src_v, threshold, value_if_less, value_if_more);
+			dst.fill(dst_v, dst_channel);
+
+		} else {
+			dst.decompress_channel(dst_channel);
+
+			Span<const float> src_data;
+			src.get_channel_data(src_channel, src_data);
+
+			Span<uint16_t> dst_data;
+			dst.get_channel_data(dst_channel, dst_data);
+
+			for (unsigned int i = 0; i < src_data.size(); ++i) {
+				dst_data[i] = select_less(src_data[i], threshold, value_if_less_16, value_if_more_16);
+			}
 		}
 
 	} else {
+		// Generic, slower version
 		Vector3i pos;
 		const Vector3i size = get_size();
 		for (pos.z = 0; pos.z < size.z; ++pos.z) {
 			for (pos.x = 0; pos.x < size.x; ++pos.x) {
 				for (pos.y = 0; pos.y < size.y; ++pos.y) {
 					const float sd = src.get_voxel_f(pos, src_channel);
-					dst.set_voxel(sd < threshold ? value_if_less : value_if_more, pos, dst_channel);
+					const int16_t dst_v = select_less(sd, threshold, value_if_less, value_if_more);
+					dst.set_voxel(dst_v, pos, dst_channel);
 				}
 			}
 		}
