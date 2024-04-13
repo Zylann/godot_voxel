@@ -135,6 +135,7 @@ public:
 
 	void compress_uniform_channels();
 	Compression get_channel_compression(int channel_index) const;
+	void decompress_channel(int channel_index);
 
 	void downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const;
 

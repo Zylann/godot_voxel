@@ -105,6 +105,11 @@ VoxelBuffer::Compression VoxelBuffer::get_channel_compression(int channel_index)
 	return VoxelBuffer::Compression(_buffer->get_channel_compression(channel_index));
 }
 
+void VoxelBuffer::decompress_channel(int channel_index) {
+	ERR_FAIL_INDEX(channel_index, MAX_CHANNELS);
+	return _buffer->decompress_channel(channel_index);
+}
+
 void VoxelBuffer::downscale_to(Ref<VoxelBuffer> dst, Vector3i src_min, Vector3i src_max, Vector3i dst_min) const {
 	ZN_DSTACK();
 	ERR_FAIL_COND(dst.is_null());
@@ -594,6 +599,8 @@ void VoxelBuffer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("optimize"), &VoxelBuffer::_b_deprecated_optimize);
 	ClassDB::bind_method(D_METHOD("compress_uniform_channels"), &VoxelBuffer::compress_uniform_channels);
 	ClassDB::bind_method(D_METHOD("get_channel_compression", "channel"), &VoxelBuffer::get_channel_compression);
+	ClassDB::bind_method(D_METHOD("decompress_channel", "channel"), &VoxelBuffer::decompress_channel);
+
 	ClassDB::bind_method(D_METHOD("remap_values", "channel", "map"), &VoxelBuffer::remap_values);
 
 	ClassDB::bind_method(D_METHOD("op_add_buffer_f", "other", "channel"), &VoxelBuffer::op_add_buffer_f);
