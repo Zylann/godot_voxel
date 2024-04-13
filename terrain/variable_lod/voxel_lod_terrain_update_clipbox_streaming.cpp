@@ -1765,6 +1765,17 @@ void process_loaded_mesh_blocks_trigger_visibility_changes( //
 	}
 }
 
+void filter_outputs(VoxelLodTerrainUpdateData::State &state) {
+	ZN_PROFILE_SCOPE();
+	// Naive cleanup of output commands. Not particularly optimized, but doesn't seem to take long on the profiler.
+	// Without this one, lod fading flickers due to redundant operations
+	for (VoxelLodTerrainUpdateData::Lod &lod : state.lods) {
+		unordered_remove_if(lod.mesh_blocks_to_drop_visual, [&lod](Vector3i bpos) { //
+			return contains(lod.mesh_blocks_to_unload, bpos);
+		});
+	}
+}
+
 } // namespace
 
 void process_clipbox_streaming( //
@@ -1818,6 +1829,8 @@ void process_clipbox_streaming( //
 	}
 
 	process_loaded_mesh_blocks_trigger_visibility_changes(state, lod_count);
+
+	filter_outputs(state);
 
 	// state.clipbox_streaming.viewer_pos_in_lod0_voxels_previous_update = viewer_pos_in_lod0_voxels;
 }
