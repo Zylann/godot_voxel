@@ -55,7 +55,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_block(
 	message_data.resize(4 * sizeof(int16_t) + result.data.size());
 
 	ByteSpanWithPosition mw_span(Span<uint8_t>(message_data.ptrw(), message_data.size()), 0);
-	MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 
 	mw.store_16(bpos.x);
 	mw.store_16(bpos.y);
@@ -97,7 +97,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	pba.resize(4 * sizeof(int32_t) + result.data.size());
 
 	ByteSpanWithPosition mw_span(Span<uint8_t>(pba.ptrw(), pba.size()), 0);
-	MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 
 	mw.store_32(voxel_box.position.x);
 	mw.store_32(voxel_box.position.y);
@@ -162,7 +162,7 @@ void VoxelTerrainMultiplayerSynchronizer::process() {
 		pba.resize(1 * sizeof(uint32_t) + size);
 
 		ByteSpanWithPosition mw_span(Span<uint8_t>(pba.ptrw(), pba.size()), 0);
-		MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+		MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 		mw.store_32(messages.size());
 
 		for (const DeferredBlockMessage &message : messages) {
@@ -186,7 +186,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_blocks(PackedByteArray mess
 	// print_line(String("Client: receive blocks data {1}").format(varray(data.size())));
 	//  print_data_hex(Span<const uint8_t>(data.ptr(), data.size()));
 
-	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANNESS_LITTLE_ENDIAN);
 
 	const unsigned int block_count = mr.get_32();
 
@@ -217,7 +217,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_terrain != nullptr);
 
-	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANNESS_LITTLE_ENDIAN);
 
 	Vector3i pos;
 	pos.x = int32_t(mr.get_32());
