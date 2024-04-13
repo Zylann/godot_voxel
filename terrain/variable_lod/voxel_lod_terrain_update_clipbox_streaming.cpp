@@ -1581,6 +1581,25 @@ void process_loaded_data_blocks_trigger_meshing( //
 // 	ofs.close();
 // }
 
+bool all_children_loaded(
+		const Vector3i parent_bpos, const VoxelLodTerrainUpdateData::Lod &lod, MeshBlockFeatureIndex feature_index) {
+	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
+		auto child_it = lod.mesh_map_state.map.find(child_bpos);
+		if (child_it == lod.mesh_map_state.map.end()) {
+			// Finding this in the mesh map would be weird due to subdivision rules. We don't expect a child
+			// to be missing, because every mesh block always has 8 children.
+			ZN_PRINT_ERROR("Didn't expect missing child");
+			return false;
+		}
+		const VoxelLodTerrainUpdateData::MeshBlockState &child = child_it->second;
+		if (!is_loaded(child, feature_index)) {
+			return false;
+		}
+	}
+	return true;
+}
+
 // Activates mesh blocks when they are loaded. Activates higher LODs and hides lower LODs when possible.
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
 void update_mesh_block_load( //
@@ -1620,69 +1639,49 @@ void update_mesh_block_load( //
 			}
 		}
 
-	} else {
-		// Not root
-		// We'll have to consider siblings since we can't activate only one at a time, it has to be all or none
+		return;
+	}
 
-		const Vector3i parent_bpos = bpos >> 1;
-		VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
+	// Not root
+	// We'll have to consider siblings since we can't activate only one at a time, it has to be all or none
 
-		auto parent_mesh_it = parent_lod.mesh_map_state.map.find(parent_bpos);
-		// if (parent_mesh_it == parent_lod.mesh_map_state.map.end()) {
-		// 	debug_dump_mesh_maps(state, lod_count);
-		// }
-		// The parent must exist because sliding boxes contain each other. Maybe in the future that won't always be true
-		// if a viewer has special behavior?
-		ZN_ASSERT_RETURN_MSG(parent_mesh_it != parent_lod.mesh_map_state.map.end(),
-				"Expected parent due to subdivision rules, bug?");
+	const Vector3i parent_bpos = bpos >> 1;
+	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
-		VoxelLodTerrainUpdateData::MeshBlockState &parent_mesh_block = parent_mesh_it->second;
+	auto parent_mesh_it = parent_lod.mesh_map_state.map.find(parent_bpos);
+	// if (parent_mesh_it == parent_lod.mesh_map_state.map.end()) {
+	// 	debug_dump_mesh_maps(state, lod_count);
+	// }
+	// The parent must exist because sliding boxes contain each other. Maybe in the future that won't always be true
+	// if a viewer has special behavior?
+	ZN_ASSERT_RETURN_MSG(
+			parent_mesh_it != parent_lod.mesh_map_state.map.end(), "Expected parent due to subdivision rules, bug?");
 
-		if (is_active(parent_mesh_block, feature_index)) {
-			bool all_siblings_loaded = true;
+	VoxelLodTerrainUpdateData::MeshBlockState &parent_mesh_block = parent_mesh_it->second;
 
-			// Test if all siblings are loaded
-			// TODO This needs to be optimized. Store a cache in parent?
+	if (is_active(parent_mesh_block, feature_index)) {
+		if (all_children_loaded(parent_bpos, lod, feature_index)) {
+			// Hide parent
+			set_inactive_hide(parent_mesh_block, feature_index, parent_lod, parent_bpos);
+
+			// Cancel deferred merge
+			set_pending_merge(parent_mesh_block, feature_index, false);
+
+			// Show siblings
 			for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
 				const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
 				auto sibling_it = lod.mesh_map_state.map.find(sibling_bpos);
-				if (sibling_it == lod.mesh_map_state.map.end()) {
-					// Finding this in the mesh map would be weird due to subdivision rules. We don't expect a sibling
-					// to be missing, because every mesh block always has 8 children.
-					ZN_PRINT_ERROR("Didn't expect missing sibling");
-					all_siblings_loaded = false;
-					break;
-				}
-				const VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
-				if (!is_loaded(sibling, feature_index)) {
-					all_siblings_loaded = false;
-					break;
-				}
-			}
+				VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
+				// TODO Optimize: if that sibling itself subdivides, it should not need to be made visible.
+				// Maybe make `update_mesh_block_load` return that info so we can avoid scheduling activation?
+				set_active(sibling, feature_index, lod, sibling_bpos);
 
-			if (all_siblings_loaded) {
-				// Hide parent
-				set_inactive_hide(parent_mesh_block, feature_index, parent_lod, parent_bpos);
-
-				// Cancel deferred merge
-				set_pending_merge(parent_mesh_block, feature_index, false);
-
-				// Show siblings
-				for (unsigned int sibling_index = 0; sibling_index < 8; ++sibling_index) {
-					const Vector3i sibling_bpos = get_child_position(parent_bpos, sibling_index);
-					auto sibling_it = lod.mesh_map_state.map.find(sibling_bpos);
-					VoxelLodTerrainUpdateData::MeshBlockState &sibling = sibling_it->second;
-					// TODO Optimize: if that sibling itself subdivides, it should not need to be made visible.
-					// Maybe make `update_mesh_block_load` return that info so we can avoid scheduling activation?
-					set_active(sibling, feature_index, lod, sibling_bpos);
-
-					if (lod_index > 0) {
-						// Check if children are loaded too
-						const unsigned int child_lod_index = lod_index - 1;
-						for (unsigned int child_index = 0; child_index < 8; ++child_index) {
-							const Vector3i child_bpos = get_child_position(sibling_bpos, child_index);
-							update_mesh_block_load(state, child_bpos, child_lod_index, lod_count, feature_index);
-						}
+				if (lod_index > 0) {
+					// Check if children are loaded too
+					const unsigned int child_lod_index = lod_index - 1;
+					for (unsigned int child_index = 0; child_index < 8; ++child_index) {
+						const Vector3i child_bpos = get_child_position(sibling_bpos, child_index);
+						update_mesh_block_load(state, child_bpos, child_lod_index, lod_count, feature_index);
 					}
 				}
 			}
