@@ -321,6 +321,9 @@ void VoxelEngine::process() {
 	ZN_PROFILE_PLOT("TimeSpread tasks", int64_t(_time_spread_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Threaded tasks", int64_t(_general_thread_pool.get_debug_remaining_tasks()));
+	ZN_PROFILE_PLOT("Objects", int64_t(ObjectDB::get_object_count()));
+	ZN_PROFILE_PLOT("ZN Std Allocator",
+			int64_t(StdDefaultAllocatorCounters::g_allocated - StdDefaultAllocatorCounters::g_deallocated));
 
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {
