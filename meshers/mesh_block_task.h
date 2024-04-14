@@ -76,13 +76,24 @@ private:
 	VoxelBuffer _voxels;
 	VoxelMesher::Output _surfaces_output;
 	Ref<Mesh> _mesh;
+	Ref<Mesh> _shadow_occluder_mesh;
 	StdVector<uint16_t> _mesh_material_indices; // Indexed by mesh surface
 	std::shared_ptr<DetailTextureOutput> _detail_textures;
 	StdVector<GenerateBlockGPUTaskResult> _gpu_generation_results;
 };
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		StdVector<uint16_t> &mesh_material_indices);
+// Builds a mesh resource from multiple surfaces data, and returns a mapping of where materials specified in the input
+// will be in the returned mesh. Empty surfaces won't be added to the mesh. If the mesh is totally empty, null will be
+// returned.
+Ref<ArrayMesh> build_mesh( //
+		Span<const VoxelMesher::Output::Surface> surfaces, //
+		Mesh::PrimitiveType primitive, //
+		int flags, //
+		StdVector<uint16_t> &mesh_material_indices //
+);
+
+// Builds a triangles mesh resource from a single surface. If the surface is empty, returns null.
+Ref<ArrayMesh> build_mesh(Array surface);
 
 } // namespace zylann::voxel
 

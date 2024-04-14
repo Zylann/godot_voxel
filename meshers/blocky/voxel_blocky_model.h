@@ -71,8 +71,10 @@ public:
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
 			unsigned int surface_count = 0;
-			// Cached information to check this case early
+			// Cached information to check this case early.
+			// Bits are indexed with the Cube::Side enum.
 			uint8_t empty_sides_mask = 0;
+			uint8_t full_sides_mask = 0;
 
 			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
 			// Side patterns are still determined based on a combination of all surfaces.

@@ -70,6 +70,8 @@ public:
 		};
 		CollisionSurface collision_surface;
 
+		Array shadow_occluder;
+
 		// May be used to store extra information needed in shader to render the mesh properly
 		// (currently used only by the cubes mesher when baking colors)
 		Ref<Image> atlas_image;

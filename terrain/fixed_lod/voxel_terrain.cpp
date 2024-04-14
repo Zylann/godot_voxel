@@ -1779,10 +1779,12 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	Ref<ArrayMesh> mesh;
+	Ref<Mesh> shadow_occluder_mesh;
 	StdVector<uint16_t> material_indices;
 	if (ob.has_mesh_resource) {
 		// The mesh was already built as part of the threaded task
 		mesh = ob.mesh;
+		shadow_occluder_mesh = ob.shadow_occluder_mesh;
 		// It can be empty
 		material_indices = std::move(ob.mesh_material_indices);
 	} else {
@@ -1790,6 +1792,7 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		material_indices.clear();
 		mesh = build_mesh(to_span_const(ob.surfaces.surfaces), ob.surfaces.primitive_type, ob.surfaces.mesh_flags,
 				material_indices);
+		shadow_occluder_mesh = build_mesh(ob.surfaces.shadow_occluder);
 	}
 	if (mesh.is_valid()) {
 		const unsigned int surface_count = mesh->get_surface_count();
@@ -1815,8 +1818,13 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 		}
 	}
 
-	block->set_mesh(
-			mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()), get_render_layers_mask());
+	block->set_mesh( //
+			mesh, //
+			get_gi_mode(), //
+			static_cast<RenderingServer::ShadowCastingSetting>(get_shadow_casting()), //
+			get_render_layers_mask(), //
+			shadow_occluder_mesh //
+	);
 
 	if (_material_override.is_valid()) {
 		block->set_material_override(_material_override);
