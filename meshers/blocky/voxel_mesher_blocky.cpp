@@ -57,10 +57,15 @@ StdVector<int> &get_tls_index_offsets() {
 } // namespace
 
 template <typename Type_T>
-void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
-		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
-		const Vector3i block_size, const VoxelBlockyLibraryBase::BakedData &library, bool bake_occlusion,
-		float baked_occlusion_darkness) {
+void generate_blocky_mesh( //
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
+		VoxelMesher::Output::CollisionSurface *collision_surface, //
+		const Span<const Type_T> type_buffer, //
+		const Vector3i block_size, //
+		const VoxelBlockyLibraryBase::BakedData &library, //
+		bool bake_occlusion, //
+		float baked_occlusion_darkness //
+) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
 	// changing makes no difference, we could use a function pointer or switch inside instead to reduce executable size.
@@ -452,7 +457,7 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -515,8 +520,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		return;
 	}
 
-	Span<uint8_t> raw_channel;
-	if (!voxels.get_channel_raw(channel, raw_channel)) {
+	Span<const uint8_t> raw_channel;
+	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -544,14 +549,27 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface, raw_channel, block_size,
-						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel, //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface,
-						raw_channel.reinterpret_cast_to<uint16_t>(), block_size, library_baked_data,
-						params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel.reinterpret_cast_to<const uint16_t>(), //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			default:
