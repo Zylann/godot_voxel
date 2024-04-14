@@ -6,7 +6,7 @@ Some custom formats used in this engine can be wrapped in a compressed container
 Specification
 ----------------
 
-### Endianess
+### Endianness
 
 By default, little-endian.
 

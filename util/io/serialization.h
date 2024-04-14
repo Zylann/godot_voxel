@@ -7,18 +7,18 @@
 
 namespace zylann {
 
-enum Endianess { //
-	ENDIANESS_BIG_ENDIAN,
-	ENDIANESS_LITTLE_ENDIAN
+enum Endianness { //
+	ENDIANNESS_BIG_ENDIAN,
+	ENDIANNESS_LITTLE_ENDIAN
 };
 
-inline Endianess get_platform_endianess() {
+inline Endianness get_platform_endianness() {
 	// https://stackoverflow.com/questions/4181951/how-to-check-whether-a-system-is-big-endian-or-little-endian#4181991
 	const int n = 1;
 	if (*(char *)&n == 1) {
-		return ENDIANESS_LITTLE_ENDIAN;
+		return ENDIANNESS_LITTLE_ENDIAN;
 	}
-	return ENDIANESS_BIG_ENDIAN;
+	return ENDIANNESS_BIG_ENDIAN;
 	// TODO In C++20 we'll be able to use std::endian
 }
 
@@ -29,16 +29,16 @@ struct MemoryWriterTemplate {
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	Endianess endianess = ENDIANESS_BIG_ENDIAN;
+	Endianness endianness = ENDIANNESS_BIG_ENDIAN;
 
-	MemoryWriterTemplate(Container_T &p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
+	MemoryWriterTemplate(Container_T &p_data, Endianness p_endianness) : data(p_data), endianness(p_endianness) {}
 
 	inline void store_8(uint8_t v) {
 		data.push_back(v);
 	}
 
 	inline void store_16(uint16_t v) {
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			data.push_back(v >> 8);
 			data.push_back(v & 0xff);
 		} else {
@@ -48,7 +48,7 @@ struct MemoryWriterTemplate {
 	}
 
 	inline void store_32(uint32_t v) {
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			data.push_back(v >> 24);
 			data.push_back(v >> 16);
 			data.push_back(v >> 8);
@@ -62,7 +62,7 @@ struct MemoryWriterTemplate {
 	}
 
 	inline void store_64(uint64_t v) {
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			data.push_back(v >> 56);
 			data.push_back(v >> 48);
 			data.push_back(v >> 40);
@@ -135,9 +135,9 @@ struct MemoryReader {
 	Span<const uint8_t> data;
 	size_t pos = 0;
 	// Using network-order by default
-	Endianess endianess = ENDIANESS_BIG_ENDIAN;
+	Endianness endianness = ENDIANNESS_BIG_ENDIAN;
 
-	MemoryReader(Span<const uint8_t> p_data, Endianess p_endianess) : data(p_data), endianess(p_endianess) {}
+	MemoryReader(Span<const uint8_t> p_data, Endianness p_endianness) : data(p_data), endianness(p_endianness) {}
 
 	inline uint8_t get_8() {
 		// ERR_FAIL_COND_V(pos >= data.size(), 0);
@@ -147,7 +147,7 @@ struct MemoryReader {
 	inline uint16_t get_16() {
 		// ERR_FAIL_COND_V(pos + 1 >= data.size(), 0);
 		uint16_t v;
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			v = (static_cast<uint16_t>(data[pos]) << 8) | data[pos + 1];
 		} else {
 			v = (static_cast<uint16_t>(data[pos]) | static_cast<uint16_t>(data[pos + 1]) << 8);
@@ -159,7 +159,7 @@ struct MemoryReader {
 	inline uint32_t get_32() {
 		// ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint32_t v;
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			v = //
 					(static_cast<uint32_t>(data[pos]) << 24) | //
 					(static_cast<uint32_t>(data[pos + 1]) << 16) | //
@@ -177,7 +177,7 @@ struct MemoryReader {
 	inline uint64_t get_64() {
 		// ERR_FAIL_COND_V(pos + 3 >= data.size(), 0);
 		uint64_t v;
-		if (endianess == ENDIANESS_BIG_ENDIAN) {
+		if (endianness == ENDIANNESS_BIG_ENDIAN) {
 			v = //
 					(static_cast<uint64_t>(data[pos]) << 56) | //
 					(static_cast<uint64_t>(data[pos + 1]) << 48) | //
