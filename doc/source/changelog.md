@@ -61,6 +61,7 @@ Primarily developped with Godot 4.2.
         - Fixed wrapping error with the `Image` node in negative coordinates
         - Fixed wrong behavior and crashes when generating chunks large enough to trigger the "subdivision" feature
     - `VoxelInstanceLibraryMultimeshItem`: fixed error when using "Update From Scene" and trying to undo/redo it
+    - `VoxelStreamSQLite`: fixed crash when using `set_key_cache_enabled(true)`
     - `VoxelTool`: fixed `paste` wrongly printing an error despite working fine
     - `VoxelToolLodTerrain`: 
         - `do_point` and `set_voxel` were not always updating meshes near chunk borders, leaving holes
