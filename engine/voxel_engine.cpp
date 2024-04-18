@@ -215,14 +215,14 @@ void VoxelEngine::set_viewer_position(ViewerID viewer_id, Vector3 position) {
 	viewer.world_position = position;
 }
 
-void VoxelEngine::set_viewer_distance(ViewerID viewer_id, unsigned int distance) {
+void VoxelEngine::set_viewer_distances(ViewerID viewer_id, Viewer::Distances distances) {
 	Viewer &viewer = _world.viewers.get(viewer_id);
-	viewer.view_distance = distance;
+	viewer.view_distances = distances;
 }
 
-unsigned int VoxelEngine::get_viewer_distance(ViewerID viewer_id) const {
+VoxelEngine::Viewer::Distances VoxelEngine::get_viewer_distances(ViewerID viewer_id) const {
 	const Viewer &viewer = _world.viewers.get(viewer_id);
-	return viewer.view_distance;
+	return viewer.view_distances;
 }
 
 void VoxelEngine::set_viewer_requires_visuals(ViewerID viewer_id, bool enabled) {
@@ -367,9 +367,7 @@ void VoxelEngine::sync_viewers_task_priority_data() {
 	unsigned int max_distance = 0;
 	_world.viewers.for_each_value([&i, &max_distance, &dep](Viewer &viewer) {
 		dep.viewers[i] = to_vec3f(viewer.world_position);
-		if (viewer.view_distance > max_distance) {
-			max_distance = viewer.view_distance;
-		}
+		max_distance = math::max(max_distance, viewer.view_distances.max());
 		++i;
 	});
 

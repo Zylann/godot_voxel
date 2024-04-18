@@ -1156,7 +1156,8 @@ void VoxelTerrain::process_viewers() {
 				// Interpret removal as nullified view distance so the same code handling loading of blocks
 				// will be used to unload those viewed by this viewer.
 				// We'll actually remove unpaired viewers in a second pass.
-				p.state.view_distance_voxels = 0;
+				p.state.vertical_view_distance_voxels = 0;
+				p.state.horizontal_view_distance_voxels = 0;
 				// Also update boxes, they won't be updated since the viewer has been removed.
 				// Assign prev state, otherwise in some cases resetting boxes would make them equal to prev state,
 				// therefore causing no unload
@@ -1201,11 +1202,17 @@ void VoxelTerrain::process_viewers() {
 				paired_viewer.prev_state = paired_viewer.state;
 				PairedViewer::State &state = paired_viewer.state;
 
-				const unsigned int view_distance_voxels =
-						static_cast<unsigned int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
+				const unsigned int view_distance_voxels_h = static_cast<unsigned int>(
+						static_cast<float>(viewer.view_distances.horizontal) * view_distance_scale);
+				const unsigned int view_distance_voxels_v = static_cast<unsigned int>(
+						static_cast<float>(viewer.view_distances.vertical) * view_distance_scale);
+
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
-				state.view_distance_voxels = math::min(view_distance_voxels, self._max_view_distance_voxels);
+				state.horizontal_view_distance_voxels =
+						math::min(view_distance_voxels_h, self._max_view_distance_voxels);
+				state.vertical_view_distance_voxels = math::min(view_distance_voxels_v, self._max_view_distance_voxels);
+
 				state.local_position_voxels = math::floor_to_int(local_position);
 				state.requires_collisions = VoxelEngine::get_singleton().is_viewer_requiring_collisions(viewer_id);
 				state.requires_meshes =
@@ -1216,32 +1223,40 @@ void VoxelTerrain::process_viewers() {
 				const int data_block_size = self.get_data_block_size();
 				const int mesh_block_size = self.get_mesh_block_size();
 
-				int view_distance_data_blocks;
+				int view_distance_data_blocks_h;
+				int view_distance_data_blocks_v;
 				Vector3i data_block_pos;
 
 				if (state.requires_meshes || state.requires_collisions) {
-					const int view_distance_mesh_blocks = math::ceildiv(state.view_distance_voxels, mesh_block_size);
+					const int view_distance_mesh_blocks_h =
+							math::ceildiv(state.horizontal_view_distance_voxels, mesh_block_size);
+					const int view_distance_mesh_blocks_v =
+							math::ceildiv(state.vertical_view_distance_voxels, mesh_block_size);
+
 					const int render_to_data_factor = (mesh_block_size / data_block_size);
 					const Vector3i mesh_block_pos = math::floordiv(state.local_position_voxels, mesh_block_size);
 
 					// Adding one block of padding because meshing requires neighbors
-					view_distance_data_blocks = view_distance_mesh_blocks * render_to_data_factor + 1;
+					view_distance_data_blocks_h = view_distance_mesh_blocks_h * render_to_data_factor + 1;
+					view_distance_data_blocks_v = view_distance_mesh_blocks_v * render_to_data_factor + 1;
 
 					data_block_pos = mesh_block_pos * render_to_data_factor;
-					state.mesh_box =
-							Box3i::from_center_extents(mesh_block_pos, Vector3iUtil::create(view_distance_mesh_blocks))
-									.clipped(bounds_in_mesh_blocks);
+					state.mesh_box = Box3i::from_center_extents(mesh_block_pos,
+							Vector3i(view_distance_mesh_blocks_h, view_distance_mesh_blocks_v,
+									view_distance_mesh_blocks_h))
+											 .clipped(bounds_in_mesh_blocks);
 
 				} else {
-					view_distance_data_blocks = math::ceildiv(state.view_distance_voxels, data_block_size);
+					view_distance_data_blocks_h = math::ceildiv(state.horizontal_view_distance_voxels, data_block_size);
+					view_distance_data_blocks_v = math::ceildiv(state.vertical_view_distance_voxels, data_block_size);
 
 					data_block_pos = math::floordiv(state.local_position_voxels, data_block_size);
 					state.mesh_box = Box3i();
 				}
 
-				state.data_box =
-						Box3i::from_center_extents(data_block_pos, Vector3iUtil::create(view_distance_data_blocks))
-								.clipped(bounds_in_data_blocks);
+				state.data_box = Box3i::from_center_extents(data_block_pos,
+						Vector3i(view_distance_data_blocks_h, view_distance_data_blocks_v, view_distance_data_blocks_h))
+										 .clipped(bounds_in_data_blocks);
 			}
 		};
 

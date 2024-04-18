@@ -258,6 +258,10 @@ struct VoxelLodTerrainUpdateData {
 
 	// Paired viewers are VoxelViewers which intersect with the boundaries of the volume
 	struct PairedViewer {
+		struct Distances {
+			unsigned int horizontal = 0;
+			unsigned int vertical = 0;
+		};
 		struct State {
 			Vector3i local_position_voxels;
 
@@ -265,7 +269,7 @@ struct VoxelLodTerrainUpdateData {
 			FixedArray<Box3i, constants::MAX_LOD> data_box_per_lod;
 			FixedArray<Box3i, constants::MAX_LOD> mesh_box_per_lod;
 
-			int view_distance_voxels = 0;
+			Distances view_distance_voxels;
 			bool requires_collisions = false;
 			bool requires_visuals = false;
 		};

@@ -21,6 +21,10 @@ inline Vector2f lerp(const Vector2f a, const Vector2f b, const float t) {
 	return Vector2f(Math::lerp(a.x, b.x, t), Math::lerp(a.y, b.y, t));
 }
 
+inline bool is_equal_approx(const Vector2f a, const Vector2f b) {
+	return Math::is_equal_approx(a.x, b.x) && Math::is_equal_approx(a.y, b.y);
+}
+
 } // namespace math
 } // namespace zylann
 

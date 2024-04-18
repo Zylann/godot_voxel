@@ -106,6 +106,14 @@ public:
 	};
 
 	struct Viewer {
+		struct Distances {
+			unsigned int horizontal = 128;
+			unsigned int vertical = 128;
+
+			inline unsigned int max() const {
+				return math::max(horizontal, vertical);
+			}
+		};
 		// enum Flags {
 		// 	FLAG_DATA = 1,
 		// 	FLAG_VISUAL = 2,
@@ -113,7 +121,7 @@ public:
 		// 	FLAGS_COUNT = 3
 		// };
 		Vector3 world_position;
-		unsigned int view_distance = 128;
+		Distances view_distances;
 		bool require_collisions = true;
 		bool require_visuals = true;
 		bool requires_data_block_notifications = false;
@@ -145,8 +153,8 @@ public:
 	ViewerID add_viewer();
 	void remove_viewer(ViewerID viewer_id);
 	void set_viewer_position(ViewerID viewer_id, Vector3 position);
-	void set_viewer_distance(ViewerID viewer_id, unsigned int distance);
-	unsigned int get_viewer_distance(ViewerID viewer_id) const;
+	void set_viewer_distances(ViewerID viewer_id, Viewer::Distances distances);
+	Viewer::Distances get_viewer_distances(ViewerID viewer_id) const;
 	void set_viewer_requires_visuals(ViewerID viewer_id, bool enabled);
 	bool is_viewer_requiring_visuals(ViewerID viewer_id) const;
 	void set_viewer_requires_collisions(ViewerID viewer_id, bool enabled);
