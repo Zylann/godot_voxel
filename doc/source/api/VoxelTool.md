@@ -17,47 +17,48 @@ By default, if an operation overlaps a non-editable area (if not loaded yet for 
 ## Properties: 
 
 
-Type     | Name                                   | Default 
--------- | -------------------------------------- | --------
-`int`    | [channel](#i_channel)                  |         
-`int`    | [eraser_value](#i_eraser_value)        |         
-`int`    | [mode](#i_mode)                        |         
-`float`  | [sdf_scale](#i_sdf_scale)              |         
-`float`  | [sdf_strength](#i_sdf_strength)        |         
-`float`  | [texture_falloff](#i_texture_falloff)  |         
-`int`    | [texture_index](#i_texture_index)      |         
-`float`  | [texture_opacity](#i_texture_opacity)  |         
-`int`    | [value](#i_value)                      |         
+Type                                                                      | Name                                   | Default 
+------------------------------------------------------------------------- | -------------------------------------- | --------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [channel](#i_channel)                  |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [eraser_value](#i_eraser_value)        |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [mode](#i_mode)                        |         
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_scale](#i_sdf_scale)              |         
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [sdf_strength](#i_sdf_strength)        |         
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [texture_falloff](#i_texture_falloff)  |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [texture_index](#i_texture_index)      |         
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)  | [texture_opacity](#i_texture_opacity)  |         
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)      | [value](#i_value)                      |         
 <p></p>
 
 ## Methods: 
 
 
-Return                                                                          | Signature                                                                                                                                                                                                                                                                                                                                                                                                                     
-------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16](#i_color_to_u16) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) static                                                                                                                                                                                                                                                                                                     
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16_weights](#i_color_to_u16_weights) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                             
-[void](#)                                                                       | [copy](#i_copy) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                      
-[void](#)                                                                       | [do_box](#i_do_box) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end )                                                                                                                                                                                                                              
-[void](#)                                                                       | [do_path](#i_do_path) ( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii )                                                                                                                                                                                 
-[void](#)                                                                       | [do_point](#i_do_point) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                
-[void](#)                                                                       | [do_sphere](#i_do_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                                                            
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_voxel](#i_get_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                              
-[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [get_voxel_f](#i_get_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                          
-[Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)    | [get_voxel_metadata](#i_get_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) const                                                                                                                                                                                                                                                                                      
-[void](#)                                                                       | [grow_sphere](#i_grow_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength )                                                                                                                       
-[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_area_editable](#i_is_area_editable) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) const                                                                                                                                                                                                                                                                                                  
-[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)        | [normalize_color](#i_normalize_color) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                       
-[void](#)                                                                       | [paste](#i_paste) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                    
-[void](#)                                                                       | [paste_masked](#i_paste_masked) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_value )  
-[VoxelRaycastResult](VoxelRaycastResult.md)                                     | [raycast](#i_raycast) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 )                             
-[void](#)                                                                       | [set_voxel](#i_set_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v )                                                                                                                                                                                                                                      
-[void](#)                                                                       | [set_voxel_f](#i_set_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v )                                                                                                                                                                                                                              
-[void](#)                                                                       | [set_voxel_metadata](#i_set_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta )                                                                                                                                                                                                         
-[void](#)                                                                       | [smooth_sphere](#i_smooth_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius )                                                                                                                    
-[Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)  | [u16_indices_to_vec4i](#i_u16_indices_to_vec4i) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                 
-[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)        | [u16_weights_to_color](#i_u16_weights_to_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                 
-[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [vec4i_to_u16_indices](#i_vec4i_to_u16_indices) ( [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                       
+Return                                                                          | Signature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16](#i_color_to_u16) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [color_to_u16_weights](#i_color_to_u16_weights) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+[void](#)                                                                       | [copy](#i_copy) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                                                                                                                                                                                                                                                                
+[void](#)                                                                       | [do_box](#i_do_box) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end )                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+[void](#)                                                                       | [do_path](#i_do_path) ( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii )                                                                                                                                                                                                                                                                                                                                                                                                                           
+[void](#)                                                                       | [do_point](#i_do_point) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+[void](#)                                                                       | [do_sphere](#i_do_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius )                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [get_voxel](#i_get_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+[float](https://docs.godotengine.org/en/stable/classes/class_float.html)        | [get_voxel_f](#i_get_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+[Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)    | [get_voxel_metadata](#i_get_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) const                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+[void](#)                                                                       | [grow_sphere](#i_grow_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength )                                                                                                                                                                                                                                                                                                                                                                 
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)          | [is_area_editable](#i_is_area_editable) ( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) const                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)        | [normalize_color](#i_normalize_color) ( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+[void](#)                                                                       | [paste](#i_paste) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask )                                                                                                                                                                                                                                                                                                                                                                                                                              
+[void](#)                                                                       | [paste_masked](#i_paste_masked) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_value )                                                                                                                                                                                                                                            
+[void](#)                                                                       | [paste_masked_writable_list](#i_paste_masked_writable_list) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_mask_channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) dst_writable_list )  
+[VoxelRaycastResult](VoxelRaycastResult.md)                                     | [raycast](#i_raycast) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 )                                                                                                                                                                                                                                                                       
+[void](#)                                                                       | [set_voxel](#i_set_voxel) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v )                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+[void](#)                                                                       | [set_voxel_f](#i_set_voxel_f) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v )                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+[void](#)                                                                       | [set_voxel_metadata](#i_set_voxel_metadata) ( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta )                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+[void](#)                                                                       | [smooth_sphere](#i_smooth_sphere) ( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius )                                                                                                                                                                                                                                                                                                                                                              
+[Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)  | [u16_indices_to_vec4i](#i_u16_indices_to_vec4i) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+[Color](https://docs.godotengine.org/en/stable/classes/class_color.html)        | [u16_weights_to_color](#i_u16_weights_to_color) ( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)            | [vec4i_to_u16_indices](#i_vec4i_to_u16_indices) ( [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) _unnamed_arg0 ) static                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 <p></p>
 
 ## Enumerations: 
@@ -72,52 +73,56 @@ enum **Mode**:
 
 ## Property Descriptions
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel**
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_channel"></span> **channel**
 
 Set which channel will be edited. When used on a terrain node, it will default to the first available channel, based on the stream and generator.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value**
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_eraser_value"></span> **eraser_value**
 
 Sets which value will be used to erase voxels when editing the [VoxelBuffer.CHANNEL_TYPE](VoxelBuffer.md#i_CHANNEL_TYPE) channel in [VoxelTool.MODE_REMOVE](VoxelTool.md#i_MODE_REMOVE) mode.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_mode"></span> **mode**
 
 Sets how `do_*` functions will behave. This may vary depending on the channel.
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_scale"></span> **sdf_scale**
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_scale"></span> **sdf_scale**
 
 When working with smooth voxels, applies a scale to the signed distance field. A high scale (1 or higher) will tend to produce blocky results, and a low scale (below 1, but not too close to zero) will tend to be smoother.
 
 
 This is related to the [VoxelBuffer.Depth](VoxelBuffer.md#enumerations) configuration on voxels. For 8-bit and 16-bit, there is a limited range of values the Signed Distance Field can take, and by default it is clamped to -1..1, so the gradient can only range across 2 voxels. But when LOD is used, it is better to stretch that range over a longer distance, and this is achieved by scaling SDF values.
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_sdf_strength"></span> **sdf_strength**
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_falloff"></span> **texture_falloff**
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_falloff"></span> **texture_falloff**
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texture_index"></span> **texture_index**
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_texture_index"></span> **texture_index**
 
+*(This property has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_opacity"></span> **texture_opacity**
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_texture_opacity"></span> **texture_opacity**
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value**
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_value"></span> **value**
 
 Sets which voxel value will be used. This is not relevant when editing [VoxelBuffer.CHANNEL_SDF](VoxelBuffer.md#i_CHANNEL_SDF).
 
 ## Method Descriptions
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_to_u16"></span> **color_to_u16**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_to_u16"></span> **color_to_u16**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) color ) 
 
 Encodes normalized 4-float color into 16-bit integer data. It is used with the COLOR channel, in cases where the channel represents direct colors (without using a palette).
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_to_u16_weights"></span> **color_to_u16_weights**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_color_to_u16_weights"></span> **color_to_u16_weights**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) 
 
 Encodes normalized 4-float color into 16-bit integer data, for use with the WEIGHTS channel.
 
-- [void](#)<span id="i_copy"></span> **copy**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
+### [void](#)<span id="i_copy"></span> **copy**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) src_pos, [VoxelBuffer](VoxelBuffer.md) dst_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
 
 Copies voxels in a box and stores them in the passed buffer.
 
@@ -125,29 +130,35 @@ Copies voxels in a box and stores them in the passed buffer.
 
 `channels_mask` is a bitmask where each bit tells which channels will be copied. Example: `1 << VoxelBuffer.CHANNEL_SDF` to get only SDF data. Use `0xff` if you want them all.
 
-- [void](#)<span id="i_do_box"></span> **do_box**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end ) 
+### [void](#)<span id="i_do_box"></span> **do_box**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) begin, [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) end ) 
 
 Operate on a rectangular cuboid section of the terrain. `begin` and `end` are inclusive. Choose operation and which voxel to use by setting `value` and `mode` before calling this function.
 
-- [void](#)<span id="i_do_path"></span> **do_path**( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii ) 
+### [void](#)<span id="i_do_path"></span> **do_path**( [PackedVector3Array](https://docs.godotengine.org/en/stable/classes/class_packedvector3array.html) points, [PackedFloat32Array](https://docs.godotengine.org/en/stable/classes/class_packedfloat32array.html) radii ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_do_point"></span> **do_point**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
+### [void](#)<span id="i_do_point"></span> **do_point**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_do_sphere"></span> **do_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius ) 
+### [void](#)<span id="i_do_sphere"></span> **do_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) radius ) 
 
+*(This method has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel"></span> **get_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_voxel"></span> **get_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
+*(This method has no documentation)*
 
-- [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_voxel_f"></span> **get_voxel_f**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
+### [float](https://docs.godotengine.org/en/stable/classes/class_float.html)<span id="i_get_voxel_f"></span> **get_voxel_f**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
+*(This method has no documentation)*
 
-- [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_voxel_metadata"></span> **get_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
+### [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html)<span id="i_get_voxel_metadata"></span> **get_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_grow_sphere"></span> **grow_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength ) 
+### [void](#)<span id="i_grow_sphere"></span> **grow_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) strength ) 
 
 Adds/removes (depending on `mode`) a value to/from all voxels within a sphere. Added/removed value will be equal to `strength` at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
 
@@ -155,19 +166,21 @@ Adds/removes (depending on `mode`) a value to/from all voxels within a sphere. A
 
 `sphere_radius` radius of a sphere from the `center` where voxel values will be affected. Should be greater than zero.
 
-`strength` value that controls maximal value that will be added/removed to/from voxels. Should be in range [0, 1]. Suggested to keep value same as `sdf_scale`.
+`strength` value that controls maximal value that will be added/removed to/from voxels. Suggested range is [0, 10].
 
 Note 1: This is currently implemented only for terrain that uses SDF data (smooth voxels).
 
 Note 2: This is meant to be analogous to Surface tool from Unreal Engine Voxel Plugin.
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_editable"></span> **is_area_editable**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_area_editable"></span> **is_area_editable**( [AABB](https://docs.godotengine.org/en/stable/classes/class_aabb.html) box ) 
 
+*(This method has no documentation)*
 
-- [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_normalize_color"></span> **normalize_color**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) 
+### [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_normalize_color"></span> **normalize_color**( [Color](https://docs.godotengine.org/en/stable/classes/class_color.html) _unnamed_arg0 ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_paste"></span> **paste**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
+### [void](#)<span id="i_paste"></span> **paste**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask ) 
 
 Paste voxels in a box from the given buffer at a specific location.
 
@@ -175,7 +188,7 @@ Paste voxels in a box from the given buffer at a specific location.
 
 `channels_mask` is a bitmask where each bit tells which channels will be modified. Example: `1 << VoxelBuffer.CHANNEL_SDF` only write SDF data. Use `0xff` if you want them all.
 
-- [void](#)<span id="i_paste_masked"></span> **paste_masked**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_value ) 
+### [void](#)<span id="i_paste_masked"></span> **paste_masked**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) dst_pos, [VoxelBuffer](VoxelBuffer.md) src_buffer, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) mask_value ) 
 
 Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel will not be pasted.
 
@@ -183,11 +196,27 @@ Paste voxels in a box from the given buffer at a specific location. Voxels havin
 
 `channels_mask` is a bitmask where each bit tells which channels will be modified. Example: `1 << VoxelBuffer.CHANNEL_SDF` only write SDF data. Use `0xff` if you want them all.
 
-`src_mask_channel` channel that will be used to lookup mask values.
+`src_mask_channel` channel from the source buffer that will be used to lookup mask values.
 
-`src_mask_value` if voxels have this value in the channel specified for masking, then they won't be pasted.
+`src_mask_value` if voxels of the source buffer have this value in the channel specified for masking, then they won't be pasted.
 
-- [VoxelRaycastResult](VoxelRaycastResult.md)<span id="i_raycast"></span> **raycast**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 ) 
+### [void](#)<span id="i_paste_masked_writable_list"></span> **paste_masked_writable_list**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) position, [VoxelBuffer](VoxelBuffer.md) voxels, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) channels_mask, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_channel, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) src_mask_value, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) dst_mask_channel, [PackedInt32Array](https://docs.godotengine.org/en/stable/classes/class_packedint32array.html) dst_writable_list ) 
+
+Paste voxels in a box from the given buffer at a specific location. Voxels having a specific value in a mask channel of the source buffer will not be pasted, and existing voxels at the destination will only be modified if they have specific values.
+
+`dst_pos` is the lowest corner of the box, and its size is determined by the size of `src_buffer`.
+
+`channels_mask` is a bitmask where each bit tells which channels will be modified. Example: `1 << VoxelBuffer.CHANNEL_SDF` only write SDF data. Use `0xff` if you want them all.
+
+`src_mask_channel` channel from the source buffer that will be used to lookup mask values.
+
+`src_mask_value` if voxels of the source buffer have this value in the channel specified for masking, then they won't be pasted.
+
+`dst_mask_channel` channel from the destination that will be used to select writable voxels.
+
+`dst_writable_list` List of values the destination voxels must have in order to be written to. Values in that list must be between 0 and 65535. A very large amount of values can also affect performance.
+
+### [VoxelRaycastResult](VoxelRaycastResult.md)<span id="i_raycast"></span> **raycast**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) origin, [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) direction, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) max_distance=10.0, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) collision_mask=4294967295 ) 
 
 Runs a voxel-based raycast to find the first hit from an origin and a direction.
 
@@ -197,18 +226,19 @@ This is useful when colliders cannot be relied upon. It might also be faster (at
 
 `collision_mask` is currently only used with blocky voxels. It is combined with [VoxelBlockyModel.collision_mask](VoxelBlockyModel.md#i_collision_mask) to decide which voxel types the ray can collide with.
 
-- [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
+### [void](#)<span id="i_set_voxel"></span> **set_voxel**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) v ) 
 
 Sets the raw integer value of a specific voxel on the current channel.
 
-- [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v ) 
+### [void](#)<span id="i_set_voxel_f"></span> **set_voxel_f**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) v ) 
 
-Sets the normalized decimal value of a specific voxel. This should preferably be used when modifying voxels on the SDF channel.
+Sets the signed distance field (SDF) value a specific voxel. This should preferably be used on the SDF channel.
 
-- [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
+### [void](#)<span id="i_set_voxel_metadata"></span> **set_voxel_metadata**( [Vector3i](https://docs.godotengine.org/en/stable/classes/class_vector3i.html) pos, [Variant](https://docs.godotengine.org/en/stable/classes/class_variant.html) meta ) 
 
+*(This method has no documentation)*
 
-- [void](#)<span id="i_smooth_sphere"></span> **smooth_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius ) 
+### [void](#)<span id="i_smooth_sphere"></span> **smooth_sphere**( [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html) sphere_center, [float](https://docs.godotengine.org/en/stable/classes/class_float.html) sphere_radius, [int](https://docs.godotengine.org/en/stable/classes/class_int.html) blur_radius ) 
 
 Smoothens out terrain by performing box blur in a spherical area. Strength will be maximal at the center of the sphere, and decreases linearly to zero at the surface of the sphere. Voxels outside the sphere will not be affected.
 
@@ -222,16 +252,16 @@ Note 1: This is currently implemented only for terrain that uses SDF data (smoot
 
 Note 2: Beware of using high `sphere_radius` and high `blur_radius` as the performance can drop quickly if this is called 60 times a second.
 
-- [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)<span id="i_u16_indices_to_vec4i"></span> **u16_indices_to_vec4i**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
+### [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html)<span id="i_u16_indices_to_vec4i"></span> **u16_indices_to_vec4i**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
 
 Decodes raw voxel integer data from the INDICES channel into a 4-integer vector.
 
-- [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_u16_weights_to_color"></span> **u16_weights_to_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
+### [Color](https://docs.godotengine.org/en/stable/classes/class_color.html)<span id="i_u16_weights_to_color"></span> **u16_weights_to_color**( [int](https://docs.godotengine.org/en/stable/classes/class_int.html) _unnamed_arg0 ) 
 
 Decodes raw voxel integer data from the WEIGHTS channel into a normalized 4-float color.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_vec4i_to_u16_indices"></span> **vec4i_to_u16_indices**( [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) _unnamed_arg0 ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_vec4i_to_u16_indices"></span> **vec4i_to_u16_indices**( [Vector4i](https://docs.godotengine.org/en/stable/classes/class_vector4i.html) _unnamed_arg0 ) 
 
 Encodes a 4-integer vector into 16-bit integer voxel data, for use in the INDICES channel.
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 06, 2024_

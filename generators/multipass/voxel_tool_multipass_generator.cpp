@@ -1,5 +1,8 @@
 #include "voxel_tool_multipass_generator.h"
 #include "../../edition/funcs.h"
+#include "../../util/containers/dynamic_bitset.h"
+#include "../../util/godot/core/packed_arrays.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -68,6 +71,13 @@ const VoxelBuffer *get_pass_input_block_r(void *ctx, Vector3i bpos) {
 	return get_pass_input_block_w(ctx, bpos);
 }
 
+struct GetPassInputBlock {
+	PassInput &pi;
+	VoxelBuffer *operator()(const Vector3i &bpos) const {
+		return get_pass_input_block(pi, bpos);
+	}
+};
+
 } // namespace
 
 void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
@@ -76,16 +86,51 @@ void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t c
 }
 
 void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
-	paste_to_chunked_storage(
-			src, pos, _block_size_po2, channels_mask, false, 0, 0, get_pass_input_block_w, &_pass_input);
+	paste_to_chunked_storage_tp(src, pos, _block_size_po2, channels_mask, //
+			GetPassInputBlock{ _pass_input }, //
+			paste_functors::Default());
 }
 
-void VoxelToolMultipassGenerator::paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
-		uint8_t mask_channel, uint64_t mask_value) {
+void VoxelToolMultipassGenerator::paste_masked( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t mask_channel, //
+		uint64_t mask_value //
+) {
 	ZN_ASSERT_RETURN(p_voxels.is_valid());
 	const VoxelBuffer &src = p_voxels->get_buffer();
-	paste_to_chunked_storage(src, pos, _block_size_po2, channels_mask, true, mask_channel, mask_value,
-			get_pass_input_block_w, &_pass_input);
+
+	paste_to_chunked_storage_tp(src, pos, _block_size_po2, channels_mask, //
+			GetPassInputBlock{ _pass_input }, //
+			paste_functors::SrcMasked{ mask_channel, mask_value } //
+	);
+}
+
+void VoxelToolMultipassGenerator::paste_masked_writable_list( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		PackedInt32Array dst_mask_values //
+) {
+	ZN_ASSERT_RETURN(p_voxels.is_valid());
+	ZN_ASSERT_RETURN(dst_mask_values.size() > 0);
+
+	const VoxelBuffer &src = p_voxels->get_buffer();
+
+	paste_to_chunked_storage_masked_writable_list(src, //
+			pos, //
+			_block_size_po2, //
+			channels_mask, //
+			GetPassInputBlock{ _pass_input }, //
+			src_mask_channel, //
+			src_mask_value, //
+			dst_mask_channel, //
+			to_span(dst_mask_values) //
+	);
 }
 
 Block *VoxelToolMultipassGenerator::get_block_and_relative_position(
@@ -147,11 +192,11 @@ void VoxelToolMultipassGenerator::_post_edit(const Box3i &box) {
 }
 
 Vector3i VoxelToolMultipassGenerator::get_editable_area_min() const {
-	return _editable_voxel_box.pos;
+	return _editable_voxel_box.position;
 }
 
 Vector3i VoxelToolMultipassGenerator::get_editable_area_max() const {
-	return _editable_voxel_box.pos + _editable_voxel_box.size;
+	return _editable_voxel_box.position + _editable_voxel_box.size;
 }
 
 Vector3i VoxelToolMultipassGenerator::get_main_area_min() const {

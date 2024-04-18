@@ -2,7 +2,7 @@
 #define ZN_DSTACK_H
 
 #include "containers/std_vector.h"
-#include "fwd_std_string.h"
+#include "string/fwd_std_string.h"
 
 #ifdef DEBUG_ENABLED
 #define ZN_DSTACK_ENABLED

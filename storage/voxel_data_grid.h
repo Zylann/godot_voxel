@@ -1,6 +1,7 @@
 #ifndef VOXEL_DATA_GRID_H
 #define VOXEL_DATA_GRID_H
 
+#include "../storage/voxel_buffer.h"
 #include "../util/thread/spatial_lock_3d.h"
 #include "voxel_data_map.h"
 
@@ -23,7 +24,7 @@ public:
 	inline void reference_area_block_coords(const VoxelDataMap &map, Box3i blocks_box, SpatialLock3D *sl) {
 		ZN_PROFILE_SCOPE();
 		create(blocks_box.size, map.get_block_size());
-		_offset_in_blocks = blocks_box.pos;
+		_offset_in_blocks = blocks_box.position;
 		if (sl != nullptr) {
 			// Locking is needed because we access `has_voxels`
 			sl->lock_read(blocks_box);
@@ -210,7 +211,7 @@ private:
 						continue;
 					}
 					const Vector3i block_origin = block_rpos * _block_size + area_origin_in_voxels;
-					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+					Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), Vector3iUtil::create(_block_size)));
 					block_action(*block, local_box, block_origin);
 				}

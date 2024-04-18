@@ -4,11 +4,12 @@
 #include "../engine/voxel_engine.h"
 #include "../meshers/mesh_block_task.h"
 #include "../modifiers/voxel_modifier.h"
+#include "../storage/materials_4i4w.h"
 #include "../util/dstack.h"
 #include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 #include "../util/godot/classes/rendering_device.h"
 
@@ -84,7 +85,7 @@ void GenerateBlockGPUTask::prepare(GPUTaskContext &ctx) {
 		};
 
 		Params params;
-		params.origin_in_voxels = to_vec3f((box.pos << lod_index) + origin_in_voxels);
+		params.origin_in_voxels = to_vec3f((box.position << lod_index) + origin_in_voxels);
 		params.voxel_size = 1 << lod_index;
 		params.block_size = buffer_resolution;
 		params.output_buffer_start = (ctx.shared_output_buffer_begin / sizeof(float)) + out_offset_elements;
@@ -246,7 +247,7 @@ void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, cons
 				sd_data[i] = snorm_to_s8(sd_scale * src_data_f[i]);
 			}
 			dst.copy_channel_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
+					sd_data.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
 		case VoxelBuffer::DEPTH_16_BIT: {
@@ -256,12 +257,12 @@ void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, cons
 			}
 
 			dst.copy_channel_from(
-					sd_data.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
+					sd_data.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
 			dst.copy_channel_from(
-					src_data_f.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_SDF);
+					src_data_f.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_SDF);
 		} break;
 
 		case VoxelBuffer::DEPTH_64_BIT: {
@@ -277,7 +278,7 @@ void convert_gpu_output_sdf(VoxelBuffer &dst, Span<const float> src_data_f, cons
 void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_data_f, const Box3i &box) {
 	ZN_PROFILE_SCOPE();
 	const uint16_t encoded_weights = encode_weights_to_packed_u16_lossy(255, 0, 0, 0);
-	dst.fill_area(encoded_weights, box.pos, box.pos + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
+	dst.fill_area(encoded_weights, box.position, box.position + box.size, VoxelBuffer::CHANNEL_WEIGHTS);
 
 	// Little hack: the destination type is smaller than float, so we can convert in place.
 	Span<uint16_t> src_data_u16 = get_temporary_conversion_memory_tls<uint16_t>(src_data_f.size());
@@ -292,7 +293,7 @@ void convert_gpu_output_single_texture(VoxelBuffer &dst, Span<const float> src_d
 	}
 
 	dst.copy_channel_from(
-			src_data_u16.to_const(), box.size, Vector3i(), box.size, box.pos, VoxelBuffer::CHANNEL_INDICES);
+			src_data_u16.to_const(), box.size, Vector3i(), box.size, box.position, VoxelBuffer::CHANNEL_INDICES);
 }
 
 template <typename T>
@@ -316,23 +317,23 @@ void convert_gpu_output_uint(
 
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT: {
-			dst.copy_channel_from(
-					cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos, channel_index);
+			dst.copy_channel_from(cast_floats<uint8_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size,
+					box.position, channel_index);
 		} break;
 
 		case VoxelBuffer::DEPTH_16_BIT: {
-			dst.copy_channel_from(cast_floats<uint16_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+			dst.copy_channel_from(cast_floats<uint16_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size,
+					box.position, channel_index);
 		} break;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
-			dst.copy_channel_from(cast_floats<uint32_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+			dst.copy_channel_from(cast_floats<uint32_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size,
+					box.position, channel_index);
 		} break;
 
 		case VoxelBuffer::DEPTH_64_BIT: {
-			dst.copy_channel_from(cast_floats<uint64_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size, box.pos,
-					channel_index);
+			dst.copy_channel_from(cast_floats<uint64_t>(src_data_f, tls_temp), box.size, Vector3i(), box.size,
+					box.position, channel_index);
 		} break;
 
 		default:

@@ -13,9 +13,9 @@ Models used by [VoxelMesherBlocky](VoxelMesherBlocky.md) must be baked before th
 ## Properties: 
 
 
-Type    | Name                               | Default 
-------- | ---------------------------------- | --------
-`bool`  | [bake_tangents](#i_bake_tangents)  | true    
+Type                                                                    | Name                               | Default 
+----------------------------------------------------------------------- | ---------------------------------- | --------
+[bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)  | [bake_tangents](#i_bake_tangents)  | true    
 <p></p>
 
 ## Methods: 
@@ -34,20 +34,20 @@ Return                                                                          
 
 ## Property Descriptions
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_bake_tangents"></span> **bake_tangents** = true
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_bake_tangents"></span> **bake_tangents** = true
 
 Enable this option if you need normal mapping on your voxels. If you don't need it, disabling can reduce memory usage and give a small speed boost.
 
 ## Method Descriptions
 
-- [void](#)<span id="i_bake"></span> **bake**( ) 
+### [void](#)<span id="i_bake"></span> **bake**( ) 
 
 Bakes the library. The data of models is optimized in order to combine them more efficiently when generating voxel meshes.
 
-- [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html)<span id="i_get_materials"></span> **get_materials**( ) 
+### [Material[]](https://docs.godotengine.org/en/stable/classes/class_material[].html)<span id="i_get_materials"></span> **get_materials**( ) 
 
 Gets a list of all distinct materials found in all models of the library.
 
 Note, if at least one non-empty model has no material, there will be one `null` entry in this list to represent "The default material".
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 06, 2024_

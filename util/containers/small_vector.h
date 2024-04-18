@@ -2,6 +2,7 @@
 #define ZN_SMALL_VECTOR_H
 
 #include "../errors.h"
+#include "span.h"
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -20,6 +21,15 @@ public:
 
 	// TODO Bunch of features not supported, not needed for now.
 	// constexpr is not possible due to `reinterpret_cast`. However we have no need for it at the moment.
+
+	SmallVector() = default;
+
+	SmallVector(const SmallVector<T, N> &other) {
+		while (_size < other._size) {
+			::new (&_items[_size]) T(other[_size]);
+			++_size;
+		}
+	}
 
 	~SmallVector() {
 		for (unsigned int i = 0; i < _size; ++i) {
@@ -85,6 +95,10 @@ public:
 		return N;
 	}
 
+	inline const T *data() const {
+		return &(*this)[0];
+	}
+
 	inline T &operator[](unsigned int i) {
 #ifdef DEBUG_ENABLED
 		ZN_ASSERT(i < N);
@@ -100,10 +114,12 @@ public:
 	}
 
 	SmallVector<T, N> &operator=(const SmallVector<T, N> &other) {
-		clear();
+		if ((void *)this != (void *)&other) {
+			clear();
 
-		for (; _size < other.size(); ++_size) {
-			::new (&_items[_size]) T(other[_size]);
+			for (; _size < other.size(); ++_size) {
+				::new (&_items[_size]) T(other[_size]);
+			}
 		}
 
 		return *this;
@@ -202,6 +218,11 @@ private:
 
 	Item _items[N];
 };
+
+template <typename T, unsigned int N>
+Span<const T> to_span(const SmallVector<T, N> &v) {
+	return Span<const T>(v.data(), v.size());
+}
 
 } // namespace zylann
 

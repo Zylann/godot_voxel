@@ -1,5 +1,5 @@
 #include "interval.h"
-#include "../string_funcs.h"
+#include "../string/format.h"
 #include <sstream>
 
 namespace zylann {

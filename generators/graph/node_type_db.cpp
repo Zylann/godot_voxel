@@ -1,7 +1,7 @@
 #include "node_type_db.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/macros.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "image_range_grid.h"
 #include "nodes/curve.h"
 #include "nodes/image.h"

@@ -7,7 +7,7 @@
 #include "../containers/std_queue.h"
 #include "../containers/std_vector.h"
 #include "../profiling.h"
-#include "../std_string.h"
+#include "../string/std_string.h"
 #include "../thread/mutex.h"
 #include "../thread/semaphore.h"
 #include "../thread/thread.h"

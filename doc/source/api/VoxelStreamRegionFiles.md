@@ -13,13 +13,13 @@ Region files are not thread-safe. Because of this, internal mutexing may often c
 ## Properties: 
 
 
-Type      | Name                                   | Default 
---------- | -------------------------------------- | --------
-`int`     | [block_size_po2](#i_block_size_po2)    | 4       
-`String`  | [directory](#i_directory)              | ""      
-`int`     | [lod_count](#i_lod_count)              | 1       
-`int`     | [region_size_po2](#i_region_size_po2)  | 4       
-`int`     | [sector_size](#i_sector_size)          | 512     
+Type                                                                        | Name                                   | Default 
+--------------------------------------------------------------------------- | -------------------------------------- | --------
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [block_size_po2](#i_block_size_po2)    | 4       
+[String](https://docs.godotengine.org/en/stable/classes/class_string.html)  | [directory](#i_directory)              | ""      
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [lod_count](#i_lod_count)              | 1       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [region_size_po2](#i_region_size_po2)  | 4       
+[int](https://docs.godotengine.org/en/stable/classes/class_int.html)        | [sector_size](#i_sector_size)          | 512     
 <p></p>
 
 ## Methods: 
@@ -33,28 +33,34 @@ Return                                                                        | 
 
 ## Property Descriptions
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_block_size_po2"></span> **block_size_po2** = 4
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_block_size_po2"></span> **block_size_po2** = 4
 
+*(This property has no documentation)*
 
-- [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_directory"></span> **directory** = ""
+### [String](https://docs.godotengine.org/en/stable/classes/class_string.html)<span id="i_directory"></span> **directory** = ""
 
 Directory under which the data is saved.
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 1
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_lod_count"></span> **lod_count** = 1
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_region_size_po2"></span> **region_size_po2** = 4
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_region_size_po2"></span> **region_size_po2** = 4
 
+*(This property has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_sector_size"></span> **sector_size** = 512
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_sector_size"></span> **sector_size** = 512
 
+*(This property has no documentation)*
 
 ## Method Descriptions
 
-- [void](#)<span id="i_convert_files"></span> **convert_files**( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) new_settings ) 
+### [void](#)<span id="i_convert_files"></span> **convert_files**( [Dictionary](https://docs.godotengine.org/en/stable/classes/class_dictionary.html) new_settings ) 
 
+*(This method has no documentation)*
 
-- [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_region_size"></span> **get_region_size**( ) 
+### [Vector3](https://docs.godotengine.org/en/stable/classes/class_vector3.html)<span id="i_get_region_size"></span> **get_region_size**( ) 
 
+*(This method has no documentation)*
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 06, 2024_

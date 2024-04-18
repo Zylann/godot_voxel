@@ -4,7 +4,7 @@
 #include "../../util/io/log.h"
 #include "../../util/math/funcs.h"
 #include "../../util/noise/fast_noise_lite/fast_noise_lite.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../tests.h"
 
 namespace zylann::voxel::noise_tests {

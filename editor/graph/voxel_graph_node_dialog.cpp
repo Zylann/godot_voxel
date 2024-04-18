@@ -236,6 +236,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 }
 
 void VoxelGraphNodeDialog::popup_at_screen_position(Vector2 screen_pos) {
+	// Similar popup as in VisualShaderEditor::_show_members_dialog
+
 	VoxelGraphNodeDialog &dialog = *this;
 
 	dialog.set_position(screen_pos);

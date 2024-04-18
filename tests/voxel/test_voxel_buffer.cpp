@@ -1,8 +1,11 @@
 #include "test_voxel_buffer.h"
+#include "../../storage/metadata/voxel_metadata_factory.h"
+#include "../../storage/metadata/voxel_metadata_variant.h"
 #include "../../storage/voxel_buffer_gd.h"
-#include "../../storage/voxel_metadata_variant.h"
 #include "../../streams/voxel_block_serializer.h"
+#include "../../util/string/std_stringstream.h"
 #include "../testing.h"
+#include <sstream>
 
 namespace zylann::voxel::tests {
 
@@ -219,6 +222,160 @@ void test_voxel_buffer_metadata_gd() {
 			ZN_TEST_ASSERT(metav.data == meta2v.data);
 		}
 	}
+}
+
+namespace {
+
+template <size_t N>
+void load_from_array_literal(VoxelBuffer &vb, unsigned int channel, const uint8_t (&array)[N], Vector3i size) {
+	vb.create(size);
+	unsigned int i = 0;
+	for (int y = 0; y < size.y; ++y) {
+		for (int z = 0; z < size.z; ++z) {
+			for (int x = 0; x < size.x; ++x) {
+				ZN_ASSERT(i < N);
+				vb.set_voxel(array[i], Vector3i(x, y, z), channel);
+				++i;
+			}
+		}
+	}
+}
+
+void print_channel_as_ascii(const VoxelBuffer &vb, unsigned int channel) {
+	StdStringStream ss;
+
+	Vector3i pos;
+	for (pos.y = 0; pos.y < vb.get_size().y; ++pos.y) {
+		ss << "Y=" << pos.y << '\n';
+		for (pos.z = 0; pos.z < vb.get_size().z; ++pos.z) {
+			for (pos.x = 0; pos.x < vb.get_size().x; ++pos.x) {
+				const int v = vb.get_voxel(pos, channel);
+				ss << v << ' ';
+			}
+			ss << '\n';
+		}
+	}
+
+	print_line(ss.str());
+}
+
+} // namespace
+
+void test_voxel_buffer_paste_masked() {
+	VoxelBuffer src(VoxelBuffer::ALLOCATOR_DEFAULT);
+	VoxelBuffer dst(VoxelBuffer::ALLOCATOR_DEFAULT);
+
+	const uint8_t src_values[] = {
+		0, 0, 0, 0, 0, //
+		0, 1, 0, 0, 0, //
+		0, 1, 1, 0, 0, //
+		0, 1, 1, 1, 0, //
+		//
+		0, 0, 1, 1, 0, //
+		0, 0, 1, 1, 0, //
+		0, 0, 1, 1, 0, //
+		0, 0, 1, 1, 0, //
+		//
+		0, 1, 1, 1, 0, //
+		0, 0, 0, 0, 0, //
+		0, 0, 0, 0, 0, //
+		0, 1, 1, 1, 0, //
+	};
+
+	// const uint8_t src_values_pretransformed[] = {
+	// 	0, 0, 0, 0, //
+	// 	0, 0, 0, 0, //
+	// 	1, 0, 0, 0, //
+	// 	1, 1, 0, 0, //
+	// 	1, 1, 1, 0, //
+	// 	//
+	// 	0, 0, 0, 0, //
+	// 	0, 1, 1, 0, //
+	// 	0, 1, 1, 0, //
+	// 	0, 1, 1, 0, //
+	// 	0, 1, 1, 0, //
+	// 	//
+	// 	0, 0, 0, 0, //
+	// 	1, 1, 1, 0, //
+	// 	0, 0, 0, 0, //
+	// 	0, 0, 0, 0, //
+	// 	1, 1, 1, 0, //
+	// };
+
+	const uint8_t dst_values[] = {
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		//
+		2, 2, 2, 2, //
+		2, 2, 2, 2, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		//
+		3, 3, 3, 3, //
+		3, 2, 2, 3, //
+		3, 2, 2, 3, //
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		//
+	};
+
+	const Vector3i paste_dst_pos(-1, 0, 1);
+	const uint8_t src_mask_value = 0;
+	const uint8_t dst_mask_value = 3;
+
+	const uint8_t expected_values[] = {
+		3, 3, 3, 3, //
+		3, 3, 3, 3, //
+		1, 3, 3, 3, //
+		1, 1, 3, 3, //
+		1, 1, 1, 3, //
+		//
+		2, 2, 2, 2, //
+		2, 2, 2, 2, //
+		3, 1, 1, 3, //
+		3, 1, 1, 3, //
+		3, 1, 1, 3, //
+		//
+		3, 3, 3, 3, //
+		1, 2, 2, 3, //
+		3, 2, 2, 3, //
+		3, 3, 3, 3, //
+		1, 1, 1, 3, //
+		//
+	};
+
+	const uint8_t copied_channel_index = 0;
+	const uint8_t src_mask_channel_index = 0;
+	const uint8_t dst_mask_channel_index = 0;
+
+	load_from_array_literal(src, copied_channel_index, src_values, Vector3i(5, 3, 4));
+	load_from_array_literal(dst, copied_channel_index, dst_values, Vector3i(4, 3, 5));
+
+	paste_src_masked_dst_writable_value( //
+			to_single_element_span(copied_channel_index), //
+			src, //
+			src_mask_channel_index, //
+			src_mask_value, //
+			dst, //
+			paste_dst_pos, //
+			dst_mask_channel_index, //
+			dst_mask_value, //
+			true //
+	);
+
+	VoxelBuffer expected(VoxelBuffer::ALLOCATOR_DEFAULT);
+	expected.create(dst.get_size());
+	load_from_array_literal(expected, copied_channel_index, expected_values, expected.get_size());
+
+	if (!dst.equals(expected)) {
+		print_channel_as_ascii(dst, copied_channel_index);
+	}
+
+	ZN_TEST_ASSERT(dst.equals(expected));
 }
 
 } // namespace zylann::voxel::tests

@@ -2,7 +2,7 @@
 #include "../dstack.h"
 #include "../godot/classes/time.h"
 #include "../profiling.h"
-#include "../string_funcs.h"
+#include "../string/format.h"
 
 namespace zylann {
 

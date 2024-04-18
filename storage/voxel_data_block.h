@@ -1,11 +1,12 @@
 #ifndef VOXEL_DATA_BLOCK_H
 #define VOXEL_DATA_BLOCK_H
 
-#include "../storage/voxel_buffer.h"
 #include "../util/ref_count.h"
 #include <memory>
 
 namespace zylann::voxel {
+
+class VoxelBuffer;
 
 // Stores voxel data for a chunk of the volume. Mesh and colliders are stored separately.
 // Voxel data can be present, or not. If not present, it means we know the block contains no edits, and voxels can be

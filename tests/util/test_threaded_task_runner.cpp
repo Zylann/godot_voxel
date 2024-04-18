@@ -7,8 +7,8 @@
 #include "../../util/math/vector3i.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
-#include "../../util/std_stringstream.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
+#include "../../util/string/std_stringstream.h"
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../testing.h"
 

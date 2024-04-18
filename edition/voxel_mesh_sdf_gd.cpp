@@ -9,7 +9,7 @@
 #include "../util/math/color.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 #include "mesh_sdf.h"
 // Necessary when compiling with GodotCpp because it is used in a registered method argument, and the type must be
 // defined

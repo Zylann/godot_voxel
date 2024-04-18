@@ -32,7 +32,7 @@
 				Finds the index of the first model having the specified resource name. If not found, returns [code]null[/code].
 			</description>
 		</method>
-		<method name="get_voxel_index_from_name" qualifiers="const" is_deprecated="true">
+		<method name="get_voxel_index_from_name" qualifiers="const" is_deprecated="true" deprecated="Use [method get_model_index_from_resource_name] instead.">
 			<return type="int" />
 			<param index="0" name="name" type="String" />
 			<description>

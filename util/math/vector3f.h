@@ -2,7 +2,7 @@
 #define ZYLANN_VECTOR3F_H
 
 #include "../errors.h"
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "vector3t.h"
 
 namespace zylann {

@@ -31,7 +31,7 @@
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "voxel_graph_editor_node.h"
 #include "voxel_graph_editor_node_preview.h"
 #include "voxel_graph_editor_shader_dialog.h"
@@ -210,6 +210,12 @@ VoxelGraphEditor::VoxelGraphEditor() {
 			callable_mp(this, &VoxelGraphEditor::_on_node_dialog_node_selected));
 	_node_dialog->connect(VoxelGraphNodeDialog::SIGNAL_FILE_SELECTED,
 			callable_mp(this, &VoxelGraphEditor::_on_node_dialog_file_selected));
+	// Initially the popup was meant to not appear as its own window in the taskbar, and close when clicking
+	// outside of it. At some point the latter stopped being a thing (?), causing the same issue as the VisualShader
+	// editor:
+	// https://github.com/godotengine/godot/issues/83805
+	// So for now we do the same fix, making it exclusive...
+	_node_dialog->set_exclusive(true);
 	add_child(_node_dialog);
 
 	_range_analysis_dialog = memnew(VoxelRangeAnalysisDialog);

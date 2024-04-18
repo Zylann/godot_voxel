@@ -8,7 +8,7 @@
 #include "../../util/io/log.h"
 #include "../../util/math/box3i.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "file_utils.h"
 
 #include <algorithm>

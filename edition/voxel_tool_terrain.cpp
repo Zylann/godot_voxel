@@ -1,12 +1,13 @@
 #include "voxel_tool_terrain.h"
 #include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../meshers/cubes/voxel_mesher_cubes.h"
+#include "../storage/metadata/voxel_metadata_variant.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data.h"
-#include "../storage/voxel_metadata_variant.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
 #include "../util/godot/classes/ref_counted.h"
 #include "../util/godot/core/array.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/math/conv.h"
 #include "../util/voxel_raycast.h"
 
@@ -176,6 +177,75 @@ void VoxelToolTerrain::paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxe
 	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
 }
 
+void VoxelToolTerrain::paste_masked_writable_list( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		PackedInt32Array dst_writable_list //
+) {
+	ERR_FAIL_COND(_terrain == nullptr);
+	ERR_FAIL_COND(p_voxels.is_null());
+	if (channels_mask == 0) {
+		channels_mask = (1 << _channel);
+	}
+	_terrain->get_storage().paste_masked_writable_list( //
+			pos, //
+			p_voxels->get_buffer(), //
+			channels_mask, //
+			src_mask_channel, //
+			src_mask_value, //
+			dst_mask_channel, //
+			to_span(dst_writable_list),
+			false //
+	);
+	_post_edit(Box3i(pos, p_voxels->get_buffer().get_size()));
+}
+
+void VoxelToolTerrain::do_box(Vector3i begin, Vector3i end) {
+	ZN_PROFILE_SCOPE();
+	ERR_FAIL_COND(_terrain == nullptr);
+
+	if (get_channel() != VoxelBuffer::CHANNEL_SDF) {
+		// Fallback on generic do_box, which pretty much does a naive fill in the exact boundaries, though it's still
+		// slower than necessary because it uses random access.
+		// TODO Make it so generic ops can do that too without an extra margin and without superfluous calculations
+		VoxelTool::do_box(begin, end);
+		return;
+	}
+
+	ops::DoShapeChunked<ops::SdfAxisAlignedBox, ops::VoxelDataGridAccess> op;
+	op.shape.center = to_vec3(begin + end) * 0.5;
+	op.shape.half_size = to_vec3(end - begin) * 0.5;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(_terrain->get_bounds());
+	op.mode = ops::Mode(get_mode());
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+
+	if (!is_area_editable(op.box)) {
+		ZN_PRINT_VERBOSE("Area not editable");
+		return;
+	}
+
+	VoxelData &data = _terrain->get_storage();
+
+	VoxelDataGrid grid;
+	data.get_blocks_grid(grid, op.box, 0);
+	op.block_access.grid = &grid;
+
+	{
+		VoxelDataGrid::LockWrite wlock(grid);
+		op();
+	}
+
+	_post_edit(op.box);
+}
+
 void VoxelToolTerrain::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND(_terrain == nullptr);
@@ -322,7 +392,7 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 	// Choose blocks at random
 	for (int bi = 0; bi < block_count; ++bi) {
-		const Vector3i block_pos = block_box.pos + L::urand_vec3i(random, block_box.size);
+		const Vector3i block_pos = block_box.position + L::urand_vec3i(random, block_box.size);
 
 		const Vector3i block_origin = data.block_to_voxel(block_pos);
 
@@ -351,14 +421,14 @@ void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxe
 
 				const Box3i block_voxel_box(block_origin, Vector3iUtil::create(block_size));
 				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
-				local_voxel_box.pos -= block_origin;
+				local_voxel_box.position -= block_origin;
 				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
 				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
 
 				// Choose a bunch of voxels at random within the block.
 				// Batching this way improves performance a little by reducing block lookups.
 				for (int vi = 0; vi < local_batch_count; ++vi) {
-					const Vector3i rpos = local_voxel_box.pos + L::urand_vec3i(random, local_voxel_box.size);
+					const Vector3i rpos = local_voxel_box.position + L::urand_vec3i(random, local_voxel_box.size);
 
 					const uint64_t v = voxels.get_voxel(rpos, channel);
 					picks.push_back(Pick{ v, rpos });
@@ -466,7 +536,7 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		}
 
 		const Vector3i block_origin = block_pos * data.get_block_size();
-		const Box3i rel_voxel_box(voxel_box.pos - block_origin, voxel_box.size);
+		const Box3i rel_voxel_box(voxel_box.position - block_origin, voxel_box.size);
 		// TODO Worth it locking blocks for metadata?
 		// For read or write? We'd have to specify as argument and trust the user... since metadata can contain
 		// reference types.

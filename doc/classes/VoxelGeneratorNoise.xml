@@ -18,7 +18,7 @@
 		<member name="height_start" type="float" setter="set_height_start" getter="get_height_start" default="0.0">
 			Base of the shape. Everything below it will be filled with ground.
 		</member>
-		<member name="noise" type="Noise" setter="set_noise" getter="get_noise">
+		<member name="noise" type="FastNoiseLite" setter="set_noise" getter="get_noise">
 			Noise used as density function. It is required for the generator to work.
 		</member>
 	</members>

@@ -15,7 +15,13 @@ Steps to reproduce the behavior:
 2. Click on '....'
 3. Scroll down to '....'
 4. See error
-Linking a minimal project that reproduces the issue may help.
+
+Linking a minimal project that reproduces the issue may help:
+- Keep it to a minimum, if possible no steps required after launching, or just press one key or button to trigger the test. The more complicated a project is, the more effort it takes to inspect, understand and isolate the issue.
+- Remove any scripts, nodes and assets that aren't necessary to reproduce the issue.
+- Don't use fullscreen or large screen size.
+- If scripts are needed, prefer GDScript, as C# is harder to setup
+
 If you see any errors in the console, that may also help.
 
 **Expected behavior**

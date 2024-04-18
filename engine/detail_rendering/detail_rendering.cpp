@@ -9,7 +9,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -179,10 +179,6 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
 	ZN_PROFILE_SCOPE();
 
-	// TODO Get scale properly
-	const float sdf_scale = VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
-	const float sdf_scale_inv = 1.f / sdf_scale;
-
 	VoxelDataGrid::LockRead rlock(grid);
 
 	for (unsigned int query_index = 0; query_index < query_sdf_buffer.size(); ++query_index) {
@@ -213,9 +209,7 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 						//      (because we can't lock multiple blocks at once otherwise it causes deadlocks)
 						// TODO Optimize: the grid could be told to gather raw channels so we get direct access
 						//      (requires the former optimization)
-						if (grid.try_get_voxel_f(posi, sd_samples[i], channel)) {
-							sd_samples[i] *= sdf_scale_inv;
-						} else {
+						if (!grid.try_get_voxel_f(posi, sd_samples[i], channel)) {
 							// Not edited, add to the list of voxels to generate
 							x_gen[gen_count] = posi.x;
 							y_gen[gen_count] = posi.y;

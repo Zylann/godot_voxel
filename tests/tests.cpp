@@ -7,6 +7,7 @@
 #include "util/test_expression_parser.h"
 #include "util/test_flat_map.h"
 #include "util/test_island_finder.h"
+#include "util/test_math_funcs.h"
 #include "util/test_slot_map.h"
 #include "util/test_spatial_lock.h"
 #include "util/test_threaded_task_runner.h"
@@ -43,6 +44,9 @@ void run_voxel_tests() {
 
 	using namespace zylann::tests;
 
+	VOXEL_TEST(test_wrap);
+	VOXEL_TEST(test_voxel_buffer_paste_masked);
+	VOXEL_TEST(test_image_range_grid);
 	VOXEL_TEST(test_box3i_intersects);
 	VOXEL_TEST(test_box3i_for_inner_outline);
 	VOXEL_TEST(test_voxel_data_map_paste_fill);
@@ -79,6 +83,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_voxel_graph_function_execute);
 	VOXEL_TEST(test_voxel_graph_image);
 	VOXEL_TEST(test_voxel_graph_many_weight_outputs);
+	VOXEL_TEST(test_voxel_graph_many_subdivisions);
 	VOXEL_TEST(test_island_finder);
 	VOXEL_TEST(test_unordered_remove_if);
 	VOXEL_TEST(test_instance_data_serialization);

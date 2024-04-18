@@ -3,7 +3,7 @@
 
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
-#include "../../util/std_string.h"
+#include "../../util/string/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "program_graph.h"
 #include "voxel_graph_runtime.h"

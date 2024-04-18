@@ -3,7 +3,7 @@
 #include "../util/io/serialization.h"
 #include "../util/math/basis.h"
 #include "../util/math/funcs.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -61,7 +61,7 @@ bool serialize_instance_block_data(const InstanceBlockData &src, StdVector<uint8
 	// TODO Apparently big-endian is dead
 	// I chose it originally to match "network byte order",
 	// but as I read comments about it there seem to be no reason to continue using it. Needs a version increment.
-	zylann::MemoryWriter w(dst, zylann::ENDIANESS_LITTLE_ENDIAN);
+	zylann::MemoryWriter w(dst, zylann::ENDIANNESS_LITTLE_ENDIAN);
 
 	ZN_ASSERT_RETURN_V(src.position_range >= 0.f, false);
 	const float position_range = math::max(src.position_range, InstanceBlockData::POSITION_RANGE_MINIMUM);
@@ -122,11 +122,11 @@ bool deserialize_instance_block_data(InstanceBlockData &dst, Span<const uint8_t>
 	const uint8_t expected_version = INSTANCE_BLOCK_FORMAT_VERSION_1;
 	const uint8_t expected_instance_format = InstanceBlockData::FORMAT_SIMPLE_11B_V1;
 
-	zylann::MemoryReader r(src, zylann::ENDIANESS_LITTLE_ENDIAN);
+	zylann::MemoryReader r(src, zylann::ENDIANNESS_LITTLE_ENDIAN);
 
 	const uint8_t version = r.get_8();
 	if (version == INSTANCE_BLOCK_FORMAT_VERSION_0) {
-		r.endianess = zylann::ENDIANESS_BIG_ENDIAN;
+		r.endianness = zylann::ENDIANNESS_BIG_ENDIAN;
 	} else {
 		ZN_ASSERT_RETURN_V(version == expected_version, false);
 	}

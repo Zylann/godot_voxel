@@ -1,6 +1,6 @@
 #include "voxel_data_block.h"
 #include "../util/io/log.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 

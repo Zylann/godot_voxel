@@ -1,5 +1,6 @@
 #include "voxel_terrain_multiplayer_synchronizer.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../streams/voxel_block_serializer.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/multiplayer_api.h"
@@ -8,7 +9,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/io/serialization.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "voxel_terrain.h"
 
 #ifdef TOOLS_ENABLED
@@ -54,7 +55,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_block(
 	message_data.resize(4 * sizeof(int16_t) + result.data.size());
 
 	ByteSpanWithPosition mw_span(Span<uint8_t>(message_data.ptrw(), message_data.size()), 0);
-	MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 
 	mw.store_16(bpos.x);
 	mw.store_16(bpos.y);
@@ -87,7 +88,7 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	// Not particularly efficient for single-voxel edits, but should scale ok with bigger boxes
 	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_POOL);
 	voxels.create(voxel_box.size);
-	_terrain->get_storage().copy(voxel_box.pos, voxels, 0xff);
+	_terrain->get_storage().copy(voxel_box.position, voxels, 0xff);
 
 	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(voxels);
 	ZN_ASSERT_RETURN(result.success);
@@ -96,11 +97,11 @@ void VoxelTerrainMultiplayerSynchronizer::send_area(Box3i voxel_box) {
 	pba.resize(4 * sizeof(int32_t) + result.data.size());
 
 	ByteSpanWithPosition mw_span(Span<uint8_t>(pba.ptrw(), pba.size()), 0);
-	MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 
-	mw.store_32(voxel_box.pos.x);
-	mw.store_32(voxel_box.pos.y);
-	mw.store_32(voxel_box.pos.z);
+	mw.store_32(voxel_box.position.x);
+	mw.store_32(voxel_box.position.y);
+	mw.store_32(voxel_box.position.z);
 	mw.store_32(result.data.size());
 	mw.store_buffer(to_span(result.data));
 	for (const ViewerID viewer_id : viewers) {
@@ -161,7 +162,7 @@ void VoxelTerrainMultiplayerSynchronizer::process() {
 		pba.resize(1 * sizeof(uint32_t) + size);
 
 		ByteSpanWithPosition mw_span(Span<uint8_t>(pba.ptrw(), pba.size()), 0);
-		MemoryWriterExistingBuffer mw(mw_span, ENDIANESS_LITTLE_ENDIAN);
+		MemoryWriterExistingBuffer mw(mw_span, ENDIANNESS_LITTLE_ENDIAN);
 		mw.store_32(messages.size());
 
 		for (const DeferredBlockMessage &message : messages) {
@@ -185,7 +186,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_blocks(PackedByteArray mess
 	// print_line(String("Client: receive blocks data {1}").format(varray(data.size())));
 	//  print_data_hex(Span<const uint8_t>(data.ptr(), data.size()));
 
-	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANNESS_LITTLE_ENDIAN);
 
 	const unsigned int block_count = mr.get_32();
 
@@ -216,7 +217,7 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(_terrain != nullptr);
 
-	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(Span<const uint8_t>(message_data.ptr(), message_data.size()), ENDIANNESS_LITTLE_ENDIAN);
 
 	Vector3i pos;
 	pos.x = int32_t(mr.get_32());

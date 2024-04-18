@@ -1,17 +1,17 @@
 #include "voxel_block_serializer.h"
 #include "../storage/voxel_buffer.h"
 #include "../storage/voxel_memory_pool.h"
-#include "../util/containers/container_funcs.h"
 #include "../util/dstack.h"
 #include "../util/godot/classes/file_access.h"
 #include "../util/io/serialization.h"
 #include "../util/math/vector3i.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 #include "compressed_data.h"
 
 #if defined(ZN_GODOT) || defined(ZN_GODOT_EXTENSION)
-#include "../storage/voxel_metadata_variant.h"
+#include "../storage/metadata/voxel_metadata_factory.h"
+#include "../storage/metadata/voxel_metadata_variant.h"
 #endif
 
 #include <limits>
@@ -132,7 +132,7 @@ void serialize_metadata(const VoxelMetadata &meta, MemoryWriterExistingBuffer &m
 // The target buffer MUST have correct size. Recoverable errors must have been checked before.
 void serialize_metadata(Span<uint8_t> p_dst, const VoxelBuffer &buffer) {
 	ByteSpanWithPosition bs(p_dst, 0);
-	MemoryWriterExistingBuffer mw(bs, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriterExistingBuffer mw(bs, ENDIANNESS_LITTLE_ENDIAN);
 
 	const VoxelMetadata &block_meta = buffer.get_block_metadata();
 	serialize_metadata(block_meta, mw);
@@ -200,7 +200,7 @@ bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 }
 
 bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBuffer &buffer) {
-	MemoryReader mr(p_src, ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(p_src, ENDIANNESS_LITTLE_ENDIAN);
 
 	ZN_ASSERT_RETURN_V(deserialize_metadata(buffer.get_block_metadata(), mr), false);
 
@@ -285,7 +285,7 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 	const size_t expected_data_size = get_size_in_bytes(voxel_buffer, expected_metadata_size);
 	dst_data.reserve(expected_data_size);
 
-	MemoryWriter f(dst_data, ENDIANESS_LITTLE_ENDIAN);
+	MemoryWriter f(dst_data, ENDIANNESS_LITTLE_ENDIAN);
 
 	f.store_8(BLOCK_FORMAT_VERSION);
 
@@ -371,7 +371,7 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 	const unsigned int no_compression = 0;
 	const unsigned int uniform_compression = 1;
 
-	MemoryReader mr(p_data, ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(p_data, ENDIANNESS_LITTLE_ENDIAN);
 
 	const uint8_t rv = mr.get_8(); // version
 	ZN_ASSERT(rv == 3);
@@ -411,7 +411,7 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 	const size_t total_metadata_size = mr.data.size() - mr.pos;
 
 	if (total_metadata_size > 0) {
-		MemoryWriter mw(dst, ENDIANESS_LITTLE_ENDIAN);
+		MemoryWriter mw(dst, ENDIANNESS_LITTLE_ENDIAN);
 
 		struct L {
 			static bool convert_metadata_item(MemoryReader &mr, MemoryWriter &mw) {
@@ -477,7 +477,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 	dst.resize(p_data.size());
 	memcpy(dst.data(), p_data.data(), p_data.size());
 
-	MemoryReader mr(p_data, ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader mr(p_data, ENDIANNESS_LITTLE_ENDIAN);
 
 	const uint8_t rv = mr.get_8(); // version
 	ZN_ASSERT(rv == 2);
@@ -501,7 +501,7 @@ bool migrate_v2_to_v3(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 
 		if (channel_index == sdf_channel_index) {
 			ByteSpanWithPosition dst2(to_span(dst), mr.pos);
-			MemoryWriterExistingBuffer mw(dst2, ENDIANESS_LITTLE_ENDIAN);
+			MemoryWriterExistingBuffer mw(dst2, ENDIANNESS_LITTLE_ENDIAN);
 
 			if (compression_value == no_compression) {
 				switch (depth_value) {
@@ -562,12 +562,12 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 	const uint32_t magic = *reinterpret_cast<const uint32_t *>(&p_data[p_data.size() - sizeof(uint32_t)]);
 #if DEV_ENABLED
 	if (magic != BLOCK_TRAILING_MAGIC) {
-		print_data_hex(p_data);
+		print_line(to_hex_table(p_data));
 	}
 #endif
 	ERR_FAIL_COND_V(magic != BLOCK_TRAILING_MAGIC, false);
 
-	MemoryReader f(p_data, ENDIANESS_LITTLE_ENDIAN);
+	MemoryReader f(p_data, ENDIANNESS_LITTLE_ENDIAN);
 
 	const uint8_t format_version = f.get_8();
 

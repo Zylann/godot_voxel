@@ -1,7 +1,7 @@
 #ifndef ZYLANN_LOG_H
 #define ZYLANN_LOG_H
 
-#include "../fwd_std_string.h"
+#include "../string/fwd_std_string.h"
 
 // print_verbose() is used everywhere in Godot, but its drawback is that even if you turn it off, strings
 // you print are still allocated and formatted, to not be used. This macro avoids the string.

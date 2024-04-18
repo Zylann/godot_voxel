@@ -24,10 +24,6 @@ class VoxelBuffer;
 // This is intended for files, so it may run in a single background thread and gets requests in batches.
 // Must be implemented in a thread-safe way.
 //
-// Functions currently don't enforce querying blocks of the same size, however it is required for every stream to
-// support querying blocks the size of the declared block size, at positions matching their origins.
-// This might be restricted in the future, because there has been no compelling use case for that.
-//
 // If you are looking for a more specialized API to generate voxels with more threads, use VoxelGenerator.
 //
 class VoxelStream : public Resource {

@@ -4,7 +4,7 @@
 #include "../util/math/triangle.h"
 #include "../util/math/vector3d.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h" // Debug
+#include "../util/string/format.h" // Debug
 #include "../util/voxel_raycast.h"
 
 // Debug
@@ -836,17 +836,17 @@ void generate_mesh_sdf_approx_interp(Span<float> sdf_grid, const Vector3i res, S
 					});
 				} else {
 					// We are far enough from the surface, approximate by interpolating corners
-					const Vector3i cell_box_end = cell_box.pos + cell_box.size;
+					const Vector3i cell_box_end = cell_box.position + cell_box.size;
 					Vector3i grid_pos;
-					for (grid_pos.z = cell_box.pos.z; grid_pos.z < cell_box_end.z; ++grid_pos.z) {
-						for (grid_pos.x = cell_box.pos.x; grid_pos.x < cell_box_end.x; ++grid_pos.x) {
-							for (grid_pos.y = cell_box.pos.y; grid_pos.y < cell_box_end.y; ++grid_pos.y) {
+					for (grid_pos.z = cell_box.position.z; grid_pos.z < cell_box_end.z; ++grid_pos.z) {
+						for (grid_pos.x = cell_box.position.x; grid_pos.x < cell_box_end.x; ++grid_pos.x) {
+							for (grid_pos.y = cell_box.position.y; grid_pos.y < cell_box_end.y; ++grid_pos.y) {
 								const size_t i = Vector3iUtil::get_zxy_index(grid_pos, res);
 								if (sdf_grid[i] != FAR_SD) {
 									// Already computed
 									continue;
 								}
-								const Vector3f ipf = to_vec3f(grid_pos - cell_box.pos) / float(node_size_cells);
+								const Vector3f ipf = to_vec3f(grid_pos - cell_box.position) / float(node_size_cells);
 								const float sd = math::interpolate_trilinear(
 										sd000, sd100, sd101, sd001, sd010, sd110, sd111, sd011, ipf);
 								ZN_ASSERT(i < sdf_grid.size());
@@ -872,11 +872,11 @@ void generate_mesh_sdf_naive(Span<float> sdf_grid, const Vector3i res, const Box
 
 	Vector3i grid_pos;
 
-	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
+	const Vector3i sub_box_end = sub_box.position + sub_box.size;
 
-	for (grid_pos.z = sub_box.pos.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
-		for (grid_pos.x = sub_box.pos.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
-			grid_pos.y = sub_box.pos.y;
+	for (grid_pos.z = sub_box.position.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
+		for (grid_pos.x = sub_box.position.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
+			grid_pos.y = sub_box.position.y;
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {
@@ -904,12 +904,12 @@ void generate_mesh_sdf_partitioned(Span<float> sdf_grid, const Vector3i res, con
 	const Vector3f cell_size = mesh_size / Vector3f(res.x, res.y, res.z);
 	const EvaluatorCG eval{ chunk_grid, GridToSpaceConverter(res, min_pos, mesh_size, cell_size * 0.5f) };
 
-	const Vector3i sub_box_end = sub_box.pos + sub_box.size;
+	const Vector3i sub_box_end = sub_box.position + sub_box.size;
 
 	Vector3i grid_pos;
-	for (grid_pos.z = sub_box.pos.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
-		for (grid_pos.x = sub_box.pos.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
-			grid_pos.y = sub_box.pos.y;
+	for (grid_pos.z = sub_box.position.z; grid_pos.z < sub_box_end.z; ++grid_pos.z) {
+		for (grid_pos.x = sub_box.position.x; grid_pos.x < sub_box_end.x; ++grid_pos.x) {
+			grid_pos.y = sub_box.position.y;
 			size_t grid_index = Vector3iUtil::get_zxy_index(grid_pos, res);
 
 			for (; grid_pos.y < sub_box_end.y; ++grid_pos.y) {

@@ -5,7 +5,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/dstack.h"
 #include "../../util/godot/classes/time.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 
 namespace zylann::voxel {
 
@@ -180,8 +180,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 
 			Vector2i cpos;
 
-			const Vector2i cpos_min = neighbors_box.pos;
-			const Vector2i cpos_max = neighbors_box.pos + neighbors_box.size;
+			const Vector2i cpos_min = neighbors_box.position;
+			const Vector2i cpos_max = neighbors_box.position + neighbors_box.size;
 
 			std::shared_ptr<std::atomic_int> dependency_counter = nullptr;
 
@@ -316,7 +316,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 					PassInput input;
 					input.grid = to_span(blocks);
 					input.grid_size = Vector3i(neighbors_box.size.x, column_height_blocks, neighbors_box.size.y);
-					input.grid_origin = Vector3i(neighbors_box.pos.x, column_base_y_blocks, neighbors_box.pos.y);
+					input.grid_origin =
+							Vector3i(neighbors_box.position.x, column_base_y_blocks, neighbors_box.position.y);
 					input.main_block_position = Vector3i(_column_position.x, column_base_y_blocks, _column_position.y);
 					input.pass_index = pass_index;
 					input.block_size = _block_size;

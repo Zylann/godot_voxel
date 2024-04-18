@@ -15,7 +15,7 @@ using namespace godot;
 #endif
 
 #include "../godot/macros.h"
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 
 namespace zylann {
 namespace Vector3iUtil {

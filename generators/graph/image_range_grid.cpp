@@ -1,6 +1,6 @@
 #include "image_range_grid.h"
 #include "../../util/godot/classes/image.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "range_utility.h"
 
 namespace zylann {
@@ -30,8 +30,8 @@ void ImageRangeGrid::generate(const Image &im) {
 		const int chunk_size = 1 << lod_base;
 
 		Lod &lod = _lods[0];
-		lod.size_x = (im.get_width() - 1) / chunk_size + 1;
-		lod.size_y = (im.get_height() - 1) / chunk_size + 1;
+		lod.size_x = math::ceildiv(im.get_width(), chunk_size);
+		lod.size_y = math::ceildiv(im.get_height(), chunk_size);
 		lod.data.resize(lod.size_x * lod.size_y);
 		lod.data.shrink_to_fit();
 
@@ -62,8 +62,8 @@ void ImageRangeGrid::generate(const Image &im) {
 
 		Lod &lod = _lods[lod_index];
 
-		lod.size_x = max(arithmetic_rshift(prev_lod.size_x, 1), 1);
-		lod.size_y = max(arithmetic_rshift(prev_lod.size_y, 1), 1);
+		lod.size_x = max(ceildiv(prev_lod.size_x, 2), 1);
+		lod.size_y = max(ceildiv(prev_lod.size_y, 2), 1);
 
 		lod.data.resize(lod.size_x * lod.size_y);
 		lod.data.shrink_to_fit();
@@ -75,20 +75,25 @@ void ImageRangeGrid::generate(const Image &im) {
 
 			for (int cx = 0; cx < lod.size_x; ++cx) {
 				const int src_x = min(cx * 2, prev_lod.size_x);
-				const int a = src_x + src_y * prev_lod.size_x;
+				// Index of the lowest chunk in the previous LOD within the 2x2 region covered by the current chunk
+				const int src_i = src_x + src_y * prev_lod.size_x;
 
-				Interval r = prev_lod.data[a];
+				// Add 2x2 chunks from previous LOD covered by the current chunk, if available
 
+				// X, Y
+				Interval r = prev_lod.data[src_i];
+
+				// X+1, Y
 				if (src_x + 1 < prev_lod.size_x) {
-					r.add_interval(prev_lod.data[a + 1]);
-
-					if (src_y + 1 < prev_lod.size_y) {
-						r.add_interval(prev_lod.data[a + prev_lod.size_x]);
-						r.add_interval(prev_lod.data[a + prev_lod.size_x + 1]);
-					}
-
-				} else if (src_y + 1 < prev_lod.size_y) {
-					r.add_interval(prev_lod.data[a + prev_lod.size_x]);
+					r.add_interval(prev_lod.data[src_i + 1]);
+				}
+				// X, Y+1
+				if (src_y + 1 < prev_lod.size_y) {
+					r.add_interval(prev_lod.data[src_i + prev_lod.size_x]);
+				}
+				// X+1, Y+1
+				if (src_x + 1 < prev_lod.size_x && src_y + 1 < prev_lod.size_y) {
+					r.add_interval(prev_lod.data[src_i + prev_lod.size_x + 1]);
 				}
 
 				lod.data[dst_i++] = r;
@@ -97,10 +102,10 @@ void ImageRangeGrid::generate(const Image &im) {
 	}
 
 	{
+		ZN_ASSERT(lod_count > 0);
 		const int last_lod_index = lod_count - 1;
-		CRASH_COND(last_lod_index < 0);
 		const Lod &lod = _lods[last_lod_index];
-		Interval r;
+		Interval r = lod.data[0];
 		for (int cy = 0; cy < lod.size_y; ++cy) {
 			for (int cx = 0; cx < lod.size_x; ++cx) {
 				r.add_interval(lod.data[cx + cy * lod.size_x]);
@@ -111,63 +116,102 @@ void ImageRangeGrid::generate(const Image &im) {
 
 	_pixels_x = im.get_width();
 	_pixels_y = im.get_height();
+	_pixels_x_is_power_of_2 = math::is_power_of_two(_pixels_x);
+	_pixels_y_is_power_of_2 = math::is_power_of_two(_pixels_y);
 	_lod_base = lod_base;
 	_lod_count = lod_count;
 }
 
 namespace {
 
-void interval_to_pixels(Interval i, int &out_min, int &out_max, int len) {
-	// Convert range to integer coordinates
-	const int imin = static_cast<int>(Math::floor(i.min));
-	const int imax = static_cast<int>(Math::ceil(i.max));
+void interval_to_pixels_repeat(Interval i, int &out_min, int &out_max, int image_len) {
+	// Convert range to a positive integer coordinate space,
+	// where coordinates extend up to twice the length of the image.
+	// The interval gets wrapped within it, assuming a repeating image.
 
-	// Images are finite, intervals are not.
-	// It's useless to let the range span a potentially infinite area.
-	// The image can repeat, so we clamp to one repetition.
-	out_min = clamp(imin, -len, len);
-	out_max = clamp(imax, -len, len);
+	int imin = static_cast<int>(Math::floor(i.min));
+	int imax = static_cast<int>(Math::ceil(i.max));
+
+	const int interval_len = imax - imin;
+
+	if (interval_len >= image_len) {
+		// The interval covers the whole length
+		out_min = 0;
+		out_max = image_len;
+		return;
+	}
+
+	imin = math::wrap(imin, image_len);
+	imax = math::wrap(imax, image_len);
+
+	if (imin > imax) {
+		imax = imin + interval_len;
+	}
+
+	// Keep it positive
+	if (imin < 0) {
+		imin += image_len;
+		imax += image_len;
+	}
+
+	out_min = imin;
+	out_max = imax;
 }
 
 } // namespace
 
-Interval ImageRangeGrid::get_range(Interval xr, Interval yr) const {
-	CRASH_COND(_lod_count <= 0);
+Interval ImageRangeGrid::get_range_repeat(Interval xr, Interval yr) const {
+	ZN_ASSERT(_lod_count > 0);
 
 	int pixel_min_x, pixel_max_x, pixel_min_y, pixel_max_y;
-	interval_to_pixels(xr, pixel_min_x, pixel_max_x, _pixels_x);
-	interval_to_pixels(yr, pixel_min_y, pixel_max_y, _pixels_y);
+	interval_to_pixels_repeat(xr, pixel_min_x, pixel_max_x, _pixels_x);
+	interval_to_pixels_repeat(yr, pixel_min_y, pixel_max_y, _pixels_y);
 
 	// Find best LOD to use.
 	// Depending on the length of the largest range, we may evaluate a different LOD to save iterations
-	int pixel_len = max(pixel_max_x - pixel_min_x, pixel_max_y - pixel_min_y);
-	const int cs = 1 << _lod_base;
-	const int max_overlapping_chunks = 2;
 	int lod_index = 0; // relative to _lod_base
-	while (pixel_len > cs * max_overlapping_chunks && lod_index + 1 < _lod_count) {
-		++lod_index;
-		pixel_len >>= 1;
+	{
+		int pixel_len = max(pixel_max_x - pixel_min_x, pixel_max_y - pixel_min_y);
+		const int cs = 1 << _lod_base;
+		const int max_overlapping_chunks = 2;
+		while (pixel_len > cs * max_overlapping_chunks && lod_index + 1 < _lod_count) {
+			++lod_index;
+			pixel_len >>= 1;
+		}
 	}
 
-	CRASH_COND(lod_index >= _lod_count);
+	ZN_ASSERT(lod_index < _lod_count);
 
+	// Calculate the area in chunks
 	const int absolute_lod = _lod_base + lod_index;
-	const int x_min = arithmetic_rshift(pixel_min_x, absolute_lod);
-	const int x_max = arithmetic_rshift(pixel_max_x, absolute_lod);
-	const int y_min = arithmetic_rshift(pixel_min_y, absolute_lod);
-	const int y_max = arithmetic_rshift(pixel_max_y, absolute_lod);
+	const int chunk_x_min = arithmetic_rshift(pixel_min_x, absolute_lod);
+	const int chunk_y_min = arithmetic_rshift(pixel_min_y, absolute_lod);
+	int chunk_x_max = arithmetic_rshift(pixel_max_x, absolute_lod);
+	int chunk_y_max = arithmetic_rshift(pixel_max_y, absolute_lod);
+
+	// If the image size is not a power of 2 and the interval crosses the repeating boundary of the image, we have to
+	// lookup one more chunk away, because chunks tile based on a rounded-up size of the image, yet the last chunk is
+	// virtually shorter so the next repetition of the image starts sooner.
+	// Note that `pixel_min_x` can't be >= `pixels_x`, because as soon as it is we wrap it back to the beginning of the
+	// image.
+	if (!_pixels_x_is_power_of_2 && pixel_max_x >= _pixels_x) {
+		++chunk_x_max;
+	}
+	if (!_pixels_y_is_power_of_2 && pixel_max_y >= _pixels_y) {
+		++chunk_y_max;
+	}
 
 	const Lod &lod = _lods[lod_index];
 
 	// Accumulate overlapping chunks
 	Interval r;
 	{
-		const unsigned int loc = math::wrap(x_min, lod.size_x) + math::wrap(y_min, lod.size_y) * lod.size_x;
+		const unsigned int loc = math::wrap(chunk_x_min, lod.size_x) + math::wrap(chunk_y_min, lod.size_y) * lod.size_x;
 		r = lod.data[loc];
 	}
-	for (int y = y_min; y <= y_max; ++y) {
-		for (int x = x_min; x <= x_max; ++x) {
-			const unsigned int loc = math::wrap(x, lod.size_x) + math::wrap(y, lod.size_y) * lod.size_x;
+	for (int chunk_y = chunk_y_min; chunk_y <= chunk_y_max; ++chunk_y) {
+		for (int chunk_x = chunk_x_min; chunk_x <= chunk_x_max; ++chunk_x) {
+			const unsigned int loc = math::wrap(chunk_x, lod.size_x) + math::wrap(chunk_y, lod.size_y) * lod.size_x;
 			r.add_interval(lod.data[loc]);
 		}
 	}

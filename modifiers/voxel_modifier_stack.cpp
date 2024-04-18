@@ -216,7 +216,7 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 			// Get modifier bounds in voxels
 			Box3i modifier_box(math::floor(modifier_aabb.position * w_to_v), math::ceil(modifier_aabb.size * w_to_v));
 			modifier_box.clip(Box3i(origin_voxels, voxels.get_size()));
-			const Vector3i local_origin_in_voxels = modifier_box.pos - origin_voxels;
+			const Vector3i local_origin_in_voxels = modifier_box.position - origin_voxels;
 
 			const int64_t volume = Vector3iUtil::get_volume(modifier_box.size);
 			area_sdf.resize(volume);
@@ -224,7 +224,7 @@ void VoxelModifierStack::apply(VoxelBuffer &voxels, AABB aabb) const {
 					voxels.get_size(), local_origin_in_voxels, local_origin_in_voxels + modifier_box.size);
 
 			get_positions_buffer(
-					modifier_box.size, v_to_w * modifier_box.pos, v_to_w * modifier_box.size, area_positions);
+					modifier_box.size, v_to_w * modifier_box.position, v_to_w * modifier_box.size, area_positions);
 
 			ctx.positions = to_span(area_positions);
 			ctx.sdf = to_span(area_sdf);

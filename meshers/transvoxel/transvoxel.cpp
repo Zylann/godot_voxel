@@ -1,5 +1,6 @@
 #include "transvoxel.h"
 #include "../../constants/cube_tables.h"
+#include "../../storage/materials_4i4w.h"
 #include "../../util/godot/core/sort_array.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/triangle.h"

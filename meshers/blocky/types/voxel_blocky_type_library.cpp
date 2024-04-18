@@ -8,7 +8,7 @@
 #include "../../../util/godot/core/string.h"
 #include "../../../util/godot/core/typed_array.h"
 #include "../../../util/profiling.h"
-#include "../../../util/string_funcs.h"
+#include "../../../util/string/format.h"
 #include "../voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
@@ -111,6 +111,10 @@ void VoxelBlockyTypeLibrary::update_id_map(StdVector<VoxelID> &id_map, StdVector
 
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
+
+		if (type == nullptr) {
+			continue;
+		}
 
 		type->generate_keys(keys, true);
 

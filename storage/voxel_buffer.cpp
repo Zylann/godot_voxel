@@ -1,9 +1,11 @@
 #include "voxel_buffer.h"
 #include "../constants/voxel_constants.h"
 #include "../util/containers/container_funcs.h"
+#include "../util/containers/dynamic_bitset.h"
 #include "../util/dstack.h"
 #include "../util/profiling.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
+#include "materials_4i4w.h"
 #include "voxel_memory_pool.h"
 #include <cstring>
 
@@ -720,6 +722,13 @@ bool VoxelBuffer::get_channel_raw(unsigned int channel_index, Span<uint8_t> &sli
 	return false;
 }
 
+bool VoxelBuffer::get_channel_raw_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const {
+	Span<uint8_t> slice_w;
+	const bool success = get_channel_raw(channel_index, slice_w);
+	slice = slice_w;
+	return success;
+}
+
 bool VoxelBuffer::create_channel(int i, uint64_t defval) {
 	ZN_DSTACK();
 	if (!create_channel_noinit(i, _size)) {
@@ -1032,8 +1041,8 @@ void VoxelBuffer::clear_voxel_metadata_in_area(Box3i box) {
 void VoxelBuffer::copy_voxel_metadata_in_area(const VoxelBuffer &src_buffer, Box3i src_box, Vector3i dst_origin) {
 	ZN_ASSERT_RETURN(src_buffer.is_box_valid(src_box));
 
-	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.pos - dst_origin, _size));
-	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.pos - src_box.pos;
+	const Box3i clipped_src_box = src_box.clipped(Box3i(src_box.position - dst_origin, _size));
+	const Vector3i clipped_dst_offset = dst_origin + clipped_src_box.position - src_box.position;
 
 	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator src_it = src_buffer._voxel_metadata.begin();
 			src_it != src_buffer._voxel_metadata.end(); ++src_it) {
@@ -1214,6 +1223,207 @@ void scale_and_store_sdf_if_modified(VoxelBuffer &voxels, Span<float> sdf, Span<
 		default:
 			ZN_CRASH();
 	}
+}
+
+void paste(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		bool with_metadata //
+) {
+	for (const uint8_t channel : channels) {
+		dst_buffer.copy_channel_from(src_buffer, Vector3i(), src_buffer.get_size(), dst_base_pos, channel);
+	}
+
+	if (with_metadata) {
+		const Box3i dst_box(dst_base_pos, src_buffer.get_size());
+		dst_buffer.clear_voxel_metadata_in_area(dst_box);
+		dst_buffer.copy_voxel_metadata_in_area(src_buffer, Box3i(Vector3i(), src_buffer.get_size()), dst_base_pos);
+	}
+}
+
+void paste_src_masked(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		bool with_metadata //
+) {
+	const Box3i dst_box = Box3i(dst_base_pos, src_buffer.get_size()).clipped(dst_buffer.get_size());
+
+	for (const uint8_t channel : channels) {
+		if (channel == src_mask_channel) {
+			dst_buffer.read_write_action(dst_box, channel,
+					[&src_buffer, src_mask_value, dst_base_pos, channel](const Vector3i pos, uint64_t dst_v) {
+						const uint64_t src_v = src_buffer.get_voxel(pos - dst_base_pos, channel);
+						if (src_v == src_mask_value) {
+							return dst_v;
+						}
+						return src_v;
+					});
+		} else {
+			dst_buffer.read_write_action(dst_box, channel,
+					[&src_buffer, src_mask_value, dst_base_pos, channel, src_mask_channel](
+							const Vector3i pos, uint64_t dst_v) {
+						const uint64_t mv = src_buffer.get_voxel(pos - dst_base_pos, src_mask_channel);
+						if (mv == src_mask_value) {
+							return dst_v;
+						}
+						const uint64_t src_v = src_buffer.get_voxel(pos - dst_base_pos, channel);
+						return src_v;
+					});
+		}
+	}
+
+	if (with_metadata) {
+		dst_buffer.erase_voxel_metadata_if([dst_box, &src_buffer, src_mask_channel, src_mask_value](
+												   const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) {
+			return dst_box.contains(p.key) && src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value;
+		});
+
+		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
+
+		src_buffer.for_each_voxel_metadata_in_area(src_box,
+				[&src_buffer, src_mask_channel, src_mask_value, &dst_buffer, dst_box, dst_base_pos](
+						Vector3i src_pos, const VoxelMetadata &src_meta) {
+					const Vector3i dst_pos = src_pos + dst_base_pos;
+					if (dst_box.contains(dst_pos) &&
+							src_buffer.get_voxel(src_pos, src_mask_channel) != src_mask_value) {
+						VoxelMetadata *dst_meta = dst_buffer.get_or_create_voxel_metadata(dst_pos);
+#ifdef TOOLS_ENABLED
+						ZN_ASSERT_RETURN(dst_meta != nullptr);
+#endif
+						dst_meta->copy_from(src_meta);
+					}
+				});
+	}
+}
+
+// Paste if the source is not a certain value, and the destination satisfies a predicate
+template <typename FDstPredicate>
+void paste_src_masked_dst_predicate(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		unsigned int dst_mask_channel, //
+		FDstPredicate dst_predicate, //
+		bool with_metadata //
+) {
+	const Box3i dst_box = Box3i(dst_base_pos, src_buffer.get_size()).clipped(dst_buffer.get_size());
+
+	for (const uint8_t channel : channels) {
+		if (channel == src_mask_channel && channel == dst_mask_channel) {
+			// Common path for blocky games
+			dst_buffer.read_write_action(dst_box, channel,
+					[&src_buffer, src_mask_value, dst_base_pos, channel, &dst_predicate](
+							const Vector3i pos, uint64_t dst_v) {
+						const uint64_t src_v = src_buffer.get_voxel(pos - dst_base_pos, channel);
+						if (src_v == src_mask_value) {
+							return dst_v;
+						}
+						if (!dst_predicate(dst_v)) {
+							return dst_v;
+						}
+						return src_v;
+					});
+
+		} else {
+			dst_buffer.read_write_action(dst_box, channel,
+					[&src_buffer, src_mask_value, dst_base_pos, channel, src_mask_channel, &dst_buffer, &dst_predicate,
+							dst_mask_channel](const Vector3i pos, uint64_t dst_v) {
+						const uint64_t src_mv = src_buffer.get_voxel(pos - dst_base_pos, src_mask_channel);
+						if (src_mv == src_mask_value) {
+							return dst_v;
+						}
+						const uint64_t dst_mv = dst_buffer.get_voxel(pos, dst_mask_channel);
+						if (!dst_predicate(dst_mv)) {
+							return dst_v;
+						}
+						const uint64_t src_v = src_buffer.get_voxel(pos - dst_base_pos, channel);
+						return src_v;
+					});
+		}
+	}
+
+	if (with_metadata) {
+		dst_buffer.erase_voxel_metadata_if(
+				[&src_buffer, src_mask_channel, src_mask_value, dst_box, &dst_buffer, dst_mask_channel, &dst_predicate](
+						const FlatMapMoveOnly<Vector3i, VoxelMetadata>::Pair &p) {
+					//
+					return dst_box.contains(p.key) //
+							&& src_buffer.get_voxel(p.key, src_mask_channel) != src_mask_value //
+							&& dst_predicate(dst_buffer.get_voxel(p.key, dst_mask_channel));
+				});
+
+		const Box3i src_box(dst_box.position - dst_base_pos, dst_box.size);
+
+		src_buffer.for_each_voxel_metadata_in_area(src_box,
+				[&src_buffer, src_mask_channel, src_mask_value, &dst_buffer, dst_box, dst_base_pos, dst_mask_channel,
+						&dst_predicate](Vector3i src_pos, const VoxelMetadata &src_meta) {
+					//
+					const Vector3i dst_pos = src_pos + dst_base_pos;
+					if (dst_box.contains(dst_pos) //
+							&& src_buffer.get_voxel(src_pos, src_mask_channel) != src_mask_value //
+							&& dst_predicate(dst_buffer.get_voxel(dst_pos, dst_mask_channel))) {
+						VoxelMetadata *dst_meta = dst_buffer.get_or_create_voxel_metadata(dst_pos);
+#ifdef TOOLS_ENABLED
+						ZN_ASSERT_RETURN(dst_meta != nullptr);
+#endif
+						dst_meta->copy_from(src_meta);
+					}
+				});
+	}
+}
+
+void paste_src_masked_dst_writable_value(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		unsigned int dst_mask_channel, //
+		uint64_t dst_mask_value, //
+		bool with_metadata //
+) {
+	paste_src_masked_dst_predicate(
+			channels,
+			src_buffer, //
+			src_mask_channel, //
+			src_mask_value, //
+			dst_buffer, //
+			dst_base_pos, //
+			dst_mask_channel, //
+			[dst_mask_value](const uint64_t dst_v) { //
+				return dst_v == dst_mask_value;
+			},
+			with_metadata);
+}
+
+void paste_src_masked_dst_writable_bitarray(Span<const uint8_t> channels, //
+		const VoxelBuffer &src_buffer, //
+		unsigned int src_mask_channel, //
+		uint64_t src_mask_value, //
+		VoxelBuffer &dst_buffer, //
+		const Vector3i dst_base_pos, //
+		unsigned int dst_mask_channel, //
+		const DynamicBitset &bitarray, //
+		bool with_metadata //
+) {
+	paste_src_masked_dst_predicate(
+			channels,
+			src_buffer, //
+			src_mask_channel, //
+			src_mask_value, //
+			dst_buffer, //
+			dst_base_pos, //
+			dst_mask_channel, //
+			[&bitarray](const uint64_t dst_v) { //
+				return dst_v < bitarray.size() && bitarray.get(dst_v);
+			},
+			with_metadata);
 }
 
 } // namespace zylann::voxel

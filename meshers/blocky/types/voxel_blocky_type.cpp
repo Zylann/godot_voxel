@@ -12,7 +12,7 @@
 #endif
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
-#include "../../../util/string_funcs.h"
+#include "../../../util/string/format.h"
 #include "../voxel_blocky_library_base.h"
 
 namespace zylann::voxel {

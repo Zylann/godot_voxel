@@ -14,8 +14,8 @@ public:
 		return _size;
 	}
 
-	inline void resize(unsigned int size) {
-		// non-initializing resize
+	inline void resize_no_init(unsigned int size) {
+		// non-initializing resize (no guaranteed values)
 		_bits.resize((size + 63) / 64);
 		_size = size;
 	}

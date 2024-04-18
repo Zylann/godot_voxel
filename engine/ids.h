@@ -2,7 +2,7 @@
 #define VOXEL_VOLUME_ID_H
 
 #include "../util/containers/slot_map.h"
-#include "../util/std_stringstream.h"
+#include "../util/string/std_stringstream.h"
 
 namespace zylann::voxel {
 

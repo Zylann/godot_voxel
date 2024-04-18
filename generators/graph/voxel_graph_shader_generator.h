@@ -6,7 +6,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/errors.h"
 #include "../../util/godot/core/variant.h"
-#include "../../util/std_string.h"
+#include "../../util/string/std_string.h"
 #include "code_gen_helper.h"
 #include "voxel_graph_function.h"
 #include "voxel_graph_runtime.h"

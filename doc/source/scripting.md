@@ -84,16 +84,17 @@ func _generate_block(buffer : VoxelBuffer, origin : Vector3i, lod : int) -> void
 In your terrain scene, add another script to a node, which will setup your generator when the game starts. Code might differ a bit depending on how you structure your scene.
 
 ```gdscript
+extends Node # Or whatever your root node is
 const MyGenerator = preload("my_generator.gd")
 
 # Get the terrain
-var terrain = $VoxelTerrain
+@onready var terrain = $VoxelTerrain
 
 func _ready():
 	terrain.generator = MyGenerator.new()
 ```
 
-Make sure to have a `VoxelViewer` node in the scene under the camera, and you should see this:
+Make sure to have a `VoxelViewer` node in the scene under the camera. You may also want to move it up, look down, and add a `DirectionalLight3D` and `WorldEnvironment` (otherwise everything will look grey).
 
 ![Custom stream](images/custom-stream.jpg)
 

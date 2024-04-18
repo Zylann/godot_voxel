@@ -8,7 +8,7 @@
 #include "../util/godot/classes/rendering_device.h"
 #include "../util/io/file_locker.h"
 #include "../util/memory/memory.h"
-#include "../util/std_string.h"
+#include "../util/string/std_string.h"
 #include "../util/tasks/progressive_task_runner.h"
 #include "../util/tasks/threaded_task_runner.h"
 #include "../util/tasks/time_spread_task_runner.h"

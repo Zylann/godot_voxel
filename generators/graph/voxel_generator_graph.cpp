@@ -1,8 +1,8 @@
 #include "voxel_generator_graph.h"
 #include "../../constants/voxel_string_names.h"
+#include "../../storage/materials_4i4w.h"
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/container_funcs.h"
-#include "../../util/expression_parser.h"
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/image.h"
 #include "../../util/godot/classes/object.h"
@@ -14,7 +14,8 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/expression_parser.h"
+#include "../../util/string/format.h"
 #include "node_type_db.h"
 #include "voxel_graph_function.h"
 
@@ -425,7 +426,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	const int stride = 1 << input.lod;
 
 	// Clip threshold must be higher for higher lod indexes because distances for one sampled voxel are also larger
-	const float clip_threshold = sdf_scale * _sdf_clip_threshold * stride;
+	const float clip_threshold = _sdf_clip_threshold * stride;
 
 	// Block size must be a multiple of section size, as all sections must have the same size
 	const bool can_use_subdivision =
@@ -458,9 +459,6 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 	FixedArray<uint8_t, 4> spare_texture_indices = runtime_ptr->spare_texture_indices;
 	const int sdf_output_buffer_index = runtime_ptr->sdf_output_buffer_index;
 	const int type_output_buffer_index = runtime_ptr->type_output_buffer_index;
-
-	FixedArray<unsigned int, pg::Runtime::MAX_OUTPUTS> required_outputs;
-	unsigned int required_outputs_count = 0;
 
 	bool all_sdf_is_air = (sdf_output_buffer_index != -1) && (type_output_buffer_index == -1);
 	bool all_sdf_is_matter = all_sdf_is_air;
@@ -504,10 +502,12 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					runtime.analyze_range(cache.state, range_inputs.get());
 				}
 
+				SmallVector<unsigned int, pg::Runtime::MAX_OUTPUTS> required_outputs;
+
 				bool sdf_is_air = true;
 				bool sdf_is_uniform = true;
 				if (sdf_output_buffer_index != -1) {
-					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index) * sdf_scale;
+					const math::Interval sdf_range = cache.state.get_range(sdf_output_buffer_index);
 					bool sdf_is_matter = false;
 
 					if (sdf_range.min > clip_threshold && sdf_range.max > clip_threshold) {
@@ -526,8 +526,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 
 					} else {
 						// SDF is not uniform, we'll need to compute it per voxel
-						required_outputs[required_outputs_count] = runtime_ptr->sdf_output_index;
-						++required_outputs_count;
+						required_outputs.push_back(runtime_ptr->sdf_output_index);
 						sdf_is_air = false;
 						sdf_is_uniform = false;
 					}
@@ -544,8 +543,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 						type_is_uniform = true;
 					} else {
 						// Types are not uniform, we'll need to compute them per voxel
-						required_outputs[required_outputs_count] = runtime_ptr->type_output_index;
-						++required_outputs_count;
+						required_outputs.push_back(runtime_ptr->type_output_index);
 					}
 				}
 
@@ -553,8 +551,7 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 					// We can skip this when SDF is air because there won't be any matter to give a texture to
 					// TODO Range analysis on that?
 					for (unsigned int i = 0; i < runtime_ptr->weight_outputs_count; ++i) {
-						required_outputs[required_outputs_count] = runtime_ptr->weight_output_indices[i];
-						++required_outputs_count;
+						required_outputs.push_back(runtime_ptr->weight_output_indices[i]);
 					}
 				}
 
@@ -576,12 +573,11 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 						out_buffer.fill_area(encoded_weights, rmin, rmax, VoxelBuffer::CHANNEL_WEIGHTS);
 						single_texture_is_uniform = true;
 					} else {
-						required_outputs[required_outputs_count] = runtime_ptr->single_texture_output_index;
-						++required_outputs_count;
+						required_outputs.push_back(runtime_ptr->single_texture_output_index);
 					}
 				}
 
-				if (required_outputs_count == 0) {
+				if (required_outputs.size() == 0) {
 					// We found all we need with range analysis, no need to calculate per voxel.
 					continue;
 				}
@@ -589,8 +585,8 @@ VoxelGenerator::Result VoxelGeneratorGraph::generate_block(VoxelGenerator::Voxel
 				// At least one channel needs per-voxel computation.
 
 				if (_use_optimized_execution_map) {
-					runtime.generate_optimized_execution_map(cache.state, cache.optimized_execution_map,
-							to_span_const(required_outputs, required_outputs_count), false);
+					runtime.generate_optimized_execution_map(
+							cache.state, cache.optimized_execution_map, to_span(required_outputs), false);
 				}
 
 				{

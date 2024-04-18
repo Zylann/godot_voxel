@@ -2,8 +2,6 @@
 
 Inherits: [RefCounted](https://docs.godotengine.org/en/stable/classes/class_refcounted.html)
 
-
-
 ## Methods: 
 
 
@@ -17,16 +15,20 @@ Return                                                                  | Signat
 
 ## Method Descriptions
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_remaining_tasks"></span> **get_remaining_tasks**( ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_remaining_tasks"></span> **get_remaining_tasks**( ) 
 
+*(This method has no documentation)*
 
-- [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_total_tasks"></span> **get_total_tasks**( ) 
+### [int](https://docs.godotengine.org/en/stable/classes/class_int.html)<span id="i_get_total_tasks"></span> **get_total_tasks**( ) 
 
+*(This method has no documentation)*
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_aborted"></span> **is_aborted**( ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_aborted"></span> **is_aborted**( ) 
 
+*(This method has no documentation)*
 
-- [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_complete"></span> **is_complete**( ) 
+### [bool](https://docs.godotengine.org/en/stable/classes/class_bool.html)<span id="i_is_complete"></span> **is_complete**( ) 
 
+*(This method has no documentation)*
 
-_Generated on Mar 24, 2024_
+_Generated on Apr 06, 2024_

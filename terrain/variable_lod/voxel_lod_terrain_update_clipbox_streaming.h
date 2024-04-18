@@ -6,11 +6,17 @@
 
 namespace zylann::voxel {
 
-void process_clipbox_streaming(VoxelLodTerrainUpdateData::State &state, VoxelData &data,
-		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const Transform3D &volume_transform,
-		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
-		const VoxelLodTerrainUpdateData::Settings &settings, bool can_load, bool can_mesh);
+void process_clipbox_streaming( //
+		VoxelLodTerrainUpdateData::State &state, //
+		VoxelData &data, //
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, //
+		const Transform3D &volume_transform, //
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save, //
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
+		const VoxelLodTerrainUpdateData::Settings &settings, //
+		bool can_load, //
+		bool can_mesh //
+);
 
 } // namespace zylann::voxel
 

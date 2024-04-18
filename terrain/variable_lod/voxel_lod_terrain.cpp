@@ -28,7 +28,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/profiling_clock.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../../util/tasks/async_dependency_tracker.h"
 #include "../../util/thread/mutex.h"
 #include "../../util/thread/rw_lock.h"
@@ -2804,7 +2804,7 @@ void VoxelLodTerrain::_b_set_voxel_bounds(AABB aabb) {
 
 AABB VoxelLodTerrain::_b_get_voxel_bounds() const {
 	const Box3i b = get_voxel_bounds();
-	return AABB(b.pos, b.size);
+	return AABB(b.position, b.size);
 }
 
 // DEBUG LAND
@@ -3094,7 +3094,7 @@ void VoxelLodTerrain::update_gizmos() {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
-					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.pos) - margin);
+					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.position) - margin);
 			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
 	}
@@ -3210,8 +3210,8 @@ void VoxelLodTerrain::update_gizmos() {
 			for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 				const int lod_mesh_block_size = mesh_block_size << lod_index;
 				const Box3i box = paired_viewer.state.mesh_box_per_lod[lod_index];
-				const Transform3D lt(Basis().scaled(Vector3(box.size * lod_mesh_block_size)),
-						Vector3(box.pos * lod_mesh_block_size));
+				const Transform3D lt(Basis().scaled(to_vec3(box.size * lod_mesh_block_size)),
+						to_vec3(box.position * lod_mesh_block_size));
 				const Transform3D t = parent_transform * lt;
 				const float g = math::squared(math::max(1.f - float(lod_index) / lod_count_f, 0.f));
 				dr.draw_box(t, Color8(uint8_t(g * 254.f), 32, 255, 255));
@@ -3263,7 +3263,8 @@ void VoxelLodTerrain::update_gizmos() {
 	for (unsigned int i = 0; i < _debug_edit_items.size();) {
 		DebugEditItem &item = _debug_edit_items[i];
 
-		const Transform3D local_transform(Basis().scaled(to_vec3(item.voxel_box.size)), to_vec3(item.voxel_box.pos));
+		const Transform3D local_transform(
+				Basis().scaled(to_vec3(item.voxel_box.size)), to_vec3(item.voxel_box.position));
 
 		const Transform3D t = parent_transform * local_transform;
 
@@ -3314,7 +3315,7 @@ Array VoxelLodTerrain::_b_debug_print_sdf_top_down(Vector3i center, Vector3i ext
 		buffer.create(world_box.size);
 
 		world_box.for_each_cell([world_box, &buffer, &voxel_data](const Vector3i &world_pos) {
-			const Vector3i rpos = world_pos - world_box.pos;
+			const Vector3i rpos = world_pos - world_box.position;
 			VoxelSingleValue v;
 			v.f = constants::SDF_FAR_OUTSIDE;
 			v = voxel_data.get_voxel(world_pos, VoxelBuffer::CHANNEL_SDF, v);

@@ -1,10 +1,10 @@
 #ifndef ZYLANN_EXPRESSION_PARSER_H
 #define ZYLANN_EXPRESSION_PARSER_H
 
-#include "containers/fixed_array.h"
-#include "containers/span.h"
-#include "containers/std_vector.h"
-#include "memory.h"
+#include "../containers/fixed_array.h"
+#include "../containers/span.h"
+#include "../containers/std_vector.h"
+#include "../memory/memory.h"
 #include "std_string.h"
 #include <string_view>
 

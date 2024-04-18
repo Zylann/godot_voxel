@@ -99,6 +99,7 @@ Pugulishus
 Fabian (nan0m)
 SummitCollie
 nulshift
+ddel-rio (Daniel del Río Román)
 ```
 
 

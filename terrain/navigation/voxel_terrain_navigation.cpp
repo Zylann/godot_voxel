@@ -10,7 +10,7 @@
 #include "../fixed_lod/voxel_terrain.h"
 
 #ifdef DEBUG_ENABLED
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #endif
 
 namespace zylann::voxel {

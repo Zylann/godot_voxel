@@ -3,7 +3,7 @@
 
 #include "../containers/small_vector.h"
 #include "../containers/std_vector.h"
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "vector3i.h"
 
 namespace zylann {
@@ -11,14 +11,14 @@ namespace zylann {
 // Axis-aligned 3D box using integer coordinates
 class Box3i {
 public:
-	Vector3i pos;
+	Vector3i position;
 	Vector3i size;
 
 	Box3i() {}
 
-	Box3i(Vector3i p_pos, Vector3i p_size) : pos(p_pos), size(p_size) {}
+	Box3i(Vector3i p_pos, Vector3i p_size) : position(p_pos), size(p_size) {}
 
-	Box3i(int ox, int oy, int oz, int sx, int sy, int sz) : pos(ox, oy, oz), size(sx, sy, sz) {}
+	Box3i(int ox, int oy, int oz, int sx, int sy, int sz) : position(ox, oy, oz), size(sx, sy, sz) {}
 
 	// Creates a box centered on a point, specifying half its size.
 	// Warning: if you consider the center being a 1x1x1 box which would be extended, instead of a mathematical point,
@@ -35,58 +35,58 @@ public:
 	static inline Box3i get_bounding_box(Box3i a, Box3i b) {
 		Box3i box;
 
-		box.pos.x = math::min(a.pos.x, b.pos.x);
-		box.pos.y = math::min(a.pos.y, b.pos.y);
-		box.pos.z = math::min(a.pos.z, b.pos.z);
+		box.position.x = math::min(a.position.x, b.position.x);
+		box.position.y = math::min(a.position.y, b.position.y);
+		box.position.z = math::min(a.position.z, b.position.z);
 
-		Vector3i max_a = a.pos + a.size;
-		Vector3i max_b = b.pos + b.size;
+		Vector3i max_a = a.position + a.size;
+		Vector3i max_b = b.position + b.size;
 
-		box.size.x = math::max(max_a.x, max_b.x) - box.pos.x;
-		box.size.y = math::max(max_a.y, max_b.y) - box.pos.y;
-		box.size.z = math::max(max_a.z, max_b.z) - box.pos.z;
+		box.size.x = math::max(max_a.x, max_b.x) - box.position.x;
+		box.size.y = math::max(max_a.y, max_b.y) - box.position.y;
+		box.size.z = math::max(max_a.z, max_b.z) - box.position.z;
 
 		return box;
 	}
 
 	bool inline contains(Vector3i p_pos) const {
-		const Vector3i end = pos + size;
-		return p_pos.x >= pos.x && //
-				p_pos.y >= pos.y && //
-				p_pos.z >= pos.z && //
+		const Vector3i end = position + size;
+		return p_pos.x >= position.x && //
+				p_pos.y >= position.y && //
+				p_pos.z >= position.z && //
 				p_pos.x < end.x && //
 				p_pos.y < end.y && //
 				p_pos.z < end.z;
 	}
 
 	bool inline contains(const Box3i other) const {
-		const Vector3i other_end = other.pos + other.size;
-		const Vector3i end = pos + size;
-		return other.pos.x >= pos.x && //
-				other.pos.y >= pos.y && //
-				other.pos.z >= pos.z && //
+		const Vector3i other_end = other.position + other.size;
+		const Vector3i end = position + size;
+		return other.position.x >= position.x && //
+				other.position.y >= position.y && //
+				other.position.z >= position.z && //
 				other_end.x <= end.x && //
 				other_end.y <= end.y && //
 				other_end.z <= end.z;
 	}
 
 	bool intersects(const Box3i &other) const {
-		if (pos.x >= other.pos.x + other.size.x) {
+		if (position.x >= other.position.x + other.size.x) {
 			return false;
 		}
-		if (pos.y >= other.pos.y + other.size.y) {
+		if (position.y >= other.position.y + other.size.y) {
 			return false;
 		}
-		if (pos.z >= other.pos.z + other.size.z) {
+		if (position.z >= other.position.z + other.size.z) {
 			return false;
 		}
-		if (other.pos.x >= pos.x + size.x) {
+		if (other.position.x >= position.x + size.x) {
 			return false;
 		}
-		if (other.pos.y >= pos.y + size.y) {
+		if (other.position.y >= position.y + size.y) {
 			return false;
 		}
-		if (other.pos.z >= pos.z + size.z) {
+		if (other.position.z >= position.z + size.z) {
 			return false;
 		}
 		return true;
@@ -99,11 +99,11 @@ public:
 	// Iteration is done in ZYX order.
 	template <typename A>
 	inline void for_each_cell(A action) const {
-		const Vector3i max = pos + size;
+		const Vector3i max = position + size;
 		Vector3i p;
-		for (p.z = pos.z; p.z < max.z; ++p.z) {
-			for (p.y = pos.y; p.y < max.y; ++p.y) {
-				for (p.x = pos.x; p.x < max.x; ++p.x) {
+		for (p.z = position.z; p.z < max.z; ++p.z) {
+			for (p.y = position.y; p.y < max.y; ++p.y) {
+				for (p.x = position.x; p.x < max.x; ++p.x) {
 					action(p);
 				}
 			}
@@ -113,11 +113,11 @@ public:
 	// Iteration is done in ZXY order.
 	template <typename A>
 	inline void for_each_cell_zxy(A action) const {
-		const Vector3i max = pos + size;
+		const Vector3i max = position + size;
 		Vector3i p;
-		for (p.z = pos.z; p.z < max.z; ++p.z) {
-			for (p.x = pos.x; p.x < max.x; ++p.x) {
-				for (p.y = pos.y; p.y < max.y; ++p.y) {
+		for (p.z = position.z; p.z < max.z; ++p.z) {
+			for (p.x = position.x; p.x < max.x; ++p.x) {
+				for (p.y = position.y; p.y < max.y; ++p.y) {
 					action(p);
 				}
 			}
@@ -128,11 +128,11 @@ public:
 	// Iteration is done in ZYX order.
 	template <typename A>
 	inline bool all_cells_match(A predicate) const {
-		const Vector3i max = pos + size;
+		const Vector3i max = position + size;
 		Vector3i p;
-		for (p.z = pos.z; p.z < max.z; ++p.z) {
-			for (p.y = pos.y; p.y < max.y; ++p.y) {
-				for (p.x = pos.x; p.x < max.x; ++p.x) {
+		for (p.z = position.z; p.z < max.z; ++p.z) {
+			for (p.y = position.y; p.y < max.y; ++p.y) {
+				for (p.x = position.x; p.x < max.x; ++p.x) {
 					if (!predicate(p)) {
 						return false;
 					}
@@ -164,31 +164,31 @@ public:
 
 		Box3i a = *this;
 
-		Vector3i a_min = a.pos;
-		Vector3i a_max = a.pos + a.size;
+		Vector3i a_min = a.position;
+		Vector3i a_max = a.position + a.size;
 
-		const Vector3i b_min = b.pos;
-		const Vector3i b_max = b.pos + b.size;
+		const Vector3i b_min = b.position;
+		const Vector3i b_max = b.position + b.size;
 
 		if (a_min.x < b_min.x) {
 			const Vector3i a_rect_size(b_min.x - a_min.x, a.size.y, a.size.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.x = b_min.x;
-			a.pos.x = b.pos.x;
+			a.position.x = b.position.x;
 			a.size.x = a_max.x - a_min.x;
 		}
 		if (a_min.y < b_min.y) {
 			const Vector3i a_rect_size(a.size.x, b_min.y - a_min.y, a.size.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.y = b_min.y;
-			a.pos.y = b.pos.y;
+			a.position.y = b.position.y;
 			a.size.y = a_max.y - a_min.y;
 		}
 		if (a_min.z < b_min.z) {
 			const Vector3i a_rect_size(a.size.x, a.size.y, b_min.z - a_min.z);
 			action(Box3i(a_min, a_rect_size));
 			a_min.z = b_min.z;
-			a.pos.z = b.pos.z;
+			a.position.z = b.position.z;
 			a.size.z = a_max.z - a_min.z;
 		}
 
@@ -236,8 +236,8 @@ public:
 		//  |/      |/    |/
 		//  o-------o     o---x
 
-		Vector3i min_pos = pos;
-		Vector3i max_pos = pos + size;
+		Vector3i min_pos = position;
+		Vector3i max_pos = position + size;
 
 		// Top and bottom
 		for (int z = min_pos.z; z < max_pos.z; ++z) {
@@ -273,17 +273,17 @@ public:
 	}
 
 	inline Box3i padded(int m) const {
-		return Box3i(pos.x - m, pos.y - m, pos.z - m, size.x + 2 * m, size.y + 2 * m, size.z + 2 * m);
+		return Box3i(position.x - m, position.y - m, position.z - m, size.x + 2 * m, size.y + 2 * m, size.z + 2 * m);
 	}
 
 	// Converts the rectangle into a coordinate system of higher step size,
 	// rounding outwards of the area covered by the original rectangle if divided coordinates have remainders.
 	inline Box3i downscaled(int step_size) const {
 		Box3i o;
-		o.pos = math::floordiv(pos, step_size);
+		o.position = math::floordiv(position, step_size);
 		// TODO Is that ceildiv?
-		Vector3i max_pos = math::floordiv(pos + size - Vector3i(1, 1, 1), step_size);
-		o.size = max_pos - o.pos + Vector3i(1, 1, 1);
+		Vector3i max_pos = math::floordiv(position + size - Vector3i(1, 1, 1), step_size);
+		o.size = max_pos - o.position + Vector3i(1, 1, 1);
 		return o;
 	}
 
@@ -292,11 +292,11 @@ public:
 	// This is such that the result is included in the original rectangle (assuming a common coordinate system).
 	// The result can be an empty rectangle.
 	inline Box3i downscaled_inner(int step_size) const {
-		return Box3i::from_min_max(math::ceildiv(pos, step_size), math::floordiv(pos + size, step_size));
+		return Box3i::from_min_max(math::ceildiv(position, step_size), math::floordiv(position + size, step_size));
 	}
 
 	inline Box3i scaled(int scale) const {
-		return Box3i(pos * scale, size * scale);
+		return Box3i(position * scale, size * scale);
 	}
 
 	static inline void clip_range(int &pos, int &size, int lim_pos, int lim_size) {
@@ -313,9 +313,15 @@ public:
 	}
 
 	inline void clip(const Box3i lim) {
-		clip_range(pos.x, size.x, lim.pos.x, lim.size.x);
-		clip_range(pos.y, size.y, lim.pos.y, lim.size.y);
-		clip_range(pos.z, size.z, lim.pos.z, lim.size.z);
+		clip_range(position.x, size.x, lim.position.x, lim.size.x);
+		clip_range(position.y, size.y, lim.position.y, lim.size.y);
+		clip_range(position.z, size.z, lim.position.z, lim.size.z);
+	}
+
+	inline void clip(const Vector3i &lim_size) {
+		clip_range(position.x, size.x, 0, lim_size.x);
+		clip_range(position.y, size.y, 0, lim_size.y);
+		clip_range(position.z, size.z, 0, lim_size.z);
 	}
 
 	inline Box3i clipped(const Box3i lim) const {
@@ -324,18 +330,24 @@ public:
 		return copy;
 	}
 
+	inline Box3i clipped(const Vector3i &lim_size) const {
+		Box3i copy(*this);
+		copy.clip(lim_size);
+		return copy;
+	}
+
 	inline bool encloses(const Box3i &other) const {
-		return pos.x <= other.pos.x && //
-				pos.y <= other.pos.y && //
-				pos.z <= other.pos.z && //
-				pos.x + size.x >= other.pos.x + other.size.x && //
-				pos.y + size.y >= other.pos.y + other.size.y && //
-				pos.z + size.z >= other.pos.z + other.size.z;
+		return position.x <= other.position.x && //
+				position.y <= other.position.y && //
+				position.z <= other.position.z && //
+				position.x + size.x >= other.position.x + other.size.x && //
+				position.y + size.y >= other.position.y + other.size.y && //
+				position.z + size.z >= other.position.z + other.size.z;
 	}
 
 	inline Box3i snapped(int step) const {
 		Box3i r = downscaled(step);
-		r.pos *= step;
+		r.position *= step;
 		r.size *= step;
 		return r;
 	}
@@ -346,24 +358,24 @@ public:
 
 	void merge_with(const Box3i &other) {
 		const Vector3i min_pos( //
-				math::min(pos.x, other.pos.x), //
-				math::min(pos.y, other.pos.y), //
-				math::min(pos.z, other.pos.z));
+				math::min(position.x, other.position.x), //
+				math::min(position.y, other.position.y), //
+				math::min(position.z, other.position.z));
 		const Vector3i max_pos( //
-				math::max(pos.x + size.x, other.pos.x + other.size.x), //
-				math::max(pos.y + size.y, other.pos.y + other.size.y), //
-				math::max(pos.z + size.z, other.pos.z + other.size.z));
-		pos = min_pos;
+				math::max(position.x + size.x, other.position.x + other.size.x), //
+				math::max(position.y + size.y, other.position.y + other.size.y), //
+				math::max(position.z + size.z, other.position.z + other.size.z));
+		position = min_pos;
 		size = max_pos - min_pos;
 	}
 };
 
 inline bool operator!=(const Box3i &a, const Box3i &b) {
-	return a.pos != b.pos || a.size != b.size;
+	return a.position != b.position || a.size != b.size;
 }
 
 inline bool operator==(const Box3i &a, const Box3i &b) {
-	return a.pos == b.pos && a.size == b.size;
+	return a.position == b.position && a.size == b.size;
 }
 
 StdStringStream &operator<<(StdStringStream &ss, const Box3i &box);

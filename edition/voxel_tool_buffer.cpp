@@ -20,22 +20,68 @@ bool VoxelToolBuffer::is_area_editable(const Box3i &box) const {
 
 void VoxelToolBuffer::do_sphere(Vector3 center, float radius) {
 	ERR_FAIL_COND(_buffer.is_null());
-
-	if (_mode != MODE_TEXTURE_PAINT) {
-		// TODO Eventually all specialized voxel tools should use lambda writing functions
-		VoxelTool::do_sphere(center, radius);
-		return;
-	}
-
 	ZN_PROFILE_SCOPE();
 
-	Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
-	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
+	VoxelBuffer &vb = _buffer->get_buffer();
 
-	_buffer->get_buffer().write_box_2_template<ops::TextureBlendSphereOp, uint16_t, uint16_t>(box,
-			VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS,
-			ops::TextureBlendSphereOp(center, radius, _texture_params), Vector3i());
+	ops::DoShapeSingleBuffer<ops::SdfSphere> op;
+	op.shape.center = center;
+	op.shape.radius = radius;
+	op.shape.sdf_scale = get_sdf_scale();
+	op.box = op.shape.get_box().clipped(vb.get_size());
+	op.mode = static_cast<ops::Mode>(get_mode());
+	op.buffer = &vb;
+	op.texture_params = _texture_params;
+	op.blocky_value = _value;
+	op.channel = get_channel();
+	op.strength = get_sdf_strength();
+
+	op();
+
+	_post_edit(op.box);
+}
+
+void VoxelToolBuffer::do_box(Vector3i begin, Vector3i end) {
+	ERR_FAIL_COND(_buffer.is_null());
+	ZN_PROFILE_SCOPE();
+
+	VoxelBuffer &vb = _buffer->get_buffer();
+
+	Vector3iUtil::sort_min_max(begin, end);
+	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1)).clipped(vb.get_size());
+
+	if (_channel == VoxelBuffer::CHANNEL_SDF) {
+#if 0
+		const float sdf_scale = get_sdf_scale();
+		const VoxelBuffer::ChannelId channel = _channel;
+		const ops::Mode mode = static_cast<ops::Mode>(_mode);
+
+		// TODO Better quality
+		// Not consistent SDF, but should work ok
+		box.for_each_cell([&vb, sdf_scale, channel, mode](Vector3i pos) {
+			vb.set_voxel_f(ops::sdf_blend(constants::SDF_FAR_INSIDE * sdf_scale, vb.get_voxel_f(pos, channel), mode),
+					pos, channel);
+		});
+#else
+		ops::DoShapeSingleBuffer<ops::SdfAxisAlignedBox> op;
+		op.shape.center = to_vec3(begin + end) * 0.5;
+		op.shape.half_size = to_vec3(end - begin) * 0.5;
+		op.shape.sdf_scale = get_sdf_scale();
+		op.box = op.shape.get_box().clipped(vb.get_size());
+		op.mode = static_cast<ops::Mode>(get_mode());
+		op.buffer = &vb;
+		op.texture_params = _texture_params;
+		op.blocky_value = _value;
+		op.channel = get_channel();
+		op.strength = get_sdf_strength();
+
+		op();
+#endif
+
+	} else {
+		const int value = _mode == MODE_REMOVE ? _eraser_value : _value;
+		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
+	}
 
 	_post_edit(box);
 }
@@ -81,29 +127,25 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 	VoxelBuffer &dst = _buffer->get_buffer();
 
 	Box3i box(p_pos, src.get_size());
-	const Vector3i min_noclamp = box.pos;
-	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
+	const Vector3i min_noclamp = box.position;
+	box.clip(Box3i(Vector3i(), dst.get_size()));
 
 	if (channels_mask == 0) {
 		channels_mask = (1 << get_channel());
 	}
 
-	unsigned int channel_count;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBuffer::mask_to_channels_list(channels_mask, channel_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
-	const Vector3i box_max = box.pos + box.size;
+	const Vector3i box_max = box.position + box.size;
 
-	for (unsigned int ci = 0; ci < channel_count; ++ci) {
-		const unsigned int channel_index = channels[ci];
-
-		for (int z = box.pos.z; z < box_max.z; ++z) {
+	for (const uint8_t channel_index : channels) {
+		for (int z = box.position.z; z < box_max.z; ++z) {
 			const int bz = z - min_noclamp.z;
 
-			for (int x = box.pos.x; x < box_max.x; ++x) {
+			for (int x = box.position.x; x < box_max.x; ++x) {
 				const int bx = x - min_noclamp.x;
 
-				for (int y = box.pos.y; y < box_max.y; ++y) {
+				for (int y = box.position.y; y < box_max.y; ++y) {
 					const int by = y - min_noclamp.y;
 
 					const uint64_t v = src.get_voxel(bx, by, bz, channel_index);
@@ -117,7 +159,7 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 		}
 	}
 
-	_buffer->get_buffer().copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
+	dst.copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
 }
 
 void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
@@ -128,56 +170,13 @@ void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_vox
 	VoxelBuffer &dst = _buffer->get_buffer();
 	const VoxelBuffer &src = p_voxels->get_buffer();
 
-	Box3i box(p_pos, p_voxels->get_buffer().get_size());
-	const Vector3i min_noclamp = box.pos;
-	box.clip(Box3i(Vector3i(), _buffer->get_buffer().get_size()));
-
 	if (channels_mask == 0) {
 		channels_mask = (1 << get_channel());
 	}
 
-	unsigned int channel_count;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBuffer::mask_to_channels_list(channels_mask, channel_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
-	const Vector3i box_max = box.pos + box.size;
-
-	for (unsigned int ci = 0; ci < channel_count; ++ci) {
-		const unsigned int channel_index = channels[ci];
-
-		for (int z = box.pos.z; z < box_max.z; ++z) {
-			const int bz = z - min_noclamp.z;
-
-			for (int x = box.pos.x; x < box_max.x; ++x) {
-				const int bx = x - min_noclamp.x;
-
-				for (int y = box.pos.y; y < box_max.y; ++y) {
-					const int by = y - min_noclamp.y;
-
-					const uint64_t mv = src.get_voxel(bx, by, bz, mask_channel);
-					if (mv != mask_value) {
-						const uint64_t v =
-								mask_channel == channel_index ? mv : src.get_voxel(bx, by, bz, channel_index);
-						dst.set_voxel(v, x, y, z, channel_index);
-
-						// Overwrite previous metadata
-						dst.erase_voxel_metadata(Vector3i(x, y, z));
-					}
-				}
-			}
-		}
-	}
-
-	_buffer->get_buffer().for_each_voxel_metadata_in_area(
-			box, [min_noclamp, &src, &dst, mask_channel, mask_value](Vector3i dst_pos, const VoxelMetadata &meta) {
-				const Vector3i src_pos = dst_pos - min_noclamp;
-				ZN_ASSERT(src.is_position_valid(src_pos));
-				if (src.get_voxel(src_pos, mask_channel) != mask_value) {
-					VoxelMetadata *dst_meta = dst.get_or_create_voxel_metadata(dst_pos);
-					ZN_ASSERT_RETURN(dst_meta != nullptr);
-					dst_meta->copy_from(meta);
-				}
-			});
+	paste_src_masked(to_span(channels), src, mask_channel, mask_value, dst, p_pos, true);
 }
 
 void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> radii) {

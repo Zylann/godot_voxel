@@ -4,7 +4,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/memory/memory.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "../../util/tasks/threaded_task_runner.h"
 #include "../../util/thread/spatial_lock_3d.h"
 #include "../testing.h"

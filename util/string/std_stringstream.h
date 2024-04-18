@@ -1,7 +1,7 @@
 #ifndef ZN_STD_STRINGSTREAM_H
 #define ZN_STD_STRINGSTREAM_H
 
-#include "memory/std_allocator.h"
+#include "../memory/std_allocator.h"
 #include <iosfwd>
 
 namespace zylann {

@@ -8,9 +8,7 @@
 
 namespace zylann::voxel {
 
-VoxelTool::VoxelTool() {
-	_sdf_scale = 1.f; // VoxelBuffer::get_sdf_quantization_scale(VoxelBuffer::DEFAULT_SDF_CHANNEL_DEPTH);
-}
+VoxelTool::VoxelTool() {}
 
 void VoxelTool::set_value(uint64_t val) {
 	_value = val;
@@ -153,41 +151,13 @@ void VoxelTool::_set_voxel_f(Vector3i pos, float v) {
 	ERR_PRINT("Not implemented");
 }
 
-// TODO May be worth using VoxelBuffer::read_write_action() in the future with a lambda,
-// so we avoid the burden of going through get/set, validation and rehash access to blocks.
-// Would work well by avoiding virtual as well using a specialized implementation.
-
-namespace {
-inline float sdf_blend(float src_value, float dst_value, VoxelTool::Mode mode) {
-	float res;
-	switch (mode) {
-		case VoxelTool::MODE_ADD:
-			res = zylann::math::sdf_union(src_value, dst_value);
-			break;
-
-		case VoxelTool::MODE_REMOVE:
-			// Relative complement (or difference)
-			res = zylann::math::sdf_subtract(dst_value, src_value);
-			break;
-
-		case VoxelTool::MODE_SET:
-			res = src_value;
-			break;
-
-		default:
-			res = 0;
-			break;
-	}
-	return res;
-}
-} // namespace
-
 // The following are default legacy implementations. They may be slower than specialized ones, so they can often be
 // defined in subclasses of VoxelTool. Ideally, a function may be exposed on the base class only if it has an optimal
 // definition in all specialized classes.
 
 void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
+	// Default, suboptimal implementation
 
 	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
 			Vector3iUtil::create(Math::ceil(radius) * 2));
@@ -200,7 +170,7 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		box.for_each_cell([this, center, radius](Vector3i pos) {
 			float d = _sdf_scale * zylann::math::sdf_sphere(pos, center, radius);
-			_set_voxel_f(pos, sdf_blend(d, get_voxel_f(pos), _mode));
+			_set_voxel_f(pos, ops::sdf_blend(d, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
@@ -248,8 +218,10 @@ void VoxelTool::sdf_stamp_erase(const VoxelBuffer &stamp, Vector3i pos) {
 
 void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 	ZN_PROFILE_SCOPE();
+	// Default, suboptimal implementation
+
 	Vector3iUtil::sort_min_max(begin, end);
-	Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
+	const Box3i box = Box3i::from_min_max(begin, end + Vector3i(1, 1, 1));
 
 	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -260,11 +232,11 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 		// TODO Better quality
 		// Not consistent SDF, but should work ok
 		box.for_each_cell([this](Vector3i pos) {
-			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), _mode));
+			_set_voxel_f(pos, sdf_blend(constants::SDF_FAR_INSIDE, get_voxel_f(pos), static_cast<ops::Mode>(_mode)));
 		});
 
 	} else {
-		int value = _mode == MODE_REMOVE ? _eraser_value : _value;
+		const int value = _mode == MODE_REMOVE ? _eraser_value : _value;
 		box.for_each_cell([this, value](Vector3i pos) { _set_voxel(pos, value); });
 	}
 
@@ -273,10 +245,12 @@ void VoxelTool::do_box(Vector3i begin, Vector3i end) {
 
 void VoxelTool::do_path(Span<const Vector3> positions, Span<const float> radii) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::copy(Vector3i pos, VoxelBuffer &dst, uint8_t channels_mask) const {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_mask) const {
@@ -291,6 +265,7 @@ void VoxelTool::copy(Vector3i pos, Ref<godot::VoxelBuffer> dst, uint8_t channel_
 
 void VoxelTool::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t channels_mask) {
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::paste(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask) {
@@ -305,6 +280,20 @@ void VoxelTool::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, u
 		uint8_t mask_channel, uint64_t mask_value) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
+	// Implemented in derived classes
+}
+
+void VoxelTool::paste_masked_writable_list( //
+		Vector3i pos, //
+		Ref<godot::VoxelBuffer> p_voxels, //
+		uint8_t channels_mask, //
+		uint8_t src_mask_channel, //
+		uint64_t src_mask_value, //
+		uint8_t dst_mask_channel, //
+		PackedInt32Array dst_writable_list //
+) {
+	ZN_PRINT_ERROR("Not implemented");
+	// Implemented in derived classes
 }
 
 void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius) {
@@ -329,13 +318,13 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't blur voxel texture data.
 
-		copy(padded_voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(padded_voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 		VoxelBuffer smooth_buffer(VoxelBuffer::ALLOCATOR_POOL);
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		ops::box_blur(buffer, smooth_buffer, blur_radius, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		paste(voxel_box.position, smooth_buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -347,7 +336,6 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	// see: https://github.com/Zylann/godot_voxel/pull/594
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(sphere_radius >= 0.01f);
-	ZN_ASSERT_RETURN(strength >= 0.0f && strength <= 1.0f);
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
@@ -364,14 +352,14 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 	if (_channel == VoxelBuffer::CHANNEL_SDF) {
 		// Note, this only applies to SDF. It won't affect voxel texture data.
 
-		copy(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		copy(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
-		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.pos));
+		const Vector3f relative_sphere_center = to_vec3f(sphere_center - to_vec3(voxel_box.position));
 		const float signed_strength = _mode == VoxelTool::MODE_REMOVE ? -strength : strength;
 
-		ops::grow_sphere(buffer, signed_strength, relative_sphere_center, sphere_radius);
+		ops::grow_sphere(buffer, _sdf_scale * signed_strength, relative_sphere_center, sphere_radius);
 
-		paste(voxel_box.pos, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
+		paste(voxel_box.position, buffer, (1 << VoxelBuffer::CHANNEL_SDF));
 
 	} else {
 		ERR_PRINT("Not implemented");
@@ -550,6 +538,9 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
 			&VoxelTool::_b_paste_masked);
+	ClassDB::bind_method(D_METHOD("paste_masked_writable_list", "position", "voxels", "channels_mask",
+								 "src_mask_channel", "src_mask_value", "dst_mask_channel", "dst_writable_list"),
+			&VoxelTool::paste_masked_writable_list);
 
 	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
 			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));

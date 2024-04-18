@@ -158,8 +158,6 @@ inline bool is_uniform(const Item_T *p_data, size_t item_count) {
 	return true;
 }
 
-void print_data_hex(Span<const uint8_t> data);
-
 template <typename T>
 bool find(Span<const T> items, const T &v, size_t &out_index) {
 	unsigned int i = 0;
@@ -230,6 +228,20 @@ size_t get_estimated_size_in_bytes(const std::vector<TElement, TAllocator> &vec)
 	}
 	size += (vec.capacity() - vec.size()) * sizeof(TElement);
 	return size;
+}
+
+// Gets the number of elements in a compile-time known array
+template <typename T, int N>
+constexpr size_t count_of(const T (&)[N]) {
+	return N;
+}
+
+// Gets the number of characters in a compile-time known string
+template <int N>
+constexpr size_t string_literal_length(const char (&)[N]) {
+	// -1 to exclude the null-terminating character '\0'
+	static_assert(N > 0);
+	return N - 1;
 }
 
 } // namespace zylann

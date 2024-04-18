@@ -1,7 +1,9 @@
 #include "range_utility.h"
 #include "../../util/godot/classes/curve.h"
 #include "../../util/godot/classes/image.h"
-#include "../../util/string_funcs.h"
+#include "../../util/math/rect2i.h"
+#include "../../util/math/vector2i.h"
+#include "../../util/string/format.h"
 
 namespace zylann {
 
@@ -129,11 +131,15 @@ Interval get_heightmap_range(const Image &im) {
 }
 
 Interval get_heightmap_range(const Image &im, Rect2i rect) {
+#ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN_V_MSG(!im.is_compressed(), Interval(), format("Image format not supported: {}", im.get_format()));
+	ZN_ASSERT_RETURN_V_MSG(Rect2i(0, 0, im.get_width(), im.get_height()).encloses(rect), Interval(0, 0),
+			format("Rectangle out of range: image size is {}, rectangle is {}", im.get_size(), rect));
+#endif
 
 	Interval r;
 
-	r.min = im.get_pixel(0, 0).r;
+	r.min = im.get_pixel(rect.position.x, rect.position.y).r;
 	r.max = r.min;
 
 	const int max_x = rect.position.x + rect.size.x;

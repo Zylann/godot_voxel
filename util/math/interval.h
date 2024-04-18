@@ -1,7 +1,7 @@
 #ifndef ZN_INTERVAL_H
 #define ZN_INTERVAL_H
 
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <limits>
 

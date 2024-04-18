@@ -10,7 +10,7 @@
 #include "../../util/io/log.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include "voxel_blocky_model_cube.h"
 #include "voxel_blocky_model_empty.h"
 #include "voxel_blocky_model_mesh.h"

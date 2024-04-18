@@ -5,7 +5,7 @@
 #include <algorithm>
 #ifdef ZN_GODOT_EXTENSION
 #include "../../util/godot/core/array.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #endif
 
 namespace zylann::voxel {

@@ -7,7 +7,7 @@
 #include "../../util/hash_funcs.h"
 #include "../../util/math/vector2.h"
 #include "../../util/non_copyable.h"
-#include "../../util/std_string.h"
+#include "../../util/string/std_string.h"
 
 #include <string_view>
 

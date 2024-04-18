@@ -1,8 +1,10 @@
 #include "voxel_box_mover.h"
 #include "../../meshers/blocky/voxel_mesher_blocky.h"
 #include "../../meshers/cubes/voxel_mesher_cubes.h"
+#include "../../storage/voxel_buffer.h"
 #include "../../storage/voxel_data.h"
 #include "../../util/containers/std_vector.h"
+#include "../../util/profiling.h"
 #include "voxel_terrain.h"
 
 namespace zylann::voxel {
@@ -185,6 +187,7 @@ bool intersects(Span<const AABB> aabbs, const AABB &box) {
 }
 
 void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_nask, StdVector<AABB> &potential_boxes) {
+	ZN_PROFILE_SCOPE();
 	const VoxelData &voxels = p_terrain.get_storage();
 
 	const int min_x = int(Math::floor(query_box.position.x));
@@ -208,7 +211,7 @@ void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_n
 		VoxelSingleValue defval;
 		defval.i = 0;
 
-		const VoxelBlockyLibraryBase::BakedData baked_data = library_ref->get_baked_data();
+		const VoxelBlockyLibraryBase::BakedData &baked_data = library_ref->get_baked_data();
 
 		// TODO Optimization: read the whole box of voxels at once, querying individually is slower
 		for (i.z = min_z; i.z < max_z; ++i.z) {
@@ -255,6 +258,7 @@ void collect_boxes(VoxelTerrain &p_terrain, AABB query_box, uint32_t collision_n
 } // namespace
 
 Vector3 VoxelBoxMover::get_motion(Vector3 p_pos, Vector3 p_motion, AABB p_aabb, VoxelTerrain &p_terrain) {
+	ZN_PROFILE_SCOPE();
 	// The mesher is required to know how collisions should be processed
 	ERR_FAIL_COND_V(p_terrain.get_mesher().is_null(), Vector3());
 

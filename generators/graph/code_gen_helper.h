@@ -2,8 +2,8 @@
 #define ZN_CODE_GEN_HELPER_H
 
 #include "../../util/containers/std_unordered_set.h"
-#include "../../util/fwd_std_string.h"
-#include "../../util/std_stringstream.h"
+#include "../../util/string/fwd_std_string.h"
+#include "../../util/string/std_stringstream.h"
 
 namespace zylann {
 

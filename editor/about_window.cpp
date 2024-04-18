@@ -1,5 +1,6 @@
 #include "about_window.h"
 #include "../constants/version.gen.h"
+#include "../util/containers/container_funcs.h"
 #include "../util/godot/classes/button.h"
 #include "../util/godot/classes/h_box_container.h"
 #include "../util/godot/classes/h_split_container.h"
@@ -12,7 +13,6 @@
 #include "../util/godot/core/array.h"
 #include "../util/godot/core/string.h"
 #include "../util/godot/editor_scale.h"
-#include "../util/macros.h"
 
 namespace zylann::voxel {
 
@@ -148,7 +148,7 @@ const ThirdParty g_third_parties[] = {
 			"The contents of this file are protected by copyright and may not be publicly\n"
 			"reproduced without permission.\n" }
 };
-const unsigned int VOXEL_THIRD_PARTY_COUNT = ZN_ARRAY_LENGTH(g_third_parties);
+const unsigned int VOXEL_THIRD_PARTY_COUNT = count_of(g_third_parties);
 
 VoxelAboutWindow *g_window_singleton = nullptr;
 
@@ -240,7 +240,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"OrbitalHare\n"
 						"matthewhilton (Matthew Hilton)\n"
 						"SummitCollie\n"
-						"nulshift";
+						"nulshift\n"
+						"ddel-rio (Daniel del Río Román)";
 	{
 		Dictionary d;
 

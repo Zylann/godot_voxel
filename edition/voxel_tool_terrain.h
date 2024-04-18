@@ -28,6 +28,17 @@ public:
 	void paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask, uint8_t mask_channel,
 			uint64_t mask_value) override;
 
+	void paste_masked_writable_list( //
+			Vector3i pos, //
+			Ref<godot::VoxelBuffer> p_voxels, //
+			uint8_t channels_mask, //
+			uint8_t src_mask_channel, //
+			uint64_t src_mask_value, //
+			uint8_t dst_mask_channel, //
+			PackedInt32Array dst_writable_list //
+			) override;
+
+	void do_box(Vector3i begin, Vector3i end) override;
 	void do_sphere(Vector3 center, float radius) override;
 	void do_path(Span<const Vector3> positions, Span<const float> radii) override;
 

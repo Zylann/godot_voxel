@@ -11,7 +11,7 @@ using namespace godot;
 #include "../errors.h"
 #include "../godot/macros.h"
 #include "../hash_funcs.h"
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "funcs.h"
 #include <functional> // For std::hash
 

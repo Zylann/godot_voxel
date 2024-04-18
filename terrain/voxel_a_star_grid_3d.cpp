@@ -1,6 +1,6 @@
 #include "voxel_a_star_grid_3d.h"
 #include "../terrain/fixed_lod/voxel_terrain.h"
-// #include "../util/string_funcs.h"
+// #include "../util/string/format.h"
 #include "../constants/voxel_string_names.h"
 #include "../util/math/conv.h"
 
@@ -11,7 +11,7 @@ VoxelAStarGrid3DInternal::VoxelAStarGrid3DInternal() : _voxel_buffer(VoxelBuffer
 void VoxelAStarGrid3DInternal::init_cache() {
 	_grid_cache_size = math::ceildiv(get_region().size, Chunk::SIZE);
 	_grid_cache.resize(_grid_cache_size.x * _grid_cache_size.y * _grid_cache_size.z);
-	_grid_chunk_states.resize(_grid_cache.size());
+	_grid_chunk_states.resize_no_init(_grid_cache.size());
 	_grid_chunk_states.fill(false);
 	_voxel_buffer.create(Vector3iUtil::create(Chunk::SIZE));
 
@@ -34,7 +34,7 @@ void VoxelAStarGrid3DInternal::init_cache() {
 
 bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 	// TODO We could align the cache with the voxel chunk grid to avoid more expensive copies across chunk borders
-	const Vector3i gpos = pos - get_region().pos;
+	const Vector3i gpos = pos - get_region().position;
 	const Vector3i cpos = gpos >> Chunk::SIZE_PO2;
 	const Vector3i rpos = gpos & Chunk::SIZE_MASK;
 
@@ -49,7 +49,7 @@ bool VoxelAStarGrid3DInternal::is_solid(Vector3i pos) {
 		ZN_ASSERT(data != nullptr);
 
 		const VoxelBuffer::ChannelId channel_index = VoxelBuffer::CHANNEL_TYPE;
-		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().pos;
+		const Vector3i copy_origin = (cpos << Chunk::SIZE_PO2) + get_region().position;
 		data->copy(copy_origin, _voxel_buffer, 1 << channel_index);
 
 		if (_voxel_buffer.get_channel_compression(channel_index) == VoxelBuffer::COMPRESSION_UNIFORM) {
@@ -213,7 +213,7 @@ void VoxelAStarGrid3D::_b_set_region(AABB aabb) {
 
 AABB VoxelAStarGrid3D::_b_get_region() {
 	const Box3i region = get_region();
-	return AABB(to_vec3(region.pos), to_vec3(region.size));
+	return AABB(to_vec3(region.position), to_vec3(region.size));
 }
 
 // Intermediate method to enforce the signal to be emitted on the main thread
@@ -240,7 +240,7 @@ void VoxelAStarGrid3D::_bind_methods() {
 			D_METHOD("_on_async_search_completed", "path"), &VoxelAStarGrid3D::_b_on_async_search_completed);
 
 	ADD_SIGNAL(MethodInfo(
-			"async_search_completed", PropertyInfo(Variant::ARRAY, "name", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
+			"async_search_completed", PropertyInfo(Variant::ARRAY, "path", PROPERTY_HINT_ARRAY_TYPE, "Vector3i")));
 }
 
 } // namespace zylann::voxel

@@ -8,7 +8,7 @@
 #include "../util/io/log.h"
 #include "../util/math/conv.h"
 #include "../util/profiling.h"
-//#include "../util/string_funcs.h" // Debug
+//#include "../util/string/format.h" // Debug
 #include "../engine/voxel_engine.h"
 #include "../generators/generate_block_gpu_task.h"
 #include "../meshers/transvoxel/transvoxel_cell_iterator.h"
@@ -62,9 +62,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 	ZN_PROFILE_SCOPE();
 
 	// Extract wanted channels in a list
-	unsigned int channels_count = 0;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBuffer::mask_to_channels_list(channels_mask, channels_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	// Determine size of the cube of blocks
 	const CubicAreaInfo area_info = get_cubic_area_info_from_size(blocks.size());
@@ -134,8 +132,8 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 					const Vector3i src_min = min_pos - offset;
 					const Vector3i src_max = max_pos - offset;
 
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channels[ci]);
+					for (const uint8_t channel_index : channels) {
+						dst.copy_channel_from(*src, src_min, src_max, Vector3i(), channel_index);
 					}
 
 					if (boxes_to_generate.size() > 0) {
@@ -171,7 +169,7 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 
 	// Undo padding to go back to proper buffer coordinates
 	for (Box3i &box : boxes_to_generate) {
-		box.pos += Vector3iUtil::create(min_padding);
+		box.position += Vector3iUtil::create(min_padding);
 	}
 
 	if (out_origin_in_voxels != nullptr) {
@@ -195,15 +193,20 @@ void copy_block_and_neighbors(Span<std::shared_ptr<VoxelBuffer>> blocks, VoxelBu
 			generated_voxels.create(box.size);
 			// generated_voxels.set_voxel_f(2.0f, box.size.x / 2, box.size.y / 2, box.size.z / 2,
 			// VoxelBuffer::CHANNEL_SDF);
-			VoxelGenerator::VoxelQueryData q{ generated_voxels, (box.pos << lod_index) + origin_in_voxels, lod_index };
+			VoxelGenerator::VoxelQueryData q{
+				generated_voxels, //
+				(box.position << lod_index) + origin_in_voxels, //
+				lod_index //
+			};
 
 			if (generator.is_valid()) {
 				generator->generate_block(q);
 			}
 			modifiers.apply(q.voxel_buffer, AABB(q.origin_in_voxels, q.voxel_buffer.get_size() << lod_index));
 
-			for (unsigned int ci = 0; ci < channels_count; ++ci) {
-				dst.copy_channel_from(generated_voxels, Vector3i(), generated_voxels.get_size(), box.pos, channels[ci]);
+			for (const uint8_t channel_index : channels) {
+				dst.copy_channel_from(
+						generated_voxels, Vector3i(), generated_voxels.get_size(), box.position, channel_index);
 			}
 		}
 	}

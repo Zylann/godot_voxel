@@ -2,7 +2,7 @@
 #include "../engine/voxel_engine.h"
 #include "../util/godot/classes/engine.h"
 #include "../util/godot/classes/node.h"
-#include "../util/string_funcs.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 

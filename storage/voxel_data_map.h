@@ -1,9 +1,13 @@
 #ifndef VOXEL_DATA_MAP_H
 #define VOXEL_DATA_MAP_H
 
+#include "../constants/voxel_constants.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/containers/span.h"
 #include "../util/containers/std_unordered_map.h"
+#include "../util/math/box3i.h"
 #include "../util/profiling.h"
+#include "voxel_buffer.h" // Used in template methods
 #include "voxel_data_block.h"
 
 namespace zylann::voxel {
@@ -65,8 +69,8 @@ public:
 	int get_voxel(Vector3i pos, unsigned int c = 0) const;
 	void set_voxel(int value, Vector3i pos, unsigned int c = 0);
 
-	float get_voxel_f(Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF) const;
-	void set_voxel_f(real_t value, Vector3i pos, unsigned int c = VoxelBuffer::CHANNEL_SDF);
+	float get_voxel_f(Vector3i pos, unsigned int c) const;
+	void set_voxel_f(real_t value, Vector3i pos, unsigned int c);
 
 	inline void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask) const {
 		copy(min_pos, dst_buffer, channels_mask, nullptr, nullptr);
@@ -76,8 +80,20 @@ public:
 	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask, void *,
 			void (*gen_func)(void *, VoxelBuffer &, Vector3i)) const;
 
-	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool use_mask,
-			uint8_t mask_channel, uint64_t mask_value, bool create_new_blocks);
+	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
+
+	void paste_masked( //
+			Vector3i min_pos, //
+			const VoxelBuffer &src_buffer, //
+			unsigned int channels_mask, //
+			bool use_src_mask, //
+			uint8_t src_mask_channel, //
+			uint64_t src_mask_value, //
+			bool use_dst_mask, //
+			uint8_t dst_mask_channel, //
+			Span<const int32_t> dst_writable_values, //
+			bool create_new_blocks //
+	);
 
 	// Moves the given buffer into a block of the map. The buffer is referenced, no copy is made.
 	VoxelDataBlock *set_block_buffer(Vector3i bpos, std::shared_ptr<VoxelBuffer> &buffer, bool overwrite);
@@ -151,7 +167,7 @@ public:
 				gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 			}
 			const Vector3i block_origin = block_to_voxel(block_pos);
-			Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+			Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 			local_box.clip(Box3i(Vector3i(), block_size));
 			block->get_voxels().write_box(local_box, channel, action, block_origin);
 		});
@@ -175,7 +191,7 @@ public:
 						gen_func(block->get_voxels(), block_pos << get_block_size_pow2());
 					}
 					const Vector3i block_origin = block_to_voxel(block_pos);
-					Box3i local_box(voxel_box.pos - block_origin, voxel_box.size);
+					Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), block_size));
 					block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
 							local_box, channel0, channel1, action, block_origin);

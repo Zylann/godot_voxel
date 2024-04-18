@@ -82,6 +82,16 @@ public:
 	virtual void paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
 			uint8_t mask_channel, uint64_t mask_value);
 
+	virtual void paste_masked_writable_list( //
+			Vector3i pos, //
+			Ref<godot::VoxelBuffer> p_voxels, //
+			uint8_t channels_mask, //
+			uint8_t src_mask_channel, //
+			uint64_t src_mask_value, //
+			uint8_t dst_mask_channel, //
+			PackedInt32Array dst_writable_list //
+	);
+
 	void smooth_sphere(Vector3 sphere_center, float sphere_radius, int blur_radius);
 	void grow_sphere(Vector3 sphere_center, float sphere_radius, float strength);
 
@@ -125,6 +135,7 @@ private:
 	void _b_set_voxel_metadata(Vector3i pos, Variant meta);
 	bool _b_is_area_editable(AABB box) const;
 	void _b_set_channel(godot::VoxelBuffer::ChannelId p_channel);
+
 	godot::VoxelBuffer::ChannelId _b_get_channel() const;
 
 protected:

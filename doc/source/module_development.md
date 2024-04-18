@@ -315,7 +315,7 @@ Non-Godot:
 
 ```cpp
 #include "util/io/log.h"
-#include "util/string_funcs.h"
+#include "util/string/format.h"
 
 println(format("Hello {}, my age is {}", name, age));
 ```
@@ -379,6 +379,8 @@ Once you are done profiling, don't forget to switch back to a normal build, othe
 
 
 ### How to add profiler scopes
+
+If existing instrumentation isn't enough, you can add more by editing the code.
 
 A profiling scope bounds a section of code. It takes the time before, the time after, and records it into a timeline. In C++ we can use RAII to automatically close a section when we exit a function or block, so usually a single macro is needed at the beginning of the profiled zone. The module already have plenty of them, but you can add yours if you need more insight.
 

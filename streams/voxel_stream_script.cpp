@@ -1,6 +1,7 @@
 #include "voxel_stream_script.h"
 #include "../constants/voxel_string_names.h"
 #include "../storage/voxel_buffer_gd.h"
+#include "../util/godot/check_ref_ownership.h"
 
 namespace zylann::voxel {
 
@@ -13,6 +14,8 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 	buffer_wrapper->get_buffer().create(query_data.voxel_buffer.get_size());
 
 	query_data.result = RESULT_ERROR;
+
+	ZN_GODOT_CHECK_REF_COUNT_DOES_NOT_CHANGE(buffer_wrapper);
 
 	int res;
 	if (GDVIRTUAL_CALL(_load_voxel_block, buffer_wrapper, query_data.position_in_blocks, query_data.lod_index, res)) {
@@ -30,6 +33,7 @@ void VoxelStreamScript::load_voxel_block(VoxelStream::VoxelQueryData &query_data
 }
 
 void VoxelStreamScript::save_voxel_block(VoxelStream::VoxelQueryData &query_data) {
+	// For now the callee can exceptionally take ownership of this wrapper, because we copy the data to it.
 	Ref<godot::VoxelBuffer> buffer_wrapper(memnew(
 			godot::VoxelBuffer(static_cast<godot::VoxelBuffer::Allocator>(query_data.voxel_buffer.get_allocator()))));
 	query_data.voxel_buffer.copy_to(buffer_wrapper->get_buffer(), true);

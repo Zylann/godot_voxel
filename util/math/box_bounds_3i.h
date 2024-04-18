@@ -1,7 +1,7 @@
 #ifndef ZN_BOX_BOUNDS_3I_H
 #define ZN_BOX_BOUNDS_3I_H
 
-#include "../std_stringstream.h"
+#include "../string/std_stringstream.h"
 #include "box3i.h"
 
 namespace zylann {
@@ -16,7 +16,7 @@ struct BoxBounds3i {
 
 	BoxBounds3i(Vector3i p_min, Vector3i p_max) : min_pos(p_min), max_pos(p_max) {}
 
-	BoxBounds3i(Box3i box) : min_pos(box.pos), max_pos(box.pos + box.size) {}
+	BoxBounds3i(Box3i box) : min_pos(box.position), max_pos(box.position + box.size) {}
 
 	static BoxBounds3i from_position_size(Vector3i pos, Vector3i size) {
 		return BoxBounds3i(pos, pos + size);

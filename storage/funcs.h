@@ -4,7 +4,7 @@
 #include "../constants/voxel_constants.h"
 #include "../util/containers/span.h"
 #include "../util/math/vector3i.h"
-#include <stdint.h>
+#include <cstdint>
 
 namespace zylann::voxel {
 
@@ -142,60 +142,6 @@ inline uint16_t snorm_to_u16(float v) {
 }
 
 } // namespace legacy
-
-inline FixedArray<uint8_t, 4> decode_weights_from_packed_u16(uint16_t packed_weights) {
-	FixedArray<uint8_t, 4> weights;
-	// SIMDable?
-	// weights[0] = ((packed_weights >> 0) & 0x0f) << 4;
-	// weights[1] = ((packed_weights >> 4) & 0x0f) << 4;
-	// weights[2] = ((packed_weights >> 8) & 0x0f) << 4;
-	// weights[3] = ((packed_weights >> 12) & 0x0f) << 4;
-
-	// Reduced but not SIMDable
-	weights[0] = (packed_weights & 0x0f) << 4;
-	weights[1] = packed_weights & 0xf0;
-	weights[2] = (packed_weights >> 4) & 0xf0;
-	weights[3] = (packed_weights >> 8) & 0xf0;
-	// The code above is such that the maximum uint8_t value for a weight is 240, not 255.
-	// We could add extra computations in order to match the range exactly,
-	// but as a compromise I'm not doing them because it would kinda break bijectivity and is slower.
-	// If this is a problem, then it could be an argument to switch to 8bit representation using 3 channels.
-	// weights[0] |= weights[0] >> 4;
-	// weights[1] |= weights[1] >> 4;
-	// weights[2] |= weights[2] >> 4;
-	// weights[3] |= weights[3] >> 4;
-	return weights;
-}
-
-inline FixedArray<uint8_t, 4> decode_indices_from_packed_u16(uint16_t packed_indices) {
-	FixedArray<uint8_t, 4> indices;
-	// SIMDable?
-	indices[0] = (packed_indices >> 0) & 0x0f;
-	indices[1] = (packed_indices >> 4) & 0x0f;
-	indices[2] = (packed_indices >> 8) & 0x0f;
-	indices[3] = (packed_indices >> 12) & 0x0f;
-	return indices;
-}
-
-inline constexpr uint16_t encode_indices_to_packed_u16(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-	return (a & 0xf) | ((b & 0xf) << 4) | ((c & 0xf) << 8) | ((d & 0xf) << 12);
-}
-
-// Encodes from 0..255 to 0..15 values packed in 16 bits. Lower 4 bits of input values will not be preserved.
-inline constexpr uint16_t encode_weights_to_packed_u16_lossy(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
-	return (a >> 4) | ((b >> 4) << 4) | ((c >> 4) << 8) | ((d >> 4) << 12);
-}
-
-// Checks if there are no duplicate indices in any voxel
-inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
-	FixedArray<bool, 16> checked;
-	fill(checked, false);
-	for (unsigned int i = 0; i < indices.size(); ++i) {
-		unsigned int ti = indices[i];
-		ZN_ASSERT(!checked[ti]);
-		checked[ti] = true;
-	}
-}
 
 struct IntBasis {
 	Vector3i x;

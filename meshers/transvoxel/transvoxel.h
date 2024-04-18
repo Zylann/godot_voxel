@@ -1,5 +1,5 @@
-#ifndef TRANSVOXEL_H
-#define TRANSVOXEL_H
+#ifndef VOXEL_TRANSVOXEL_H
+#define VOXEL_TRANSVOXEL_H
 
 #include "../../storage/voxel_buffer.h"
 #include "../../util/containers/fixed_array.h"
@@ -168,4 +168,4 @@ void build_transition_mesh(const VoxelBuffer &voxels, unsigned int sdf_channel, 
 
 } // namespace zylann::voxel::transvoxel
 
-#endif // TRANSVOXEL_H
+#endif // VOXEL_TRANSVOXEL_H

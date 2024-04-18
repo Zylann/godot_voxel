@@ -5,7 +5,7 @@
 #include "../../util/godot/classes/resource.h"
 #include "../../util/godot/core/string.h"
 #include "../../util/memory/memory.h"
-#include "../../util/string_funcs.h"
+#include "../../util/string/format.h"
 #include <fstream>
 
 namespace zylann {

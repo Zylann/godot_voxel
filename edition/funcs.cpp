@@ -1,12 +1,20 @@
 #include "funcs.h"
+#include "../util/containers/dynamic_bitset.h"
+#include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
 #include "../util/profiling.h"
+#include "../util/string/format.h"
 
 namespace zylann::voxel {
 
-void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		uint32_t channels_mask, const VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx) {
-	//
+void copy_from_chunked_storage( //
+		VoxelBuffer &dst_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		uint32_t channels_mask, //
+		const VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+) {
 	ZN_ASSERT_RETURN_MSG(Vector3iUtil::get_volume(dst_buffer.get_size()) > 0, "The area to copy is empty");
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
 
@@ -17,9 +25,7 @@ void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsign
 
 	const Vector3i block_size_v = Vector3iUtil::create(1 << block_size_po2);
 
-	unsigned int channels_count;
-	FixedArray<uint8_t, VoxelBuffer::MAX_CHANNELS> channels =
-			VoxelBuffer::mask_to_channels_list(channels_mask, channels_count);
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
 
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
@@ -29,8 +35,7 @@ void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsign
 				const Vector3i src_block_origin = bpos << block_size_po2;
 
 				if (src_buffer != nullptr) {
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						const uint8_t channel = channels[ci];
+					for (const uint8_t channel : channels) {
 						dst_buffer.set_channel_depth(channel, src_buffer->get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_channel_from(
@@ -38,8 +43,7 @@ void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsign
 					}
 
 				} else {
-					for (unsigned int ci = 0; ci < channels_count; ++ci) {
-						const uint8_t channel = channels[ci];
+					for (const uint8_t channel : channels) {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
 						dst_buffer.fill_area(VoxelBuffer::get_default_value_static(channel), src_block_origin - min_pos,
@@ -51,63 +55,44 @@ void copy_from_chunked_storage(VoxelBuffer &dst_buffer, Vector3i min_pos, unsign
 	}
 }
 
-void paste_to_chunked_storage(const VoxelBuffer &src_buffer, Vector3i min_pos, unsigned int block_size_po2,
-		unsigned int channels_mask, bool use_mask, uint8_t mask_channel, uint64_t mask_value,
-		VoxelBuffer *(*get_block_func)(void *, Vector3i), void *get_block_func_ctx) {
-	//
+void paste_to_chunked_storage( //
+		const VoxelBuffer &src_buffer, //
+		Vector3i min_pos, //
+		unsigned int block_size_po2, //
+		unsigned int channels_mask, //
+		bool use_mask, //
+		uint8_t mask_channel, //
+		uint64_t mask_value, //
+		VoxelBuffer *(*get_block_func)(void *, Vector3i), //
+		void *get_block_func_ctx //
+) {
 	ZN_ASSERT_RETURN(get_block_func != nullptr);
 	const Vector3i max_pos = min_pos + src_buffer.get_size();
 
 	const Vector3i min_block_pos = min_pos >> block_size_po2;
 	const Vector3i max_block_pos = ((max_pos - Vector3i(1, 1, 1)) >> block_size_po2) + Vector3i(1, 1, 1);
 
+	const SmallVector<uint8_t, VoxelBuffer::MAX_CHANNELS> channels = VoxelBuffer::mask_to_channels_list(channels_mask);
+
 	Vector3i bpos;
 	for (bpos.z = min_block_pos.z; bpos.z < max_block_pos.z; ++bpos.z) {
 		for (bpos.x = min_block_pos.x; bpos.x < max_block_pos.x; ++bpos.x) {
 			for (bpos.y = min_block_pos.y; bpos.y < max_block_pos.y; ++bpos.y) {
-				for (unsigned int channel = 0; channel < VoxelBuffer::MAX_CHANNELS; ++channel) {
-					if (((1 << channel) & channels_mask) == 0) {
-						continue;
-					}
-					VoxelBuffer *dst_buffer = (*get_block_func)(get_block_func_ctx, bpos);
+				VoxelBuffer *dst_buffer = (*get_block_func)(get_block_func_ctx, bpos);
 
-					if (dst_buffer == nullptr) {
-						continue;
-					}
+				if (dst_buffer == nullptr) {
+					continue;
+				}
 
-					const Vector3i dst_block_origin = bpos << block_size_po2;
+				const Vector3i dst_block_origin = bpos << block_size_po2;
+				const Vector3i dst_base_pos = min_pos - dst_block_origin;
 
-					if (use_mask) {
-						const Box3i dst_box(min_pos - dst_block_origin, src_buffer.get_size());
+				if (use_mask) {
+					paste_src_masked(
+							to_span(channels), src_buffer, mask_channel, mask_value, *dst_buffer, dst_base_pos, true);
 
-						const Vector3i src_offset = -dst_box.pos;
-
-						if (channel == mask_channel) {
-							dst_buffer->read_write_action(dst_box, channel,
-									[&src_buffer, mask_value, src_offset, channel](const Vector3i pos, uint64_t dst_v) {
-										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
-										if (src_v == mask_value) {
-											return dst_v;
-										}
-										return src_v;
-									});
-						} else {
-							dst_buffer->read_write_action(dst_box, channel,
-									[&src_buffer, mask_value, src_offset, channel, mask_channel](
-											const Vector3i pos, uint64_t dst_v) {
-										const uint64_t mv = src_buffer.get_voxel(pos + src_offset, mask_channel);
-										if (mv == mask_value) {
-											return dst_v;
-										}
-										const uint64_t src_v = src_buffer.get_voxel(pos + src_offset, channel);
-										return src_v;
-									});
-						}
-
-					} else {
-						dst_buffer->copy_channel_from(
-								src_buffer, Vector3i(), src_buffer.get_size(), min_pos - dst_block_origin, channel);
-					}
+				} else {
+					paste(to_span(channels), src_buffer, *dst_buffer, dst_base_pos, true);
 				}
 			}
 		}
@@ -126,6 +111,31 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
 	}
 
 	return aabb;
+}
+
+bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray) {
+#ifdef DEBUG_ENABLED
+	const int32_t max_supported_value = 65535;
+	// Validate
+	for (const int32_t i : indices) {
+		ZN_ASSERT_RETURN_V_MSG(i >= 0 && i <= max_supported_value, false,
+				format("Index {} is out of supported range 0..{}", i, max_supported_value));
+		return false;
+	}
+#endif
+
+	int32_t max_value = 0;
+	for (const int32_t i : indices) {
+		max_value = math::max(i, max_value);
+	}
+
+	bitarray.resize_no_init(indices.size() / 8);
+
+	for (const int32_t i : indices) {
+		bitarray.set(i);
+	}
+
+	return true;
 }
 
 } // namespace zylann::voxel

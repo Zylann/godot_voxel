@@ -12,7 +12,7 @@ concurrency:
 # Global Cache Settings
 env:
   # TODO Poke qarmin to update Qarminer and stuff
-  GODOT_BASE_BRANCH: "4.0"
+  GODOT_BASE_BRANCH: "4.2"
   SCONS_CACHE_LIMIT: 4096
   GODOT_BINARY_NAME: godot.linuxbsd.editor.dev.x86_64.san
 
