@@ -27,12 +27,12 @@ jobs:
           - name: 4.2 Editor
             target: editor
             executable_name: godot.macos.editor
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
 
           - name: 4.2 Template
             target: template_release
             executable_name: godot.macos.template_release
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
 
     steps:
       # Clone Godot

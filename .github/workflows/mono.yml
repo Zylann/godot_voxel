@@ -11,7 +11,7 @@ concurrency:
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: "4.2"
+  GODOT_BASE_BRANCH: "4.2.2-stable"
   SCONS_CACHE_LIMIT: 4096
 
 jobs:

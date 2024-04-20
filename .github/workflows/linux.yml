@@ -57,7 +57,7 @@ jobs:
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.x86_64
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
             warnings: extra
 
           - name: 4.2 Template
@@ -65,7 +65,7 @@ jobs:
             target: template_release
             production: yes
             executable_name: godot.linuxbsd.template_release.x86_64
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
             warnings: extra
 
           - name: 4.2 Editor Float64
@@ -73,7 +73,7 @@ jobs:
             target: editor
             production: yes
             executable_name: godot.linuxbsd.editor.double.x86_64
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
             warnings: extra
 
     steps:
