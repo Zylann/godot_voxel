@@ -1,7 +1,7 @@
 name: 🐒 Mono Builds
 on:
   push:
-    branches: [ master, github_actions ]
+    branches: [ master, github_actions, "1.2" ]
   pull_request:
     branches: [ master ]
 
