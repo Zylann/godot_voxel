@@ -19,7 +19,8 @@
 						"general": {
 							"tasks": int,
 							"active_threads": int,
-							"thread_count": int
+							"thread_count": int,
+							"task_names": PackedStringArray
 						}
 					},
 					"tasks": {

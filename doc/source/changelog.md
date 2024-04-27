@@ -7,9 +7,14 @@ At the moment, this module doesn't have a distinct release schedule, so this cha
 
 Semver is not yet in place, so each version can have breaking changes, although it shouldn't happen often across minor versions.
 
+1.3.dev - ongoing development - `master`
+-----------------------------------------
 
-1.2.dev - ongoing development - `master`
---------------------------------------
+TBD
+
+
+1.2 - 20/04/2024 - branch `1.2` - tag `v1.2.0`
+------------------------------------------------
 
 Primarily developped with Godot 4.2.
 
@@ -51,6 +56,7 @@ Primarily developped with Godot 4.2.
     - Fixed some corner cases where quickly leaving and coming back to an edited area would revert edits to their previous state, due to chunks reloading before those edits got saved asynchronously
     - Fixed possible artifacts near terrain borders when using generators that sometimes avoid filling the output buffer, assuming they are initialized to defaults (issue #603)
     - `VoxelBlockyModel`: Fixed `material_override_*` properties all acting like the same material
+    - `VoxelBlockyTypeLibrary`: Fixed a crash when saving a library with a null type entry (thanks to ArchLinus)
     - `VoxelBoxMover`: Fixed performance slowdown when `VoxelBlockyLibrary` contains a lot of models.
     - `VoxelGeneratorGraph`: 
         - Fixed ambiguous voxel texture indices produced by `OutputSingleTexture` caused painting to fail in some situations
@@ -82,8 +88,8 @@ Primarily developped with Godot 4.2.
     - `VoxelToolMultipassGenerator`: changed `get_editable_area_max` to return an exclusive position instead of inclusive
 
 
-1.1 - 29/12/2023 - `1.1`
----------------------------------
+1.1 - 29/12/2023 - branch `1.1` - tag `v1.1.0`
+-----------------------------------------------
 
 Primarily developped with Godot 4.1
 

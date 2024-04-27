@@ -269,7 +269,9 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 						tri_positions[0], tri_positions[1], tri_positions[2], side, side_vertex_tolerance)) {
 				// That triangle is on the face
 
-				int next_side_index = surface.side_positions[side].size();
+				VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+
+				int next_side_index = side_surface.positions.size();
 
 				for (int j = 0; j < 3; ++j) {
 					const int src_index = indices[i + j];
@@ -279,18 +281,18 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 					if (existing_dst_index_it == added_indices.end()) {
 						// Add new vertex
 
-						surface.side_indices[side].push_back(next_side_index);
-						surface.side_positions[side].push_back(tri_positions[j]);
-						surface.side_uvs[side].push_back(to_vec2f(uvs[indices[i + j]]));
+						side_surface.indices.push_back(next_side_index);
+						side_surface.positions.push_back(tri_positions[j]);
+						side_surface.uvs.push_back(to_vec2f(uvs[indices[i + j]]));
 
 						if (bake_tangents) {
 							// i is the first vertex of each triangle which increments by steps of 3.
 							// There are 4 floats per tangent.
 							int ti = indices[i + j] * 4;
-							surface.side_tangents[side].push_back(tangents[ti]);
-							surface.side_tangents[side].push_back(tangents[ti + 1]);
-							surface.side_tangents[side].push_back(tangents[ti + 2]);
-							surface.side_tangents[side].push_back(tangents[ti + 3]);
+							side_surface.tangents.push_back(tangents[ti]);
+							side_surface.tangents.push_back(tangents[ti + 1]);
+							side_surface.tangents.push_back(tangents[ti + 2]);
+							side_surface.tangents.push_back(tangents[ti + 3]);
 						}
 
 						added_indices.insert({ src_index, next_side_index });
@@ -298,7 +300,7 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 
 					} else {
 						// Vertex was already added, just add index referencing it
-						surface.side_indices[side].push_back(existing_dst_index_it->second);
+						side_surface.indices.push_back(existing_dst_index_it->second);
 					}
 				}
 

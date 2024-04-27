@@ -4,6 +4,7 @@
 #include "../storage/voxel_memory_pool.h"
 #include "../util/godot/classes/project_settings.h"
 #include "../util/godot/classes/rendering_server.h"
+#include "../util/godot/core/packed_arrays.h"
 #include "../util/macros.h"
 #include "../util/profiling.h"
 #include "../util/tasks/godot/threaded_task_gd.h"
@@ -86,12 +87,15 @@ Dictionary to_dict(const zylann::voxel::VoxelEngine::Stats::ThreadPoolStats &sta
 	d["active_threads"] = stats.active_threads;
 	d["thread_count"] = stats.thread_count;
 
-	Array task_names;
-	task_names.resize(stats.thread_count);
-	for (unsigned int i = 0; i < stats.active_task_names.size(); ++i) {
-		const char *name = stats.active_task_names[i];
-		if (name != nullptr) {
-			task_names[i] = name;
+	PackedStringArray task_names;
+	{
+		task_names.resize(stats.thread_count);
+		Span<String> task_names_s = to_span(task_names);
+		for (unsigned int i = 0; i < stats.active_task_names.size(); ++i) {
+			const char *name = stats.active_task_names[i];
+			if (name != nullptr) {
+				task_names_s[i] = name;
+			}
 		}
 	}
 

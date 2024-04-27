@@ -214,7 +214,7 @@ void generate_blocky_mesh( //
 					}
 
 					// Subtracting 1 because the data is padded
-					Vector3f pos(x - 1, y - 1, z - 1);
+					const Vector3f pos(x - 1, y - 1, z - 1);
 
 					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
@@ -224,11 +224,13 @@ void generate_blocky_mesh( //
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const StdVector<Vector3f> &side_positions = surface.side_positions[side];
-						const unsigned int vertex_count = side_positions.size();
+						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
 
-						const StdVector<Vector2f> &side_uvs = surface.side_uvs[side];
-						const StdVector<float> &side_tangents = surface.side_tangents[side];
+						const StdVector<Vector3f> &side_positions = side_surface.positions;
+						const unsigned int vertex_count = side_surface.positions.size();
+
+						const StdVector<Vector2f> &side_uvs = side_surface.uvs;
+						const StdVector<float> &side_tangents = side_surface.tangents;
 
 						// Append vertices of the faces in one go, don't use push_back
 
@@ -306,7 +308,7 @@ void generate_blocky_mesh( //
 							}
 						}
 
-						const StdVector<int> &side_indices = surface.side_indices[side];
+						const StdVector<int> &side_indices = side_surface.indices;
 						const unsigned int index_count = side_indices.size();
 
 						{
