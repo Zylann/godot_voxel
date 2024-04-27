@@ -243,7 +243,7 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 		bool empty = true;
 		for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 			const BakedData::Surface &surface = model.surfaces[surface_index];
-			if (surface.side_indices[side].size() > 0) {
+			if (surface.sides[side].indices.size() > 0) {
 				empty = false;
 				break;
 			}
@@ -356,9 +356,9 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (unsigned int side = 0; side < surface.side_positions.size(); ++side) {
-			vertex_count += surface.side_positions[side].size();
-			index_count += surface.side_indices[side].size();
+		for (const BakedData::SideSurface &side_surface : surface.sides) {
+			vertex_count += side_surface.positions.size();
+			index_count += side_surface.indices.size();
 		}
 
 		// Allocate surface arrays
@@ -414,11 +414,12 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 			++ii;
 		}
 
-		for (unsigned int side = 0; side < surface.side_positions.size(); ++side) {
-			Span<const Vector3f> side_positions = to_span(surface.side_positions[side]);
-			Span<const Vector2f> side_uvs = to_span(surface.side_uvs[side]);
-			Span<const int> side_indices = to_span(surface.side_indices[side]);
-			Span<const float> side_tangents = to_span(surface.side_tangents[side]);
+		for (unsigned int side = 0; side < surface.sides.size(); ++side) {
+			const BakedData::SideSurface &side_surface = surface.sides[side];
+			Span<const Vector3f> side_positions = to_span(side_surface.positions);
+			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
+			Span<const int> side_indices = to_span(side_surface.indices);
+			Span<const float> side_tangents = to_span(side_surface.tangents);
 			const Vector3 side_normal = to_vec3(Cube::g_side_normals[side]);
 
 			const unsigned int vi0 = vi;

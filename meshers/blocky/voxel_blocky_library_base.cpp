@@ -157,19 +157,16 @@ void rasterize_side( //
 	}
 }
 
-void rasterize_side( //
+void rasterize_side_all_surfaces( //
 		const VoxelBlockyModel::BakedData &model_data, //
-		const unsigned int side, //
+		const unsigned int side_index, //
 		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap //
 ) {
 	// For each surface (they are all combined for simplicity, though it is also a limitation)
 	for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
 		const VoxelBlockyModel::BakedData::Surface &surface = model_data.model.surfaces[surface_index];
-
-		const StdVector<Vector3f> &positions = surface.side_positions[side];
-		const StdVector<int> &indices = surface.side_indices[side];
-
-		rasterize_side(to_span(positions), to_span(indices), side, bitmap);
+		const VoxelBlockyModel::BakedData::SideSurface &side = surface.sides[side_index];
+		rasterize_side(to_span(side.positions), to_span(side.indices), side_index, bitmap);
 	}
 }
 
@@ -204,7 +201,7 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 		// For each side
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
-			rasterize_side(model_data, side, bitmap);
+			rasterize_side_all_surfaces(model_data, side, bitmap);
 
 			// Find if the same pattern already exists
 			uint32_t pattern_index = VoxelBlockyLibraryBase::NULL_INDEX;

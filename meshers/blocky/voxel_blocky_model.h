@@ -30,6 +30,21 @@ public:
 	// while the configuration that produced the data can be changed by the user at any time.
 	// Also, it is lighter than Godot resources.
 	struct BakedData {
+		struct SideSurface {
+			StdVector<Vector3f> positions;
+			StdVector<Vector2f> uvs;
+			StdVector<int> indices;
+			StdVector<float> tangents;
+			// Normals aren't stored because they are assumed to be the same for the whole side
+
+			void clear() {
+				positions.clear();
+				uvs.clear();
+				indices.clear();
+				tangents.clear();
+			}
+		};
+
 		struct Surface {
 			// Inside part of the model.
 			StdVector<Vector3f> positions;
@@ -40,10 +55,7 @@ public:
 			// Model sides:
 			// They are separated because this way we can occlude them easily.
 			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<StdVector<Vector3f>, Cube::SIDE_COUNT> side_positions;
-			FixedArray<StdVector<Vector2f>, Cube::SIDE_COUNT> side_uvs;
-			FixedArray<StdVector<int>, Cube::SIDE_COUNT> side_indices;
-			FixedArray<StdVector<float>, Cube::SIDE_COUNT> side_tangents;
+			FixedArray<SideSurface, Cube::SIDE_COUNT> sides;
 
 			uint32_t material_id = 0;
 			bool collision_enabled = true;
@@ -55,11 +67,8 @@ public:
 				indices.clear();
 				tangents.clear();
 
-				for (int side = 0; side < Cube::SIDE_COUNT; ++side) {
-					side_positions[side].clear();
-					side_uvs[side].clear();
-					side_indices[side].clear();
-					side_tangents[side].clear();
+				for (SideSurface &side : sides) {
+					side.clear();
 				}
 			}
 		};
