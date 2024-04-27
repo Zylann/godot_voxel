@@ -77,6 +77,12 @@ public:
 			// Tells what is the "shape" of each side in order to cull them quickly when in contact with neighbors.
 			// Side patterns are still determined based on a combination of all surfaces.
 			FixedArray<uint32_t, Cube::SIDE_COUNT> side_pattern_indices;
+			// Side culling is all or nothing.
+			// If we want to support partial culling with baked models (needed if you do fluids with "staircase"
+			// models), we would need another lookup table that given two side patterns, outputs alternate geometry data
+			// that is pre-cut. This would require a lot more data and precomputations though, and the cases in
+			// which this is needed could make use of different approaches such as procedural generation of the
+			// geometry.
 
 			void clear() {
 				for (unsigned int i = 0; i < surfaces.size(); ++i) {

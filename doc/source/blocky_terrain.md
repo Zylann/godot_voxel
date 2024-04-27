@@ -138,6 +138,38 @@ Here is that same group of leaves with `culls_neighbors=false`. The sides in-bet
 
 ![Screenshot of leaves with culls_neighbors set to false](images/culls_neighbors_disabled.webp)
 
+### Limitations
+
+#### Culling
+
+While the blocky mesher will attempt to cull neighbor faces when they cover each other, it won't actually cut them out perfectly like CSG nodes. If you have two slabs touching each other on the side, both sides will be removed.
+
+![Screenshot of several models touching each other sharing a side with the same shape](images/matching_model_sides.webp)
+
+But if you have a cube touching a slab, the slab will be covered and its side will be culled, but the cube's side will still be half-visible. In this case the engine leaves triangles of the whole side visible. In other words, sides are either fully culled, or not culled.
+
+![Screenshot of two models touching each other sharing a side with different shapes](images/mismatching_model_sides.webp)
+
+This is mainly because the engine doesn't have time to do full "CSG" on every possible combination of sides there can be when it meshes models into a chunk. Instead, it uses a matrix of precomputed bitmasks, so that telling if a face covers another is very fast. This is also one reason why models rotation or flipping is precomputed per model, because it eliminates a lot of work that boils down to simple lookups.
+
+This can be problematic if models need transparency because it exposes the underlying geometry. There is currently no way to avoid it, other than not having this situation in the game. For example, in Minecraft, there are no glass slabs or staircases, and water flows such that model sides always match.
+
+Another more minor detail is how matching faces are detected. During baking of the library, the engine uses rasterization to check if two sides have the same shape, so it can gather all shapes of the whole library and compare them all against each other quickly, generating a "culling" matrix that the mesher will be able to use. If you rely on very small triangles or very detailed faces, the result might not work out perfectly in certain cases.
+
+
+#### Fluids
+
+Doing dynamic water is currently not well supported. You can have transparent models, but it is often desired for water to have different levels and be able to flow.
+
+The logic of flowing is up to you at the moment. It's something that is normally handled with a system of block updates, where flowing water is just one kind of update that propagates to neighbor locations.
+
+Rendering water is tricky because in order to look like Minecraft, it would need a lot of models due to all the combinations of levels on 4 sides. Currently options are to either generate those models using a script, or to use only flat levels looking like "staircases". The latter is however affected by [culling limitations](#culling-limitations).
+
+Another tricky part with water relates to backfaces. In Minecraft, water actually has both backfaces and front faces, which are culled differently in certain edge cases. Currently the engine doesn't differenciate the two. A workaround people often try is to disable backface culling entirely in the water material, but that leads to other issues. For more details, see [issue 621](https://github.com/Zylann/godot_voxel/issues/621)
+
+Dedicated fluid models or procedural models to help with the rendering part might be implemented in the future.
+
+
 ### Random tick
 
 `VoxelBlockyModel` has a property named `random_tickable`. This is for use with a very specific function of `VoxelToolTerrain`: [run_blocky_random_tick](api/VoxelToolTerrain.md)
