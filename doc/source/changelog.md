@@ -10,7 +10,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 1.3.dev - ongoing development - `master`
 -----------------------------------------
 
-TBD
+- `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 
 1.2 - 20/04/2024 - branch `1.2` - tag `v1.2.0`
