@@ -115,7 +115,7 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}}
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}
