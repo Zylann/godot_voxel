@@ -146,7 +146,7 @@ While the blocky mesher will attempt to cull neighbor faces when they cover each
 
 ![Screenshot of several models touching each other sharing a side with the same shape](images/matching_model_sides.webp)
 
-But if you have a cube touching a slab, the slab will be covered and its side will be culled, but the cube's side will still be half-visible. In this case the engine leaves triangles of the whole side visible. In other words, sides are either fully culled, or not culled.
+But if you have a cube touching a slab, the slab will be covered and its side will be culled, but the cube's side will still be half-visible. In this case the engine leaves triangles of the whole side visible. In other words, sides are either fully culled, or not culled (this also happens in Minecraft).
 
 ![Screenshot of two models touching each other sharing a side with different shapes](images/mismatching_model_sides.webp)
 
