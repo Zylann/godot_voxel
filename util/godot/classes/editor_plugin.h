@@ -2,7 +2,7 @@
 #define ZN_GODOT_EDITOR_PLUGIN_H
 
 #if defined(ZN_GODOT)
-#include <editor/editor_plugin.h>
+#include <editor/plugins/editor_plugin.h>
 
 #elif defined(ZN_GODOT_EXTENSION)
 // Header includes required due to implementation being required inside the `GDCLASS` macro for virtual methods...
