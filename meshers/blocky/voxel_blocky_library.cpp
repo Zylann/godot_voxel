@@ -224,7 +224,7 @@ void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_models"), &VoxelBlockyLibrary::_b_get_models);
 	ClassDB::bind_method(D_METHOD("set_models"), &VoxelBlockyLibrary::_b_set_models);
 
-	ClassDB::bind_method(D_METHOD("add_model"), &VoxelBlockyLibrary::add_model);
+	ClassDB::bind_method(D_METHOD("add_model", "model"), &VoxelBlockyLibrary::add_model);
 
 	ClassDB::bind_method(D_METHOD("get_model", "index"), &VoxelBlockyLibrary::_b_get_model);
 	ClassDB::bind_method(D_METHOD("get_model_index_from_resource_name", "name"),
