@@ -115,8 +115,12 @@ float VoxelBlockyModelCube::get_height() const {
 
 namespace {
 
-void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::BakedData &baked_data,
-		Vector2i p_atlas_size, bool bake_tangents) {
+void bake_cube_geometry(
+		const VoxelBlockyModelCube &config,
+		VoxelBlockyModel::BakedData &baked_data,
+		Vector2i p_atlas_size,
+		bool bake_tangents
+) {
 	const float height = config.get_height();
 
 	baked_data.model.surface_count = 1;
@@ -272,9 +276,11 @@ void VoxelBlockyModelCube::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_atlas_size_in_tiles"), &VoxelBlockyModelCube::get_atlas_size_in_tiles);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,1,0.001"), "set_height", "get_height");
-	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2I, "atlas_size_in_tiles"), "set_atlas_size_in_tiles",
-			"get_atlas_size_in_tiles");
+			PropertyInfo(Variant::FLOAT, "height", PROPERTY_HINT_RANGE, "0.001,1,0.001"), "set_height", "get_height"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::VECTOR2I, "atlas_size_in_tiles"), "set_atlas_size_in_tiles", "get_atlas_size_in_tiles"
+	);
 }
 
 } // namespace zylann::voxel

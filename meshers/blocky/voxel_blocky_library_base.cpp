@@ -256,7 +256,7 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 		for (unsigned int bi = ai + 1; bi < patterns.size(); ++bi) {
 			const Pattern &pattern_b = patterns[bi];
 
-			std::bitset<RASTER_SIZE *RASTER_SIZE> res = pattern_a.bitmap & pattern_b.bitmap;
+			std::bitset<RASTER_SIZE * RASTER_SIZE> res = pattern_a.bitmap & pattern_b.bitmap;
 
 			if (!res.any()) {
 				// Patterns have nothing in common, there is no occlusion
