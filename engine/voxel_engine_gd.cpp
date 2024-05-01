@@ -31,12 +31,11 @@ void VoxelEngine::destroy_singleton() {
 	g_voxel_engine = nullptr;
 }
 
-zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
-		unsigned int &out_main_thread_time_budget_usec) {
+VoxelEngine::Config VoxelEngine::get_config_from_godot() {
 	ZN_ASSERT(ProjectSettings::get_singleton() != nullptr);
 	ProjectSettings &ps = *ProjectSettings::get_singleton();
 
-	zylann::voxel::VoxelEngine::ThreadsConfig config;
+	Config config;
 
 	// Compute thread count for general pool.
 
@@ -47,16 +46,20 @@ zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
 			Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1", 0.5f, true);
 	add_custom_project_setting(
 			Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000", 8, true);
+	add_custom_project_setting(Variant::BOOL, "voxel/ownership_checks", PROPERTY_HINT_NONE, "", true, true);
 
-	out_main_thread_time_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));
+	config.inner.main_thread_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));
 
-	config.thread_count_minimum = math::max(1, int(ps.get("voxel/threads/count/minimum")));
+	config.inner.thread_count_minimum = math::max(1, int(ps.get("voxel/threads/count/minimum")));
 
 	// How many threads below available count on the CPU should we set as limit
-	config.thread_count_margin_below_max = math::max(1, int(ps.get("voxel/threads/count/margin_below_max")));
+	config.inner.thread_count_margin_below_max = math::max(1, int(ps.get("voxel/threads/count/margin_below_max")));
 
 	// Portion of available CPU threads to attempt using
-	config.thread_count_ratio_over_max = math::clamp(float(ps.get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
+	config.inner.thread_count_ratio_over_max =
+			math::clamp(float(ps.get("voxel/threads/count/ratio_over_max")), 0.f, 1.f);
+
+	config.ownership_checks = ps.get("voxel/ownership_checks");
 
 	return config;
 }
