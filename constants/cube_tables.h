@@ -88,6 +88,8 @@ extern const Vector3i g_edge_inormals[EDGE_COUNT];
 
 extern const unsigned int g_edge_corners[EDGE_COUNT][2];
 
+extern const int g_opposite_side[6];
+
 const unsigned int MOORE_NEIGHBORING_3D_COUNT = 26;
 extern const Vector3i g_moore_neighboring_3d[MOORE_NEIGHBORING_3D_COUNT];
 

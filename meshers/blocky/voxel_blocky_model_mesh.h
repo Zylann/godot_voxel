@@ -28,6 +28,9 @@ public:
 	void set_side_vertex_tolerance(float tolerance);
 	float get_side_vertex_tolerance() const;
 
+	void set_side_cutout_enabled(bool enabled);
+	bool is_side_cutout_enabled() const;
+
 private:
 	static void _bind_methods();
 
@@ -36,6 +39,7 @@ private:
 	// Margin near sides of the voxel where triangles will be considered to be "on the side". Those triangles will
 	// be processed by the neighbor side culling system.
 	float _side_vertex_tolerance = 0.001f;
+	bool _side_cutout_enabled = false;
 };
 
 } // namespace zylann::voxel

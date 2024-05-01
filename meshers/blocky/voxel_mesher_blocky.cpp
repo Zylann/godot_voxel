@@ -15,31 +15,6 @@ namespace zylann::voxel {
 
 // Utility functions
 namespace {
-const int g_opposite_side[6] = {
-	Cube::SIDE_NEGATIVE_X, //
-	Cube::SIDE_POSITIVE_X, //
-	Cube::SIDE_POSITIVE_Y, //
-	Cube::SIDE_NEGATIVE_Y, //
-	Cube::SIDE_POSITIVE_Z, //
-	Cube::SIDE_NEGATIVE_Z //
-};
-
-inline bool is_face_visible(const VoxelBlockyLibraryBase::BakedData &lib, const VoxelBlockyModel::BakedData &vt,
-		uint32_t other_voxel_id, int side) {
-	if (other_voxel_id < lib.models.size()) {
-		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
-		// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
-		if (other_vt.empty || (other_vt.transparency_index > vt.transparency_index) || !other_vt.culls_neighbors) {
-			return true;
-		} else {
-			const unsigned int ai = vt.model.side_pattern_indices[side];
-			const unsigned int bi = other_vt.model.side_pattern_indices[g_opposite_side[side]];
-			// Patterns are not the same, and B does not occlude A
-			return (ai != bi) && !lib.get_side_pattern_occlusion(bi, ai);
-		}
-	}
-	return true;
-}
 
 inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint32_t voxel_id) {
 	if (voxel_id < lib.models.size()) {
@@ -155,6 +130,7 @@ void generate_blocky_mesh( //
 				const int voxel_index = y + x * row_size + z * deck_size;
 				const int voxel_id = type_buffer[voxel_index];
 
+				// TODO Don't assume air is 0?
 				if (voxel_id == VoxelBlockyModel::AIR_ID || !library.has_model(voxel_id)) {
 					continue;
 				}
@@ -174,13 +150,48 @@ void generate_blocky_mesh( //
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
-					if (!is_face_visible(library, voxel, neighbor_voxel_id, side)) {
-						continue;
+					// By default we render the whole side if we consider it visible
+					const FixedArray<VoxelBlockyModel::BakedData::SideSurface,
+							VoxelBlockyModel::BakedData::Model::MAX_SURFACES> *side_surfaces =
+							&model.sides_surfaces[side];
+
+					// Invalid voxels are treated like air
+					if (neighbor_voxel_id < library.models.size()) {
+						const VoxelBlockyModel::BakedData &other_vt = library.models[neighbor_voxel_id];
+						if (!is_face_visible_regardless_of_shape(voxel, other_vt)) {
+							// Visibility depends on the shape
+							if (!is_face_visible_according_to_shape(library, voxel, other_vt, side)) {
+								// Completely occluded
+								continue;
+							}
+
+							// Might be only partially visible
+							if (voxel.cutout_sides_enabled) {
+								const std::unordered_map<uint32_t,
+										FixedArray<VoxelBlockyModel::BakedData::SideSurface,
+												VoxelBlockyModel::BakedData::Model::MAX_SURFACES>>
+										&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
+
+								const unsigned int neighbor_shape_id =
+										other_vt.model.side_pattern_indices[Cube::g_opposite_side[side]];
+
+								// That's a hashmap lookup on a hot path. Cutting out sides like this should be used
+								// sparsely if possible.
+								// Unfortunately, use cases include certain water styles, which means oceans...
+								// Eventually we should provide another approach for these
+								auto it = cutout_side_surfaces_by_neighbor_shape.find(neighbor_shape_id);
+
+								if (it != cutout_side_surfaces_by_neighbor_shape.end()) {
+									// Use pre-cut side instead
+									side_surfaces = &it->second;
+								}
+							}
+						}
 					}
 
 					// The face is visible
 
-					int shaded_corner[8] = { 0 };
+					int8_t shaded_corner[8] = { 0 };
 
 					if (bake_occlusion) {
 						// Combinatory solution for
@@ -224,7 +235,7 @@ void generate_blocky_mesh( //
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+						const VoxelBlockyModel::BakedData::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -282,7 +293,7 @@ void generate_blocky_mesh( //
 									float shade = 0;
 									for (unsigned int j = 0; j < 4; ++j) {
 										unsigned int corner = Cube::g_side_corners[side][j];
-										if (shaded_corner[corner]) {
+										if (shaded_corner[corner] != 0) {
 											float s = baked_occlusion_darkness *
 													static_cast<float>(shaded_corner[corner]);
 											// float k = 1.f - Cube::g_corner_position[corner].distance_to(v);

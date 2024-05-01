@@ -48,6 +48,20 @@ inline float get_triangle_area(Vector3 p0, Vector3 p1, Vector3 p2) {
 	return 0.5 * c.length();
 }
 
+inline Vector3f get_triangle_barycentric_coordinates(Vector2f p0, Vector2f p1, Vector2f p2, Vector2f p) {
+	const float den = (p1.y - p2.y) * (p0.x - p2.x) + (p2.x - p1.x) * (p0.y - p2.y);
+	Vector3f weights;
+	if (Math::is_zero_approx(den)) {
+		weights.x = 0;
+		weights.y = 0;
+	} else {
+		weights.x = ((p1.y - p2.y) * (p.x - p2.x) + (p2.x - p1.x) * (p.y - p2.y)) / den;
+		weights.y = ((p2.y - p0.y) * (p.x - p2.x) + (p0.x - p2.x) * (p.y - p2.y)) / den;
+	}
+	weights.z = 1.f - weights.x - weights.y;
+	return weights;
+}
+
 struct TriangleIntersectionResult {
 	enum Case { //
 		INTERSECTION,

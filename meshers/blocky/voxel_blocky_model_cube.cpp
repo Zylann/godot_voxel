@@ -120,10 +120,9 @@ void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::Ba
 	const float height = config.get_height();
 
 	baked_data.model.surface_count = 1;
-	VoxelBlockyModel::BakedData::Surface &surface = baked_data.model.surfaces[0];
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
 		StdVector<Vector3f> &positions = side_surface.positions;
 		positions.resize(4);
 		for (unsigned int i = 0; i < 4; ++i) {
@@ -167,7 +166,7 @@ void bake_cube_geometry(const VoxelBlockyModelCube &config, VoxelBlockyModel::Ba
 	const Vector2f s = Vector2f(1.0f) / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
 		StdVector<Vector2f> &uvs = side_surface.uvs;
 		uvs.resize(4);
 

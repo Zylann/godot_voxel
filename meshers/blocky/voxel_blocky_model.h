@@ -52,10 +52,6 @@ public:
 			StdVector<Vector2f> uvs;
 			StdVector<int> indices;
 			StdVector<float> tangents;
-			// Model sides:
-			// They are separated because this way we can occlude them easily.
-			// Due to these defining cube side triangles, normals are known already.
-			FixedArray<SideSurface, Cube::SIDE_COUNT> sides;
 
 			uint32_t material_id = 0;
 			bool collision_enabled = true;
@@ -66,10 +62,6 @@ public:
 				uvs.clear();
 				indices.clear();
 				tangents.clear();
-
-				for (SideSurface &side : sides) {
-					side.clear();
-				}
 			}
 		};
 
@@ -79,6 +71,8 @@ public:
 			// A model can have up to 2 materials.
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
+			// Model sides: they are separated because this way we can occlude them easily.
+			FixedArray<FixedArray<SideSurface, MAX_SURFACES>, Cube::SIDE_COUNT> sides_surfaces;
 			unsigned int surface_count = 0;
 			// Cached information to check this case early
 			uint8_t empty_sides_mask = 0;
@@ -93,9 +87,21 @@ public:
 			// which this is needed could make use of different approaches such as procedural generation of the
 			// geometry.
 
+			// [side][neighbor_shape_id] => pre-cut SideSurfaces
+			// Surface to attempt using when a side passes the visibility test and cutout is enabled.
+			// If the SideSurface from this container is empty or not found, fallback on full surface
+			FixedArray<std::unordered_map<uint32_t, FixedArray<SideSurface, MAX_SURFACES>>, Cube::SIDE_COUNT>
+					cutout_side_surfaces;
+			// TODO ^ Make it UniquePtr? That array takes space for what is essentially a niche feature
+
 			void clear() {
-				for (unsigned int i = 0; i < surfaces.size(); ++i) {
-					surfaces[i].clear();
+				for (Surface &surface : surfaces) {
+					surface.clear();
+				}
+				for (FixedArray<SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
+					for (SideSurface &side_surface : side_surfaces) {
+						side_surface.clear();
+					}
 				}
 			}
 		};
@@ -108,6 +114,7 @@ public:
 		bool empty;
 		bool is_random_tickable;
 		bool is_transparent;
+		bool cutout_sides_enabled = false;
 
 		uint32_t box_collision_mask;
 		StdVector<AABB> box_collision_aabbs;
@@ -260,6 +267,17 @@ private:
 
 	LegacyProperties _legacy_properties;
 };
+
+inline bool is_empty(
+		const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
+				&surfaces) {
+	for (const VoxelBlockyModel::BakedData::SideSurface &surface : surfaces) {
+		if (surface.indices.size() > 0) {
+			return false;
+		}
+	}
+	return true;
+}
 
 } // namespace zylann::voxel
 

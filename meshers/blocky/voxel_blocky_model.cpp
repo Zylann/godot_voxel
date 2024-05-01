@@ -240,17 +240,10 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 	// Set empty sides mask
 	model.empty_sides_mask = 0;
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		bool empty = true;
-		for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-			const BakedData::Surface &surface = model.surfaces[surface_index];
-			if (surface.sides[side].indices.size() > 0) {
-				empty = false;
-				break;
-			}
+		if (!zylann::voxel::is_empty(model.sides_surfaces[side])) {
+			continue;
 		}
-		if (empty) {
-			model.empty_sides_mask |= (1 << side);
-		}
+		model.empty_sides_mask |= (1 << side);
 	}
 
 	// Assign material overrides if any
@@ -356,7 +349,9 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (const BakedData::SideSurface &side_surface : surface.sides) {
+		for (const FixedArray<BakedData::SideSurface, BakedData::Model::MAX_SURFACES> &side_surfaces :
+				model.sides_surfaces) {
+			const BakedData::SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();
 		}
@@ -414,8 +409,8 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 			++ii;
 		}
 
-		for (unsigned int side = 0; side < surface.sides.size(); ++side) {
-			const BakedData::SideSurface &side_surface = surface.sides[side];
+		for (unsigned int side = 0; side < model.sides_surfaces.size(); ++side) {
+			const BakedData::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 			Span<const Vector3f> side_positions = to_span(side_surface.positions);
 			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
 			Span<const int> side_indices = to_span(side_surface.indices);

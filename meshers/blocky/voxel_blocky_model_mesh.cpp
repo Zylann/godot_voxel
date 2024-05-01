@@ -269,7 +269,7 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 						tri_positions[0], tri_positions[1], tri_positions[2], side, side_vertex_tolerance)) {
 				// That triangle is on the face
 
-				VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+				VoxelBlockyModel::BakedData::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -338,12 +338,14 @@ void bake_mesh_geometry(Span<const Array> surfaces, Span<const Ref<Material>> ma
 				}
 			}
 		}
-	} // namespace zylann::voxel
+	}
 }
 
 void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::BakedData &baked_data, bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer, float side_vertex_tolerance) {
+		VoxelBlockyModel::MaterialIndexer &material_indexer, float side_vertex_tolerance, bool side_cutout_enabled) {
 	Ref<Mesh> mesh = config.get_mesh();
+
+	baked_data.cutout_sides_enabled = side_cutout_enabled;
 
 	if (mesh.is_null()) {
 		baked_data.empty = true;
@@ -376,7 +378,7 @@ void bake_mesh_geometry(const VoxelBlockyModelMesh &config, VoxelBlockyModel::Ba
 
 void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
 	baked_data.clear();
-	bake_mesh_geometry(*this, baked_data, bake_tangents, materials, _side_vertex_tolerance);
+	bake_mesh_geometry(*this, baked_data, bake_tangents, materials, _side_vertex_tolerance, _side_cutout_enabled);
 	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
 }
 
@@ -408,7 +410,7 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
 	MaterialIndexer material_indexer{ materials };
-	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance);
+	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance, false);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);
 
@@ -456,6 +458,14 @@ float VoxelBlockyModelMesh::get_side_vertex_tolerance() const {
 	return _side_vertex_tolerance;
 }
 
+void VoxelBlockyModelMesh::set_side_cutout_enabled(bool enabled) {
+	_side_cutout_enabled = enabled;
+}
+
+bool VoxelBlockyModelMesh::is_side_cutout_enabled() const {
+	return _side_cutout_enabled;
+}
+
 void VoxelBlockyModelMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &VoxelBlockyModelMesh::set_mesh);
 	ClassDB::bind_method(D_METHOD("get_mesh"), &VoxelBlockyModelMesh::get_mesh);
@@ -469,12 +479,18 @@ void VoxelBlockyModelMesh::_bind_methods() {
 			D_METHOD("set_side_vertex_tolerance", "tolerance"), &VoxelBlockyModelMesh::set_side_vertex_tolerance);
 	ClassDB::bind_method(D_METHOD("get_side_vertex_tolerance"), &VoxelBlockyModelMesh::get_side_vertex_tolerance);
 
+	ClassDB::bind_method(
+			D_METHOD("set_side_cutout_enabled", "enabled"), &VoxelBlockyModelMesh::set_side_cutout_enabled);
+	ClassDB::bind_method(D_METHOD("is_side_cutout_enabled"), &VoxelBlockyModelMesh::is_side_cutout_enabled);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
 			"set_mesh", "get_mesh");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_ortho_rotation_index", PROPERTY_HINT_RANGE, "0,24"),
 			"set_mesh_ortho_rotation_index", "get_mesh_ortho_rotation_index");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "side_vertex_tolerance", PROPERTY_HINT_RANGE, "0,1,0.0001"),
 			"set_side_vertex_tolerance", "get_side_vertex_tolerance");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "side_cutout_enabled"), "set_side_cutout_enabled", "is_side_cutout_enabled");
 }
 
 } // namespace zylann::voxel
