@@ -51,7 +51,11 @@ bool find_index(Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers, Vie
 }
 
 Box3i get_base_box_in_chunks(
-		Vector3i viewer_position_voxels, Vector3i distance_voxels, int chunk_size, bool make_even) {
+		Vector3i viewer_position_voxels,
+		Vector3i distance_voxels,
+		int chunk_size,
+		bool make_even
+) {
 	// Get min and max positions
 	Vector3i minp = viewer_position_voxels - distance_voxels;
 	Vector3i maxp = viewer_position_voxels +
@@ -130,17 +134,17 @@ Vector3i get_relative_lod_distance_in_chunks( //
 	return ld3;
 }
 
-void process_viewers( //
-		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs, //
-		const VoxelLodTerrainUpdateData::Settings &volume_settings, //
-		unsigned int lod_count, //
-		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, //
-		const Transform3D &volume_transform, //
-		Box3i volume_bounds_in_voxels, //
-		int data_block_size_po2, //
-		bool can_mesh, //
+void process_viewers(
+		VoxelLodTerrainUpdateData::ClipboxStreamingState &cs,
+		const VoxelLodTerrainUpdateData::Settings &volume_settings,
+		unsigned int lod_count,
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers,
+		const Transform3D &volume_transform,
+		Box3i volume_bounds_in_voxels,
+		int data_block_size_po2,
+		bool can_mesh,
 		// Ordered by ascending index in paired viewers list
-		StdVector<unsigned int> &unpaired_viewers_to_remove //
+		StdVector<unsigned int> &unpaired_viewers_to_remove
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -264,11 +268,18 @@ void process_viewers( //
 
 				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
 
-				const Vector3i ld = get_relative_lod_distance_in_chunks(lod_index, lod_count,
-						lod0_distance_in_mesh_chunks, lodn_distance_in_mesh_chunks, lod_mesh_block_size,
-						Vector3i(paired_viewer.state.view_distance_voxels.horizontal,
+				const Vector3i ld = get_relative_lod_distance_in_chunks(
+						lod_index,
+						lod_count,
+						lod0_distance_in_mesh_chunks,
+						lodn_distance_in_mesh_chunks,
+						lod_mesh_block_size,
+						Vector3i(
+								paired_viewer.state.view_distance_voxels.horizontal,
 								paired_viewer.state.view_distance_voxels.vertical,
-								paired_viewer.state.view_distance_voxels.horizontal));
+								paired_viewer.state.view_distance_voxels.horizontal
+						)
+				);
 
 				// Box3i new_mesh_box = get_lod_box_in_chunks(
 				// 		paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
@@ -277,9 +288,13 @@ void process_viewers( //
 				// Root LOD doesn't need to respect that.
 				const bool even_coordinates_required = (lod_index != lod_count - 1);
 
-				Box3i new_mesh_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
+				Box3i new_mesh_box = get_base_box_in_chunks(
+						paired_viewer.state.local_position_voxels,
 						// Making sure that distance is a multiple of chunk size, for consistent box size
-						ld * lod_mesh_block_size, lod_mesh_block_size, even_coordinates_required);
+						ld * lod_mesh_block_size,
+						lod_mesh_block_size,
+						even_coordinates_required
+				);
 
 				if (lod_index > 0) {
 					const Box3i &child_box = paired_viewer.state.mesh_box_per_lod[lod_index - 1];
@@ -304,7 +319,8 @@ void process_viewers( //
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 				const Box3i volume_bounds_in_data_blocks = Box3i( //
 						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
-						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+						volume_bounds_in_voxels.size >> lod_data_block_size_po2
+				);
 
 				// const int ld =
 				// 		(lod_index == (lod_count - 1) ? lod_distance_in_data_chunks : last_lod_distance_in_data_chunks);
@@ -343,21 +359,33 @@ void process_viewers( //
 				// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 				const Box3i volume_bounds_in_data_blocks = Box3i( //
 						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
-						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
+						volume_bounds_in_voxels.size >> lod_data_block_size_po2
+				);
 
-				const Vector3i ld = get_relative_lod_distance_in_chunks(lod_index, lod_count,
-						lod0_distance_in_data_chunks, lodn_distance_in_data_chunks, lod_data_block_size,
-						Vector3i(paired_viewer.state.view_distance_voxels.horizontal,
+				const Vector3i ld = get_relative_lod_distance_in_chunks(
+						lod_index,
+						lod_count,
+						lod0_distance_in_data_chunks,
+						lodn_distance_in_data_chunks,
+						lod_data_block_size,
+						Vector3i(
+								paired_viewer.state.view_distance_voxels.horizontal,
 								paired_viewer.state.view_distance_voxels.vertical,
-								paired_viewer.state.view_distance_voxels.horizontal));
+								paired_viewer.state.view_distance_voxels.horizontal
+						)
+				);
 
-				const Box3i new_data_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
-						// Making sure that distance is a multiple of chunk size, for consistent box size
-						ld * lod_data_block_size, lod_data_block_size,
-						// Make min and max coordinates even in child LODs, to respect subdivision rule.
-						// Root LOD doesn't need to respect that,
-						lod_index != lod_count - 1)
-												   .clipped(volume_bounds_in_data_blocks);
+				const Box3i new_data_box =
+						get_base_box_in_chunks(
+								paired_viewer.state.local_position_voxels,
+								// Making sure that distance is a multiple of chunk size, for consistent box size
+								ld * lod_data_block_size,
+								lod_data_block_size,
+								// Make min and max coordinates even in child LODs, to respect subdivision rule.
+								// Root LOD doesn't need to respect that,
+								lod_index != lod_count - 1
+						)
+								.clipped(volume_bounds_in_data_blocks);
 
 				// const Box3i new_data_box = get_lod_box_in_chunks(paired_viewer.state.local_position_voxels,
 				// 		lod_distance_in_data_chunks, data_block_size_po2, lod_index)
@@ -369,9 +397,9 @@ void process_viewers( //
 	}
 }
 
-void remove_unpaired_viewers( //
-		const StdVector<unsigned int> &unpaired_viewers_to_remove, //
-		StdVector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers //
+void remove_unpaired_viewers(
+		const StdVector<unsigned int> &unpaired_viewers_to_remove,
+		StdVector<VoxelLodTerrainUpdateData::PairedViewer> &paired_viewers
 ) {
 	// Iterating backward so indexes of paired viewers that need removal will not change because of the removal itself
 	for (auto it = unpaired_viewers_to_remove.rbegin(); it != unpaired_viewers_to_remove.rend(); ++it) {
@@ -382,11 +410,11 @@ void remove_unpaired_viewers( //
 	}
 }
 
-void add_loading_block( //
-		VoxelLodTerrainUpdateData::Lod &lod, //
-		Vector3i position, //
-		uint8_t lod_index, //
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load //
+void add_loading_block(
+		VoxelLodTerrainUpdateData::Lod &lod,
+		Vector3i position,
+		uint8_t lod_index,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load
 ) {
 	auto it = lod.loading_blocks.find(position);
 
@@ -495,7 +523,8 @@ void process_data_blocks_sliding_box( //
 			// Should be correct as long as bounds size is a multiple of the biggest LOD chunk
 			const Box3i bounds_in_data_blocks = Box3i( //
 					bounds_in_voxels.position >> lod_data_block_size_po2, //
-					bounds_in_voxels.size >> lod_data_block_size_po2);
+					bounds_in_voxels.size >> lod_data_block_size_po2
+			);
 
 			// const Box3i new_data_box = get_lod_box_in_chunks(
 			// 		viewer_pos_in_lod0_voxels, lod_distance_in_data_chunks, data_block_size_po2, lod_index)
@@ -547,8 +576,13 @@ void process_data_blocks_sliding_box( //
 					const unsigned int to_save_index0 = blocks_to_save != nullptr ? blocks_to_save->size() : 0;
 
 					prev_data_box.difference(new_data_box, [&data, blocks_to_save, lod_index](Box3i box_to_remove) {
-						data.unview_area(box_to_remove, lod_index, &tls_found_blocks_positions, &tls_missing_blocks,
-								blocks_to_save);
+						data.unview_area(
+								box_to_remove,
+								lod_index,
+								&tls_found_blocks_positions,
+								&tls_missing_blocks,
+								blocks_to_save
+						);
 					});
 
 					if (blocks_to_save != nullptr && blocks_to_save->size() > to_save_index0) {
@@ -568,7 +602,8 @@ void process_data_blocks_sliding_box( //
 					// Remove refcount from loading blocks, and cancel loading if it reaches zero
 					for (const Vector3i bpos : tls_missing_blocks) {
 						unreference_data_block_from_loading_lists(
-								lod.loading_blocks, data_blocks_to_load, bpos, lod_index);
+								lod.loading_blocks, data_blocks_to_load, bpos, lod_index
+						);
 					}
 				}
 			}
@@ -618,7 +653,9 @@ void process_data_blocks_sliding_box( //
 
 // TODO Copypasta from octree streaming file
 VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
-		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map, Vector3i pos) {
+		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map,
+		Vector3i pos
+) {
 #ifdef DEBUG_ENABLED
 	// We got here because the map didn't contain the element. If it did contain it already, that's a bug.
 	static VoxelLodTerrainUpdateData::MeshBlockState s_default;
@@ -643,18 +680,19 @@ inline Vector3i get_relative_child_position(unsigned int child_index) {
 	return Vector3i( //
 			(child_index & 1), //
 			((child_index & 2) >> 1), //
-			((child_index & 4) >> 2));
+			((child_index & 4) >> 2)
+	);
 }
 
 inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_index) {
 	return parent_position * 2 + get_relative_child_position(child_index);
 }
 
-inline void schedule_mesh_load( //
-		StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list, //
-		Vector3i bpos, //
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		bool require_visual //
+inline void schedule_mesh_load(
+		StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list,
+		Vector3i bpos,
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		bool require_visual
 ) {
 	// ZN_PROFILE_SCOPE();
 
@@ -674,28 +712,30 @@ inline void schedule_mesh_load( //
 	// mesh_block.pending_update_has_visuals = require_visual;
 }
 
-void view_mesh_box(const Box3i box_to_add,
-		VoxelLodTerrainUpdateData::Lod &lod, //
-		unsigned int lod_index, //
-		unsigned int lod_count, //
-		VoxelLodTerrainUpdateData::State &state, //
-		bool is_full_load_mode, //
-		int mesh_to_data_factor, //
-		const VoxelData &voxel_data, //
-		bool require_visuals, //
-		bool require_collisions //
+void view_mesh_box(
+		const Box3i box_to_add,
+		VoxelLodTerrainUpdateData::Lod &lod,
+		unsigned int lod_index,
+		unsigned int lod_count,
+		VoxelLodTerrainUpdateData::State &state,
+		bool is_full_load_mode,
+		int mesh_to_data_factor,
+		const VoxelData &voxel_data,
+		bool require_visuals,
+		bool require_collisions
 ) {
 	ZN_PROFILE_SCOPE();
 
 	const Box3i bounds_in_data_blocks = voxel_data.get_bounds().downscaled(voxel_data.get_block_size() << lod_index);
 
 	box_to_add.for_each_cell([&lod, //
-									 is_full_load_mode, //
-									 mesh_to_data_factor, //
-									 &voxel_data, lod_index, //
-									 require_visuals, //
-									 require_collisions, //
-									 bounds_in_data_blocks //
+							  is_full_load_mode, //
+							  mesh_to_data_factor, //
+							  &voxel_data,
+							  lod_index, //
+							  require_visuals, //
+							  require_collisions, //
+							  bounds_in_data_blocks //
 	](Vector3i bpos) {
 		VoxelLodTerrainUpdateData::MeshBlockState *mesh_block;
 		auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
@@ -902,11 +942,11 @@ bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFea
 	}
 }
 
-void set_active( //
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		MeshBlockFeatureIndex feature_index, //
-		VoxelLodTerrainUpdateData::Lod &lod, //
-		const Vector3i bpos //
+void set_active(
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		MeshBlockFeatureIndex feature_index,
+		VoxelLodTerrainUpdateData::Lod &lod,
+		const Vector3i bpos
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -927,11 +967,11 @@ void set_active( //
 	}
 }
 
-void set_inactive_hide( //
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		MeshBlockFeatureIndex feature_index, //
-		VoxelLodTerrainUpdateData::Lod &lod, //
-		const Vector3i bpos //
+void set_inactive_hide(
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		MeshBlockFeatureIndex feature_index,
+		VoxelLodTerrainUpdateData::Lod &lod,
+		const Vector3i bpos
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -952,11 +992,11 @@ void set_inactive_hide( //
 	}
 }
 
-void set_inactive_drop( //
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		MeshBlockFeatureIndex feature_index, //
-		VoxelLodTerrainUpdateData::Lod &lod, //
-		const Vector3i bpos //
+void set_inactive_drop(
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		MeshBlockFeatureIndex feature_index,
+		VoxelLodTerrainUpdateData::Lod &lod,
+		const Vector3i bpos
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -981,10 +1021,10 @@ void set_inactive_drop( //
 	}
 }
 
-void set_pending_merge( //
-		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		MeshBlockFeatureIndex feature_index, //
-		bool pending //
+void set_pending_merge(
+		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		MeshBlockFeatureIndex feature_index,
+		bool pending
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -999,9 +1039,9 @@ void set_pending_merge( //
 	}
 }
 
-bool is_pending_merge( //
-		const VoxelLodTerrainUpdateData::MeshBlockState &mesh_block, //
-		MeshBlockFeatureIndex feature_index //
+bool is_pending_merge(
+		const VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
+		MeshBlockFeatureIndex feature_index
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -1014,10 +1054,10 @@ bool is_pending_merge( //
 	}
 }
 
-bool all_children_loaded_and_active( //
-		const Vector3i parent_bpos, //
-		const VoxelLodTerrainUpdateData::Lod &child_lod, //
-		MeshBlockFeatureIndex feature //
+bool all_children_loaded_and_active(
+		const Vector3i parent_bpos,
+		const VoxelLodTerrainUpdateData::Lod &child_lod,
+		MeshBlockFeatureIndex feature
 ) {
 	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
@@ -1034,12 +1074,12 @@ bool all_children_loaded_and_active( //
 }
 
 // Deactivates a block in the context of a merge, and removes it if nothing uses it.
-void deactivate_or_remove_recursive( //
-		const Vector3i bpos, //
-		unsigned int lod_index, //
-		VoxelLodTerrainUpdateData::State &state, //
-		MeshBlockFeatureIndex feature, //
-		const VoxelLodTerrainUpdateData::MeshBlockState *parent_block //
+void deactivate_or_remove_recursive(
+		const Vector3i bpos,
+		unsigned int lod_index,
+		VoxelLodTerrainUpdateData::State &state,
+		MeshBlockFeatureIndex feature,
+		const VoxelLodTerrainUpdateData::MeshBlockState *parent_block
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto block_it = lod.mesh_map_state.map.find(bpos);
@@ -1091,12 +1131,12 @@ void deactivate_or_remove_recursive( //
 }
 
 // Unreferences block features and deactivates if it reaches zero. Meant for the last LOD.
-void unview_mesh_block_no_merge( //
-		const Vector3i bpos, //
-		unsigned int lod_index, //
+void unview_mesh_block_no_merge(
+		const Vector3i bpos,
+		unsigned int lod_index,
 		VoxelLodTerrainUpdateData::State &state,
-		bool visual_flag, //
-		bool collision_flag //
+		bool visual_flag,
+		bool collision_flag
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
@@ -1125,13 +1165,13 @@ void unview_mesh_block_no_merge( //
 }
 
 // Deactivates/drops children and activates parent. Children must exist.
-void merge( //
-		VoxelLodTerrainUpdateData::MeshBlockState &parent_block, //
-		const Vector3i parent_bpos, //
-		VoxelLodTerrainUpdateData::Lod &parent_lod, //
-		unsigned int child_lod_index, //
-		VoxelLodTerrainUpdateData::State &state, //
-		MeshBlockFeatureIndex feature //
+void merge(
+		VoxelLodTerrainUpdateData::MeshBlockState &parent_block,
+		const Vector3i parent_bpos,
+		VoxelLodTerrainUpdateData::Lod &parent_lod,
+		unsigned int child_lod_index,
+		VoxelLodTerrainUpdateData::State &state,
+		MeshBlockFeatureIndex feature
 ) {
 	set_pending_merge(parent_block, feature, false);
 
@@ -1148,12 +1188,12 @@ void merge( //
 // When a feature refcount of children drops to 0, we may consider merging them.
 // This can fail however if the parent is not ready yet. In that case, an update will be scheduled and the merge will
 // happen later.
-bool try_merge( //
-		VoxelLodTerrainUpdateData::MeshBlockState &parent_block, //
-		const Vector3i parent_bpos, //
-		unsigned int parent_lod_index, //
-		VoxelLodTerrainUpdateData::State &state, //
-		MeshBlockFeatureIndex feature //
+bool try_merge(
+		VoxelLodTerrainUpdateData::MeshBlockState &parent_block,
+		const Vector3i parent_bpos,
+		unsigned int parent_lod_index,
+		VoxelLodTerrainUpdateData::State &state,
+		MeshBlockFeatureIndex feature
 ) {
 	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
@@ -1171,7 +1211,8 @@ bool try_merge( //
 							parent_bpos, //
 							TaskCancellationToken(), //
 							parent_block.mesh_viewers.get() > 0 //
-					});
+					}
+			);
 
 			if (!is_active(parent_block, feature)) {
 				if (all_children_loaded_and_active(parent_bpos, child_lod, feature)) {
@@ -1191,13 +1232,13 @@ bool try_merge( //
 
 // Unreferences a group of 8 child blocks under a specific parent block.
 // If they reach zero, attempts to do a "merge" (deactivate children and activate the parent).
-void unview_mesh_blocks_with_merge( //
-		VoxelLodTerrainUpdateData::Lod &parent_lod, //
-		unsigned int parent_lod_index, //
-		Vector3i parent_bpos, //
-		VoxelLodTerrainUpdateData::State &state, //
-		bool visual_flag, //
-		bool collision_flag //
+void unview_mesh_blocks_with_merge(
+		VoxelLodTerrainUpdateData::Lod &parent_lod,
+		unsigned int parent_lod_index,
+		Vector3i parent_bpos,
+		VoxelLodTerrainUpdateData::State &state,
+		bool visual_flag,
+		bool collision_flag
 ) {
 	auto parent_block_it = parent_lod.mesh_map_state.map.find(parent_bpos);
 #ifdef DEV_ENABLED
@@ -1254,12 +1295,13 @@ void unview_mesh_blocks_with_merge( //
 	}
 }
 
-void unview_mesh_box(const Box3i out_of_range_box, //
-		unsigned int lod_index, //
-		unsigned int lod_count, //
-		VoxelLodTerrainUpdateData::State &state, //
-		bool visual_flag, //
-		bool collision_flag //
+void unview_mesh_box(
+		const Box3i out_of_range_box,
+		unsigned int lod_index,
+		unsigned int lod_count,
+		VoxelLodTerrainUpdateData::State &state,
+		bool visual_flag,
+		bool collision_flag
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(collision_flag || visual_flag);
@@ -1284,7 +1326,8 @@ void unview_mesh_box(const Box3i out_of_range_box, //
 
 	// Attempt to remove children and activate parents
 	parent_box.for_each_cell([&parent_lod, parent_lod_index, &state, visual_flag, collision_flag](
-									 const Vector3i parent_bpos) {
+									 const Vector3i parent_bpos
+							 ) {
 		// Trigger merges: when refcounts reach 0, groups of 8 blocks merge into one from the parent LOD.
 		unview_mesh_blocks_with_merge(parent_lod, parent_lod_index, parent_bpos, state, visual_flag, collision_flag);
 	});
@@ -1294,16 +1337,16 @@ inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State
 	return viewer_state.requires_collisions || viewer_state.requires_visuals;
 }
 
-void process_viewer_mesh_blocks_sliding_box( //
-		VoxelLodTerrainUpdateData::State &state, //
-		int mesh_block_size_po2, //
-		int lod_count, //
-		const Box3i &volume_bounds_in_voxels, //
-		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer, //
-		bool can_load, //
-		bool is_full_load_mode, //
-		int mesh_to_data_factor, //
-		const VoxelData &data //
+void process_viewer_mesh_blocks_sliding_box(
+		VoxelLodTerrainUpdateData::State &state,
+		int mesh_block_size_po2,
+		int lod_count,
+		const Box3i &volume_bounds_in_voxels,
+		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer,
+		bool can_load,
+		bool is_full_load_mode,
+		int mesh_to_data_factor,
+		const VoxelData &data
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1359,8 +1402,18 @@ void process_viewer_mesh_blocks_sliding_box( //
 				new_mesh_box.difference_to_vec(prev_mesh_box, new_mesh_boxes);
 
 				for (const Box3i &box_to_add : new_mesh_boxes) {
-					view_mesh_box(box_to_add, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor,
-							data, paired_viewer.state.requires_visuals, paired_viewer.state.requires_collisions);
+					view_mesh_box(
+							box_to_add,
+							lod,
+							lod_index,
+							lod_count,
+							state,
+							is_full_load_mode,
+							mesh_to_data_factor,
+							data,
+							paired_viewer.state.requires_visuals,
+							paired_viewer.state.requires_collisions
+					);
 				}
 			}
 
@@ -1370,9 +1423,15 @@ void process_viewer_mesh_blocks_sliding_box( //
 				prev_mesh_box.difference_to_vec(new_mesh_box, old_mesh_boxes);
 
 				for (const Box3i &out_of_range_box : old_mesh_boxes) {
-					unview_mesh_box(out_of_range_box, lod_index, lod_count, state,
+					unview_mesh_box(
+							out_of_range_box,
+							lod_index,
+							lod_count,
+							state,
 							// Use previous state because old boxes were loaded because of them
-							paired_viewer.prev_state.requires_visuals, paired_viewer.prev_state.requires_collisions);
+							paired_viewer.prev_state.requires_visuals,
+							paired_viewer.prev_state.requires_collisions
+					);
 				}
 			}
 		}
@@ -1387,8 +1446,18 @@ void process_viewer_mesh_blocks_sliding_box( //
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 				if (paired_viewer.state.requires_collisions) {
 					// Add refcount to just collisions
-					view_mesh_box(box, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor, data,
-							false, true);
+					view_mesh_box(
+							box,
+							lod,
+							lod_index,
+							lod_count,
+							state,
+							is_full_load_mode,
+							mesh_to_data_factor,
+							data,
+							false, // visuals
+							true // collisions
+					);
 				} else {
 					// Remove refcount to just collisions
 					unview_mesh_box(box, lod_index, lod_count, state, false, true);
@@ -1398,8 +1467,18 @@ void process_viewer_mesh_blocks_sliding_box( //
 			if (paired_viewer.state.requires_visuals != paired_viewer.prev_state.requires_visuals) {
 				const Box3i box = new_mesh_box.clipped(prev_mesh_box);
 				if (paired_viewer.state.requires_visuals) {
-					view_mesh_box(box, lod, lod_index, lod_count, state, is_full_load_mode, mesh_to_data_factor, data,
-							true, false);
+					view_mesh_box(
+							box,
+							lod,
+							lod_index,
+							lod_count,
+							state,
+							is_full_load_mode,
+							mesh_to_data_factor,
+							data,
+							true, // visuals
+							false // collisions
+					);
 				} else {
 					unview_mesh_box(box, lod_index, lod_count, state, true, false);
 				}
@@ -1417,15 +1496,15 @@ void process_viewer_mesh_blocks_sliding_box( //
 	}
 }
 
-void process_mesh_blocks_sliding_box( //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const Box3i bounds_in_voxels, //
-		int lod_count, //
-		bool is_full_load_mode, //
-		bool can_load, //
-		const VoxelData &data, //
-		int data_block_size //
+void process_mesh_blocks_sliding_box(
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const Box3i bounds_in_voxels,
+		int lod_count,
+		bool is_full_load_mode,
+		bool can_load,
+		const VoxelData &data,
+		int data_block_size
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1440,16 +1519,16 @@ void process_mesh_blocks_sliding_box( //
 		// Only update around viewers that need meshes.
 		// Check previous state too in case we have to handle them changing
 		if (requires_meshes(paired_viewer.state) || requires_meshes(paired_viewer.prev_state)) {
-			process_viewer_mesh_blocks_sliding_box( //
-					state, //
-					mesh_block_size_po2, //
-					lod_count, //
-					bounds_in_voxels, //
-					paired_viewer, //
-					can_load, //
-					is_full_load_mode, //
-					mesh_to_data_factor, //
-					data //
+			process_viewer_mesh_blocks_sliding_box(
+					state,
+					mesh_block_size_po2,
+					lod_count,
+					bounds_in_voxels,
+					paired_viewer,
+					can_load,
+					is_full_load_mode,
+					mesh_to_data_factor,
+					data
 			);
 		}
 	}
@@ -1458,11 +1537,11 @@ void process_mesh_blocks_sliding_box( //
 	// clipbox_streaming.lod_distance_in_mesh_chunks_previous_update = lod_distance_in_mesh_chunks;
 }
 
-void process_loaded_data_blocks_trigger_meshing( //
-		const VoxelData &data, //
-		VoxelLodTerrainUpdateData::State &state, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const Box3i bounds_in_voxels //
+void process_loaded_data_blocks_trigger_meshing(
+		const VoxelData &data,
+		VoxelLodTerrainUpdateData::State &state,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const Box3i bounds_in_voxels
 ) {
 	ZN_PROFILE_SCOPE();
 	// This function should only be used when data streaming is on.
@@ -1497,7 +1576,8 @@ void process_loaded_data_blocks_trigger_meshing( //
 		const int lod_data_block_size_po2 = data.get_block_size_po2() + bloc.lod;
 		const Box3i bounds_in_data_blocks = Box3i( //
 				bounds_in_voxels.position >> lod_data_block_size_po2, //
-				bounds_in_voxels.size >> lod_data_block_size_po2);
+				bounds_in_voxels.size >> lod_data_block_size_po2
+		);
 
 		const Box3i data_neighboring =
 				Box3i(bloc.position - Vector3i(1, 1, 1), Vector3i(3, 3, 3)).clipped(bounds_in_data_blocks);
@@ -1507,8 +1587,12 @@ void process_loaded_data_blocks_trigger_meshing( //
 
 		const unsigned int lod_index = bloc.lod;
 
-		data_neighboring.for_each_cell([data_to_mesh_shift, &checked_mesh_blocks, &lod, &data, lod_index,
-											   &bounds_in_data_blocks](Vector3i data_bpos) {
+		data_neighboring.for_each_cell([data_to_mesh_shift,
+										&checked_mesh_blocks,
+										&lod,
+										&data,
+										lod_index,
+										&bounds_in_data_blocks](Vector3i data_bpos) {
 			// ZN_PROFILE_SCOPE_NAMED("Cell");
 
 			const Vector3i mesh_block_pos = data_bpos >> data_to_mesh_shift;
@@ -1530,7 +1614,7 @@ void process_loaded_data_blocks_trigger_meshing( //
 
 			// TODO Check if there is more flags to compute with the mesh (collider? rendering?)
 			if (mesh_state != VoxelLodTerrainUpdateData::MESH_NEED_UPDATE &&
-					mesh_state != VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED) {
+				mesh_state != VoxelLodTerrainUpdateData::MESH_NEVER_UPDATED) {
 				// Already updated or updating
 				return;
 			}
@@ -1538,7 +1622,7 @@ void process_loaded_data_blocks_trigger_meshing( //
 			bool data_available = true;
 			// if (data.is_streaming_enabled()) {
 			const Box3i data_box = Box3i((mesh_block_pos << data_to_mesh_shift) - Vector3i(1, 1, 1),
-					Vector3iUtil::create((1 << data_to_mesh_shift) + 2))
+										 Vector3iUtil::create((1 << data_to_mesh_shift) + 2))
 										   .clipped(bounds_in_data_blocks);
 			// TODO Do a single grid query up-front, they will overlap so we do redundant lookups!
 			data_available = data.has_all_blocks_in_area_unbound(data_box, lod_index);
@@ -1550,7 +1634,8 @@ void process_loaded_data_blocks_trigger_meshing( //
 
 			if (data_available) {
 				schedule_mesh_load(
-						lod.mesh_blocks_pending_update, mesh_block_pos, mesh_block, mesh_block.mesh_viewers.get() > 0);
+						lod.mesh_blocks_pending_update, mesh_block_pos, mesh_block, mesh_block.mesh_viewers.get() > 0
+				);
 				// We assume data blocks won't unload after this, until data is gathered, because unloading
 				// runs before this logic.
 			}
@@ -1597,7 +1682,10 @@ void process_loaded_data_blocks_trigger_meshing( //
 // }
 
 bool all_children_loaded(
-		const Vector3i parent_bpos, const VoxelLodTerrainUpdateData::Lod &lod, MeshBlockFeatureIndex feature_index) {
+		const Vector3i parent_bpos,
+		const VoxelLodTerrainUpdateData::Lod &lod,
+		MeshBlockFeatureIndex feature_index
+) {
 	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
 		auto child_it = lod.mesh_map_state.map.find(child_bpos);
@@ -1617,12 +1705,12 @@ bool all_children_loaded(
 
 // Activates mesh blocks when they are loaded. Activates higher LODs and hides lower LODs when possible.
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
-void update_mesh_block_load( //
-		VoxelLodTerrainUpdateData::State &state, //
-		Vector3i bpos, //
-		unsigned int lod_index, //
-		unsigned int lod_count, //
-		MeshBlockFeatureIndex feature_index //
+void update_mesh_block_load(
+		VoxelLodTerrainUpdateData::State &state,
+		Vector3i bpos,
+		unsigned int lod_index,
+		unsigned int lod_count,
+		MeshBlockFeatureIndex feature_index
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto mesh_it = lod.mesh_map_state.map.find(bpos);
@@ -1670,7 +1758,8 @@ void update_mesh_block_load( //
 	// The parent must exist because sliding boxes contain each other. Maybe in the future that won't always be true
 	// if a viewer has special behavior?
 	ZN_ASSERT_RETURN_MSG(
-			parent_mesh_it != parent_lod.mesh_map_state.map.end(), "Expected parent due to subdivision rules, bug?");
+			parent_mesh_it != parent_lod.mesh_map_state.map.end(), "Expected parent due to subdivision rules, bug?"
+	);
 
 	VoxelLodTerrainUpdateData::MeshBlockState &parent_mesh_block = parent_mesh_it->second;
 
@@ -1704,9 +1793,9 @@ void update_mesh_block_load( //
 	}
 }
 
-void process_loaded_mesh_blocks_trigger_visibility_changes( //
-		VoxelLodTerrainUpdateData::State &state, //
-		unsigned int lod_count //
+void process_loaded_mesh_blocks_trigger_visibility_changes(
+		VoxelLodTerrainUpdateData::State &state,
+		unsigned int lod_count
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1793,16 +1882,16 @@ void filter_outputs(VoxelLodTerrainUpdateData::State &state) {
 
 } // namespace
 
-void process_clipbox_streaming( //
-		VoxelLodTerrainUpdateData::State &state, //
-		VoxelData &data, //
-		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, //
-		const Transform3D &volume_transform, //
-		StdVector<VoxelData::BlockToSave> *data_blocks_to_save, //
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		bool can_load, //
-		bool can_mesh //
+void process_clipbox_streaming(
+		VoxelLodTerrainUpdateData::State &state,
+		VoxelData &data,
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers,
+		const Transform3D &volume_transform,
+		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		bool can_load,
+		bool can_mesh
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1814,12 +1903,22 @@ void process_clipbox_streaming( //
 
 	StdVector<unsigned int> unpaired_viewers_to_remove;
 
-	process_viewers(state.clipbox_streaming, settings, lod_count, viewers, volume_transform, bounds_in_voxels,
-			data_block_size_po2, can_mesh, unpaired_viewers_to_remove);
+	process_viewers(
+			state.clipbox_streaming,
+			settings,
+			lod_count,
+			viewers,
+			volume_transform,
+			bounds_in_voxels,
+			data_block_size_po2,
+			can_mesh,
+			unpaired_viewers_to_remove
+	);
 
 	if (streaming_enabled) {
 		process_data_blocks_sliding_box(
-				state, data, data_blocks_to_save, data_blocks_to_load, settings, lod_count, can_load);
+				state, data, data_blocks_to_save, data_blocks_to_load, settings, lod_count, can_load
+		);
 	} else {
 		if (full_load_completed == false) {
 			// Don't do anything until things are loaded, because we'll trigger meshing directly when mesh blocks get
@@ -1831,7 +1930,8 @@ void process_clipbox_streaming( //
 	}
 
 	process_mesh_blocks_sliding_box(
-			state, settings, bounds_in_voxels, lod_count, !streaming_enabled, can_load, data, 1 << data_block_size_po2);
+			state, settings, bounds_in_voxels, lod_count, !streaming_enabled, can_load, data, 1 << data_block_size_po2
+	);
 
 	// Removing paired viewers after box diffs because we interpret viewer removal as boxes becoming zero-size, so we
 	// need one processing step to handle that before actually removing them
