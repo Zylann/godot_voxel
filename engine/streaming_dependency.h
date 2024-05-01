@@ -16,7 +16,10 @@ struct StreamingDependency {
 	bool valid = true;
 
 	static void reset(
-			std::shared_ptr<StreamingDependency> &ref, Ref<VoxelStream> stream, Ref<VoxelGenerator> generator) {
+			std::shared_ptr<StreamingDependency> &ref,
+			Ref<VoxelStream> stream,
+			Ref<VoxelGenerator> generator
+	) {
 		if (ref != nullptr) {
 			ref->valid = false;
 		}

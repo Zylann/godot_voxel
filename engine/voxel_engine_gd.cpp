@@ -32,7 +32,8 @@ void VoxelEngine::destroy_singleton() {
 }
 
 zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
-		unsigned int &out_main_thread_time_budget_usec) {
+		unsigned int &out_main_thread_time_budget_usec
+) {
 	ZN_ASSERT(ProjectSettings::get_singleton() != nullptr);
 	ProjectSettings &ps = *ProjectSettings::get_singleton();
 
@@ -42,11 +43,14 @@ zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
 
 	add_custom_project_setting(Variant::INT, "voxel/threads/count/minimum", PROPERTY_HINT_RANGE, "1,64", 1, true);
 	add_custom_project_setting(
-			Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64", 1, true);
+			Variant::INT, "voxel/threads/count/margin_below_max", PROPERTY_HINT_RANGE, "1,64", 1, true
+	);
 	add_custom_project_setting(
-			Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1", 0.5f, true);
+			Variant::FLOAT, "voxel/threads/count/ratio_over_max", PROPERTY_HINT_RANGE, "0,1,0.1", 0.5f, true
+	);
 	add_custom_project_setting(
-			Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000", 8, true);
+			Variant::INT, "voxel/threads/main/time_budget_ms", PROPERTY_HINT_RANGE, "0,1000", 8, true
+	);
 
 	out_main_thread_time_budget_usec = 1000 * int(ps.get("voxel/threads/main/time_budget_ms"));
 
@@ -64,8 +68,10 @@ zylann::voxel::VoxelEngine::ThreadsConfig VoxelEngine::get_config_from_godot(
 VoxelEngine::VoxelEngine() {
 #ifdef ZN_PROFILER_ENABLED
 	CRASH_COND(RenderingServer::get_singleton() == nullptr);
-	RenderingServer::get_singleton()->connect(VoxelStringNames::get_singleton().frame_post_draw,
-			callable_mp(this, &VoxelEngine::_on_rendering_server_frame_post_draw));
+	RenderingServer::get_singleton()->connect(
+			VoxelStringNames::get_singleton().frame_post_draw,
+			callable_mp(this, &VoxelEngine::_on_rendering_server_frame_post_draw)
+	);
 #endif
 }
 

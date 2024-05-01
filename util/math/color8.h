@@ -37,7 +37,8 @@ struct Color8 {
 				(v >> 6) * 85, //
 				((v >> 4) & 3) * 85, //
 				((v >> 2) & 3) * 85, //
-				(v & 3) * 85);
+				(v & 3) * 85
+		);
 	}
 
 	static inline Color8 from_u16(uint16_t v) {
@@ -51,7 +52,8 @@ struct Color8 {
 				(v >> 12) * 17, //
 				((v >> 8) & 0xf) * 17, //
 				((v >> 4) & 0xf) * 17, //
-				(v & 0xf) * 17);
+				(v & 0xf) * 17
+		);
 	}
 
 	static inline Color8 from_u32(uint32_t c) {

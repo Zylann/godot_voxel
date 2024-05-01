@@ -43,7 +43,9 @@ public:
 	};
 
 	static void make_transform_and_color8_3d_bulk_array(
-			Span<const TransformAndColor8> data, PackedFloat32Array &bulk_array);
+			Span<const TransformAndColor8> data,
+			PackedFloat32Array &bulk_array
+	);
 
 	struct TransformAndColor32 {
 		Transform3D transform;
@@ -51,7 +53,9 @@ public:
 	};
 
 	static void make_transform_and_color32_3d_bulk_array(
-			Span<const TransformAndColor32> data, PackedFloat32Array &bulk_array);
+			Span<const TransformAndColor32> data,
+			PackedFloat32Array &bulk_array
+	);
 
 private:
 	RID _multimesh_instance;

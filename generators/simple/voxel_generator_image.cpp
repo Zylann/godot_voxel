@@ -72,12 +72,18 @@ VoxelGenerator::Result VoxelGeneratorImage::generate_block(VoxelGenerator::Voxel
 
 	if (params.blur_enabled) {
 		result = VoxelGeneratorHeightmap::generate(
-				out_buffer, [&image](int x, int z) { return get_height_blurred(image, x, z); }, input.origin_in_voxels,
-				input.lod);
+				out_buffer,
+				[&image](int x, int z) { return get_height_blurred(image, x, z); },
+				input.origin_in_voxels,
+				input.lod
+		);
 	} else {
 		result = VoxelGeneratorHeightmap::generate(
-				out_buffer, [&image](int x, int z) { return get_height_repeat(image, x, z); }, input.origin_in_voxels,
-				input.lod);
+				out_buffer,
+				[&image](int x, int z) { return get_height_repeat(image, x, z); },
+				input.origin_in_voxels,
+				input.lod
+		);
 	}
 
 	out_buffer.compress_uniform_channels();
@@ -91,8 +97,11 @@ void VoxelGeneratorImage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_blur_enabled", "enable"), &VoxelGeneratorImage::set_blur_enabled);
 	ClassDB::bind_method(D_METHOD("is_blur_enabled"), &VoxelGeneratorImage::is_blur_enabled);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, Image::get_class_static()),
-			"set_image", "get_image");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "image", PROPERTY_HINT_RESOURCE_TYPE, Image::get_class_static()),
+			"set_image",
+			"get_image"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "blur_enabled"), "set_blur_enabled", "is_blur_enabled");
 }
 
