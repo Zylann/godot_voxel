@@ -56,6 +56,9 @@ public:
 	void set_visible(bool visible);
 	bool is_visible() const;
 
+	void set_parent_visible(bool parent_visible);
+	void set_parent_transform(const Transform3D &parent_transform);
+
 	// Collisions
 
 	void set_collision_shape(Ref<Shape3D> shape, bool debug_collision, Node3D *node, float margin);
@@ -68,11 +71,6 @@ public:
 
 	void set_collision_enabled(bool enable);
 	bool is_collision_enabled() const;
-
-	// State
-
-	void set_parent_visible(bool parent_visible);
-	void set_parent_transform(const Transform3D &parent_transform);
 
 protected:
 	void _set_visible(bool visible);

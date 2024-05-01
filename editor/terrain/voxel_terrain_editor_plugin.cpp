@@ -87,7 +87,10 @@ void VoxelTerrainEditorPlugin::generate_menu_items(MenuButton *menu_button, bool
 namespace {
 ViewerID create_editor_viewer() {
 	ViewerID id = VoxelEngine::get_singleton().add_viewer();
-	VoxelEngine::get_singleton().set_viewer_distance(id, 512);
+	VoxelEngine::Viewer::Distances vd;
+	vd.horizontal = 512;
+	vd.vertical = 512;
+	VoxelEngine::get_singleton().set_viewer_distances(id, vd);
 	// No collision needed in editor, also it updates faster without
 	VoxelEngine::get_singleton().set_viewer_requires_collisions(id, false);
 	return id;
@@ -154,7 +157,11 @@ void VoxelTerrainEditorPlugin::_zn_make_visible(bool visible) {
 EditorPlugin::AfterGUIInput VoxelTerrainEditorPlugin::_zn_forward_3d_gui_input(
 		Camera3D *p_camera, const Ref<InputEvent> &p_event) {
 	if (_editor_viewer_enabled) {
-		VoxelEngine::get_singleton().set_viewer_distance(_editor_viewer_id, p_camera->get_far());
+		// Will be clamped by terrain max view distance
+		VoxelEngine::Viewer::Distances vd;
+		vd.horizontal = p_camera->get_far();
+		vd.vertical = p_camera->get_far();
+		VoxelEngine::get_singleton().set_viewer_distances(_editor_viewer_id, vd);
 	}
 	_editor_camera_last_position = p_camera->get_global_transform().origin;
 

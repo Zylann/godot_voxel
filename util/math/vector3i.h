@@ -103,7 +103,8 @@ inline Vector3i wrap(const Vector3i v, const Vector3i d) {
 
 inline Vector3i clamp(const Vector3i a, const Vector3i minv, const Vector3i maxv) {
 	return Vector3i(
-			math::clamp(a.x, minv.x, maxv.x), math::clamp(a.y, minv.y, maxv.y), math::clamp(a.z, minv.z, maxv.z));
+			math::clamp(a.x, minv.x, maxv.x), math::clamp(a.y, minv.y, maxv.y), math::clamp(a.z, minv.z, maxv.z)
+	);
 }
 
 inline Vector3i abs(const Vector3i v) {

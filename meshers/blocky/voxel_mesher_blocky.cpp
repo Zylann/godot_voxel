@@ -57,10 +57,15 @@ StdVector<int> &get_tls_index_offsets() {
 } // namespace
 
 template <typename Type_T>
-void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
-		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
-		const Vector3i block_size, const VoxelBlockyLibraryBase::BakedData &library, bool bake_occlusion,
-		float baked_occlusion_darkness) {
+void generate_blocky_mesh( //
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
+		VoxelMesher::Output::CollisionSurface *collision_surface, //
+		const Span<const Type_T> type_buffer, //
+		const Vector3i block_size, //
+		const VoxelBlockyLibraryBase::BakedData &library, //
+		bool bake_occlusion, //
+		float baked_occlusion_darkness //
+) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
 	// changing makes no difference, we could use a function pointer or switch inside instead to reduce executable size.
@@ -209,7 +214,7 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 					}
 
 					// Subtracting 1 because the data is padded
-					Vector3f pos(x - 1, y - 1, z - 1);
+					const Vector3f pos(x - 1, y - 1, z - 1);
 
 					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
@@ -219,11 +224,13 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const StdVector<Vector3f> &side_positions = surface.side_positions[side];
-						const unsigned int vertex_count = side_positions.size();
+						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
 
-						const StdVector<Vector2f> &side_uvs = surface.side_uvs[side];
-						const StdVector<float> &side_tangents = surface.side_tangents[side];
+						const StdVector<Vector3f> &side_positions = side_surface.positions;
+						const unsigned int vertex_count = side_surface.positions.size();
+
+						const StdVector<Vector2f> &side_uvs = side_surface.uvs;
+						const StdVector<float> &side_tangents = side_surface.tangents;
 
 						// Append vertices of the faces in one go, don't use push_back
 
@@ -301,7 +308,7 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 							}
 						}
 
-						const StdVector<int> &side_indices = surface.side_indices[side];
+						const StdVector<int> &side_indices = side_surface.indices;
 						const unsigned int index_count = side_indices.size();
 
 						{
@@ -452,7 +459,7 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -515,8 +522,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		return;
 	}
 
-	Span<uint8_t> raw_channel;
-	if (!voxels.get_channel_raw(channel, raw_channel)) {
+	Span<const uint8_t> raw_channel;
+	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -544,14 +551,27 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface, raw_channel, block_size,
-						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel, //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface,
-						raw_channel.reinterpret_cast_to<uint16_t>(), block_size, library_baked_data,
-						params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel.reinterpret_cast_to<const uint16_t>(), //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			default:

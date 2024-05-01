@@ -722,6 +722,13 @@ bool VoxelBuffer::get_channel_raw(unsigned int channel_index, Span<uint8_t> &sli
 	return false;
 }
 
+bool VoxelBuffer::get_channel_raw_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const {
+	Span<uint8_t> slice_w;
+	const bool success = get_channel_raw(channel_index, slice_w);
+	slice = slice_w;
+	return success;
+}
+
 bool VoxelBuffer::create_channel(int i, uint64_t defval) {
 	ZN_DSTACK();
 	if (!create_channel_noinit(i, _size)) {

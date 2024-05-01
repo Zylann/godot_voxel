@@ -121,6 +121,11 @@ inline T distance_squared(const Vector2T<T> &a, const Vector2T<T> &b) {
 	return length_squared(b - a);
 }
 
+template <typename T>
+inline Vector2T<T> max(const Vector2T<T> a, const Vector2T<T> b) {
+	return Vector2T<T>(max(a.x, b.x), max(a.y, b.y));
+}
+
 } // namespace math
 } // namespace zylann
 

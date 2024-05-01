@@ -3,6 +3,7 @@
 
 #include "../engine/ids.h"
 #include "../util/godot/classes/node_3d.h"
+#include "../util/math/vector2f.h"
 
 namespace zylann::voxel {
 
@@ -17,6 +18,9 @@ public:
 	void set_view_distance(unsigned int distance);
 	unsigned int get_view_distance() const;
 	// TODO Collision distance
+
+	void set_view_distance_vertical_ratio(float p_ratio);
+	float get_view_distance_vertical_ratio() const;
 
 	// TODO Have an option to run in editor, could be useful for testing?
 
@@ -42,11 +46,13 @@ private:
 	static void _bind_methods();
 
 	void sync_all_parameters();
+	void sync_view_distances();
 
 	bool is_active() const;
 
 	ViewerID _viewer_id;
 	unsigned int _view_distance = 128;
+	float _view_distance_vertical_ratio = 1.f;
 	bool _requires_visuals = true;
 	bool _requires_collisions = true;
 	bool _requires_data_block_notifications = false;

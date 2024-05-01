@@ -1,7 +1,7 @@
 #include "render_detail_texture_task.h"
 #include "../../util/profiling.h"
 #include "../voxel_engine.h"
-//#include "../../util/string/format.h" // Debug
+// #include "../../util/string/format.h" // Debug
 #include "../../constants/voxel_constants.h"
 #include "../../modifiers/voxel_modifier_stack.h"
 #include "../../storage/voxel_data.h"
@@ -67,13 +67,26 @@ void RenderDetailTextureTask::run_on_cpu() {
 	const Vector3i size_in_voxels = mesh_block_size << lod_index;
 	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
 
-	compute_detail_texture_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels, size_in_voxels, lod_index,
+	compute_detail_texture_data(
+			*cell_iterator,
+			to_span(mesh_vertices),
+			to_span(mesh_normals),
+			to_span(mesh_indices),
+			normalmap_data,
+			tile_resolution,
+			**generator,
+			voxel_data.get(),
+			origin_in_voxels,
+			size_in_voxels,
+			lod_index,
 			detail_texture_settings.octahedral_encoding_enabled,
-			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), false);
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)),
+			false
+	);
 
 	DetailImages images = store_normalmap_data_to_images(
-			normalmap_data, tile_resolution, mesh_block_size, detail_texture_settings.octahedral_encoding_enabled);
+			normalmap_data, tile_resolution, mesh_block_size, detail_texture_settings.octahedral_encoding_enabled
+	);
 
 	// Debug
 	// debug_dump_atlas(images.atlas,
@@ -138,9 +151,14 @@ bool RenderDetailTextureTask::is_cancelled() {
 
 namespace {
 
-void build_gpu_tiles_data(ICellIterator &cell_iterator, unsigned int tile_count, StdVector<int32_t> &cell_triangles,
-		StdVector<RenderDetailTextureGPUTask::TileData> &tile_data, const StdVector<int> &mesh_indices,
-		const StdVector<Vector3f> &mesh_normals) {
+void build_gpu_tiles_data(
+		ICellIterator &cell_iterator,
+		unsigned int tile_count,
+		StdVector<int32_t> &cell_triangles,
+		StdVector<RenderDetailTextureGPUTask::TileData> &tile_data,
+		const StdVector<int> &mesh_indices,
+		const StdVector<Vector3f> &mesh_normals
+) {
 	tile_data.reserve(tile_count);
 
 	CurrentCellInfo cell_info;
@@ -203,10 +221,22 @@ RenderDetailTextureGPUTask *RenderDetailTextureTask::make_gpu_task() {
 	const Vector3i size_in_voxels = mesh_block_size << lod_index;
 	const Vector3i origin_in_voxels = mesh_block_position * size_in_voxels;
 	DetailTextureData edited_tiles_normalmap_data;
-	compute_detail_texture_data(*cell_iterator, to_span(mesh_vertices), to_span(mesh_normals), to_span(mesh_indices),
-			edited_tiles_normalmap_data, tile_resolution, **generator, voxel_data.get(), origin_in_voxels,
-			size_in_voxels, lod_index, false, /*detail_texture_settings.octahedral_encoding_enabled*/
-			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)), true);
+	compute_detail_texture_data(
+			*cell_iterator,
+			to_span(mesh_vertices),
+			to_span(mesh_normals),
+			to_span(mesh_indices),
+			edited_tiles_normalmap_data,
+			tile_resolution,
+			**generator,
+			voxel_data.get(),
+			origin_in_voxels,
+			size_in_voxels,
+			lod_index,
+			false, /*detail_texture_settings.octahedral_encoding_enabled*/
+			math::deg_to_rad(float(detail_texture_settings.max_deviation_degrees)),
+			true
+	);
 
 	const unsigned int tile_count = cell_iterator->get_count();
 	const unsigned int tiles_across = get_square_grid_size_from_item_count(tile_count);
@@ -299,8 +329,12 @@ void convert_pixels_from_rgba8_to_rgb8_in_place(PackedByteArray &pba) {
 	pba.resize(pixel_count * 3);
 }
 
-void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pixels, Vector2i atlas_size_pixels,
-		const DetailTextureData &edited_tiles_normalmap_data) {
+void combine_edited_tiles(
+		PackedByteArray &atlas_data,
+		unsigned int tile_size_pixels,
+		Vector2i atlas_size_pixels,
+		const DetailTextureData &edited_tiles_normalmap_data
+) {
 	ZN_PROFILE_SCOPE();
 
 	uint8_t *dst_w = atlas_data.ptrw();
@@ -311,14 +345,16 @@ void combine_edited_tiles(PackedByteArray &atlas_data, unsigned int tile_size_pi
 
 	for (unsigned int tile_index = 0; tile_index < edited_tiles_normalmap_data.tiles.size(); ++tile_index) {
 		Span<const uint8_t> src_pixels = to_span_from_position_and_size(
-				edited_tiles_normalmap_data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
+				edited_tiles_normalmap_data.normals, tile_index * tile_size_in_bytes, tile_size_in_bytes
+		);
 
 		const unsigned int dst_tile_index = edited_tiles_normalmap_data.tile_indices[tile_index];
 		const Vector2i dst_tile_pos_pixels =
 				Vector2i(dst_tile_index % tiles_x, dst_tile_index / tiles_x) * tile_size_pixels;
 
-		copy_2d_region_from_packed_to_atlased(dst, atlas_size_pixels, src_pixels,
-				Vector2i(tile_size_pixels, tile_size_pixels), dst_tile_pos_pixels, 3);
+		copy_2d_region_from_packed_to_atlased(
+				dst, atlas_size_pixels, src_pixels, Vector2i(tile_size_pixels, tile_size_pixels), dst_tile_pos_pixels, 3
+		);
 	}
 }
 
@@ -335,7 +371,8 @@ void RenderDetailTexturePass2Task::run(ThreadedTaskContext &ctx) {
 	// tiles. Maybe we should find a way to tell the GPU task to exclude these tiles efficiently?
 	if (edited_tiles_texture_data.tiles.size() > 0) {
 		combine_edited_tiles(
-				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_texture_data);
+				atlas_data, tile_size_pixels, Vector2i(atlas_width, atlas_height), edited_tiles_texture_data
+		);
 	}
 
 	DetailImages images;

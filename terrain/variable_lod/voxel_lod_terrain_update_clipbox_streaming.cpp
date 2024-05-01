@@ -50,15 +50,16 @@ bool find_index(Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers, Vie
 	return false;
 }
 
-Box3i get_base_box_in_chunks(Vector3i viewer_position_voxels, int distance_voxels, int chunk_size, bool make_even) {
+Box3i get_base_box_in_chunks(
+		Vector3i viewer_position_voxels, Vector3i distance_voxels, int chunk_size, bool make_even) {
 	// Get min and max positions
-	Vector3i minp = viewer_position_voxels - Vector3iUtil::create(distance_voxels);
+	Vector3i minp = viewer_position_voxels - distance_voxels;
 	Vector3i maxp = viewer_position_voxels +
-			Vector3iUtil::create(distance_voxels
-					// When distance is a multiple of chunk size, we should be able to get a consistent box size,
-					// however without that +1 there are still very specific coordinates that makes the box shrink due
-					// to rounding
-					+ 1);
+			distance_voxels
+			// When distance is a multiple of chunk size, we should be able to get a consistent box size,
+			// however without that +1 there are still very specific coordinates that makes the box shrink due
+			// to rounding
+			+ Vector3iUtil::create(1);
 
 	// Convert to chunk coordinates
 	minp = math::floordiv(minp, chunk_size);
@@ -103,13 +104,13 @@ inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mes
 }
 
 // Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
-int get_relative_lod_distance_in_chunks( //
+Vector3i get_relative_lod_distance_in_chunks( //
 		int lod_index, //
 		int lod_count, //
 		int lod0_distance_in_chunks, //
 		int lodn_distance_in_chunks, //
 		int lod_chunk_size, //
-		int max_view_distance_voxels //
+		Vector3i max_view_distance_voxels //
 ) {
 	int ld;
 	if (lod_index == 0) {
@@ -121,11 +122,12 @@ int get_relative_lod_distance_in_chunks( //
 		// multiplying LODN distance
 		ld = (lod0_distance_in_chunks >> lod_index) + lodn_distance_in_chunks;
 	}
+	Vector3i ld3(ld, ld, ld);
 	if (lod_index == lod_count - 1) {
 		// Last LOD may extend all the way to max view distance if possible
-		ld = math::max(ld, math::ceildiv(max_view_distance_voxels, lod_chunk_size));
+		ld3 = math::max(ld3, math::ceildiv(max_view_distance_voxels, Vector3iUtil::create(lod_chunk_size)));
 	}
-	return ld;
+	return ld3;
 }
 
 void process_viewers( //
@@ -152,7 +154,7 @@ void process_viewers( //
 			// Interpret removal as nullified view distance so the same code handling loading of blocks
 			// will be used to unload those viewed by this viewer.
 			// We'll actually remove unpaired viewers in a second pass.
-			pv.state.view_distance_voxels = 0;
+			pv.state.view_distance_voxels = VoxelLodTerrainUpdateData::PairedViewer::Distances();
 
 			// Also update boxes, they won't be updated since the viewer has been removed.
 			// Assign prev state, otherwise in some cases resetting boxes would make them equal to prev state,
@@ -216,10 +218,17 @@ void process_viewers( //
 		// Move current state to be the previous state
 		paired_viewer.prev_state = paired_viewer.state;
 
-		const int view_distance_voxels =
-				static_cast<int>(static_cast<float>(viewer.view_distance) * view_distance_scale);
-		paired_viewer.state.view_distance_voxels =
-				math::min(view_distance_voxels, static_cast<int>(volume_settings.view_distance_voxels));
+		{
+			const int view_distance_voxels_h =
+					static_cast<int>(static_cast<float>(viewer.view_distances.horizontal) * view_distance_scale);
+			const int view_distance_voxels_v =
+					static_cast<int>(static_cast<float>(viewer.view_distances.vertical) * view_distance_scale);
+
+			paired_viewer.state.view_distance_voxels.horizontal =
+					math::min(view_distance_voxels_h, static_cast<int>(volume_settings.view_distance_voxels));
+			paired_viewer.state.view_distance_voxels.vertical =
+					math::min(view_distance_voxels_v, static_cast<int>(volume_settings.view_distance_voxels));
+		}
 
 		// The last LOD should extend at least up to view distance. It must also be at least the distance specified by
 		// "lod distance"
@@ -255,8 +264,11 @@ void process_viewers( //
 
 				const Box3i volume_bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
 
-				const int ld = get_relative_lod_distance_in_chunks(lod_index, lod_count, lod0_distance_in_mesh_chunks,
-						lodn_distance_in_mesh_chunks, lod_mesh_block_size, paired_viewer.state.view_distance_voxels);
+				const Vector3i ld = get_relative_lod_distance_in_chunks(lod_index, lod_count,
+						lod0_distance_in_mesh_chunks, lodn_distance_in_mesh_chunks, lod_mesh_block_size,
+						Vector3i(paired_viewer.state.view_distance_voxels.horizontal,
+								paired_viewer.state.view_distance_voxels.vertical,
+								paired_viewer.state.view_distance_voxels.horizontal));
 
 				// Box3i new_mesh_box = get_lod_box_in_chunks(
 				// 		paired_viewer.state.local_position_voxels, ld, volume_settings.mesh_block_size_po2, lod_index);
@@ -333,8 +345,11 @@ void process_viewers( //
 						volume_bounds_in_voxels.position >> lod_data_block_size_po2, //
 						volume_bounds_in_voxels.size >> lod_data_block_size_po2);
 
-				const int ld = get_relative_lod_distance_in_chunks(lod_index, lod_count, lod0_distance_in_data_chunks,
-						lodn_distance_in_data_chunks, lod_data_block_size, paired_viewer.state.view_distance_voxels);
+				const Vector3i ld = get_relative_lod_distance_in_chunks(lod_index, lod_count,
+						lod0_distance_in_data_chunks, lodn_distance_in_data_chunks, lod_data_block_size,
+						Vector3i(paired_viewer.state.view_distance_voxels.horizontal,
+								paired_viewer.state.view_distance_voxels.vertical,
+								paired_viewer.state.view_distance_voxels.horizontal));
 
 				const Box3i new_data_box = get_base_box_in_chunks(paired_viewer.state.local_position_voxels,
 						// Making sure that distance is a multiple of chunk size, for consistent box size

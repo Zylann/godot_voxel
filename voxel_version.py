@@ -3,7 +3,7 @@
 # TODO Could not name the file just "version.py" because otherwise `import version` imports the wrong one from Godot...
 
 MAJOR = 1
-MINOR = 2
+MINOR = 3
 PATCH = 0
 STATUS = "dev"
 

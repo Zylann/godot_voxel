@@ -134,7 +134,9 @@ inline void write_bulk_array_transform(float *dst, const TTransform3 &t) {
 }
 
 void DirectMultiMeshInstance::make_transform_3d_bulk_array(
-		Span<const Transform3D> transforms, PackedFloat32Array &bulk_array) {
+		Span<const Transform3D> transforms,
+		PackedFloat32Array &bulk_array
+) {
 	ZN_PROFILE_SCOPE();
 
 	const int item_size = 12; // In number of floats
@@ -158,7 +160,9 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 }
 
 void DirectMultiMeshInstance::make_transform_3d_bulk_array(
-		Span<const Transform3f> transforms, PackedFloat32Array &bulk_array) {
+		Span<const Transform3f> transforms,
+		PackedFloat32Array &bulk_array
+) {
 	ZN_PROFILE_SCOPE();
 
 	const int item_size = 12; // In number of floats
@@ -178,7 +182,9 @@ void DirectMultiMeshInstance::make_transform_3d_bulk_array(
 }
 
 void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
-		Span<const TransformAndColor8> data, PackedFloat32Array &bulk_array) {
+		Span<const TransformAndColor8> data,
+		PackedFloat32Array &bulk_array
+) {
 	ZN_PROFILE_SCOPE();
 
 	const int transform_size = 12; // In number of floats
@@ -189,8 +195,10 @@ void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
 		bulk_array.resize(bulk_array_size);
 	}
 	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
-	CRASH_COND(data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color8) / sizeof(float)) !=
-			static_cast<size_t>(bulk_array.size()));
+	CRASH_COND(
+			data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color8) / sizeof(float)) !=
+			static_cast<size_t>(bulk_array.size())
+	);
 
 	float *w = bulk_array.ptrw();
 	for (size_t i = 0; i < data.size(); ++i) {
@@ -202,7 +210,9 @@ void DirectMultiMeshInstance::make_transform_and_color8_3d_bulk_array(
 }
 
 void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
-		Span<const TransformAndColor32> data, PackedFloat32Array &bulk_array) {
+		Span<const TransformAndColor32> data,
+		PackedFloat32Array &bulk_array
+) {
 	ZN_PROFILE_SCOPE();
 
 	const int transform_size = 12; // In number of floats
@@ -214,8 +224,10 @@ void DirectMultiMeshInstance::make_transform_and_color32_3d_bulk_array(
 	}
 	// Note, the actual size of `Transform3D` can be twice if `real_t` is `double`.
 	// `Color` still uses `float` no matter the setting.
-	CRASH_COND(data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color) / sizeof(float)) !=
-			static_cast<size_t>(bulk_array.size()));
+	CRASH_COND(
+			data.size() * (sizeof(Transform3D) / sizeof(real_t) + sizeof(Color) / sizeof(float)) !=
+			static_cast<size_t>(bulk_array.size())
+	);
 
 	float *w = bulk_array.ptrw();
 	for (size_t i = 0; i < data.size(); ++i) {

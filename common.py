@@ -128,6 +128,7 @@ def get_sources(env, is_editor_build):
             "editor/multipass/*.cpp",
 
             "util/godot/debug_renderer.cpp",
+            "util/godot/check_ref_ownership.cpp",
 
             "util/godot/classes/editor_plugin.cpp",
             "util/godot/classes/editor_import_plugin.cpp",
