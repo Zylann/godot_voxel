@@ -132,8 +132,10 @@ void GenerateBlockTask::run_cpu_generation() {
 	_max_lod_hint = result.max_lod_hint;
 
 	if (_data != nullptr) {
-		_data->get_modifiers().apply(query_data.voxel_buffer,
-				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << _lod_index));
+		_data->get_modifiers().apply(
+				query_data.voxel_buffer,
+				AABB(query_data.origin_in_voxels, query_data.voxel_buffer.get_size() << _lod_index)
+		);
 	}
 }
 
@@ -145,7 +147,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
 			ZN_PRINT_VERBOSE(
-					format("Requesting save of generator output for block {} lod {}", _position, int(_lod_index)));
+					format("Requesting save of generator output for block {} lod {}", _position, int(_lod_index))
+			);
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
@@ -155,7 +158,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 			// No priority data, saving doesn't need sorting.
 
 			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
-					_volume_id, _position, _lod_index, voxels_copy, _stream_dependency, nullptr, false));
+					_volume_id, _position, _lod_index, voxels_copy, _stream_dependency, nullptr, false
+			));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -167,7 +171,8 @@ void GenerateBlockTask::run_stream_saving_and_finish() {
 TaskPriority GenerateBlockTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const TaskPriority p = _priority_dependency.evaluate(
-			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
+			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq
+	);
 	_too_far = _drop_beyond_max_distance && closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }

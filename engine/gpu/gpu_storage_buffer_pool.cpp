@@ -38,7 +38,8 @@ void GPUStorageBufferPool::clear() {
 	for (Pool &pool : _pools) {
 		if (pool.used_buffers > 0) {
 			ZN_PRINT_ERROR(
-					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index));
+					format("{} storage buffers are still in use when clearing pool {}", pool.used_buffers, pool_index)
+			);
 		}
 		for (GPUStorageBuffer &b : pool.buffers) {
 			godot::free_rendering_device_rid(rd, b.rid);

@@ -45,9 +45,11 @@ void generate_blocky_mesh( //
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
 	// changing makes no difference, we could use a function pointer or switch inside instead to reduce executable size.
 
-	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
+	ERR_FAIL_COND(
+			block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
-			block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
+			block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING)
+	);
 
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
@@ -151,7 +153,8 @@ void generate_blocky_mesh( //
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
 					// By default we render the whole side if we consider it visible
-					const FixedArray<VoxelBlockyModel::BakedData::SideSurface,
+					const FixedArray<
+							VoxelBlockyModel::BakedData::SideSurface,
 							VoxelBlockyModel::BakedData::Model::MAX_SURFACES> *side_surfaces =
 							&model.sides_surfaces[side];
 
@@ -167,8 +170,10 @@ void generate_blocky_mesh( //
 
 							// Might be only partially visible
 							if (voxel.cutout_sides_enabled) {
-								const std::unordered_map<uint32_t,
-										FixedArray<VoxelBlockyModel::BakedData::SideSurface,
+								const std::unordered_map<
+										uint32_t,
+										FixedArray<
+												VoxelBlockyModel::BakedData::SideSurface,
 												VoxelBlockyModel::BakedData::Model::MAX_SURFACES>>
 										&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
 
@@ -263,8 +268,9 @@ void generate_blocky_mesh( //
 						if (side_tangents.size() > 0) {
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, side_tangents.data(),
-									(vertex_count * 4) * sizeof(float));
+							memcpy(arrays.tangents.data() + append_index,
+								   side_tangents.data(),
+								   (vertex_count * 4) * sizeof(float));
 						}
 
 						{
@@ -386,8 +392,9 @@ void generate_blocky_mesh( //
 					if (tangents.size() > 0) {
 						const int append_index = arrays.tangents.size();
 						arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-						memcpy(arrays.tangents.data() + append_index, tangents.data(),
-								(vertex_count * 4) * sizeof(float));
+						memcpy(arrays.tangents.data() + append_index,
+							   tangents.data(),
+							   (vertex_count * 4) * sizeof(float));
 					}
 
 					for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -677,8 +684,10 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 
 	if (library.is_null()) {
 		out_warnings.append(String(ZN_TTR("{0} has no {1} assigned."))
-									.format(varray(VoxelMesherBlocky::get_class_static(),
-											VoxelBlockyLibraryBase::get_class_static())));
+									.format(
+											varray(VoxelMesherBlocky::get_class_static(),
+												   VoxelBlockyLibraryBase::get_class_static())
+									));
 		return;
 	}
 
@@ -706,16 +715,26 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
-						 VoxelBlockyLibraryBase::get_class_static(), PROPERTY_USAGE_DEFAULT
-						 // Sadly we can't use this hint because the property type is abstract... can't just choose a
-						 // default child class. This hint becomes less and less useful everytime I come across it...
-						 //| PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
-						 ),
-			"set_library", "get_library");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"library",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					VoxelBlockyLibraryBase::get_class_static(),
+					PROPERTY_USAGE_DEFAULT
+					// Sadly we can't use this hint because the property type is abstract... can't just choose a
+					// default child class. This hint becomes less and less useful everytime I come across it...
+					//| PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
+			),
+			"set_library",
+			"get_library"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
-			"set_occlusion_darkness", "get_occlusion_darkness");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
+			"set_occlusion_darkness",
+			"get_occlusion_darkness"
+	);
 }
 
 } // namespace zylann::voxel

@@ -14,7 +14,11 @@ math::Interval get_fnl_range_2d(const ZN_FastNoiseLite &noise, math::Interval x,
 math::Interval get_fnl_range_3d(const ZN_FastNoiseLite &noise, math::Interval x, math::Interval y, math::Interval z);
 math::Interval2 get_fnl_gradient_range_2d(const ZN_FastNoiseLiteGradient &noise, math::Interval x, math::Interval y);
 math::Interval3 get_fnl_gradient_range_3d(
-		const ZN_FastNoiseLiteGradient &noise, math::Interval x, math::Interval y, math::Interval z);
+		const ZN_FastNoiseLiteGradient &noise,
+		math::Interval x,
+		math::Interval y,
+		math::Interval z
+);
 
 } // namespace zylann
 

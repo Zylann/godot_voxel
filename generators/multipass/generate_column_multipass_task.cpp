@@ -13,13 +13,13 @@ namespace {
 #ifdef ZN_PROFILER_ENABLED
 std::atomic_int g_task_count[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = { 0 };
 const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
-	"GenerateColumnMultipassTasks_subpass0",
-	"GenerateColumnMultipassTasks_subpass1",
-	"GenerateColumnMultipassTasks_subpass2",
-	"GenerateColumnMultipassTasks_subpass3",
-	"GenerateColumnMultipassTasks_subpass4",
-	"GenerateColumnMultipassTasks_subpass5",
-	"GenerateColumnMultipassTasks_subpass6",
+	"GenerateColumnMultipassTasks_subpass0", //
+	"GenerateColumnMultipassTasks_subpass1", //
+	"GenerateColumnMultipassTasks_subpass2", //
+	"GenerateColumnMultipassTasks_subpass3", //
+	"GenerateColumnMultipassTasks_subpass4", //
+	"GenerateColumnMultipassTasks_subpass5", //
+	"GenerateColumnMultipassTasks_subpass6", //
 };
 #endif
 
@@ -27,11 +27,16 @@ const char *g_profiling_task_names[VoxelGeneratorMultipassCB::MAX_SUBPASSES] = {
 
 using namespace VoxelGeneratorMultipassCBStructs;
 
-GenerateColumnMultipassTask::GenerateColumnMultipassTask(Vector2i p_column_position, uint8_t p_block_size,
-		uint8_t p_subpass_index, std::shared_ptr<Internal> p_generator_internal,
-		Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority, IThreadedTask *p_caller,
-		std::shared_ptr<std::atomic_int> p_caller_dependency_count) {
-	//
+GenerateColumnMultipassTask::GenerateColumnMultipassTask(
+		Vector2i p_column_position,
+		uint8_t p_block_size,
+		uint8_t p_subpass_index,
+		std::shared_ptr<Internal> p_generator_internal,
+		Ref<VoxelGeneratorMultipassCB> p_generator,
+		TaskPriority p_priority,
+		IThreadedTask *p_caller,
+		std::shared_ptr<std::atomic_int> p_caller_dependency_count
+) {
 	_column_position = p_column_position;
 	_priority = p_priority;
 	_block_size = p_block_size;
@@ -90,7 +95,8 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 				return;
 			}
 			SpatialLock2D::UnlockWriteOnScopeExit swlock(
-					map.spatial_lock, BoxBounds2i::from_position(_column_position));
+					map.spatial_lock, BoxBounds2i::from_position(_column_position)
+			);
 
 			MutexLock mlock(map.mutex);
 			auto column_it = map.columns.find(_column_position);
@@ -121,9 +127,10 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 		ZN_ASSERT(pass.dependency_extents > 0);
 	}
 
-	const Box2i neighbors_box = Box2i::from_min_max( //
+	const Box2i neighbors_box = Box2i::from_min_max(
 			_column_position - Vector2iUtil::create(pass.dependency_extents),
-			_column_position + Vector2iUtil::create(pass.dependency_extents + 1));
+			_column_position + Vector2iUtil::create(pass.dependency_extents + 1)
+	);
 
 	const unsigned int central_block_index =
 			Vector2iUtil::get_yx_index(Vector2iUtil::create(pass.dependency_extents), neighbors_box.size);
@@ -240,9 +247,16 @@ void GenerateColumnMultipassTask::run(ThreadedTaskContext &ctx) {
 							}
 							++(*dependency_counter);
 
-							GenerateColumnMultipassTask *subtask =
-									ZN_NEW(GenerateColumnMultipassTask(cpos, _block_size, prev_subpass_index,
-											_generator_internal, _generator, _priority, this, dependency_counter));
+							GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
+									cpos,
+									_block_size,
+									prev_subpass_index,
+									_generator_internal,
+									_generator,
+									_priority,
+									this,
+									dependency_counter
+							));
 							subtask->_caller_mp_task = this;
 							task_scheduler.push_main_task(subtask);
 

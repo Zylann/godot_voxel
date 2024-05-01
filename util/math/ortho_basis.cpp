@@ -57,6 +57,7 @@ int get_index_from_ortho_basis(const OrthoBasis &b) {
 	return -1;
 }
 
+// clang-format off
 const char *s_rotation_names[ORTHO_ROTATION_COUNT] = {
 	"identity",
 	"z_270",
@@ -83,6 +84,7 @@ const char *s_rotation_names[ORTHO_ROTATION_COUNT] = {
 	"y_90",
 	"z_270_y_90",
 };
+// clang-format on
 
 const char *ortho_rotation_to_string(int i) {
 	ZN_ASSERT_RETURN_V(i >= 0 && i < ORTHO_ROTATION_COUNT, "<error>");
