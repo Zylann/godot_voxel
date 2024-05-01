@@ -31,9 +31,10 @@ struct BoxBounds2i {
 	}
 
 	static BoxBounds2i from_everywhere() {
-		return BoxBounds2i( //
+		return BoxBounds2i(
 				Vector2iUtil::create(std::numeric_limits<int>::min()),
-				Vector2iUtil::create(std::numeric_limits<int>::max()));
+				Vector2iUtil::create(std::numeric_limits<int>::max())
+		);
 	}
 
 	inline bool intersects(const BoxBounds2i &other) const {
@@ -41,7 +42,8 @@ struct BoxBounds2i {
 				max_pos.x < other.min_pos.x || //
 				max_pos.y < other.min_pos.y || //
 				min_pos.x > other.max_pos.x || //
-				min_pos.y > other.max_pos.y);
+				min_pos.y > other.max_pos.y
+		);
 	}
 
 	inline bool operator==(const BoxBounds2i &other) const {

@@ -24,8 +24,12 @@ const int g_opposite_side[6] = {
 	Cube::SIDE_NEGATIVE_Z //
 };
 
-inline bool is_face_visible(const VoxelBlockyLibraryBase::BakedData &lib, const VoxelBlockyModel::BakedData &vt,
-		uint32_t other_voxel_id, int side) {
+inline bool is_face_visible(
+		const VoxelBlockyLibraryBase::BakedData &lib,
+		const VoxelBlockyModel::BakedData &vt,
+		uint32_t other_voxel_id,
+		int side
+) {
 	if (other_voxel_id < lib.models.size()) {
 		const VoxelBlockyModel::BakedData &other_vt = lib.models[other_voxel_id];
 		// TODO Maybe we could get rid of `empty` here and instead set `culls_neighbors` to false during baking
@@ -57,17 +61,24 @@ StdVector<int> &get_tls_index_offsets() {
 } // namespace
 
 template <typename Type_T>
-void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
-		VoxelMesher::Output::CollisionSurface *collision_surface, const Span<Type_T> type_buffer,
-		const Vector3i block_size, const VoxelBlockyLibraryBase::BakedData &library, bool bake_occlusion,
-		float baked_occlusion_darkness) {
+void generate_blocky_mesh( //
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
+		VoxelMesher::Output::CollisionSurface *collision_surface, //
+		const Span<const Type_T> type_buffer, //
+		const Vector3i block_size, //
+		const VoxelBlockyLibraryBase::BakedData &library, //
+		bool bake_occlusion, //
+		float baked_occlusion_darkness //
+) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If
 	// changing makes no difference, we could use a function pointer or switch inside instead to reduce executable size.
 
-	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
+	ERR_FAIL_COND(
+			block_size.x < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherBlocky::PADDING) ||
-			block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING));
+			block_size.z < static_cast<int>(2 * VoxelMesherBlocky::PADDING)
+	);
 
 	// Build lookup tables so to speed up voxel access.
 	// These are values to add to an address in order to get given neighbor.
@@ -209,7 +220,7 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 					}
 
 					// Subtracting 1 because the data is padded
-					Vector3f pos(x - 1, y - 1, z - 1);
+					const Vector3f pos(x - 1, y - 1, z - 1);
 
 					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
@@ -219,11 +230,13 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const StdVector<Vector3f> &side_positions = surface.side_positions[side];
-						const unsigned int vertex_count = side_positions.size();
+						const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
 
-						const StdVector<Vector2f> &side_uvs = surface.side_uvs[side];
-						const StdVector<float> &side_tangents = surface.side_tangents[side];
+						const StdVector<Vector3f> &side_positions = side_surface.positions;
+						const unsigned int vertex_count = side_surface.positions.size();
+
+						const StdVector<Vector2f> &side_uvs = side_surface.uvs;
+						const StdVector<float> &side_tangents = side_surface.tangents;
 
 						// Append vertices of the faces in one go, don't use push_back
 
@@ -245,8 +258,9 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 						if (side_tangents.size() > 0) {
 							const int append_index = arrays.tangents.size();
 							arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-							memcpy(arrays.tangents.data() + append_index, side_tangents.data(),
-									(vertex_count * 4) * sizeof(float));
+							memcpy(arrays.tangents.data() + append_index,
+								   side_tangents.data(),
+								   (vertex_count * 4) * sizeof(float));
 						}
 
 						{
@@ -301,7 +315,7 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 							}
 						}
 
-						const StdVector<int> &side_indices = surface.side_indices[side];
+						const StdVector<int> &side_indices = side_surface.indices;
 						const unsigned int index_count = side_indices.size();
 
 						{
@@ -368,8 +382,9 @@ void generate_blocky_mesh(StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_m
 					if (tangents.size() > 0) {
 						const int append_index = arrays.tangents.size();
 						arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
-						memcpy(arrays.tangents.data() + append_index, tangents.data(),
-								(vertex_count * 4) * sizeof(float));
+						memcpy(arrays.tangents.data() + append_index,
+							   tangents.data(),
+							   (vertex_count * 4) * sizeof(float));
 					}
 
 					for (unsigned int i = 0; i < vertex_count; ++i) {
@@ -452,7 +467,7 @@ bool VoxelMesherBlocky::get_occlusion_enabled() const {
 }
 
 void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::Input &input) {
-	const int channel = VoxelBuffer::CHANNEL_TYPE;
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
 	Parameters params;
 	{
 		RWLockRead rlock(_parameters_lock);
@@ -515,8 +530,8 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 		return;
 	}
 
-	Span<uint8_t> raw_channel;
-	if (!voxels.get_channel_raw(channel, raw_channel)) {
+	Span<const uint8_t> raw_channel;
+	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -544,14 +559,27 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 
 		switch (channel_depth) {
 			case VoxelBuffer::DEPTH_8_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface, raw_channel, block_size,
-						library_baked_data, params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel, //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh(arrays_per_material, collision_surface,
-						raw_channel.reinterpret_cast_to<uint16_t>(), block_size, library_baked_data,
-						params.bake_occlusion, baked_occlusion_darkness);
+				generate_blocky_mesh( //
+						arrays_per_material, //
+						collision_surface, //
+						raw_channel.reinterpret_cast_to<const uint16_t>(), //
+						block_size, //
+						library_baked_data, //
+						params.bake_occlusion, //
+						baked_occlusion_darkness //
+				);
 				break;
 
 			default:
@@ -646,8 +674,10 @@ void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnin
 
 	if (library.is_null()) {
 		out_warnings.append(String(ZN_TTR("{0} has no {1} assigned."))
-									.format(varray(VoxelMesherBlocky::get_class_static(),
-											VoxelBlockyLibraryBase::get_class_static())));
+									.format(
+											varray(VoxelMesherBlocky::get_class_static(),
+												   VoxelBlockyLibraryBase::get_class_static())
+									));
 		return;
 	}
 
@@ -675,16 +705,26 @@ void VoxelMesherBlocky::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_occlusion_darkness", "value"), &VoxelMesherBlocky::set_occlusion_darkness);
 	ClassDB::bind_method(D_METHOD("get_occlusion_darkness"), &VoxelMesherBlocky::get_occlusion_darkness);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "library", PROPERTY_HINT_RESOURCE_TYPE,
-						 VoxelBlockyLibraryBase::get_class_static(), PROPERTY_USAGE_DEFAULT
-						 // Sadly we can't use this hint because the property type is abstract... can't just choose a
-						 // default child class. This hint becomes less and less useful everytime I come across it...
-						 //| PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
-						 ),
-			"set_library", "get_library");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"library",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					VoxelBlockyLibraryBase::get_class_static(),
+					PROPERTY_USAGE_DEFAULT
+					// Sadly we can't use this hint because the property type is abstract... can't just choose a
+					// default child class. This hint becomes less and less useful everytime I come across it...
+					//| PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
+			),
+			"set_library",
+			"get_library"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "occlusion_enabled"), "set_occlusion_enabled", "get_occlusion_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
-			"set_occlusion_darkness", "get_occlusion_darkness");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "occlusion_darkness", PROPERTY_HINT_RANGE, "0,1,0.01"),
+			"set_occlusion_darkness",
+			"get_occlusion_darkness"
+	);
 }
 
 } // namespace zylann::voxel

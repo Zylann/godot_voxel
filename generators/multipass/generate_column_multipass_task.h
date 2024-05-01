@@ -23,12 +23,18 @@ class BufferedTaskScheduler;
 // It actively looks for dependencies, rather than assuming they are loaded by separate logic.
 class GenerateColumnMultipassTask : public IThreadedTask {
 public:
-	GenerateColumnMultipassTask(Vector2i p_column_position, uint8_t p_block_size, uint8_t p_subpass_index,
+	GenerateColumnMultipassTask(
+			Vector2i p_column_position,
+			uint8_t p_block_size,
+			uint8_t p_subpass_index,
 			std::shared_ptr<VoxelGeneratorMultipassCBStructs::Internal> p_generator_internal,
-			Ref<VoxelGeneratorMultipassCB> p_generator, TaskPriority p_priority,
+			Ref<VoxelGeneratorMultipassCB> p_generator,
+			TaskPriority p_priority,
 			// When the current task finishes, it will decrement the given counter, and return control to the following
 			// caller task when the counter reaches 0.
-			IThreadedTask *p_caller, std::shared_ptr<std::atomic_int> p_caller_dependency_count);
+			IThreadedTask *p_caller,
+			std::shared_ptr<std::atomic_int> p_caller_dependency_count
+	);
 
 	~GenerateColumnMultipassTask();
 
@@ -48,7 +54,9 @@ public:
 
 private:
 	void schedule_final_block_tasks(
-			VoxelGeneratorMultipassCBStructs::Column &column, BufferedTaskScheduler &task_scheduler);
+			VoxelGeneratorMultipassCBStructs::Column &column,
+			BufferedTaskScheduler &task_scheduler
+	);
 	void return_to_caller(bool success);
 
 	Vector2i _column_position;

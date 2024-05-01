@@ -25,9 +25,11 @@ unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Ma
 	}
 #ifdef TOOLS_ENABLED
 	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
-		ZN_PRINT_ERROR(format("Maximum material count reached ({}), try reduce your number of materials by re-using "
-							  "them or using atlases.",
-				VoxelBlockyLibraryBase::MAX_MATERIALS));
+		ZN_PRINT_ERROR(
+				format("Maximum material count reached ({}), try reduce your number of materials by re-using "
+					   "them or using atlases.",
+					   VoxelBlockyLibraryBase::MAX_MATERIALS)
+		);
 	}
 #endif
 	const unsigned int ret = materials.size();
@@ -127,17 +129,23 @@ bool VoxelBlockyModel::_get(const StringName &p_name, Variant &r_ret) const {
 void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 	if (_surface_count > 0) {
 		p_list->push_back(PropertyInfo(
-				Variant::NIL, "Material overrides", PROPERTY_HINT_NONE, "material_override_", PROPERTY_USAGE_GROUP));
+				Variant::NIL, "Material overrides", PROPERTY_HINT_NONE, "material_override_", PROPERTY_USAGE_GROUP
+		));
 
 		for (unsigned int i = 0; i < _surface_count; ++i) {
-			p_list->push_back(PropertyInfo(Variant::OBJECT, String("material_override_{0}").format(varray(i)),
+			p_list->push_back(PropertyInfo(
+					Variant::OBJECT,
+					String("material_override_{0}").format(varray(i)),
 					PROPERTY_HINT_RESOURCE_TYPE,
 					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))));
+							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
+					)
+			));
 		}
 
 		p_list->push_back(PropertyInfo(
-				Variant::NIL, "Mesh collision", PROPERTY_HINT_NONE, "collision_enabled_", PROPERTY_USAGE_GROUP));
+				Variant::NIL, "Mesh collision", PROPERTY_HINT_NONE, "collision_enabled_", PROPERTY_USAGE_GROUP
+		));
 
 		for (unsigned int i = 0; i < _surface_count; ++i) {
 			p_list->push_back(PropertyInfo(Variant::BOOL, String("collision_enabled_{0}").format(varray(i))));
@@ -243,7 +251,7 @@ void VoxelBlockyModel::bake(BakedData &baked_data, bool bake_tangents, MaterialI
 		bool empty = true;
 		for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 			const BakedData::Surface &surface = model.surfaces[surface_index];
-			if (surface.side_indices[side].size() > 0) {
+			if (surface.sides[side].indices.size() > 0) {
 				empty = false;
 				break;
 			}
@@ -284,8 +292,11 @@ void VoxelBlockyModel::_b_set_collision_aabbs(TypedArray<AABB> array) {
 		// ERR_FAIL_COND(v.get_type() != Variant::AABB);
 		// TODO "Add Element" in the Godot Array inspector always adds a null element even if the array is typed!
 		if (v.get_type() != Variant::AABB) {
-			ZN_PRINT_WARNING(format("Item {} of the array is not an AABB (found {}). It will be replaced.", i,
-					Variant::get_type_name(v.get_type())));
+			ZN_PRINT_WARNING(
+					format("Item {} of the array is not an AABB (found {}). It will be replaced.",
+						   i,
+						   Variant::get_type_name(v.get_type()))
+			);
 			array[i] = AABB(Vector3(), Vector3(1, 1, 1));
 		}
 	}
@@ -356,9 +367,9 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (unsigned int side = 0; side < surface.side_positions.size(); ++side) {
-			vertex_count += surface.side_positions[side].size();
-			index_count += surface.side_indices[side].size();
+		for (const BakedData::SideSurface &side_surface : surface.sides) {
+			vertex_count += side_surface.positions.size();
+			index_count += side_surface.indices.size();
 		}
 
 		// Allocate surface arrays
@@ -414,11 +425,12 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 			++ii;
 		}
 
-		for (unsigned int side = 0; side < surface.side_positions.size(); ++side) {
-			Span<const Vector3f> side_positions = to_span(surface.side_positions[side]);
-			Span<const Vector2f> side_uvs = to_span(surface.side_uvs[side]);
-			Span<const int> side_indices = to_span(surface.side_indices[side]);
-			Span<const float> side_tangents = to_span(surface.side_tangents[side]);
+		for (unsigned int side = 0; side < surface.sides.size(); ++side) {
+			const BakedData::SideSurface &side_surface = surface.sides[side];
+			Span<const Vector3f> side_positions = to_span(side_surface.positions);
+			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
+			Span<const int> side_indices = to_span(side_surface.indices);
+			Span<const float> side_tangents = to_span(side_surface.tangents);
 			const Vector3 side_normal = to_vec3(Cube::g_side_normals[side]);
 
 			const unsigned int vi0 = vi;
@@ -520,14 +532,16 @@ void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_color"), &VoxelBlockyModel::get_color);
 
 	ClassDB::bind_method(
-			D_METHOD("set_material_override", "index", "material"), &VoxelBlockyModel::set_material_override);
+			D_METHOD("set_material_override", "index", "material"), &VoxelBlockyModel::set_material_override
+	);
 	ClassDB::bind_method(D_METHOD("get_material_override", "index"), &VoxelBlockyModel::get_material_override);
 
 	ClassDB::bind_method(D_METHOD("set_transparent", "transparent"), &VoxelBlockyModel::set_transparent);
 	ClassDB::bind_method(D_METHOD("is_transparent"), &VoxelBlockyModel::is_transparent);
 
 	ClassDB::bind_method(
-			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index);
+			D_METHOD("set_transparency_index", "transparency_index"), &VoxelBlockyModel::set_transparency_index
+	);
 	ClassDB::bind_method(D_METHOD("get_transparency_index"), &VoxelBlockyModel::get_transparency_index);
 
 	ClassDB::bind_method(D_METHOD("set_culls_neighbors", "culls_neighbors"), &VoxelBlockyModel::set_culls_neighbors);
@@ -536,10 +550,13 @@ void VoxelBlockyModel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_random_tickable"), &VoxelBlockyModel::is_random_tickable);
 	ClassDB::bind_method(D_METHOD("set_random_tickable"), &VoxelBlockyModel::set_random_tickable);
 
-	ClassDB::bind_method(D_METHOD("set_mesh_collision_enabled", "surface_index", "enabled"),
-			&VoxelBlockyModel::set_mesh_collision_enabled);
 	ClassDB::bind_method(
-			D_METHOD("is_mesh_collision_enabled", "surface_index"), &VoxelBlockyModel::is_mesh_collision_enabled);
+			D_METHOD("set_mesh_collision_enabled", "surface_index", "enabled"),
+			&VoxelBlockyModel::set_mesh_collision_enabled
+	);
+	ClassDB::bind_method(
+			D_METHOD("is_mesh_collision_enabled", "surface_index"), &VoxelBlockyModel::is_mesh_collision_enabled
+	);
 
 	ClassDB::bind_method(D_METHOD("set_collision_aabbs", "aabbs"), &VoxelBlockyModel::_b_set_collision_aabbs);
 	ClassDB::bind_method(D_METHOD("get_collision_aabbs"), &VoxelBlockyModel::_b_get_collision_aabbs);
@@ -553,8 +570,11 @@ void VoxelBlockyModel::_bind_methods() {
 	// TODO Update to StringName in Godot 4
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
 	// TODO Might become obsolete
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"set_transparent", "is_transparent");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "transparent", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"set_transparent",
+			"is_transparent"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "transparency_index"), "set_transparency_index", "get_transparency_index");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "culls_neighbors"), "set_culls_neighbors", "get_culls_neighbors");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "random_tickable"), "set_random_tickable", "is_random_tickable");
@@ -563,11 +583,18 @@ void VoxelBlockyModel::_bind_methods() {
 
 	// TODO What is the syntax `number:` in `hint_string` with `ARRAY`? It's old, hard to search usages in Godot's
 	// codebase, and I can't find it anywhere in the documentation
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING,
-						 String::num_int64(Variant::AABB) + ":"),
-			"set_collision_aabbs", "get_collision_aabbs");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
-			"get_collision_mask");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::ARRAY, "collision_aabbs", PROPERTY_HINT_TYPE_STRING, String::num_int64(Variant::AABB) + ":"
+			),
+			"set_collision_aabbs",
+			"get_collision_aabbs"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask",
+			"get_collision_mask"
+	);
 
 	BIND_ENUM_CONSTANT(SIDE_NEGATIVE_X);
 	BIND_ENUM_CONSTANT(SIDE_POSITIVE_X);

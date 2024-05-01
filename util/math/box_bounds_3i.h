@@ -33,7 +33,8 @@ struct BoxBounds3i {
 	static BoxBounds3i from_everywhere() {
 		return BoxBounds3i( //
 				Vector3iUtil::create(std::numeric_limits<int>::min()),
-				Vector3iUtil::create(std::numeric_limits<int>::max()));
+				Vector3iUtil::create(std::numeric_limits<int>::max())
+		);
 	}
 
 	inline bool intersects(const BoxBounds3i &other) const {
@@ -43,7 +44,8 @@ struct BoxBounds3i {
 				max_pos.z < other.min_pos.z || //
 				min_pos.x > other.max_pos.x || //
 				min_pos.y > other.max_pos.y || //
-				min_pos.z > other.max_pos.z);
+				min_pos.z > other.max_pos.z
+		);
 	}
 
 	inline bool operator==(const BoxBounds3i &other) const {

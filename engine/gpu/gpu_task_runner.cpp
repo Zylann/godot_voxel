@@ -30,7 +30,8 @@ void GPUTaskRunner::start(RenderingDevice *rd, GPUStorageBufferPool *pool) {
 				GPUTaskRunner *runner = static_cast<GPUTaskRunner *>(p_userdata);
 				runner->thread_func();
 			},
-			this);
+			this
+	);
 }
 
 void GPUTaskRunner::stop() {
@@ -152,7 +153,8 @@ void GPUTaskRunner::thread_func() {
 				// Unfortunately we can't re-use memory for that buffer, Godot will always want to allocate it using
 				// malloc. That buffer can be a few megabytes long...
 				ctx.downloaded_shared_output_data = ctx.rendering_device.buffer_get_data(
-						shared_output_storage_buffer_rid, 0, required_shared_output_buffer_size);
+						shared_output_storage_buffer_rid, 0, required_shared_output_buffer_size
+				);
 			}
 
 			// Collect results and complete tasks

@@ -165,8 +165,8 @@ public:
 	float get_noise_3d_single(Vector3 pos) const;
 
 	void get_noise_2d_series(Span<const float> src_x, Span<const float> src_y, Span<float> dst) const;
-	void get_noise_3d_series(
-			Span<const float> src_x, Span<const float> src_y, Span<const float> src_z, Span<float> dst) const;
+	void get_noise_3d_series(Span<const float> src_x, Span<const float> src_y, Span<const float> src_z, Span<float> dst)
+			const;
 
 	void get_noise_2d_grid(Vector2 origin, Vector2i size, Span<float> dst) const;
 	void get_noise_3d_grid(Vector3 origin, Vector3i size, Span<float> dst) const;

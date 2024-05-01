@@ -96,6 +96,10 @@ inline Span<const uint8_t> to_span(const PackedByteArray &a) {
 	return Span<const uint8_t>(a.ptr(), a.size());
 }
 
+inline Span<String> to_span(PackedStringArray &a) {
+	return Span<String>(a.ptrw(), a.size());
+}
+
 } // namespace zylann
 
 #endif // ZN_GODOT_PACKED_ARRAYS_H

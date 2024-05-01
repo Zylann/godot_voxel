@@ -11,8 +11,8 @@ typedef Vector3T<int16_t> Vector3i16;
 
 inline size_t get_hash_st(const zylann::Vector3i16 &v) {
 	// TODO Optimization: benchmark this hash, I just wanted one that works
-	uint64_t m = 0;
-	*(zylann::Vector3i16 *)m = v;
+	// static_assert(sizeof(zylann::Vector3i16) <= sizeof(uint64_t));
+	const uint64_t m = v.x | (static_cast<uint64_t>(v.y) << 16) | (static_cast<uint64_t>(v.z) << 32);
 	return std::hash<uint64_t>{}(m);
 }
 

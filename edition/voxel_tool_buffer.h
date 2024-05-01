@@ -31,6 +31,9 @@ protected:
 	void _post_edit(const Box3i &box) override;
 
 private:
+	// When compiling with GodotCpp, `_bind_methods` is not optional.
+	static void _bind_methods() {}
+
 	Ref<godot::VoxelBuffer> _buffer;
 };
 

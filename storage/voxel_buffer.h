@@ -414,6 +414,7 @@ public:
 	}
 
 	bool get_channel_raw(unsigned int channel_index, Span<uint8_t> &slice) const;
+	bool get_channel_raw_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
 
 	template <typename T>
 	bool get_channel_data(unsigned int channel_index, Span<T> &dst) const {

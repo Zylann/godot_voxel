@@ -1,7 +1,7 @@
 name: 🚪 Windows Builds
 on:
   push:
-    branches: [ master, github_actions ]
+    branches: [ master, github_actions, "1.2" ]
   pull_request:
     branches: [ master ]
 
@@ -12,7 +12,7 @@ concurrency:
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.2"
+  GODOT_BASE_BRANCH: "4.2.2-stable"
   SCONS_CACHE_MSVC_CONFIG: true
   SCONS_CACHE_LIMIT: 4096
 
@@ -115,7 +115,7 @@ jobs:
         env:
           SCONS_CACHE: /.scons_cache/
         run: |
-          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}}
+          scons verbose=yes warnings=all werror=yes platform=windows tests=no target=${{matrix.target}} dev_build=no precision=${{matrix.precision}} tracy=${{matrix.tracy}} production=yes
 
       - name: "Rename executable"
         if: ${{ matrix.tracy == 'yes' }}

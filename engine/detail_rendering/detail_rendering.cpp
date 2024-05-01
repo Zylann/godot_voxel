@@ -64,7 +64,10 @@ void dilate_normalmap(Span<Vector3f> normals, Vector2i size) {
 } // namespace
 
 DetailTextureData::Tile compute_tile_info(
-		const CurrentCellInfo &cell_info, Span<const Vector3f> mesh_normals, Span<const int> mesh_indices) {
+		const CurrentCellInfo &cell_info,
+		Span<const Vector3f> mesh_normals,
+		Span<const int> mesh_indices
+) {
 	Vector3f normal_sum;
 
 	for (unsigned int triangle_index = 0; triangle_index < cell_info.triangle_count; ++triangle_index) {
@@ -92,10 +95,10 @@ DetailTextureData::Tile compute_tile_info(
 	ZN_ASSERT(cell_info.position.z < 256);
 #endif
 	const DetailTextureData::Tile tile{ //
-		uint8_t(cell_info.position.x), //
-		uint8_t(cell_info.position.y), //
-		uint8_t(cell_info.position.z), //
-		uint8_t(math::get_longest_axis(normal_sum))
+										uint8_t(cell_info.position.x), //
+										uint8_t(cell_info.position.y), //
+										uint8_t(cell_info.position.z), //
+										uint8_t(math::get_longest_axis(normal_sum))
 	};
 	return tile;
 }
@@ -124,8 +127,13 @@ void get_axis_indices(math::Axis axis, unsigned int &ax, unsigned int &ay, unsig
 
 typedef FixedArray<math::BakedIntersectionTriangleForFixedDirection, CurrentCellInfo::MAX_TRIANGLES> CellTriangles;
 
-unsigned int prepare_triangles(const CurrentCellInfo &cell_info, const Vector3f direction,
-		CellTriangles &baked_triangles, Span<const Vector3f> mesh_vertices, Span<const int> mesh_indices) {
+unsigned int prepare_triangles(
+		const CurrentCellInfo &cell_info,
+		const Vector3f direction,
+		CellTriangles &baked_triangles,
+		Span<const Vector3f> mesh_vertices,
+		Span<const int> mesh_indices
+) {
 	unsigned int triangle_count = 0;
 
 	for (unsigned int ti = 0; ti < cell_info.triangle_count; ++ti) {
@@ -174,9 +182,17 @@ inline Vector3f encode_normal_xyz(const Vector3f n) {
 	return Vector3f(0.5f) + 0.5f * n;
 }
 
-void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &modifiers, const VoxelDataGrid &grid,
-		Span<const float> query_x_buffer, Span<const float> query_y_buffer, Span<const float> query_z_buffer,
-		Span<float> query_sdf_buffer, Vector3f query_min_pos, Vector3f query_max_pos) {
+void query_sdf_with_edits(
+		VoxelGenerator &generator,
+		const VoxelModifierStack &modifiers,
+		const VoxelDataGrid &grid,
+		Span<const float> query_x_buffer,
+		Span<const float> query_y_buffer,
+		Span<const float> query_z_buffer,
+		Span<float> query_sdf_buffer,
+		Vector3f query_min_pos,
+		Vector3f query_max_pos
+) {
 	ZN_PROFILE_SCOPE();
 
 	VoxelDataGrid::LockRead rlock(grid);
@@ -229,11 +245,24 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 			ZN_PROFILE_SCOPE();
 			FixedArray<float, 8> gen_samples;
 
-			generator.generate_series(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
-					channel, to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+			generator.generate_series(
+					to_span(x_gen, gen_count),
+					to_span(y_gen, gen_count),
+					to_span(z_gen, gen_count),
+					channel,
+					to_span(gen_samples, gen_count),
+					query_min_pos,
+					query_max_pos
+			);
 
-			modifiers.apply(to_span(x_gen, gen_count), to_span(y_gen, gen_count), to_span(z_gen, gen_count),
-					to_span(gen_samples, gen_count), query_min_pos, query_max_pos);
+			modifiers.apply(
+					to_span(x_gen, gen_count),
+					to_span(y_gen, gen_count),
+					to_span(z_gen, gen_count),
+					to_span(gen_samples, gen_count),
+					query_min_pos,
+					query_max_pos
+			);
 
 			for (unsigned int j = 0; j < gen_count; ++j) {
 				sd_samples[i_gen[j]] = gen_samples[j];
@@ -241,8 +270,17 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 		}
 
 		// Interpolate
-		const float sd_interp = math::interpolate_trilinear(sd_samples[0], sd_samples[1], sd_samples[5], sd_samples[4],
-				sd_samples[2], sd_samples[3], sd_samples[7], sd_samples[6], math::fract(posf));
+		const float sd_interp = math::interpolate_trilinear(
+				sd_samples[0],
+				sd_samples[1],
+				sd_samples[5],
+				sd_samples[4],
+				sd_samples[2],
+				sd_samples[3],
+				sd_samples[7],
+				sd_samples[6],
+				math::fract(posf)
+		);
 
 		query_sdf_buffer[query_index] = sd_interp;
 	}
@@ -252,8 +290,13 @@ void query_sdf_with_edits(VoxelGenerator &generator, const VoxelModifierStack &m
 // Beyond this size, there are too many cells to query so the algorithm will fallback to generator.
 static const unsigned int MAX_EDITED_BLOCKS_ACROSS = 8;
 
-bool try_query_edited_blocks(VoxelDataGrid &grid, const VoxelData &voxel_data, Vector3f query_min_pos,
-		Vector3f query_max_pos, uint32_t &skipped_count_due_to_high_volume) {
+bool try_query_edited_blocks(
+		VoxelDataGrid &grid,
+		const VoxelData &voxel_data,
+		Vector3f query_min_pos,
+		Vector3f query_max_pos,
+		uint32_t &skipped_count_due_to_high_volume
+) {
 	ZN_PROFILE_SCOPE();
 
 	// Pad by 1 in case there are neighboring edited voxels. If not done, it creates a grid pattern following LOD0 block
@@ -293,10 +336,17 @@ struct ClearVoxelDataGridOnExit {
 	}
 };
 
-inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_voxel_data,
-		const VoxelModifierStack *modifiers, Span<const float> query_x_buffer, Span<const float> query_y_buffer,
-		Span<const float> query_z_buffer, Span<float> query_sdf_buffer, Vector3f query_min_pos,
-		Vector3f query_max_pos) {
+inline void query_sdf(
+		VoxelGenerator &generator,
+		const VoxelDataGrid *edited_voxel_data,
+		const VoxelModifierStack *modifiers,
+		Span<const float> query_x_buffer,
+		Span<const float> query_y_buffer,
+		Span<const float> query_z_buffer,
+		Span<float> query_sdf_buffer,
+		Vector3f query_min_pos,
+		Vector3f query_max_pos
+) {
 	ZN_PROFILE_SCOPE();
 
 	if (edited_voxel_data != nullptr) {
@@ -304,18 +354,35 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_vox
 		// reason not to be there either.
 		ZN_ASSERT(modifiers != nullptr);
 
-		query_sdf_with_edits(generator, *modifiers, *edited_voxel_data, query_x_buffer, query_y_buffer, query_z_buffer,
-				query_sdf_buffer, query_min_pos, query_max_pos);
+		query_sdf_with_edits(
+				generator,
+				*modifiers,
+				*edited_voxel_data,
+				query_x_buffer,
+				query_y_buffer,
+				query_z_buffer,
+				query_sdf_buffer,
+				query_min_pos,
+				query_max_pos
+		);
 	} else {
 		// Generator only.
 
 		// Note, these samples are not scaled since we are working with floats instead of encoded buffer values.
-		generator.generate_series(query_x_buffer, query_y_buffer, query_z_buffer, VoxelBuffer::CHANNEL_SDF,
-				query_sdf_buffer, query_min_pos, query_max_pos);
+		generator.generate_series(
+				query_x_buffer,
+				query_y_buffer,
+				query_z_buffer,
+				VoxelBuffer::CHANNEL_SDF,
+				query_sdf_buffer,
+				query_min_pos,
+				query_max_pos
+		);
 
 		if (modifiers != nullptr) {
 			modifiers->apply(
-					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos);
+					query_x_buffer, query_y_buffer, query_z_buffer, query_sdf_buffer, query_min_pos, query_max_pos
+			);
 		}
 	}
 
@@ -328,11 +395,22 @@ inline void query_sdf(VoxelGenerator &generator, const VoxelDataGrid *edited_vox
 
 // For each non-empty cell of the mesh, choose an axis-aligned projection based on triangle normals in the cell.
 // Sample voxels inside the cell to compute a tile of world space normals from the SDF.
-void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector3f> mesh_vertices,
-		Span<const Vector3f> mesh_normals, Span<const int> mesh_indices, DetailTextureData &normal_map_data,
-		unsigned int tile_resolution, VoxelGenerator &generator, const VoxelData *voxel_data, Vector3i origin_in_voxels,
-		Vector3i size_in_voxels, unsigned int lod_index, bool octahedral_encoding, float max_deviation_radians,
-		bool edited_tiles_only) {
+void compute_detail_texture_data(
+		ICellIterator &cell_iterator,
+		Span<const Vector3f> mesh_vertices,
+		Span<const Vector3f> mesh_normals,
+		Span<const int> mesh_indices,
+		DetailTextureData &normal_map_data,
+		unsigned int tile_resolution,
+		VoxelGenerator &generator,
+		const VoxelData *voxel_data,
+		Vector3i origin_in_voxels,
+		Vector3i size_in_voxels,
+		unsigned int lod_index,
+		bool octahedral_encoding,
+		float max_deviation_radians,
+		bool edited_tiles_only
+) {
 	ZN_PROFILE_SCOPE();
 
 	ZN_ASSERT_RETURN(generator.supports_series_generation());
@@ -353,7 +431,7 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 	}
 
 	if (voxel_data != nullptr &&
-			!voxel_data->has_blocks_with_voxels_in_area_broad_mip_test(Box3i(origin_in_voxels, size_in_voxels))) {
+		!voxel_data->has_blocks_with_voxels_in_area_broad_mip_test(Box3i(origin_in_voxels, size_in_voxels))) {
 		// Ignore edits completely
 		voxel_data = nullptr;
 		if (edited_tiles_only) {
@@ -374,8 +452,11 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 
 		// In cases we only want tiles with edited voxels, check this early so we can skip the tile.
 		const bool cell_has_edits = voxel_data != nullptr &&
-				try_query_edited_blocks(tls_voxel_data_grid, *voxel_data, cell_origin_world,
-						cell_origin_world + Vector3f(cell_size), skipped_count_due_to_high_volume);
+				try_query_edited_blocks(tls_voxel_data_grid,
+										*voxel_data,
+										cell_origin_world,
+										cell_origin_world + Vector3f(cell_size),
+										skipped_count_due_to_high_volume);
 		if (!cell_has_edits && edited_tiles_only) {
 			continue;
 		} else if (edited_tiles_only) {
@@ -457,7 +538,7 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 						const math::TriangleIntersectionResult result =
 								baked_triangles[ti].intersect(ray_origin_mesh, direction);
 						if (result.case_id == math::TriangleIntersectionResult::INTERSECTION &&
-								result.distance < nearest_hit_distance) {
+							result.distance < nearest_hit_distance) {
 							nearest_hit_distance = result.distance;
 							hit_triangle_index = ti;
 						}
@@ -504,9 +585,17 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 			const VoxelModifierStack *modifiers = voxel_data != nullptr ? &voxel_data->get_modifiers() : nullptr;
 
 			// Query voxel data
-			query_sdf(generator, edits_grid, modifiers, to_span(tls_x_buffer), to_span(tls_y_buffer),
-					to_span(tls_z_buffer), to_span(tls_sdf_buffer), cell_origin_world,
-					cell_origin_world + Vector3f(cell_size));
+			query_sdf(
+					generator,
+					edits_grid,
+					modifiers,
+					to_span(tls_x_buffer),
+					to_span(tls_y_buffer),
+					to_span(tls_z_buffer),
+					to_span(tls_sdf_buffer),
+					cell_origin_world,
+					cell_origin_world + Vector3f(cell_size)
+			);
 		}
 
 		static thread_local StdVector<Vector3f> tls_tile_normals;
@@ -573,7 +662,8 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 		// Resizing as we go, because depending on settings we may have to skip some cells
 		const unsigned int tile_begin = normal_map_data.normals.size();
 		normal_map_data.normals.resize(
-				normal_map_data.normals.size() + math::squared(tile_resolution) * encoded_normal_size);
+				normal_map_data.normals.size() + math::squared(tile_resolution) * encoded_normal_size
+		);
 
 		// Encode normals
 		if (octahedral_encoding) {
@@ -600,7 +690,9 @@ void compute_detail_texture_data(ICellIterator &cell_iterator, Span<const Vector
 		// Logging here to reduce spam
 		ZN_PRINT_VERBOSE(format(
 				"Virtual normalmaps: fell back on generator for {} tiles, box too big to render edited voxels (lod {})",
-				skipped_count_due_to_high_volume, lod_index));
+				skipped_count_due_to_high_volume,
+				lod_index
+		));
 	}
 }
 
@@ -646,8 +738,12 @@ Ref<Image> store_lookup_to_image(const StdVector<DetailTextureData::Tile> &tiles
 
 #ifdef VOXEL_VIRTUAL_TEXTURE_USE_TEXTURE_ARRAY
 
-Vector<Ref<Image>> store_atlas_to_image_array(const StdVector<uint8_t> &normals, unsigned int tile_resolution,
-		unsigned int tile_count, bool octahedral_encoding) {
+Vector<Ref<Image>> store_atlas_to_image_array(
+		const StdVector<uint8_t> &normals,
+		unsigned int tile_resolution,
+		unsigned int tile_count,
+		bool octahedral_encoding
+) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
@@ -676,8 +772,12 @@ Vector<Ref<Image>> store_atlas_to_image_array(const StdVector<uint8_t> &normals,
 
 #endif
 
-Ref<Image> store_atlas_to_image(const StdVector<uint8_t> &normals, unsigned int tile_resolution,
-		unsigned int tile_count, bool octahedral_encoding) {
+Ref<Image> store_atlas_to_image(
+		const StdVector<uint8_t> &normals,
+		unsigned int tile_resolution,
+		unsigned int tile_count,
+		bool octahedral_encoding
+) {
 	ZN_PROFILE_SCOPE();
 
 	const unsigned int pixel_size = octahedral_encoding ? 2 : 3;
@@ -697,8 +797,14 @@ Ref<Image> store_atlas_to_image(const StdVector<uint8_t> &normals, unsigned int 
 				int(tile_resolution) * Vector2i(tile_index % tiles_across, tile_index / tiles_across);
 		Span<const uint8_t> tile =
 				to_span_from_position_and_size(normals, tile_index * tile_size_in_bytes, tile_size_in_bytes);
-		copy_2d_region_from_packed_to_atlased(bytes_span, Vector2i(pixels_across, pixels_across), tile,
-				Vector2i(tile_resolution, tile_resolution), tile_pos_pixels, pixel_size);
+		copy_2d_region_from_packed_to_atlased(
+				bytes_span,
+				Vector2i(pixels_across, pixels_across),
+				tile,
+				Vector2i(tile_resolution, tile_resolution),
+				tile_pos_pixels,
+				pixel_size
+		);
 	}
 
 	Ref<Image> atlas = Image::create_from_data(pixels_across, pixels_across, false, format, bytes);
@@ -706,7 +812,11 @@ Ref<Image> store_atlas_to_image(const StdVector<uint8_t> &normals, unsigned int 
 }
 
 DetailImages store_normalmap_data_to_images(
-		const DetailTextureData &data, unsigned int tile_resolution, Vector3i block_size, bool octahedral_encoding) {
+		const DetailTextureData &data,
+		unsigned int tile_resolution,
+		Vector3i block_size,
+		bool octahedral_encoding
+) {
 	ZN_PROFILE_SCOPE();
 
 	DetailImages images;
@@ -748,10 +858,15 @@ DetailTextures store_normalmap_data_to_textures(const DetailImages &data) {
 }
 
 unsigned int get_detail_texture_tile_resolution_for_lod(
-		const DetailRenderingSettings &settings, unsigned int lod_index) {
+		const DetailRenderingSettings &settings,
+		unsigned int lod_index
+) {
 	const unsigned int relative_lod_index = lod_index - settings.begin_lod_index;
-	const unsigned int tile_resolution = math::clamp(int(settings.tile_resolution_min << relative_lod_index),
-			int(settings.tile_resolution_min), int(settings.tile_resolution_max));
+	const unsigned int tile_resolution = math::clamp(
+			int(settings.tile_resolution_min << relative_lod_index),
+			int(settings.tile_resolution_min),
+			int(settings.tile_resolution_max)
+	);
 	return tile_resolution;
 }
 

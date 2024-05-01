@@ -72,7 +72,8 @@ void VoxelBlockyLibrary::bake() {
 
 	uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(
-			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size()));
+			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size())
+	);
 
 	_needs_baking = false;
 }
@@ -179,7 +180,8 @@ void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warni
 	if (!has_solid_model) {
 		out_warnings.append(
 				String(ZN_TTR("The {0} only has empty {1}s."))
-						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelBlockyModel::get_class_static())));
+						.format(varray(VoxelBlockyLibrary::get_class_static(), VoxelBlockyModel::get_class_static()))
+		);
 	}
 
 	if (null_indices.size() > 0) {
@@ -224,19 +226,29 @@ void VoxelBlockyLibrary::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_models"), &VoxelBlockyLibrary::_b_get_models);
 	ClassDB::bind_method(D_METHOD("set_models"), &VoxelBlockyLibrary::_b_set_models);
 
-	ClassDB::bind_method(D_METHOD("add_model"), &VoxelBlockyLibrary::add_model);
+	ClassDB::bind_method(D_METHOD("add_model", "model"), &VoxelBlockyLibrary::add_model);
 
 	ClassDB::bind_method(D_METHOD("get_model", "index"), &VoxelBlockyLibrary::_b_get_model);
-	ClassDB::bind_method(D_METHOD("get_model_index_from_resource_name", "name"),
-			&VoxelBlockyLibrary::get_model_index_from_resource_name);
+	ClassDB::bind_method(
+			D_METHOD("get_model_index_from_resource_name", "name"),
+			&VoxelBlockyLibrary::get_model_index_from_resource_name
+	);
 
 	// Legacy
-	ClassDB::bind_method(D_METHOD("get_voxel_index_from_name", "name"),
-			&VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name);
+	ClassDB::bind_method(
+			D_METHOD("get_voxel_index_from_name", "name"), &VoxelBlockyLibrary::_b_deprecated_get_voxel_index_from_name
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "models", PROPERTY_HINT_ARRAY_TYPE,
-						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyModel::get_class_static())),
-			"set_models", "get_models");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::ARRAY,
+					"models",
+					PROPERTY_HINT_ARRAY_TYPE,
+					MAKE_RESOURCE_TYPE_HINT(VoxelBlockyModel::get_class_static())
+			),
+			"set_models",
+			"get_models"
+	);
 }
 
 } // namespace zylann::voxel

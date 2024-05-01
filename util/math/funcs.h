@@ -327,8 +327,17 @@ constexpr const T sign(const T v) {
 //
 // p000, p100, p101, p001, p010, p110, p111, p011
 template <typename T, typename Vec3_T>
-inline T interpolate_trilinear(const T v000, const T v100, const T v101, const T v001, const T v010, const T v110,
-		const T v111, const T v011, Vec3_T p) {
+inline T interpolate_trilinear(
+		const T v000,
+		const T v100,
+		const T v101,
+		const T v001,
+		const T v010,
+		const T v110,
+		const T v111,
+		const T v011,
+		Vec3_T p
+) {
 	//
 	const T v00 = v000 + p.x * (v100 - v000);
 	const T v10 = v010 + p.x * (v110 - v010);
@@ -370,7 +379,13 @@ inline float deg_to_rad(float p_y) {
 // Given source and destination intervals, returns parameters to use in an `a*x+b` formula to apply such remap.
 // If the source interval is approximatively empty, returns zero values.
 inline void remap_intervals_to_linear_params(
-		float min0, float max0, float min1, float max1, float &out_a, float &out_b) {
+		float min0,
+		float max0,
+		float min1,
+		float max1,
+		float &out_a,
+		float &out_b
+) {
 	// min1 + (max1 - min1) * (x - min0) / (max0 - min0)
 	// min1 + (max1 - min1) * (x - min0) * (1/(max0 - min0))
 	// min1 +       A       * (x - min0) *        B

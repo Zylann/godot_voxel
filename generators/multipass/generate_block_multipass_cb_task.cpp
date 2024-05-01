@@ -118,11 +118,18 @@ void GenerateBlockMultipassCBTask::run(zylann::ThreadedTaskContext &ctx) {
 			if ((column->pending_subpass_tasks_mask & (1 << final_subpass_index)) == 0) {
 				// No tasks working on it, and we are the first top-level task.
 				// Spawn a subtask to bring this column to final state.
-				GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(column_position, _block_size,
-						final_subpass_index, multipass_generator_internal, multipass_generator, ctx.task_priority,
+				GenerateColumnMultipassTask *subtask = ZN_NEW(GenerateColumnMultipassTask(
+						column_position,
+						_block_size,
+						final_subpass_index,
+						multipass_generator_internal,
+						multipass_generator,
+						ctx.task_priority,
 						// The subtask takes ownership of the current task, it will schedule it back when it
 						// finishes (or cancels)
-						this, make_shared_instance<std::atomic_int>(1)));
+						this,
+						make_shared_instance<std::atomic_int>(1)
+				));
 
 				column->pending_subpass_tasks_mask |= (1 << final_subpass_index);
 
@@ -185,8 +192,9 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 		// TODO In some cases we don't want this to run all the time, do we?
 		// Like in full load mode, where non-edited blocks remain generated on the fly...
 		if (stream.is_valid() && stream->get_save_generator_output()) {
-			ZN_PRINT_VERBOSE(format(
-					"Requesting save of generator output for block {} lod {}", _block_position, int(_lod_index)));
+			ZN_PRINT_VERBOSE(
+					format("Requesting save of generator output for block {} lod {}", _block_position, int(_lod_index))
+			);
 
 			// TODO Optimization: `voxels` doesn't actually need to be shared
 			std::shared_ptr<VoxelBuffer> voxels_copy = make_shared_instance<VoxelBuffer>(VoxelBuffer::ALLOCATOR_POOL);
@@ -196,7 +204,8 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 			// No priority data, saving doesn't need sorting.
 
 			SaveBlockDataTask *save_task = ZN_NEW(SaveBlockDataTask(
-					_volume_id, _block_position, _lod_index, voxels_copy, _stream_dependency, nullptr, false));
+					_volume_id, _block_position, _lod_index, voxels_copy, _stream_dependency, nullptr, false
+			));
 
 			VoxelEngine::get_singleton().push_async_io_task(save_task);
 		}
@@ -208,7 +217,8 @@ void GenerateBlockMultipassCBTask::run_stream_saving_and_finish() {
 TaskPriority GenerateBlockMultipassCBTask::get_priority() {
 	float closest_viewer_distance_sq;
 	const TaskPriority p = _priority_dependency.evaluate(
-			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq);
+			_lod_index, constants::TASK_PRIORITY_GENERATE_BAND2, &closest_viewer_distance_sq
+	);
 	_too_far = _drop_beyond_max_distance && closest_viewer_distance_sq > _priority_dependency.drop_distance_squared;
 	return p;
 }

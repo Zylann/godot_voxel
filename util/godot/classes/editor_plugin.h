@@ -2,7 +2,13 @@
 #define ZN_GODOT_EDITOR_PLUGIN_H
 
 #if defined(ZN_GODOT)
+#include <core/version.h>
+
+#if VERSION_MAJOR == 4 && VERSION_MINOR <= 2
 #include <editor/editor_plugin.h>
+#else
+#include <editor/plugins/editor_plugin.h>
+#endif
 
 #elif defined(ZN_GODOT_EXTENSION)
 // Header includes required due to implementation being required inside the `GDCLASS` macro for virtual methods...
@@ -45,6 +51,6 @@ private:
 	static void _bind_methods() {}
 };
 
-} // namespace zylann
+} // namespace zylann::godot
 
 #endif // ZN_GODOT_EDITOR_PLUGIN_H

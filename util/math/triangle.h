@@ -62,8 +62,13 @@ struct TriangleIntersectionResult {
 // TODO Templatize?
 
 // Initially from Godot Engine, tweaked to suits needs
-inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from, const Vector3f &p_dir,
-		const Vector3f &p_v0, const Vector3f &p_v1, const Vector3f &p_v2) {
+inline TriangleIntersectionResult ray_intersects_triangle(
+		const Vector3f &p_from,
+		const Vector3f &p_dir,
+		const Vector3f &p_v0,
+		const Vector3f &p_v1,
+		const Vector3f &p_v2
+) {
 	const Vector3f e1 = p_v1 - p_v0;
 	const Vector3f e2 = p_v2 - p_v0;
 	const Vector3f h = math::cross(p_dir, e2);
@@ -103,8 +108,13 @@ inline TriangleIntersectionResult ray_intersects_triangle(const Vector3f &p_from
 	}
 }
 
-inline TriangleIntersectionResult ray_intersects_triangle(const Vector3d &p_from, const Vector3d &p_dir,
-		const Vector3d &p_v0, const Vector3d &p_v1, const Vector3d &p_v2) {
+inline TriangleIntersectionResult ray_intersects_triangle(
+		const Vector3d &p_from,
+		const Vector3d &p_dir,
+		const Vector3d &p_v0,
+		const Vector3d &p_v1,
+		const Vector3d &p_v2
+) {
 	const Vector3d e1 = p_v1 - p_v0;
 	const Vector3d e2 = p_v2 - p_v0;
 	const Vector3d h = math::cross(p_dir, e2);

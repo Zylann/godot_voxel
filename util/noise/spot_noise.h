@@ -141,7 +141,12 @@ inline bool box_intersects(Vector3f a_min, Vector3f a_max, Vector3f b_min, Vecto
 }
 
 inline math::Interval spot_noise_2d_range(
-		math::Interval2 pos, float cell_size, math::Interval spot_size, float jitter, int seed) {
+		math::Interval2 pos,
+		float cell_size,
+		math::Interval spot_size,
+		float jitter,
+		int seed
+) {
 	vec2 min_cell_origin_norm = math::floor(vec2(pos.x.min, pos.y.min) / cell_size);
 	vec2 max_cell_origin_norm = math::floor(vec2(pos.x.max, pos.y.max) / cell_size);
 
@@ -167,8 +172,12 @@ inline math::Interval spot_noise_2d_range(
 			vec2 spot_pos_norm = math::lerp(vec2(0.5), h2, jitter);
 			vec2 spot_pos = cell_size * (vec2(xi, yi) + spot_pos_norm);
 
-			if (box_intersects(spot_pos - vec2(spot_size.max), spot_pos + vec2(spot_size.max),
-						vec2(pos.x.min, pos.y.min), vec2(pos.x.max, pos.y.max))) {
+			if (box_intersects(
+						spot_pos - vec2(spot_size.max),
+						spot_pos + vec2(spot_size.max),
+						vec2(pos.x.min, pos.y.min),
+						vec2(pos.x.max, pos.y.max)
+				)) {
 				return math::Interval(0, 1);
 			}
 		}
@@ -178,7 +187,12 @@ inline math::Interval spot_noise_2d_range(
 }
 
 inline math::Interval spot_noise_3d_range(
-		math::Interval3 pos, float cell_size, math::Interval spot_size, float jitter, int seed) {
+		math::Interval3 pos,
+		float cell_size,
+		math::Interval spot_size,
+		float jitter,
+		int seed
+) {
 	vec3 min_cell_origin_norm = math::floor(vec3(pos.x.min, pos.y.min, pos.z.min) / cell_size);
 	vec3 max_cell_origin_norm = math::floor(vec3(pos.x.max, pos.y.max, pos.z.max) / cell_size);
 
@@ -205,8 +219,12 @@ inline math::Interval spot_noise_3d_range(
 				vec3 spot_pos_norm = math::lerp(vec3(0.5), h3, jitter);
 				vec3 spot_pos = cell_size * (vec3(xi, yi, zi) + spot_pos_norm);
 
-				if (box_intersects(spot_pos - vec3(spot_size.max), spot_pos + vec3(spot_size.max),
-							vec3(pos.x.min, pos.y.min, pos.z.min), vec3(pos.x.max, pos.y.max, pos.z.max))) {
+				if (box_intersects(
+							spot_pos - vec3(spot_size.max),
+							spot_pos + vec3(spot_size.max),
+							vec3(pos.x.min, pos.y.min, pos.z.min),
+							vec3(pos.x.max, pos.y.max, pos.z.max)
+					)) {
 					return math::Interval(0, 1);
 				}
 			}

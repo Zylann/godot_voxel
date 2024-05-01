@@ -227,7 +227,10 @@ Span<TValue> to_span_from_position_and_size(std::vector<TValue, TAllocator> &vec
 
 template <typename TValue, typename TAllocator>
 Span<const TValue> to_span_from_position_and_size(
-		const std::vector<TValue, TAllocator> &vec, unsigned int pos, unsigned int size) {
+		const std::vector<TValue, TAllocator> &vec,
+		unsigned int pos,
+		unsigned int size
+) {
 	ZN_ASSERT(pos + size <= vec.size());
 	return Span<const TValue>(vec.data(), pos, pos + size);
 }
