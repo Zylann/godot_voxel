@@ -133,8 +133,10 @@ bool detect_single_quad(Span<const Vector2f> vertices, Span<const int32_t> indic
 		return false;
 	}
 
-	out_quad_indices = QuadIndices{ static_cast<unsigned int>(i0), static_cast<unsigned int>(i1),
-		static_cast<unsigned int>(i2), static_cast<unsigned int>(i3) };
+	out_quad_indices = QuadIndices{ static_cast<unsigned int>(i0),
+									static_cast<unsigned int>(i1),
+									static_cast<unsigned int>(i2),
+									static_cast<unsigned int>(i3) };
 	return true;
 }
 
@@ -178,8 +180,14 @@ void to_2d(Span<const Vector3f> src, Span<Vector2f> dst, unsigned int side) {
 	}
 }
 
-void to_3d(Span<const Vector2f> src, Span<Vector3f> dst, unsigned int dst_x_axis, unsigned int dst_y_axis,
-		unsigned int dst_z_axis, float z) {
+void to_3d(
+		Span<const Vector2f> src,
+		Span<Vector3f> dst,
+		unsigned int dst_x_axis,
+		unsigned int dst_y_axis,
+		unsigned int dst_z_axis,
+		float z
+) {
 	ZN_ASSERT(src.size() == dst.size());
 	for (unsigned int i = 0; i < src.size(); ++i) {
 		const Vector2f srcv = src[i];
@@ -214,8 +222,12 @@ void to_3d(Span<const Vector2f> src, Span<Vector3f> dst, unsigned int side) {
 	}
 }
 
-void get_side_geometry_2d_all_surfaces(const VoxelBlockyModel::BakedData::Model &model, int side,
-		StdVector<Vector2f> &out_vertices, StdVector<int32_t> &out_indices) {
+void get_side_geometry_2d_all_surfaces(
+		const VoxelBlockyModel::BakedData::Model &model,
+		int side,
+		StdVector<Vector2f> &out_vertices,
+		StdVector<int32_t> &out_indices
+) {
 	unsigned int vertex_count = 0;
 	unsigned int index_count = 0;
 
@@ -334,9 +346,15 @@ bool find_triangle(Span<const Vector2f> vertices, Span<const int32_t> indices, V
 	return false;
 }
 
-void interpolate_attributes_assume_no_seams(Span<const Vector2f> src_vertices, Span<const int32_t> src_indices,
-		Span<const Vector2f> src_uvs, Span<const float> src_tangents, Span<const Vector2f> interp_vertices,
-		Span<Vector2f> interp_uvs, Span<float> interp_tangents) {
+void interpolate_attributes_assume_no_seams(
+		Span<const Vector2f> src_vertices,
+		Span<const int32_t> src_indices,
+		Span<const Vector2f> src_uvs,
+		Span<const float> src_tangents,
+		Span<const Vector2f> interp_vertices,
+		Span<Vector2f> interp_uvs,
+		Span<float> interp_tangents
+) {
 	ZN_ASSERT((src_indices.size() % 3) == 0);
 
 	// This method only works if the whole mesh we are interpolating has consistent UVs. The mesh could have seams
@@ -384,8 +402,12 @@ void interpolate_attributes_assume_no_seams(Span<const Vector2f> src_vertices, S
 	}
 }
 
-void generate_cutout_side_surface(const VoxelBlockyModel::BakedData::SideSurface &side_surface, unsigned int side,
-		Box2f other_quad, VoxelBlockyModel::BakedData::SideSurface &cut_side_surface) {
+void generate_cutout_side_surface(
+		const VoxelBlockyModel::BakedData::SideSurface &side_surface,
+		unsigned int side,
+		Box2f other_quad,
+		VoxelBlockyModel::BakedData::SideSurface &cut_side_surface
+) {
 	// Arguably, some of this could be done once up front.
 	// Not done currently because what we really want here is a full-blown mesh boolean operation. The quad stuff is
 	// only here as an early shortcut because I couldn't find how to do the former.
@@ -452,7 +474,10 @@ void generate_cutout_side_surface(const VoxelBlockyModel::BakedData::SideSurface
 }
 
 void generate_model_cutout_sides(
-		VoxelBlockyModel::BakedData &model_data, uint16_t model_id, VoxelBlockyLibraryBase::BakedData &lib) {
+		VoxelBlockyModel::BakedData &model_data,
+		uint16_t model_id,
+		VoxelBlockyLibraryBase::BakedData &lib
+) {
 	// Iterating other models instead of the shape matrix because there is often a limited subset of models we have
 	// to compute cutouts with. Typically, this is used with transparent neighbors that cull our own faces
 	for (uint16_t other_model_id = 0; other_model_id < lib.models.size(); ++other_model_id) {
