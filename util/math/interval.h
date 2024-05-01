@@ -206,7 +206,7 @@ inline Interval sqrt(const Interval &i) {
 
 inline Interval abs(const Interval &i) {
 	return Interval{ i.contains(0) ? 0 : min(Math::abs(i.min), Math::abs(i.max)),
-		max(Math::abs(i.min), Math::abs(i.max)) };
+					 max(Math::abs(i.min), Math::abs(i.max)) };
 }
 
 inline Interval clamp(const Interval &i, const Interval &p_min, const Interval &p_max) {

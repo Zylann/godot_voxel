@@ -110,21 +110,29 @@ void VoxelEngine::load_shaders() {
 		_detail_gather_hits_shader.load_from_glsl(g_detail_gather_hits_shader, "zylann.voxel.detail_gather_hits");
 		_detail_normalmap_shader.load_from_glsl(g_detail_normalmap_shader, "zylann.voxel.detail_normalmap_shader");
 
-		_detail_modifier_sphere_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
-						String(g_modifier_sphere_shader_snippet) + String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_sphere_shader");
+		_detail_modifier_sphere_shader.load_from_glsl(
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_sphere_shader"
+		);
 
-		_detail_modifier_mesh_shader.load_from_glsl(String(g_detail_modifier_shader_template_0) +
-						String(g_modifier_mesh_shader_snippet) + String(g_detail_modifier_shader_template_1),
-				"zylann.voxel.detail_modifier_mesh_shader");
+		_detail_modifier_mesh_shader.load_from_glsl(
+				String(g_detail_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_detail_modifier_shader_template_1),
+				"zylann.voxel.detail_modifier_mesh_shader"
+		);
 
-		_block_modifier_sphere_shader.load_from_glsl(String(g_block_modifier_shader_template_0) +
-						String(g_modifier_sphere_shader_snippet) + String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_sphere_shader");
+		_block_modifier_sphere_shader.load_from_glsl(
+				String(g_block_modifier_shader_template_0) + String(g_modifier_sphere_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_sphere_shader"
+		);
 
-		_block_modifier_mesh_shader.load_from_glsl(String(g_block_modifier_shader_template_0) +
-						String(g_modifier_mesh_shader_snippet) + String(g_block_modifier_shader_template_1),
-				"zylann.voxel.block_modifier_mesh_shader");
+		_block_modifier_mesh_shader.load_from_glsl(
+				String(g_block_modifier_shader_template_0) + String(g_modifier_mesh_shader_snippet) +
+						String(g_block_modifier_shader_template_1),
+				"zylann.voxel.block_modifier_mesh_shader"
+		);
 	}
 }
 
@@ -270,7 +278,9 @@ bool VoxelEngine::viewer_exists(ViewerID viewer_id) const {
 }
 
 void VoxelEngine::push_main_thread_time_spread_task(
-		zylann::ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority) {
+		zylann::ITimeSpreadTask *task,
+		TimeSpreadTaskRunner::Priority priority
+) {
 	_time_spread_task_runner.push(task, priority);
 }
 
@@ -322,8 +332,10 @@ void VoxelEngine::process() {
 	ZN_PROFILE_PLOT("Progressive tasks", int64_t(_progressive_task_runner.get_pending_count()));
 	ZN_PROFILE_PLOT("Threaded tasks", int64_t(_general_thread_pool.get_debug_remaining_tasks()));
 	ZN_PROFILE_PLOT("Objects", int64_t(ObjectDB::get_object_count()));
-	ZN_PROFILE_PLOT("ZN Std Allocator",
-			int64_t(StdDefaultAllocatorCounters::g_allocated - StdDefaultAllocatorCounters::g_deallocated));
+	ZN_PROFILE_PLOT(
+			"ZN Std Allocator",
+			int64_t(StdDefaultAllocatorCounters::g_allocated - StdDefaultAllocatorCounters::g_deallocated)
+	);
 
 	// Receive generation and meshing results
 	_general_thread_pool.dequeue_completed_tasks([](zylann::IThreadedTask *task) {

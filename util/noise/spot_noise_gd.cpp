@@ -127,15 +127,18 @@ void ZN_SpotNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_noise_3dv", "pos"), &ZN_SpotNoise::get_noise_3dv);
 
 	ClassDB::bind_method(
-			D_METHOD("get_spot_positions_in_area_2d", "rect"), &ZN_SpotNoise::get_spot_positions_in_area_2d);
+			D_METHOD("get_spot_positions_in_area_2d", "rect"), &ZN_SpotNoise::get_spot_positions_in_area_2d
+	);
 	ClassDB::bind_method(
-			D_METHOD("get_spot_positions_in_area_3d", "aabb"), &ZN_SpotNoise::get_spot_positions_in_area_3d);
+			D_METHOD("get_spot_positions_in_area_3d", "aabb"), &ZN_SpotNoise::get_spot_positions_in_area_3d
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "spot_radius"), "set_spot_radius", "get_spot_radius");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cell_size"), "set_cell_size", "get_cell_size");
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), "set_jitter", "get_jitter");
+			PropertyInfo(Variant::FLOAT, "jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), "set_jitter", "get_jitter"
+	);
 }
 
 } // namespace zylann

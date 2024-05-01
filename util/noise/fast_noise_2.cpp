@@ -345,7 +345,11 @@ void FastNoise2::get_noise_2d_series(Span<const float> src_x, Span<const float> 
 }
 
 void FastNoise2::get_noise_3d_series(
-		Span<const float> src_x, Span<const float> src_y, Span<const float> src_z, Span<float> dst) const {
+		Span<const float> src_x,
+		Span<const float> src_y,
+		Span<const float> src_z,
+		Span<float> dst
+) const {
 	ERR_FAIL_COND(!is_valid());
 	ERR_FAIL_COND(src_x.size() != src_y.size() || src_x.size() != src_z.size() || src_x.size() != dst.size());
 	if (src_x.size() < MIN_BUFFER_SIZE) {
@@ -381,7 +385,8 @@ void FastNoise2::get_noise_3d_series(
 		}
 	} else {
 		_generator->GenPositionArray3D(
-				dst.data(), dst.size(), src_x.data(), src_y.data(), src_z.data(), 0, 0, 0, _seed);
+				dst.data(), dst.size(), src_x.data(), src_y.data(), src_z.data(), 0, 0, 0, _seed
+		);
 	}
 }
 
@@ -579,15 +584,18 @@ void FastNoise2::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_fractal_gain"), &FastNoise2::get_fractal_gain);
 
 	ClassDB::bind_method(
-			D_METHOD("set_fractal_ping_pong_strength", "strength"), &FastNoise2::set_fractal_ping_pong_strength);
+			D_METHOD("set_fractal_ping_pong_strength", "strength"), &FastNoise2::set_fractal_ping_pong_strength
+	);
 	ClassDB::bind_method(D_METHOD("get_fractal_ping_pong_strength"), &FastNoise2::get_fractal_ping_pong_strength);
 
 	// ClassDB::bind_method(
 	// 		D_METHOD("set_fractal_weighted_strength", "strength"), &FastNoise2::set_fractal_weighted_strength);
 	// ClassDB::bind_method(D_METHOD("get_fractal_weighted_strength"), &FastNoise2::get_fractal_weighted_strength);
 
-	ClassDB::bind_method(D_METHOD("set_cellular_distance_function", "cell_distance_func"),
-			&FastNoise2::set_cellular_distance_function);
+	ClassDB::bind_method(
+			D_METHOD("set_cellular_distance_function", "cell_distance_func"),
+			&FastNoise2::set_cellular_distance_function
+	);
 	ClassDB::bind_method(D_METHOD("get_cellular_distance_function"), &FastNoise2::get_cellular_distance_function);
 
 	ClassDB::bind_method(D_METHOD("set_cellular_return_type", "return_type"), &FastNoise2::set_cellular_return_type);
@@ -637,55 +645,89 @@ void FastNoise2::_bind_methods() {
 
 	// ClassDB::bind_method(D_METHOD("_on_warp_noise_changed"), &FastNoiseLite::_on_warp_noise_changed);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM, NOISE_TYPE_HINT_STRING), "set_noise_type",
-			"get_noise_type");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM, NOISE_TYPE_HINT_STRING),
+			"set_noise_type",
+			"get_noise_type"
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"), "set_period",
-			"get_period");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"),
+			"set_period",
+			"get_period"
+	);
 
 	// ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "warp_noise", PROPERTY_HINT_RESOURCE_TYPE, "FastNoiseLiteGradient"),
 	// 		"set_warp_noise", "get_warp_noise");
 
 	ADD_GROUP("Fractal", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, FRACTAL_TYPE_HINT_STRING),
-			"set_fractal_type", "get_fractal_type");
-
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", MAX_OCTAVES)),
-			"set_fractal_octaves", "get_fractal_octaves");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, FRACTAL_TYPE_HINT_STRING),
+			"set_fractal_type",
+			"get_fractal_type"
+	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
+			PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, vformat("1,%d,1", MAX_OCTAVES)),
+			"set_fractal_octaves",
+			"get_fractal_octaves"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"), "set_fractal_ping_pong_strength",
-			"get_fractal_ping_pong_strength");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_ping_pong_strength"),
+			"set_fractal_ping_pong_strength",
+			"get_fractal_ping_pong_strength"
+	);
 
 	// ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_weighted_strength"), "set_fractal_weighted_strength",
 	// 		"get_fractal_weighted_strength");
 
 	ADD_GROUP("Cellular", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cellular_distance_function", PROPERTY_HINT_ENUM,
-						 CELLULAR_DISTANCE_FUNCTION_HINT_STRING),
-			"set_cellular_distance_function", "get_cellular_distance_function");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"cellular_distance_function",
+					PROPERTY_HINT_ENUM,
+					CELLULAR_DISTANCE_FUNCTION_HINT_STRING
+			),
+			"set_cellular_distance_function",
+			"get_cellular_distance_function"
+	);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "cellular_return_type", PROPERTY_HINT_ENUM, CELLULAR_RETURN_TYPE_HINT_STRING),
-			"set_cellular_return_type", "get_cellular_return_type");
+			"set_cellular_return_type",
+			"get_cellular_return_type"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
-			"set_cellular_jitter", "get_cellular_jitter");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "cellular_jitter", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
+			"set_cellular_jitter",
+			"get_cellular_jitter"
+	);
 
 	ADD_GROUP("Terrace", "");
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "terrace_enabled"), "set_terrace_enabled", "is_terrace_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "terrace_multiplier", PROPERTY_HINT_RANGE, "0.0,100.0,0.1"),
-			"set_terrace_multiplier", "get_terrace_multiplier");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "terrace_smoothness", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
-			"set_terrace_smoothness", "get_terrace_smoothness");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "terrace_multiplier", PROPERTY_HINT_RANGE, "0.0,100.0,0.1"),
+			"set_terrace_multiplier",
+			"get_terrace_multiplier"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "terrace_smoothness", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"),
+			"set_terrace_smoothness",
+			"get_terrace_smoothness"
+	);
 
 	ADD_GROUP("Remap", "");
 

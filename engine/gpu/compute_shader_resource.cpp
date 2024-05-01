@@ -108,9 +108,10 @@ void ComputeShaderResource::create_texture_2d(const Image &image) {
 	texture_format->set_width(image.get_width());
 	texture_format->set_height(image.get_height());
 	texture_format->set_format(data_format);
-	texture_format->set_usage_bits(RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
-			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT |
-			RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_2D);
 	// TODO Do I need multisample if I want filtering?
 
@@ -182,9 +183,10 @@ void ComputeShaderResource::create_texture_3d_zxy(Span<const float> fdata_zxy, V
 	texture_format->set_height(size.y);
 	texture_format->set_depth(size.z);
 	texture_format->set_format(RenderingDevice::DATA_FORMAT_R32_SFLOAT);
-	texture_format->set_usage_bits(RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
-			RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT |
-			RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT);
+	texture_format->set_usage_bits(
+			RenderingDevice::TEXTURE_USAGE_STORAGE_BIT | RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+			RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT | RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT
+	);
 	texture_format->set_texture_type(RenderingDevice::TEXTURE_TYPE_3D);
 
 	Ref<RDTextureView> texture_view;

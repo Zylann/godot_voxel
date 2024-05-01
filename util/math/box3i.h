@@ -357,14 +357,16 @@ public:
 	}
 
 	void merge_with(const Box3i &other) {
-		const Vector3i min_pos( //
-				math::min(position.x, other.position.x), //
-				math::min(position.y, other.position.y), //
-				math::min(position.z, other.position.z));
-		const Vector3i max_pos( //
-				math::max(position.x + size.x, other.position.x + other.size.x), //
-				math::max(position.y + size.y, other.position.y + other.size.y), //
-				math::max(position.z + size.z, other.position.z + other.size.z));
+		const Vector3i min_pos(
+				math::min(position.x, other.position.x),
+				math::min(position.y, other.position.y),
+				math::min(position.z, other.position.z)
+		);
+		const Vector3i max_pos(
+				math::max(position.x + size.x, other.position.x + other.size.x),
+				math::max(position.y + size.y, other.position.y + other.size.y),
+				math::max(position.z + size.z, other.position.z + other.size.z)
+		);
 		position = min_pos;
 		size = max_pos - min_pos;
 	}

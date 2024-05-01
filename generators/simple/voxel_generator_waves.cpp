@@ -21,7 +21,8 @@ VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelGenerator::Voxel
 
 	VoxelBuffer &out_buffer = input.voxel_buffer;
 	const Vector2 freq(
-			Math_PI / static_cast<float>(params.pattern_size.x), Math_PI / static_cast<float>(params.pattern_size.y));
+			Math_PI / static_cast<float>(params.pattern_size.x), Math_PI / static_cast<float>(params.pattern_size.y)
+	);
 	const Vector2 offset = params.pattern_offset;
 
 	return VoxelGeneratorHeightmap::generate(
@@ -29,7 +30,9 @@ VoxelGenerator::Result VoxelGeneratorWaves::generate_block(VoxelGenerator::Voxel
 			[freq, offset](int x, int z) {
 				return 0.5 + 0.25 * (Math::cos((x + offset.x) * freq.x) + Math::sin((z + offset.y) * freq.y));
 			},
-			input.origin_in_voxels, input.lod);
+			input.origin_in_voxels,
+			input.lod
+	);
 }
 
 Vector2 VoxelGeneratorWaves::get_pattern_size() const {
