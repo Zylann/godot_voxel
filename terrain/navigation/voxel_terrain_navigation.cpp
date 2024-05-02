@@ -20,7 +20,10 @@ namespace {
 #ifdef DEV_ENABLED
 
 void dump_navmesh_source_data_to_mesh_resource(
-		const PackedFloat32Array &vertices, const PackedInt32Array &indices, const char *fpath) {
+		const PackedFloat32Array &vertices,
+		const PackedInt32Array &indices,
+		const char *fpath
+) {
 	PackedVector3Array debug_vertices;
 	for (int i = 0; i < vertices.size(); i += 3) {
 		debug_vertices.push_back(Vector3(vertices[i], vertices[i + 1], vertices[i + 2]));
@@ -42,7 +45,10 @@ void dump_navmesh_source_data_to_mesh_resource(
 }
 
 void check_navmesh_source_data(
-		const PackedFloat32Array &vertices, const PackedInt32Array &indices, unsigned int vertex_count) {
+		const PackedFloat32Array &vertices,
+		const PackedInt32Array &indices,
+		unsigned int vertex_count
+) {
 	ZN_PROFILE_SCOPE();
 	// Some sanity checks to make sure we don't send garbage to the baker
 
@@ -379,9 +385,11 @@ void VoxelTerrainNavigation::bake(const VoxelTerrain &terrain) {
 
 	_baking = true;
 
-	ns.bake_from_source_geometry_data_async(navmesh, navmesh_source_data,
-			callable_mp_static(&VoxelTerrainNavigation::on_async_bake_complete_static)
-					.bind(get_instance_id(), navmesh));
+	ns.bake_from_source_geometry_data_async(
+			navmesh,
+			navmesh_source_data,
+			callable_mp_static(&VoxelTerrainNavigation::on_async_bake_complete_static).bind(get_instance_id(), navmesh)
+	);
 }
 
 void VoxelTerrainNavigation::on_async_bake_complete_static(uint64_t p_object_id, Ref<NavigationMesh> navmesh) {
@@ -390,8 +398,10 @@ void VoxelTerrainNavigation::on_async_bake_complete_static(uint64_t p_object_id,
 	if (obj == nullptr) {
 		// Don't raise an error like Callable would. We'll drop the navmesh.
 #ifdef DEBUG_ENABLED
-		ZN_PRINT_VERBOSE(format("Navmesh async baking finished, but {} was destroyed in the meantime.",
-				zylann::godot::get_class_name_str<VoxelTerrainNavigation>()));
+		ZN_PRINT_VERBOSE(
+				format("Navmesh async baking finished, but {} was destroyed in the meantime.",
+					   zylann::godot::get_class_name_str<VoxelTerrainNavigation>())
+		);
 #endif
 		return;
 	}
@@ -432,18 +442,22 @@ void VoxelTerrainNavigation::get_configuration_warnings(PackedStringArray &warni
 		const real_t default_cell_size = 0.25;
 		const real_t default_cell_height = 0.25;
 		if (!Math::is_equal_approx(_template_navmesh->get_cell_size(), default_cell_size)) {
-			warnings.append(String(
-					"{0} template cell_size has been modified. It won't be used: {1} automatically sets it to the "
-					"map's cell size when baking.")
-									.format(varray(NavigationMesh::get_class_static(),
-											VoxelTerrainNavigation::get_class_static())));
+			warnings.append(String("{0} template cell_size has been modified. It won't be used: {1} automatically sets "
+								   "it to the "
+								   "map's cell size when baking.")
+									.format(
+											varray(NavigationMesh::get_class_static(),
+												   VoxelTerrainNavigation::get_class_static())
+									));
 		}
 		if (!Math::is_equal_approx(_template_navmesh->get_cell_height(), default_cell_height)) {
-			warnings.append(String(
-					"{0} template cell_height has been modified. It won't be used: {1} automatically sets it to the "
-					"map's cell height when baking.")
-									.format(varray(NavigationMesh::get_class_static(),
-											VoxelTerrainNavigation::get_class_static())));
+			warnings.append(String("{0} template cell_height has been modified. It won't be used: {1} automatically "
+								   "sets it to the "
+								   "map's cell height when baking.")
+									.format(
+											varray(NavigationMesh::get_class_static(),
+												   VoxelTerrainNavigation::get_class_static())
+									));
 		}
 	}
 }
@@ -458,27 +472,43 @@ void VoxelTerrainNavigation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_run_in_editor"), &VoxelTerrainNavigation::get_run_is_editor);
 
 	ClassDB::bind_method(
-			D_METHOD("set_template_navigation_mesh", "navmesh"), &VoxelTerrainNavigation::set_template_navigation_mesh);
+			D_METHOD("set_template_navigation_mesh", "navmesh"), &VoxelTerrainNavigation::set_template_navigation_mesh
+	);
 	ClassDB::bind_method(
-			D_METHOD("get_template_navigation_mesh"), &VoxelTerrainNavigation::get_template_navigation_mesh);
+			D_METHOD("get_template_navigation_mesh"), &VoxelTerrainNavigation::get_template_navigation_mesh
+	);
 
-	ClassDB::bind_method(D_METHOD("debug_get_regions_visible_in_editor"),
-			&VoxelTerrainNavigation::debug_get_regions_visible_in_editor);
-	ClassDB::bind_method(D_METHOD("debug_set_regions_visible_in_editor", "enabled"),
-			&VoxelTerrainNavigation::debug_set_regions_visible_in_editor);
+	ClassDB::bind_method(
+			D_METHOD("debug_get_regions_visible_in_editor"),
+			&VoxelTerrainNavigation::debug_get_regions_visible_in_editor
+	);
+	ClassDB::bind_method(
+			D_METHOD("debug_set_regions_visible_in_editor", "enabled"),
+			&VoxelTerrainNavigation::debug_set_regions_visible_in_editor
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enabled"), "set_enabled", "is_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_in_editor"), "set_run_in_editor", "get_run_in_editor");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "template_navigation_mesh", PROPERTY_HINT_RESOURCE_TYPE,
-						 NavigationMesh::get_class_static(),
-						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
-			"set_template_navigation_mesh", "get_template_navigation_mesh");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"template_navigation_mesh",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					NavigationMesh::get_class_static(),
+					PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
+			),
+			"set_template_navigation_mesh",
+			"get_template_navigation_mesh"
+	);
 
 	ADD_GROUP("Debug", "debug_");
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_regions_visible_in_editor"), "debug_set_regions_visible_in_editor",
-			"debug_get_regions_visible_in_editor");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "debug_regions_visible_in_editor"),
+			"debug_set_regions_visible_in_editor",
+			"debug_get_regions_visible_in_editor"
+	);
 }
 
 } // namespace zylann::voxel
