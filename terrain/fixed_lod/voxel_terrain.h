@@ -276,7 +276,8 @@ private:
 			Vector3i local_position_voxels;
 			Box3i data_box; // In block coordinates
 			Box3i mesh_box;
-			int view_distance_voxels = 0;
+			int horizontal_view_distance_voxels = 0;
+			int vertical_view_distance_voxels = 0;
 			bool requires_collisions = false;
 			bool requires_meshes = false;
 		};

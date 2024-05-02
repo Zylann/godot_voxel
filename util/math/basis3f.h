@@ -124,7 +124,8 @@ struct Basis3f {
 		return Vector3f( //
 				math::length(Vector3f(rows[0][0], rows[1][0], rows[2][0])),
 				math::length(Vector3f(rows[0][1], rows[1][1], rows[2][1])),
-				math::length(Vector3f(rows[0][2], rows[1][2], rows[2][2])));
+				math::length(Vector3f(rows[0][2], rows[1][2], rows[2][2]))
+		);
 	}
 
 	void orthonormalize() {
@@ -173,11 +174,11 @@ struct Basis3f {
 	}
 
 	Quaternionf get_quaternion() const {
-		//#ifdef MATH_CHECKS
-		// 	ERR_FAIL_COND_V_MSG(!is_rotation(), Quaternion(), "Basis must be normalized in order to be casted to a
-		// Quaternion. Use get_rotation_quaternion() or call orthonormalized() if the Basis contains linearly
-		// independent vectors.");
-		//#endif
+		// #ifdef MATH_CHECKS
+		//  	ERR_FAIL_COND_V_MSG(!is_rotation(), Quaternion(), "Basis must be normalized in order to be casted to a
+		//  Quaternion. Use get_rotation_quaternion() or call orthonormalized() if the Basis contains linearly
+		//  independent vectors.");
+		// #endif
 
 		// Allow getting a quaternion from an unnormalized transform
 

@@ -15,12 +15,21 @@ namespace zylann::godot {
 // the end of the call.
 class CheckRefCountDoesNotChange {
 public:
+	// Ideally this shouldn't need to be turned off in project settings, but some languages like C# like to keep
+	// references on object due to garbage-collection memory model. In those cases, the strategy of this sanity check
+	// falls apart because we can't tell what happened...
+	static void set_enabled(bool enabled);
+	static bool is_enabled();
+
 	// Note: not taking a `const Ref<RefCounted>&` for convenience, because it may involve casting, which means C++ will
 	// not pass Ref<T> by reference but by value instead, which would increase the refcount.
 	inline CheckRefCountDoesNotChange(const char *method_name, RefCounted *rc) :
 			_method_name(method_name), _rc(rc), _initial_count(rc->get_reference_count()) {}
 
 	inline ~CheckRefCountDoesNotChange() {
+		if (!is_enabled()) {
+			return;
+		}
 		const int after_count = _rc->get_reference_count();
 		if (after_count != _initial_count) {
 			ZN_PRINT_ERROR(format("Holding a reference to the passed {} outside {} is not allowed (count before: {}, "

@@ -107,6 +107,14 @@ public:
 	};
 
 	struct Viewer {
+		struct Distances {
+			unsigned int horizontal = 128;
+			unsigned int vertical = 128;
+
+			inline unsigned int max() const {
+				return math::max(horizontal, vertical);
+			}
+		};
 		// enum Flags {
 		// 	FLAG_DATA = 1,
 		// 	FLAG_VISUAL = 2,
@@ -114,23 +122,26 @@ public:
 		// 	FLAGS_COUNT = 3
 		// };
 		Vector3 world_position;
-		unsigned int view_distance = 128;
+		Distances view_distances;
 		bool require_collisions = true;
 		bool require_visuals = true;
 		bool requires_data_block_notifications = false;
 		int network_peer_id = -1;
 	};
 
-	struct ThreadsConfig {
+	static constexpr unsigned int DEFAULT_MAIN_THREAD_BUDGET_USEC = 8000;
+
+	struct Config {
 		int thread_count_minimum = 1;
 		// How many threads below available count on the CPU should we set as limit
 		int thread_count_margin_below_max = 1;
 		// Portion of available CPU threads to attempt using
 		float thread_count_ratio_over_max = 0.5;
+		unsigned int main_thread_budget_usec = DEFAULT_MAIN_THREAD_BUDGET_USEC;
 	};
 
 	static VoxelEngine &get_singleton();
-	static void create_singleton(ThreadsConfig threads_config);
+	static void create_singleton(Config config);
 	static void destroy_singleton();
 
 	VolumeID add_volume(VolumeCallbacks callbacks);
@@ -146,8 +157,8 @@ public:
 	ViewerID add_viewer();
 	void remove_viewer(ViewerID viewer_id);
 	void set_viewer_position(ViewerID viewer_id, Vector3 position);
-	void set_viewer_distance(ViewerID viewer_id, unsigned int distance);
-	unsigned int get_viewer_distance(ViewerID viewer_id) const;
+	void set_viewer_distances(ViewerID viewer_id, Viewer::Distances distances);
+	Viewer::Distances get_viewer_distances(ViewerID viewer_id) const;
 	void set_viewer_requires_visuals(ViewerID viewer_id, bool enabled);
 	bool is_viewer_requiring_visuals(ViewerID viewer_id) const;
 	void set_viewer_requires_collisions(ViewerID viewer_id, bool enabled);
@@ -165,7 +176,9 @@ public:
 	}
 
 	void push_main_thread_time_spread_task(
-			ITimeSpreadTask *task, TimeSpreadTaskRunner::Priority priority = TimeSpreadTaskRunner::PRIORITY_NORMAL);
+			ITimeSpreadTask *task,
+			TimeSpreadTaskRunner::Priority priority = TimeSpreadTaskRunner::PRIORITY_NORMAL
+	);
 	int get_main_thread_time_budget_usec() const;
 	void set_main_thread_time_budget_usec(unsigned int usec);
 
@@ -285,7 +298,7 @@ public:
 	}
 
 private:
-	VoxelEngine(ThreadsConfig threads_config);
+	VoxelEngine(Config config);
 
 	void load_shaders();
 
@@ -319,7 +332,7 @@ private:
 	ThreadedTaskRunner _general_thread_pool;
 	// For tasks that can only run on the main thread and be spread out over frames
 	TimeSpreadTaskRunner _time_spread_task_runner;
-	unsigned int _main_thread_time_budget_usec = 8000;
+	unsigned int _main_thread_time_budget_usec = DEFAULT_MAIN_THREAD_BUDGET_USEC;
 	ProgressiveTaskRunner _progressive_task_runner;
 
 	FileLocker _file_locker;

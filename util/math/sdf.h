@@ -17,8 +17,14 @@ inline real_t sdf_box(const Vector3 pos, const Vector3 extents) {
 	return minf(maxf(d.x, maxf(d.y, d.z)), 0) + Vector3(maxf(d.x, 0), maxf(d.y, 0), maxf(d.z, 0)).length();
 }
 
-inline Interval sdf_box(const Interval &x, const Interval &y, const Interval &z, const Interval &sx, const Interval &sy,
-		const Interval &sz) {
+inline Interval sdf_box(
+		const Interval &x,
+		const Interval &y,
+		const Interval &z,
+		const Interval &sx,
+		const Interval &sy,
+		const Interval &sz
+) {
 	const Interval dx = abs(x) - sx;
 	const Interval dy = abs(y) - sy;
 	const Interval dz = abs(z) - sz;
@@ -36,7 +42,12 @@ inline real_t sdf_torus(real_t x, real_t y, real_t z, real_t r0, real_t r1) {
 }
 
 inline Interval sdf_torus(
-		const Interval &x, const Interval &y, const Interval &z, const Interval r0, const Interval r1) {
+		const Interval &x,
+		const Interval &y,
+		const Interval &z,
+		const Interval r0,
+		const Interval r1
+) {
 	const Interval qx = get_length(x, z) - r0;
 	return get_length(qx, y) - r1;
 }

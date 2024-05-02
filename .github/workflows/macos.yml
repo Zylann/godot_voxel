@@ -1,7 +1,7 @@
 name: 🍎 macOS Builds
 on:
   push:
-    branches: [master, github_actions]
+    branches: [master, github_actions, "1.2"]
   pull_request:
     branches: [master]
 
@@ -27,12 +27,12 @@ jobs:
           - name: 4.2 Editor
             target: editor
             executable_name: godot.macos.editor
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
 
           - name: 4.2 Template
             target: template_release
             executable_name: godot.macos.template_release
-            godot_base_branch: "4.2"
+            godot_base_branch: "4.2.2-stable"
 
     steps:
       # Clone Godot
@@ -83,7 +83,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no
+          scons arch=${{matrix.arch}} verbose=yes warnings=extra werror=yes platform=macos tests=no target=${{matrix.target}} dev_build=no production=yes
           
       # Make build available
       - uses: actions/upload-artifact@v4

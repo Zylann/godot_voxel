@@ -179,7 +179,8 @@ void ZN_FastNoiseLiteGradient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_fractal_octaves"), &ZN_FastNoiseLiteGradient::get_fractal_octaves);
 
 	ClassDB::bind_method(
-			D_METHOD("set_fractal_lacunarity", "lacunarity"), &ZN_FastNoiseLiteGradient::set_fractal_lacunarity);
+			D_METHOD("set_fractal_lacunarity", "lacunarity"), &ZN_FastNoiseLiteGradient::set_fractal_lacunarity
+	);
 	ClassDB::bind_method(D_METHOD("get_fractal_lacunarity"), &ZN_FastNoiseLiteGradient::get_fractal_lacunarity);
 
 	ClassDB::bind_method(D_METHOD("set_fractal_gain", "gain"), &ZN_FastNoiseLiteGradient::set_fractal_gain);
@@ -191,36 +192,56 @@ void ZN_FastNoiseLiteGradient::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("warp_2d", "position"), &ZN_FastNoiseLiteGradient::_b_warp_2d);
 	ClassDB::bind_method(D_METHOD("warp_3d", "position"), &ZN_FastNoiseLiteGradient::_b_warp_3d);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM, "OpenSimplex2,OpenSimplex2Reduced,Value"),
-			"set_noise_type", "get_noise_type");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "noise_type", PROPERTY_HINT_ENUM, "OpenSimplex2,OpenSimplex2Reduced,Value"),
+			"set_noise_type",
+			"get_noise_type"
+	);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "seed"), "set_seed", "get_seed");
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"), "set_period",
-			"get_period");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "period", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"),
+			"set_period",
+			"get_period"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "amplitude", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"),
-			"set_amplitude", "get_amplitude");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "amplitude", PROPERTY_HINT_RANGE, "0.0001,10000.0,0.1,exp"),
+			"set_amplitude",
+			"get_amplitude"
+	);
 
 	ADD_GROUP("Fractal", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_type", PROPERTY_HINT_ENUM,
-						 "None,DomainWarpProgressive,DomainWarpIndependent"),
-			"set_fractal_type", "get_fractal_type");
-
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE,
-						 String("1,{0},1").format(varray(_MAX_OCTAVES))),
-			"set_fractal_octaves", "get_fractal_octaves");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT, "fractal_type", PROPERTY_HINT_ENUM, "None,DomainWarpProgressive,DomainWarpIndependent"
+			),
+			"set_fractal_type",
+			"get_fractal_type"
+	);
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity");
+			PropertyInfo(
+					Variant::INT, "fractal_octaves", PROPERTY_HINT_RANGE, String("1,{0},1").format(varray(_MAX_OCTAVES))
+			),
+			"set_fractal_octaves",
+			"get_fractal_octaves"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::FLOAT, "fractal_lacunarity"), "set_fractal_lacunarity", "get_fractal_lacunarity"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fractal_gain"), "set_fractal_gain", "get_fractal_gain");
 
 	ADD_GROUP("Advanced", "");
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "rotation_type_3d", PROPERTY_HINT_ENUM, "None,ImproveXYPlanes,ImproveXZPlanes"),
-			"set_rotation_type_3d", "get_rotation_type_3d");
+			"set_rotation_type_3d",
+			"get_rotation_type_3d"
+	);
 
 	BIND_ENUM_CONSTANT(TYPE_OPEN_SIMPLEX_2);
 	BIND_ENUM_CONSTANT(TYPE_OPEN_SIMPLEX_2_REDUCED);

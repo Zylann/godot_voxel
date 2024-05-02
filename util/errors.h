@@ -25,7 +25,8 @@
 #define ZN_ASSERT_MSG(cond, msg)                                                                                       \
 	if (ZN_UNLIKELY(!(cond))) {                                                                                        \
 		zylann::print_error(                                                                                           \
-				"FATAL: Assertion failed: \"" #cond "\" is false.", msg, __FUNCTION__, __FILE__, __LINE__);            \
+				"FATAL: Assertion failed: \"" #cond "\" is false.", msg, __FUNCTION__, __FILE__, __LINE__              \
+		);                                                                                                             \
 		zylann::flush_stdout();                                                                                        \
 		ZN_GENERATE_TRAP();                                                                                            \
 	} else                                                                                                             \

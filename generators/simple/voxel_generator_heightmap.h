@@ -102,7 +102,8 @@ protected:
 							ih = bs.y;
 						}
 						out_buffer.fill_area(
-								params.matter_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
+								params.matter_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel
+						);
 					}
 
 				} // for x
@@ -114,9 +115,16 @@ protected:
 
 	// float height_func(x, y)
 	template <typename Height_F>
-	void generate_series_template(Height_F height_func, Span<const float> positions_x, Span<const float> positions_y,
-			Span<const float> positions_z, unsigned int channel, Span<float> out_values, Vector3f min_pos,
-			Vector3f max_pos) {
+	void generate_series_template(
+			Height_F height_func,
+			Span<const float> positions_x,
+			Span<const float> positions_y,
+			Span<const float> positions_z,
+			unsigned int channel,
+			Span<float> out_values,
+			Vector3f min_pos,
+			Vector3f max_pos
+	) {
 		Parameters params;
 		{
 			RWLockRead rlock(_parameters_lock);
