@@ -11,6 +11,9 @@
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
 
+// TODO Binary greedy mesher optimization
+// https://www.youtube.com/watch?v=qnGoGq7DWMc
+
 namespace zylann::voxel {
 
 namespace {

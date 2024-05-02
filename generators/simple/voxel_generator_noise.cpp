@@ -15,13 +15,15 @@ void VoxelGeneratorNoise::set_noise(Ref<FastNoiseLite> noise) {
 	}
 	if (_noise.is_valid()) {
 		_noise->disconnect(
-				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed)
+		);
 	}
 	_noise = noise;
 	Ref<FastNoiseLite> copy;
 	if (_noise.is_valid()) {
 		_noise->connect(
-				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed));
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelGeneratorNoise::_on_noise_changed)
+		);
 		// The OpenSimplexNoise resource is not thread-safe so we make a copy of it for use in threads
 		copy = _noise->duplicate();
 	}
@@ -261,11 +263,22 @@ void VoxelGeneratorNoise::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_height_range", "hrange"), &VoxelGeneratorNoise::set_height_range);
 	ClassDB::bind_method(D_METHOD("get_height_range"), &VoxelGeneratorNoise::get_height_range);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
-			"set_channel", "get_channel");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "noise", PROPERTY_HINT_RESOURCE_TYPE, FastNoiseLite::get_class_static(),
-						 PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT),
-			"set_noise", "get_noise");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel",
+			"get_channel"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"noise",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					FastNoiseLite::get_class_static(),
+					PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_INSTANTIATE_OBJECT
+			),
+			"set_noise",
+			"get_noise"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_start"), "set_height_start", "get_height_start");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_range"), "set_height_range", "get_height_range");
 }

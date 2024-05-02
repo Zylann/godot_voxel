@@ -102,7 +102,8 @@ void DirectStaticBody::set_attached_object(Object *obj) {
 	// Serves in high-level collision query results, `collider` will contain the attached object
 	ERR_FAIL_COND(!_body.is_valid());
 	PhysicsServer3D::get_singleton()->body_attach_object_instance_id(
-			_body, obj != nullptr ? obj->get_instance_id() : ObjectID());
+			_body, obj != nullptr ? obj->get_instance_id() : ObjectID()
+	);
 }
 
 void DirectStaticBody::set_collision_layer(int layer) {

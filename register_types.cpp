@@ -59,6 +59,7 @@
 #include "terrain/voxel_mesh_block.h"
 #include "terrain/voxel_save_completion_tracker.h"
 #include "terrain/voxel_viewer.h"
+#include "util/godot/check_ref_ownership.h"
 #include "util/macros.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite.h"
 #include "util/noise/fast_noise_lite/fast_noise_lite_gradient.h"
@@ -337,11 +338,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		VoxelStringNames::create_singleton();
 		pg::NodeTypeDB::create_singleton();
 
-		unsigned int main_thread_budget_usec;
-		const VoxelEngine::ThreadsConfig threads_config =
-				zylann::voxel::godot::VoxelEngine::get_config_from_godot(main_thread_budget_usec);
-		VoxelEngine::create_singleton(threads_config);
-		VoxelEngine::get_singleton().set_main_thread_time_budget_usec(main_thread_budget_usec);
+		const zylann::voxel::godot::VoxelEngine::Config config =
+				zylann::voxel::godot::VoxelEngine::get_config_from_godot();
+		CheckRefCountDoesNotChange::set_enabled(config.ownership_checks);
+		VoxelEngine::create_singleton(config.inner);
 #if defined(ZN_GODOT)
 		// RenderingServer can be null with `tests=yes`.
 		// TODO There is no hook to integrate modules to Godot's test framework, update this when it gets improved

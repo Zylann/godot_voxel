@@ -86,55 +86,67 @@ void VoxelToolMultipassGenerator::copy(Vector3i pos, VoxelBuffer &dst, uint8_t c
 }
 
 void VoxelToolMultipassGenerator::paste(Vector3i pos, const VoxelBuffer &src, uint8_t channels_mask) {
-	paste_to_chunked_storage_tp(src, pos, _block_size_po2, channels_mask, //
-			GetPassInputBlock{ _pass_input }, //
-			paste_functors::Default());
+	paste_to_chunked_storage_tp(
+			src, //
+			pos,
+			_block_size_po2,
+			channels_mask,
+			GetPassInputBlock{ _pass_input },
+			paste_functors::Default()
+	);
 }
 
-void VoxelToolMultipassGenerator::paste_masked( //
-		Vector3i pos, //
-		Ref<godot::VoxelBuffer> p_voxels, //
-		uint8_t channels_mask, //
-		uint8_t mask_channel, //
-		uint64_t mask_value //
+void VoxelToolMultipassGenerator::paste_masked(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value
 ) {
 	ZN_ASSERT_RETURN(p_voxels.is_valid());
 	const VoxelBuffer &src = p_voxels->get_buffer();
 
-	paste_to_chunked_storage_tp(src, pos, _block_size_po2, channels_mask, //
-			GetPassInputBlock{ _pass_input }, //
-			paste_functors::SrcMasked{ mask_channel, mask_value } //
+	paste_to_chunked_storage_tp(
+			src,
+			pos,
+			_block_size_po2,
+			channels_mask,
+			GetPassInputBlock{ _pass_input },
+			paste_functors::SrcMasked{ mask_channel, mask_value }
 	);
 }
 
-void VoxelToolMultipassGenerator::paste_masked_writable_list( //
-		Vector3i pos, //
-		Ref<godot::VoxelBuffer> p_voxels, //
-		uint8_t channels_mask, //
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		PackedInt32Array dst_mask_values //
+void VoxelToolMultipassGenerator::paste_masked_writable_list(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		PackedInt32Array dst_mask_values
 ) {
 	ZN_ASSERT_RETURN(p_voxels.is_valid());
 	ZN_ASSERT_RETURN(dst_mask_values.size() > 0);
 
 	const VoxelBuffer &src = p_voxels->get_buffer();
 
-	paste_to_chunked_storage_masked_writable_list(src, //
-			pos, //
-			_block_size_po2, //
-			channels_mask, //
-			GetPassInputBlock{ _pass_input }, //
-			src_mask_channel, //
-			src_mask_value, //
-			dst_mask_channel, //
-			to_span(dst_mask_values) //
+	paste_to_chunked_storage_masked_writable_list(
+			src,
+			pos,
+			_block_size_po2,
+			channels_mask,
+			GetPassInputBlock{ _pass_input },
+			src_mask_channel,
+			src_mask_value,
+			dst_mask_channel,
+			to_span(dst_mask_values)
 	);
 }
 
 Block *VoxelToolMultipassGenerator::get_block_and_relative_position(
-		Vector3i terrain_voxel_pos, Vector3i &out_voxel_rpos) const {
+		Vector3i terrain_voxel_pos,
+		Vector3i &out_voxel_rpos
+) const {
 	if (!_editable_voxel_box.contains(terrain_voxel_pos)) {
 		return nullptr;
 	}
