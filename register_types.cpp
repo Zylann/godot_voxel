@@ -338,7 +338,9 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 		const zylann::voxel::godot::VoxelEngine::Config config =
 				zylann::voxel::godot::VoxelEngine::get_config_from_godot();
+#ifdef TOOLS_ENABLED
 		CheckRefCountDoesNotChange::set_enabled(config.ownership_checks);
+#endif
 		VoxelEngine::create_singleton(config.inner);
 #if defined(ZN_GODOT)
 		// RenderingServer can be null with `tests=yes`.
