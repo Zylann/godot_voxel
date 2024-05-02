@@ -45,7 +45,10 @@ bool VoxelTerrainMultiplayerSynchronizer::is_server() const {
 }
 
 void VoxelTerrainMultiplayerSynchronizer::send_block(
-		int viewer_peer_id, const VoxelDataBlock &data_block, Vector3i bpos) {
+		int viewer_peer_id,
+		const VoxelDataBlock &data_block,
+		Vector3i bpos
+) {
 	ZN_PROFILE_SCOPE();
 
 	BlockSerializer::SerializeResult result = BlockSerializer::serialize_and_compress(data_block.get_voxels_const());
@@ -229,10 +232,12 @@ void VoxelTerrainMultiplayerSynchronizer::_b_receive_area(PackedByteArray messag
 	ZN_ASSERT_RETURN(BlockSerializer::decompress_and_deserialize(mr.data.sub(mr.pos, voxel_data_size), voxels));
 
 	_terrain->get_storage().paste(pos, voxels, 0xff, false);
-	_terrain->post_edit_area(Box3i(pos, voxels.get_size()),
+	_terrain->post_edit_area(
+			Box3i(pos, voxels.get_size()),
 			// Don't bother for now, update mesh regardless. If necessary we would have to add a flag with the message
 			// to tell it's not actually changing voxels (if it's metadata changes), but might not be worth it
-			true);
+			true
+	);
 }
 
 #ifdef TOOLS_ENABLED
@@ -263,8 +268,10 @@ void VoxelTerrainMultiplayerSynchronizer::get_configuration_warnings(PackedStrin
 			const VoxelTerrain *terrain = Object::cast_to<VoxelTerrain>(parent_node);
 			if (terrain != nullptr && terrain->get_multiplayer_synchronizer() != this) {
 				warnings.append(ZN_TTR("Only one instance of {0} should exist under a {1}")
-										.format(varray(VoxelTerrainMultiplayerSynchronizer::get_class_static(),
-												VoxelTerrain::get_class_static())));
+										.format(
+												varray(VoxelTerrainMultiplayerSynchronizer::get_class_static(),
+													   VoxelTerrain::get_class_static())
+										));
 			}
 		}
 	}
@@ -276,7 +283,8 @@ void VoxelTerrainMultiplayerSynchronizer::_bind_methods() {
 	// TODO These methods are not supposed to be exposed. They only exist for Godot's high-level multiplayer to find
 	// them.
 	ClassDB::bind_method(
-			D_METHOD("_rpc_receive_blocks", "data"), &VoxelTerrainMultiplayerSynchronizer::_b_receive_blocks);
+			D_METHOD("_rpc_receive_blocks", "data"), &VoxelTerrainMultiplayerSynchronizer::_b_receive_blocks
+	);
 	ClassDB::bind_method(D_METHOD("_rpc_receive_area", "data"), &VoxelTerrainMultiplayerSynchronizer::_b_receive_area);
 }
 

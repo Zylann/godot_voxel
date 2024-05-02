@@ -313,8 +313,10 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 
 #ifdef ZN_GODOT
 		if (RenderingDevice::get_singleton() != nullptr) {
-			ZN_PRINT_VERBOSE(format("TextureArray max layers: {}",
-					RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS)));
+			ZN_PRINT_VERBOSE(
+					format("TextureArray max layers: {}",
+						   RenderingDevice::get_singleton()->limit_get(RenderingDevice::LIMIT_MAX_TEXTURE_ARRAY_LAYERS))
+			);
 		}
 #else
 		// TODO GDX: Not possible to access the default `RenderingDevice` to query its limits
@@ -352,7 +354,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 			// `can_create_resources_async` but this is internal. AFAIK `is_low_end` will be `true` only for OpenGL
 			// backends, which are the only ones not supporting async resource creation.
 			VoxelEngine::get_singleton().set_threaded_graphics_resource_building_enabled(
-					RenderingServer::get_singleton()->is_low_end() == false);
+					RenderingServer::get_singleton()->is_low_end() == false
+			);
 		}
 #else
 		// TODO GDX: RenderingServer::is_low_end() is not exposed, can't tell if we can generate graphics resources in
@@ -363,7 +366,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		zylann::godot::add_singleton("VoxelEngine", zylann::voxel::godot::VoxelEngine::get_singleton());
 
 		VoxelMetadataFactory::get_singleton().add_constructor_by_type<zylann::voxel::godot::VoxelMetadataVariant>(
-				zylann::voxel::godot::METADATA_TYPE_VARIANT);
+				zylann::voxel::godot::METADATA_TYPE_VARIANT
+		);
 
 		VoxelMesherTransvoxel::load_static_resources();
 
@@ -532,8 +536,11 @@ void uninitialize_voxel_module(ModuleInitializationLevel p_level) {
 #ifdef ZN_GODOT_EXTENSION
 extern "C" {
 // Library entry point
-GDExtensionBool GDE_EXPORT voxel_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address,
-		GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+GDExtensionBool GDE_EXPORT voxel_library_init(
+		GDExtensionInterfaceGetProcAddress p_get_proc_address,
+		GDExtensionClassLibraryPtr p_library,
+		GDExtensionInitialization *r_initialization
+) {
 	godot::GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 
 	init_obj.register_initializer(initialize_voxel_module);
