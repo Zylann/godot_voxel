@@ -263,7 +263,7 @@ void VoxelTerrain::_on_stream_params_changed() {
 	reset_map();
 
 	if ((get_stream().is_valid() || get_generator().is_valid()) &&
-			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
+		(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor)) {
 		start_streamer();
 		start_updater();
 	}
@@ -537,10 +537,13 @@ void VoxelTerrain::save_all_modified_blocks(bool with_copy, std::shared_ptr<Asyn
 		_instancer->save_all_modified_blocks(task_scheduler, tracker, true);
 	}
 
-	consume_block_data_save_requests(task_scheduler, tracker,
+	consume_block_data_save_requests(
+			task_scheduler,
+			tracker,
 			// Require all data we just gathered to be written to disk if the stream uses a cache. So if the
 			// game crashes or gets killed after all tasks are done, data won't be lost.
-			true);
+			true
+	);
 
 	if (tracker != nullptr) {
 		// Using buffered count instead of `_blocks_to_save` because it can also contain tasks from VoxelInstancer
@@ -886,8 +889,13 @@ Vector3i get_block_center(Vector3i pos, int bs) {
 	return pos * bs + Vector3iUtil::create(bs / 2);
 }
 
-void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector3i block_position, int block_size,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D &volume_transform) {
+void init_sparse_grid_priority_dependency(
+		PriorityDependency &dep,
+		Vector3i block_position,
+		int block_size,
+		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D &volume_transform
+) {
 	const Vector3i voxel_pos = get_block_center(block_position, block_size);
 	const float block_radius = block_size / 2;
 	dep.shared = shared_viewers_data;
@@ -902,9 +910,16 @@ void init_sparse_grid_priority_dependency(PriorityDependency &dep, Vector3i bloc
 			math::squared(shared_viewers_data->highest_view_distance + 2.f * transformed_block_radius);
 }
 
-void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency> stream_dependency, Vector3i block_pos,
-		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data, const Transform3D volume_transform,
-		BufferedTaskScheduler &scheduler, bool use_gpu, const std::shared_ptr<VoxelData> &voxel_data) {
+void request_block_load(
+		VolumeID volume_id,
+		std::shared_ptr<StreamingDependency> stream_dependency,
+		Vector3i block_pos,
+		std::shared_ptr<PriorityDependency::ViewersData> &shared_viewers_data,
+		const Transform3D volume_transform,
+		BufferedTaskScheduler &scheduler,
+		bool use_gpu,
+		const std::shared_ptr<VoxelData> &voxel_data
+) {
 	ZN_ASSERT(stream_dependency != nullptr);
 
 	if (use_gpu && (stream_dependency->generator.is_null() || !stream_dependency->generator->supports_shaders())) {
@@ -916,11 +931,23 @@ void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency>
 	if (stream_dependency->stream.is_valid()) {
 		PriorityDependency priority_dependency;
 		init_sparse_grid_priority_dependency(
-				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
+				priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform
+		);
 
 		const bool request_instances = false;
-		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(volume_id, block_pos, 0, data_block_size, request_instances,
-				stream_dependency, priority_dependency, true, use_gpu, voxel_data, TaskCancellationToken()));
+		LoadBlockDataTask *task = ZN_NEW(LoadBlockDataTask(
+				volume_id,
+				block_pos,
+				0,
+				data_block_size,
+				request_instances,
+				stream_dependency,
+				priority_dependency,
+				true,
+				use_gpu,
+				voxel_data,
+				TaskCancellationToken()
+		));
 
 		scheduler.push_io_task(task);
 
@@ -937,7 +964,8 @@ void request_block_load(VolumeID volume_id, std::shared_ptr<StreamingDependency>
 		params.data = voxel_data;
 
 		init_sparse_grid_priority_dependency(
-				params.priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform);
+				params.priority_dependency, block_pos, data_block_size, shared_viewers_data, volume_transform
+		);
 
 		IThreadedTask *task = stream_dependency->generator->create_block_task(params);
 
@@ -990,8 +1018,16 @@ void VoxelTerrain::send_data_load_requests() {
 				// locking actually occurs!).
 
 			} else {
-				request_block_load(_volume_id, _streaming_dependency, block_pos, shared_viewers_data, volume_transform,
-						scheduler, _generator_use_gpu, _data);
+				request_block_load(
+						_volume_id,
+						_streaming_dependency,
+						block_pos,
+						shared_viewers_data,
+						volume_transform,
+						scheduler,
+						_generator_use_gpu,
+						_data
+				);
 			}
 		}
 		scheduler.flush();
@@ -999,8 +1035,11 @@ void VoxelTerrain::send_data_load_requests() {
 	}
 }
 
-void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_scheduler,
-		std::shared_ptr<AsyncDependencyTracker> saving_tracker, bool with_flush) {
+void VoxelTerrain::consume_block_data_save_requests(
+		BufferedTaskScheduler &task_scheduler,
+		std::shared_ptr<AsyncDependencyTracker> saving_tracker,
+		bool with_flush
+) {
 	ZN_PROFILE_SCOPE();
 
 	// Blocks to save
@@ -1009,7 +1048,8 @@ void VoxelTerrain::consume_block_data_save_requests(BufferedTaskScheduler &task_
 			ZN_PRINT_VERBOSE(format("Requesting save of block {}", b.position));
 
 			SaveBlockDataTask *task = ZN_NEW(SaveBlockDataTask(
-					_volume_id, b.position, 0, b.voxels, _streaming_dependency, saving_tracker, with_flush));
+					_volume_id, b.position, 0, b.voxels, _streaming_dependency, saving_tracker, with_flush
+			));
 
 			// No priority data, saving doesn't need sorting.
 			task_scheduler.push_io_task(task);
@@ -1085,12 +1125,12 @@ void VoxelTerrain::notify_data_block_enter(const VoxelDataBlock &block, Vector3i
 	_data_block_enter_info_obj->block_position = bpos;
 
 	if (!GDVIRTUAL_CALL(_on_data_block_entered, _data_block_enter_info_obj.get()) &&
-			_multiplayer_synchronizer == nullptr) {
+		_multiplayer_synchronizer == nullptr) {
 		WARN_PRINT_ONCE("VoxelTerrain::_on_data_block_entered is unimplemented!");
 	}
 
 	if (_multiplayer_synchronizer != nullptr && !Engine::get_singleton()->is_editor_hint() &&
-			network_peer_id != MultiplayerPeer::TARGET_PEER_SERVER && _multiplayer_synchronizer->is_server()) {
+		network_peer_id != MultiplayerPeer::TARGET_PEER_SERVER && _multiplayer_synchronizer->is_server()) {
 		_multiplayer_synchronizer->send_block(network_peer_id, block, bpos);
 	}
 }
@@ -1101,7 +1141,7 @@ void VoxelTerrain::process() {
 	if (get_generator_use_gpu()) {
 		Ref<VoxelGenerator> generator = get_generator();
 		if (generator.is_valid() && generator->supports_shaders() &&
-				generator->get_block_rendering_shader() == nullptr) {
+			generator->get_block_rendering_shader() == nullptr) {
 			generator->compile_shaders();
 		}
 	}
@@ -1203,9 +1243,11 @@ void VoxelTerrain::process_viewers() {
 				PairedViewer::State &state = paired_viewer.state;
 
 				const unsigned int view_distance_voxels_h = static_cast<unsigned int>(
-						static_cast<float>(viewer.view_distances.horizontal) * view_distance_scale);
+						static_cast<float>(viewer.view_distances.horizontal) * view_distance_scale
+				);
 				const unsigned int view_distance_voxels_v = static_cast<unsigned int>(
-						static_cast<float>(viewer.view_distances.vertical) * view_distance_scale);
+						static_cast<float>(viewer.view_distances.vertical) * view_distance_scale
+				);
 
 				const Vector3 local_position = world_to_local_transform.xform(viewer.world_position);
 
@@ -1241,9 +1283,14 @@ void VoxelTerrain::process_viewers() {
 					view_distance_data_blocks_v = view_distance_mesh_blocks_v * render_to_data_factor + 1;
 
 					data_block_pos = mesh_block_pos * render_to_data_factor;
-					state.mesh_box = Box3i::from_center_extents(mesh_block_pos,
-							Vector3i(view_distance_mesh_blocks_h, view_distance_mesh_blocks_v,
-									view_distance_mesh_blocks_h))
+					state.mesh_box = Box3i::from_center_extents(
+											 mesh_block_pos,
+											 Vector3i(
+													 view_distance_mesh_blocks_h,
+													 view_distance_mesh_blocks_v,
+													 view_distance_mesh_blocks_h
+											 )
+					)
 											 .clipped(bounds_in_mesh_blocks);
 
 				} else {
@@ -1254,22 +1301,28 @@ void VoxelTerrain::process_viewers() {
 					state.mesh_box = Box3i();
 				}
 
-				state.data_box = Box3i::from_center_extents(data_block_pos,
-						Vector3i(view_distance_data_blocks_h, view_distance_data_blocks_v, view_distance_data_blocks_h))
+				state.data_box = Box3i::from_center_extents(
+										 data_block_pos,
+										 Vector3i(
+												 view_distance_data_blocks_h,
+												 view_distance_data_blocks_v,
+												 view_distance_data_blocks_h
+										 )
+				)
 										 .clipped(bounds_in_data_blocks);
 			}
 		};
 
 		// New viewers and updates. Removed viewers won't be iterated but are still paired until later.
-		UpdatePairedViewer u{ *this, bounds_in_data_blocks, bounds_in_mesh_blocks, world_to_local_transform,
-			view_distance_scale };
+		UpdatePairedViewer u{
+			*this, bounds_in_data_blocks, bounds_in_mesh_blocks, world_to_local_transform, view_distance_scale
+		};
 		VoxelEngine::get_singleton().for_each_viewer(u);
 	}
 
-	const bool can_load_blocks =
-			((_automatic_loading_enabled &&
-					 (_multiplayer_synchronizer == nullptr || _multiplayer_synchronizer->is_server())) &&
-					(get_stream().is_valid() || get_generator().is_valid())) &&
+	const bool can_load_blocks = ((_automatic_loading_enabled &&
+								   (_multiplayer_synchronizer == nullptr || _multiplayer_synchronizer->is_server())) &&
+								  (get_stream().is_valid() || get_generator().is_valid())) &&
 			(Engine::get_singleton()->is_editor_hint() == false || _run_stream_in_editor);
 
 	// Find out which blocks need to appear and which need to be unloaded
@@ -1303,7 +1356,8 @@ void VoxelTerrain::process_viewers() {
 					prev_mesh_box.difference(new_mesh_box, [this, &viewer](Box3i out_of_range_box) {
 						out_of_range_box.for_each_cell([this, &viewer](Vector3i bpos) {
 							unview_mesh_block(
-									bpos, viewer.prev_state.requires_meshes, viewer.prev_state.requires_collisions);
+									bpos, viewer.prev_state.requires_meshes, viewer.prev_state.requires_collisions
+							);
 						});
 					});
 
@@ -1374,7 +1428,11 @@ void VoxelTerrain::process_viewers() {
 }
 
 void VoxelTerrain::process_viewer_data_box_change(
-		ViewerID viewer_id, Box3i prev_data_box, Box3i new_data_box, bool can_load_blocks) {
+		ViewerID viewer_id,
+		Box3i prev_data_box,
+		Box3i new_data_box,
+		bool can_load_blocks
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(prev_data_box != new_data_box);
 
@@ -1402,8 +1460,13 @@ void VoxelTerrain::process_viewer_data_box_change(
 		// Decrement refcounts from loaded blocks, and unload them
 		prev_data_box.difference(new_data_box, [this, may_save](Box3i out_of_range_box) {
 			// ZN_PRINT_VERBOSE(format("Unview data box {}", out_of_range_box));
-			_data->unview_area(out_of_range_box, 0, &tls_found_blocks_positions, &tls_missing_blocks,
-					may_save ? &_blocks_to_save : nullptr);
+			_data->unview_area(
+					out_of_range_box,
+					0,
+					&tls_found_blocks_positions,
+					&tls_missing_blocks,
+					may_save ? &_blocks_to_save : nullptr
+			);
 		});
 
 		// Temporarily store unloaded blocks in a map until saving completes
@@ -1452,7 +1515,7 @@ void VoxelTerrain::process_viewer_data_box_change(
 	if (can_load_blocks) {
 		const bool require_notifications =
 				(_block_enter_notification_enabled ||
-						(_multiplayer_synchronizer != nullptr && _multiplayer_synchronizer->is_server())) &&
+				 (_multiplayer_synchronizer != nullptr && _multiplayer_synchronizer->is_server())) &&
 				VoxelEngine::get_singleton().viewer_exists(viewer_id) && // Could be a destroyed viewer
 				VoxelEngine::get_singleton().is_viewer_requiring_data_block_notifications(viewer_id);
 
@@ -1534,8 +1597,10 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		return;
 	}
 
-	CRASH_COND(ob.type != VoxelEngine::BlockDataOutput::TYPE_LOADED &&
-			ob.type != VoxelEngine::BlockDataOutput::TYPE_GENERATED);
+	CRASH_COND(
+			ob.type != VoxelEngine::BlockDataOutput::TYPE_LOADED &&
+			ob.type != VoxelEngine::BlockDataOutput::TYPE_GENERATED
+	);
 
 	const Vector3i block_pos = ob.position;
 
@@ -1546,9 +1611,14 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 		}
 		// That block was cancelled, but we are still expecting it.
 		// We'll have to request it again.
-		ZN_PRINT_VERBOSE(format("Received a block loading drop while we were still expecting it: "
-								"lod{} ({}, {}, {}), re-requesting it",
-				int(ob.lod_index), ob.position.x, ob.position.y, ob.position.z));
+		ZN_PRINT_VERBOSE(
+				format("Received a block loading drop while we were still expecting it: "
+					   "lod{} ({}, {}, {}), re-requesting it",
+					   int(ob.lod_index),
+					   ob.position.x,
+					   ob.position.y,
+					   ob.position.z)
+		);
 
 		++_stats.dropped_block_loads;
 
@@ -1582,13 +1652,18 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 
 	if (block.has_voxels() && block.get_voxels_const().get_size() != Vector3iUtil::create(_data->get_block_size())) {
 		// Voxel block size is incorrect, drop it
-		ZN_PRINT_ERROR(format("Block is different from expected size. Expected {}, got {}",
-				Vector3iUtil::create(_data->get_block_size()), block.get_voxels_const().get_size()));
+		ZN_PRINT_ERROR(
+				format("Block is different from expected size. Expected {}, got {}",
+					   Vector3iUtil::create(_data->get_block_size()),
+					   block.get_voxels_const().get_size())
+		);
 		++_stats.dropped_block_loads;
 		return;
 	}
 
-	_data->try_set_block(block_pos, block,
+	_data->try_set_block(
+			block_pos,
+			block,
 			[
 #ifdef DEBUG_ENABLED
 					block_pos
@@ -1599,7 +1674,8 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 #endif
 				existing_block.set_voxels(incoming_block.get_voxels_shared());
 				existing_block.set_edited(incoming_block.is_edited());
-			});
+			}
+	);
 
 	emit_data_block_loaded(block_pos);
 
@@ -1612,7 +1688,8 @@ void VoxelTerrain::apply_data_block_response(VoxelEngine::BlockDataOutput &ob) {
 	// TODO Optimize: initial loading can hang for a while here.
 	// Because lots of blocks are loaded at once, which leads to many block queries.
 	try_schedule_mesh_update_from_data(
-			Box3i(_data->block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size())));
+			Box3i(_data->block_to_voxel(block_pos), Vector3iUtil::create(get_data_block_size()))
+	);
 
 	// We might have requested some blocks again (if we got a dropped one while we still need them)
 	// if (stream_enabled) {
@@ -1632,10 +1709,13 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 	ERR_FAIL_COND_V(voxel_data == nullptr, false);
 
 	const Vector3i expected_block_size = Vector3iUtil::create(_data->get_block_size());
-	ERR_FAIL_COND_V_MSG(voxel_data->get_size() != expected_block_size, false,
+	ERR_FAIL_COND_V_MSG(
+			voxel_data->get_size() != expected_block_size,
+			false,
 			String("Block size is different from expected size. "
 				   "Expected {0}, got {1}")
-					.format(varray(expected_block_size, voxel_data->get_size())));
+					.format(varray(expected_block_size, voxel_data->get_size()))
+	);
 
 	// Setup viewers count intersecting with this block
 	RefCount refcount;
@@ -1670,7 +1750,8 @@ bool VoxelTerrain::try_set_block_data(Vector3i position, std::shared_ptr<VoxelBu
 
 	// The block itself might not be suitable for meshing yet, but blocks surrounding it might be now
 	try_schedule_mesh_update_from_data(
-			Box3i(_data->block_to_voxel(position), Vector3iUtil::create(get_data_block_size())));
+			Box3i(_data->block_to_voxel(position), Vector3iUtil::create(get_data_block_size()))
+	);
 
 	return true;
 }
@@ -1749,8 +1830,13 @@ void VoxelTerrain::process_meshing() {
 		}
 #endif
 
-		init_sparse_grid_priority_dependency(task->priority_dependency, task->mesh_block_position,
-				get_mesh_block_size(), shared_viewers_data, volume_transform);
+		init_sparse_grid_priority_dependency(
+				task->priority_dependency,
+				task->mesh_block_position,
+				get_mesh_block_size(),
+				shared_viewers_data,
+				volume_transform
+		);
 
 		scheduler.push_main_task(task);
 
@@ -1803,8 +1889,12 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	} else {
 		// Can't build meshes in threads, do it here
 		material_indices.clear();
-		mesh = build_mesh(to_span_const(ob.surfaces.surfaces), ob.surfaces.primitive_type, ob.surfaces.mesh_flags,
-				material_indices);
+		mesh = build_mesh(
+				to_span_const(ob.surfaces.surfaces),
+				ob.surfaces.primitive_type,
+				ob.surfaces.mesh_flags,
+				material_indices
+		);
 	}
 	if (mesh.is_valid()) {
 		const unsigned int surface_count = mesh->get_surface_count();
@@ -1831,7 +1921,8 @@ void VoxelTerrain::apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob) {
 	}
 
 	block->set_mesh(
-			mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()), get_render_layers_mask());
+			mesh, get_gi_mode(), RenderingServer::ShadowCastingSetting(get_shadow_casting()), get_render_layers_mask()
+	);
 
 	if (_material_override.is_valid()) {
 		block->set_material_override(_material_override);
@@ -2027,7 +2118,8 @@ void VoxelTerrain::process_debug_draw() {
 			const Vector3 margin = Vector3(1, 1, 1) * bounds_in_voxels_len * 0.0025f;
 			const Vector3 size = bounds_in_voxels.size;
 			const Transform3D local_transform(
-					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.position) - margin);
+					Basis().scaled(size + margin * 2.f), Vector3(bounds_in_voxels.position) - margin
+			);
 			dr.draw_box(parent_transform * local_transform, Color(1, 1, 1));
 		}
 	}
@@ -2081,9 +2173,12 @@ bool VoxelTerrain::_b_try_set_block_data(Vector3i position, Ref<godot::VoxelBuff
 	const StringName &key = VoxelStringNames::get_singleton()._voxel_debug_vt_position;
 	if (voxel_data->has_meta(key)) {
 		const Vector3i meta_pos = voxel_data->get_meta(key);
-		ERR_FAIL_COND_V_MSG(meta_pos != position, false,
+		ERR_FAIL_COND_V_MSG(
+				meta_pos != position,
+				false,
 				String("Setting the same {0} at different positions is not supported")
-						.format(varray(godot::VoxelBuffer::get_class_static())));
+						.format(varray(godot::VoxelBuffer::get_class_static()))
+		);
 	} else {
 		voxel_data->set_meta(key, position);
 	}
@@ -2117,74 +2212,77 @@ bool VoxelTerrain::_b_is_area_meshed(AABB aabb) const {
 }
 
 void VoxelTerrain::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_material_override", "material"), &VoxelTerrain::set_material_override);
-	ClassDB::bind_method(D_METHOD("get_material_override"), &VoxelTerrain::get_material_override);
+	using Self = VoxelTerrain;
 
-	ClassDB::bind_method(D_METHOD("set_max_view_distance", "distance_in_voxels"), &VoxelTerrain::set_max_view_distance);
-	ClassDB::bind_method(D_METHOD("get_max_view_distance"), &VoxelTerrain::get_max_view_distance);
+	ClassDB::bind_method(D_METHOD("set_material_override", "material"), &Self::set_material_override);
+	ClassDB::bind_method(D_METHOD("get_material_override"), &Self::get_material_override);
 
-	ClassDB::bind_method(D_METHOD("set_block_enter_notification_enabled", "enabled"),
-			&VoxelTerrain::set_block_enter_notification_enabled);
-	ClassDB::bind_method(
-			D_METHOD("is_block_enter_notification_enabled"), &VoxelTerrain::is_block_enter_notification_enabled);
-
-	ClassDB::bind_method(D_METHOD("set_area_edit_notification_enabled", "enabled"),
-			&VoxelTerrain::set_area_edit_notification_enabled);
-	ClassDB::bind_method(
-			D_METHOD("is_area_edit_notification_enabled"), &VoxelTerrain::is_area_edit_notification_enabled);
-
-	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &VoxelTerrain::get_generate_collisions);
-	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &VoxelTerrain::set_generate_collisions);
-
-	ClassDB::bind_method(D_METHOD("get_collision_layer"), &VoxelTerrain::get_collision_layer);
-	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &VoxelTerrain::set_collision_layer);
-
-	ClassDB::bind_method(D_METHOD("get_collision_mask"), &VoxelTerrain::get_collision_mask);
-	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &VoxelTerrain::set_collision_mask);
-
-	ClassDB::bind_method(D_METHOD("get_collision_margin"), &VoxelTerrain::get_collision_margin);
-	ClassDB::bind_method(D_METHOD("set_collision_margin", "margin"), &VoxelTerrain::set_collision_margin);
-
-	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &VoxelTerrain::_b_voxel_to_data_block);
-	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &VoxelTerrain::_b_data_block_to_voxel);
-
-	ClassDB::bind_method(D_METHOD("get_data_block_size"), &VoxelTerrain::get_data_block_size);
-
-	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &VoxelTerrain::get_mesh_block_size);
-	ClassDB::bind_method(D_METHOD("set_mesh_block_size", "size"), &VoxelTerrain::set_mesh_block_size);
-
-	ClassDB::bind_method(D_METHOD("get_statistics"), &VoxelTerrain::_b_get_statistics);
-	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &VoxelTerrain::get_voxel_tool);
-
-	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &VoxelTerrain::_b_save_modified_blocks);
-	ClassDB::bind_method(D_METHOD("save_block", "position"), &VoxelTerrain::_b_save_block);
-
-	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor", "enable"), &VoxelTerrain::set_run_stream_in_editor);
-	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &VoxelTerrain::is_stream_running_in_editor);
+	ClassDB::bind_method(D_METHOD("set_max_view_distance", "distance_in_voxels"), &Self::set_max_view_distance);
+	ClassDB::bind_method(D_METHOD("get_max_view_distance"), &Self::get_max_view_distance);
 
 	ClassDB::bind_method(
-			D_METHOD("set_automatic_loading_enabled", "enable"), &VoxelTerrain::set_automatic_loading_enabled);
-	ClassDB::bind_method(D_METHOD("is_automatic_loading_enabled"), &VoxelTerrain::is_automatic_loading_enabled);
+			D_METHOD("set_block_enter_notification_enabled", "enabled"), &Self::set_block_enter_notification_enabled
+	);
+	ClassDB::bind_method(D_METHOD("is_block_enter_notification_enabled"), &Self::is_block_enter_notification_enabled);
 
-	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enable"), &VoxelTerrain::set_generator_use_gpu);
-	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &VoxelTerrain::get_generator_use_gpu);
+	ClassDB::bind_method(
+			D_METHOD("set_area_edit_notification_enabled", "enabled"), &Self::set_area_edit_notification_enabled
+	);
+	ClassDB::bind_method(D_METHOD("is_area_edit_notification_enabled"), &Self::is_area_edit_notification_enabled);
+
+	ClassDB::bind_method(D_METHOD("get_generate_collisions"), &Self::get_generate_collisions);
+	ClassDB::bind_method(D_METHOD("set_generate_collisions", "enabled"), &Self::set_generate_collisions);
+
+	ClassDB::bind_method(D_METHOD("get_collision_layer"), &Self::get_collision_layer);
+	ClassDB::bind_method(D_METHOD("set_collision_layer", "layer"), &Self::set_collision_layer);
+
+	ClassDB::bind_method(D_METHOD("get_collision_mask"), &Self::get_collision_mask);
+	ClassDB::bind_method(D_METHOD("set_collision_mask", "mask"), &Self::set_collision_mask);
+
+	ClassDB::bind_method(D_METHOD("get_collision_margin"), &Self::get_collision_margin);
+	ClassDB::bind_method(D_METHOD("set_collision_margin", "margin"), &Self::set_collision_margin);
+
+	ClassDB::bind_method(D_METHOD("voxel_to_data_block", "voxel_pos"), &Self::_b_voxel_to_data_block);
+	ClassDB::bind_method(D_METHOD("data_block_to_voxel", "block_pos"), &Self::_b_data_block_to_voxel);
+
+	ClassDB::bind_method(D_METHOD("get_data_block_size"), &Self::get_data_block_size);
+
+	ClassDB::bind_method(D_METHOD("get_mesh_block_size"), &Self::get_mesh_block_size);
+	ClassDB::bind_method(D_METHOD("set_mesh_block_size", "size"), &Self::set_mesh_block_size);
+
+	ClassDB::bind_method(D_METHOD("get_statistics"), &Self::_b_get_statistics);
+	ClassDB::bind_method(D_METHOD("get_voxel_tool"), &Self::get_voxel_tool);
+
+	ClassDB::bind_method(D_METHOD("save_modified_blocks"), &Self::_b_save_modified_blocks);
+	ClassDB::bind_method(D_METHOD("save_block", "position"), &Self::_b_save_block);
+
+	ClassDB::bind_method(D_METHOD("set_run_stream_in_editor", "enable"), &Self::set_run_stream_in_editor);
+	ClassDB::bind_method(D_METHOD("is_stream_running_in_editor"), &Self::is_stream_running_in_editor);
+
+	ClassDB::bind_method(D_METHOD("set_automatic_loading_enabled", "enable"), &Self::set_automatic_loading_enabled);
+	ClassDB::bind_method(D_METHOD("is_automatic_loading_enabled"), &Self::is_automatic_loading_enabled);
+
+	ClassDB::bind_method(D_METHOD("set_generator_use_gpu", "enable"), &Self::set_generator_use_gpu);
+	ClassDB::bind_method(D_METHOD("get_generator_use_gpu"), &Self::get_generator_use_gpu);
 
 	// TODO Rename `_voxel_bounds`
-	ClassDB::bind_method(D_METHOD("set_bounds", "bounds"), &VoxelTerrain::_b_set_bounds);
-	ClassDB::bind_method(D_METHOD("get_bounds"), &VoxelTerrain::_b_get_bounds);
+	ClassDB::bind_method(D_METHOD("set_bounds", "bounds"), &Self::_b_set_bounds);
+	ClassDB::bind_method(D_METHOD("get_bounds"), &Self::_b_get_bounds);
 
-	ClassDB::bind_method(D_METHOD("try_set_block_data", "position", "voxels"), &VoxelTerrain::_b_try_set_block_data);
+	ClassDB::bind_method(D_METHOD("try_set_block_data", "position", "voxels"), &Self::_b_try_set_block_data);
 
-	ClassDB::bind_method(D_METHOD("get_viewer_network_peer_ids_in_area", "area_origin", "area_size"),
-			&VoxelTerrain::_b_get_viewer_network_peer_ids_in_area);
+	ClassDB::bind_method(
+			D_METHOD("get_viewer_network_peer_ids_in_area", "area_origin", "area_size"),
+			&Self::_b_get_viewer_network_peer_ids_in_area
+	);
 
-	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &VoxelTerrain::has_data_block);
-	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels"), &VoxelTerrain::_b_is_area_meshed);
+	ClassDB::bind_method(D_METHOD("has_data_block", "block_position"), &Self::has_data_block);
+	ClassDB::bind_method(D_METHOD("is_area_meshed", "area_in_voxels"), &Self::_b_is_area_meshed);
 
-	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &VoxelTerrain::debug_set_draw_enabled);
-	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &VoxelTerrain::debug_is_draw_enabled);
-	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &VoxelTerrain::debug_set_draw_flag);
-	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &VoxelTerrain::debug_get_draw_flag);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_enabled", "enabled"), &Self::debug_set_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_is_draw_enabled"), &Self::debug_is_draw_enabled);
+	ClassDB::bind_method(D_METHOD("debug_set_draw_flag", "flag_index", "enabled"), &Self::debug_set_draw_flag);
+	ClassDB::bind_method(D_METHOD("debug_get_draw_flag", "flag_index"), &Self::debug_get_draw_flag);
 
 #ifdef ZN_GODOT
 	GDVIRTUAL_BIND(_on_data_block_entered, "info");
@@ -2199,37 +2297,64 @@ void VoxelTerrain::_bind_methods() {
 	ADD_GROUP("Collisions", "");
 
 	ADD_PROPERTY(
-			PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_layer",
-			"get_collision_layer");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_collision_mask",
-			"get_collision_mask");
+			PropertyInfo(Variant::BOOL, "generate_collisions"), "set_generate_collisions", "get_generate_collisions"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_layer", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_layer",
+			"get_collision_layer"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "collision_mask", PROPERTY_HINT_LAYERS_3D_PHYSICS),
+			"set_collision_mask",
+			"get_collision_mask"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "collision_margin"), "set_collision_margin", "get_collision_margin");
 
 	ADD_GROUP("Materials", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material_override", PROPERTY_HINT_RESOURCE_TYPE,
-						 String("{0},{1}").format(
-								 varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static()))),
-			"set_material_override", "get_material_override");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT,
+					"material_override",
+					PROPERTY_HINT_RESOURCE_TYPE,
+					String("{0},{1}").format(
+							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
+					)
+			),
+			"set_material_override",
+			"get_material_override"
+	);
 
 	ADD_GROUP("Networking", "");
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "block_enter_notification_enabled"),
-			"set_block_enter_notification_enabled", "is_block_enter_notification_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "block_enter_notification_enabled"),
+			"set_block_enter_notification_enabled",
+			"is_block_enter_notification_enabled"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "area_edit_notification_enabled"), "set_area_edit_notification_enabled",
-			"is_area_edit_notification_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "area_edit_notification_enabled"),
+			"set_area_edit_notification_enabled",
+			"is_area_edit_notification_enabled"
+	);
 
 	// This may be set to false in multiplayer designs where the server is the one sending the blocks
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "automatic_loading_enabled"), "set_automatic_loading_enabled",
-			"is_automatic_loading_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "automatic_loading_enabled"),
+			"set_automatic_loading_enabled",
+			"is_automatic_loading_enabled"
+	);
 
 	ADD_GROUP("Advanced", "");
 
 	// TODO Should probably be in the parent class?
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "run_stream_in_editor"), "set_run_stream_in_editor",
-			"is_stream_running_in_editor");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "run_stream_in_editor"),
+			"set_run_stream_in_editor",
+			"is_stream_running_in_editor"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mesh_block_size"), "set_mesh_block_size", "get_mesh_block_size");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_gpu_generation"), "set_generator_use_gpu", "get_generator_use_gpu");
 
@@ -2240,12 +2365,19 @@ void VoxelTerrain::_bind_methods() {
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_VOLUME_BOUNDS);
 	BIND_ENUM_CONSTANT(DEBUG_DRAW_FLAGS_COUNT);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_draw_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
-			"debug_set_draw_enabled", "debug_is_draw_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "debug_draw_enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),
+			"debug_set_draw_enabled",
+			"debug_is_draw_enabled"
+	);
 
 #define ADD_DEBUG_DRAW_FLAG(m_name, m_flag)                                                                            \
-	ADD_PROPERTYI(PropertyInfo(Variant::BOOL, m_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),                  \
-			"debug_set_draw_flag", "debug_get_draw_flag", m_flag);
+	ADD_PROPERTYI(                                                                                                     \
+			PropertyInfo(Variant::BOOL, m_name, PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR),                        \
+			"debug_set_draw_flag",                                                                                     \
+			"debug_get_draw_flag",                                                                                     \
+			m_flag                                                                                                     \
+	);
 
 	ADD_DEBUG_DRAW_FLAG("debug_draw_volume_bounds", DEBUG_DRAW_VOLUME_BOUNDS);
 
