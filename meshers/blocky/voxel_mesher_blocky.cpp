@@ -38,17 +38,6 @@ void copy(const VoxelBlockyModel::BakedData::SideSurface &src, VoxelBlockyModel:
 	copy(src.tangents, dst.tangents);
 }
 
-void copy(const VoxelBlockyModel::BakedData::Surface &src, VoxelBlockyModel::BakedData::Surface &dst) {
-	copy(src.positions, dst.positions);
-	copy(src.normals, dst.normals);
-	copy(src.uvs, dst.uvs);
-	copy(src.indices, dst.indices);
-	copy(src.tangents, dst.tangents);
-
-	dst.material_id = src.material_id;
-	dst.collision_enabled = src.collision_enabled;
-}
-
 void copy(
 		const VoxelBlockyModel::BakedData::SideSurface &src,
 		const Vector3f normal,
