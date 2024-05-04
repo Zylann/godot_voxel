@@ -14,6 +14,7 @@
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
 #include "../voxel_blocky_library_base.h"
+#include "../voxel_blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 
@@ -361,7 +362,7 @@ void VoxelBlockyType::bake(
 
 		if (model.is_valid()) {
 			// Variant specified explicitely, just use it
-			model->bake(baked_model, bake_tangents, material_indexer);
+			model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
 
 		} else if (_automatic_rotations && rotation_attribute.is_valid()) {
 			// Not specified, but the type has a rotation attribute.
@@ -397,12 +398,12 @@ void VoxelBlockyType::bake(
 					get_baking_rotation_ortho_basis(rotation_attribute, key.attribute_values[rotation_attribute_index]);
 			Ref<VoxelBlockyModel> temp_model = ref_model->duplicate();
 			temp_model->rotate_ortho(trans_basis);
-			temp_model->bake(baked_model, bake_tangents, material_indexer);
+			temp_model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
 
 		} else {
 			// No variant specified, use base model.
 			if (_base_model.is_valid()) {
-				_base_model->bake(baked_model, bake_tangents, material_indexer);
+				_base_model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
 			} else if (print_warnings) {
 				WARN_PRINT(
 						String("No model found for variant {0} when baking {1} with name {2}. The model will be empty.")

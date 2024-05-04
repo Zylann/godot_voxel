@@ -11,6 +11,7 @@
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string/format.h"
 #include "voxel_blocky_library.h"
+#include "voxel_blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 
@@ -423,10 +424,15 @@ void bake_mesh_geometry(
 
 } // namespace
 
-void VoxelBlockyModelMesh::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
+	VoxelBlockyModel::BakedData &baked_data = ctx.model;
+	VoxelBlockyModel::MaterialIndexer &materials = ctx.material_indexer;
+
 	baked_data.clear();
-	bake_mesh_geometry(*this, baked_data, bake_tangents, materials, _side_vertex_tolerance, _side_cutout_enabled);
-	VoxelBlockyModel::bake(baked_data, bake_tangents, materials);
+	bake_mesh_geometry(
+			*this, baked_data, ctx.tangents_enabled, materials, _side_vertex_tolerance, _side_cutout_enabled
+	);
+	VoxelBlockyModel::bake(ctx);
 }
 
 bool VoxelBlockyModelMesh::is_empty() const {

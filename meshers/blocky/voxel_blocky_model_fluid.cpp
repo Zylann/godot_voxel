@@ -2,6 +2,7 @@
 // #include "../../util/godot/classes/object.h"
 // #include "../../util/string/format.h"
 #include "../../util/godot/core/array.h"
+#include "voxel_blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 
@@ -23,7 +24,7 @@ int VoxelBlockyModelFluid::get_level() const {
 	return _level;
 }
 
-void VoxelBlockyModelFluid::bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const {
+void VoxelBlockyModelFluid::bake(blocky::ModelBakingContext &ctx) const {
 	// Fluids are baked differently
 }
 

@@ -14,7 +14,7 @@ public:
 		return _mesh;
 	}
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	void bake(blocky::ModelBakingContext &ctx) const override;
 	bool is_empty() const override;
 
 	void set_mesh_ortho_rotation_index(int i);

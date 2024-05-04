@@ -13,6 +13,7 @@
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "voxel_blocky_model_baking_context.h"
 #include "voxel_blocky_model_cube.h"
 #include "voxel_blocky_model_empty.h"
 #include "voxel_blocky_model_fluid.h"
@@ -186,7 +187,7 @@ void VoxelBlockyLibrary::bake() {
 		}
 
 		if (config.is_valid()) {
-			config->bake(baked_model, _bake_tangents, materials);
+			config->bake(blocky::ModelBakingContext{ baked_model, _bake_tangents, materials });
 
 		} else {
 			baked_model.clear();

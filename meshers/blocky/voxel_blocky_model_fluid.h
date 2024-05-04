@@ -20,7 +20,7 @@ public:
 	void set_level(int level);
 	int get_level() const;
 
-	void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const override;
+	void bake(blocky::ModelBakingContext &ctx) const override;
 
 	// #ifdef TOOLS_ENABLED
 	// 	void get_configuration_warnings(PackedStringArray &warnings);

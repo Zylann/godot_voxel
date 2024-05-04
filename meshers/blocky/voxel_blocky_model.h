@@ -13,6 +13,10 @@
 
 namespace zylann::voxel {
 
+namespace blocky {
+struct ModelBakingContext;
+}
+
 // TODO Add preview in inspector showing collision boxes
 
 // Visuals and collisions corresponding to a specific voxel value/state, for use with `VoxelMesherBlocky`.
@@ -192,7 +196,7 @@ public:
 		unsigned int get_or_create_index(const Ref<Material> &p_material);
 	};
 
-	virtual void bake(BakedData &baked_data, bool bake_tangents, MaterialIndexer &materials) const;
+	virtual void bake(blocky::ModelBakingContext &ctx) const;
 
 	Span<const AABB> get_collision_aabbs() const {
 		return to_span(_collision_aabbs);
