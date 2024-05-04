@@ -137,9 +137,7 @@ void VoxelBlockyModel::_get_property_list(List<PropertyInfo> *p_list) const {
 					Variant::OBJECT,
 					String("material_override_{0}").format(varray(i)),
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			));
 		}
 

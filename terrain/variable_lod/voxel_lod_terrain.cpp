@@ -3711,9 +3711,7 @@ void VoxelLodTerrain::_bind_methods() {
 					Variant::OBJECT,
 					"material",
 					PROPERTY_HINT_RESOURCE_TYPE,
-					String("{0},{1}").format(
-							varray(BaseMaterial3D::get_class_static(), ShaderMaterial::get_class_static())
-					)
+					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
 			"set_material",
 			"get_material"
