@@ -195,7 +195,11 @@ private:
 	void process();
 	void process_viewers();
 	void process_viewer_data_box_change(
-			ViewerID viewer_id, Box3i prev_data_box, Box3i new_data_box, bool can_load_blocks);
+			ViewerID viewer_id,
+			Box3i prev_data_box,
+			Box3i new_data_box,
+			bool can_load_blocks
+	);
 	// void process_received_data_blocks();
 	void process_meshing();
 	void apply_mesh_update(const VoxelEngine::BlockMeshOutput &ob);
@@ -224,8 +228,11 @@ private:
 	void save_all_modified_blocks(bool with_copy, std::shared_ptr<AsyncDependencyTracker> tracker);
 	void get_viewer_pos_and_direction(Vector3 &out_pos, Vector3 &out_direction) const;
 	void send_data_load_requests();
-	void consume_block_data_save_requests(BufferedTaskScheduler &task_scheduler,
-			std::shared_ptr<AsyncDependencyTracker> saving_tracker, bool with_flush);
+	void consume_block_data_save_requests(
+			BufferedTaskScheduler &task_scheduler,
+			std::shared_ptr<AsyncDependencyTracker> saving_tracker,
+			bool with_flush
+	);
 
 	void emit_data_block_loaded(Vector3i bpos);
 	void emit_data_block_unloaded(Vector3i bpos);

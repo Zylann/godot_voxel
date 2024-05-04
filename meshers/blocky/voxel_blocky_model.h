@@ -270,7 +270,8 @@ private:
 
 inline bool is_empty(
 		const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-				&surfaces) {
+				&surfaces
+) {
 	for (const VoxelBlockyModel::BakedData::SideSurface &surface : surfaces) {
 		if (surface.indices.size() > 0) {
 			return false;

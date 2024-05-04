@@ -361,7 +361,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
 		for (const FixedArray<BakedData::SideSurface, BakedData::Model::MAX_SURFACES> &side_surfaces :
-				model.sides_surfaces) {
+			 model.sides_surfaces) {
 			const BakedData::SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();
