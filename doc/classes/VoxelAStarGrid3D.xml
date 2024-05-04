@@ -55,7 +55,7 @@
 	</methods>
 	<signals>
 		<signal name="async_search_completed">
-			<param index="0" name="name" type="Vector3i[]" />
+			<param index="0" name="path" type="Vector3i[]" />
 			<description>
 			</description>
 		</signal>
