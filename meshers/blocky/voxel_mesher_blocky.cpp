@@ -31,14 +31,22 @@ StdVector<int> &get_tls_index_offsets() {
 	return tls_index_offsets;
 }
 
-void copy(const VoxelBlockyModel::BakedData::SideSurface &src, VoxelBlockyModel::BakedData::SideSurface &dst) {
+void copy(
+		const VoxelBlockyModel::BakedData::SideSurface &src,
+		Vector2f src_uv,
+		VoxelBlockyModel::BakedData::SideSurface &dst
+) {
 	copy(src.positions, dst.positions);
-	copy(src.uvs, dst.uvs);
+
+	dst.uvs.resize(src.positions.size());
+	fill(dst.uvs, src_uv);
+
 	copy(src.indices, dst.indices);
+	// TODO Aren't tangents always the same on sides too? Like normals?
 	copy(src.tangents, dst.tangents);
 }
 
-void copy(
+void copy_positions_normals_tangents(
 		const VoxelBlockyModel::BakedData::SideSurface &src,
 		const Vector3f normal,
 		const uint32_t p_material_id,
@@ -51,7 +59,7 @@ void copy(
 	fill(dst.normals, normal);
 	// std::fill(dst.normals.begin(), dst.normals.end(), normal);
 
-	copy(src.uvs, dst.uvs);
+	// copy(src.uvs, dst.uvs);
 	copy(src.indices, dst.indices);
 	copy(src.tangents, dst.tangents);
 
@@ -59,15 +67,69 @@ void copy(
 	dst.collision_enabled = p_collision_enabled;
 }
 
-FixedArray<float, 4> fluid_levels_to_heights(
+static const VoxelBlockyFluid::FlowState g_min_corners_mask_to_flowstate[16] = {
+	// 0000
+	VoxelBlockyFluid::FLOW_IDLE, // Impossible
+	// 1000
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
+	// 0100
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
+	// 1100
+	VoxelBlockyFluid::FLOW_STRAIGHT_NEGATIVE_Z,
+	// 0010
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z,
+	// 1010
+	VoxelBlockyFluid::FLOW_IDLE, // Ambiguous
+	// 0110
+	VoxelBlockyFluid::FLOW_STRAIGHT_NEGATIVE_X,
+	// 1110
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
+	// 0001
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
+	// 1001
+	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_X,
+	// 0101
+	VoxelBlockyFluid::FLOW_IDLE, // Ambiguous
+	// 1101
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
+	// 0011
+	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z,
+	// 1011
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
+	// 0111
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z,
+	// 1111
+	VoxelBlockyFluid::FLOW_IDLE,
+};
+
+VoxelBlockyFluid::FlowState get_fluid_flow_state_from_corner_levels(
 		//    3-------2
-		//   /|      /|        z         8 7 6     z
-		//  / |     / |       /          5 4 3     |
-		// 0-------1     x---o           2 1 0  x--o
+		//   /|      /|        z
+		//  / |     / |       /
+		// 0-------1     x---o
 		// |       |
-		const FixedArray<uint8_t, 9> fluid_levels,
-		const VoxelBlockyFluid::BakedData &fluid
+		const FixedArray<uint8_t, 4> corner_levels
 ) {
+	const uint8_t min_level = math::min(corner_levels[0], corner_levels[1], corner_levels[2], corner_levels[3]);
+	const uint8_t mask = //
+			(static_cast<uint8_t>(corner_levels[0] == min_level) << 3) | //
+			(static_cast<uint8_t>(corner_levels[1] == min_level) << 2) | //
+			(static_cast<uint8_t>(corner_levels[2] == min_level) << 1) | //
+			(static_cast<uint8_t>(corner_levels[3] == min_level) << 0);
+	return g_min_corners_mask_to_flowstate[mask];
+}
+
+FixedArray<uint8_t, 4> get_corner_levels_from_fluid_levels(
+		//  8 7 6     z
+		//  5 4 3     |
+		//  2 1 0  x--o
+		const FixedArray<uint8_t, 9> fluid_levels
+) {
+	//    3-------2
+	//   /|      /|        z
+	//  / |     / |       /
+	// 0-------1     x---o
+	// |       |
 	FixedArray<uint8_t, 4> corner_levels;
 
 	corner_levels[0] = math::max(fluid_levels[1], fluid_levels[2], fluid_levels[4], fluid_levels[5]);
@@ -75,6 +137,13 @@ FixedArray<float, 4> fluid_levels_to_heights(
 	corner_levels[2] = math::max(fluid_levels[3], fluid_levels[4], fluid_levels[6], fluid_levels[7]);
 	corner_levels[3] = math::max(fluid_levels[4], fluid_levels[5], fluid_levels[7], fluid_levels[8]);
 
+	return corner_levels;
+}
+
+FixedArray<float, 4> get_corner_heights_from_corner_levels(
+		const FixedArray<uint8_t, 4> corner_levels,
+		const VoxelBlockyFluid::BakedData &fluid
+) {
 	struct LevelToHeight {
 		const float max_level_inv;
 
@@ -150,21 +219,53 @@ void generate_fluid_model(
 	auto &fluid_top_surface = get_tls_fluid_top();
 
 	// TODO Optimize: maybe don't copy if not covered and reference instead?
-	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
-		if (side_index == Cube::SIDE_POSITIVE_Y) {
-			fluid_sides[side_index][surface_index].clear();
-			continue;
-		}
-		copy(fluid.side_surfaces[side_index], fluid_sides[side_index][surface_index]);
-	}
-	copy(fluid.side_surfaces[Cube::SIDE_POSITIVE_Y],
-		 Vector3f(0.f, 1.f, 0.f),
-		 fluid.material_id,
-		 // TODO Option for collision on the fluid? Not sure if desired
-		 false,
-		 fluid_top_surface);
 
-	if (!fluid_top_covered) {
+	// UVs will be assigned differently than typical voxels. The shader is assumed to interpret them in order to render
+	// a flowing animation. Vertex coordinates may be used as UVs instead.
+	// UV.X = which axis the side is on (although it could already be deduced from normals?)
+	// UV.Y = flow state (tells both direction or whether the fluid is idle)
+
+	// Lateral sides
+	// They always flow to the same direction
+
+	copy(fluid.side_surfaces[Cube::SIDE_NEGATIVE_X],
+		 Vector2f(math::AXIS_X, VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z),
+		 fluid_sides[Cube::SIDE_NEGATIVE_X][surface_index]);
+
+	copy(fluid.side_surfaces[Cube::SIDE_POSITIVE_X],
+		 Vector2f(math::AXIS_X, VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z),
+		 fluid_sides[Cube::SIDE_POSITIVE_X][surface_index]);
+
+	copy(fluid.side_surfaces[Cube::SIDE_NEGATIVE_Z],
+		 Vector2f(math::AXIS_Z, VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z),
+		 fluid_sides[Cube::SIDE_NEGATIVE_Z][surface_index]);
+
+	copy(fluid.side_surfaces[Cube::SIDE_POSITIVE_Z],
+		 Vector2f(math::AXIS_Z, VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z),
+		 fluid_sides[Cube::SIDE_POSITIVE_Z][surface_index]);
+
+	// Bottom side
+	// It is always idle
+
+	copy(fluid.side_surfaces[Cube::SIDE_NEGATIVE_Y],
+		 Vector2f(math::AXIS_Y, VoxelBlockyFluid::FLOW_IDLE),
+		 fluid_sides[Cube::SIDE_NEGATIVE_Y][surface_index]);
+
+	if (fluid_top_covered) {
+		// No top side
+		fluid_sides[Cube::SIDE_POSITIVE_Y][surface_index].clear();
+		fluid_top_surface.clear();
+
+	} else {
+		copy_positions_normals_tangents(
+				fluid.side_surfaces[Cube::SIDE_POSITIVE_Y],
+				Vector3f(0.f, 1.f, 0.f),
+				fluid.material_id,
+				// TODO Option for collision on the fluid? Not sure if desired
+				false,
+				fluid_top_surface
+		);
+
 		// We'll potentially have to adjust corners of the model based on neighbor levels
 		FixedArray<uint8_t, 9> fluid_levels;
 
@@ -193,9 +294,15 @@ void generate_fluid_model(
 
 		// Adjust top corner heights to form slopes.
 
-		FixedArray<float, 4> corner_heights = fluid_levels_to_heights(fluid_levels, fluid);
+		const FixedArray<uint8_t, 4> corner_levels = get_corner_levels_from_fluid_levels(fluid_levels);
+		const VoxelBlockyFluid::FlowState flow_state = get_fluid_flow_state_from_corner_levels(corner_levels);
+		const FixedArray<float, 4> corner_heights = get_corner_heights_from_corner_levels(corner_levels, fluid);
+
+		fluid_top_surface.uvs.resize(4);
+		fill(fluid_top_surface.uvs, Vector2f(math::AXIS_Y, flow_state));
 
 		// TODO Option to alter normals too so they are more "correct"? Not always needed tho?
+		// TODO Transpose triangles in some cases that look less good?
 
 		// For lateral sides, we assume top vertices are always the last 2, in
 		// clockwise order relative to the top face
@@ -231,11 +338,11 @@ void generate_fluid_model(
 	// Override model data with procedural data
 	out_model_surface_count = 1;
 
-	if (!fluid_top_covered) {
-		out_model_surfaces = to_single_element_span(fluid_top_surface);
-	} else {
+	if (fluid_top_covered) {
 		// Expected to be empty
 		out_model_surfaces = to_span(voxel.model.surfaces);
+	} else {
+		out_model_surfaces = to_single_element_span(fluid_top_surface);
 	}
 
 	out_model_sides_surfaces = &fluid_sides;

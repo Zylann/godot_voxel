@@ -14,11 +14,30 @@ namespace zylann::voxel {
 class VoxelBlockyFluid : public Resource {
 	GDCLASS(VoxelBlockyFluid, Resource)
 public:
+	enum FlowState : uint8_t {
+		// o---x
+		// |
+		// z
+		// Values are proportional to an angle, and named after a top-down OpenGL coordinate system.
+		FLOW_STRAIGHT_POSITIVE_X,
+		FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
+		FLOW_STRAIGHT_NEGATIVE_Z,
+		FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
+		FLOW_STRAIGHT_NEGATIVE_X,
+		FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z,
+		FLOW_STRAIGHT_POSITIVE_Z,
+		FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
+		FLOW_IDLE,
+		FLOW_STATE_COUNT
+	};
+
 	struct BakedData {
 		static constexpr float TOP_HEIGHT = 0.9375f;
 		static constexpr float BOTTOM_HEIGHT = 0.0625f;
 
 		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> side_surfaces;
+		FixedArray<FixedArray<Vector2f, 4>, FLOW_STATE_COUNT> top_flow_uvs;
+
 		// StdVector<uint16_t> level_model_indices;
 		uint32_t material_id = 0;
 		uint8_t max_level = 1;
@@ -26,12 +45,6 @@ public:
 	};
 
 	VoxelBlockyFluid();
-
-	void set_flowing_tile_strip(Rect2i tile_rect);
-	Rect2i get_flowing_tile_strip() const;
-
-	void set_idle_tile_strip(Rect2i tile_rect);
-	Rect2i get_idle_tile_strip() const;
 
 	void set_material(Ref<Material> material);
 	Ref<Material> get_material() const;
@@ -41,9 +54,6 @@ public:
 private:
 	static void _bind_methods();
 
-	Rect2i _flowing_tile_strip = Rect2i(0, 0, 1, 1);
-	Rect2i _idle_tile_strip = Rect2i(0, 0, 1, 1);
-	Vector2i _atlas_size_in_tiles = Vector2i(16, 16);
 	Ref<Material> _material;
 };
 
