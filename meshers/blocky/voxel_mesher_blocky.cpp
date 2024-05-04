@@ -6,7 +6,9 @@
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/macros.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 // TODO GDX: String has no `operator+=`
+#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/string.h"
 
 using namespace zylann::godot;
@@ -27,6 +29,227 @@ inline bool contributes_to_ao(const VoxelBlockyLibraryBase::BakedData &lib, uint
 StdVector<int> &get_tls_index_offsets() {
 	static thread_local StdVector<int> tls_index_offsets;
 	return tls_index_offsets;
+}
+
+void copy(const VoxelBlockyModel::BakedData::SideSurface &src, VoxelBlockyModel::BakedData::SideSurface &dst) {
+	copy(src.positions, dst.positions);
+	copy(src.uvs, dst.uvs);
+	copy(src.indices, dst.indices);
+	copy(src.tangents, dst.tangents);
+}
+
+void copy(const VoxelBlockyModel::BakedData::Surface &src, VoxelBlockyModel::BakedData::Surface &dst) {
+	copy(src.positions, dst.positions);
+	copy(src.normals, dst.normals);
+	copy(src.uvs, dst.uvs);
+	copy(src.indices, dst.indices);
+	copy(src.tangents, dst.tangents);
+
+	dst.material_id = src.material_id;
+	dst.collision_enabled = src.collision_enabled;
+}
+
+void copy(
+		const VoxelBlockyModel::BakedData::SideSurface &src,
+		const Vector3f normal,
+		const uint32_t p_material_id,
+		const bool p_collision_enabled,
+		VoxelBlockyModel::BakedData::Surface &dst
+) {
+	copy(src.positions, dst.positions);
+
+	dst.normals.resize(src.positions.size());
+	fill(dst.normals, normal);
+	// std::fill(dst.normals.begin(), dst.normals.end(), normal);
+
+	copy(src.uvs, dst.uvs);
+	copy(src.indices, dst.indices);
+	copy(src.tangents, dst.tangents);
+
+	dst.material_id = p_material_id;
+	dst.collision_enabled = p_collision_enabled;
+}
+
+FixedArray<float, 4> fluid_levels_to_heights(
+		//    3-------2
+		//   /|      /|        z         8 7 6     z
+		//  / |     / |       /          5 4 3     |
+		// 0-------1     x---o           2 1 0  x--o
+		// |       |
+		const FixedArray<uint8_t, 9> fluid_levels,
+		const VoxelBlockyFluid::BakedData &fluid
+) {
+	FixedArray<uint8_t, 4> corner_levels;
+
+	corner_levels[0] = math::max(fluid_levels[1], fluid_levels[2], fluid_levels[4], fluid_levels[5]);
+	corner_levels[1] = math::max(fluid_levels[0], fluid_levels[1], fluid_levels[3], fluid_levels[4]);
+	corner_levels[2] = math::max(fluid_levels[3], fluid_levels[4], fluid_levels[6], fluid_levels[7]);
+	corner_levels[3] = math::max(fluid_levels[4], fluid_levels[5], fluid_levels[7], fluid_levels[8]);
+
+	struct LevelToHeight {
+		const float max_level_inv;
+
+		inline float operator()(uint8_t level) const {
+			return math::lerp(
+					VoxelBlockyFluid::BakedData::BOTTOM_HEIGHT,
+					VoxelBlockyFluid::BakedData::TOP_HEIGHT,
+					static_cast<float>(level) * max_level_inv
+			);
+		}
+	};
+
+	// TODO Disallow fluids with only one level
+	const LevelToHeight level_to_height{ 1.f / static_cast<float>(fluid.level_model_indices.size() - 1) };
+
+	FixedArray<float, 4> heights;
+	heights[0] = level_to_height(corner_levels[0]);
+	heights[1] = level_to_height(corner_levels[1]);
+	heights[2] = level_to_height(corner_levels[2]);
+	heights[3] = level_to_height(corner_levels[3]);
+
+	return heights;
+}
+
+FixedArray<
+		FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+		Cube::SIDE_COUNT> &
+get_tls_fluid_sides_surfaces() {
+	static thread_local FixedArray<
+			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+			Cube::SIDE_COUNT>
+			tls_fluid_sides;
+	return tls_fluid_sides;
+}
+
+VoxelBlockyModel::BakedData::Surface &get_tls_fluid_top() {
+	static thread_local VoxelBlockyModel::BakedData::Surface tls_fluid_top;
+	return tls_fluid_top;
+}
+
+template <typename TModelID>
+void generate_fluid_model(
+		const VoxelBlockyModel::BakedData &voxel,
+		const Span<const TModelID> type_buffer,
+		const int voxel_index,
+		const int y_jump_size,
+		const int x_jump_size,
+		const int z_jump_size,
+		const VoxelBlockyLibraryBase::BakedData &library,
+		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
+		const FixedArray<
+				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+				Cube::SIDE_COUNT> *&out_model_sides_surfaces,
+		uint8_t &out_model_surface_count
+) {
+	const uint32_t top_voxel_id = type_buffer[voxel_index + y_jump_size];
+
+	bool fluid_top_covered = false;
+
+	if (library.has_model(top_voxel_id)) {
+		const VoxelBlockyModel::BakedData &top_model = library.models[top_voxel_id];
+		if (top_model.fluid_index == voxel.fluid_index) {
+			fluid_top_covered = true;
+		}
+	}
+
+	const VoxelBlockyFluid::BakedData &fluid = library.fluids[voxel.fluid_index];
+
+	// Fluids have only one material
+	static constexpr unsigned int surface_index = 0;
+
+	auto &fluid_sides = get_tls_fluid_sides_surfaces();
+	auto &fluid_top_surface = get_tls_fluid_top();
+
+	// TODO Optimize: maybe don't copy if not covered and reference instead?
+	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
+		if (side_index == Cube::SIDE_POSITIVE_Y) {
+			fluid_sides[side_index][surface_index].clear();
+			continue;
+		}
+		copy(fluid.side_surfaces[side_index], fluid_sides[side_index][surface_index]);
+	}
+	copy(fluid.side_surfaces[Cube::SIDE_POSITIVE_Y],
+		 Vector3f(0.f, 1.f, 0.f),
+		 fluid.material_id,
+		 // TODO Option for collision on the fluid? Not sure if desired
+		 false,
+		 fluid_top_surface);
+
+	if (!fluid_top_covered) {
+		// We'll potentially have to adjust corners of the model based on neighbor levels
+		FixedArray<uint8_t, 9> fluid_levels;
+
+		// TODO Optimize: could sample 4 neighbors first and if the max isn't the same as current level,
+		// sample 4 diagonals too?
+		unsigned int i = 0;
+		for (int dz = -1; dz <= 1; ++dz) {
+			for (int dx = -1; dx <= 1; ++dx) {
+				const uint32_t nloc = voxel_index + dx * x_jump_size + dz * z_jump_size;
+				const uint32_t nid = type_buffer[nloc];
+
+				if (library.has_model(nid)) {
+					const VoxelBlockyModel::BakedData &nm = library.models[nid];
+					if (nm.fluid_index == voxel.fluid_index) {
+						fluid_levels[i] = nm.fluid_level;
+					} else {
+						fluid_levels[i] = 0;
+					}
+				} else {
+					fluid_levels[i] = 0;
+				}
+
+				++i;
+			}
+		}
+
+		// Adjust top corner heights to form slopes.
+
+		FixedArray<float, 4> corner_heights = fluid_levels_to_heights(fluid_levels, fluid);
+
+		// TODO Option to alter normals too so they are more "correct"? Not always needed tho?
+
+		// For lateral sides, we assume top vertices are always the last 2, in
+		// clockwise order relative to the top face
+		{
+			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_X][surface_index];
+			side_surface.positions[2].y = corner_heights[2];
+			side_surface.positions[3].y = corner_heights[1];
+		}
+		{
+			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_X][surface_index];
+			side_surface.positions[2].y = corner_heights[0];
+			side_surface.positions[3].y = corner_heights[3];
+		}
+		{
+			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_Z][surface_index];
+			side_surface.positions[2].y = corner_heights[1];
+			side_surface.positions[3].y = corner_heights[0];
+		}
+		{
+			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_Z][surface_index];
+			side_surface.positions[2].y = corner_heights[3];
+			side_surface.positions[3].y = corner_heights[2];
+		}
+		// For the top side, we assume vertices are counter-clockwise, and the first is at (+x, -z)
+		{
+			fluid_top_surface.positions[0].y = corner_heights[0];
+			fluid_top_surface.positions[1].y = corner_heights[1];
+			fluid_top_surface.positions[2].y = corner_heights[2];
+			fluid_top_surface.positions[3].y = corner_heights[3];
+		}
+	}
+
+	// Override model data with procedural data
+	out_model_surface_count = 1;
+
+	if (!fluid_top_covered) {
+		out_model_surfaces = to_single_element_span(fluid_top_surface);
+	} else {
+		// Expected to be empty
+		out_model_surfaces = to_span(voxel.model.surfaces);
+	}
+
+	out_model_sides_surfaces = &fluid_sides;
 }
 
 } // namespace
@@ -140,8 +363,33 @@ void generate_blocky_mesh( //
 				const VoxelBlockyModel::BakedData &voxel = library.models[voxel_id];
 				const VoxelBlockyModel::BakedData::Model &model = voxel.model;
 
+				uint8_t model_surface_count = model.surface_count;
+
+				Span<const VoxelBlockyModel::BakedData::Surface> model_surfaces = to_span(model.surfaces);
+
+				const FixedArray<
+						FixedArray<
+								VoxelBlockyModel::BakedData::SideSurface,
+								VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
+
 				// Hybrid approach: extract cube faces and decimate those that aren't visible,
 				// and still allow voxels to have geometry that is not a cube.
+
+				if (voxel.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
+					generate_fluid_model(
+							voxel,
+							type_buffer,
+							voxel_index,
+							1,
+							row_size,
+							deck_size,
+							library,
+							model_surfaces,
+							model_sides_surfaces,
+							model_surface_count
+					);
+				}
 
 				// Sides
 				for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
@@ -150,13 +398,13 @@ void generate_blocky_mesh( //
 						continue;
 					}
 
-					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
-
 					// By default we render the whole side if we consider it visible
 					const FixedArray<
 							VoxelBlockyModel::BakedData::SideSurface,
 							VoxelBlockyModel::BakedData::Model::MAX_SURFACES> *side_surfaces =
-							&model.sides_surfaces[side];
+							&((*model_sides_surfaces)[side]);
+
+					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
 					// Invalid voxels are treated like air
 					if (neighbor_voxel_id < library.models.size()) {
@@ -232,8 +480,9 @@ void generate_blocky_mesh( //
 					// Subtracting 1 because the data is padded
 					const Vector3f pos(x - 1, y - 1, z - 1);
 
-					for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-						const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+					// TODO Move this into a function
+					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+						const VoxelBlockyModel::BakedData::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
@@ -367,8 +616,8 @@ void generate_blocky_mesh( //
 				}
 
 				// Inside
-				for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-					const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
+					const VoxelBlockyModel::BakedData::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}

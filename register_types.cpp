@@ -25,9 +25,11 @@
 #include "meshers/blocky/types/voxel_blocky_attribute_direction.h"
 #include "meshers/blocky/types/voxel_blocky_attribute_rotation.h"
 #include "meshers/blocky/types/voxel_blocky_type_library.h"
+#include "meshers/blocky/voxel_blocky_fluid.h"
 #include "meshers/blocky/voxel_blocky_library.h"
 #include "meshers/blocky/voxel_blocky_model_cube.h"
 #include "meshers/blocky/voxel_blocky_model_empty.h"
+#include "meshers/blocky/voxel_blocky_model_fluid.h"
 #include "meshers/blocky/voxel_blocky_model_mesh.h"
 #include "meshers/blocky/voxel_mesher_blocky.h"
 #include "meshers/cubes/voxel_mesher_cubes.h"
@@ -218,6 +220,8 @@ void initialize_voxel_module(ModuleInitializationLevel p_level) {
 		ClassDB::register_class<VoxelBlockyModelCube>();
 		ClassDB::register_class<VoxelBlockyModelMesh>();
 		ClassDB::register_class<VoxelBlockyModelEmpty>();
+		ClassDB::register_class<VoxelBlockyModelFluid>();
+		ClassDB::register_class<VoxelBlockyFluid>();
 		ClassDB::register_abstract_class<VoxelBlockyLibraryBase>();
 		ClassDB::register_class<VoxelBlockyLibrary>();
 		ClassDB::register_abstract_class<VoxelBlockyAttribute>();

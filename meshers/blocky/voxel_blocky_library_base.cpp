@@ -695,7 +695,17 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 		// For each side
 		for (uint16_t side = 0; side < Cube::SIDE_COUNT; ++side) {
 			std::bitset<RASTER_SIZE * RASTER_SIZE> bitmap;
-			rasterize_side_all_surfaces(model_data, side, bitmap);
+
+			if (model_data.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX) {
+				// Fluids don't have per-model static geometry, but their culling rules are still similar to a cube.
+				// There is never a side on the top, it's either slightly lower (not on the side) or culled by
+				// neighboring water.
+				if (side != Cube::SIDE_POSITIVE_Y) {
+					bitmap.set();
+				}
+			} else {
+				rasterize_side_all_surfaces(model_data, side, bitmap);
+			}
 
 			// Find if the same pattern already exists
 			uint32_t pattern_index = VoxelBlockyLibraryBase::NULL_INDEX;

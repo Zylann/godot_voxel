@@ -24,6 +24,7 @@ public:
 	// Convention to mean "nothing".
 	// Don't assign a non-empty model at this index.
 	static const uint16_t AIR_ID = 0;
+	static const uint8_t NULL_FLUID_INDEX = 255;
 
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
@@ -115,6 +116,8 @@ public:
 		bool is_random_tickable;
 		bool is_transparent;
 		bool cutout_sides_enabled = false;
+		uint8_t fluid_index = NULL_FLUID_INDEX;
+		uint8_t fluid_level;
 
 		uint32_t box_collision_mask;
 		StdVector<AABB> box_collision_aabbs;

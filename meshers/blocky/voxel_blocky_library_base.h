@@ -5,6 +5,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
 #include "../../util/thread/rw_lock.h"
+#include "voxel_blocky_fluid.h"
 #include "voxel_blocky_model.h"
 
 namespace zylann::voxel {
@@ -18,6 +19,8 @@ class VoxelBlockyLibraryBase : public Resource {
 public:
 	// Limit based on maximum supported by VoxelMesherBlocky
 	static constexpr unsigned int MAX_MODELS = 65536;
+	// Limit related to how we index baked fluids
+	static constexpr unsigned int MAX_FLUIDS = 64;
 
 	// Materials must be kept to a minimum. 256 is already a lot, but that only affects performance. This limit is
 	// the one beyond which the code stops working. Could still be increased in theory (requires some code changes to
@@ -33,6 +36,7 @@ public:
 		unsigned int side_pattern_count = 0;
 		// Lots of data can get moved but it's only on load.
 		StdVector<VoxelBlockyModel::BakedData> models;
+		StdVector<VoxelBlockyFluid::BakedData> fluids;
 
 		// struct VariantInfo {
 		// 	uint16_t type_index;

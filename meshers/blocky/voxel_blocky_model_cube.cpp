@@ -113,7 +113,51 @@ float VoxelBlockyModelCube::get_height() const {
 	return _height;
 }
 
+void make_cube_side_vertices_tangents(
+		VoxelBlockyModel::BakedData::SideSurface &side_surface,
+		const unsigned int side_index,
+		const float height,
+		const bool bake_tangents
+) {
+	StdVector<Vector3f> &positions = side_surface.positions;
+	positions.resize(4);
+	for (unsigned int i = 0; i < 4; ++i) {
+		int corner = Cube::g_side_corners[side_index][i];
+		Vector3f p = Cube::g_corner_position[corner];
+		if (p.y > 0.9) {
+			p.y = height;
+		}
+		positions[i] = p;
+	}
+
+	StdVector<int> &indices = side_surface.indices;
+	indices.resize(6);
+	for (unsigned int i = 0; i < 6; ++i) {
+		indices[i] = Cube::g_side_quad_triangles[side_index][i];
+	}
+
+	if (bake_tangents) {
+		StdVector<float> &tangents = side_surface.tangents;
+		for (unsigned int i = 0; i < 4; ++i) {
+			for (unsigned int j = 0; j < 4; ++j) {
+				tangents.push_back(Cube::g_side_tangents[side_index][j]);
+			}
+		}
+	}
+}
+
 namespace {
+
+void make_cube_sides_vertices_tangents(
+		Span<FixedArray<VoxelBlockyModel::BakedData::SideSurface, 2>> sides_surfaces,
+		const float height,
+		const bool bake_tangents
+) {
+	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
+		VoxelBlockyModel::BakedData::SideSurface &side_surface = sides_surfaces[side][0];
+		make_cube_side_vertices_tangents(side_surface, side, height, bake_tangents);
+	}
+}
 
 void bake_cube_geometry(
 		const VoxelBlockyModelCube &config,
@@ -125,25 +169,7 @@ void bake_cube_geometry(
 
 	baked_data.model.surface_count = 1;
 
-	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
-		StdVector<Vector3f> &positions = side_surface.positions;
-		positions.resize(4);
-		for (unsigned int i = 0; i < 4; ++i) {
-			int corner = Cube::g_side_corners[side][i];
-			Vector3f p = Cube::g_corner_position[corner];
-			if (p.y > 0.9) {
-				p.y = height;
-			}
-			positions[i] = p;
-		}
-
-		StdVector<int> &indices = side_surface.indices;
-		indices.resize(6);
-		for (unsigned int i = 0; i < 6; ++i) {
-			indices[i] = Cube::g_side_quad_triangles[side][i];
-		}
-	}
+	make_cube_sides_vertices_tangents(to_span(baked_data.model.sides_surfaces), config.get_height(), bake_tangents);
 
 	const float e = 0.001;
 	// Winding is the same as the one chosen in Cube:: vertices
@@ -178,15 +204,6 @@ void bake_cube_geometry(
 
 		for (unsigned int i = 0; i < 4; ++i) {
 			uvs[i] = (to_vec2f(config.get_tile(VoxelBlockyModel::Side(side))) + uv_norm[i]) * s;
-		}
-
-		if (bake_tangents) {
-			StdVector<float> &tangents = side_surface.tangents;
-			for (unsigned int i = 0; i < 4; ++i) {
-				for (unsigned int j = 0; j < 4; ++j) {
-					tangents.push_back(Cube::g_side_tangents[side][j]);
-				}
-			}
 		}
 	}
 
