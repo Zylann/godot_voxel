@@ -98,8 +98,8 @@ void VoxelBlockyFluid::_bind_methods() {
 					PROPERTY_HINT_RESOURCE_TYPE,
 					zylann::godot::MATERIAL_3D_PROPERTY_HINT_STRING
 			),
-			"set_idle_tile_strip",
-			"get_idle_tile_strip"
+			"set_material",
+			"get_material"
 	);
 }
 
