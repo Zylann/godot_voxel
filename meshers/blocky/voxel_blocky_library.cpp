@@ -68,8 +68,10 @@ void VoxelBlockyLibrary::bake() {
 		VoxelBlockyModel::BakedData &baked_model = _baked_data.models[model_index];
 
 		if (config.is_valid()) {
-			config->bake(blocky::ModelBakingContext{
-					baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids });
+			blocky::ModelBakingContext context{
+				baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids
+			};
+			config->bake(context);
 
 		} else {
 			baked_model.clear();
