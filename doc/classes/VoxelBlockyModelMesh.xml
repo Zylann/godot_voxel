@@ -15,5 +15,8 @@
 			Orthogonal rotation applied to the mesh when baking. Values are taken from the same convention as [GridMap] tiles.
 			([GridMap] provides a conversion method from [Basis], unfortunately it is not a static method so it requires a [GridMap] instance to exist. A helper method could be added in the future if requested)
 		</member>
+		<member name="side_vertex_tolerance" type="float" setter="set_side_vertex_tolerance" getter="get_side_vertex_tolerance" default="0.001">
+			Margin below which triangles located near one of the 6 sides of the voxel will be considered on that side. Triangles located on sides will be culled if they are occluded by neighbor voxels.
+		</member>
 	</members>
 </class>
