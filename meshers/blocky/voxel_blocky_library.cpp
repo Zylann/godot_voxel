@@ -4,7 +4,6 @@
 // For `MAKE_RESOURCE_TYPE_HINT`
 #include "../../util/godot/classes/object.h"
 #endif
-#include "../../util/containers/container_funcs.h"
 #include "../../util/godot/classes/time.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/string.h"
@@ -34,6 +33,7 @@ void VoxelBlockyLibrary::clear() {
 void VoxelBlockyLibrary::load_default() {
 	clear();
 
+	// TODO Why not empty?
 	Ref<VoxelBlockyModelMesh> air;
 	air.instantiate();
 	air->set_name("air");
@@ -46,116 +46,6 @@ void VoxelBlockyLibrary::load_default() {
 	_voxel_models.push_back(cube);
 
 	_needs_baking = true;
-}
-
-void bake_fluid_model(
-		const VoxelBlockyModelFluid &fluid_model,
-		uint16_t model_index,
-		VoxelBlockyModel::BakedData &baked_model,
-		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
-) {
-	Ref<VoxelBlockyFluid> fluid = fluid_model.get_fluid();
-
-	baked_model.clear();
-
-	if (fluid.is_null()) {
-		ZN_PRINT_ERROR("Fluid model without assigned fluid");
-		return;
-	}
-
-	size_t fluid_index;
-	if (!find(indexed_fluids, fluid, fluid_index)) {
-		fluid_index = indexed_fluids.size();
-
-		if (fluid_index >= VoxelBlockyLibraryBase::MAX_FLUIDS) {
-			ZN_PRINT_ERROR("Reached maximum fluids");
-			return;
-		}
-
-		indexed_fluids.push_back(fluid);
-	}
-
-	baked_model.fluid_index = fluid_index;
-	baked_model.empty = false;
-
-	if (fluid_index >= baked_fluids.size()) {
-		baked_fluids.resize(fluid_index + 1);
-	}
-
-	VoxelBlockyFluid::BakedData &baked_fluid = baked_fluids[fluid_index];
-
-	// TODO Allow more than one model with the same level?
-	const unsigned int level = fluid_model.get_level();
-	ZN_ASSERT(level >= 0 && level < VoxelBlockyModelFluid::MAX_LEVELS);
-	if (level >= baked_fluid.level_model_indices.size()) {
-		baked_fluid.level_model_indices.resize(level + 1, VoxelBlockyModel::AIR_ID);
-	}
-	baked_fluid.level_model_indices[level] = model_index;
-	baked_model.fluid_level = level;
-
-	baked_model.transparency_index = fluid_model.get_transparency_index();
-	baked_model.culls_neighbors = fluid_model.get_culls_neighbors();
-	baked_model.color = fluid_model.get_color();
-	baked_model.is_random_tickable = fluid_model.is_random_tickable();
-	baked_model.box_collision_mask = fluid_model.get_collision_mask();
-	// baked_model.box_collision_aabbs = fluid_model.get_collision_aabbs();
-
-	// This is to be decided dynamically. The top side is always empty.
-	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
-
-	// TODO Specify material
-	// Assign material overrides if any
-	// for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-	// 	if (surface_index < _surface_count) {
-	// 		const SurfaceParams &surface_params = _surface_params[surface_index];
-	// 		const Ref<Material> material = surface_params.material_override;
-
-	// 		BakedData::Surface &surface = model.surfaces[surface_index];
-
-	// 		const unsigned int material_index = materials.get_or_create_index(material);
-	// 		surface.material_id = material_index;
-
-	// 		surface.collision_enabled = surface_params.collision_enabled;
-	// 	}
-	// }
-}
-
-void bake_fluid(
-		const VoxelBlockyFluid &fluid,
-		VoxelBlockyFluid::BakedData &baked_fluid,
-		VoxelBlockyModel::MaterialIndexer &materials
-) {
-	for (const uint16_t model_index : baked_fluid.level_model_indices) {
-		if (model_index == VoxelBlockyModel::AIR_ID) {
-			ZN_PRINT_ERROR("Fluid is missing some levels");
-			break;
-		}
-	}
-
-	if (baked_fluid.level_model_indices.size() == 1) {
-		ZN_PRINT_ERROR("Fluid with only one level will not work properly");
-	}
-
-	Ref<Material> material = fluid.get_material();
-	baked_fluid.material_id = materials.get_or_create_index(material);
-
-	// TODO This part shouldn't be necessary? it's the same for every fluid
-	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
-		make_cube_side_vertices_tangents(
-				baked_fluid.side_surfaces[side_index], side_index, VoxelBlockyFluid::BakedData::TOP_HEIGHT, false
-		);
-	}
-
-	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = baked_fluid.side_surfaces[side_index];
-
-		// TODO Bake UVs with animation info somehow
-		side_surface.uvs.resize(4);
-		for (unsigned int i = 0; i < side_surface.uvs.size(); ++i) {
-			side_surface.uvs[i] = Vector2f();
-		}
-	}
 }
 
 void VoxelBlockyLibrary::bake() {
@@ -173,21 +63,13 @@ void VoxelBlockyLibrary::bake() {
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 
 	_baked_data.models.resize(_voxel_models.size());
-	for (size_t i = 0; i < _voxel_models.size(); ++i) {
-		Ref<VoxelBlockyModel> config = _voxel_models[i];
-		VoxelBlockyModel::BakedData &baked_model = _baked_data.models[i];
-
-		// TODO Perhaps models need a broader context to be baked
-		Ref<VoxelBlockyModelFluid> fluid_model = config;
-		if (!fluid_model.is_valid()) {
-			baked_model.fluid_index = VoxelBlockyModel::NULL_FLUID_INDEX;
-		} else {
-			bake_fluid_model(**fluid_model, i, baked_model, indexed_fluids, _baked_data.fluids);
-			continue;
-		}
+	for (uint16_t model_index = 0; model_index < _voxel_models.size(); ++model_index) {
+		Ref<VoxelBlockyModel> config = _voxel_models[model_index];
+		VoxelBlockyModel::BakedData &baked_model = _baked_data.models[model_index];
 
 		if (config.is_valid()) {
-			config->bake(blocky::ModelBakingContext{ baked_model, _bake_tangents, materials });
+			config->bake(blocky::ModelBakingContext{
+					baked_model, _bake_tangents, materials, indexed_fluids, _baked_data.fluids });
 
 		} else {
 			baked_model.clear();
@@ -197,7 +79,7 @@ void VoxelBlockyLibrary::bake() {
 	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
 		const VoxelBlockyFluid &fluid = **indexed_fluids[fluid_index];
 		VoxelBlockyFluid::BakedData &baked_fluid = _baked_data.fluids[fluid_index];
-		bake_fluid(fluid, baked_fluid, materials);
+		fluid.bake(baked_fluid, materials);
 	}
 
 	_baked_data.indexed_materials_count = _indexed_materials.size();

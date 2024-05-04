@@ -99,7 +99,7 @@ FixedArray<float, 4> fluid_levels_to_heights(
 	};
 
 	// TODO Disallow fluids with only one level
-	const LevelToHeight level_to_height{ 1.f / static_cast<float>(fluid.level_model_indices.size() - 1) };
+	const LevelToHeight level_to_height{ 1.f / static_cast<float>(fluid.max_level) };
 
 	FixedArray<float, 4> heights;
 	heights[0] = level_to_height(corner_levels[0]);

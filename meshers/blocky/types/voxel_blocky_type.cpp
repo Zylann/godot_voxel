@@ -320,7 +320,9 @@ void VoxelBlockyType::bake(
 		StdVector<VariantKey> &out_keys,
 		VoxelBlockyModel::MaterialIndexer &material_indexer,
 		const VariantKey *specific_key,
-		bool bake_tangents
+		bool bake_tangents,
+		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
+		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
 ) const {
 	ZN_PROFILE_SCOPE();
 
@@ -360,9 +362,15 @@ void VoxelBlockyType::bake(
 
 		Ref<VoxelBlockyModel> model = get_variant(key);
 
+		// Note, model indices are not known at this stage. They will be known later when we update the ID map.
+
+		blocky::ModelBakingContext model_baking_context{
+			baked_model, bake_tangents, material_indexer, indexed_fluids, baked_fluids
+		};
+
 		if (model.is_valid()) {
 			// Variant specified explicitely, just use it
-			model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
+			model->bake(model_baking_context);
 
 		} else if (_automatic_rotations && rotation_attribute.is_valid()) {
 			// Not specified, but the type has a rotation attribute.
@@ -398,12 +406,12 @@ void VoxelBlockyType::bake(
 					get_baking_rotation_ortho_basis(rotation_attribute, key.attribute_values[rotation_attribute_index]);
 			Ref<VoxelBlockyModel> temp_model = ref_model->duplicate();
 			temp_model->rotate_ortho(trans_basis);
-			temp_model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
+			temp_model->bake(model_baking_context);
 
 		} else {
 			// No variant specified, use base model.
 			if (_base_model.is_valid()) {
-				_base_model->bake(blocky::ModelBakingContext{ baked_model, bake_tangents, material_indexer });
+				_base_model->bake(model_baking_context);
 			} else if (print_warnings) {
 				WARN_PRINT(
 						String("No model found for variant {0} when baking {1} with name {2}. The model will be empty.")
@@ -501,8 +509,10 @@ Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 
 	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview
 	const bool require_tangents = true;
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	StdVector<VoxelBlockyFluid::BakedData> baked_fluids;
 
-	bake(baked_models, keys, material_indexer, &key, true);
+	bake(baked_models, keys, material_indexer, &key, require_tangents, indexed_fluids, baked_fluids);
 
 	ZN_ASSERT_RETURN_V(baked_models.size() == 1, Ref<Mesh>());
 	const VoxelBlockyModel::BakedData &baked_model = baked_models[0];

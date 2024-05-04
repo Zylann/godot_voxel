@@ -3,6 +3,7 @@
 
 #include "../../../util/containers/std_vector.h"
 #include "../../../util/godot/classes/resource.h"
+#include "../voxel_blocky_fluid.h"
 #include "../voxel_blocky_model.h"
 #include "voxel_blocky_attribute.h"
 
@@ -67,7 +68,9 @@ public:
 			StdVector<VariantKey> &out_keys,
 			VoxelBlockyModel::MaterialIndexer &material_indexer,
 			const VariantKey *specific_key,
-			bool bake_tangents
+			bool bake_tangents,
+			StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
+			StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
 	) const;
 
 #ifdef TOOLS_ENABLED

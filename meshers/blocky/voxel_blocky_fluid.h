@@ -19,8 +19,9 @@ public:
 		static constexpr float BOTTOM_HEIGHT = 0.0625f;
 
 		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> side_surfaces;
-		StdVector<uint16_t> level_model_indices;
+		// StdVector<uint16_t> level_model_indices;
 		uint32_t material_id = 0;
+		uint8_t max_level = 1;
 		// uint32_t box_collision_mask = 0;
 	};
 
@@ -34,6 +35,8 @@ public:
 
 	void set_material(Ref<Material> material);
 	Ref<Material> get_material() const;
+
+	void bake(BakedData &baked_fluid, VoxelBlockyModel::MaterialIndexer &materials) const;
 
 private:
 	static void _bind_methods();

@@ -53,6 +53,7 @@ void VoxelBlockyTypeLibrary::bake() {
 	StdVector<VoxelBlockyModel::BakedData> baked_models;
 	StdVector<VoxelBlockyType::VariantKey> keys;
 	VoxelBlockyModel::MaterialIndexer material_indexer{ _indexed_materials };
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 
 	_baked_data.models.resize(_id_map.size());
 
@@ -62,7 +63,9 @@ void VoxelBlockyTypeLibrary::bake() {
 				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i)
 		);
 
-		type->bake(baked_models, keys, material_indexer, nullptr, get_bake_tangents());
+		type->bake(
+				baked_models, keys, material_indexer, nullptr, get_bake_tangents(), indexed_fluids, _baked_data.fluids
+		);
 
 		VoxelID id;
 		id.type_name = type->get_unique_name();
@@ -92,6 +95,12 @@ void VoxelBlockyTypeLibrary::bake() {
 
 		baked_models.clear();
 		keys.clear();
+	}
+
+	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
+		const VoxelBlockyFluid &fluid = **indexed_fluids[fluid_index];
+		VoxelBlockyFluid::BakedData &baked_fluid = _baked_data.fluids[fluid_index];
+		fluid.bake(baked_fluid, material_indexer);
 	}
 
 	_baked_data.indexed_materials_count = _indexed_materials.size();
