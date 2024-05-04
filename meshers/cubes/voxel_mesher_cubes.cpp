@@ -76,11 +76,16 @@ inline uint8_t get_alpha_index(Color8 c) {
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_simple_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer, const Vector3i block_size, Color_F color_func) {
+		const Span<Voxel_T> voxel_buffer,
+		const Vector3i block_size,
+		Color_F color_func
+) {
 	//
-	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+	ERR_FAIL_COND(
+			block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING)
+	);
 
 	const Vector3i min_pos = Vector3iUtil::create(VoxelMesherCubes::PADDING);
 	const Vector3i max_pos = block_size - Vector3iUtil::create(VoxelMesherCubes::PADDING);
@@ -207,12 +212,17 @@ void build_voxel_mesh_as_simple_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer, const Vector3i block_size, StdVector<uint8_t> &mask_memory_pool,
-		Color_F color_func) {
+		const Span<Voxel_T> voxel_buffer,
+		const Vector3i block_size,
+		StdVector<uint8_t> &mask_memory_pool,
+		Color_F color_func
+) {
 	//
-	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+	ERR_FAIL_COND(
+			block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING)
+	);
 
 	struct MaskValue {
 		Voxel_T color;
@@ -292,7 +302,11 @@ void build_voxel_mesh_as_greedy_cubes(
 
 			struct L {
 				static inline bool is_range_equal(
-						const Span<MaskValue> &mask, unsigned int xmin, unsigned int xmax, MaskValue v) {
+						const Span<MaskValue> &mask,
+						unsigned int xmin,
+						unsigned int xmax,
+						MaskValue v
+				) {
 					for (unsigned int x = xmin; x < xmax; ++x) {
 						if (mask[x] != v) {
 							return false;
@@ -320,8 +334,8 @@ void build_voxel_mesh_as_greedy_cubes(
 
 					// Check if the next rows of faces are the same along Y
 					unsigned int ry = fy + 1;
-					while (ry < mask_size_y &&
-							L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)) {
+					while (ry < mask_size_y && L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)
+					) {
 						++ry;
 					}
 
@@ -396,13 +410,19 @@ void build_voxel_mesh_as_greedy_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes_atlased(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		VoxelMesherCubes::GreedyAtlasData &out_greedy_atlas_data, const Span<Voxel_T> voxel_buffer,
-		const Vector3i block_size, StdVector<uint8_t> &mask_memory_pool, Color_F color_func) {
+		VoxelMesherCubes::GreedyAtlasData &out_greedy_atlas_data,
+		const Span<Voxel_T> voxel_buffer,
+		const Vector3i block_size,
+		StdVector<uint8_t> &mask_memory_pool,
+		Color_F color_func
+) {
 	//
 	ZN_PROFILE_SCOPE();
-	ERR_FAIL_COND(block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
+	ERR_FAIL_COND(
+			block_size.x < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
 			block_size.y < static_cast<int>(2 * VoxelMesherCubes::PADDING) ||
-			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING));
+			block_size.z < static_cast<int>(2 * VoxelMesherCubes::PADDING)
+	);
 
 	struct MaskValue {
 		uint8_t side;
@@ -493,7 +513,11 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 
 			struct L {
 				static inline bool is_range_equal(
-						const Span<MaskValue> &mask, unsigned int xmin, unsigned int xmax, MaskValue v) {
+						const Span<MaskValue> &mask,
+						unsigned int xmin,
+						unsigned int xmax,
+						MaskValue v
+				) {
 					for (unsigned int x = xmin; x < xmax; ++x) {
 						if (mask[x] != v) {
 							return false;
@@ -521,8 +545,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 
 					// Check if the next rows of faces are the same along Y
 					unsigned int ry = fy + 1;
-					while (ry < mask_size_y &&
-							L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)) {
+					while (ry < mask_size_y && L::is_range_equal(mask, fx + ry * mask_size_x, rx + ry * mask_size_x, m)
+					) {
 						++ry;
 					}
 
@@ -577,7 +601,8 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 					image_info.size_y = ry - fy;
 					image_info.first_color_index = out_greedy_atlas_data.colors.size();
 					out_greedy_atlas_data.colors.resize(
-							out_greedy_atlas_data.colors.size() + image_info.size_x * image_info.size_y);
+							out_greedy_atlas_data.colors.size() + image_info.size_x * image_info.size_y
+					);
 
 					const unsigned int index_offset = index_offsets[material_index];
 					CRASH_COND(za >= 3 || m.side >= 2);
@@ -624,7 +649,9 @@ void build_voxel_mesh_as_greedy_cubes_atlased(
 }
 
 Ref<Image> make_greedy_atlas(
-		const VoxelMesherCubes::GreedyAtlasData &atlas_data, Span<VoxelMesherCubes::Arrays> surfaces) {
+		const VoxelMesherCubes::GreedyAtlasData &atlas_data,
+		Span<VoxelMesherCubes::Arrays> surfaces
+) {
 	//
 	ERR_FAIL_COND_V(atlas_data.images.size() == 0, Ref<Image>());
 	ZN_PROFILE_SCOPE();
@@ -772,33 +799,55 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			switch (channel_depth) {
 				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
-								cache.mask_memory_pool, Color8::from_u8);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel,
+								block_size,
+								cache.mask_memory_pool,
+								Color8::from_u8
+						);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								cache.arrays_per_material, raw_channel, block_size, Color8::from_u8);
+								cache.arrays_per_material, raw_channel, block_size, Color8::from_u8
+						);
 					}
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
-								Color8::from_u16);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								cache.mask_memory_pool,
+								Color8::from_u16
+						);
 					} else {
-						build_voxel_mesh_as_simple_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, Color8::from_u16);
+						build_voxel_mesh_as_simple_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								Color8::from_u16
+						);
 					}
 					break;
 
 				case VoxelBuffer::DEPTH_32_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(), block_size, cache.mask_memory_pool,
-								Color8::from_u32);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint32_t>(),
+								block_size,
+								cache.mask_memory_pool,
+								Color8::from_u32
+						);
 					} else {
-						build_voxel_mesh_as_simple_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(), block_size, Color8::from_u32);
+						build_voxel_mesh_as_simple_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint32_t>(),
+								block_size,
+								Color8::from_u32
+						);
 					}
 					break;
 
@@ -826,28 +875,48 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
 						if (params.store_colors_in_texture) {
-							build_voxel_mesh_as_greedy_cubes_atlased(cache.arrays_per_material, cache.greedy_atlas_data,
-									raw_channel, block_size, cache.mask_memory_pool, get_color_from_palette);
+							build_voxel_mesh_as_greedy_cubes_atlased(
+									cache.arrays_per_material,
+									cache.greedy_atlas_data,
+									raw_channel,
+									block_size,
+									cache.mask_memory_pool,
+									get_color_from_palette
+							);
 							atlas_image =
 									make_greedy_atlas(cache.greedy_atlas_data, to_span(cache.arrays_per_material));
 						} else {
-							build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
-									cache.mask_memory_pool, get_color_from_palette);
+							build_voxel_mesh_as_greedy_cubes(
+									cache.arrays_per_material,
+									raw_channel,
+									block_size,
+									cache.mask_memory_pool,
+									get_color_from_palette
+							);
 						}
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								cache.arrays_per_material, raw_channel, block_size, get_color_from_palette);
+								cache.arrays_per_material, raw_channel, block_size, get_color_from_palette
+						);
 					}
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
-								get_color_from_palette);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								cache.mask_memory_pool,
+								get_color_from_palette
+						);
 					} else {
-						build_voxel_mesh_as_simple_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, get_color_from_palette);
+						build_voxel_mesh_as_simple_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								get_color_from_palette
+						);
 					}
 					break;
 
@@ -872,22 +941,36 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 			switch (channel_depth) {
 				case VoxelBuffer::DEPTH_8_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material, raw_channel, block_size,
-								cache.mask_memory_pool, get_index_from_palette);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel,
+								block_size,
+								cache.mask_memory_pool,
+								get_index_from_palette
+						);
 					} else {
 						build_voxel_mesh_as_simple_cubes(
-								cache.arrays_per_material, raw_channel, block_size, get_index_from_palette);
+								cache.arrays_per_material, raw_channel, block_size, get_index_from_palette
+						);
 					}
 					break;
 
 				case VoxelBuffer::DEPTH_16_BIT:
 					if (params.greedy_meshing) {
-						build_voxel_mesh_as_greedy_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, cache.mask_memory_pool,
-								get_index_from_palette);
+						build_voxel_mesh_as_greedy_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								cache.mask_memory_pool,
+								get_index_from_palette
+						);
 					} else {
-						build_voxel_mesh_as_simple_cubes(cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(), block_size, get_index_from_palette);
+						build_voxel_mesh_as_simple_cubes(
+								cache.arrays_per_material,
+								raw_channel.reinterpret_cast_to<uint16_t>(),
+								block_size,
+								get_index_from_palette
+						);
 					}
 					break;
 
@@ -1064,7 +1147,8 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	ZN_ASSERT_RETURN_V(image.is_valid(), Ref<Mesh>());
 	ZN_ASSERT_RETURN_V(voxel_size > 0.001f, Ref<Mesh>());
 	ZN_ASSERT_RETURN_V_MSG(
-			!image->is_compressed(), Ref<Mesh>(), format("Image format not supported: {}", image->get_format()));
+			!image->is_compressed(), Ref<Mesh>(), format("Image format not supported: {}", image->get_format())
+	);
 
 	// Convert image
 	VoxelBuffer voxels(VoxelBuffer::ALLOCATOR_DEFAULT);
@@ -1076,17 +1160,23 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 	voxels.create( //
 			im_size_x + VoxelMesherCubes::PADDING * 2, //
 			im_size_y + VoxelMesherCubes::PADDING * 2, //
-			1 + VoxelMesherCubes::PADDING * 2);
+			1 + VoxelMesherCubes::PADDING * 2
+	);
 
 	for (int y = 0; y < im_size_y; ++y) {
 		for (int x = 0; x < im_size_x; ++x) {
 			const Color cf = image->get_pixel(x, y);
 			const Color8 c(cf);
-			voxels.set_voxel(c.to_u32(),
-					Vector3i(x + VoxelMesherCubes::PADDING,
+			voxels.set_voxel(
+					c.to_u32(),
+					Vector3i(
+							x + VoxelMesherCubes::PADDING,
 							// Flip Y axis, since Y goes up in world space, but Y goes down in Image space
-							(im_size_y - 1 - y) + VoxelMesherCubes::PADDING, VoxelMesherCubes::PADDING),
-					VoxelBuffer::CHANNEL_COLOR);
+							(im_size_y - 1 - y) + VoxelMesherCubes::PADDING,
+							VoxelMesherCubes::PADDING
+					),
+					VoxelBuffer::CHANNEL_COLOR
+			);
 		}
 	}
 
@@ -1135,43 +1225,62 @@ Ref<Mesh> VoxelMesherCubes::generate_mesh_from_image(Ref<Image> image, float vox
 }
 
 void VoxelMesherCubes::_bind_methods() {
-	ClassDB::bind_method(
-			D_METHOD("set_greedy_meshing_enabled", "enable"), &VoxelMesherCubes::set_greedy_meshing_enabled);
-	ClassDB::bind_method(D_METHOD("is_greedy_meshing_enabled"), &VoxelMesherCubes::is_greedy_meshing_enabled);
+	using Self = VoxelMesherCubes;
 
-	ClassDB::bind_method(D_METHOD("set_palette", "palette"), &VoxelMesherCubes::set_palette);
-	ClassDB::bind_method(D_METHOD("get_palette"), &VoxelMesherCubes::get_palette);
+	ClassDB::bind_method(D_METHOD("set_greedy_meshing_enabled", "enable"), &Self::set_greedy_meshing_enabled);
+	ClassDB::bind_method(D_METHOD("is_greedy_meshing_enabled"), &Self::is_greedy_meshing_enabled);
 
-	ClassDB::bind_method(D_METHOD("set_color_mode", "mode"), &VoxelMesherCubes::set_color_mode);
-	ClassDB::bind_method(D_METHOD("get_color_mode"), &VoxelMesherCubes::get_color_mode);
+	ClassDB::bind_method(D_METHOD("set_palette", "palette"), &Self::set_palette);
+	ClassDB::bind_method(D_METHOD("get_palette"), &Self::get_palette);
 
-	ClassDB::bind_method(D_METHOD("set_material_by_index", "id", "material"), &VoxelMesherCubes::set_material_by_index);
+	ClassDB::bind_method(D_METHOD("set_color_mode", "mode"), &Self::set_color_mode);
+	ClassDB::bind_method(D_METHOD("get_color_mode"), &Self::get_color_mode);
 
-	ClassDB::bind_method(D_METHOD("_get_opaque_material"), &VoxelMesherCubes::_b_get_opaque_material);
-	ClassDB::bind_method(D_METHOD("_set_opaque_material", "material"), &VoxelMesherCubes::_b_set_opaque_material);
+	ClassDB::bind_method(D_METHOD("set_material_by_index", "id", "material"), &Self::set_material_by_index);
 
-	ClassDB::bind_method(D_METHOD("_get_transparent_material"), &VoxelMesherCubes::_b_get_transparent_material);
-	ClassDB::bind_method(
-			D_METHOD("_set_transparent_material", "material"), &VoxelMesherCubes::_b_set_transparent_material);
+	ClassDB::bind_method(D_METHOD("_get_opaque_material"), &Self::_b_get_opaque_material);
+	ClassDB::bind_method(D_METHOD("_set_opaque_material", "material"), &Self::_b_set_opaque_material);
 
-	ClassDB::bind_static_method(VoxelMesherCubes::get_class_static(),
-			D_METHOD("generate_mesh_from_image", "image", "voxel_size"), &VoxelMesherCubes::generate_mesh_from_image);
+	ClassDB::bind_method(D_METHOD("_get_transparent_material"), &Self::_b_get_transparent_material);
+	ClassDB::bind_method(D_METHOD("_set_transparent_material", "material"), &Self::_b_set_transparent_material);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "greedy_meshing_enabled"), "set_greedy_meshing_enabled",
-			"is_greedy_meshing_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_mode", PROPERTY_HINT_ENUM, "Raw,MesherPalette,ShaderPalette"),
-			"set_color_mode", "get_color_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE,
-						 VoxelColorPalette::get_class_static()),
-			"set_palette", "get_palette");
+	ClassDB::bind_static_method(
+			Self::get_class_static(),
+			D_METHOD("generate_mesh_from_image", "image", "voxel_size"),
+			&Self::generate_mesh_from_image
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "greedy_meshing_enabled"),
+			"set_greedy_meshing_enabled",
+			"is_greedy_meshing_enabled"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "color_mode", PROPERTY_HINT_ENUM, "Raw,MesherPalette,ShaderPalette"),
+			"set_color_mode",
+			"get_color_mode"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::OBJECT, "palette", PROPERTY_HINT_RESOURCE_TYPE, VoxelColorPalette::get_class_static()
+			),
+			"set_palette",
+			"get_palette"
+	);
 
 	const String material_hint =
 			String(BaseMaterial3D::get_class_static()) + "," + String(ShaderMaterial::get_class_static());
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
-			"_set_opaque_material", "_get_opaque_material");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
-			"_set_transparent_material", "_get_transparent_material");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "opaque_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			"_set_opaque_material",
+			"_get_opaque_material"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "transparent_material", PROPERTY_HINT_RESOURCE_TYPE, material_hint),
+			"_set_transparent_material",
+			"_get_transparent_material"
+	);
 
 	BIND_ENUM_CONSTANT(MATERIAL_OPAQUE);
 	BIND_ENUM_CONSTANT(MATERIAL_TRANSPARENT);

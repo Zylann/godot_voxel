@@ -285,7 +285,10 @@ private:
 	void apply_data_block_response(VoxelEngine::BlockDataOutput &ob);
 	void apply_detail_texture_update(VoxelEngine::BlockDetailTextureOutput &ob);
 	void apply_detail_texture_update_to_block(
-			VoxelMeshBlockVLT &block, DetailTextureOutput &ob, unsigned int lod_index);
+			VoxelMeshBlockVLT &block,
+			DetailTextureOutput &ob,
+			unsigned int lod_index
+	);
 	void try_apply_parent_detail_texture_to_block(VoxelMeshBlockVLT &block, Vector3i bpos, unsigned int lod_index);
 
 	void start_updater();
