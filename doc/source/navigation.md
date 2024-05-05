@@ -36,4 +36,4 @@ It is also hard to support planets because it assumes the world is flat.
 The `navigation` branch of the module attempts to implement a dynamic navmesh system, however it has performance issues and isn't ready for production.
 At time of writing, it is not actively developped (subject to change, eventually). You may check it out and tweak it for your needs if you want to use it.
 
-See also https://github.com/Zylann/godot_voxel/issues/610
+See also [issue 610](https://github.com/Zylann/godot_voxel/issues/610).
