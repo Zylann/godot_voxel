@@ -47,12 +47,9 @@ private:
 	Vector2i _atlas_size_in_tiles;
 };
 
-void make_cube_side_vertices_tangents(
-		VoxelBlockyModel::BakedData::SideSurface &side_surface,
-		const unsigned int side_index,
-		const float height,
-		const bool bake_tangents
-);
+void make_cube_side_vertices(StdVector<Vector3f> &positions, const unsigned int side_index, const float height);
+void make_cube_side_indices(StdVector<int> &indices, const unsigned int side_index);
+void make_cube_side_tangents(StdVector<float> &tangents, const unsigned int side_index);
 
 } // namespace zylann::voxel
 

@@ -36,9 +36,10 @@ void bake_fluid(
 
 	// TODO This part shouldn't be necessary? it's the same for every fluid
 	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
-		make_cube_side_vertices_tangents(
-				baked_fluid.side_surfaces[side_index], side_index, VoxelBlockyFluid::BakedData::TOP_HEIGHT, false
-		);
+		VoxelBlockyModel::BakedData::SideSurface &ss = baked_fluid.side_surfaces[side_index];
+		make_cube_side_vertices(ss.positions, side_index, VoxelBlockyFluid::BakedData::TOP_HEIGHT);
+		// make_cube_side_tangents(ss.tangents, side_index);
+		make_cube_side_indices(ss.indices, side_index);
 	}
 }
 
