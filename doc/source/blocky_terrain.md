@@ -95,6 +95,9 @@ Top corners of fluid voxels will be raised to match the highest neighbor fluid o
 
 This is a procedural model, so less data is precomputed and is instead calculated by the mesher on every block update. This is because when fluids have more than a few levels, precomputed models would require so many variations that it wouldn't be worth it.
 
+!!! note
+	Like the rest of models, fluids won't simulate behavior on their own. That part is for you to implement.
+
 
 #### Library setup
 
