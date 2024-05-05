@@ -67,10 +67,6 @@ void bake_fluid_model(
 	// TODO Allow more than one model with the same level?
 	const unsigned int level = fluid_model.get_level();
 	ZN_ASSERT(level >= 0 && level < VoxelBlockyModelFluid::MAX_LEVELS);
-	// if (level >= baked_fluid.level_model_indices.size()) {
-	// 	baked_fluid.level_model_indices.resize(level + 1, VoxelBlockyModel::AIR_ID);
-	// }
-	// baked_fluid.level_model_indices[level] = model_index;
 	baked_model.fluid_level = level;
 	baked_fluid.max_level = math::max(static_cast<uint8_t>(level), baked_fluid.max_level);
 
@@ -83,22 +79,6 @@ void bake_fluid_model(
 
 	// This is to be decided dynamically. The top side is always empty.
 	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
-
-	// TODO Specify material
-	// Assign material overrides if any
-	// for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-	// 	if (surface_index < _surface_count) {
-	// 		const SurfaceParams &surface_params = _surface_params[surface_index];
-	// 		const Ref<Material> material = surface_params.material_override;
-
-	// 		BakedData::Surface &surface = model.surfaces[surface_index];
-
-	// 		const unsigned int material_index = materials.get_or_create_index(material);
-	// 		surface.material_id = material_index;
-
-	// 		surface.collision_enabled = surface_params.collision_enabled;
-	// 	}
-	// }
 }
 
 } // namespace
