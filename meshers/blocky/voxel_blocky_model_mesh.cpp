@@ -394,15 +394,13 @@ void bake_mesh_geometry(
 
 	// TODO Merge surfaces if they are found to have the same material (but still print a warning if their material is
 	// different or is null)
-	if (mesh->get_surface_count() > int(VoxelBlockyModel::BakedData::Model::MAX_SURFACES)) {
-		ZN_PRINT_WARNING(
-				format("Mesh has more than {} surfaces, extra surfaces will not be baked.",
-					   VoxelBlockyModel::BakedData::Model::MAX_SURFACES)
-		);
+	if (mesh->get_surface_count() > int(VoxelBlockyModel::MAX_SURFACES)) {
+		ZN_PRINT_WARNING(format(
+				"Mesh has more than {} surfaces, extra surfaces will not be baked.", VoxelBlockyModel::MAX_SURFACES
+		));
 	}
 
-	const unsigned int surface_count =
-			math::min(uint32_t(mesh->get_surface_count()), VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
+	const unsigned int surface_count = math::min(uint32_t(mesh->get_surface_count()), VoxelBlockyModel::MAX_SURFACES);
 
 	StdVector<Ref<Material>> materials;
 	StdVector<Array> surfaces;

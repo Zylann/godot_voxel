@@ -231,8 +231,8 @@ void get_side_geometry_2d_all_surfaces(
 	unsigned int vertex_count = 0;
 	unsigned int index_count = 0;
 
-	const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-			&side_surfaces = model.sides_surfaces[side];
+	const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+			model.sides_surfaces[side];
 
 	for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 		const VoxelBlockyModel::BakedData::SideSurface &side_surface = side_surfaces[surface_index];
@@ -526,11 +526,10 @@ void generate_model_cutout_sides(
 
 			const uint32_t other_side_shape_id = other_model.side_pattern_indices[other_side];
 
-			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-					cut_surfaces;
+			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> cut_surfaces;
 
-			const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-					&side_surfaces = model.sides_surfaces[side];
+			const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+					model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 				const VoxelBlockyModel::BakedData::SideSurface &side_surface = side_surfaces[surface_index];
@@ -655,8 +654,8 @@ void rasterize_side_all_surfaces( //
 		const unsigned int side_index, //
 		std::bitset<RASTER_SIZE * RASTER_SIZE> &bitmap //
 ) {
-	const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-			&side_surfaces = model_data.model.sides_surfaces[side_index];
+	const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+			model_data.model.sides_surfaces[side_index];
 	// For each surface (they are all combined for simplicity, though it is also a limitation)
 	for (unsigned int surface_index = 0; surface_index < model_data.model.surface_count; ++surface_index) {
 		const VoxelBlockyModel::BakedData::SideSurface &side = side_surfaces[surface_index];

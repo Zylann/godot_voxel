@@ -349,7 +349,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 
 Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 		Span<const BakedData::Surface> inner_surfaces,
-		Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>> sides_surfaces,
+		Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>> sides_surfaces,
 		const Color model_color,
 		const bool tangents_enabled
 ) {
@@ -364,7 +364,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (const FixedArray<BakedData::SideSurface, BakedData::Model::MAX_SURFACES> &side_surfaces : sides_surfaces) {
+		for (const FixedArray<BakedData::SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
 			const BakedData::SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();

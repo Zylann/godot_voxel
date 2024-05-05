@@ -29,6 +29,7 @@ public:
 	// Don't assign a non-empty model at this index.
 	static const uint16_t AIR_ID = 0;
 	static const uint8_t NULL_FLUID_INDEX = 255;
+	static constexpr uint32_t MAX_SURFACES = 2;
 
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
@@ -71,8 +72,6 @@ public:
 		};
 
 		struct Model {
-			static constexpr uint32_t MAX_SURFACES = 2;
-
 			// A model can have up to 2 materials.
 			// If more is needed or profiling tells better, we could change it to a vector?
 			FixedArray<Surface, MAX_SURFACES> surfaces;
@@ -226,8 +225,7 @@ public:
 
 	static Ref<Mesh> make_mesh_from_baked_data(
 			Span<const BakedData::Surface> inner_surfaces,
-			Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>>
-					sides_surfaces,
+			Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>> sides_surfaces,
 			const Color model_color,
 			const bool tangents_enabled
 	);
@@ -258,7 +256,7 @@ private:
 		bool collision_enabled = true;
 	};
 
-	FixedArray<SurfaceParams, BakedData::Model::MAX_SURFACES> _surface_params;
+	FixedArray<SurfaceParams, MAX_SURFACES> _surface_params;
 
 protected:
 	unsigned int _surface_count = 0;
@@ -282,8 +280,7 @@ private:
 };
 
 inline bool is_empty(
-		const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-				&surfaces
+		const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces
 ) {
 	for (const VoxelBlockyModel::BakedData::SideSurface &surface : surfaces) {
 		if (surface.indices.size() > 0) {

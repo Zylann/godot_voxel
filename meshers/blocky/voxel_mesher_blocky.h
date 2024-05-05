@@ -142,7 +142,7 @@ void generate_preview_fluid_model(
 		const VoxelBlockyLibraryBase::BakedData &library,
 		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
 		const FixedArray<
-				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
 				Cube::SIDE_COUNT> *&out_model_sides_surfaces
 );
 
