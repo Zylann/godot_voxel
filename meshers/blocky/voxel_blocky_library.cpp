@@ -12,6 +12,7 @@
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_model_cube.h"
 #include "voxel_blocky_model_empty.h"
@@ -61,7 +62,7 @@ void VoxelBlockyLibrary::bake() {
 	// This is the only place we modify the data.
 
 	_indexed_materials.clear();
-	VoxelBlockyModel::MaterialIndexer materials{ _indexed_materials };
+	blocky::MaterialIndexer materials{ _indexed_materials };
 
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 

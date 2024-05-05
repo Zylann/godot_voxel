@@ -194,12 +194,6 @@ public:
 
 	virtual bool is_empty() const;
 
-	struct MaterialIndexer {
-		StdVector<Ref<Material>> &materials;
-
-		unsigned int get_or_create_index(const Ref<Material> &p_material);
-	};
-
 	virtual void bake(blocky::ModelBakingContext &ctx) const;
 
 	Span<const AABB> get_collision_aabbs() const {

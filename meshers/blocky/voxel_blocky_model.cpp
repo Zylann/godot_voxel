@@ -7,8 +7,9 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/string/format.h"
-#include "voxel_blocky_library.h"
+#include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
+#include "voxel_blocky_library.h"
 
 // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 #include "voxel_mesher_blocky.h"
@@ -16,27 +17,6 @@
 #include "voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
-
-unsigned int VoxelBlockyModel::MaterialIndexer::get_or_create_index(const Ref<Material> &p_material) {
-	for (size_t i = 0; i < materials.size(); ++i) {
-		const Ref<Material> &material = materials[i];
-		if (material == p_material) {
-			return i;
-		}
-	}
-#ifdef TOOLS_ENABLED
-	if (materials.size() == VoxelBlockyLibraryBase::MAX_MATERIALS) {
-		ZN_PRINT_ERROR(
-				format("Maximum material count reached ({}), try reduce your number of materials by re-using "
-					   "them or using atlases.",
-					   VoxelBlockyLibraryBase::MAX_MATERIALS)
-		);
-	}
-#endif
-	const unsigned int ret = materials.size();
-	materials.push_back(p_material);
-	return ret;
-}
 
 VoxelBlockyModel::VoxelBlockyModel() : _color(1.f, 1.f, 1.f) {}
 
@@ -235,7 +215,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 	// The following logic must run after derived classes, should not be called directly
 
 	VoxelBlockyModel::BakedData &baked_data = ctx.model;
-	VoxelBlockyModel::MaterialIndexer &materials = ctx.material_indexer;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	// baked_data.contributes_to_ao is set by the side culling phase
 	baked_data.transparency_index = _transparency_index;

@@ -10,6 +10,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string/format.h"
+#include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library.h"
 
@@ -165,7 +166,7 @@ void bake_mesh_geometry(
 		Span<const Ref<Material>> materials,
 		VoxelBlockyModel::BakedData &baked_data,
 		bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		blocky::MaterialIndexer &material_indexer,
 		unsigned int ortho_rotation,
 		float side_vertex_tolerance
 ) {
@@ -378,7 +379,7 @@ void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
 		VoxelBlockyModel::BakedData &baked_data,
 		bool bake_tangents,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		blocky::MaterialIndexer &material_indexer,
 		float side_vertex_tolerance,
 		bool side_cutout_enabled
 ) {
@@ -426,7 +427,7 @@ void bake_mesh_geometry(
 
 void VoxelBlockyModelMesh::bake(blocky::ModelBakingContext &ctx) const {
 	VoxelBlockyModel::BakedData &baked_data = ctx.model;
-	VoxelBlockyModel::MaterialIndexer &materials = ctx.material_indexer;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	baked_data.clear();
 	bake_mesh_geometry(
@@ -462,7 +463,7 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	VoxelBlockyModel::BakedData baked_data;
 	baked_data.color = get_color();
 	StdVector<Ref<Material>> materials;
-	MaterialIndexer material_indexer{ materials };
+	blocky::MaterialIndexer material_indexer{ materials };
 	bake_mesh_geometry(*this, baked_data, bake_tangents, material_indexer, _side_vertex_tolerance, false);
 
 	Ref<Mesh> mesh = make_mesh_from_baked_data(baked_data, bake_tangents);

@@ -4,6 +4,7 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h"
+#include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 #include "voxel_blocky_library_base.h"
 #include "voxel_mesher_blocky.h"
@@ -57,7 +58,7 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	}
 
 	StdVector<Ref<Material>> materials;
-	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
+	blocky::MaterialIndexer material_indexer{ materials };
 
 	VoxelBlockyLibraryBase::BakedData library;
 	library.models.resize(2);

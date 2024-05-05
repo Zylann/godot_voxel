@@ -1,4 +1,6 @@
 #include "voxel_blocky_fluid.h"
+#include "../../util/godot/classes/material.h"
+#include "blocky_material_indexer.h"
 #include "voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
@@ -22,7 +24,7 @@ namespace {
 void bake_fluid(
 		const VoxelBlockyFluid &fluid,
 		VoxelBlockyFluid::BakedData &baked_fluid,
-		VoxelBlockyModel::MaterialIndexer &materials
+		blocky::MaterialIndexer &materials
 ) {
 	// for (const uint16_t model_index : baked_fluid.level_model_indices) {
 	// 	if (model_index == VoxelBlockyModel::AIR_ID) {
@@ -49,8 +51,7 @@ void bake_fluid(
 
 } // namespace
 
-void VoxelBlockyFluid::bake(VoxelBlockyFluid::BakedData &baked_fluid, VoxelBlockyModel::MaterialIndexer &materials)
-		const {
+void VoxelBlockyFluid::bake(VoxelBlockyFluid::BakedData &baked_fluid, blocky::MaterialIndexer &materials) const {
 	bake_fluid(*this, baked_fluid, materials);
 }
 

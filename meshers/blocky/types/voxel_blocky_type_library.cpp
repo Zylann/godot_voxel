@@ -9,6 +9,7 @@
 #include "../../../util/godot/core/typed_array.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_material_indexer.h"
 #include "../voxel_blocky_model_cube.h"
 
 namespace zylann::voxel {
@@ -52,7 +53,7 @@ void VoxelBlockyTypeLibrary::bake() {
 
 	StdVector<VoxelBlockyModel::BakedData> baked_models;
 	StdVector<VoxelBlockyType::VariantKey> keys;
-	VoxelBlockyModel::MaterialIndexer material_indexer{ _indexed_materials };
+	blocky::MaterialIndexer material_indexer{ _indexed_materials };
 	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
 
 	_baked_data.models.resize(_id_map.size());

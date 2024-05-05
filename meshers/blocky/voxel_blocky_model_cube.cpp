@@ -1,6 +1,7 @@
 #include "voxel_blocky_model_cube.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
+#include "blocky_material_indexer.h"
 #include "blocky_model_baking_context.h"
 
 namespace zylann::voxel {
@@ -213,7 +214,7 @@ void bake_cube_geometry(
 
 void VoxelBlockyModelCube::bake(blocky::ModelBakingContext &ctx) const {
 	VoxelBlockyModel::BakedData &baked_data = ctx.model;
-	VoxelBlockyModel::MaterialIndexer &materials = ctx.material_indexer;
+	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	baked_data.clear();
 	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, ctx.tangents_enabled);

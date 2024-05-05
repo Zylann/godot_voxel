@@ -66,7 +66,7 @@ public:
 	void bake(
 			StdVector<VoxelBlockyModel::BakedData> &out_models,
 			StdVector<VariantKey> &out_keys,
-			VoxelBlockyModel::MaterialIndexer &material_indexer,
+			blocky::MaterialIndexer &material_indexer,
 			const VariantKey *specific_key,
 			bool bake_tangents,
 			StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,

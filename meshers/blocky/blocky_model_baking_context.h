@@ -8,11 +8,13 @@
 namespace zylann::voxel {
 namespace blocky {
 
+struct MaterialIndexer;
+
 struct ModelBakingContext {
 	VoxelBlockyModel::BakedData &model;
 	// const uint16_t model_index;
 	const bool tangents_enabled;
-	VoxelBlockyModel::MaterialIndexer &material_indexer;
+	MaterialIndexer &material_indexer;
 	StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids;
 	StdVector<VoxelBlockyFluid::BakedData> &baked_fluids;
 };

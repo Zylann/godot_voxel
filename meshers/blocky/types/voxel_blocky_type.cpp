@@ -13,6 +13,7 @@
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_material_indexer.h"
 #include "../blocky_model_baking_context.h"
 #include "../voxel_blocky_library_base.h"
 
@@ -318,7 +319,7 @@ math::OrthoBasis get_baking_rotation_ortho_basis(
 void VoxelBlockyType::bake(
 		StdVector<VoxelBlockyModel::BakedData> &out_models,
 		StdVector<VariantKey> &out_keys,
-		VoxelBlockyModel::MaterialIndexer &material_indexer,
+		blocky::MaterialIndexer &material_indexer,
 		const VariantKey *specific_key,
 		bool bake_tangents,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
@@ -504,7 +505,7 @@ void VoxelBlockyType::get_configuration_warnings(PackedStringArray &out_warnings
 Ref<Mesh> VoxelBlockyType::get_preview_mesh(const VariantKey &key) const {
 	StdVector<VoxelBlockyModel::BakedData> baked_models;
 	StdVector<Ref<Material>> materials;
-	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
+	blocky::MaterialIndexer material_indexer{ materials };
 	StdVector<VariantKey> keys;
 
 	// Assuming tangents are needed, which might not always be the case, but we won't waste much for just a preview

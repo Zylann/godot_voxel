@@ -1,12 +1,20 @@
 #ifndef VOXEL_BLOCKY_FLUID_H
 #define VOXEL_BLOCKY_FLUID_H
 
-#include "../../util/godot/classes/material.h"
+#include "../../constants/cube_tables.h"
+#include "../../util/containers/fixed_array.h"
+#include "../../util/containers/std_vector.h"
 #include "../../util/godot/classes/resource.h"
-#include "../../util/math/rect2i.h"
-#include "voxel_blocky_model.h"
+#include "../../util/math/vector3f.h"
+#include <cstdint>
+
+ZN_GODOT_FORWARD_DECLARE(class Material);
 
 namespace zylann::voxel {
+
+namespace blocky {
+struct MaterialIndexer;
+}
 
 // Minecraft-style fluid common configuration.
 // Fluids are a bit special compared to regular models. Rendering them with precalculated models would require way too
@@ -61,7 +69,7 @@ public:
 	void set_material(Ref<Material> material);
 	Ref<Material> get_material() const;
 
-	void bake(BakedData &baked_fluid, VoxelBlockyModel::MaterialIndexer &materials) const;
+	void bake(BakedData &baked_fluid, blocky::MaterialIndexer &materials) const;
 
 private:
 	static void _bind_methods();
