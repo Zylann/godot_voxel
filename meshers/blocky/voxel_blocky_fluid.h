@@ -36,7 +36,6 @@ public:
 		static constexpr float BOTTOM_HEIGHT = 0.0625f;
 
 		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> side_surfaces;
-		FixedArray<FixedArray<Vector2f, 4>, FLOW_STATE_COUNT> top_flow_uvs;
 
 		// StdVector<uint16_t> level_model_indices;
 		uint32_t material_id = 0;
