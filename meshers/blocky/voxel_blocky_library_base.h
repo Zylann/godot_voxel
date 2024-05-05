@@ -20,7 +20,7 @@ public:
 	// Limit based on maximum supported by VoxelMesherBlocky
 	static constexpr unsigned int MAX_MODELS = 65536;
 	// Limit related to how we index baked fluids
-	static constexpr unsigned int MAX_FLUIDS = 64;
+	static constexpr unsigned int MAX_FLUIDS = 256;
 
 	// Materials must be kept to a minimum. 256 is already a lot, but that only affects performance. This limit is
 	// the one beyond which the code stops working. Could still be increased in theory (requires some code changes to
