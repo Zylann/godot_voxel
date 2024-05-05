@@ -64,36 +64,38 @@ void copy_positions_normals_tangents(
 }
 
 static const VoxelBlockyFluid::FlowState g_min_corners_mask_to_flowstate[16] = {
+	// 0123
+	// ----
 	// 0000
 	VoxelBlockyFluid::FLOW_IDLE, // Impossible
-	// 1000
-	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
-	// 0100
-	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
-	// 1100
-	VoxelBlockyFluid::FLOW_STRAIGHT_NEGATIVE_Z,
+	// 0001
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
 	// 0010
 	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z,
-	// 1010
+	// 0011
+	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z,
+	// 0100
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
+	// 0101
 	VoxelBlockyFluid::FLOW_IDLE, // Ambiguous
 	// 0110
 	VoxelBlockyFluid::FLOW_STRAIGHT_NEGATIVE_X,
-	// 1110
-	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
-	// 0001
-	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
-	// 1001
-	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_X,
-	// 0101
-	VoxelBlockyFluid::FLOW_IDLE, // Ambiguous
-	// 1101
-	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
-	// 0011
-	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_Z,
-	// 1011
-	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
 	// 0111
 	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z,
+	// 1000
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
+	// 1001
+	VoxelBlockyFluid::FLOW_STRAIGHT_POSITIVE_X,
+	// 1010
+	VoxelBlockyFluid::FLOW_IDLE, // Ambiguous
+	// 1011
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z,
+	// 1100
+	VoxelBlockyFluid::FLOW_STRAIGHT_NEGATIVE_Z,
+	// 1101
+	VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z,
+	// 1110
+	VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z,
 	// 1111
 	VoxelBlockyFluid::FLOW_IDLE,
 };
@@ -340,8 +342,8 @@ void generate_fluid_model(
 		}
 
 		// We want the diagonal of the top quad's triangles to remain aligned with the flow
-		if (flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z ||
-			flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z) {
+		if (flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_POSITIVE_Z ||
+			flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_NEGATIVE_Z) {
 			transpose_quad_triangles(to_span(fluid_top_surface.indices));
 		}
 	}
