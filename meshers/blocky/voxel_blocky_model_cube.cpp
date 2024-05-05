@@ -145,12 +145,12 @@ void make_cube_side_tangents(StdVector<float> &tangents, const unsigned int side
 namespace {
 
 void make_cube_sides_vertices_tangents(
-		Span<FixedArray<VoxelBlockyModel::BakedData::SideSurface, 2>> sides_surfaces,
+		Span<FixedArray<VoxelBlockyModel::SideSurface, 2>> sides_surfaces,
 		const float height,
 		const bool bake_tangents
 ) {
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = sides_surfaces[side][0];
+		VoxelBlockyModel::SideSurface &side_surface = sides_surfaces[side][0];
 		make_cube_side_vertices(side_surface.positions, side, height);
 		make_cube_side_indices(side_surface.indices, side);
 		if (bake_tangents) {
@@ -196,7 +196,7 @@ void bake_cube_geometry(
 	const Vector2f s = Vector2f(1.0f) / atlas_size;
 
 	for (unsigned int side = 0; side < Cube::SIDE_COUNT; ++side) {
-		VoxelBlockyModel::BakedData::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
+		VoxelBlockyModel::SideSurface &side_surface = baked_data.model.sides_surfaces[side][0];
 		StdVector<Vector2f> &uvs = side_surface.uvs;
 		uvs.resize(4);
 

@@ -74,10 +74,9 @@ Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
 	library.fluids.resize(1);
 	_fluid->bake(library.fluids[0], material_indexer);
 
-	Span<const VoxelBlockyModel::BakedData::Surface> model_surfaces;
-	const FixedArray<
-			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-			Cube::SIDE_COUNT> *model_sides_surfaces = nullptr;
+	Span<const VoxelBlockyModel::Surface> model_surfaces;
+	const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT>
+			*model_sides_surfaces = nullptr;
 
 	generate_preview_fluid_model(library.models[1], 1, library, model_surfaces, model_sides_surfaces);
 	ZN_ASSERT_RETURN_V(model_sides_surfaces != nullptr, Ref<Mesh>());

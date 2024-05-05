@@ -242,7 +242,7 @@ void VoxelBlockyModel::bake(blocky::ModelBakingContext &ctx) const {
 			const SurfaceParams &surface_params = _surface_params[surface_index];
 			const Ref<Material> material = surface_params.material_override;
 
-			BakedData::Surface &surface = model.surfaces[surface_index];
+			Surface &surface = model.surfaces[surface_index];
 
 			const unsigned int material_index = materials.get_or_create_index(material);
 			surface.material_id = material_index;
@@ -348,8 +348,8 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(const BakedData &baked_dat
 }
 
 Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
-		Span<const BakedData::Surface> inner_surfaces,
-		Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>> sides_surfaces,
+		Span<const Surface> inner_surfaces,
+		Span<const FixedArray<SideSurface, MAX_SURFACES>> sides_surfaces,
 		const Color model_color,
 		const bool tangents_enabled
 ) {
@@ -359,13 +359,13 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 	const unsigned int surface_count = inner_surfaces.size();
 
 	for (unsigned int surface_index = 0; surface_index < inner_surfaces.size(); ++surface_index) {
-		const BakedData::Surface &surface = inner_surfaces[surface_index];
+		const Surface &surface = inner_surfaces[surface_index];
 
 		// Get vertex and index count in the surface
 		unsigned int vertex_count = surface.positions.size();
 		unsigned int index_count = surface.indices.size();
-		for (const FixedArray<BakedData::SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
-			const BakedData::SideSurface &side_surface = side_surfaces[surface_index];
+		for (const FixedArray<SideSurface, MAX_SURFACES> &side_surfaces : sides_surfaces) {
+			const SideSurface &side_surface = side_surfaces[surface_index];
 			vertex_count += side_surface.positions.size();
 			index_count += side_surface.indices.size();
 		}
@@ -424,7 +424,7 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 		}
 
 		for (unsigned int side = 0; side < sides_surfaces.size(); ++side) {
-			const BakedData::SideSurface &side_surface = sides_surfaces[side][surface_index];
+			const SideSurface &side_surface = sides_surfaces[side][surface_index];
 			Span<const Vector3f> side_positions = to_span(side_surface.positions);
 			Span<const Vector2f> side_uvs = to_span(side_surface.uvs);
 			Span<const int> side_indices = to_span(side_surface.indices);

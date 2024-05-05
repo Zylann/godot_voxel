@@ -283,7 +283,7 @@ void bake_mesh_geometry(
 
 		VoxelBlockyModel::BakedData::Model &model = baked_data.model;
 
-		VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+		VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
 		Ref<Material> material = materials[surface_index];
 		// Note, an empty material counts as "The default material".
 		surface.material_id = material_indexer.get_or_create_index(material);
@@ -303,7 +303,7 @@ void bake_mesh_geometry(
 				)) {
 				// That triangle is on the face
 
-				VoxelBlockyModel::BakedData::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
+				VoxelBlockyModel::SideSurface &side_surface = model.sides_surfaces[side][surface_index];
 
 				int next_side_index = side_surface.positions.size();
 
@@ -469,7 +469,7 @@ Ref<Mesh> VoxelBlockyModelMesh::get_preview_mesh() const {
 	// In case of earlier failure, it's possible there are no materials at all.
 	if (materials.size() > 0) {
 		for (unsigned int surface_index = 0; surface_index < baked_data.model.surface_count; ++surface_index) {
-			const BakedData::Surface &surface = baked_data.model.surfaces[surface_index];
+			const Surface &surface = baked_data.model.surfaces[surface_index];
 			Ref<Material> material = materials[surface.material_id];
 			Ref<Material> material_override = get_material_override(surface_index);
 			if (material_override.is_valid()) {

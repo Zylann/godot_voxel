@@ -31,46 +31,46 @@ public:
 	static const uint8_t NULL_FLUID_INDEX = 255;
 	static constexpr uint32_t MAX_SURFACES = 2;
 
+	struct SideSurface {
+		StdVector<Vector3f> positions;
+		StdVector<Vector2f> uvs;
+		StdVector<int> indices;
+		StdVector<float> tangents;
+		// Normals aren't stored because they are assumed to be the same for the whole side
+
+		void clear() {
+			positions.clear();
+			uvs.clear();
+			indices.clear();
+			tangents.clear();
+		}
+	};
+
+	struct Surface {
+		// Inside part of the model.
+		StdVector<Vector3f> positions;
+		StdVector<Vector3f> normals;
+		StdVector<Vector2f> uvs;
+		StdVector<int> indices;
+		StdVector<float> tangents;
+
+		uint32_t material_id = 0;
+		bool collision_enabled = true;
+
+		void clear() {
+			positions.clear();
+			normals.clear();
+			uvs.clear();
+			indices.clear();
+			tangents.clear();
+		}
+	};
+
 	// Plain data strictly used by the mesher.
 	// It becomes distinct because it's going to be used in a multithread environment,
 	// while the configuration that produced the data can be changed by the user at any time.
 	// Also, it is lighter than Godot resources.
 	struct BakedData {
-		struct SideSurface {
-			StdVector<Vector3f> positions;
-			StdVector<Vector2f> uvs;
-			StdVector<int> indices;
-			StdVector<float> tangents;
-			// Normals aren't stored because they are assumed to be the same for the whole side
-
-			void clear() {
-				positions.clear();
-				uvs.clear();
-				indices.clear();
-				tangents.clear();
-			}
-		};
-
-		struct Surface {
-			// Inside part of the model.
-			StdVector<Vector3f> positions;
-			StdVector<Vector3f> normals;
-			StdVector<Vector2f> uvs;
-			StdVector<int> indices;
-			StdVector<float> tangents;
-
-			uint32_t material_id = 0;
-			bool collision_enabled = true;
-
-			void clear() {
-				positions.clear();
-				normals.clear();
-				uvs.clear();
-				indices.clear();
-				tangents.clear();
-			}
-		};
-
 		struct Model {
 			// A model can have up to 2 materials.
 			// If more is needed or profiling tells better, we could change it to a vector?
@@ -224,8 +224,8 @@ public:
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
 
 	static Ref<Mesh> make_mesh_from_baked_data(
-			Span<const BakedData::Surface> inner_surfaces,
-			Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>> sides_surfaces,
+			Span<const Surface> inner_surfaces,
+			Span<const FixedArray<SideSurface, MAX_SURFACES>> sides_surfaces,
 			const Color model_color,
 			const bool tangents_enabled
 	);
@@ -279,10 +279,8 @@ private:
 	LegacyProperties _legacy_properties;
 };
 
-inline bool is_empty(
-		const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces
-) {
-	for (const VoxelBlockyModel::BakedData::SideSurface &surface : surfaces) {
+inline bool is_empty(const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &surfaces) {
+	for (const VoxelBlockyModel::SideSurface &surface : surfaces) {
 		if (surface.indices.size() > 0) {
 			return false;
 		}

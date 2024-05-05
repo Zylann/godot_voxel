@@ -140,10 +140,9 @@ void generate_preview_fluid_model(
 		const VoxelBlockyModel::BakedData &model,
 		const uint16_t model_id,
 		const VoxelBlockyLibraryBase::BakedData &library,
-		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
-		const FixedArray<
-				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-				Cube::SIDE_COUNT> *&out_model_sides_surfaces
+		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
+		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
+				&out_model_sides_surfaces
 );
 
 } // namespace zylann::voxel

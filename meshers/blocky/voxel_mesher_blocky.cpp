@@ -31,7 +31,7 @@ StdVector<int> &get_tls_index_offsets() {
 	return tls_index_offsets;
 }
 
-void copy(const VoxelBlockyFluid::Surface &src, Vector2f src_uv, VoxelBlockyModel::BakedData::SideSurface &dst) {
+void copy(const VoxelBlockyFluid::Surface &src, Vector2f src_uv, VoxelBlockyModel::SideSurface &dst) {
 	copy(src.positions, dst.positions);
 
 	dst.uvs.resize(src.positions.size());
@@ -47,7 +47,7 @@ void copy_positions_normals_tangents(
 		const Vector3f normal,
 		const uint32_t p_material_id,
 		const bool p_collision_enabled,
-		VoxelBlockyModel::BakedData::Surface &dst
+		VoxelBlockyModel::Surface &dst
 ) {
 	copy(src.positions, dst.positions);
 
@@ -166,17 +166,17 @@ FixedArray<float, 4> get_corner_heights_from_corner_levels(
 	return heights;
 }
 
-FixedArray<FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> &
+FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> &
 get_tls_fluid_sides_surfaces() {
 	static thread_local FixedArray<
-			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
+			FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
 			Cube::SIDE_COUNT>
 			tls_fluid_sides;
 	return tls_fluid_sides;
 }
 
-VoxelBlockyModel::BakedData::Surface &get_tls_fluid_top() {
-	static thread_local VoxelBlockyModel::BakedData::Surface tls_fluid_top;
+VoxelBlockyModel::Surface &get_tls_fluid_top() {
+	static thread_local VoxelBlockyModel::Surface tls_fluid_top;
 	return tls_fluid_top;
 }
 
@@ -198,10 +198,9 @@ void generate_fluid_model(
 		const int x_jump_size,
 		const int z_jump_size,
 		const VoxelBlockyLibraryBase::BakedData &library,
-		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
-		const FixedArray<
-				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-				Cube::SIDE_COUNT> *&out_model_sides_surfaces,
+		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
+		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
+				&out_model_sides_surfaces,
 		uint8_t &out_model_surface_count
 ) {
 	const uint32_t top_voxel_id = type_buffer[voxel_index + y_jump_size];
@@ -312,22 +311,22 @@ void generate_fluid_model(
 		// For lateral sides, we assume top vertices are always the last 2, in
 		// clockwise order relative to the top face
 		{
-			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_X][surface_index];
+			VoxelBlockyModel::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_X][surface_index];
 			side_surface.positions[2].y = corner_heights[2];
 			side_surface.positions[3].y = corner_heights[1];
 		}
 		{
-			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_X][surface_index];
+			VoxelBlockyModel::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_X][surface_index];
 			side_surface.positions[2].y = corner_heights[0];
 			side_surface.positions[3].y = corner_heights[3];
 		}
 		{
-			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_Z][surface_index];
+			VoxelBlockyModel::SideSurface &side_surface = fluid_sides[Cube::SIDE_NEGATIVE_Z][surface_index];
 			side_surface.positions[2].y = corner_heights[1];
 			side_surface.positions[3].y = corner_heights[0];
 		}
 		{
-			VoxelBlockyModel::BakedData::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_Z][surface_index];
+			VoxelBlockyModel::SideSurface &side_surface = fluid_sides[Cube::SIDE_POSITIVE_Z][surface_index];
 			side_surface.positions[2].y = corner_heights[3];
 			side_surface.positions[3].y = corner_heights[2];
 		}
@@ -365,10 +364,9 @@ void generate_preview_fluid_model(
 		const VoxelBlockyModel::BakedData &model,
 		const uint16_t model_id,
 		const VoxelBlockyLibraryBase::BakedData &library,
-		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
-		const FixedArray<
-				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
-				Cube::SIDE_COUNT> *&out_model_sides_surfaces
+		Span<const VoxelBlockyModel::Surface> &out_model_surfaces,
+		const FixedArray<FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>, Cube::SIDE_COUNT> *
+				&out_model_sides_surfaces
 ) {
 	ZN_ASSERT(model.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX);
 	FixedArray<uint16_t, 3 * 3 * 3> id_buffer;
@@ -501,10 +499,10 @@ void generate_blocky_mesh(
 
 				uint8_t model_surface_count = model.surface_count;
 
-				Span<const VoxelBlockyModel::BakedData::Surface> model_surfaces = to_span(model.surfaces);
+				Span<const VoxelBlockyModel::Surface> model_surfaces = to_span(model.surfaces);
 
 				const FixedArray<
-						FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
+						FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>,
 						Cube::SIDE_COUNT> *model_sides_surfaces = &model.sides_surfaces;
 
 				// Hybrid approach: extract cube faces and decimate those that aren't visible,
@@ -533,8 +531,8 @@ void generate_blocky_mesh(
 					}
 
 					// By default we render the whole side if we consider it visible
-					const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::MAX_SURFACES>
-							*side_surfaces = &((*model_sides_surfaces)[side]);
+					const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> *side_surfaces =
+							&((*model_sides_surfaces)[side]);
 
 					const uint32_t neighbor_voxel_id = type_buffer[voxel_index + side_neighbor_lut[side]];
 
@@ -552,9 +550,7 @@ void generate_blocky_mesh(
 							if (voxel.cutout_sides_enabled) {
 								const std::unordered_map<
 										uint32_t,
-										FixedArray<
-												VoxelBlockyModel::BakedData::SideSurface,
-												VoxelBlockyModel::MAX_SURFACES>>
+										FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES>>
 										&cutout_side_surfaces_by_neighbor_shape = model.cutout_side_surfaces[side];
 
 								const unsigned int neighbor_shape_id =
@@ -614,14 +610,14 @@ void generate_blocky_mesh(
 
 					// TODO Move this into a function
 					for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-						const VoxelBlockyModel::BakedData::Surface &surface = model_surfaces[surface_index];
+						const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
 
 						VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
 						ZN_ASSERT(surface.material_id >= 0 && surface.material_id < index_offsets.size());
 						int &index_offset = index_offsets[surface.material_id];
 
-						const VoxelBlockyModel::BakedData::SideSurface &side_surface = (*side_surfaces)[surface_index];
+						const VoxelBlockyModel::SideSurface &side_surface = (*side_surfaces)[surface_index];
 
 						const StdVector<Vector3f> &side_positions = side_surface.positions;
 						const unsigned int vertex_count = side_surface.positions.size();
@@ -749,7 +745,7 @@ void generate_blocky_mesh(
 
 				// Inside
 				for (unsigned int surface_index = 0; surface_index < model_surface_count; ++surface_index) {
-					const VoxelBlockyModel::BakedData::Surface &surface = model_surfaces[surface_index];
+					const VoxelBlockyModel::Surface &surface = model_surfaces[surface_index];
 					if (surface.positions.size() == 0) {
 						continue;
 					}
