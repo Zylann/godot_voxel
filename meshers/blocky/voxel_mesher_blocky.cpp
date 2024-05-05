@@ -31,11 +31,7 @@ StdVector<int> &get_tls_index_offsets() {
 	return tls_index_offsets;
 }
 
-void copy(
-		const VoxelBlockyModel::BakedData::SideSurface &src,
-		Vector2f src_uv,
-		VoxelBlockyModel::BakedData::SideSurface &dst
-) {
+void copy(const VoxelBlockyFluid::Surface &src, Vector2f src_uv, VoxelBlockyModel::BakedData::SideSurface &dst) {
 	copy(src.positions, dst.positions);
 
 	dst.uvs.resize(src.positions.size());
@@ -47,7 +43,7 @@ void copy(
 }
 
 void copy_positions_normals_tangents(
-		const VoxelBlockyModel::BakedData::SideSurface &src,
+		const VoxelBlockyFluid::Surface &src,
 		const Vector3f normal,
 		const uint32_t p_material_id,
 		const bool p_collision_enabled,
@@ -184,6 +180,15 @@ VoxelBlockyModel::BakedData::Surface &get_tls_fluid_top() {
 	return tls_fluid_top;
 }
 
+inline void transpose_quad_triangles(Span<int32_t> indices) {
+	// Assumes triangles are like this:
+	// 3---2
+	// |   |  {0, 2, 1, 0, 3, 2} --> { 0, 3, 1, 1, 3, 2 }
+	// 0---1
+	indices[1] = indices[4];
+	indices[3] = indices[2];
+}
+
 template <typename TModelID>
 void generate_fluid_model(
 		const VoxelBlockyModel::BakedData &voxel,
@@ -215,6 +220,7 @@ void generate_fluid_model(
 	// Fluids have only one material
 	static constexpr unsigned int surface_index = 0;
 
+	// We re-use the same memory per thread for each meshed fluid voxel
 	auto &fluid_sides = get_tls_fluid_sides_surfaces();
 	auto &fluid_top_surface = get_tls_fluid_top();
 
@@ -302,7 +308,6 @@ void generate_fluid_model(
 		fill(fluid_top_surface.uvs, Vector2f(math::AXIS_Y, flow_state));
 
 		// TODO Option to alter normals too so they are more "correct"? Not always needed tho?
-		// TODO Transpose triangles in some cases that look less good?
 
 		// For lateral sides, we assume top vertices are always the last 2, in
 		// clockwise order relative to the top face
@@ -332,6 +337,12 @@ void generate_fluid_model(
 			fluid_top_surface.positions[1].y = corner_heights[1];
 			fluid_top_surface.positions[2].y = corner_heights[2];
 			fluid_top_surface.positions[3].y = corner_heights[3];
+		}
+
+		// We want the diagonal of the top quad's triangles to remain aligned with the flow
+		if (flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_POSITIVE_X_NEGATIVE_Z ||
+			flow_state == VoxelBlockyFluid::FLOW_DIAGONAL_NEGATIVE_X_POSITIVE_Z) {
+			transpose_quad_triangles(to_span(fluid_top_surface.indices));
 		}
 	}
 

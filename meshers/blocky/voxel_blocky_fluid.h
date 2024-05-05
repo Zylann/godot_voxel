@@ -31,11 +31,24 @@ public:
 		FLOW_STATE_COUNT
 	};
 
+	struct Surface {
+		StdVector<Vector3f> positions;
+		StdVector<int> indices;
+		StdVector<float> tangents;
+		// Normals aren't stored because they are assumed to be the same for the whole side
+
+		void clear() {
+			positions.clear();
+			indices.clear();
+			tangents.clear();
+		}
+	};
+
 	struct BakedData {
 		static constexpr float TOP_HEIGHT = 0.9375f;
 		static constexpr float BOTTOM_HEIGHT = 0.0625f;
 
-		FixedArray<VoxelBlockyModel::BakedData::SideSurface, Cube::SIDE_COUNT> side_surfaces;
+		FixedArray<Surface, Cube::SIDE_COUNT> side_surfaces;
 
 		// StdVector<uint16_t> level_model_indices;
 		uint32_t material_id = 0;
