@@ -5,6 +5,7 @@
 #include "../../util/godot/core/array.h"
 #include "voxel_blocky_library_base.h"
 #include "voxel_blocky_model_baking_context.h"
+#include "voxel_mesher_blocky.h"
 
 namespace zylann::voxel {
 
@@ -24,6 +25,49 @@ void VoxelBlockyModelFluid::set_level(int level) {
 
 int VoxelBlockyModelFluid::get_level() const {
 	return _level;
+}
+
+bool VoxelBlockyModelFluid::is_empty() const {
+	return _fluid.is_null();
+}
+
+Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const {
+	if (_fluid.is_null()) {
+		return Ref<Mesh>();
+	}
+
+	StdVector<Ref<Material>> materials;
+	VoxelBlockyModel::MaterialIndexer material_indexer{ materials };
+
+	VoxelBlockyLibraryBase::BakedData library;
+	library.models.resize(2);
+
+	const bool tangents_enabled = false;
+
+	StdVector<Ref<VoxelBlockyFluid>> indexed_fluids;
+	blocky::ModelBakingContext model_baking_context{
+		library.models[1], tangents_enabled, material_indexer, indexed_fluids, library.fluids
+	};
+	bake(model_baking_context);
+
+	library.fluids.resize(1);
+	_fluid->bake(library.fluids[0], material_indexer);
+
+	Span<const VoxelBlockyModel::BakedData::Surface> model_surfaces;
+	const FixedArray<
+			FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+			Cube::SIDE_COUNT> *model_sides_surfaces = nullptr;
+
+	generate_preview_fluid_model(library.models[1], 1, library, model_surfaces, model_sides_surfaces);
+	ZN_ASSERT_RETURN_V(model_sides_surfaces != nullptr, Ref<Mesh>());
+
+	Ref<Mesh> mesh =
+			make_mesh_from_baked_data(model_surfaces, to_span(*model_sides_surfaces), Color(1, 1, 1), tangents_enabled);
+	ZN_ASSERT_RETURN_V(mesh.is_valid(), Ref<Mesh>());
+
+	mesh->surface_set_material(0, _fluid->get_material());
+
+	return mesh;
 }
 
 namespace {

@@ -350,15 +350,44 @@ void generate_fluid_model(
 
 } // namespace
 
+void generate_preview_fluid_model(
+		const VoxelBlockyModel::BakedData &model,
+		const uint16_t model_id,
+		const VoxelBlockyLibraryBase::BakedData &library,
+		Span<const VoxelBlockyModel::BakedData::Surface> &out_model_surfaces,
+		const FixedArray<
+				FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>,
+				Cube::SIDE_COUNT> *&out_model_sides_surfaces
+) {
+	ZN_ASSERT(model.fluid_index != VoxelBlockyModel::NULL_FLUID_INDEX);
+	FixedArray<uint16_t, 3 * 3 * 3> id_buffer;
+	fill(id_buffer, VoxelBlockyModel::AIR_ID);
+	const int center_loc = Vector3iUtil::get_zxy_index(Vector3i(1, 1, 1), Vector3i(3, 3, 3));
+	id_buffer[center_loc] = model_id;
+	uint8_t unused_surface_count;
+	generate_fluid_model<uint16_t>(
+			model,
+			to_span(id_buffer),
+			center_loc,
+			1,
+			3,
+			3 * 3,
+			library,
+			out_model_surfaces,
+			out_model_sides_surfaces,
+			unused_surface_count
+	);
+}
+
 template <typename Type_T>
-void generate_blocky_mesh( //
-		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material, //
-		VoxelMesher::Output::CollisionSurface *collision_surface, //
-		const Span<const Type_T> type_buffer, //
-		const Vector3i block_size, //
-		const VoxelBlockyLibraryBase::BakedData &library, //
-		bool bake_occlusion, //
-		float baked_occlusion_darkness //
+void generate_blocky_mesh(
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
+		VoxelMesher::Output::CollisionSurface *collision_surface,
+		const Span<const Type_T> type_buffer,
+		const Vector3i block_size,
+		const VoxelBlockyLibraryBase::BakedData &library,
+		const bool bake_occlusion,
+		const float baked_occlusion_darkness
 ) {
 	// TODO Optimization: not sure if this mandates a template function. There is so much more happening in this
 	// function other than reading voxels, although reading is on the hottest path. It needs to be profiled. If

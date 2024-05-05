@@ -20,7 +20,11 @@ public:
 	void set_level(int level);
 	int get_level() const;
 
+	bool is_empty() const override;
+
 	void bake(blocky::ModelBakingContext &ctx) const override;
+
+	Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const override;
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const override;

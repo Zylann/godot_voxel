@@ -116,7 +116,7 @@ public:
 		uint8_t transparency_index;
 		bool culls_neighbors;
 		bool contributes_to_ao;
-		bool empty;
+		bool empty = true;
 		bool is_random_tickable;
 		bool is_transparent;
 		bool cutout_sides_enabled = false;
@@ -229,6 +229,14 @@ public:
 	virtual void rotate_ortho(math::OrthoBasis ortho_basis);
 
 	static Ref<Mesh> make_mesh_from_baked_data(const BakedData &baked_data, bool tangents_enabled);
+
+	static Ref<Mesh> make_mesh_from_baked_data(
+			Span<const BakedData::Surface> inner_surfaces,
+			Span<const FixedArray<BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>>
+					sides_surfaces,
+			const Color model_color,
+			const bool tangents_enabled
+	);
 
 protected:
 	bool _set(const StringName &p_name, const Variant &p_value);
