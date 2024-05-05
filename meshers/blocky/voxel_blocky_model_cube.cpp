@@ -1,7 +1,7 @@
 #include "voxel_blocky_model_cube.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/math/conv.h"
-#include "voxel_blocky_model_baking_context.h"
+#include "blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 

@@ -8,7 +8,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/string/format.h"
 #include "voxel_blocky_library.h"
-#include "voxel_blocky_model_baking_context.h"
+#include "blocky_model_baking_context.h"
 
 // TODO Only required because of MAX_MATERIALS... could be enough inverting that dependency
 #include "voxel_mesher_blocky.h"

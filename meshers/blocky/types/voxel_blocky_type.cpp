@@ -13,8 +13,8 @@
 #include "../../../util/math/ortho_basis.h"
 #include "../../../util/profiling.h"
 #include "../../../util/string/format.h"
+#include "../blocky_model_baking_context.h"
 #include "../voxel_blocky_library_base.h"
-#include "../voxel_blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 

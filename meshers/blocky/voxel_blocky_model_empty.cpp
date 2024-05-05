@@ -1,5 +1,5 @@
 #include "voxel_blocky_model_empty.h"
-#include "voxel_blocky_model_baking_context.h"
+#include "blocky_model_baking_context.h"
 
 namespace zylann::voxel {
 

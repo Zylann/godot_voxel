@@ -4,8 +4,8 @@
 #include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h"
+#include "blocky_model_baking_context.h"
 #include "voxel_blocky_library_base.h"
-#include "voxel_blocky_model_baking_context.h"
 #include "voxel_mesher_blocky.h"
 
 namespace zylann::voxel {
