@@ -65,8 +65,6 @@ private:
 	StdVector<Ref<VoxelBlockyModel>> _voxel_models;
 };
 
-void bake_fluids();
-
 } // namespace zylann::voxel
 
 #endif // VOXEL_BLOCKY_LIBRARY_H
