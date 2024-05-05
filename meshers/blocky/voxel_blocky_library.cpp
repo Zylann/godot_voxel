@@ -17,6 +17,9 @@
 #include "voxel_blocky_model_empty.h"
 #include "voxel_blocky_model_fluid.h"
 #include "voxel_blocky_model_mesh.h"
+#ifdef TOOLS_ENABLED
+#include "../../util/godot/classes/resource.h"
+#endif
 
 #include <bitset>
 
@@ -207,6 +210,16 @@ void VoxelBlockyLibrary::get_configuration_warnings(PackedStringArray &out_warni
 		// Should we really consider it a problem?
 		out_warnings.append(String(ZN_TTR("The {0} has null model entries: {1}"))
 									.format(varray(VoxelBlockyLibrary::get_class_static(), indices_str)));
+	}
+
+	for (unsigned int i = 0; i < _voxel_models.size() && !has_solid_model; ++i) {
+		Ref<VoxelBlockyModel> model = _voxel_models[i];
+		if (model.is_null()) {
+			continue;
+		}
+		zylann::godot::get_resource_configuration_warnings(**model, out_warnings, [i]() {
+			return String("Model {0}: ").format(varray(i));
+		});
 	}
 }
 

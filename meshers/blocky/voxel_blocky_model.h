@@ -185,6 +185,10 @@ public:
 	void set_random_tickable(bool rt);
 	bool is_random_tickable() const;
 
+#ifdef TOOLS_ENABLED
+	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;
+#endif
+
 	//------------------------------------------
 	// Properties for internal usage only
 

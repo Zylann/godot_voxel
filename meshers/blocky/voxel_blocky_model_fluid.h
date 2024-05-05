@@ -22,9 +22,9 @@ public:
 
 	void bake(blocky::ModelBakingContext &ctx) const override;
 
-	// #ifdef TOOLS_ENABLED
-	// 	void get_configuration_warnings(PackedStringArray &warnings);
-	// #endif
+#ifdef TOOLS_ENABLED
+	void get_configuration_warnings(PackedStringArray &warnings) const override;
+#endif
 
 private:
 	static void _bind_methods();

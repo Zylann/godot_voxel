@@ -327,6 +327,14 @@ bool VoxelBlockyModel::is_random_tickable() const {
 	return _random_tickable;
 }
 
+#ifdef TOOLS_ENABLED
+
+void VoxelBlockyModel::get_configuration_warnings(PackedStringArray &out_warnings) const {
+	// May have implementations in subclasses
+}
+
+#endif
+
 bool VoxelBlockyModel::is_empty() const {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in child classes

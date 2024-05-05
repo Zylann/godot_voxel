@@ -87,17 +87,17 @@ void VoxelBlockyModelFluid::bake(blocky::ModelBakingContext &ctx) const {
 	bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids);
 }
 
-// #ifdef TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
 
-// void VoxelBlockyModelFluid::get_configuration_warnings(PackedStringArray &warnings) {
-// 	using namespace zylann::godot;
+void VoxelBlockyModelFluid::get_configuration_warnings(PackedStringArray &warnings) const {
+	using namespace zylann::godot;
 
-// 	if (!_fluid.is_valid()) {
-// 		warnings.append(String("{0} has no fluid assigned.").format(varray(VoxelBlockyModelFluid::get_class_static())));
-// 	}
-// }
+	if (!_fluid.is_valid()) {
+		warnings.append(String("{0} has no fluid assigned.").format(varray(VoxelBlockyModelFluid::get_class_static())));
+	}
+}
 
-// #endif
+#endif
 
 void VoxelBlockyModelFluid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_fluid", "fluid"), &VoxelBlockyModelFluid::set_fluid);
