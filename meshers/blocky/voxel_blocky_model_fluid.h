@@ -31,6 +31,8 @@ public:
 #endif
 
 private:
+	void _on_fluid_changed();
+
 	static void _bind_methods();
 
 	Ref<VoxelBlockyFluid> _fluid;

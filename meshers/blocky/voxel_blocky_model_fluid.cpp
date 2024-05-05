@@ -1,6 +1,7 @@
 #include "voxel_blocky_model_fluid.h"
 // #include "../../util/godot/classes/object.h"
 // #include "../../util/string/format.h"
+#include "../../constants/voxel_string_names.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/array.h"
 #include "voxel_blocky_library_base.h"
@@ -12,15 +13,34 @@ namespace zylann::voxel {
 VoxelBlockyModelFluid::VoxelBlockyModelFluid() {}
 
 void VoxelBlockyModelFluid::set_fluid(Ref<VoxelBlockyFluid> fluid) {
+	if (fluid == _fluid) {
+		return;
+	}
+	if (_fluid.is_valid()) {
+		_fluid->disconnect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelFluid::_on_fluid_changed)
+		);
+	}
 	_fluid = fluid;
+	if (_fluid.is_valid()) {
+		_fluid->connect(
+				VoxelStringNames::get_singleton().changed, callable_mp(this, &VoxelBlockyModelFluid::_on_fluid_changed)
+		);
+	}
+	emit_changed();
 }
 
 Ref<VoxelBlockyFluid> VoxelBlockyModelFluid::get_fluid() const {
 	return _fluid;
 }
 
-void VoxelBlockyModelFluid::set_level(int level) {
-	_level = math::clamp(level, 0, MAX_LEVELS - 1);
+void VoxelBlockyModelFluid::set_level(const int level) {
+	const int checked_level = math::clamp(level, 0, MAX_LEVELS - 1);
+	if (checked_level == _level) {
+		return;
+	}
+	_level = checked_level;
+	emit_changed();
 }
 
 int VoxelBlockyModelFluid::get_level() const {
@@ -129,6 +149,10 @@ void bake_fluid_model(
 
 void VoxelBlockyModelFluid::bake(blocky::ModelBakingContext &ctx) const {
 	bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids);
+}
+
+void VoxelBlockyModelFluid::_on_fluid_changed() {
+	emit_changed();
 }
 
 #ifdef TOOLS_ENABLED

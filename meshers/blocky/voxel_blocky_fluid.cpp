@@ -6,7 +6,11 @@ namespace zylann::voxel {
 VoxelBlockyFluid::VoxelBlockyFluid() {}
 
 void VoxelBlockyFluid::set_material(Ref<Material> material) {
+	if (_material == material) {
+		return;
+	}
 	_material = material;
+	emit_changed();
 }
 
 Ref<Material> VoxelBlockyFluid::get_material() const {
