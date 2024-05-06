@@ -144,6 +144,8 @@ void bake_fluid_model(
 
 	// This is to be decided dynamically. The top side is always empty.
 	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
+	baked_model.contributes_to_ao = false;
+
 	baked_model.model.surface_count = 1;
 	baked_model.model.surfaces[0].material_id = materials.get_or_create_index(fluid->get_material());
 }
