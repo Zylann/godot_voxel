@@ -19,6 +19,14 @@ Ref<Material> VoxelBlockyFluid::get_material() const {
 	return _material;
 }
 
+void VoxelBlockyFluid::set_dip_when_flowing_down(bool enable) {
+	_dip_when_flowing_down = enable;
+}
+
+bool VoxelBlockyFluid::get_dip_when_flowing_down() const {
+	return _dip_when_flowing_down;
+}
+
 namespace {
 
 void bake_fluid(
@@ -39,6 +47,7 @@ void bake_fluid(
 
 	Ref<Material> material = fluid.get_material();
 	baked_fluid.material_id = materials.get_or_create_index(material);
+	baked_fluid.dip_when_flowing_down = fluid.get_dip_when_flowing_down();
 
 	// TODO This part shouldn't be necessary? it's the same for every fluid
 	for (unsigned int side_index = 0; side_index < Cube::SIDE_COUNT; ++side_index) {
@@ -61,6 +70,9 @@ void VoxelBlockyFluid::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_material", "material"), &Self::set_material);
 	ClassDB::bind_method(D_METHOD("get_material"), &Self::get_material);
 
+	ClassDB::bind_method(D_METHOD("set_dip_when_flowing_down", "enable"), &Self::set_dip_when_flowing_down);
+	ClassDB::bind_method(D_METHOD("get_dip_when_flowing_down"), &Self::get_dip_when_flowing_down);
+
 	ADD_PROPERTY(
 			PropertyInfo(
 					Variant::OBJECT,
@@ -70,6 +82,12 @@ void VoxelBlockyFluid::_bind_methods() {
 			),
 			"set_material",
 			"get_material"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "dip_when_flowing_down"),
+			"set_dip_when_flowing_down",
+			"get_dip_when_flowing_down"
 	);
 }
 

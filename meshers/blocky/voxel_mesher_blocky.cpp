@@ -277,6 +277,7 @@ void generate_fluid_model(
 		//  2 1 0  x--o
 		FixedArray<uint8_t, 9> fluid_levels;
 		uint32_t covered_neighbors = 0;
+		const bool dip_when_flowing_down = fluid.dip_when_flowing_down;
 
 		// TODO Optimize: could sample 4 neighbors first and if the max isn't the same as current level,
 		// sample 4 diagonals too?
@@ -291,6 +292,7 @@ void generate_fluid_model(
 					if (nm.fluid_index == voxel.fluid_index) {
 						fluid_levels[i] = nm.fluid_level;
 
+						// We don't test the current voxel, we know it's not covered
 						if (i != 4) {
 							const uint32_t anloc = nloc + y_jump_size;
 							const uint32_t anid = type_buffer[anloc];
@@ -302,20 +304,22 @@ void generate_fluid_model(
 							}
 						}
 
-						// When a non-covered fluid voxel is above an area in which it can flow down, fake its level
-						// to be 0 (even if it isn't really) in order to create a steep slope.
-						// Do this except on max level fluids, which can "sustain" themselves. If we don't do this,
-						// lakes and oceans would end up looking lower than they should (assuming their surface is
-						// covered in max level fluid).
-						if (nm.fluid_level != fluid.max_level) {
-							const uint32_t bnloc = nloc - y_jump_size;
-							const uint32_t bnid = type_buffer[bnloc];
-							if (bnid == VoxelBlockyModel::AIR_ID) {
-								fluid_levels[i] = 0;
-							} else if (library.has_model(bnid)) {
-								const VoxelBlockyModel::BakedData &bnm = library.models[bnid];
-								if (bnm.fluid_index == voxel.fluid_index) {
+						if (dip_when_flowing_down) {
+							// When a non-covered fluid voxel is above an area in which it can flow down, fake its level
+							// to be 0 (even if it isn't really) in order to create a steep slope.
+							// Do this except on max level fluids, which can "sustain" themselves. If we don't do this,
+							// lakes and oceans would end up looking lower than they should (assuming their surface is
+							// covered in max level fluid).
+							if (nm.fluid_level != fluid.max_level && (covered_neighbors & (1 << i)) == 0) {
+								const uint32_t bnloc = nloc - y_jump_size;
+								const uint32_t bnid = type_buffer[bnloc];
+								if (bnid == VoxelBlockyModel::AIR_ID) {
 									fluid_levels[i] = 0;
+								} else if (library.has_model(bnid)) {
+									const VoxelBlockyModel::BakedData &bnm = library.models[bnid];
+									if (bnm.fluid_index == voxel.fluid_index) {
+										fluid_levels[i] = 0;
+									}
 								}
 							}
 						}

@@ -61,6 +61,7 @@ public:
 		// StdVector<uint16_t> level_model_indices;
 		uint32_t material_id = 0;
 		uint8_t max_level = 1;
+		bool dip_when_flowing_down = false;
 		// uint32_t box_collision_mask = 0;
 	};
 
@@ -69,12 +70,16 @@ public:
 	void set_material(Ref<Material> material);
 	Ref<Material> get_material() const;
 
+	void set_dip_when_flowing_down(bool enable);
+	bool get_dip_when_flowing_down() const;
+
 	void bake(BakedData &baked_fluid, blocky::MaterialIndexer &materials) const;
 
 private:
 	static void _bind_methods();
 
 	Ref<Material> _material;
+	bool _dip_when_flowing_down = false;
 };
 
 } // namespace zylann::voxel
