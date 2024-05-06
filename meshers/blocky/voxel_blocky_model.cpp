@@ -370,6 +370,11 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 			index_count += side_surface.indices.size();
 		}
 
+		// Godot doesn't like being given empty arrays when adding a surface to a mesh
+		if (index_count == 0) {
+			continue;
+		}
+
 		// Allocate surface arrays
 
 		PackedVector3Array vertices;
