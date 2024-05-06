@@ -703,6 +703,8 @@ void generate_side_culling_matrix(VoxelBlockyLibraryBase::BakedData &baked_data)
 				// if (side != Cube::SIDE_POSITIVE_Y) {
 				bitmap.set();
 				// }
+				// Fluids don't contribute to AO for now
+				model_data.contributes_to_ao = false;
 			} else {
 				rasterize_side_all_surfaces(model_data, side, bitmap);
 			}
