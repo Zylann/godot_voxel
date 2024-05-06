@@ -301,6 +301,25 @@ void generate_fluid_model(
 								}
 							}
 						}
+
+						// When a non-covered fluid voxel is above an area in which it can flow down, fake its level
+						// to be 0 (even if it isn't really) in order to create a steep slope.
+						// Do this except on max level fluids, which can "sustain" themselves. If we don't do this,
+						// lakes and oceans would end up looking lower than they should (assuming their surface is
+						// covered in max level fluid).
+						if (nm.fluid_level != fluid.max_level) {
+							const uint32_t bnloc = nloc - y_jump_size;
+							const uint32_t bnid = type_buffer[bnloc];
+							if (bnid == VoxelBlockyModel::AIR_ID) {
+								fluid_levels[i] = 0;
+							} else if (library.has_model(bnid)) {
+								const VoxelBlockyModel::BakedData &bnm = library.models[bnid];
+								if (bnm.fluid_index == voxel.fluid_index) {
+									fluid_levels[i] = 0;
+								}
+							}
+						}
+
 					} else {
 						fluid_levels[i] = 0;
 					}
