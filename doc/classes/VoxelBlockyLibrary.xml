@@ -13,7 +13,7 @@
 	<methods>
 		<method name="add_model">
 			<return type="int" />
-			<param index="0" name="_unnamed_arg0" type="VoxelBlockyModel" />
+			<param index="0" name="model" type="VoxelBlockyModel" />
 			<description>
 				Adds a model to the library. Returns its index, which will be the value of voxels representing it.
 			</description>
