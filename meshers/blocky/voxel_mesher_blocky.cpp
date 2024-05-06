@@ -272,7 +272,11 @@ void generate_fluid_model(
 		);
 
 		// We'll potentially have to adjust corners of the model based on neighbor levels
+		//  8 7 6     z
+		//  5 4 3     |
+		//  2 1 0  x--o
 		FixedArray<uint8_t, 9> fluid_levels;
+		uint32_t covered_neighbors = 0;
 
 		// TODO Optimize: could sample 4 neighbors first and if the max isn't the same as current level,
 		// sample 4 diagonals too?
@@ -286,6 +290,17 @@ void generate_fluid_model(
 					const VoxelBlockyModel::BakedData &nm = library.models[nid];
 					if (nm.fluid_index == voxel.fluid_index) {
 						fluid_levels[i] = nm.fluid_level;
+
+						if (i != 4) {
+							const uint32_t anloc = nloc + y_jump_size;
+							const uint32_t anid = type_buffer[anloc];
+							if (anid != VoxelBlockyModel::AIR_ID && library.has_model(anid)) {
+								const VoxelBlockyModel::BakedData &anm = library.models[anid];
+								if (anm.fluid_index == voxel.fluid_index) {
+									covered_neighbors |= (1 << i);
+								}
+							}
+						}
 					} else {
 						fluid_levels[i] = 0;
 					}
@@ -301,7 +316,29 @@ void generate_fluid_model(
 
 		const FixedArray<uint8_t, 4> corner_levels = get_corner_levels_from_fluid_levels(fluid_levels);
 		const VoxelBlockyFluid::FlowState flow_state = get_fluid_flow_state_from_corner_levels(corner_levels);
-		const FixedArray<float, 4> corner_heights = get_corner_heights_from_corner_levels(corner_levels, fluid);
+		//    3-------2
+		//   /|      /|        z
+		//  / |     / |       /
+		// 0-------1     x---o
+		// |       |
+		FixedArray<float, 4> corner_heights = get_corner_heights_from_corner_levels(corner_levels, fluid);
+
+		//  8 7 6     z
+		//  5 4 3     |
+		//  2 1 0  x--o
+		// Covered neighbors need to be considered at full height
+		if ((covered_neighbors & 0b000'001'011) != 0) {
+			corner_heights[1] = 1.f;
+		}
+		if ((covered_neighbors & 0b000'100'110) != 0) {
+			corner_heights[0] = 1.f;
+		}
+		if ((covered_neighbors & 0b011'001'000) != 0) {
+			corner_heights[2] = 1.f;
+		}
+		if ((covered_neighbors & 0b110'100'000) != 0) {
+			corner_heights[3] = 1.f;
+		}
 
 		fluid_top_surface.uvs.resize(4);
 		fill(fluid_top_surface.uvs, Vector2f(math::AXIS_Y, flow_state));
