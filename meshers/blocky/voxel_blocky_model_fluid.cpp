@@ -96,7 +96,8 @@ void bake_fluid_model(
 		const VoxelBlockyModelFluid &fluid_model,
 		VoxelBlockyModel::BakedData &baked_model,
 		StdVector<Ref<VoxelBlockyFluid>> &indexed_fluids,
-		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids
+		StdVector<VoxelBlockyFluid::BakedData> &baked_fluids,
+		blocky::MaterialIndexer &materials
 ) {
 	Ref<VoxelBlockyFluid> fluid = fluid_model.get_fluid();
 
@@ -143,12 +144,14 @@ void bake_fluid_model(
 
 	// This is to be decided dynamically. The top side is always empty.
 	baked_model.model.empty_sides_mask = (1 << Cube::SIDE_POSITIVE_Y);
+	baked_model.model.surface_count = 1;
+	baked_model.model.surfaces[0].material_id = materials.get_or_create_index(fluid->get_material());
 }
 
 } // namespace
 
 void VoxelBlockyModelFluid::bake(blocky::ModelBakingContext &ctx) const {
-	bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids);
+	bake_fluid_model(*this, ctx.model, ctx.indexed_fluids, ctx.baked_fluids, ctx.material_indexer);
 }
 
 void VoxelBlockyModelFluid::_on_fluid_changed() {

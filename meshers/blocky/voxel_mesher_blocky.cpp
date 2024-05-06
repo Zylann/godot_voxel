@@ -349,7 +349,7 @@ void generate_fluid_model(
 	out_model_surface_count = 1;
 
 	if (fluid_top_covered) {
-		// Expected to be empty
+		// Expected to be empty, but also provides material ID. Not great tho
 		out_model_surfaces = to_span(voxel.model.surfaces);
 	} else {
 		out_model_surfaces = to_single_element_span(fluid_top_surface);
