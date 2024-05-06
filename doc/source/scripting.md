@@ -60,6 +60,8 @@ You can provide your own voxel generator by extending `VoxelGeneratorScript` in 
 
 ### Example
 
+#### With blocky voxels
+
 Here is how to make a bare bones generator usable with a blocky terrain. Make sure you use `VoxelMesherBlocky` as mesher.
 
 Create a standalone script `my_generator.gd` with the following contents:
@@ -98,7 +100,48 @@ Make sure to have a `VoxelViewer` node in the scene under the camera. You may al
 
 ![Custom stream](images/custom-stream.jpg)
 
-Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Generate_block generally gives you a block of 16x16x16 cubes to fill all at once, so you may also use `VoxelBuffer.set_voxel()` to specify each one individually. You can change the channel to `VoxelBuffer.CHANNEL_SDF` to get smooth voxels using another mesher such as `VoxelMesherTransvoxel`.
+Though `VoxelBuffer.fill()` is probably not what you want to use, the above is a quick example. Generate_block generally gives you a block of 16x16x16 cubes to fill all at once, so you may also use `VoxelBuffer.set_voxel()` to specify each one individually.
+
+#### With smooth voxels
+
+Getting a similar result with smooth voxels like in the previous example is more tricky, so we'll switch to a different one.
+
+First you have to change your mesher to `VoxelMesherTranvoxel`. Next, here is how you could generate ground with varying height:
+
+```
+# Change channel to SDF
+const channel : int = VoxelBuffer.CHANNEL_SDF
+
+func _generate_block(out_buffer : VoxelBuffer, origin_in_voxels : Vector3i, lod : int) -> void:
+	# We'll have to iterate every 3D voxel in the block this time
+	for rz in out_buffer.get_size().z:
+		for rx in out_buffer.get_size().x:
+			# The following part only depends on `x` and `z`, 
+			# so moving it out of the innermost loop optimizes things a little.
+
+            # Get voxel world position.
+			# To account for LOD we multiply local coordinates by 2^lod.
+			# This can be done faster than `pow()` by using binary left-shift.
+            # Y is left out because we'll compute it in the inner loop.
+			var pos_world := Vector3(origin_in_voxels) + Vector3(rx << lod, 0, rz << lod)
+
+			# Generates infinite "wavy" hills.
+			var height := 10.0 * (sin(pos_world.x * 0.1) + cos(pos_world.z * 0.1))
+
+            # Innermost loop
+			for ry in out_buffer.get_size().y:
+				pos_world.y = origin_in_voxels.y + (ry << lod)
+
+                # This is a cheap approximation for the signed distance of a heightfield
+				var signed_distance := pos_world.y - height
+
+				# When outputting signed distances, use `set_voxel_f` instead of `set_voxel`
+				out_buffer.set_voxel_f(signed_distance, rx, ry, rz, channel)
+```
+
+With signed distance fields, negative values mean "inside" while positive values mean "outside". It is also important to output *gradients*, instead of just setting voxels to either 1 or 0. This is why we can't use `fill` here. In practice you 'll also want to use noise and actual SDF functions. See [Signed Distance Fields](smooth_terrain.md/#signed-distance-fields).
+
+Further optimizations are also possible, for example if you know that the passed block is far enough to intersect any area where land features occur, you could do an early-return that outputs `fill_f(100.0)`. It's as a way to say "there is only air here and it's far from everything". Similarly, you can do `fill_f(-100.0)` to mean "there is only matter in this block and it's far from any surface".
 
 
 ### Thread-safety
