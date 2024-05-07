@@ -102,8 +102,11 @@ This is a procedural model, so less data is precomputed and is instead calculate
 #### Library setup
 
 This one works a bit differently than regular models. First you have to create a [VoxelBlockyFluid](api/VoxelBlockyFluid.md) resource, and save it as a `.tres` file.
+
 Then, in your library, create a [VoxelBlockyModelFluid](api/VoxelBlockyModelFluid.md) for every level your fluid has, setting their `fluid` and `level` properties accordingly. It may be convenient for each level to have consecutive IDs, but it is not required. 
 It is important that you share the same fluid on the `fluid` property (which is easier if the fluid resource is a file). This way, the mesher will recognize each model as part of the same fluid.
+
+To avoid issues with side culling, make sure fluid models also have a `transparency_index` higher than solid blocks.
 
 
 #### Material setup
