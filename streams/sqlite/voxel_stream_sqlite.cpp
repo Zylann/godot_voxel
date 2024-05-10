@@ -734,6 +734,11 @@ void VoxelStreamSQLite::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	ZN_PROFILE_SCOPE();
 
+	// Getting connection first to allow the key cache to load if enabled.
+	// This should be quick after the first call because the connection is cached.
+	VoxelStreamSQLiteInternal *con = get_connection();
+	ERR_FAIL_COND(con == nullptr);
+
 	// Check the cache first
 	StdVector<unsigned int> blocks_to_load;
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
@@ -757,11 +762,9 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	if (blocks_to_load.size() == 0) {
 		// Everything was cached, no need to query the database
+		recycle_connection(con);
 		return;
 	}
-
-	VoxelStreamSQLiteInternal *con = get_connection();
-	ERR_FAIL_COND(con == nullptr);
 
 	// TODO We should handle busy return codes
 	ERR_FAIL_COND(con->begin_transaction() == false);
