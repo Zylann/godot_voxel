@@ -96,12 +96,20 @@ public:
 	bool save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type);
 	VoxelStream::ResultCode load_block(BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type);
 
-	bool load_all_blocks(void *callback_data,
-			void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
-					Span<const uint8_t> instances_data));
+	bool load_all_blocks(
+			void *callback_data,
+			void (*process_block_func)(
+					void *callback_data,
+					BlockLocation location,
+					Span<const uint8_t> voxel_data,
+					Span<const uint8_t> instances_data
+			)
+	);
 
 	bool load_all_block_keys(
-			void *callback_data, void (*process_block_func)(void *callback_data, BlockLocation location));
+			void *callback_data,
+			void (*process_block_func)(void *callback_data, BlockLocation location)
+	);
 
 	Meta load_meta();
 	void save_meta(Meta meta);
@@ -171,8 +179,8 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 
 	// Create tables if they don't exist.
 	const char *tables[3] = { "CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
-		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
-		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
+							  "CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
+							  "CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
@@ -184,17 +192,23 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	}
 
 	// Prepare statements
-	if (!prepare(db, &_update_voxel_block_statement,
+	if (!prepare(
+				db,
+				&_update_voxel_block_statement,
 				"INSERT INTO blocks VALUES (:loc, :vb, null) "
-				"ON CONFLICT(loc) DO UPDATE SET vb=excluded.vb")) {
+				"ON CONFLICT(loc) DO UPDATE SET vb=excluded.vb"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_get_voxel_block_statement, "SELECT vb FROM blocks WHERE loc=:loc")) {
 		return false;
 	}
-	if (!prepare(db, &_update_instance_block_statement,
+	if (!prepare(
+				db,
+				&_update_instance_block_statement,
 				"INSERT INTO blocks VALUES (:loc, null, :instances) "
-				"ON CONFLICT(loc) DO UPDATE SET instances=excluded.instances")) {
+				"ON CONFLICT(loc) DO UPDATE SET instances=excluded.instances"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_get_instance_block_statement, "SELECT instances FROM blocks WHERE loc=:loc")) {
@@ -215,9 +229,12 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	if (!prepare(db, &_load_channels_statement, "SELECT * FROM channels")) {
 		return false;
 	}
-	if (!prepare(db, &_save_channel_statement,
+	if (!prepare(
+				db,
+				&_save_channel_statement,
 				"INSERT INTO channels VALUES (:idx, :depth) "
-				"ON CONFLICT(idx) DO UPDATE SET depth=excluded.depth")) {
+				"ON CONFLICT(idx) DO UPDATE SET depth=excluded.depth"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_load_all_blocks_statement, "SELECT * FROM blocks")) {
@@ -354,7 +371,10 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t
 }
 
 VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
-		BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type) {
+		BlockLocation loc,
+		StdVector<uint8_t> &out_block_data,
+		BlockType type
+) {
 	sqlite3 *db = _db;
 
 	sqlite3_stmt *get_block_statement;
@@ -411,9 +431,15 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 	return result;
 }
 
-bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
-		void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
-				Span<const uint8_t> instances_data)) {
+bool VoxelStreamSQLiteInternal::load_all_blocks(
+		void *callback_data,
+		void (*process_block_func)(
+				void *callback_data,
+				BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data
+		)
+) {
 	ZN_PROFILE_SCOPE();
 	CRASH_COND(process_block_func == nullptr);
 
@@ -445,9 +471,12 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 
 			// Using a function pointer because returning a big list of a copy of all the blobs can
 			// waste a lot of temporary memory
-			process_block_func(callback_data, loc,
+			process_block_func(
+					callback_data,
+					loc,
 					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(voxels_blob), voxels_blob_size),
-					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(instances_blob), instances_blob_size));
+					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(instances_blob), instances_blob_size)
+			);
 
 		} else if (rc == SQLITE_DONE) {
 			break;
@@ -462,7 +491,9 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 }
 
 bool VoxelStreamSQLiteInternal::load_all_block_keys(
-		void *callback_data, void (*process_block_func)(void *callback_data, BlockLocation location)) {
+		void *callback_data,
+		void (*process_block_func)(void *callback_data, BlockLocation location)
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(process_block_func != nullptr);
 
@@ -897,13 +928,20 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 	// Godot's clang-format does not allow to write function parameters in column,
 	// which makes the lambda break line length.
 	struct L {
-		static void process_block_func(void *callback_data, const BlockLocation location,
-				Span<const uint8_t> voxel_data, Span<const uint8_t> instances_data) {
+		static void process_block_func(
+				void *callback_data,
+				const BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data
+		) {
 			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
 			if (voxel_data.size() == 0 && instances_data.size() == 0) {
-				ZN_PRINT_VERBOSE(format("Unexpected empty voxel data and instances data at {} lod {}",
-						Vector3i(location.x, location.y, location.z), location.lod));
+				ZN_PRINT_VERBOSE(
+						format("Unexpected empty voxel data and instances data at {} lod {}",
+							   Vector3i(location.x, location.y, location.z),
+							   location.lod)
+				);
 				return;
 			}
 
@@ -997,7 +1035,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 			ERR_FAIL_COND(!serialize_instance_block_data(*block.instances, temp_data));
 
 			ERR_FAIL_COND(!CompressedData::compress(
-					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE));
+					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE
+			));
 		}
 		p_connection->save_block(loc, to_span(temp_compressed_data), VoxelStreamSQLiteInternal::INSTANCES);
 
@@ -1073,8 +1112,9 @@ void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_key_cache_enabled", "enabled"), &VoxelStreamSQLite::set_key_cache_enabled);
 	ClassDB::bind_method(D_METHOD("is_key_cache_enabled"), &VoxelStreamSQLite::is_key_cache_enabled);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path",
-			"get_database_path");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path", "get_database_path"
+	);
 }
 
 } // namespace zylann::voxel
