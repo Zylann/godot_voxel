@@ -17,6 +17,8 @@
 			<return type="void" />
 			<param index="0" name="enabled" type="bool" />
 			<description>
+				Enables caching keys of the database to speed up loading queries in terrains that only save sparse edited blocks. This won't provide any benefit if your terrain saves all its blocks (for example if the output of the generator is saved).
+				This must be called before any call to [code]load_voxel_block[/code] (before the terrain starts using it), otherwise it won't work properly. You may use a script to do this.
 			</description>
 		</method>
 	</methods>
