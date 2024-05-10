@@ -391,8 +391,6 @@ void VoxelInstanceGenerator::generate_transforms(
 
 	// Filter out by noise
 	if (use_noise) {
-		// Position of the block relative to the instancer node.
-		// Use full-precision here because we deal with potentially large coordinates
 		ZN_PROFILE_SCOPE_NAMED("Noise filter");
 
 		for (size_t i = 0; i < vertex_cache.size(); ++i) {
