@@ -53,24 +53,48 @@ public:
 	void set_key_cache_enabled(bool enable);
 	bool is_key_cache_enabled() const;
 
+	Box3i get_supported_block_range() const override;
+	int get_lod_count() const override;
+
+	enum CoordinateFormat {
+		// Blocks: -32,768..32,767
+		// Voxels: -524,288..524,287
+		// LODs: 24
+		COORDINATE_FORMAT_U64_X16_Y16_Z16_L16 = 0,
+		// Blocks: -262,144..262,143
+		// Voxels: -4,194,304..4,194,303
+		// LODs: 24
+		COORDINATE_FORMAT_U64_X19_Y19_Z19_L7,
+		// Full range, but may be slow
+		// COORDINATE_FORMAT_STRING_CSD,
+		COORDINATE_FORMAT_COUNT,
+	};
+
+	void set_preferred_coordinate_format(CoordinateFormat format);
+	CoordinateFormat get_preferred_coordinate_format() const;
+
+	CoordinateFormat get_current_coordinate_format();
+
+	void copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream);
+
 private:
 	void rebuild_key_cache();
 
 	struct BlockKeysCache {
-		FixedArray<StdUnorderedSet<Vector3i16>, constants::MAX_LOD> lods;
+		FixedArray<StdUnorderedSet<Vector3i>, constants::MAX_LOD> lods;
 		RWLock rw_lock;
 
-		inline bool contains(Vector3i16 bpos, unsigned int lod_index) const {
-			const StdUnorderedSet<Vector3i16> &keys = lods[lod_index];
+		inline bool contains(Vector3i bpos, unsigned int lod_index) const {
+			const StdUnorderedSet<Vector3i> &keys = lods[lod_index];
 			RWLockRead rlock(rw_lock);
 			return keys.find(bpos) != keys.end();
 		}
 
-		inline void add_no_lock(Vector3i16 bpos, unsigned int lod_index) {
+		inline void add_no_lock(Vector3i bpos, unsigned int lod_index) {
 			lods[lod_index].insert(bpos);
 		}
 
-		inline void add(Vector3i16 bpos, unsigned int lod_index) {
+		inline void add(Vector3i bpos, unsigned int lod_index) {
 			RWLockWrite wlock(rw_lock);
 			add_no_lock(bpos, lod_index);
 		}
@@ -127,6 +151,9 @@ private:
 	// such a cache can become quite large. In this case we could either allow turning it off, or use an octree.
 	BlockKeysCache _block_keys_cache;
 	bool _block_keys_cache_enabled = false;
+	// Format that will be used when creating new databases. May not necessarily match the format actually used by
+	// existing databases.
+	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_U64_X19_Y19_Z19_L7;
 };
 
 } // namespace zylann::voxel

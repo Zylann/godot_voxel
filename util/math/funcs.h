@@ -410,7 +410,7 @@ inline void remap_intervals_to_linear_params(
 // The result of the right-shift operator `>>` is implementation-defined until C++20, where it performs arithmetic
 // shift. This function makes it explicit to handle eventual issues before C++20.
 // https://en.cppreference.com/w/cpp/language/operator_arithmetic#Built-in_bitwise_shift_operators
-inline int32_t arithmetic_rshift(int32_t a, unsigned int b) {
+inline constexpr int32_t arithmetic_rshift(int32_t a, unsigned int b) {
 	// MSVC documents right shift as arithmetic.
 	// https://learn.microsoft.com/en-us/cpp/cpp/left-shift-and-right-shift-operators-input-and-output?view=msvc-170#right-shifts
 

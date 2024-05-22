@@ -16,10 +16,21 @@ namespace zylann::voxel {
 
 namespace {
 
+inline constexpr int32_t sign_extend_to_32bit(uint32_t i, uint32_t from_bits) {
+#ifdef DEBUG_ENABLED
+	ZN_ASSERT(from_bits > 0 && from_bits < 32);
+#endif
+	// If the sign bit of the source integer is set
+	if (i & (1 << (from_bits - 1))) {
+		// Extend it to 32 bits by setting all bits to the left:
+		// Make a mask of `from_bits` bits set to 1, invert it and combine it
+		return i | ~((1 << from_bits) - 1);
+	}
+	return i;
+}
+
 struct BlockLocation {
-	int16_t x;
-	int16_t y;
-	int16_t z;
+	Vector3i position;
 	uint8_t lod;
 
 	static bool validate(const Vector3i pos, uint8_t lod) {
@@ -28,20 +39,75 @@ struct BlockLocation {
 		return true;
 	}
 
-	uint64_t encode() const {
+	uint64_t encode_x16_y16_z16_l16() const {
 		// 0l xx yy zz
-		// TODO Is this valid with negative numbers?
-		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) | ((static_cast<uint64_t>(x) & 0xffff) << 32) |
-				((static_cast<uint64_t>(y) & 0xffff) << 16) | (static_cast<uint64_t>(z) & 0xffff);
+		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) | ((static_cast<uint64_t>(position.x) & 0xffff) << 32) |
+				((static_cast<uint64_t>(position.y) & 0xffff) << 16) | (static_cast<uint64_t>(position.z) & 0xffff);
 	}
 
-	static BlockLocation decode(uint64_t id) {
+	static BlockLocation decode_x16_y16_z16_l16(uint64_t id) {
 		BlockLocation b;
-		b.z = (id & 0xffff);
-		b.y = ((id >> 16) & 0xffff);
-		b.x = ((id >> 32) & 0xffff);
+		// We cast first to restore the sign
+		b.position.z = static_cast<int16_t>(id & 0xffff);
+		b.position.y = static_cast<int16_t>((id >> 16) & 0xffff);
+		b.position.x = static_cast<int16_t>((id >> 32) & 0xffff);
 		b.lod = ((id >> 48) & 0xff);
 		return b;
+	}
+
+	uint64_t encode_x19_y19_z19_l7() const {
+		// lllllllx xxxxxxxx xxxxxxxx xxyyyyyy yyyyyyyy yyyyyzzz zzzzzzzz zzzzzzzz
+		return ((static_cast<uint64_t>(lod) & 0x7f) << 57) | ((static_cast<uint64_t>(position.x) & 0x7ffff) << 38) |
+				((static_cast<uint64_t>(position.y) & 0x7ffff) << 19) | (static_cast<uint64_t>(position.z) & 0x7ffff);
+	}
+
+	static BlockLocation decode_x19_y19_z19_l7(uint64_t id) {
+		BlockLocation b;
+		b.position.z = sign_extend_to_32bit(id & 0x7ffff, 19);
+		b.position.y = sign_extend_to_32bit((id >> 19) & 0x7ffff, 19);
+		b.position.x = sign_extend_to_32bit((id >> 38) & 0x7ffff, 19);
+		b.lod = ((id >> 57) & 0x7f);
+		return b;
+	}
+
+	uint64_t encode(VoxelStreamSQLite::CoordinateFormat format) const {
+		switch (format) {
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+				return encode_x16_y16_z16_l16();
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+				return encode_x19_y19_z19_l7();
+			default:
+				ZN_CRASH_MSG("Invalid coordinate format");
+				return 0;
+		}
+	}
+
+	static BlockLocation decode(uint64_t id, VoxelStreamSQLite::CoordinateFormat format) {
+		switch (format) {
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+				return decode_x16_y16_z16_l16(id);
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+				return decode_x19_y19_z19_l7(id);
+			default:
+				ZN_CRASH_MSG("Invalid coordinate format");
+				return BlockLocation();
+		}
+	}
+
+	static Box3i get_coordinate_range(VoxelStreamSQLite::CoordinateFormat format) {
+		switch (format) {
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 16)), Vector3iUtil::create((1 << 16) - 1));
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 19)), Vector3iUtil::create((1 << 19) - 1));
+			default:
+				ZN_PRINT_ERROR("Invalid coordinate format");
+				return Box3i();
+		}
+	}
+
+	static uint8_t get_lod_count(VoxelStreamSQLite::CoordinateFormat format) {
+		return constants::MAX_LOD;
 	}
 };
 
@@ -52,11 +118,16 @@ struct BlockLocation {
 // One connection to the database, with our prepared statements
 class VoxelStreamSQLiteInternal {
 public:
-	static const int VERSION = 0;
+	static const int VERSION_V0 = 0;
+	static const int VERSION_V1 = 1;
+	static const int VERSION_LATEST = VERSION_V1;
 
 	struct Meta {
 		int version = -1;
 		int block_size_po2 = 0;
+		VoxelStreamSQLite::CoordinateFormat coordinate_format =
+				// Default as of V0
+				VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16;
 
 		struct Channel {
 			VoxelBuffer::Depth depth;
@@ -74,7 +145,7 @@ public:
 	VoxelStreamSQLiteInternal();
 	~VoxelStreamSQLiteInternal();
 
-	bool open(const char *fpath);
+	bool open(const char *fpath, const VoxelStreamSQLite::CoordinateFormat preferred_coordinate_format);
 	void close();
 
 	bool is_open() const {
@@ -93,8 +164,13 @@ public:
 	bool begin_transaction();
 	bool end_transaction();
 
-	bool save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type);
-	VoxelStream::ResultCode load_block(BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type);
+	bool save_block(const BlockLocation loc, const Span<const uint8_t> block_data, const BlockType type);
+
+	VoxelStream::ResultCode load_block(
+			const BlockLocation loc,
+			StdVector<uint8_t> &out_block_data,
+			const BlockType type
+	);
 
 	bool load_all_blocks(
 			void *callback_data,
@@ -111,10 +187,19 @@ public:
 			void (*process_block_func)(void *callback_data, BlockLocation location)
 	);
 
-	Meta load_meta();
-	void save_meta(Meta meta);
+	const Meta &get_meta() const {
+		return _meta;
+	}
+
+	void migrate_to_latest_version();
 
 private:
+	int load_version();
+	Meta load_meta();
+	void save_meta(Meta meta);
+	bool migrate_to_next_version();
+	bool migrate_from_v0_to_v1();
+
 	struct TransactionScope {
 		VoxelStreamSQLiteInternal &db;
 		TransactionScope(VoxelStreamSQLiteInternal &p_db) : db(p_db) {
@@ -142,7 +227,9 @@ private:
 	}
 
 	StdString _opened_path;
+	Meta _meta;
 	sqlite3 *_db = nullptr;
+	sqlite3_stmt *_load_version_statement = nullptr;
 	sqlite3_stmt *_begin_statement = nullptr;
 	sqlite3_stmt *_end_statement = nullptr;
 	sqlite3_stmt *_update_voxel_block_statement = nullptr;
@@ -163,7 +250,10 @@ VoxelStreamSQLiteInternal::~VoxelStreamSQLiteInternal() {
 	close();
 }
 
-bool VoxelStreamSQLiteInternal::open(const char *fpath) {
+bool VoxelStreamSQLiteInternal::open(
+		const char *fpath,
+		const VoxelStreamSQLite::CoordinateFormat preferred_coordinate_format
+) {
 	ZN_PROFILE_SCOPE();
 	close();
 
@@ -178,9 +268,11 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	char *error_message = nullptr;
 
 	// Create tables if they don't exist.
-	const char *tables[3] = { "CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
-							  "CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
-							  "CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
+	const char *tables[3] = {
+		"CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER, coordinate_format INTEGER)",
+		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
+		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)"
+	};
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
@@ -189,6 +281,15 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 			close();
 			return false;
 		}
+	}
+
+	if (!prepare(db, &_load_version_statement, "SELECT version FROM meta")) {
+		return false;
+	}
+
+	const int version = load_version();
+	if (version == -1) {
+		return false;
 	}
 
 	// Prepare statements
@@ -223,9 +324,22 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	if (!prepare(db, &_load_meta_statement, "SELECT * FROM meta")) {
 		return false;
 	}
-	if (!prepare(db, &_save_meta_statement, "INSERT INTO meta VALUES (:version, :block_size_po2)")) {
+
+	if (version == VERSION_V0) {
+		if (!prepare(db, &_save_meta_statement, "INSERT INTO meta VALUES (:version, :block_size_po2)")) {
+			return false;
+		}
+	} else if (version == VERSION_LATEST) {
+		if (!prepare(
+					db, &_save_meta_statement, "INSERT INTO meta VALUES (:version, :block_size_po2, :coordinate_format)"
+			)) {
+			return false;
+		}
+	} else {
+		ZN_PRINT_ERROR(format("Invalid version: {}", version));
 		return false;
 	}
+
 	if (!prepare(db, &_load_channels_statement, "SELECT * FROM channels")) {
 		return false;
 	}
@@ -248,17 +362,30 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	Meta meta = load_meta();
 	if (meta.version == -1) {
 		// Setup database
-		meta.version = VERSION;
+		meta.version = VERSION_LATEST;
 		// Defaults
 		meta.block_size_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+		meta.coordinate_format = preferred_coordinate_format;
 		for (unsigned int i = 0; i < meta.channels.size(); ++i) {
 			Meta::Channel &channel = meta.channels[i];
 			channel.used = true;
 			channel.depth = VoxelBuffer::DEPTH_16_BIT;
 		}
 		save_meta(meta);
+	} else {
+		if (meta.coordinate_format != preferred_coordinate_format) {
+			ZN_PRINT_VERBOSE(
+					format("Opened database uses version {} (latest is {}) and uses coordinate format {} while the "
+						   "preferred format is {}.",
+						   meta.version,
+						   VERSION_LATEST,
+						   meta.coordinate_format,
+						   preferred_coordinate_format)
+			);
+		}
 	}
 
+	_meta = meta;
 	_opened_path = fpath;
 	return true;
 }
@@ -269,6 +396,7 @@ void VoxelStreamSQLiteInternal::close() {
 	}
 	finalize(_begin_statement);
 	finalize(_end_statement);
+	finalize(_load_version_statement);
 	finalize(_update_voxel_block_statement);
 	finalize(_get_voxel_block_statement);
 	finalize(_update_instance_block_statement);
@@ -319,7 +447,11 @@ bool VoxelStreamSQLiteInternal::end_transaction() {
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type) {
+bool VoxelStreamSQLiteInternal::save_block(
+		const BlockLocation loc,
+		const Span<const uint8_t> block_data,
+		const BlockType type
+) {
 	ZN_PROFILE_SCOPE();
 
 	sqlite3 *db = _db;
@@ -342,7 +474,7 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t
 		return false;
 	}
 
-	const uint64_t eloc = loc.encode();
+	const uint64_t eloc = loc.encode(_meta.coordinate_format);
 
 	rc = sqlite3_bind_int64(update_block_statement, 1, eloc);
 	if (rc != SQLITE_OK) {
@@ -371,9 +503,9 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t
 }
 
 VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
-		BlockLocation loc,
+		const BlockLocation loc,
 		StdVector<uint8_t> &out_block_data,
-		BlockType type
+		const BlockType type
 ) {
 	sqlite3 *db = _db;
 
@@ -397,7 +529,7 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 		return VoxelStream::RESULT_ERROR;
 	}
 
-	const uint64_t eloc = loc.encode();
+	const uint64_t eloc = loc.encode(_meta.coordinate_format);
 
 	rc = sqlite3_bind_int64(get_block_statement, 1, eloc);
 	if (rc != SQLITE_OK) {
@@ -461,7 +593,7 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(
 			ZN_PROFILE_SCOPE_NAMED("Row");
 
 			const uint64_t eloc = sqlite3_column_int64(load_all_blocks_statement, 0);
-			const BlockLocation loc = BlockLocation::decode(eloc);
+			const BlockLocation loc = BlockLocation::decode(eloc, _meta.coordinate_format);
 
 			const void *voxels_blob = sqlite3_column_blob(load_all_blocks_statement, 1);
 			const size_t voxels_blob_size = sqlite3_column_bytes(load_all_blocks_statement, 1);
@@ -515,7 +647,7 @@ bool VoxelStreamSQLiteInternal::load_all_block_keys(
 			ZN_PROFILE_SCOPE_NAMED("Row");
 
 			const uint64_t eloc = sqlite3_column_int64(load_all_block_keys_statement, 0);
-			const BlockLocation loc = BlockLocation::decode(eloc);
+			const BlockLocation loc = BlockLocation::decode(eloc, _meta.coordinate_format);
 
 			// Using a function pointer because returning a big list of a copy of all the blobs can
 			// waste a lot of temporary memory
@@ -533,6 +665,36 @@ bool VoxelStreamSQLiteInternal::load_all_block_keys(
 	return true;
 }
 
+int VoxelStreamSQLiteInternal::load_version() {
+	sqlite3 *db = _db;
+	sqlite3_stmt *load_version_statement = _load_version_statement;
+
+	int rc = sqlite3_reset(load_version_statement);
+	if (rc != SQLITE_OK) {
+		ZN_PRINT_ERROR(sqlite3_errmsg(db));
+		return -1;
+	}
+
+	int version = -1;
+
+	rc = sqlite3_step(load_version_statement);
+	if (rc == SQLITE_ROW) {
+		version = sqlite3_column_int(load_version_statement, 0);
+		// The query is still ongoing, we'll need to step one more time to complete it
+		rc = sqlite3_step(load_version_statement);
+	} else {
+		// There was no row. This database is probably not setup.
+		return VERSION_LATEST;
+	}
+
+	if (rc != SQLITE_DONE) {
+		ZN_PRINT_ERROR(sqlite3_errmsg(db));
+		return -1;
+	}
+
+	return version;
+}
+
 VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 	sqlite3 *db = _db;
 	sqlite3_stmt *load_meta_statement = _load_meta_statement;
@@ -547,11 +709,22 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 	TransactionScope transaction(*this);
 
 	Meta meta;
+	bool invalid_version = false;
 
 	rc = sqlite3_step(load_meta_statement);
 	if (rc == SQLITE_ROW) {
 		meta.version = sqlite3_column_int(load_meta_statement, 0);
 		meta.block_size_po2 = sqlite3_column_int(load_meta_statement, 1);
+
+		if (meta.version == VERSION_V0) {
+			meta.coordinate_format = VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16;
+		} else if (meta.version == VERSION_LATEST) {
+			meta.coordinate_format =
+					static_cast<VoxelStreamSQLite::CoordinateFormat>(sqlite3_column_int(load_meta_statement, 2));
+		} else {
+			invalid_version = true;
+		}
+
 		// The query is still ongoing, we'll need to step one more time to complete it
 		rc = sqlite3_step(load_meta_statement);
 
@@ -563,6 +736,14 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 		ERR_PRINT(sqlite3_errmsg(db));
 		return Meta();
 	}
+
+	ZN_ASSERT_RETURN_V(!invalid_version, Meta());
+
+	ZN_ASSERT_RETURN_V_MSG(
+			meta.coordinate_format >= 0 && meta.coordinate_format < VoxelStreamSQLite::COORDINATE_FORMAT_COUNT,
+			Meta(),
+			format("Invalid coordinate format: {}", meta.coordinate_format)
+	);
 
 	rc = sqlite3_reset(load_channels_statement);
 	if (rc != SQLITE_OK) {
@@ -621,6 +802,13 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 		ERR_PRINT(sqlite3_errmsg(db));
 		return;
 	}
+	if (meta.version == VERSION_LATEST) {
+		rc = sqlite3_bind_int(save_meta_statement, 3, meta.coordinate_format);
+		if (rc != SQLITE_OK) {
+			ZN_PRINT_ERROR(sqlite3_errmsg(db));
+			return;
+		}
+	}
 
 	rc = sqlite3_step(save_meta_statement);
 	if (rc != SQLITE_DONE) {
@@ -657,6 +845,88 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 			ERR_PRINT(sqlite3_errmsg(db));
 			return;
 		}
+	}
+}
+
+bool VoxelStreamSQLiteInternal::migrate_from_v0_to_v1() {
+	if (_meta.version == VERSION_V1) {
+		ZN_PRINT_WARNING("Version already matching");
+		return true;
+	}
+	ZN_ASSERT_RETURN_V(_meta.version == VERSION_V0, false);
+
+	// Prepare statements
+	struct Statements {
+		VoxelStreamSQLiteInternal &db;
+		sqlite3_stmt *alter_table = nullptr;
+		sqlite3_stmt *update_table = nullptr;
+
+		Statements(VoxelStreamSQLiteInternal &p_db) : db(p_db) {}
+
+		~Statements() {
+			db.finalize(alter_table);
+			db.finalize(update_table);
+		}
+	};
+
+	Statements statements(*this);
+
+	ZN_ASSERT_RETURN_V(
+			prepare(_db, &statements.alter_table, "ALTER TABLE meta ADD COLUMN coordinate_format INTEGER"), false
+	);
+	ZN_ASSERT_RETURN_V(prepare(_db, &statements.update_table, "UPDATE meta SET version = :version"), false);
+
+	// Run
+	{
+		TransactionScope scope(*this);
+
+		int rc = sqlite3_step(statements.alter_table);
+		if (rc != SQLITE_DONE) {
+			ZN_PRINT_ERROR(sqlite3_errmsg(_db));
+			return false;
+		}
+
+		rc = sqlite3_bind_int(statements.update_table, 1, VERSION_V1);
+		if (rc != SQLITE_OK) {
+			ZN_PRINT_ERROR(sqlite3_errmsg(_db));
+			return false;
+		}
+
+		rc = sqlite3_step(statements.update_table);
+		if (rc != SQLITE_DONE) {
+			ZN_PRINT_ERROR(sqlite3_errmsg(_db));
+			return false;
+		}
+	}
+
+	_meta.version = VERSION_V1;
+	return true;
+}
+
+bool VoxelStreamSQLiteInternal::migrate_to_next_version() {
+	switch (_meta.version) {
+		case VERSION_V0:
+			return migrate_from_v0_to_v1();
+
+		case VERSION_LATEST:
+			ZN_PRINT_WARNING("Version is already latest");
+			break;
+
+		default:
+			ZN_PRINT_ERROR(format("Unexpected version: {}", _meta.version));
+			return false;
+	}
+
+	return true;
+}
+
+void VoxelStreamSQLiteInternal::migrate_to_latest_version() {
+	ZN_ASSERT_RETURN(is_open());
+
+	while (_meta.version != VERSION_LATEST) {
+		const int prev = _meta.version;
+		ZN_ASSERT_RETURN(migrate_to_next_version());
+		ZN_ASSERT_RETURN(prev != _meta.version);
 	}
 }
 
@@ -704,7 +974,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
-		if (con.open(cpath.get_data())) {
+		if (con.open(cpath.get_data(), _preferred_coordinate_format)) {
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -747,7 +1017,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 		ZN_ASSERT_CONTINUE(can_convert_to_i16(pos));
 
-		if (_block_keys_cache_enabled && !_block_keys_cache.contains(to_vec3i16(pos), q.lod_index)) {
+		if (_block_keys_cache_enabled && !_block_keys_cache.contains(pos, q.lod_index)) {
 			q.result = RESULT_BLOCK_NOT_FOUND;
 			continue;
 		}
@@ -774,9 +1044,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		VoxelStream::VoxelQueryData &q = p_blocks[ri];
 
 		BlockLocation loc;
-		loc.x = q.position_in_blocks.x;
-		loc.y = q.position_in_blocks.y;
-		loc.z = q.position_in_blocks.z;
+		loc.position = q.position_in_blocks;
 		loc.lod = q.lod_index;
 
 		StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
@@ -809,7 +1077,7 @@ void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 		_cache.save_voxel_block(pos, q.lod_index, q.voxel_buffer);
 		if (_block_keys_cache_enabled) {
-			_block_keys_cache.add(to_vec3i16(pos), q.lod_index);
+			_block_keys_cache.add(pos, q.lod_index);
 		}
 	}
 
@@ -859,9 +1127,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		VoxelStream::InstancesQueryData &q = out_blocks[ri];
 
 		BlockLocation loc;
-		loc.x = q.position_in_blocks.x;
-		loc.y = q.position_in_blocks.y;
-		loc.z = q.position_in_blocks.z;
+		loc.position = q.position_in_blocks;
 		loc.lod = q.lod_index;
 
 		StdVector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
@@ -907,7 +1173,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 		_cache.save_instance_block(q.position_in_blocks, q.lod_index, std::move(q.data));
 		if (_block_keys_cache_enabled) {
-			_block_keys_cache.add(to_vec3i16(q.position_in_blocks), q.lod_index);
+			_block_keys_cache.add(q.position_in_blocks, q.lod_index);
 		}
 	}
 
@@ -940,16 +1206,14 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
 			if (voxel_data.size() == 0 && instances_data.size() == 0) {
-				ZN_PRINT_VERBOSE(
-						format("Unexpected empty voxel data and instances data at {} lod {}",
-							   Vector3i(location.x, location.y, location.z),
-							   location.lod)
-				);
+				ZN_PRINT_VERBOSE(format(
+						"Unexpected empty voxel data and instances data at {} lod {}", location.position, location.lod
+				));
 				return;
 			}
 
 			FullLoadingResult::Block result_block;
-			result_block.position = Vector3i(location.x, location.y, location.z);
+			result_block.position = location.position;
 			result_block.lod = location.lod;
 
 			if (voxel_data.size() > 0) {
@@ -1014,9 +1278,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 		ERR_FAIL_COND(!BlockLocation::validate(block.position, block.lod));
 
 		BlockLocation loc;
-		loc.x = block.position.x;
-		loc.y = block.position.y;
-		loc.z = block.position.z;
+		loc.position = block.position;
 		loc.lod = block.lod;
 
 		// Save voxels
@@ -1063,7 +1325,8 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	}
 	// First connection we get since we set the database path
 
-	String fpath = _connection_path;
+	const String fpath = _connection_path;
+	const CoordinateFormat preferred_coordinate_format = _preferred_coordinate_format;
 	_connection_mutex.unlock();
 
 	if (fpath.is_empty()) {
@@ -1073,7 +1336,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
 	const String globalized_fpath = ProjectSettings::get_singleton()->globalize_path(fpath);
 	const CharString fpath_utf8 = globalized_fpath.utf8();
-	if (!con->open(fpath_utf8.get_data())) {
+	if (!con->open(fpath_utf8.get_data(), preferred_coordinate_format)) {
 		delete con;
 		con = nullptr;
 	}
@@ -1081,7 +1344,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 		RWLockWrite wlock(_block_keys_cache.rw_lock);
 		con->load_all_block_keys(&_block_keys_cache, [](void *ctx, BlockLocation loc) {
 			BlockKeysCache *cache = static_cast<BlockKeysCache *>(ctx);
-			cache->add_no_lock({ loc.x, loc.y, loc.z }, loc.lod);
+			cache->add_no_lock(loc.position, loc.lod);
 		});
 	}
 	return con;
@@ -1106,6 +1369,75 @@ void VoxelStreamSQLite::set_key_cache_enabled(bool enable) {
 
 bool VoxelStreamSQLite::is_key_cache_enabled() const {
 	return _block_keys_cache_enabled;
+}
+
+Box3i VoxelStreamSQLite::get_supported_block_range() const {
+	// const VoxelStreamSQLiteInternal *con = get_connection();
+	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
+	// _preferred_coordinate_format;
+	const CoordinateFormat format = _preferred_coordinate_format;
+	return BlockLocation::get_coordinate_range(format);
+}
+
+int VoxelStreamSQLite::get_lod_count() const {
+	// const VoxelStreamSQLiteInternal *con = get_connection();
+	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
+	// _preferred_coordinate_format;
+	const CoordinateFormat format = _preferred_coordinate_format;
+	return BlockLocation::get_lod_count(format);
+}
+
+void VoxelStreamSQLite::set_preferred_coordinate_format(CoordinateFormat format) {
+	_preferred_coordinate_format = format;
+}
+
+VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_preferred_coordinate_format() const {
+	return _preferred_coordinate_format;
+}
+
+VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_current_coordinate_format() {
+	const VoxelStreamSQLiteInternal *con = get_connection();
+	if (con == nullptr) {
+		return get_preferred_coordinate_format();
+	}
+	return con->get_meta().coordinate_format;
+}
+
+void VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream) {
+	// This function may be used as a generic way to migrate an old save to a new one, when the format of the old one
+	// needs to change. If it's just a version change, it might be possible to do it in-place, however changes like
+	// coordinate format affect primary keys, so not doing it in-place is easier.
+
+	ZN_ASSERT_RETURN(dst_stream.is_valid());
+	ZN_ASSERT_RETURN(dst_stream.ptr() != this);
+
+	VoxelStreamSQLiteInternal *src_con = get_connection();
+	ZN_ASSERT_RETURN(src_con != nullptr);
+
+	ZN_ASSERT_RETURN(dst_stream->get_database_path() != get_database_path());
+
+	// We can skip deserialization and copy data blocks directly.
+	// We also don't use cache.
+
+	struct Context {
+		VoxelStreamSQLiteInternal *dst_con;
+
+		static void save(
+				void *cb_data,
+				BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data
+		) {
+			Context *ctx = static_cast<Context *>(cb_data);
+			ctx->dst_con->save_block(location, voxel_data, VoxelStreamSQLiteInternal::VOXELS);
+			ctx->dst_con->save_block(location, instances_data, VoxelStreamSQLiteInternal::INSTANCES);
+		}
+	};
+
+	Context context;
+	context.dst_con = dst_stream->get_connection();
+
+	src_con->load_all_blocks(&context, Context::save);
 }
 
 void VoxelStreamSQLite::_bind_methods() {
