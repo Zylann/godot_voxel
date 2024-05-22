@@ -80,6 +80,7 @@ bfoster68
 gumby-cmyk
 Joshua Woods (jpw1991)
 jjoshpoland (Josh)
+jbbieber1127 (John Bieber)
 ```
 
 ### Supporters
