@@ -65,8 +65,12 @@ public:
 		// Voxels: -4,194,304..4,194,303
 		// LODs: 24
 		COORDINATE_FORMAT_U64_X19_Y19_Z19_L7,
-		// Full range, but may be slow
-		// COORDINATE_FORMAT_STRING_CSD,
+		// Full range, but is slowest
+		COORDINATE_FORMAT_STRING_CSD,
+		// Blocks: -16,777,216..16,777,215
+		// Voxels: -268,435,456..268,435,455
+		// LODs: 24
+		COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
 		COORDINATE_FORMAT_COUNT,
 	};
 
@@ -155,6 +159,9 @@ private:
 	// existing databases.
 	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_U64_X19_Y19_Z19_L7;
 };
+
+// TODO Refactor structure later so we don't need this helper function
+void test_sqlite_stream_utility_functions();
 
 } // namespace zylann::voxel
 

@@ -4,6 +4,7 @@
 namespace zylann::voxel::tests {
 
 void test_voxel_stream_sqlite_basic();
+void test_voxel_stream_sqlite_coordinate_format();
 
 } // namespace zylann::voxel::tests
 

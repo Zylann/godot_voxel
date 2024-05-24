@@ -10,6 +10,7 @@
 #include "../compressed_data.h"
 
 #include <limits>
+#include <string_view>
 #include <unordered_set>
 
 namespace zylann::voxel {
@@ -29,6 +30,81 @@ inline constexpr int32_t sign_extend_to_32bit(uint32_t i, uint32_t from_bits) {
 	return i;
 }
 
+static constexpr unsigned int MAX_INT32_CHAR_COUNT_BASE10 = 11; // -2147483647
+
+unsigned int int32_to_string_base10(const int32_t x, Span<uint8_t> s) {
+	const unsigned int base = 10;
+
+	ZN_ASSERT(s.size() >= 1);
+	unsigned int nchars = 1;
+
+	uint32_t ux;
+	if (x < 0) {
+		s[0] = '-';
+		++nchars;
+		ux = -x;
+	} else {
+		ux = x;
+	}
+	uint32_t tx = ux;
+	while (tx >= base) {
+		tx /= base;
+		++nchars;
+	}
+
+	ZN_ASSERT(nchars <= s.size());
+
+	unsigned int pos = nchars;
+	while (true) {
+		--pos;
+		s[pos] = '0' + (ux % base);
+		ux /= base;
+		if (ux == 0) {
+			break;
+		}
+	}
+
+	return nchars;
+}
+
+int string_base10_to_int32(std::string_view s, int32_t &out_x) {
+	unsigned int pos = 0;
+	const int base = 10;
+
+	const bool negative = s[pos] == '-';
+	if (negative) {
+		++pos;
+	}
+	int64_t x = 0;
+	while (pos < s.size()) {
+		char c = s[pos];
+		if (c >= '0' && c <= '9') {
+			x = x * base + (c - '0');
+			if ((negative && -x < std::numeric_limits<int32_t>::min()) ||
+				(!negative && x > std::numeric_limits<int32_t>::max())) {
+				ZN_PRINT_ERROR(format("Can't parse \"{}\" to a 32-bit integer", s));
+				return -1;
+			}
+			++pos;
+		} else {
+			break;
+		}
+	}
+
+	out_x = negative ? -x : x;
+	return pos;
+}
+
+// x,y,z,lod where lod in [0..24[
+static constexpr unsigned int STRING_LOCATION_MAX_LENGTH = MAX_INT32_CHAR_COUNT_BASE10 * 3 + 3 + 2;
+static constexpr unsigned int BLOB80_LENGTH = 10;
+static constexpr unsigned int LOCATION_BUFFER_MAX_LENGTH = math::max(STRING_LOCATION_MAX_LENGTH, BLOB80_LENGTH);
+using BlockLocationBuffer = FixedArray<uint8_t, LOCATION_BUFFER_MAX_LENGTH>;
+
+inline constexpr uint32_t bits_u32(unsigned int nbits) {
+	return (1 << nbits) - 1;
+}
+
 struct BlockLocation {
 	Vector3i position;
 	uint8_t lod;
@@ -41,6 +117,7 @@ struct BlockLocation {
 
 	uint64_t encode_x16_y16_z16_l16() const {
 		// 0l xx yy zz
+		// TODO Is that actually correct with negative coordinates?
 		return ((static_cast<uint64_t>(lod) & 0xffff) << 48) | ((static_cast<uint64_t>(position.x) & 0xffff) << 32) |
 				((static_cast<uint64_t>(position.y) & 0xffff) << 16) | (static_cast<uint64_t>(position.z) & 0xffff);
 	}
@@ -70,7 +147,106 @@ struct BlockLocation {
 		return b;
 	}
 
-	uint64_t encode(VoxelStreamSQLite::CoordinateFormat format) const {
+	std::string_view encode_string_csd(BlockLocationBuffer &buffer) const {
+		Span<uint8_t> s = to_span(buffer);
+		unsigned int pos = int32_to_string_base10(position.x, s);
+		s[pos] = ',';
+		++pos;
+		pos += int32_to_string_base10(position.y, s.sub(pos));
+		s[pos] = ',';
+		++pos;
+		pos += int32_to_string_base10(position.z, s.sub(pos));
+		s[pos] = ',';
+		++pos;
+		pos += int32_to_string_base10(lod, s.sub(pos));
+		// s[pos] = '\0';
+		// ++pos;
+		return std::string_view(reinterpret_cast<const char *>(buffer.data()), pos);
+	}
+
+	static bool decode_string_csd(std::string_view s, BlockLocation &out_location) {
+		BlockLocation location;
+
+		int res = string_base10_to_int32(s, location.position.x);
+		ZN_ASSERT_RETURN_V(res > 0, false);
+		unsigned int pos = res;
+		ZN_ASSERT_RETURN_V(s[pos] == ',', false);
+		++pos;
+
+		res = string_base10_to_int32(s.substr(pos), location.position.y);
+		ZN_ASSERT_RETURN_V(res > 0, false);
+		pos += res;
+		ZN_ASSERT_RETURN_V(s[pos] == ',', false);
+		++pos;
+
+		res = string_base10_to_int32(s.substr(pos), location.position.z);
+		ZN_ASSERT_RETURN_V(res > 0, false);
+		pos += res;
+		ZN_ASSERT_RETURN_V(s[pos] == ',', false);
+		++pos;
+
+		int32_t lod_index;
+		res = string_base10_to_int32(s.substr(pos), lod_index);
+		ZN_ASSERT_RETURN_V(res > 0, false);
+		pos += res;
+		ZN_ASSERT_RETURN_V(lod_index < constants::MAX_LOD, false);
+		location.lod = lod_index;
+
+		out_location = location;
+		return true;
+	}
+
+	void encode_blob80(Span<uint8_t> dst) const {
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(dst.size() == BLOB80_LENGTH);
+#endif
+		const uint32_t xb = static_cast<uint32_t>(position.x);
+		const uint32_t yb = static_cast<uint32_t>(position.y);
+		const uint32_t zb = static_cast<uint32_t>(position.z);
+		const uint32_t lb = lod;
+		// 0        1        2        3        4        5        6        7        8        9
+		// --------|--------|--------|--------|--------|--------|--------|--------|--------|--------
+		// xxxxxxxx xxxxxxxx xxxxxxxx yyyyyyyx yyyyyyyy yyyyyyyy zzzzzzyy zzzzzzzz zzzzzzzz lllllzzz
+		// TODO Would it be better to change positions so that the human-readable representation has contiguous bits?
+		dst[0] = (xb >> 0) & bits_u32(8); // x[0..7]
+		dst[1] = (xb >> 8) & bits_u32(8); // x[8..15]
+		dst[2] = (xb >> 16) & bits_u32(8); // x[16..23]
+		dst[3] = ((xb >> 24) & bits_u32(1)) | ((yb & bits_u32(7)) << 1); // x[24] | y[0..6]
+		dst[4] = (yb >> 7) & bits_u32(8); // y[7..14]
+		dst[5] = (yb >> 15) & bits_u32(8); // y[15..22]
+		dst[6] = ((yb >> 23) & bits_u32(2)) | ((zb & bits_u32(6)) << 2); // y[23..24] | z[0..5]
+		dst[7] = (zb >> 6) & bits_u32(8); // y[6..13]
+		dst[8] = (zb >> 14) & bits_u32(8); // y[14..21]
+		dst[9] = ((zb >> 22) & bits_u32(3)) | ((lb & bits_u32(5)) << 3); // y[22..24] | l[0..4]
+	}
+
+	static BlockLocation decode_blob80(Span<const uint8_t> src) {
+#ifdef DEBUG_ENABLED
+		ZN_ASSERT(src.size() == BLOB80_LENGTH);
+#endif
+		const uint32_t xb = //
+				static_cast<uint32_t>(src[0]) | //
+				(static_cast<uint32_t>(src[1]) << 8) | //
+				(static_cast<uint32_t>(src[2]) << 16) | //
+				(static_cast<uint32_t>(src[3] & 1) << 24);
+		const uint32_t yb = //
+				static_cast<uint32_t>(src[3] >> 1) | //
+				(static_cast<uint32_t>(src[4]) << 7) | //
+				(static_cast<uint32_t>(src[5]) << 15) | //
+				(static_cast<uint32_t>(src[6] & 0b11) << 23);
+		const uint32_t zb = //
+				static_cast<uint32_t>(src[6] >> 2) | //
+				(static_cast<uint32_t>(src[7]) << 6) | //
+				(static_cast<uint32_t>(src[8]) << 14) | //
+				(static_cast<uint32_t>(src[9] & 0b111) << 22);
+		const uint8_t lod_index = src[9] >> 3;
+		return BlockLocation{
+			Vector3i(sign_extend_to_32bit(xb, 25), sign_extend_to_32bit(yb, 25), sign_extend_to_32bit(zb, 25)),
+			lod_index
+		};
+	}
+
+	uint64_t encode_u64(VoxelStreamSQLite::CoordinateFormat format) const {
 		switch (format) {
 			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
 				return encode_x16_y16_z16_l16();
@@ -82,7 +258,7 @@ struct BlockLocation {
 		}
 	}
 
-	static BlockLocation decode(uint64_t id, VoxelStreamSQLite::CoordinateFormat format) {
+	static BlockLocation decode_u64(uint64_t id, VoxelStreamSQLite::CoordinateFormat format) {
 		switch (format) {
 			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
 				return decode_x16_y16_z16_l16(id);
@@ -100,6 +276,13 @@ struct BlockLocation {
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 16)), Vector3iUtil::create((1 << 16) - 1));
 			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 19)), Vector3iUtil::create((1 << 19) - 1));
+			case VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD:
+				return Box3i::from_min_max(
+						Vector3iUtil::create(-constants::MAX_VOLUME_EXTENT),
+						Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)
+				);
+			case VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5:
+				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 24)), Vector3iUtil::create((1 << 24) - 1));
 			default:
 				ZN_PRINT_ERROR("Invalid coordinate format");
 				return Box3i();
@@ -109,9 +292,111 @@ struct BlockLocation {
 	static uint8_t get_lod_count(VoxelStreamSQLite::CoordinateFormat format) {
 		return constants::MAX_LOD;
 	}
+
+	inline bool operator==(const BlockLocation &other) const {
+		return position == other.position && lod == other.lod;
+	}
 };
 
+void test_int32_to_string_base10(const int32_t x, std::string_view expected) {
+	FixedArray<uint8_t, 64> buffer;
+	const unsigned int nchars = int32_to_string_base10(x, to_span(buffer));
+
+	unsigned int expected_length = 0;
+	const unsigned int expected_nchars = expected.size();
+	ZN_ASSERT(nchars == expected_nchars);
+
+	for (unsigned int i = 0; i < expected_nchars; ++i) {
+		ZN_ASSERT(buffer[i] == static_cast<uint8_t>(expected[i]));
+	}
+}
+
+void test_int32_to_string_base10() {
+	test_int32_to_string_base10(0, "0");
+	test_int32_to_string_base10(1, "1");
+	test_int32_to_string_base10(-1, "-1");
+	test_int32_to_string_base10(42, "42");
+	test_int32_to_string_base10(123456789, "123456789");
+	test_int32_to_string_base10(-123456789, "-123456789");
+	test_int32_to_string_base10(std::numeric_limits<int32_t>::min(), "-2147483648");
+	test_int32_to_string_base10(std::numeric_limits<int32_t>::max(), "2147483647");
+}
+
+void test_string_base10_to_int32(const char *src, const int32_t expected, const unsigned int expected_nchars) {
+	int32_t x;
+	std::string_view src_sv(src);
+	const unsigned int nchars = string_base10_to_int32(src_sv, x);
+	ZN_ASSERT(expected_nchars <= src_sv.size());
+	ZN_ASSERT(nchars == expected_nchars);
+	ZN_ASSERT(x == expected);
+}
+
+void test_string_base10_to_int32() {
+	test_string_base10_to_int32("0", 0, 1);
+	test_string_base10_to_int32("1", 1, 1);
+	test_string_base10_to_int32("-1", -1, 2);
+	test_string_base10_to_int32("42", 42, 2);
+	test_string_base10_to_int32("42abc", 42, 2);
+	test_string_base10_to_int32("-42abc", -42, 3);
+	test_string_base10_to_int32("42,43", 42, 2);
+	test_string_base10_to_int32("123456789", 123456789, 9);
+	test_string_base10_to_int32("-123456789", -123456789, 10);
+	test_string_base10_to_int32("-2147483648", std::numeric_limits<int32_t>::min(), 11);
+	test_string_base10_to_int32("2147483647", std::numeric_limits<int32_t>::max(), 10);
+}
+
+void test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i pos, uint8_t lod_index, std::string_view expected) {
+	FixedArray<uint8_t, STRING_LOCATION_MAX_LENGTH> buffer;
+	const BlockLocation loc{ pos, lod_index };
+	std::string_view sv = loc.encode_string_csd(buffer);
+	ZN_ASSERT(sv == expected);
+	BlockLocation loc2;
+	ZN_ASSERT(loc.decode_string_csd(sv, loc2));
+	ZN_ASSERT(loc == loc2);
+}
+
+void test_voxel_stream_sqlite_key_string_csd_encoding() {
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(0, 0, 0), 0, "0,0,0,0");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(1, 0, 0), 1, "1,0,0,1");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(-1, 4, -1), 2, "-1,4,-1,2");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(6, -9, 21), 5, "6,-9,21,5");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(123, -456, 789), 20, "123,-456,789,20");
+}
+
+void test_voxel_stream_sqlite_key_blob80_encoding(Vector3i position, uint8_t lod_index) {
+	FixedArray<uint8_t, BLOB80_LENGTH> buffer;
+	const BlockLocation loc{ position, lod_index };
+	loc.encode_blob80(to_span(buffer));
+	const BlockLocation loc2 = BlockLocation::decode_blob80(to_span(buffer));
+	ZN_ASSERT(loc == loc2);
+}
+
+void test_voxel_stream_sqlite_key_blob80_encoding() {
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(0, 0, 0), 0);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(1, 0, 0), 1);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(-1, 4, -1), 2);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(6, -9, 21), 5);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(123, -456, 789), 20);
+
+	const VoxelStreamSQLite::CoordinateFormat format = VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5;
+	const Box3i limits = BlockLocation::get_coordinate_range(format);
+	const uint8_t max_lod_index = BlockLocation::get_lod_count(format) - 1;
+	const Vector3i min_pos = limits.position;
+	const Vector3i max_pos = limits.position + limits.size - Vector3i(1, 1, 1);
+	test_voxel_stream_sqlite_key_blob80_encoding(min_pos, max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(max_pos, max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(min_pos.x, max_pos.y, min_pos.z), max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(max_pos.x, min_pos.y, max_pos.z), max_lod_index);
+}
+
 } // namespace
+
+void test_sqlite_stream_utility_functions() {
+	test_string_base10_to_int32();
+	test_int32_to_string_base10();
+	test_voxel_stream_sqlite_key_string_csd_encoding();
+	test_voxel_stream_sqlite_key_blob80_encoding();
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +485,144 @@ private:
 	bool migrate_to_next_version();
 	bool migrate_from_v0_to_v1();
 
+	enum CoordinateColumnType {
+		COORDINATE_COLUMN_U64,
+		COORDINATE_COLUMN_STRING,
+		COORDINATE_COLUMN_BLOB,
+	};
+
+	static inline CoordinateColumnType get_coordinate_column_type(VoxelStreamSQLite::CoordinateFormat cf) {
+		switch (cf) {
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+				return COORDINATE_COLUMN_U64;
+			case VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD:
+				return COORDINATE_COLUMN_STRING;
+			case VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5:
+				return COORDINATE_COLUMN_BLOB;
+			default:
+				ZN_CRASH_MSG("Invalid coordinate format");
+				return COORDINATE_COLUMN_U64;
+		}
+	}
+
+	struct BindBlockCoordinates {
+		BlockLocationBuffer buffer;
+		CoordinateColumnType key_column_type;
+
+		inline bool bind(
+				sqlite3 *db,
+				sqlite3_stmt *statement,
+				int param_index,
+				const VoxelStreamSQLite::CoordinateFormat coordinate_format,
+				const BlockLocation location
+		) {
+			key_column_type = get_coordinate_column_type(coordinate_format);
+
+			switch (key_column_type) {
+				case COORDINATE_COLUMN_U64: {
+					const uint64_t eloc = location.encode_u64(coordinate_format);
+
+					const int rc = sqlite3_bind_int64(statement, param_index, eloc);
+					if (rc != SQLITE_OK) {
+						ERR_PRINT(sqlite3_errmsg(db));
+						return false;
+					}
+				} break;
+
+				case COORDINATE_COLUMN_STRING: {
+					const std::string_view eloc = location.encode_string_csd(buffer);
+
+					// We use SQLITE_STATIC to tell SQLite we are managing that memory
+					const int rc = sqlite3_bind_text(statement, param_index, eloc.data(), eloc.size(), SQLITE_STATIC);
+					if (rc != SQLITE_OK) {
+						ERR_PRINT(sqlite3_errmsg(db));
+						return false;
+					}
+				} break;
+
+				case COORDINATE_COLUMN_BLOB: {
+					Span<uint8_t> eloc = to_span(buffer).sub(0, BLOB80_LENGTH);
+					location.encode_blob80(eloc);
+
+					// We use SQLITE_STATIC to tell SQLite we are managing that memory
+					const int rc = sqlite3_bind_blob(statement, param_index, eloc.data(), eloc.size(), SQLITE_STATIC);
+					if (rc != SQLITE_OK) {
+						ERR_PRINT(sqlite3_errmsg(db));
+						return false;
+					}
+				} break;
+
+				default:
+					ZN_CRASH_MSG("Invalid coordinate format");
+					return false;
+			}
+
+			return true;
+		}
+
+		inline bool unbind(sqlite3 *db, sqlite3_stmt *statement, int param_index) {
+			// Not done at the moment. We assume the statement will always be reset before use, and bindings will ALWAYS
+			// be overwritten the next time a query gets made.
+			// The code below currently throws an `SQLITE_MISUSE` error because we would also need to call reset() after
+			// the query...
+
+			// Unbind the key for correctness, as the doc says the use of SQLITE_STATIC means the bound object must
+			// remain valid until the parameter is bound to something else (in which case, we explicitely do it).
+			// Not sure if we actually need to do that in practice.
+			//
+			// if (key_column_type == COORDINATE_COLUMN_STRING) {
+			// 	const int rc = sqlite3_bind_text(statement, param_index, nullptr, 0, SQLITE_STATIC);
+			// 	if (rc != SQLITE_DONE) {
+			// 		ERR_PRINT(sqlite3_errmsg(db));
+			// 		return false;
+			// 	}
+			// } else if (key_column_type == COORDINATE_COLUMN_BLOB) {
+			// 	const int rc = sqlite3_bind_blob(statement, param_index, nullptr, 0, SQLITE_STATIC);
+			// 	if (rc != SQLITE_DONE) {
+			// 		ERR_PRINT(sqlite3_errmsg(db));
+			// 		return false;
+			// 	}
+			// }
+			return true;
+		}
+	};
+
+	inline bool read_block_location(
+			const CoordinateColumnType key_column_type,
+			sqlite3_stmt *statement,
+			const int param_index,
+			BlockLocation &out_location
+	) {
+		switch (key_column_type) {
+			case COORDINATE_COLUMN_U64: {
+				const uint64_t eloc = sqlite3_column_int64(statement, param_index);
+				out_location = BlockLocation::decode_u64(eloc, _meta.coordinate_format);
+			} break;
+
+			case COORDINATE_COLUMN_STRING: {
+				const unsigned char *eloc = sqlite3_column_text(statement, param_index);
+				const unsigned int eloc_len = sqlite3_column_bytes(statement, param_index);
+				// That's ugly...
+				const std::string_view s(reinterpret_cast<const char *>(eloc), eloc_len);
+				ZN_ASSERT_RETURN_V(BlockLocation::decode_string_csd(s, out_location), false);
+			} break;
+
+			case COORDINATE_COLUMN_BLOB: {
+				const void *eloc = sqlite3_column_blob(statement, param_index);
+				const unsigned int eloc_len = sqlite3_column_bytes(statement, param_index);
+				Span<const uint8_t> s(static_cast<const uint8_t *>(eloc), eloc_len);
+				out_location = BlockLocation::decode_blob80(s);
+			} break;
+
+			default:
+				ZN_CRASH_MSG("Invalid coordinate column type");
+				break;
+		}
+
+		return true;
+	}
+
 	struct TransactionScope {
 		VoxelStreamSQLiteInternal &db;
 		TransactionScope(VoxelStreamSQLiteInternal &p_db) : db(p_db) {
@@ -264,15 +687,34 @@ bool VoxelStreamSQLiteInternal::open(
 		return false;
 	}
 
+	// Note, SQLite uses UTF-8 encoding by default. We rely on that.
+	// https://www.sqlite.org/c3ref/open.html
+
 	sqlite3 *db = _db;
 	char *error_message = nullptr;
+
+	const CoordinateColumnType block_key_column_type = get_coordinate_column_type(preferred_coordinate_format);
 
 	// Create tables if they don't exist.
 	const char *tables[3] = {
 		"CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER, coordinate_format INTEGER)",
-		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
+		"",
 		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)"
 	};
+	switch (block_key_column_type) {
+		case COORDINATE_COLUMN_U64:
+			tables[1] = "CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)";
+			break;
+		case COORDINATE_COLUMN_STRING:
+			tables[1] = "CREATE TABLE IF NOT EXISTS blocks (loc TEXT PRIMARY KEY, vb BLOB, instances BLOB)";
+			break;
+		case COORDINATE_COLUMN_BLOB:
+			tables[1] = "CREATE TABLE IF NOT EXISTS blocks (loc BLOB PRIMARY KEY, vb BLOB, instances BLOB)";
+			break;
+		default:
+			ZN_CRASH_MSG("Invalid column type");
+			break;
+	}
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
@@ -474,11 +916,8 @@ bool VoxelStreamSQLiteInternal::save_block(
 		return false;
 	}
 
-	const uint64_t eloc = loc.encode(_meta.coordinate_format);
-
-	rc = sqlite3_bind_int64(update_block_statement, 1, eloc);
-	if (rc != SQLITE_OK) {
-		ERR_PRINT(sqlite3_errmsg(db));
+	BindBlockCoordinates block_coordinates_binding;
+	if (!block_coordinates_binding.bind(db, update_block_statement, 1, _meta.coordinate_format, loc)) {
 		return false;
 	}
 
@@ -496,6 +935,10 @@ bool VoxelStreamSQLiteInternal::save_block(
 	rc = sqlite3_step(update_block_statement);
 	if (rc != SQLITE_DONE) {
 		ERR_PRINT(sqlite3_errmsg(db));
+		return false;
+	}
+
+	if (!block_coordinates_binding.unbind(db, update_block_statement, 1)) {
 		return false;
 	}
 
@@ -529,11 +972,8 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 		return VoxelStream::RESULT_ERROR;
 	}
 
-	const uint64_t eloc = loc.encode(_meta.coordinate_format);
-
-	rc = sqlite3_bind_int64(get_block_statement, 1, eloc);
-	if (rc != SQLITE_OK) {
-		ERR_PRINT(sqlite3_errmsg(db));
+	BindBlockCoordinates block_coordinates_binding;
+	if (!block_coordinates_binding.bind(db, get_block_statement, 1, _meta.coordinate_format, loc)) {
 		return VoxelStream::RESULT_ERROR;
 	}
 
@@ -559,6 +999,8 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 		}
 		break;
 	}
+
+	ZN_ASSERT_RETURN_V(block_coordinates_binding.unbind(db, get_block_statement, 1), VoxelStream::RESULT_ERROR);
 
 	return result;
 }
@@ -586,14 +1028,16 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(
 		return false;
 	}
 
+	const CoordinateColumnType key_column_type = get_coordinate_column_type(_meta.coordinate_format);
+
 	while (true) {
 		rc = sqlite3_step(load_all_blocks_statement);
 
 		if (rc == SQLITE_ROW) {
 			ZN_PROFILE_SCOPE_NAMED("Row");
 
-			const uint64_t eloc = sqlite3_column_int64(load_all_blocks_statement, 0);
-			const BlockLocation loc = BlockLocation::decode(eloc, _meta.coordinate_format);
+			BlockLocation loc;
+			ZN_ASSERT_CONTINUE(read_block_location(key_column_type, load_all_blocks_statement, 0, loc));
 
 			const void *voxels_blob = sqlite3_column_blob(load_all_blocks_statement, 1);
 			const size_t voxels_blob_size = sqlite3_column_bytes(load_all_blocks_statement, 1);
@@ -640,14 +1084,16 @@ bool VoxelStreamSQLiteInternal::load_all_block_keys(
 		return false;
 	}
 
+	const CoordinateColumnType key_column_type = get_coordinate_column_type(_meta.coordinate_format);
+
 	while (true) {
 		rc = sqlite3_step(load_all_block_keys_statement);
 
 		if (rc == SQLITE_ROW) {
 			ZN_PROFILE_SCOPE_NAMED("Row");
 
-			const uint64_t eloc = sqlite3_column_int64(load_all_block_keys_statement, 0);
-			const BlockLocation loc = BlockLocation::decode(eloc, _meta.coordinate_format);
+			BlockLocation loc;
+			ZN_ASSERT_CONTINUE(read_block_location(key_column_type, load_all_block_keys_statement, 0, loc));
 
 			// Using a function pointer because returning a big list of a copy of all the blobs can
 			// waste a lot of temporary memory
