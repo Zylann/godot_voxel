@@ -67,10 +67,10 @@ void test_voxel_stream_sqlite_basic(bool with_key_cache, VoxelStreamSQLite::Coor
 void test_voxel_stream_sqlite_basic() {
 	test_sqlite_stream_utility_functions();
 
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16);
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7);
+	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
+	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
+	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
+	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
 	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
 	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
 	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
@@ -201,8 +201,8 @@ void test_voxel_stream_sqlite_coordinate_format(const VoxelStreamSQLite::Coordin
 void test_voxel_stream_sqlite_coordinate_format() {
 	test_sqlite_stream_utility_functions();
 
-	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16);
-	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7);
+	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
+	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
 }

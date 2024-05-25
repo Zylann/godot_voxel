@@ -57,21 +57,11 @@ public:
 	int get_lod_count() const override;
 
 	enum CoordinateFormat {
-		// Blocks: -32,768..32,767
-		// Voxels: -524,288..524,287
-		// LODs: 24
-		COORDINATE_FORMAT_U64_X16_Y16_Z16_L16 = 0,
-		// Blocks: -262,144..262,143
-		// Voxels: -4,194,304..4,194,303
-		// LODs: 24
-		COORDINATE_FORMAT_U64_X19_Y19_Z19_L7,
-		// Full range, but is slowest
+		COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16 = 0,
+		COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7,
 		COORDINATE_FORMAT_STRING_CSD,
-		// Blocks: -16,777,216..16,777,215
-		// Voxels: -268,435,456..268,435,455
-		// LODs: 24
 		COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
-		COORDINATE_FORMAT_COUNT,
+		COORDINATE_FORMAT_COUNT
 	};
 
 	void set_preferred_coordinate_format(CoordinateFormat format);
@@ -79,7 +69,7 @@ public:
 
 	CoordinateFormat get_current_coordinate_format();
 
-	void copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream);
+	bool copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream);
 
 private:
 	void rebuild_key_cache();
@@ -157,12 +147,14 @@ private:
 	bool _block_keys_cache_enabled = false;
 	// Format that will be used when creating new databases. May not necessarily match the format actually used by
 	// existing databases.
-	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_U64_X19_Y19_Z19_L7;
+	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_STRING_CSD;
 };
 
 // TODO Refactor structure later so we don't need this helper function
 void test_sqlite_stream_utility_functions();
 
 } // namespace zylann::voxel
+
+VARIANT_ENUM_CAST(zylann::voxel::VoxelStreamSQLite::CoordinateFormat);
 
 #endif // VOXEL_STREAM_SQLITE_H

@@ -33,6 +33,24 @@ struct BlockLocation {
 	Vector3i position;
 	uint8_t lod;
 
+	enum CoordinateFormat {
+		// Blocks: -32,768..32,767
+		// Voxels: -524,288..524,287
+		// LODs: 24
+		FORMAT_INT64_X16_Y16_Z16_L16 = 0,
+		// Blocks: -262,144..262,143
+		// Voxels: -4,194,304..4,194,303
+		// LODs: 24
+		FORMAT_INT64_X19_Y19_Z19_L7,
+		// Full range, but might be slowest
+		FORMAT_STRING_CSD,
+		// Blocks: -16,777,216..16,777,215
+		// Voxels: -268,435,456..268,435,455
+		// LODs: 24
+		FORMAT_BLOB80_X25_Y25_Z25_L5,
+		FORMAT_COUNT,
+	};
+
 	static bool validate(const Vector3i pos, uint8_t lod) {
 		ZN_ASSERT_RETURN_V(can_convert_to_i16(pos), false);
 		ZN_ASSERT_RETURN_V(lod < constants::MAX_LOD, false);
@@ -171,11 +189,11 @@ struct BlockLocation {
 							  lod_index };
 	}
 
-	uint64_t encode_u64(VoxelStreamSQLite::CoordinateFormat format) const {
+	uint64_t encode_u64(BlockLocation::CoordinateFormat format) const {
 		switch (format) {
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+			case FORMAT_INT64_X16_Y16_Z16_L16:
 				return encode_x16_y16_z16_l16();
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+			case FORMAT_INT64_X19_Y19_Z19_L7:
 				return encode_x19_y19_z19_l7();
 			default:
 				ZN_CRASH_MSG("Invalid coordinate format");
@@ -183,11 +201,11 @@ struct BlockLocation {
 		}
 	}
 
-	static BlockLocation decode_u64(uint64_t id, VoxelStreamSQLite::CoordinateFormat format) {
+	static BlockLocation decode_u64(uint64_t id, BlockLocation::CoordinateFormat format) {
 		switch (format) {
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+			case FORMAT_INT64_X16_Y16_Z16_L16:
 				return decode_x16_y16_z16_l16(id);
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+			case FORMAT_INT64_X19_Y19_Z19_L7:
 				return decode_x19_y19_z19_l7(id);
 			default:
 				ZN_CRASH_MSG("Invalid coordinate format");
@@ -195,18 +213,18 @@ struct BlockLocation {
 		}
 	}
 
-	static Box3i get_coordinate_range(VoxelStreamSQLite::CoordinateFormat format) {
+	static Box3i get_coordinate_range(BlockLocation::CoordinateFormat format) {
 		switch (format) {
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
+			case FORMAT_INT64_X16_Y16_Z16_L16:
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 16)), Vector3iUtil::create((1 << 16) - 1));
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+			case FORMAT_INT64_X19_Y19_Z19_L7:
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 19)), Vector3iUtil::create((1 << 19) - 1));
-			case VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD:
+			case FORMAT_STRING_CSD:
 				return Box3i::from_min_max(
 						Vector3iUtil::create(-constants::MAX_VOLUME_EXTENT),
 						Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)
 				);
-			case VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5:
+			case FORMAT_BLOB80_X25_Y25_Z25_L5:
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 24)), Vector3iUtil::create((1 << 24) - 1));
 			default:
 				ZN_PRINT_ERROR("Invalid coordinate format");
@@ -214,7 +232,7 @@ struct BlockLocation {
 		}
 	}
 
-	static uint8_t get_lod_count(VoxelStreamSQLite::CoordinateFormat format) {
+	static uint8_t get_lod_count(BlockLocation::CoordinateFormat format) {
 		return constants::MAX_LOD;
 	}
 
@@ -256,7 +274,7 @@ void test_voxel_stream_sqlite_key_blob80_encoding() {
 	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(6, -9, 21), 5);
 	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(123, -456, 789), 20);
 
-	const VoxelStreamSQLite::CoordinateFormat format = VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5;
+	const BlockLocation::CoordinateFormat format = BlockLocation::FORMAT_BLOB80_X25_Y25_Z25_L5;
 	const Box3i limits = BlockLocation::get_coordinate_range(format);
 	const uint8_t max_lod_index = BlockLocation::get_lod_count(format) - 1;
 	const Vector3i min_pos = limits.position;
@@ -286,9 +304,9 @@ public:
 	struct Meta {
 		int version = -1;
 		int block_size_po2 = 0;
-		VoxelStreamSQLite::CoordinateFormat coordinate_format =
+		BlockLocation::CoordinateFormat coordinate_format =
 				// Default as of V0
-				VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16;
+				BlockLocation::FORMAT_INT64_X16_Y16_Z16_L16;
 
 		struct Channel {
 			VoxelBuffer::Depth depth;
@@ -306,7 +324,7 @@ public:
 	VoxelStreamSQLiteInternal();
 	~VoxelStreamSQLiteInternal();
 
-	bool open(const char *fpath, const VoxelStreamSQLite::CoordinateFormat preferred_coordinate_format);
+	bool open(const char *fpath, const BlockLocation::CoordinateFormat preferred_coordinate_format);
 	void close();
 
 	bool is_open() const {
@@ -367,14 +385,14 @@ private:
 		COORDINATE_COLUMN_BLOB,
 	};
 
-	static inline CoordinateColumnType get_coordinate_column_type(VoxelStreamSQLite::CoordinateFormat cf) {
+	static inline CoordinateColumnType get_coordinate_column_type(BlockLocation::CoordinateFormat cf) {
 		switch (cf) {
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16:
-			case VoxelStreamSQLite::COORDINATE_FORMAT_U64_X19_Y19_Z19_L7:
+			case BlockLocation::FORMAT_INT64_X16_Y16_Z16_L16:
+			case BlockLocation::FORMAT_INT64_X19_Y19_Z19_L7:
 				return COORDINATE_COLUMN_U64;
-			case VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD:
+			case BlockLocation::FORMAT_STRING_CSD:
 				return COORDINATE_COLUMN_STRING;
-			case VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5:
+			case BlockLocation::FORMAT_BLOB80_X25_Y25_Z25_L5:
 				return COORDINATE_COLUMN_BLOB;
 			default:
 				ZN_CRASH_MSG("Invalid coordinate format");
@@ -390,7 +408,7 @@ private:
 				sqlite3 *db,
 				sqlite3_stmt *statement,
 				int param_index,
-				const VoxelStreamSQLite::CoordinateFormat coordinate_format,
+				const BlockLocation::CoordinateFormat coordinate_format,
 				const BlockLocation location
 		) {
 			key_column_type = get_coordinate_column_type(coordinate_format);
@@ -551,7 +569,7 @@ VoxelStreamSQLiteInternal::~VoxelStreamSQLiteInternal() {
 
 bool VoxelStreamSQLiteInternal::open(
 		const char *fpath,
-		const VoxelStreamSQLite::CoordinateFormat preferred_coordinate_format
+		const BlockLocation::CoordinateFormat preferred_coordinate_format
 ) {
 	ZN_PROFILE_SCOPE();
 	close();
@@ -1039,10 +1057,10 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 		meta.block_size_po2 = sqlite3_column_int(load_meta_statement, 1);
 
 		if (meta.version == VERSION_V0) {
-			meta.coordinate_format = VoxelStreamSQLite::COORDINATE_FORMAT_U64_X16_Y16_Z16_L16;
+			meta.coordinate_format = BlockLocation::FORMAT_INT64_X16_Y16_Z16_L16;
 		} else if (meta.version == VERSION_LATEST) {
 			meta.coordinate_format =
-					static_cast<VoxelStreamSQLite::CoordinateFormat>(sqlite3_column_int(load_meta_statement, 2));
+					static_cast<BlockLocation::CoordinateFormat>(sqlite3_column_int(load_meta_statement, 2));
 		} else {
 			invalid_version = true;
 		}
@@ -1062,7 +1080,7 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 	ZN_ASSERT_RETURN_V(!invalid_version, Meta());
 
 	ZN_ASSERT_RETURN_V_MSG(
-			meta.coordinate_format >= 0 && meta.coordinate_format < VoxelStreamSQLite::COORDINATE_FORMAT_COUNT,
+			meta.coordinate_format >= 0 && meta.coordinate_format < BlockLocation::FORMAT_COUNT,
 			Meta(),
 			format("Invalid coordinate format: {}", meta.coordinate_format)
 	);
@@ -1263,6 +1281,15 @@ StdVector<uint8_t> &get_tls_temp_compressed_block_data() {
 	thread_local StdVector<uint8_t> tls_temp_compressed_block_data;
 	return tls_temp_compressed_block_data;
 }
+
+BlockLocation::CoordinateFormat to_internal_coordinate_format(VoxelStreamSQLite::CoordinateFormat format) {
+	return static_cast<BlockLocation::CoordinateFormat>(format);
+}
+
+VoxelStreamSQLite::CoordinateFormat to_exposed_coordinate_format(BlockLocation::CoordinateFormat format) {
+	return static_cast<VoxelStreamSQLite::CoordinateFormat>(format);
+}
+
 } // namespace
 
 VoxelStreamSQLite::VoxelStreamSQLite() {}
@@ -1296,7 +1323,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
-		if (con.open(cpath.get_data(), _preferred_coordinate_format)) {
+		if (con.open(cpath.get_data(), to_internal_coordinate_format(_preferred_coordinate_format))) {
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -1658,7 +1685,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
 	const String globalized_fpath = ProjectSettings::get_singleton()->globalize_path(fpath);
 	const CharString fpath_utf8 = globalized_fpath.utf8();
-	if (!con->open(fpath_utf8.get_data(), preferred_coordinate_format)) {
+	if (!con->open(fpath_utf8.get_data(), to_internal_coordinate_format(preferred_coordinate_format))) {
 		delete con;
 		con = nullptr;
 	}
@@ -1698,7 +1725,7 @@ Box3i VoxelStreamSQLite::get_supported_block_range() const {
 	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
 	// _preferred_coordinate_format;
 	const CoordinateFormat format = _preferred_coordinate_format;
-	return BlockLocation::get_coordinate_range(format);
+	return BlockLocation::get_coordinate_range(to_internal_coordinate_format(format));
 }
 
 int VoxelStreamSQLite::get_lod_count() const {
@@ -1706,7 +1733,7 @@ int VoxelStreamSQLite::get_lod_count() const {
 	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
 	// _preferred_coordinate_format;
 	const CoordinateFormat format = _preferred_coordinate_format;
-	return BlockLocation::get_lod_count(format);
+	return BlockLocation::get_lod_count(to_internal_coordinate_format(format));
 }
 
 void VoxelStreamSQLite::set_preferred_coordinate_format(CoordinateFormat format) {
@@ -1722,21 +1749,27 @@ VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_current_coordinate_fo
 	if (con == nullptr) {
 		return get_preferred_coordinate_format();
 	}
-	return con->get_meta().coordinate_format;
+	return to_exposed_coordinate_format(con->get_meta().coordinate_format);
 }
 
-void VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream) {
+bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite> dst_stream) {
 	// This function may be used as a generic way to migrate an old save to a new one, when the format of the old one
 	// needs to change. If it's just a version change, it might be possible to do it in-place, however changes like
 	// coordinate format affect primary keys, so not doing it in-place is easier.
 
-	ZN_ASSERT_RETURN(dst_stream.is_valid());
-	ZN_ASSERT_RETURN(dst_stream.ptr() != this);
+	ZN_ASSERT_RETURN_V(dst_stream.is_valid(), false);
+	ZN_ASSERT_RETURN_V(dst_stream.ptr() != this, false);
 
 	VoxelStreamSQLiteInternal *src_con = get_connection();
-	ZN_ASSERT_RETURN(src_con != nullptr);
+	ZN_ASSERT_RETURN_V(src_con != nullptr, false);
 
-	ZN_ASSERT_RETURN(dst_stream->get_database_path() != get_database_path());
+	ZN_ASSERT_RETURN_V(dst_stream->get_database_path() != get_database_path(), false);
+
+	ZN_ASSERT_RETURN_V_MSG(
+			dst_stream->get_block_size_po2() != get_block_size_po2(),
+			false,
+			"Copying between streams of different block sizes is not supported"
+	);
 
 	// We can skip deserialization and copy data blocks directly.
 	// We also don't use cache.
@@ -1759,7 +1792,7 @@ void VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 	Context context;
 	context.dst_con = dst_stream->get_connection();
 
-	src_con->load_all_blocks(&context, Context::save);
+	return src_con->load_all_blocks(&context, Context::save);
 }
 
 void VoxelStreamSQLite::_bind_methods() {
@@ -1769,8 +1802,32 @@ void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_key_cache_enabled", "enabled"), &VoxelStreamSQLite::set_key_cache_enabled);
 	ClassDB::bind_method(D_METHOD("is_key_cache_enabled"), &VoxelStreamSQLite::is_key_cache_enabled);
 
+	ClassDB::bind_method(
+			D_METHOD("set_preferred_coordinate_format", "format"), &VoxelStreamSQLite::set_preferred_coordinate_format
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_preferred_coordinate_format"), &VoxelStreamSQLite::get_preferred_coordinate_format
+	);
+
+	BIND_ENUM_CONSTANT(COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
+	BIND_ENUM_CONSTANT(COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
+	BIND_ENUM_CONSTANT(COORDINATE_FORMAT_STRING_CSD);
+	BIND_ENUM_CONSTANT(COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
+	BIND_ENUM_CONSTANT(COORDINATE_FORMAT_COUNT);
+
 	ADD_PROPERTY(
 			PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path", "get_database_path"
+	);
+
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"preferred_coordinate_format",
+					PROPERTY_HINT_ENUM,
+					"Int64_X16_Y16_Z16_LOD16,Int64_X19_Y19_Z19_LOD7,String_CSD,Blob80_X25_Y25_Z25_LOD5"
+			),
+			"set_database_path",
+			"get_database_path"
 	);
 }
 
