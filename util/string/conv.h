@@ -2,6 +2,7 @@
 #define ZN_STRING_CONV_H
 
 #include "../containers/span.h"
+#include <cstdint>
 #include <string_view>
 
 namespace zylann {
