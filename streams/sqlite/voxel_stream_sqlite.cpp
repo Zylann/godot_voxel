@@ -3,6 +3,7 @@
 #include "../../util/errors.h"
 #include "../../util/godot/classes/project_settings.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
@@ -1296,7 +1297,7 @@ VoxelStreamSQLite::VoxelStreamSQLite() {}
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
 	ZN_PRINT_VERBOSE("~VoxelStreamSQLite");
-	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_globalized_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
 		flush_cache();
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
@@ -1310,20 +1311,17 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 
 void VoxelStreamSQLite::set_database_path(String path) {
 	MutexLock lock(_connection_mutex);
-	if (path == _connection_path) {
+	if (path == _user_specified_connection_path) {
 		return;
 	}
-	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_globalized_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks, we are already locked.
 		VoxelStreamSQLiteInternal con;
-		// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
-		const String globalized_connection_path = ProjectSettings::get_singleton()->globalize_path(_connection_path);
-		const CharString cpath = globalized_connection_path.utf8();
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
-		if (con.open(cpath.get_data(), to_internal_coordinate_format(_preferred_coordinate_format))) {
+		if (con.open(_globalized_connection_path.data(), to_internal_coordinate_format(_preferred_coordinate_format))) {
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -1333,13 +1331,16 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	_block_keys_cache.clear();
 	_connection_pool.clear();
 
-	_connection_path = path;
+	_user_specified_connection_path = path;
+	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
+	_globalized_connection_path = zylann::godot::to_std_string(ProjectSettings::get_singleton()->globalize_path(path));
+
 	// Don't actually open anything here. We'll do it only when necessary
 }
 
 String VoxelStreamSQLite::get_database_path() const {
 	MutexLock lock(_connection_mutex);
-	return _connection_path;
+	return _user_specified_connection_path;
 }
 
 void VoxelStreamSQLite::load_voxel_block(VoxelStream::VoxelQueryData &q) {
@@ -1661,31 +1662,29 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 }
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
-	_connection_mutex.lock();
-	if (_connection_path.is_empty()) {
-		_connection_mutex.unlock();
-		return nullptr;
-	}
-	if (_connection_pool.size() != 0) {
-		VoxelStreamSQLiteInternal *s = _connection_pool.back();
-		_connection_pool.pop_back();
-		_connection_mutex.unlock();
-		return s;
-	}
-	// First connection we get since we set the database path
+	StdString fpath;
+	CoordinateFormat preferred_coordinate_format;
+	{
+		MutexLock mlock(_connection_mutex);
 
-	const String fpath = _connection_path;
-	const CoordinateFormat preferred_coordinate_format = _preferred_coordinate_format;
-	_connection_mutex.unlock();
+		if (_globalized_connection_path.empty()) {
+			return nullptr;
+		}
+		if (_connection_pool.size() != 0) {
+			VoxelStreamSQLiteInternal *s = _connection_pool.back();
+			_connection_pool.pop_back();
+			return s;
+		}
+		// First connection we get since we set the database path
+		fpath = _globalized_connection_path;
+		preferred_coordinate_format = _preferred_coordinate_format;
+	}
 
-	if (fpath.is_empty()) {
+	if (fpath.empty()) {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
-	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
-	const String globalized_fpath = ProjectSettings::get_singleton()->globalize_path(fpath);
-	const CharString fpath_utf8 = globalized_fpath.utf8();
-	if (!con->open(fpath_utf8.get_data(), to_internal_coordinate_format(preferred_coordinate_format))) {
+	if (!con->open(fpath.data(), to_internal_coordinate_format(preferred_coordinate_format))) {
 		delete con;
 		con = nullptr;
 	}
@@ -1700,16 +1699,16 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 }
 
 void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
-	String con_path = con->get_opened_file_path();
-	_connection_mutex.lock();
-	// If path differs, delete this connection
-	if (_connection_path != con_path) {
-		_connection_mutex.unlock();
-		delete con;
-	} else {
-		_connection_pool.push_back(con);
-		_connection_mutex.unlock();
+	const char *con_path = con->get_opened_file_path();
+	// Put back in the pool if the connection path didn't change
+	{
+		MutexLock mlock(_connection_mutex);
+		if (_globalized_connection_path == con_path) {
+			_connection_pool.push_back(con);
+			return;
+		}
 	}
+	delete con;
 }
 
 void VoxelStreamSQLite::set_key_cache_enabled(bool enable) {
