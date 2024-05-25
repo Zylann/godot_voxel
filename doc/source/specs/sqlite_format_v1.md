@@ -53,22 +53,22 @@ Contains every block of the volume. There can be thousands of them.
 
 #### Coordinate format
 
-In all cases, coordinates are equal to the origin of the block in voxels, divided by the size of the block + lod index using euclidean division (`coord >> (block_size_po2 + lod_index)`). Byte order is little-endian.
+In all cases, coordinates are equal to the origin of the block in voxels, divided by the size of the block + lod index using euclidean division (`coord >> (block_size_po2 + lod_index)`).
 Depending on `meta.coordinate_format`, that column is interpreted differently:
 
-- `0`: 64-bit integer packing the coordinates and LOD index of the block. XYZ are 16-bit signed integers, and LOD is a 8-bit unsigned integer: `0LXXYYZZ`. This was the default format in v0.
-- `1`: 64-bit integer packing the coordinates and LOD index of the block. XYZ are 19-bit signed integers, and LOD is a 7-bit unsigned integer: `lllllllx xxxxxxxx xxxxxxxx xxyyyyyy yyyyyyyy yyyyyzzz zzzzzzzz zzzzzzzz`.
+- `0`: 64-bit little-endian integer packing the coordinates and LOD index of the block. XYZ are 16-bit signed integers, and LOD is a 8-bit unsigned integer: `0LXXYYZZ`. This was the default format in v0.
+- `1`: 64-bit little-endian integer packing the coordinates and LOD index of the block. XYZ are 19-bit signed integers, and LOD is a 7-bit unsigned integer: `lllllllx xxxxxxxx xxxxxxxx xxyyyyyy yyyyyyyy yyyyyzzz zzzzzzzz zzzzzzzz` (where the most significant bits are on the left).
 - `2`: Comma-separated coordinates in base 10, stored in plain text, without spaces.
 - `3`: 80-bit blob packing the coordinates and LOD index. XYZ are 25-bit signed integers, and LOD is a 5-bit unsigned integer. 
 
 Format `3` can be represented this way:
 ```
-Byte |   0        1        2        3        4        5        6        7        8        9
+Byte |   9        8        7        6        5        4        3        2        1        0
 -----|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------
-Bits |xxxxxxxx xxxxxxxx xxxxxxxx yyyyyyyx yyyyyyyy yyyyyyyy zzzzzzyy zzzzzzzz zzzzzzzz lllllzzz
+Bits |lllllzzz zzzzzzzz zzzzzzzz zzzzzzyy yyyyyyyy yyyyyyyy yyyyyyyx xxxxxxxx xxxxxxxx xxxxxxxx
 ```
+Where each cluster of bits (for each coordinate) may be read with most significant bit to the left, as when printed out. Note the reverse byte order.
 
-TODO Format 3 representation is ambiguous, each next byte actually contains more significant bits instead of following a human-readable form from left to right
 
 
 ### `channels`

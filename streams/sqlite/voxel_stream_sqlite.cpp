@@ -128,10 +128,9 @@ struct BlockLocation {
 		const uint32_t yb = static_cast<uint32_t>(position.y);
 		const uint32_t zb = static_cast<uint32_t>(position.z);
 		const uint32_t lb = lod;
-		// 0        1        2        3        4        5        6        7        8        9
-		// --------|--------|--------|--------|--------|--------|--------|--------|--------|--------
-		// xxxxxxxx xxxxxxxx xxxxxxxx yyyyyyyx yyyyyyyy yyyyyyyy zzzzzzyy zzzzzzzz zzzzzzzz lllllzzz
-		// TODO Would it be better to change positions so that the human-readable representation has contiguous bits?
+		// Byte |   9        8        7        6        5        4        3        2        1        0
+		// -----|--------|--------|--------|--------|--------|--------|--------|--------|--------|--------
+		// Bits |lllllzzz zzzzzzzz zzzzzzzz zzzzzzyy yyyyyyyy yyyyyyyy yyyyyyyx xxxxxxxx xxxxxxxx xxxxxxxx
 		dst[0] = (xb >> 0) & bits_u32(8); // x[0..7]
 		dst[1] = (xb >> 8) & bits_u32(8); // x[8..15]
 		dst[2] = (xb >> 16) & bits_u32(8); // x[16..23]
