@@ -29,6 +29,8 @@ Contains general info about the volume. There is only one row inside it.
 - `block_size_po2` is the size of blocks as a power of two. They are expected to be always the same. By default it is `4` (for blocks of 16x16x16).
 - `coordinate_format` specifies how block coordinates are stored.
 
+Usually, this row should never be modified once the database is setup. If for some reason changes are necessary, they must be done such that the database remains consistent (and may require to re-process all the blocks). Creating a new database and converting over may be preferable than modifying in-place.
+
 
 ### `blocks`
 
