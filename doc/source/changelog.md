@@ -14,7 +14,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 - Fixes
-    - `VoxelStreamSQLite`: fixed `set_key_cache_enabled(true)` caused nothing to load
+    - `VoxelStreamSQLite`: 
+        - Fixed `set_key_cache_enabled(true)` caused nothing to load
+        - Fixed slow loading when the database path contains `res://` or `user://`
 
 
 1.2 - 20/04/2024 - branch `1.2` - tag `v1.2.0`
