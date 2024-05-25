@@ -4,7 +4,9 @@
 #include "../../util/godot/classes/project_settings.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/math/conv.h"
+#include "../../util/math/funcs.h"
 #include "../../util/profiling.h"
+#include "../../util/string/conv.h"
 #include "../../util/string/format.h"
 #include "../../util/string/std_string.h"
 #include "../compressed_data.h"
@@ -16,84 +18,6 @@
 namespace zylann::voxel {
 
 namespace {
-
-inline constexpr int32_t sign_extend_to_32bit(uint32_t i, uint32_t from_bits) {
-#ifdef DEBUG_ENABLED
-	ZN_ASSERT(from_bits > 0 && from_bits < 32);
-#endif
-	// If the sign bit of the source integer is set
-	if (i & (1 << (from_bits - 1))) {
-		// Extend it to 32 bits by setting all bits to the left:
-		// Make a mask of `from_bits` bits set to 1, invert it and combine it
-		return i | ~((1 << from_bits) - 1);
-	}
-	return i;
-}
-
-static constexpr unsigned int MAX_INT32_CHAR_COUNT_BASE10 = 11; // -2147483647
-
-unsigned int int32_to_string_base10(const int32_t x, Span<uint8_t> s) {
-	const unsigned int base = 10;
-
-	ZN_ASSERT(s.size() >= 1);
-	unsigned int nchars = 1;
-
-	uint32_t ux;
-	if (x < 0) {
-		s[0] = '-';
-		++nchars;
-		ux = -x;
-	} else {
-		ux = x;
-	}
-	uint32_t tx = ux;
-	while (tx >= base) {
-		tx /= base;
-		++nchars;
-	}
-
-	ZN_ASSERT(nchars <= s.size());
-
-	unsigned int pos = nchars;
-	while (true) {
-		--pos;
-		s[pos] = '0' + (ux % base);
-		ux /= base;
-		if (ux == 0) {
-			break;
-		}
-	}
-
-	return nchars;
-}
-
-int string_base10_to_int32(std::string_view s, int32_t &out_x) {
-	unsigned int pos = 0;
-	const int base = 10;
-
-	const bool negative = s[pos] == '-';
-	if (negative) {
-		++pos;
-	}
-	int64_t x = 0;
-	while (pos < s.size()) {
-		char c = s[pos];
-		if (c >= '0' && c <= '9') {
-			x = x * base + (c - '0');
-			if ((negative && -x < std::numeric_limits<int32_t>::min()) ||
-				(!negative && x > std::numeric_limits<int32_t>::max())) {
-				ZN_PRINT_ERROR(format("Can't parse \"{}\" to a 32-bit integer", s));
-				return -1;
-			}
-			++pos;
-		} else {
-			break;
-		}
-	}
-
-	out_x = negative ? -x : x;
-	return pos;
-}
 
 // x,y,z,lod where lod in [0..24[
 static constexpr unsigned int STRING_LOCATION_MAX_LENGTH = MAX_INT32_CHAR_COUNT_BASE10 * 3 + 3 + 2;
@@ -140,9 +64,9 @@ struct BlockLocation {
 
 	static BlockLocation decode_x19_y19_z19_l7(uint64_t id) {
 		BlockLocation b;
-		b.position.z = sign_extend_to_32bit(id & 0x7ffff, 19);
-		b.position.y = sign_extend_to_32bit((id >> 19) & 0x7ffff, 19);
-		b.position.x = sign_extend_to_32bit((id >> 38) & 0x7ffff, 19);
+		b.position.z = math::sign_extend_to_32bit(id & 0x7ffff, 19);
+		b.position.y = math::sign_extend_to_32bit((id >> 19) & 0x7ffff, 19);
+		b.position.x = math::sign_extend_to_32bit((id >> 38) & 0x7ffff, 19);
 		b.lod = ((id >> 57) & 0x7f);
 		return b;
 	}
@@ -240,10 +164,12 @@ struct BlockLocation {
 				(static_cast<uint32_t>(src[8]) << 14) | //
 				(static_cast<uint32_t>(src[9] & 0b111) << 22);
 		const uint8_t lod_index = src[9] >> 3;
-		return BlockLocation{
-			Vector3i(sign_extend_to_32bit(xb, 25), sign_extend_to_32bit(yb, 25), sign_extend_to_32bit(zb, 25)),
-			lod_index
-		};
+		return BlockLocation{ Vector3i(
+									  math::sign_extend_to_32bit(xb, 25),
+									  math::sign_extend_to_32bit(yb, 25),
+									  math::sign_extend_to_32bit(zb, 25)
+							  ),
+							  lod_index };
 	}
 
 	uint64_t encode_u64(VoxelStreamSQLite::CoordinateFormat format) const {
@@ -298,53 +224,6 @@ struct BlockLocation {
 	}
 };
 
-void test_int32_to_string_base10(const int32_t x, std::string_view expected) {
-	FixedArray<uint8_t, 64> buffer;
-	const unsigned int nchars = int32_to_string_base10(x, to_span(buffer));
-
-	unsigned int expected_length = 0;
-	const unsigned int expected_nchars = expected.size();
-	ZN_ASSERT(nchars == expected_nchars);
-
-	for (unsigned int i = 0; i < expected_nchars; ++i) {
-		ZN_ASSERT(buffer[i] == static_cast<uint8_t>(expected[i]));
-	}
-}
-
-void test_int32_to_string_base10() {
-	test_int32_to_string_base10(0, "0");
-	test_int32_to_string_base10(1, "1");
-	test_int32_to_string_base10(-1, "-1");
-	test_int32_to_string_base10(42, "42");
-	test_int32_to_string_base10(123456789, "123456789");
-	test_int32_to_string_base10(-123456789, "-123456789");
-	test_int32_to_string_base10(std::numeric_limits<int32_t>::min(), "-2147483648");
-	test_int32_to_string_base10(std::numeric_limits<int32_t>::max(), "2147483647");
-}
-
-void test_string_base10_to_int32(const char *src, const int32_t expected, const unsigned int expected_nchars) {
-	int32_t x;
-	std::string_view src_sv(src);
-	const unsigned int nchars = string_base10_to_int32(src_sv, x);
-	ZN_ASSERT(expected_nchars <= src_sv.size());
-	ZN_ASSERT(nchars == expected_nchars);
-	ZN_ASSERT(x == expected);
-}
-
-void test_string_base10_to_int32() {
-	test_string_base10_to_int32("0", 0, 1);
-	test_string_base10_to_int32("1", 1, 1);
-	test_string_base10_to_int32("-1", -1, 2);
-	test_string_base10_to_int32("42", 42, 2);
-	test_string_base10_to_int32("42abc", 42, 2);
-	test_string_base10_to_int32("-42abc", -42, 3);
-	test_string_base10_to_int32("42,43", 42, 2);
-	test_string_base10_to_int32("123456789", 123456789, 9);
-	test_string_base10_to_int32("-123456789", -123456789, 10);
-	test_string_base10_to_int32("-2147483648", std::numeric_limits<int32_t>::min(), 11);
-	test_string_base10_to_int32("2147483647", std::numeric_limits<int32_t>::max(), 10);
-}
-
 void test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i pos, uint8_t lod_index, std::string_view expected) {
 	FixedArray<uint8_t, STRING_LOCATION_MAX_LENGTH> buffer;
 	const BlockLocation loc{ pos, lod_index };
@@ -392,8 +271,6 @@ void test_voxel_stream_sqlite_key_blob80_encoding() {
 } // namespace
 
 void test_sqlite_stream_utility_functions() {
-	test_string_base10_to_int32();
-	test_int32_to_string_base10();
 	test_voxel_stream_sqlite_key_string_csd_encoding();
 	test_voxel_stream_sqlite_key_blob80_encoding();
 }

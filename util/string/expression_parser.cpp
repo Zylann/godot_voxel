@@ -70,6 +70,8 @@ std::string_view get_name(const std::string_view text, unsigned int &pos) {
 }
 
 bool get_number_token(const std::string_view text, unsigned int &pos, Token &out_token, bool negative) {
+	// TODO Handle overflow errors, use common code
+
 	// Integer part
 	int64_t n = 0;
 	char c = 0;
