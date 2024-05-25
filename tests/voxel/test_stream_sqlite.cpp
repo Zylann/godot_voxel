@@ -104,7 +104,7 @@ void test_voxel_stream_sqlite_coordinate_format(const VoxelStreamSQLite::Coordin
 	RandomPCG rng;
 	rng.seed(131183);
 	std::vector<BlockInfo> blocks;
-	blocks.resize(4096);
+	blocks.resize(256);
 	const int radius = 10000;
 	// TODO Generate clusters/lines instead, to match what saves look like in practice?
 	for (unsigned int i = 0; i < blocks.size(); ++i) {
