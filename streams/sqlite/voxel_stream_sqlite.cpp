@@ -64,9 +64,9 @@ struct BlockLocation {
 
 	static BlockLocation decode_x19_y19_z19_l7(uint64_t id) {
 		BlockLocation b;
-		b.position.z = math::sign_extend_to_32bit(id & 0x7ffff, 19);
-		b.position.y = math::sign_extend_to_32bit((id >> 19) & 0x7ffff, 19);
-		b.position.x = math::sign_extend_to_32bit((id >> 38) & 0x7ffff, 19);
+		b.position.z = math::sign_extend_to_32bit<19>(id & 0x7ffff);
+		b.position.y = math::sign_extend_to_32bit<19>((id >> 19) & 0x7ffff);
+		b.position.x = math::sign_extend_to_32bit<19>((id >> 38) & 0x7ffff);
 		b.lod = ((id >> 57) & 0x7f);
 		return b;
 	}
@@ -164,9 +164,9 @@ struct BlockLocation {
 				(static_cast<uint32_t>(src[9] & 0b111) << 22);
 		const uint8_t lod_index = src[9] >> 3;
 		return BlockLocation{ Vector3i(
-									  math::sign_extend_to_32bit(xb, 25),
-									  math::sign_extend_to_32bit(yb, 25),
-									  math::sign_extend_to_32bit(zb, 25)
+									  math::sign_extend_to_32bit<25>(xb),
+									  math::sign_extend_to_32bit<25>(yb),
+									  math::sign_extend_to_32bit<25>(zb)
 							  ),
 							  lod_index };
 	}

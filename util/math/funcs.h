@@ -422,17 +422,13 @@ inline constexpr int32_t arithmetic_rshift(int32_t a, unsigned int b) {
 	return a >> b;
 }
 
-inline constexpr int32_t sign_extend_to_32bit(uint32_t i, uint32_t from_bits) {
-#ifdef DEBUG_ENABLED
-	ZN_ASSERT(from_bits > 0 && from_bits < 32);
-#endif
-	// If the sign bit of the source integer is set
-	if (i & (1 << (from_bits - 1))) {
-		// Extend it to 32 bits by setting all bits to the left:
-		// Make a mask of `from_bits` bits set to 1, invert it and combine it
-		return i | ~((1 << from_bits) - 1);
-	}
-	return i;
+template <unsigned int NBits>
+inline constexpr int32_t sign_extend_to_32bit(int32_t i) {
+	static_assert(NBits > 0 && NBits < 32);
+	struct S {
+		int32_t v : NBits;
+	};
+	return S{ i }.v;
 }
 
 } // namespace zylann::math
