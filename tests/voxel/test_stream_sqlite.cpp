@@ -12,7 +12,11 @@
 namespace zylann::voxel::tests {
 
 namespace {
-void test_voxel_stream_sqlite_basic(bool with_key_cache, VoxelStreamSQLite::CoordinateFormat coordinate_format) {
+void test_voxel_stream_sqlite_basic(
+		bool with_key_cache,
+		VoxelStreamSQLite::CoordinateFormat coordinate_format,
+		Vector3i block_position
+) {
 	zylann::testing::TestDirectory test_dir;
 	ZN_TEST_ASSERT(test_dir.is_valid());
 
@@ -21,7 +25,7 @@ void test_voxel_stream_sqlite_basic(bool with_key_cache, VoxelStreamSQLite::Coor
 	VoxelBuffer vb1(VoxelBuffer::ALLOCATOR_DEFAULT);
 	vb1.create(Vector3i(16, 16, 16));
 	vb1.fill_area(1, Vector3i(5, 5, 5), Vector3i(10, 11, 12), 0);
-	const Vector3i vb1_pos(1, 2, -3);
+	const Vector3i vb1_pos = block_position;
 
 	{
 		Ref<VoxelStreamSQLite> stream;
@@ -67,14 +71,37 @@ void test_voxel_stream_sqlite_basic(bool with_key_cache, VoxelStreamSQLite::Coor
 void test_voxel_stream_sqlite_basic() {
 	test_sqlite_stream_utility_functions();
 
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
-	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
-	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
+	test_voxel_stream_sqlite_basic(
+			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16, Vector3i(1, 2, -3)
+	);
+	test_voxel_stream_sqlite_basic(
+			true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16, Vector3i(1, 2, -3)
+	);
+	test_voxel_stream_sqlite_basic(
+			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(1, 2, -3)
+	);
+	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(1, 2, -3));
+	test_voxel_stream_sqlite_basic(false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(1, 2, -3));
+	test_voxel_stream_sqlite_basic(true, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(1, 2, -3));
+	test_voxel_stream_sqlite_basic(
+			false, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5, Vector3i(1, 2, -3)
+	);
+	test_voxel_stream_sqlite_basic(
+			true, VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5, Vector3i(1, 2, -3)
+	);
+
+	// Extras with large coordinates
+	test_voxel_stream_sqlite_basic(
+			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7, Vector3i(100'000, 150'000, -200'000)
+	);
+	test_voxel_stream_sqlite_basic(
+			false, VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD, Vector3i(10'000'000, -20'000'000, 30'000'000)
+	);
+	test_voxel_stream_sqlite_basic(
+			false,
+			VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5,
+			Vector3i(10'000'000, -11'000'000, 12'000'000)
+	);
 }
 
 void test_voxel_stream_sqlite_coordinate_format(const VoxelStreamSQLite::CoordinateFormat coordinate_format) {

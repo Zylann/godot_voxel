@@ -52,12 +52,6 @@ struct BlockLocation {
 		FORMAT_COUNT,
 	};
 
-	static bool validate(const Vector3i pos, uint8_t lod) {
-		ZN_ASSERT_RETURN_V(can_convert_to_i16(pos), false);
-		ZN_ASSERT_RETURN_V(lod < constants::MAX_LOD, false);
-		return true;
-	}
-
 	uint64_t encode_x16_y16_z16_l16() const {
 		// 0l xx yy zz
 		// TODO Is that actually correct with negative coordinates?
@@ -217,13 +211,15 @@ struct BlockLocation {
 	static Box3i get_coordinate_range(BlockLocation::CoordinateFormat format) {
 		switch (format) {
 			case FORMAT_INT64_X16_Y16_Z16_L16:
-				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 16)), Vector3iUtil::create((1 << 16) - 1));
+				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 15)), Vector3iUtil::create((1 << 15) - 1));
 			case FORMAT_INT64_X19_Y19_Z19_L7:
-				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 19)), Vector3iUtil::create((1 << 19) - 1));
+				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 18)), Vector3iUtil::create((1 << 18) - 1));
 			case FORMAT_STRING_CSD:
+				// In theory should be maximum an int32 can hold, but let's use the maximum extent we can get with the
+				// module's own limit constant
 				return Box3i::from_min_max(
-						Vector3iUtil::create(-constants::MAX_VOLUME_EXTENT),
-						Vector3iUtil::create(constants::MAX_VOLUME_EXTENT)
+						Vector3iUtil::create(-(constants::MAX_VOLUME_EXTENT >> constants::DEFAULT_BLOCK_SIZE_PO2)),
+						Vector3iUtil::create((constants::MAX_VOLUME_EXTENT >> constants::DEFAULT_BLOCK_SIZE_PO2))
 				);
 			case FORMAT_BLOB80_X25_Y25_Z25_L5:
 				return Box3i::from_min_max(Vector3iUtil::create(-(1 << 24)), Vector3iUtil::create((1 << 24) - 1));
@@ -1291,6 +1287,18 @@ VoxelStreamSQLite::CoordinateFormat to_exposed_coordinate_format(BlockLocation::
 	return static_cast<VoxelStreamSQLite::CoordinateFormat>(format);
 }
 
+bool validate_range(Vector3i pos, unsigned int lod_index, const Box3i coordinate_range, unsigned int lod_count) {
+	if (!coordinate_range.contains(pos)) {
+		ZN_PRINT_ERROR(format("Block position {} is outside of supported range {}", pos, coordinate_range));
+		return false;
+	}
+	if (lod_index >= lod_count) {
+		ZN_PRINT_ERROR(format("Block LOD {} is outside of supported range [0..{})", lod_index, lod_count));
+		return false;
+	}
+	return true;
+}
+
 } // namespace
 
 VoxelStreamSQLite::VoxelStreamSQLite() {}
@@ -1365,8 +1373,6 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 		VoxelStream::VoxelQueryData &q = p_blocks[i];
 		const Vector3i pos = q.position_in_blocks;
 
-		ZN_ASSERT_CONTINUE(can_convert_to_i16(pos));
-
 		if (_block_keys_cache_enabled && !_block_keys_cache.contains(pos, q.lod_index)) {
 			q.result = RESULT_BLOCK_NOT_FOUND;
 			continue;
@@ -1415,13 +1421,18 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 }
 
 void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
+	VoxelStreamSQLiteInternal *con = get_connection();
+	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
+	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
+	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
+	recycle_connection(con);
+
 	// First put in cache
 	for (unsigned int i = 0; i < p_blocks.size(); ++i) {
 		VoxelStream::VoxelQueryData &q = p_blocks[i];
 		const Vector3i pos = q.position_in_blocks;
 
-		if (!BlockLocation::validate(pos, q.lod_index)) {
-			ERR_PRINT(String("Block position {0} is outside of supported range").format(varray(pos)));
+		if (!validate_range(pos, q.lod_index, coordinate_range, lod_count)) {
 			continue;
 		}
 
@@ -1509,15 +1520,17 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 }
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
-	// TODO Get block size from database
-	// const int bs_po2 = constants::DEFAULT_BLOCK_SIZE_PO2;
+	VoxelStreamSQLiteInternal *con = get_connection();
+	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
+	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
+	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
+	recycle_connection(con);
 
 	// First put in cache
 	for (size_t i = 0; i < p_blocks.size(); ++i) {
 		VoxelStream::InstancesQueryData &q = p_blocks[i];
 
-		if (!BlockLocation::validate(q.position_in_blocks, q.lod_index)) {
-			ZN_PRINT_ERROR(format("Instance block position {} is outside of supported range", q.position_in_blocks));
+		if (!validate_range(q.position_in_blocks, q.lod_index, coordinate_range, lod_count)) {
 			continue;
 		}
 
@@ -1623,9 +1636,15 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 	StdVector<uint8_t> &temp_data = get_tls_temp_block_data();
 	StdVector<uint8_t> &temp_compressed_data = get_tls_temp_compressed_block_data();
 
+	const BlockLocation::CoordinateFormat coordinate_format = p_connection->get_meta().coordinate_format;
+	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
+	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
+
 	// TODO Needs better error rollback handling
-	_cache.flush([p_connection, &temp_data, &temp_compressed_data](VoxelStreamCache::Block &block) {
-		ERR_FAIL_COND(!BlockLocation::validate(block.position, block.lod));
+	_cache.flush([p_connection, &temp_data, &temp_compressed_data, coordinate_range, lod_count](
+						 VoxelStreamCache::Block &block
+				 ) {
+		ZN_ASSERT_RETURN(validate_range(block.position, block.lod, coordinate_range, lod_count));
 
 		BlockLocation loc;
 		loc.position = block.position;
