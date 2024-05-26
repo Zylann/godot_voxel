@@ -122,6 +122,8 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_spatial_lock_spam);
 	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
 	VOXEL_TEST(test_discord_soakil_copypaste);
+	VOXEL_TEST(test_voxel_stream_sqlite_key_string_csd_encoding);
+	VOXEL_TEST(test_voxel_stream_sqlite_key_blob80_encoding);
 	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 	VOXEL_TEST(test_voxel_stream_sqlite_coordinate_format);
 

@@ -1,4 +1,5 @@
 #include "test_stream_sqlite.h"
+#include "../../streams/sqlite/block_location.h"
 #include "../../streams/sqlite/voxel_stream_sqlite.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/godot/core/random_pcg.h"
@@ -69,8 +70,6 @@ void test_voxel_stream_sqlite_basic(
 } // namespace
 
 void test_voxel_stream_sqlite_basic() {
-	test_sqlite_stream_utility_functions();
-
 	test_voxel_stream_sqlite_basic(
 			false, VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16, Vector3i(1, 2, -3)
 	);
@@ -226,12 +225,60 @@ void test_voxel_stream_sqlite_coordinate_format(const VoxelStreamSQLite::Coordin
 }
 
 void test_voxel_stream_sqlite_coordinate_format() {
-	test_sqlite_stream_utility_functions();
-
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X16_Y16_Z16_L16);
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_INT64_X19_Y19_Z19_L7);
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_STRING_CSD);
 	test_voxel_stream_sqlite_coordinate_format(VoxelStreamSQLite::COORDINATE_FORMAT_BLOB80_X25_Y25_Z25_L5);
+}
+
+void test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i pos, uint8_t lod_index, std::string_view expected) {
+	using namespace sqlite;
+
+	FixedArray<uint8_t, STRING_LOCATION_MAX_LENGTH> buffer;
+	const BlockLocation loc{ pos, lod_index };
+	std::string_view sv = loc.encode_string_csd(buffer);
+	ZN_ASSERT(sv == expected);
+	BlockLocation loc2;
+	ZN_ASSERT(loc.decode_string_csd(sv, loc2));
+	ZN_ASSERT(loc == loc2);
+}
+
+void test_voxel_stream_sqlite_key_string_csd_encoding() {
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(0, 0, 0), 0, "0,0,0,0");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(1, 0, 0), 1, "1,0,0,1");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(-1, 4, -1), 2, "-1,4,-1,2");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(6, -9, 21), 5, "6,-9,21,5");
+	test_voxel_stream_sqlite_key_string_csd_encoding(Vector3i(123, -456, 789), 20, "123,-456,789,20");
+}
+
+void test_voxel_stream_sqlite_key_blob80_encoding(Vector3i position, uint8_t lod_index) {
+	using namespace sqlite;
+
+	FixedArray<uint8_t, BLOB80_LENGTH> buffer;
+	const BlockLocation loc{ position, lod_index };
+	loc.encode_blob80(to_span(buffer));
+	const BlockLocation loc2 = BlockLocation::decode_blob80(to_span(buffer));
+	ZN_ASSERT(loc == loc2);
+}
+
+void test_voxel_stream_sqlite_key_blob80_encoding() {
+	using namespace sqlite;
+
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(0, 0, 0), 0);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(1, 0, 0), 1);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(-1, 4, -1), 2);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(6, -9, 21), 5);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(123, -456, 789), 20);
+
+	const BlockLocation::CoordinateFormat format = BlockLocation::FORMAT_BLOB80_X25_Y25_Z25_L5;
+	const Box3i limits = BlockLocation::get_coordinate_range(format);
+	const uint8_t max_lod_index = BlockLocation::get_lod_count(format) - 1;
+	const Vector3i min_pos = limits.position;
+	const Vector3i max_pos = limits.position + limits.size - Vector3i(1, 1, 1);
+	test_voxel_stream_sqlite_key_blob80_encoding(min_pos, max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(max_pos, max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(min_pos.x, max_pos.y, min_pos.z), max_lod_index);
+	test_voxel_stream_sqlite_key_blob80_encoding(Vector3i(max_pos.x, min_pos.y, max_pos.z), max_lod_index);
 }
 
 } // namespace zylann::voxel::tests

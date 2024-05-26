@@ -3,16 +3,17 @@
 
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
-#include "../../util/math/vector3i16.h"
 #include "../../util/string/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
 #include "../voxel_stream_cache.h"
 
-namespace zylann::voxel {
-
+namespace zylann::voxel::sqlite {
 class VoxelStreamSQLiteInternal;
+}
+
+namespace zylann::voxel {
 
 // Saves voxel data into a single SQLite database file.
 class VoxelStreamSQLite : public VoxelStream {
@@ -125,15 +126,15 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	VoxelStreamSQLiteInternal *get_connection();
-	void recycle_connection(VoxelStreamSQLiteInternal *con);
-	void flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection);
+	sqlite::VoxelStreamSQLiteInternal *get_connection();
+	void recycle_connection(sqlite::VoxelStreamSQLiteInternal *con);
+	void flush_cache_to_connection(sqlite::VoxelStreamSQLiteInternal *p_connection);
 
 	static void _bind_methods();
 
 	String _user_specified_connection_path;
 	StdString _globalized_connection_path;
-	StdVector<VoxelStreamSQLiteInternal *> _connection_pool;
+	StdVector<sqlite::VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
 	// This cache stores blocks in memory, and gets flushed to the database when big enough.
 	// This is because save queries are more expensive.
@@ -151,9 +152,6 @@ private:
 	// existing databases.
 	CoordinateFormat _preferred_coordinate_format = COORDINATE_FORMAT_STRING_CSD;
 };
-
-// TODO Refactor structure later so we don't need this helper function
-void test_sqlite_stream_utility_functions();
 
 } // namespace zylann::voxel
 
