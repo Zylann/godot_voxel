@@ -706,6 +706,16 @@ bool VoxelStreamSQLiteInternal::open(
 		}
 		save_meta(meta);
 	} else {
+		if (meta.version > VERSION_LATEST) {
+			ZN_PRINT_ERROR(format(
+					"Could not use database at path \"{}\", its version ({}) is higher than the latest supported ({})",
+					fpath,
+					meta.version,
+					VERSION_LATEST
+			));
+			close();
+			return false;
+		}
 		if (meta.coordinate_format != preferred_coordinate_format) {
 			ZN_PRINT_VERBOSE(
 					format("Opened database uses version {} (latest is {}) and uses coordinate format {} while the "
