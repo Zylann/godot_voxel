@@ -15,7 +15,8 @@
 			<param index="1" name="materials" type="Material[]" />
 			<param index="2" name="additional_data" type="Dictionary" default="{}" />
 			<description>
-				Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher.
+				Builds a mesh from the provided voxels. Materials will be attached to each surface based on the provided array. The way materials are used can depend on the type of mesher. 
+				Meshers are initially meant to work on chunks, so voxels within an outer margin of the buffer will not be part of the result. They are considered "neighbors" and may eventually affect face culling. If you want to use a mesher to make a standalone voxel mesh, make sure it is padded by air. The size of that margin is determined by [method get_minimum_padding] and [method get_maximum_padding].
 			</description>
 		</method>
 		<method name="get_maximum_padding" qualifiers="const">
