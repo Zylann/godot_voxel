@@ -25,6 +25,7 @@ nav:
   - 'instancing.md'
   - 'editor.md'
   - 'multiplayer.md'
+  - 'navigation.md'
   - 'scripting.md'
   - 'procedural_generation.md'
   - 'performance.md'

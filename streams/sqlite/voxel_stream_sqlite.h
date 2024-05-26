@@ -4,6 +4,7 @@
 #include "../../util/containers/std_unordered_set.h"
 #include "../../util/containers/std_vector.h"
 #include "../../util/math/vector3i16.h"
+#include "../../util/string/std_string.h"
 #include "../../util/thread/mutex.h"
 #include "../voxel_block_serializer.h"
 #include "../voxel_stream.h"
@@ -112,7 +113,8 @@ private:
 
 	static void _bind_methods();
 
-	String _connection_path;
+	String _user_specified_connection_path;
+	StdString _globalized_connection_path;
 	StdVector<VoxelStreamSQLiteInternal *> _connection_pool;
 	Mutex _connection_mutex;
 	// This cache stores blocks in memory, and gets flushed to the database when big enough.

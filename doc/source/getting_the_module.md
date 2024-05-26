@@ -99,6 +99,13 @@ C# builds are available on Github Actions as well (as "Mono Builds"). Unfortunat
 To obtain a working version, you may generate the SDK yourself and use a local Nuget repository instead of the official one. Follow the steps described in the [Godot Documentation for C#](https://docs.godotengine.org/en/stable/contributing/development/compiling/compiling_with_dotnet.html).
 
 
+### Ownership checks
+
+The module does some sanity checks when running some virtual methods, such as custom generators. These checks involve reference counting. However, that doesn't work in C# because it is a garbage-collected language: `RefCounted` objects going out of scope are not actually freed until the garbage collector runs. This can cause false-positive errors.
+
+You may turn off those checks in Project Settings: `voxel/ownership_checks`
+
+
 ### GDExtension and `C#`
 
 The module can also compile as a GDExtension library, which doesn't require to build Godot. However, C# support of extensions implemented in C++ is not well defined at the moment.
