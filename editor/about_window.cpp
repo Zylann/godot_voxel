@@ -23,130 +23,141 @@ struct ThirdParty {
 };
 const ThirdParty g_third_parties[] = {
 	{ "FastNoiseLite",
-			"MIT License\n"
-			"\n"
-			"Copyright(c) 2020 Jordan Peck (jordan.me2@gmail.com)\n"
-			"Copyright(c) 2020 Contributors\n"
-			"\n"
-			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
-			"of this software and associated documentation files(the \" Software \"), to deal\n"
-			"in the Software without restriction, including without limitation the rights\n"
-			"to use, copy, modify, merge, publish, distribute, sublicense, and / or sell\n"
-			"copies of the Software, and to permit persons to whom the Software is\n"
-			"furnished to do so, subject to the following conditions :\n"
-			"\n"
-			"The above copyright notice and this permission notice shall be included in all\n"
-			"copies or substantial portions of the Software.\n"
-			"\n"
-			"THE SOFTWARE IS PROVIDED \" AS IS \", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
-			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
-			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE\n"
-			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
-			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
-			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
-			"SOFTWARE.\n" },
+
+	  "MIT License\n"
+	  "\n"
+	  "Copyright(c) 2020 Jordan Peck (jordan.me2@gmail.com)\n"
+	  "Copyright(c) 2020 Contributors\n"
+	  "\n"
+	  "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+	  "of this software and associated documentation files(the \" Software \"), to deal\n"
+	  "in the Software without restriction, including without limitation the rights\n"
+	  "to use, copy, modify, merge, publish, distribute, sublicense, and / or sell\n"
+	  "copies of the Software, and to permit persons to whom the Software is\n"
+	  "furnished to do so, subject to the following conditions :\n"
+	  "\n"
+	  "The above copyright notice and this permission notice shall be included in all\n"
+	  "copies or substantial portions of the Software.\n"
+	  "\n"
+	  "THE SOFTWARE IS PROVIDED \" AS IS \", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+	  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+	  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE\n"
+	  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+	  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+	  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+	  "SOFTWARE.\n" },
+
 	{ "FastNoise2",
-			"MIT License\n"
-			"\n"
-			"Copyright (c) 2020 Jordan Peck\n"
-			"\n"
-			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
-			"of this software and associated documentation files (the \"Software\"), to deal\n"
-			"in the Software without restriction, including without limitation the rights\n"
-			"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
-			"copies of the Software, and to permit persons to whom the Software is\n"
-			"furnished to do so, subject to the following conditions:\n"
-			"\n"
-			"The above copyright notice and this permission notice shall be included in all\n"
-			"copies or substantial portions of the Software.\n"
-			"\n"
-			"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
-			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
-			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
-			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
-			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
-			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
-			"SOFTWARE.\n" },
+
+	  "MIT License\n"
+	  "\n"
+	  "Copyright (c) 2020 Jordan Peck\n"
+	  "\n"
+	  "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+	  "of this software and associated documentation files (the \"Software\"), to deal\n"
+	  "in the Software without restriction, including without limitation the rights\n"
+	  "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+	  "copies of the Software, and to permit persons to whom the Software is\n"
+	  "furnished to do so, subject to the following conditions:\n"
+	  "\n"
+	  "The above copyright notice and this permission notice shall be included in all\n"
+	  "copies or substantial portions of the Software.\n"
+	  "\n"
+	  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+	  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+	  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+	  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+	  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+	  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+	  "SOFTWARE.\n" },
+
 	{ "LZ4 compression library",
-			"Copyright (c) 2011-2016, Yann Collet\n"
-			"All rights reserved.\n"
-			"\n"
-			"Redistribution and use in source and binary forms, with or without modification,\n"
-			"are permitted provided that the following conditions are met:\n"
-			"\n"
-			"* Redistributions of source code must retain the above copyright notice, this\n"
-			"list of conditions and the following disclaimer.\n"
-			"\n"
-			"* Redistributions in binary form must reproduce the above copyright notice, this\n"
-			"list of conditions and the following disclaimer in the documentation and/or\n"
-			"other materials provided with the distribution.\n"
-			"\n"
-			"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \" AS IS \" AND\n"
-			"ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n"
-			"WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n"
-			"DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\n"
-			"ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n"
-			"(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n"
-			"LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n"
-			"ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
-			"(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
-			"SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n" },
+
+	  "Copyright (c) 2011-2016, Yann Collet\n"
+	  "All rights reserved.\n"
+	  "\n"
+	  "Redistribution and use in source and binary forms, with or without modification,\n"
+	  "are permitted provided that the following conditions are met:\n"
+	  "\n"
+	  "* Redistributions of source code must retain the above copyright notice, this\n"
+	  "list of conditions and the following disclaimer.\n"
+	  "\n"
+	  "* Redistributions in binary form must reproduce the above copyright notice, this\n"
+	  "list of conditions and the following disclaimer in the documentation and/or\n"
+	  "other materials provided with the distribution.\n"
+	  "\n"
+	  "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \" AS IS \" AND\n"
+	  "ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n"
+	  "WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n"
+	  "DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR\n"
+	  "ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES\n"
+	  "(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;\n"
+	  "LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON\n"
+	  "ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
+	  "(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n"
+	  "SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n" },
+
 	{ "MeshOptimizer",
-			"MIT License\n"
-			"\n"
-			"Copyright (c) 2016-2021 Arseny Kapoulkine\n"
-			"\n"
-			"Permission is hereby granted, free of charge, to any person obtaining a copy\n"
-			"of this software and associated documentation files (the \"Software\"), to deal\n"
-			"in the Software without restriction, including without limitation the rights\n"
-			"to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
-			"copies of the Software, and to permit persons to whom the Software is\n"
-			"furnished to do so, subject to the following conditions:\n"
-			"\n"
-			"The above copyright notice and this permission notice shall be included in all\n"
-			"copies or substantial portions of the Software.\n"
-			"\n"
-			"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
-			"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
-			"FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
-			"AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
-			"LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
-			"OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
-			"SOFTWARE.\n" },
+
+	  "MIT License\n"
+	  "\n"
+	  "Copyright (c) 2016-2021 Arseny Kapoulkine\n"
+	  "\n"
+	  "Permission is hereby granted, free of charge, to any person obtaining a copy\n"
+	  "of this software and associated documentation files (the \"Software\"), to deal\n"
+	  "in the Software without restriction, including without limitation the rights\n"
+	  "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n"
+	  "copies of the Software, and to permit persons to whom the Software is\n"
+	  "furnished to do so, subject to the following conditions:\n"
+	  "\n"
+	  "The above copyright notice and this permission notice shall be included in all\n"
+	  "copies or substantial portions of the Software.\n"
+	  "\n"
+	  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n"
+	  "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n"
+	  "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n"
+	  "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n"
+	  "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n"
+	  "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+	  "SOFTWARE.\n" },
+
 	{ "SQLite",
-			"This software is public-domain.\n"
-			"The author disclaims copyright to this source code.  In place of\n"
-			"a legal notice, here is a blessing:\n"
-			"\n"
-			"   May you do good and not evil.\n"
-			"   May you find forgiveness for yourself and forgive others.\n"
-			"   May you share freely, never taking more than you give.\n" },
+
+	  "This software is public-domain.\n"
+	  "The author disclaims copyright to this source code.  In place of\n"
+	  "a legal notice, here is a blessing:\n"
+	  "\n"
+	  "   May you do good and not evil.\n"
+	  "   May you find forgiveness for yourself and forgive others.\n"
+	  "   May you share freely, never taking more than you give.\n" },
+
 	{ "Transvoxel tables",
-			"Copyright 2009 by Eric Lengyel\n"
-			"\n"
-			"The following data originates from Eric Lengyel's Transvoxel Algorithm.\n"
-			"http://transvoxel.org/\n"
-			"\n"
-			"The data in this file may be freely used in implementations of the Transvoxel\n"
-			"Algorithm. If you do use this data, or any transformation of it, in your own\n"
-			"projects, commercial or otherwise, please give credit by indicating in your\n"
-			"source code that the data is part of the author's implementation of the\n"
-			"Transvoxel Algorithm and that it came from the web address given above.\n"
-			"(Simply copying and pasting the two lines of the previous paragraph would be\n"
-			"perfect.) If you distribute a commercial product with source code included,\n"
-			"then the credit in the source code is required.\n"
-			"\n"
-			"If you distribute any kind of product that uses this data, a credit visible to\n"
-			"the end-user would be appreciated, but it is not required. However, you may\n"
-			"not claim that the entire implementation of the Transvoxel Algorithm is your\n"
-			"own if you use the data in this file or any transformation of it.\n"
-			"\n"
-			"The format of the data in this file is described in the dissertation \"Voxel-\n"
-			"Based Terrain for Real-Time Virtual Simulations\", available at the web page\n"
-			"given above. References to sections and figures below pertain to that paper.\n"
-			"\n"
-			"The contents of this file are protected by copyright and may not be publicly\n"
-			"reproduced without permission.\n" }
+
+	  "Copyright 2009 by Eric Lengyel\n"
+	  "\n"
+	  "The following data originates from Eric Lengyel's Transvoxel Algorithm.\n"
+	  "http://transvoxel.org/\n"
+	  "\n"
+	  "The data in this file may be freely used in implementations of the Transvoxel\n"
+	  "Algorithm. If you do use this data, or any transformation of it, in your own\n"
+	  "projects, commercial or otherwise, please give credit by indicating in your\n"
+	  "source code that the data is part of the author's implementation of the\n"
+	  "Transvoxel Algorithm and that it came from the web address given above.\n"
+	  "(Simply copying and pasting the two lines of the previous paragraph would be\n"
+	  "perfect.) If you distribute a commercial product with source code included,\n"
+	  "then the credit in the source code is required.\n"
+	  "\n"
+	  "If you distribute any kind of product that uses this data, a credit visible to\n"
+	  "the end-user would be appreciated, but it is not required. However, you may\n"
+	  "not claim that the entire implementation of the Transvoxel Algorithm is your\n"
+	  "own if you use the data in this file or any transformation of it.\n"
+	  "\n"
+	  "The format of the data in this file is described in the dissertation \"Voxel-\n"
+	  "Based Terrain for Real-Time Virtual Simulations\", available at the web page\n"
+	  "given above. References to sections and figures below pertain to that paper.\n"
+	  "\n"
+	  "The contents of this file are protected by copyright and may not be publicly\n"
+	  "reproduced without permission.\n" }
 };
 const unsigned int VOXEL_THIRD_PARTY_COUNT = count_of(g_third_parties);
 
@@ -227,6 +238,7 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"gumby-cmyk\n"
 						"Joshua Woods (jpw1991)\n"
 						"jjoshpoland (Josh)\n"
+						"jbbieber1127 (John Bieber)\n"
 						"\n"
 						"[b]Supporters:[/b]\n"
 						"rcorre (Ryan Roden-Corrent)\n"
@@ -241,7 +253,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 						"matthewhilton (Matthew Hilton)\n"
 						"SummitCollie\n"
 						"nulshift\n"
-						"ddel-rio (Daniel del Río Román)";
+						"ddel-rio (Daniel del Río Román)\n"
+						"Cyberphinx";
 	{
 		Dictionary d;
 
@@ -262,7 +275,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 	rich_text_label->set_text(about_text);
 	rich_text_label->set_selection_enabled(true);
 	rich_text_label->connect(
-			"meta_clicked", callable_mp(this, &VoxelAboutWindow::_on_about_rich_text_label_meta_clicked));
+			"meta_clicked", callable_mp(this, &VoxelAboutWindow::_on_about_rich_text_label_meta_clicked)
+	);
 
 	tab_container->add_child(rich_text_label);
 
@@ -286,7 +300,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 			"LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n"
 			"IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\n"
 			"WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n"
-			"SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.");
+			"SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+	);
 	rich_text_label2->set_selection_enabled(true);
 
 	tab_container->add_child(rich_text_label2);
@@ -305,7 +320,8 @@ VoxelAboutWindow::VoxelAboutWindow() {
 		}
 
 		third_party_list->connect(
-				"item_selected", callable_mp(this, &VoxelAboutWindow::_on_third_party_list_item_selected));
+				"item_selected", callable_mp(this, &VoxelAboutWindow::_on_third_party_list_item_selected)
+		);
 
 		_third_party_rich_text_label = memnew(RichTextLabel);
 		_third_party_rich_text_label->set_selection_enabled(true);
@@ -345,7 +361,8 @@ void VoxelAboutWindow::_on_third_party_list_item_selected(int index) {
 	ERR_FAIL_COND(index < 0 || index >= int(VOXEL_THIRD_PARTY_COUNT));
 	const ThirdParty &third_party = g_third_parties[index];
 	_third_party_rich_text_label->set_text(
-			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license)));
+			String("{0}\n------------------------------\n{1}").format(varray(third_party.name, third_party.license))
+	);
 }
 
 void VoxelAboutWindow::_bind_methods() {}

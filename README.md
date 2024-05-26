@@ -52,7 +52,7 @@ Areas of interest:
 Supporters
 -----------
 
-This module is a non-profit project developed by voluntary contributors. The following is the list of the current donors.
+This module is a non-profit project developed by voluntary contributors. The following is the list of who donated at least once.
 Thanks for your support :)
 
 ### Gold supporters
@@ -80,6 +80,7 @@ bfoster68
 gumby-cmyk
 Joshua Woods (jpw1991)
 jjoshpoland (Josh)
+jbbieber1127 (John Bieber)
 ```
 
 ### Supporters
@@ -100,6 +101,7 @@ Fabian (nan0m)
 SummitCollie
 nulshift
 ddel-rio (Daniel del Río Román)
+Cyberphinx
 ```
 
 
