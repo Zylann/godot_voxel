@@ -38,5 +38,8 @@
 		<member name="view_distance" type="int" setter="set_view_distance" getter="get_view_distance" default="128">
 			How far should voxels generate around this viewer.
 		</member>
+		<member name="view_distance_vertical_ratio" type="float" setter="set_view_distance_vertical_ratio" getter="get_view_distance_vertical_ratio" default="1.0">
+			Modifies vertical view distance to be a ratio of the [member view_distance] property. For example, if [member view_distance] is 100 and this property is 0.5, then horizontal view distance will be 100 and vertical view distance will be 50.
+		</member>
 	</members>
 </class>

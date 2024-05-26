@@ -20,6 +20,7 @@
 #include "voxel/test_octree.h"
 #include "voxel/test_region_file.h"
 #include "voxel/test_storage_funcs.h"
+#include "voxel/test_stream_sqlite.h"
 #include "voxel/test_voxel_buffer.h"
 #include "voxel/test_voxel_data_map.h"
 #include "voxel/test_voxel_graph.h"
@@ -118,6 +119,7 @@ void run_voxel_tests() {
 	VOXEL_TEST(test_spatial_lock_spam);
 	VOXEL_TEST(test_spatial_lock_dependent_map_chunks);
 	VOXEL_TEST(test_discord_soakil_copypaste);
+	VOXEL_TEST(test_voxel_stream_sqlite_basic);
 
 	print_line("------------ Voxel tests end -------------");
 }

@@ -212,8 +212,15 @@ WEIGHTS:  aaaa bbbb   cccc dddd
 
 By default, these channels default to indices `(0,1,2,3)` and weights `(1,0,0,0)`, meaning voxels always start with texture `0`. Another rule is that indices must not appear twice (for example, indices `(0,1,1,1)` are invalid). If an index appears twice, in particular with different weights, it can cause ambiguous calculations.
 
-The feature is recent and will need further work or changes in this area.
-At the moment, indices and weights are mostly applied manually. It is possible to set them directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. One easy way to paint is to use `VoxelTool.do_sphere()`:
+At the moment, indices and weights are mostly applied manually. It is possible to set them directly with `VoxelTool.set_voxel` but it is up to you to pack them properly. 
+
+You may use `VoxelTool` helper functions to encode/decode these values:
+- [vec4i_to_u16_indices](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_vec4i_to_u16_indices)
+- [color_to_u16_weights](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_color_to_u16_weights)
+- [u16_indices_to_vec4i](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_indices_to_vec4i)
+- [u16_weights_to_color](https://voxel-tools.readthedocs.io/en/latest/api/VoxelTool/#i_u16_weights_to_color)
+
+One easy way to paint is to use `VoxelTool.do_sphere()`:
 
 ```gdscript
 # Paints texture 2 in a sphere area (does not create matter)
@@ -224,6 +231,9 @@ voxel_tool.do_sphere(hit_position, radius)
 ```
 
 It is also possible to generate this in `VoxelGeneratorGraph` using special outputs, but it still requires a bit of math to produce valid data.
+
+See also this [painting demo](https://github.com/Zylann/voxelgame/tree/master/project/smooth_materials).
+
 
 #### Mesh data
 

@@ -20,7 +20,7 @@ INCLUDE_TESTS = env["voxel_tests"]
 
 env_voxel = env_modules.Clone()
 
-voxel_files = common.get_sources(env_voxel, env.editor_build)
+voxel_files = common.get_sources(env_voxel, env.editor_build, INCLUDE_TESTS)
 
 env_voxel.Append(CPPDEFINES=[
 	# Tell engine-agnostic code we are using Godot Engine as a module
@@ -28,12 +28,6 @@ env_voxel.Append(CPPDEFINES=[
 ])
 
 if INCLUDE_TESTS:
-	voxel_files += [
-		"tests/*.cpp",
-		"tests/util/*.cpp",
-		"tests/voxel/*.cpp"
-	]
-
 	if FAST_NOISE_2_SRC:
 		voxel_files += ["tests/fast_noise_2/*.cpp"]
 
