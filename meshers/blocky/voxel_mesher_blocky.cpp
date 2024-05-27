@@ -1092,6 +1092,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 				params.shadow_occluders_mask //
 		);
 
+		if (input.lod_index > 0) {
+			const float lod_scale = 1 << input.lod_index;
+			for (Vector3f &p : occluder_arrays.vertices) {
+				p *= lod_scale;
+			}
+		}
+
 		if (occluder_arrays.indices.size() > 0) {
 			Array mesh_arrays;
 			mesh_arrays.resize(Mesh::ARRAY_MAX);
