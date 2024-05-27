@@ -147,8 +147,8 @@ inline bool read_block_location(
 }
 
 struct TransactionScope {
-	VoxelStreamSQLiteInternal &db;
-	TransactionScope(VoxelStreamSQLiteInternal &p_db) : db(p_db) {
+	Connection &db;
+	TransactionScope(Connection &p_db) : db(p_db) {
 		db.begin_transaction();
 	}
 	~TransactionScope() {
@@ -174,16 +174,13 @@ static void finalize(sqlite3_stmt *&s) {
 
 } // namespace
 
-VoxelStreamSQLiteInternal::VoxelStreamSQLiteInternal() {}
+Connection::Connection() {}
 
-VoxelStreamSQLiteInternal::~VoxelStreamSQLiteInternal() {
+Connection::~Connection() {
 	close();
 }
 
-bool VoxelStreamSQLiteInternal::open(
-		const char *fpath,
-		const BlockLocation::CoordinateFormat preferred_coordinate_format
-) {
+bool Connection::open(const char *fpath, const BlockLocation::CoordinateFormat preferred_coordinate_format) {
 	ZN_PROFILE_SCOPE();
 	close();
 
@@ -349,7 +346,7 @@ bool VoxelStreamSQLiteInternal::open(
 	return true;
 }
 
-void VoxelStreamSQLiteInternal::close() {
+void Connection::close() {
 	if (_db == nullptr) {
 		return;
 	}
@@ -371,14 +368,14 @@ void VoxelStreamSQLiteInternal::close() {
 	_opened_path.clear();
 }
 
-const char *VoxelStreamSQLiteInternal::get_file_path() const {
+const char *Connection::get_file_path() const {
 	if (_db == nullptr) {
 		return nullptr;
 	}
 	return sqlite3_db_filename(_db, nullptr);
 }
 
-bool VoxelStreamSQLiteInternal::begin_transaction() {
+bool Connection::begin_transaction() {
 	int rc = sqlite3_reset(_begin_statement);
 	if (rc != SQLITE_OK) {
 		ERR_PRINT(sqlite3_errmsg(_db));
@@ -392,7 +389,7 @@ bool VoxelStreamSQLiteInternal::begin_transaction() {
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::end_transaction() {
+bool Connection::end_transaction() {
 	int rc = sqlite3_reset(_end_statement);
 	if (rc != SQLITE_OK) {
 		ERR_PRINT(sqlite3_errmsg(_db));
@@ -406,11 +403,7 @@ bool VoxelStreamSQLiteInternal::end_transaction() {
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::save_block(
-		const BlockLocation loc,
-		const Span<const uint8_t> block_data,
-		const BlockType type
-) {
+bool Connection::save_block(const BlockLocation loc, const Span<const uint8_t> block_data, const BlockType type) {
 	ZN_PROFILE_SCOPE();
 
 	sqlite3 *db = _db;
@@ -462,7 +455,7 @@ bool VoxelStreamSQLiteInternal::save_block(
 	return true;
 }
 
-VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
+VoxelStream::ResultCode Connection::load_block(
 		const BlockLocation loc,
 		StdVector<uint8_t> &out_block_data,
 		const BlockType type
@@ -522,7 +515,7 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 	return result;
 }
 
-bool VoxelStreamSQLiteInternal::load_all_blocks(
+bool Connection::load_all_blocks(
 		void *callback_data,
 		void (*process_block_func)(
 				void *callback_data,
@@ -585,7 +578,7 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::load_all_block_keys(
+bool Connection::load_all_block_keys(
 		void *callback_data,
 		void (*process_block_func)(void *callback_data, BlockLocation location)
 ) {
@@ -632,7 +625,7 @@ bool VoxelStreamSQLiteInternal::load_all_block_keys(
 	return true;
 }
 
-int VoxelStreamSQLiteInternal::load_version() {
+int Connection::load_version() {
 	sqlite3 *db = _db;
 	sqlite3_stmt *load_version_statement = _load_version_statement;
 
@@ -662,7 +655,7 @@ int VoxelStreamSQLiteInternal::load_version() {
 	return version;
 }
 
-VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
+Connection::Meta Connection::load_meta() {
 	sqlite3 *db = _db;
 	sqlite3_stmt *load_meta_statement = _load_meta_statement;
 	sqlite3_stmt *load_channels_statement = _load_channels_statement;
@@ -746,7 +739,7 @@ VoxelStreamSQLiteInternal::Meta VoxelStreamSQLiteInternal::load_meta() {
 	return meta;
 }
 
-void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
+void Connection::save_meta(Meta meta) {
 	sqlite3 *db = _db;
 	sqlite3_stmt *save_meta_statement = _save_meta_statement;
 	sqlite3_stmt *save_channel_statement = _save_channel_statement;
@@ -815,7 +808,7 @@ void VoxelStreamSQLiteInternal::save_meta(Meta meta) {
 	}
 }
 
-bool VoxelStreamSQLiteInternal::migrate_from_v0_to_v1() {
+bool Connection::migrate_from_v0_to_v1() {
 	if (_meta.version == VERSION_V1) {
 		ZN_PRINT_WARNING("Version already matching");
 		return true;
@@ -824,11 +817,11 @@ bool VoxelStreamSQLiteInternal::migrate_from_v0_to_v1() {
 
 	// Prepare statements
 	struct Statements {
-		VoxelStreamSQLiteInternal &db;
+		Connection &db;
 		sqlite3_stmt *alter_table = nullptr;
 		sqlite3_stmt *update_table = nullptr;
 
-		Statements(VoxelStreamSQLiteInternal &p_db) : db(p_db) {}
+		Statements(Connection &p_db) : db(p_db) {}
 
 		~Statements() {
 			finalize(alter_table);
@@ -870,7 +863,7 @@ bool VoxelStreamSQLiteInternal::migrate_from_v0_to_v1() {
 	return true;
 }
 
-bool VoxelStreamSQLiteInternal::migrate_to_next_version() {
+bool Connection::migrate_to_next_version() {
 	switch (_meta.version) {
 		case VERSION_V0:
 			return migrate_from_v0_to_v1();
@@ -887,7 +880,7 @@ bool VoxelStreamSQLiteInternal::migrate_to_next_version() {
 	return true;
 }
 
-void VoxelStreamSQLiteInternal::migrate_to_latest_version() {
+void Connection::migrate_to_latest_version() {
 	ZN_ASSERT_RETURN(is_open());
 
 	while (_meta.version != VERSION_LATEST) {

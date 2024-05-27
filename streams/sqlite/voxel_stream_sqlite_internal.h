@@ -1,5 +1,5 @@
-#ifndef VOXEL_STREAM_SQLITE_INTERNAL_H
-#define VOXEL_STREAM_SQLITE_INTERNAL_H
+#ifndef VOXEL_STREAM_SQLITE_CONNECTION_H
+#define VOXEL_STREAM_SQLITE_CONNECTION_H
 
 #include "../../storage/voxel_buffer.h"
 #include "../../util/string/std_string.h"
@@ -12,7 +12,7 @@ struct sqlite3_stmt;
 namespace zylann::voxel::sqlite {
 
 // One connection to the database, with our prepared statements
-class VoxelStreamSQLiteInternal {
+class Connection {
 public:
 	static const int VERSION_V0 = 0;
 	static const int VERSION_V1 = 1;
@@ -38,8 +38,8 @@ public:
 		INSTANCES
 	};
 
-	VoxelStreamSQLiteInternal();
-	~VoxelStreamSQLiteInternal();
+	Connection();
+	~Connection();
 
 	bool open(const char *fpath, const BlockLocation::CoordinateFormat preferred_coordinate_format);
 	void close();
@@ -116,4 +116,4 @@ private:
 
 } // namespace zylann::voxel::sqlite
 
-#endif // VOXEL_STREAM_SQLITE_INTERNAL_H
+#endif // VOXEL_STREAM_SQLITE_CONNECTION_H

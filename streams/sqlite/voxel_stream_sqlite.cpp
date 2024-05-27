@@ -70,7 +70,7 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	if (!_globalized_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks, we are already locked.
-		VoxelStreamSQLiteInternal con;
+		sqlite::Connection con;
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
@@ -109,7 +109,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	// Getting connection first to allow the key cache to load if enabled.
 	// This should be quick after the first call because the connection is cached.
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
 
 	// Check the cache first
@@ -150,7 +150,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 		StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
 
-		const ResultCode res = con->load_block(loc, temp_block_data, VoxelStreamSQLiteInternal::VOXELS);
+		const ResultCode res = con->load_block(loc, temp_block_data, sqlite::Connection::VOXELS);
 
 		if (res == RESULT_BLOCK_FOUND) {
 			// TODO Not sure if we should actually expect non-null. There can be legit not found blocks.
@@ -166,7 +166,7 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 }
 
 void VoxelStreamSQLite::save_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
 	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
@@ -221,7 +221,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 		return;
 	}
 
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
 
 	// TODO We should handle busy return codes
@@ -238,7 +238,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 
 		StdVector<uint8_t> &temp_compressed_block_data = get_tls_temp_compressed_block_data();
 
-		const ResultCode res = con->load_block(loc, temp_compressed_block_data, VoxelStreamSQLiteInternal::INSTANCES);
+		const ResultCode res = con->load_block(loc, temp_compressed_block_data, sqlite::Connection::INSTANCES);
 
 		if (res == RESULT_BLOCK_FOUND) {
 			StdVector<uint8_t> &temp_block_data = get_tls_temp_block_data();
@@ -265,7 +265,7 @@ void VoxelStreamSQLite::load_instance_blocks(Span<VoxelStream::InstancesQueryDat
 }
 
 void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryData> p_blocks) {
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	const BlockLocation::CoordinateFormat coordinate_format = con->get_meta().coordinate_format;
 	const Box3i coordinate_range = BlockLocation::get_coordinate_range(coordinate_format);
 	const unsigned int lod_count = BlockLocation::get_lod_count(coordinate_format);
@@ -294,7 +294,7 @@ void VoxelStreamSQLite::save_instance_blocks(Span<VoxelStream::InstancesQueryDat
 void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 	ZN_PROFILE_SCOPE();
 
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
 
 	struct Context {
@@ -360,7 +360,7 @@ int VoxelStreamSQLite::get_used_channels_mask() const {
 }
 
 void VoxelStreamSQLite::flush_cache() {
-	VoxelStreamSQLiteInternal *con = get_connection();
+	sqlite::Connection *con = get_connection();
 	ERR_FAIL_COND(con == nullptr);
 	flush_cache_to_connection(con);
 	recycle_connection(con);
@@ -371,7 +371,7 @@ void VoxelStreamSQLite::flush() {
 }
 
 // This function does not lock any mutex for internal use.
-void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_connection) {
+void VoxelStreamSQLite::flush_cache_to_connection(sqlite::Connection *p_connection) {
 	ZN_PROFILE_SCOPE();
 	ZN_PRINT_VERBOSE(format("VoxelStreamSQLite: Flushing cache ({} elements)", _cache.get_indicative_block_count()));
 
@@ -398,11 +398,11 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 		// Save voxels
 		if (block.has_voxels) {
 			if (block.voxels_deleted) {
-				p_connection->save_block(loc, Span<const uint8_t>(), VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, Span<const uint8_t>(), sqlite::Connection::VOXELS);
 			} else {
 				BlockSerializer::SerializeResult res = BlockSerializer::serialize_and_compress(block.voxels);
 				ERR_FAIL_COND(!res.success);
-				p_connection->save_block(loc, to_span(res.data), VoxelStreamSQLiteInternal::VOXELS);
+				p_connection->save_block(loc, to_span(res.data), sqlite::Connection::VOXELS);
 			}
 		}
 
@@ -417,7 +417,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE
 			));
 		}
-		p_connection->save_block(loc, to_span(temp_compressed_data), VoxelStreamSQLiteInternal::INSTANCES);
+		p_connection->save_block(loc, to_span(temp_compressed_data), sqlite::Connection::INSTANCES);
 
 		// TODO Optimization: add a version of the query that can update both at once
 	});
@@ -425,7 +425,7 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 	ERR_FAIL_COND(p_connection->end_transaction() == false);
 }
 
-VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
+Connection *VoxelStreamSQLite::get_connection() {
 	StdString fpath;
 	CoordinateFormat preferred_coordinate_format;
 	{
@@ -435,7 +435,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 			return nullptr;
 		}
 		if (_connection_pool.size() != 0) {
-			VoxelStreamSQLiteInternal *s = _connection_pool.back();
+			sqlite::Connection *s = _connection_pool.back();
 			_connection_pool.pop_back();
 			return s;
 		}
@@ -447,7 +447,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	if (fpath.empty()) {
 		return nullptr;
 	}
-	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
+	sqlite::Connection *con = new sqlite::Connection();
 	if (!con->open(fpath.data(), to_internal_coordinate_format(preferred_coordinate_format))) {
 		delete con;
 		con = nullptr;
@@ -462,7 +462,7 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 	return con;
 }
 
-void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
+void VoxelStreamSQLite::recycle_connection(sqlite::Connection *con) {
 	const char *con_path = con->get_opened_file_path();
 	// Put back in the pool if the connection path didn't change
 	{
@@ -484,7 +484,7 @@ bool VoxelStreamSQLite::is_key_cache_enabled() const {
 }
 
 Box3i VoxelStreamSQLite::get_supported_block_range() const {
-	// const VoxelStreamSQLiteInternal *con = get_connection();
+	// const Connection *con = get_connection();
 	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
 	// _preferred_coordinate_format;
 	const CoordinateFormat format = _preferred_coordinate_format;
@@ -492,7 +492,7 @@ Box3i VoxelStreamSQLite::get_supported_block_range() const {
 }
 
 int VoxelStreamSQLite::get_lod_count() const {
-	// const VoxelStreamSQLiteInternal *con = get_connection();
+	// const Connection *con = get_connection();
 	// const CoordinateFormat format = con != nullptr ? con->get_meta().coordinate_format :
 	// _preferred_coordinate_format;
 	const CoordinateFormat format = _preferred_coordinate_format;
@@ -508,7 +508,7 @@ VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_preferred_coordinate_
 }
 
 VoxelStreamSQLite::CoordinateFormat VoxelStreamSQLite::get_current_coordinate_format() {
-	const VoxelStreamSQLiteInternal *con = get_connection();
+	const sqlite::Connection *con = get_connection();
 	if (con == nullptr) {
 		return get_preferred_coordinate_format();
 	}
@@ -523,7 +523,7 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 	ZN_ASSERT_RETURN_V(dst_stream.is_valid(), false);
 	ZN_ASSERT_RETURN_V(dst_stream.ptr() != this, false);
 
-	VoxelStreamSQLiteInternal *src_con = get_connection();
+	sqlite::Connection *src_con = get_connection();
 	ZN_ASSERT_RETURN_V(src_con != nullptr, false);
 
 	ZN_ASSERT_RETURN_V(dst_stream->get_database_path() != get_database_path(), false);
@@ -538,7 +538,7 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 	// We also don't use cache.
 
 	struct Context {
-		VoxelStreamSQLiteInternal *dst_con;
+		sqlite::Connection *dst_con;
 
 		static void save(
 				void *cb_data,
@@ -547,8 +547,8 @@ bool VoxelStreamSQLite::copy_blocks_to_other_sqlite_stream(Ref<VoxelStreamSQLite
 				Span<const uint8_t> instances_data
 		) {
 			Context *ctx = static_cast<Context *>(cb_data);
-			ctx->dst_con->save_block(location, voxel_data, VoxelStreamSQLiteInternal::VOXELS);
-			ctx->dst_con->save_block(location, instances_data, VoxelStreamSQLiteInternal::INSTANCES);
+			ctx->dst_con->save_block(location, voxel_data, sqlite::Connection::VOXELS);
+			ctx->dst_con->save_block(location, instances_data, sqlite::Connection::INSTANCES);
 		}
 	};
 

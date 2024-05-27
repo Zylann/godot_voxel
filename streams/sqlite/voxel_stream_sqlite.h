@@ -10,7 +10,7 @@
 #include "../voxel_stream_cache.h"
 
 namespace zylann::voxel::sqlite {
-class VoxelStreamSQLiteInternal;
+class Connection;
 }
 
 namespace zylann::voxel {
@@ -126,15 +126,15 @@ private:
 	// Because of this, in our use case, it might be simpler to just leave SQLite in thread-safe mode,
 	// and synchronize ourselves.
 
-	sqlite::VoxelStreamSQLiteInternal *get_connection();
-	void recycle_connection(sqlite::VoxelStreamSQLiteInternal *con);
-	void flush_cache_to_connection(sqlite::VoxelStreamSQLiteInternal *p_connection);
+	sqlite::Connection *get_connection();
+	void recycle_connection(sqlite::Connection *con);
+	void flush_cache_to_connection(sqlite::Connection *p_connection);
 
 	static void _bind_methods();
 
 	String _user_specified_connection_path;
 	StdString _globalized_connection_path;
-	StdVector<sqlite::VoxelStreamSQLiteInternal *> _connection_pool;
+	StdVector<sqlite::Connection *> _connection_pool;
 	Mutex _connection_mutex;
 	// This cache stores blocks in memory, and gets flushed to the database when big enough.
 	// This is because save queries are more expensive.
