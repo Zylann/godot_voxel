@@ -77,8 +77,13 @@ public:
 	}
 
 	// Gets a copy of all voxels in the area starting at min_pos having the same size as dst_buffer.
-	void copy(Vector3i min_pos, VoxelBuffer &dst_buffer, unsigned int channels_mask, void *,
-			void (*gen_func)(void *, VoxelBuffer &, Vector3i)) const;
+	void copy(
+			Vector3i min_pos,
+			VoxelBuffer &dst_buffer,
+			unsigned int channels_mask,
+			void *,
+			void (*gen_func)(void *, VoxelBuffer &, Vector3i)
+	) const;
 
 	void paste(Vector3i min_pos, const VoxelBuffer &src_buffer, unsigned int channels_mask, bool create_new_blocks);
 
@@ -194,8 +199,10 @@ public:
 					Box3i local_box(voxel_box.position - block_origin, voxel_box.size);
 					local_box.clip(Box3i(Vector3i(), block_size));
 					block->get_voxels().write_box_2_template<F, uint16_t, uint16_t>(
-							local_box, channel0, channel1, action, block_origin);
-				});
+							local_box, channel0, channel1, action, block_origin
+					);
+				}
+		);
 	}
 
 private:

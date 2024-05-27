@@ -19,9 +19,11 @@ void VoxelMemoryPool::create_singleton() {
 void VoxelMemoryPool::destroy_singleton() {
 	const unsigned int used_blocks = VoxelMemoryPool::get_singleton().debug_get_used_blocks();
 	if (used_blocks > 0) {
-		ZN_PRINT_ERROR(format("VoxelMemoryPool: "
-							  "{} memory blocks are still used when unregistering the module. Recycling leak?",
-				used_blocks));
+		ZN_PRINT_ERROR(
+				format("VoxelMemoryPool: "
+					   "{} memory blocks are still used when unregistering the module. Recycling leak?",
+					   used_blocks)
+		);
 #ifdef DEBUG_ENABLED
 		VoxelMemoryPool::get_singleton().debug_print_used_blocks(10);
 #endif
@@ -36,8 +38,12 @@ void VoxelMemoryPool::destroy_singleton() {
 #ifdef DEBUG_ENABLED
 void VoxelMemoryPool::debug_print_used_blocks(unsigned int max_count) {
 	struct L {
-		static void debug_print_used_blocks(const VoxelMemoryPool::DebugUsedBlocks &debug_used_blocks,
-				unsigned int &count, unsigned int max_count, size_t mem_size) {
+		static void debug_print_used_blocks(
+				const VoxelMemoryPool::DebugUsedBlocks &debug_used_blocks,
+				unsigned int &count,
+				unsigned int max_count,
+				size_t mem_size
+		) {
 			if (count > max_count) {
 				count += debug_used_blocks.blocks.size();
 				return;
