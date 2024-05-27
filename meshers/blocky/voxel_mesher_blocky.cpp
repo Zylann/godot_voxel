@@ -503,11 +503,6 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	// => Could be implemented in a separate class?
 
 	const VoxelBuffer &voxels = input.voxels;
-#ifdef TOOLS_ENABLED
-	if (input.lod_index != 0) {
-		WARN_PRINT("VoxelMesherBlocky received lod != 0, it is not supported");
-	}
-#endif
 
 	// Iterate 3D padded data to extract voxel faces.
 	// This is the most intensive job in this class, so all required data should be as fit as possible.
@@ -585,6 +580,16 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 			default:
 				ERR_PRINT("Unsupported voxel depth");
 				return;
+		}
+	}
+
+	if (input.lod_index > 0) {
+		// Might not look good, but at least it's something
+		const float lod_scale = 1 << input.lod_index;
+		for (Arrays arrays : arrays_per_material) {
+			for (Vector3f &p : arrays.positions) {
+				p = p * lod_scale;
+			}
 		}
 	}
 
