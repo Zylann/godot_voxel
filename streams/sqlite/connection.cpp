@@ -1,4 +1,4 @@
-#include "voxel_stream_sqlite_internal.h"
+#include "connection.h"
 #include "../../thirdparty/sqlite/sqlite3.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"

@@ -5,7 +5,7 @@
 #include "../../util/string/format.h"
 #include "../../util/string/std_string.h"
 #include "../compressed_data.h"
-#include "voxel_stream_sqlite_internal.h"
+#include "connection.h"
 
 #include <string_view>
 #include <unordered_set>
