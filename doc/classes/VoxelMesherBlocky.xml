@@ -10,6 +10,7 @@
 	</tutorials>
 	<members>
 		<member name="library" type="VoxelBlockyLibraryBase" setter="set_library" getter="get_library">
+			Library of models that will be used by this mesher. If you are using a mesher without a terrain, make sure you call [method VoxelBlockyLibraryBase.bake] before building meshes, otherwise results will be empty or out-of-date.
 		</member>
 		<member name="occlusion_darkness" type="float" setter="set_occlusion_darkness" getter="get_occlusion_darkness" default="0.8">
 		</member>
