@@ -3,6 +3,7 @@
 #include "../../util/errors.h"
 #include "../../util/godot/classes/project_settings.h"
 #include "../../util/godot/core/array.h"
+#include "../../util/godot/core/string.h"
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "../../util/string/format.h"
@@ -96,12 +97,20 @@ public:
 	bool save_block(BlockLocation loc, Span<const uint8_t> block_data, BlockType type);
 	VoxelStream::ResultCode load_block(BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type);
 
-	bool load_all_blocks(void *callback_data,
-			void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
-					Span<const uint8_t> instances_data));
+	bool load_all_blocks(
+			void *callback_data,
+			void (*process_block_func)(
+					void *callback_data,
+					BlockLocation location,
+					Span<const uint8_t> voxel_data,
+					Span<const uint8_t> instances_data
+			)
+	);
 
 	bool load_all_block_keys(
-			void *callback_data, void (*process_block_func)(void *callback_data, BlockLocation location));
+			void *callback_data,
+			void (*process_block_func)(void *callback_data, BlockLocation location)
+	);
 
 	Meta load_meta();
 	void save_meta(Meta meta);
@@ -171,8 +180,8 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 
 	// Create tables if they don't exist.
 	const char *tables[3] = { "CREATE TABLE IF NOT EXISTS meta (version INTEGER, block_size_po2 INTEGER)",
-		"CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
-		"CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
+							  "CREATE TABLE IF NOT EXISTS blocks (loc INTEGER PRIMARY KEY, vb BLOB, instances BLOB)",
+							  "CREATE TABLE IF NOT EXISTS channels (idx INTEGER PRIMARY KEY, depth INTEGER)" };
 	for (size_t i = 0; i < 3; ++i) {
 		rc = sqlite3_exec(db, tables[i], nullptr, nullptr, &error_message);
 		if (rc != SQLITE_OK) {
@@ -184,17 +193,23 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	}
 
 	// Prepare statements
-	if (!prepare(db, &_update_voxel_block_statement,
+	if (!prepare(
+				db,
+				&_update_voxel_block_statement,
 				"INSERT INTO blocks VALUES (:loc, :vb, null) "
-				"ON CONFLICT(loc) DO UPDATE SET vb=excluded.vb")) {
+				"ON CONFLICT(loc) DO UPDATE SET vb=excluded.vb"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_get_voxel_block_statement, "SELECT vb FROM blocks WHERE loc=:loc")) {
 		return false;
 	}
-	if (!prepare(db, &_update_instance_block_statement,
+	if (!prepare(
+				db,
+				&_update_instance_block_statement,
 				"INSERT INTO blocks VALUES (:loc, null, :instances) "
-				"ON CONFLICT(loc) DO UPDATE SET instances=excluded.instances")) {
+				"ON CONFLICT(loc) DO UPDATE SET instances=excluded.instances"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_get_instance_block_statement, "SELECT instances FROM blocks WHERE loc=:loc")) {
@@ -215,9 +230,12 @@ bool VoxelStreamSQLiteInternal::open(const char *fpath) {
 	if (!prepare(db, &_load_channels_statement, "SELECT * FROM channels")) {
 		return false;
 	}
-	if (!prepare(db, &_save_channel_statement,
+	if (!prepare(
+				db,
+				&_save_channel_statement,
 				"INSERT INTO channels VALUES (:idx, :depth) "
-				"ON CONFLICT(idx) DO UPDATE SET depth=excluded.depth")) {
+				"ON CONFLICT(idx) DO UPDATE SET depth=excluded.depth"
+		)) {
 		return false;
 	}
 	if (!prepare(db, &_load_all_blocks_statement, "SELECT * FROM blocks")) {
@@ -354,7 +372,10 @@ bool VoxelStreamSQLiteInternal::save_block(BlockLocation loc, Span<const uint8_t
 }
 
 VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
-		BlockLocation loc, StdVector<uint8_t> &out_block_data, BlockType type) {
+		BlockLocation loc,
+		StdVector<uint8_t> &out_block_data,
+		BlockType type
+) {
 	sqlite3 *db = _db;
 
 	sqlite3_stmt *get_block_statement;
@@ -411,9 +432,15 @@ VoxelStream::ResultCode VoxelStreamSQLiteInternal::load_block(
 	return result;
 }
 
-bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
-		void (*process_block_func)(void *callback_data, BlockLocation location, Span<const uint8_t> voxel_data,
-				Span<const uint8_t> instances_data)) {
+bool VoxelStreamSQLiteInternal::load_all_blocks(
+		void *callback_data,
+		void (*process_block_func)(
+				void *callback_data,
+				BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data
+		)
+) {
 	ZN_PROFILE_SCOPE();
 	CRASH_COND(process_block_func == nullptr);
 
@@ -445,9 +472,12 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 
 			// Using a function pointer because returning a big list of a copy of all the blobs can
 			// waste a lot of temporary memory
-			process_block_func(callback_data, loc,
+			process_block_func(
+					callback_data,
+					loc,
 					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(voxels_blob), voxels_blob_size),
-					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(instances_blob), instances_blob_size));
+					Span<const uint8_t>(reinterpret_cast<const uint8_t *>(instances_blob), instances_blob_size)
+			);
 
 		} else if (rc == SQLITE_DONE) {
 			break;
@@ -462,7 +492,9 @@ bool VoxelStreamSQLiteInternal::load_all_blocks(void *callback_data,
 }
 
 bool VoxelStreamSQLiteInternal::load_all_block_keys(
-		void *callback_data, void (*process_block_func)(void *callback_data, BlockLocation location)) {
+		void *callback_data,
+		void (*process_block_func)(void *callback_data, BlockLocation location)
+) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT(process_block_func != nullptr);
 
@@ -646,7 +678,7 @@ VoxelStreamSQLite::VoxelStreamSQLite() {}
 
 VoxelStreamSQLite::~VoxelStreamSQLite() {
 	ZN_PRINT_VERBOSE("~VoxelStreamSQLite");
-	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_globalized_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy flushy");
 		flush_cache();
 		ZN_PRINT_VERBOSE("~VoxelStreamSQLite flushy done");
@@ -660,20 +692,17 @@ VoxelStreamSQLite::~VoxelStreamSQLite() {
 
 void VoxelStreamSQLite::set_database_path(String path) {
 	MutexLock lock(_connection_mutex);
-	if (path == _connection_path) {
+	if (path == _user_specified_connection_path) {
 		return;
 	}
-	if (!_connection_path.is_empty() && _cache.get_indicative_block_count() > 0) {
+	if (!_globalized_connection_path.empty() && _cache.get_indicative_block_count() > 0) {
 		// Save cached data before changing the path.
 		// Not using get_connection() because it locks, we are already locked.
 		VoxelStreamSQLiteInternal con;
-		// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
-		const String globalized_connection_path = ProjectSettings::get_singleton()->globalize_path(_connection_path);
-		const CharString cpath = globalized_connection_path.utf8();
 		// Note, the path could be invalid,
 		// Since Godot helpfully sets the property for every character typed in the inspector.
 		// So there can be lots of errors in the editor if you type it.
-		if (con.open(cpath.get_data())) {
+		if (con.open(_globalized_connection_path.data())) {
 			flush_cache_to_connection(&con);
 		}
 	}
@@ -683,13 +712,16 @@ void VoxelStreamSQLite::set_database_path(String path) {
 	_block_keys_cache.clear();
 	_connection_pool.clear();
 
-	_connection_path = path;
+	_user_specified_connection_path = path;
+	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
+	_globalized_connection_path = zylann::godot::to_std_string(ProjectSettings::get_singleton()->globalize_path(path));
+
 	// Don't actually open anything here. We'll do it only when necessary
 }
 
 String VoxelStreamSQLite::get_database_path() const {
 	MutexLock lock(_connection_mutex);
-	return _connection_path;
+	return _user_specified_connection_path;
 }
 
 void VoxelStreamSQLite::load_voxel_block(VoxelStream::VoxelQueryData &q) {
@@ -702,6 +734,11 @@ void VoxelStreamSQLite::save_voxel_block(VoxelStream::VoxelQueryData &q) {
 
 void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_blocks) {
 	ZN_PROFILE_SCOPE();
+
+	// Getting connection first to allow the key cache to load if enabled.
+	// This should be quick after the first call because the connection is cached.
+	VoxelStreamSQLiteInternal *con = get_connection();
+	ERR_FAIL_COND(con == nullptr);
 
 	// Check the cache first
 	StdVector<unsigned int> blocks_to_load;
@@ -726,11 +763,9 @@ void VoxelStreamSQLite::load_voxel_blocks(Span<VoxelStream::VoxelQueryData> p_bl
 
 	if (blocks_to_load.size() == 0) {
 		// Everything was cached, no need to query the database
+		recycle_connection(con);
 		return;
 	}
-
-	VoxelStreamSQLiteInternal *con = get_connection();
-	ERR_FAIL_COND(con == nullptr);
 
 	// TODO We should handle busy return codes
 	ERR_FAIL_COND(con->begin_transaction() == false);
@@ -897,13 +932,20 @@ void VoxelStreamSQLite::load_all_blocks(FullLoadingResult &result) {
 	// Godot's clang-format does not allow to write function parameters in column,
 	// which makes the lambda break line length.
 	struct L {
-		static void process_block_func(void *callback_data, const BlockLocation location,
-				Span<const uint8_t> voxel_data, Span<const uint8_t> instances_data) {
+		static void process_block_func(
+				void *callback_data,
+				const BlockLocation location,
+				Span<const uint8_t> voxel_data,
+				Span<const uint8_t> instances_data
+		) {
 			Context *ctx = reinterpret_cast<Context *>(callback_data);
 
 			if (voxel_data.size() == 0 && instances_data.size() == 0) {
-				ZN_PRINT_VERBOSE(format("Unexpected empty voxel data and instances data at {} lod {}",
-						Vector3i(location.x, location.y, location.z), location.lod));
+				ZN_PRINT_VERBOSE(
+						format("Unexpected empty voxel data and instances data at {} lod {}",
+							   Vector3i(location.x, location.y, location.z),
+							   location.lod)
+				);
 				return;
 			}
 
@@ -997,7 +1039,8 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 			ERR_FAIL_COND(!serialize_instance_block_data(*block.instances, temp_data));
 
 			ERR_FAIL_COND(!CompressedData::compress(
-					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE));
+					to_span_const(temp_data), temp_compressed_data, CompressedData::COMPRESSION_NONE
+			));
 		}
 		p_connection->save_block(loc, to_span(temp_compressed_data), VoxelStreamSQLiteInternal::INSTANCES);
 
@@ -1008,30 +1051,27 @@ void VoxelStreamSQLite::flush_cache_to_connection(VoxelStreamSQLiteInternal *p_c
 }
 
 VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
-	_connection_mutex.lock();
-	if (_connection_path.is_empty()) {
-		_connection_mutex.unlock();
-		return nullptr;
-	}
-	if (_connection_pool.size() != 0) {
-		VoxelStreamSQLiteInternal *s = _connection_pool.back();
-		_connection_pool.pop_back();
-		_connection_mutex.unlock();
-		return s;
-	}
-	// First connection we get since we set the database path
+	StdString fpath;
+	{
+		MutexLock mlock(_connection_mutex);
 
-	String fpath = _connection_path;
-	_connection_mutex.unlock();
+		if (_globalized_connection_path.empty()) {
+			return nullptr;
+		}
+		if (_connection_pool.size() != 0) {
+			VoxelStreamSQLiteInternal *s = _connection_pool.back();
+			_connection_pool.pop_back();
+			return s;
+		}
+		// First connection we get since we set the database path
+		fpath = _globalized_connection_path;
+	}
 
-	if (fpath.is_empty()) {
+	if (fpath.empty()) {
 		return nullptr;
 	}
 	VoxelStreamSQLiteInternal *con = new VoxelStreamSQLiteInternal();
-	// To support Godot shortcuts like `user://` and `res://` (though the latter won't work on exported builds)
-	const String globalized_fpath = ProjectSettings::get_singleton()->globalize_path(fpath);
-	const CharString fpath_utf8 = globalized_fpath.utf8();
-	if (!con->open(fpath_utf8.get_data())) {
+	if (!con->open(fpath.data())) {
 		delete con;
 		con = nullptr;
 	}
@@ -1046,16 +1086,16 @@ VoxelStreamSQLiteInternal *VoxelStreamSQLite::get_connection() {
 }
 
 void VoxelStreamSQLite::recycle_connection(VoxelStreamSQLiteInternal *con) {
-	String con_path = con->get_opened_file_path();
-	_connection_mutex.lock();
-	// If path differs, delete this connection
-	if (_connection_path != con_path) {
-		_connection_mutex.unlock();
-		delete con;
-	} else {
-		_connection_pool.push_back(con);
-		_connection_mutex.unlock();
+	const char *con_path = con->get_opened_file_path();
+	// Put back in the pool if the connection path didn't change
+	{
+		MutexLock mlock(_connection_mutex);
+		if (_globalized_connection_path == con_path) {
+			_connection_pool.push_back(con);
+			return;
+		}
 	}
+	delete con;
 }
 
 void VoxelStreamSQLite::set_key_cache_enabled(bool enable) {
@@ -1073,8 +1113,9 @@ void VoxelStreamSQLite::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_key_cache_enabled", "enabled"), &VoxelStreamSQLite::set_key_cache_enabled);
 	ClassDB::bind_method(D_METHOD("is_key_cache_enabled"), &VoxelStreamSQLite::is_key_cache_enabled);
 
-	ADD_PROPERTY(PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path",
-			"get_database_path");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::STRING, "database_path", PROPERTY_HINT_FILE), "set_database_path", "get_database_path"
+	);
 }
 
 } // namespace zylann::voxel

@@ -65,8 +65,13 @@ inline void debug_check_texture_indices(FixedArray<uint8_t, 4> indices) {
 	}
 }
 
-inline void _normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned int preserved_index,
-		unsigned int other0, unsigned int other1, unsigned int other2) {
+inline void _normalize_weights_preserving(
+		FixedArray<float, 4> &weights,
+		const unsigned int preserved_index,
+		const unsigned int other0,
+		const unsigned int other1,
+		const unsigned int other2
+) {
 	const float part_sum = weights[other0] + weights[other1] + weights[other2];
 	// It is assumed the preserved channel is already clamped to [0, 1]
 	const float expected_part_sum = 1.f - weights[preserved_index];
@@ -113,7 +118,11 @@ inline void normalize_weights_preserving(FixedArray<float, 4> &weights, unsigned
 }*/
 
 inline void blend_texture_packed_u16(
-		int texture_index, float target_weight, uint16_t &encoded_indices, uint16_t &encoded_weights) {
+		const int texture_index,
+		const float target_weight,
+		uint16_t &encoded_indices,
+		uint16_t &encoded_weights
+) {
 #ifdef DEBUG_ENABLED
 	ZN_ASSERT_RETURN(target_weight >= 0.f && target_weight <= 1.f);
 #endif
