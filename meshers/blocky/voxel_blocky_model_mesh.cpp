@@ -218,7 +218,7 @@ void bake_mesh_geometry(
 
 		baked_data.empty = positions.size() == 0;
 
-		ZN_ASSERT_CONTINUE_MSG(normals.size() != 0, format("The mesh is missing normals, this is not supported."));
+		ZN_ASSERT_CONTINUE_MSG(normals.size() != 0, "The mesh is missing normals, this is not supported.");
 
 		ZN_ASSERT_CONTINUE(positions.size() == normals.size());
 		// ZN_ASSERT_CONTINUE(positions.size() == uvs.size());
