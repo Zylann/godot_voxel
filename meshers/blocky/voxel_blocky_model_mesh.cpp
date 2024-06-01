@@ -98,7 +98,7 @@ void add(PackedVector3Array &vectors, Vector3 rhs) {
 void rotate_mesh_arrays(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
+		PackedFloat32Array &tangents,
 		const Basis &basis
 ) {
 	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
@@ -140,7 +140,7 @@ void rotate_mesh_arrays(
 void rotate_mesh_arrays_ortho(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
+		PackedFloat32Array &tangents,
 		unsigned int ortho_basis_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_basis_index);
