@@ -25,7 +25,11 @@ namespace zylann::voxel {
 
 namespace {
 
-bool find_index(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, ViewerID id, unsigned int &out_index) {
+bool find_index(
+		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers,
+		const ViewerID id,
+		unsigned int &out_index
+) {
 	for (unsigned int i = 0; i < viewers.size(); ++i) {
 		if (viewers[i].first == id) {
 			out_index = i;
@@ -35,12 +39,16 @@ bool find_index(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, Vi
 	return false;
 }
 
-bool contains(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, ViewerID id) {
+bool contains(Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers, const ViewerID id) {
 	unsigned int _unused;
 	return find_index(viewers, id, _unused);
 }
 
-bool find_index(Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers, ViewerID id, unsigned int &out_index) {
+bool find_index(
+		Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers,
+		const ViewerID id,
+		unsigned int &out_index
+) {
 	for (unsigned int i = 0; i < viewers.size(); ++i) {
 		if (viewers[i].id == id) {
 			out_index = i;
@@ -51,10 +59,10 @@ bool find_index(Span<const VoxelLodTerrainUpdateData::PairedViewer> viewers, Vie
 }
 
 Box3i get_base_box_in_chunks(
-		Vector3i viewer_position_voxels,
-		Vector3i distance_voxels,
-		int chunk_size,
-		bool make_even
+		const Vector3i viewer_position_voxels,
+		const Vector3i distance_voxels,
+		const int chunk_size,
+		const bool make_even
 ) {
 	// Get min and max positions
 	Vector3i minp = viewer_position_voxels - distance_voxels;
@@ -80,7 +88,7 @@ Box3i get_base_box_in_chunks(
 }
 
 // Gets the smallest box a parent LOD must have in order to keep respecting the neighboring rule
-Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
+Box3i get_minimal_box_for_parent_lod(const Box3i child_lod_box, const bool make_even) {
 	const int min_pad = 1;
 	// Note, subdivision rule enforces the child box position and size to be even, so it won't round to
 	// zero when converted to the parent LOD's coordinate system.
@@ -97,24 +105,24 @@ Box3i get_minimal_box_for_parent_lod(Box3i child_lod_box, bool make_even) {
 	return min_box;
 }
 
-Box3i enforce_neighboring_rule(Box3i box, const Box3i &child_lod_box, bool make_even) {
+Box3i enforce_neighboring_rule(Box3i box, const Box3i &child_lod_box, const bool make_even) {
 	const Box3i min_box = get_minimal_box_for_parent_lod(child_lod_box, make_even);
 	box.merge_with(min_box);
 	return box;
 }
 
-inline int get_lod_distance_in_mesh_chunks(float lod_distance_in_voxels, int mesh_block_size) {
+inline int get_lod_distance_in_mesh_chunks(const float lod_distance_in_voxels, const int mesh_block_size) {
 	return math::max(static_cast<int>(Math::ceil(lod_distance_in_voxels)) / mesh_block_size, 1);
 }
 
 // Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
 Vector3i get_relative_lod_distance_in_chunks( //
-		int lod_index, //
-		int lod_count, //
-		int lod0_distance_in_chunks, //
-		int lodn_distance_in_chunks, //
-		int lod_chunk_size, //
-		Vector3i max_view_distance_voxels //
+		const int lod_index, //
+		const int lod_count, //
+		const int lod0_distance_in_chunks, //
+		const int lodn_distance_in_chunks, //
+		const int lod_chunk_size, //
+		const Vector3i max_view_distance_voxels //
 ) {
 	int ld;
 	if (lod_index == 0) {
@@ -140,9 +148,9 @@ void process_viewers(
 		unsigned int lod_count,
 		Span<const std::pair<ViewerID, VoxelEngine::Viewer>> viewers,
 		const Transform3D &volume_transform,
-		Box3i volume_bounds_in_voxels,
-		int data_block_size_po2,
-		bool can_mesh,
+		const Box3i volume_bounds_in_voxels,
+		const int data_block_size_po2,
+		const bool can_mesh,
 		// Ordered by ascending index in paired viewers list
 		StdVector<unsigned int> &unpaired_viewers_to_remove
 ) {
@@ -412,8 +420,8 @@ void remove_unpaired_viewers(
 
 void add_loading_block(
 		VoxelLodTerrainUpdateData::Lod &lod,
-		Vector3i position,
-		uint8_t lod_index,
+		const Vector3i position,
+		const uint8_t lod_index,
 		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &blocks_to_load
 ) {
 	auto it = lod.loading_blocks.find(position);
@@ -440,8 +448,8 @@ void add_loading_block(
 void unreference_data_block_from_loading_lists( //
 		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks, //
 		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
-		Vector3i bpos, //
-		unsigned int lod_index //
+		const Vector3i bpos, //
+		const unsigned int lod_index //
 ) {
 	auto loading_block_it = loading_blocks.find(bpos);
 	if (loading_block_it == loading_blocks.end()) {
@@ -484,8 +492,8 @@ void process_data_blocks_sliding_box( //
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
 		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
 		const VoxelLodTerrainUpdateData::Settings &settings, //
-		int lod_count, //
-		bool can_load //
+		const int lod_count, //
+		const bool can_load //
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
@@ -654,7 +662,7 @@ void process_data_blocks_sliding_box( //
 // TODO Copypasta from octree streaming file
 VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::MeshBlockState> &mesh_map,
-		Vector3i pos
+		const Vector3i pos
 ) {
 #ifdef DEBUG_ENABLED
 	// We got here because the map didn't contain the element. If it did contain it already, that's a bug.
@@ -676,7 +684,7 @@ VoxelLodTerrainUpdateData::MeshBlockState &insert_new(
 	return block;
 }
 
-inline Vector3i get_relative_child_position(unsigned int child_index) {
+inline Vector3i get_relative_child_position(const unsigned int child_index) {
 	return Vector3i( //
 			(child_index & 1), //
 			((child_index & 2) >> 1), //
@@ -684,15 +692,15 @@ inline Vector3i get_relative_child_position(unsigned int child_index) {
 	);
 }
 
-inline Vector3i get_child_position(Vector3i parent_position, unsigned int child_index) {
+inline Vector3i get_child_position(const Vector3i parent_position, const unsigned int child_index) {
 	return parent_position * 2 + get_relative_child_position(child_index);
 }
 
 inline void schedule_mesh_load(
 		StdVector<VoxelLodTerrainUpdateData::MeshToUpdate> &update_list,
-		Vector3i bpos,
+		const Vector3i bpos,
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		bool require_visual
+		const bool require_visual
 ) {
 	// ZN_PROFILE_SCOPE();
 
@@ -715,14 +723,14 @@ inline void schedule_mesh_load(
 void view_mesh_box(
 		const Box3i box_to_add,
 		VoxelLodTerrainUpdateData::Lod &lod,
-		unsigned int lod_index,
-		unsigned int lod_count,
+		const unsigned int lod_index,
+		const unsigned int lod_count,
 		VoxelLodTerrainUpdateData::State &state,
-		bool is_full_load_mode,
-		int mesh_to_data_factor,
+		const bool is_full_load_mode,
+		const int mesh_to_data_factor,
 		const VoxelData &voxel_data,
-		bool require_visuals,
-		bool require_collisions
+		const bool require_visuals,
+		const bool require_collisions
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -918,7 +926,7 @@ enum MeshBlockFeatureIndex { //
 // TODO The following is not ideal. May be refactored at some point?
 // Probably introduce masks/arrays so we don't have to use switches?
 
-bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, const MeshBlockFeatureIndex i) {
 	switch (i) {
 		case MESH_VISUAL:
 			return ms.visual_loaded;
@@ -930,7 +938,7 @@ bool is_loaded(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFea
 	}
 }
 
-bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFeatureIndex i) {
+bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, const MeshBlockFeatureIndex i) {
 	switch (i) {
 		case MESH_VISUAL:
 			return ms.visual_active;
@@ -944,7 +952,7 @@ bool is_active(const VoxelLodTerrainUpdateData::MeshBlockState &ms, MeshBlockFea
 
 void set_active(
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		MeshBlockFeatureIndex feature_index,
+		const MeshBlockFeatureIndex feature_index,
 		VoxelLodTerrainUpdateData::Lod &lod,
 		const Vector3i bpos
 ) {
@@ -969,7 +977,7 @@ void set_active(
 
 void set_inactive_hide(
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		MeshBlockFeatureIndex feature_index,
+		const MeshBlockFeatureIndex feature_index,
 		VoxelLodTerrainUpdateData::Lod &lod,
 		const Vector3i bpos
 ) {
@@ -994,7 +1002,7 @@ void set_inactive_hide(
 
 void set_inactive_drop(
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		MeshBlockFeatureIndex feature_index,
+		const MeshBlockFeatureIndex feature_index,
 		VoxelLodTerrainUpdateData::Lod &lod,
 		const Vector3i bpos
 ) {
@@ -1023,8 +1031,8 @@ void set_inactive_drop(
 
 void set_pending_merge(
 		VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		MeshBlockFeatureIndex feature_index,
-		bool pending
+		const MeshBlockFeatureIndex feature_index,
+		const bool pending
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -1041,7 +1049,7 @@ void set_pending_merge(
 
 bool is_pending_merge(
 		const VoxelLodTerrainUpdateData::MeshBlockState &mesh_block,
-		MeshBlockFeatureIndex feature_index
+		const MeshBlockFeatureIndex feature_index
 ) {
 	switch (feature_index) {
 		case MESH_VISUAL:
@@ -1057,7 +1065,7 @@ bool is_pending_merge(
 bool all_children_loaded_and_active(
 		const Vector3i parent_bpos,
 		const VoxelLodTerrainUpdateData::Lod &child_lod,
-		MeshBlockFeatureIndex feature
+		const MeshBlockFeatureIndex feature
 ) {
 	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
@@ -1076,9 +1084,9 @@ bool all_children_loaded_and_active(
 // Deactivates a block in the context of a merge, and removes it if nothing uses it.
 void deactivate_or_remove_recursive(
 		const Vector3i bpos,
-		unsigned int lod_index,
+		const unsigned int lod_index,
 		VoxelLodTerrainUpdateData::State &state,
-		MeshBlockFeatureIndex feature,
+		const MeshBlockFeatureIndex feature,
 		const VoxelLodTerrainUpdateData::MeshBlockState *parent_block
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
@@ -1133,10 +1141,10 @@ void deactivate_or_remove_recursive(
 // Unreferences block features and deactivates if it reaches zero. Meant for the last LOD.
 void unview_mesh_block_no_merge(
 		const Vector3i bpos,
-		unsigned int lod_index,
+		const unsigned int lod_index,
 		VoxelLodTerrainUpdateData::State &state,
-		bool visual_flag,
-		bool collision_flag
+		const bool visual_flag,
+		const bool collision_flag
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 	auto mesh_block_it = lod.mesh_map_state.map.find(bpos);
@@ -1169,9 +1177,9 @@ void merge(
 		VoxelLodTerrainUpdateData::MeshBlockState &parent_block,
 		const Vector3i parent_bpos,
 		VoxelLodTerrainUpdateData::Lod &parent_lod,
-		unsigned int child_lod_index,
+		const unsigned int child_lod_index,
 		VoxelLodTerrainUpdateData::State &state,
-		MeshBlockFeatureIndex feature
+		const MeshBlockFeatureIndex feature
 ) {
 	set_pending_merge(parent_block, feature, false);
 
@@ -1191,9 +1199,9 @@ void merge(
 bool try_merge(
 		VoxelLodTerrainUpdateData::MeshBlockState &parent_block,
 		const Vector3i parent_bpos,
-		unsigned int parent_lod_index,
+		const unsigned int parent_lod_index,
 		VoxelLodTerrainUpdateData::State &state,
-		MeshBlockFeatureIndex feature
+		const MeshBlockFeatureIndex feature
 ) {
 	VoxelLodTerrainUpdateData::Lod &parent_lod = state.lods[parent_lod_index];
 
@@ -1234,11 +1242,11 @@ bool try_merge(
 // If they reach zero, attempts to do a "merge" (deactivate children and activate the parent).
 void unview_mesh_blocks_with_merge(
 		VoxelLodTerrainUpdateData::Lod &parent_lod,
-		unsigned int parent_lod_index,
-		Vector3i parent_bpos,
+		const unsigned int parent_lod_index,
+		const Vector3i parent_bpos,
 		VoxelLodTerrainUpdateData::State &state,
-		bool visual_flag,
-		bool collision_flag
+		const bool visual_flag,
+		const bool collision_flag
 ) {
 	auto parent_block_it = parent_lod.mesh_map_state.map.find(parent_bpos);
 #ifdef DEV_ENABLED
@@ -1297,11 +1305,11 @@ void unview_mesh_blocks_with_merge(
 
 void unview_mesh_box(
 		const Box3i out_of_range_box,
-		unsigned int lod_index,
-		unsigned int lod_count,
+		const unsigned int lod_index,
+		const unsigned int lod_count,
 		VoxelLodTerrainUpdateData::State &state,
-		bool visual_flag,
-		bool collision_flag
+		const bool visual_flag,
+		const bool collision_flag
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN(collision_flag || visual_flag);
@@ -1339,13 +1347,13 @@ inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State
 
 void process_viewer_mesh_blocks_sliding_box(
 		VoxelLodTerrainUpdateData::State &state,
-		int mesh_block_size_po2,
-		int lod_count,
+		const int mesh_block_size_po2,
+		const int lod_count,
 		const Box3i &volume_bounds_in_voxels,
 		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer,
-		bool can_load,
-		bool is_full_load_mode,
-		int mesh_to_data_factor,
+		const bool can_load,
+		const bool is_full_load_mode,
+		const int mesh_to_data_factor,
 		const VoxelData &data
 ) {
 	ZN_PROFILE_SCOPE();
@@ -1500,11 +1508,11 @@ void process_mesh_blocks_sliding_box(
 		VoxelLodTerrainUpdateData::State &state,
 		const VoxelLodTerrainUpdateData::Settings &settings,
 		const Box3i bounds_in_voxels,
-		int lod_count,
-		bool is_full_load_mode,
-		bool can_load,
+		const int lod_count,
+		const bool is_full_load_mode,
+		const bool can_load,
 		const VoxelData &data,
-		int data_block_size
+		const int data_block_size
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1684,7 +1692,7 @@ void process_loaded_data_blocks_trigger_meshing(
 bool all_children_loaded(
 		const Vector3i parent_bpos,
 		const VoxelLodTerrainUpdateData::Lod &lod,
-		MeshBlockFeatureIndex feature_index
+		const MeshBlockFeatureIndex feature_index
 ) {
 	for (unsigned int child_index = 0; child_index < 8; ++child_index) {
 		const Vector3i child_bpos = get_child_position(parent_bpos, child_index);
@@ -1707,9 +1715,9 @@ bool all_children_loaded(
 // This essentially runs octree subdivision logic, but only from a specific node and its descendants.
 void update_mesh_block_load(
 		VoxelLodTerrainUpdateData::State &state,
-		Vector3i bpos,
-		unsigned int lod_index,
-		unsigned int lod_count,
+		const Vector3i bpos,
+		const unsigned int lod_index,
+		const unsigned int lod_count,
 		MeshBlockFeatureIndex feature_index
 ) {
 	VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
@@ -1795,7 +1803,7 @@ void update_mesh_block_load(
 
 void process_loaded_mesh_blocks_trigger_visibility_changes(
 		VoxelLodTerrainUpdateData::State &state,
-		unsigned int lod_count
+		const unsigned int lod_count
 ) {
 	ZN_PROFILE_SCOPE();
 
@@ -1890,8 +1898,8 @@ void process_clipbox_streaming(
 		StdVector<VoxelData::BlockToSave> *data_blocks_to_save,
 		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
 		const VoxelLodTerrainUpdateData::Settings &settings,
-		bool can_load,
-		bool can_mesh
+		const bool can_load,
+		const bool can_mesh
 ) {
 	ZN_PROFILE_SCOPE();
 
