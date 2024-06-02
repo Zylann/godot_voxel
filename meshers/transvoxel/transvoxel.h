@@ -172,7 +172,8 @@ DefaultTextureIndicesData build_regular_mesh(
 		Cache &cache,
 		MeshArrays &output,
 		const IDeepSDFSampler *deep_sdf_sampler,
-		StdVector<CellInfo> *cell_infos
+		StdVector<CellInfo> *cell_infos,
+		const float edge_clamp_margin
 );
 
 void build_transition_mesh(
@@ -183,7 +184,8 @@ void build_transition_mesh(
 		const TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		DefaultTextureIndicesData default_texture_indices_data
+		DefaultTextureIndicesData default_texture_indices_data,
+		const float edge_clamp_margin
 );
 
 } // namespace zylann::voxel::transvoxel

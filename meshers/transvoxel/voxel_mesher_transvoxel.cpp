@@ -289,7 +289,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 				tls_cache,
 				mesh_arrays,
 				&ds,
-				cell_infos
+				cell_infos,
+				_edge_clamp_margin
 		);
 	} else {
 		default_texture_indices_data = transvoxel::build_regular_mesh(
@@ -300,7 +301,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 				tls_cache,
 				mesh_arrays,
 				nullptr,
-				cell_infos
+				cell_infos,
+				_edge_clamp_margin
 		);
 	}
 
@@ -347,7 +349,8 @@ void VoxelMesherTransvoxel::build(VoxelMesher::Output &output, const VoxelMesher
 					static_cast<transvoxel::TexturingMode>(_texture_mode),
 					tls_cache,
 					*combined_mesh_arrays,
-					default_texture_indices_data
+					default_texture_indices_data,
+					_edge_clamp_margin
 			);
 		}
 	}
@@ -394,7 +397,8 @@ Ref<ArrayMesh> VoxelMesherTransvoxel::build_transition_mesh(Ref<godot::VoxelBuff
 			static_cast<transvoxel::TexturingMode>(_texture_mode),
 			s_cache,
 			s_mesh_arrays,
-			default_texture_indices_data
+			default_texture_indices_data,
+			_edge_clamp_margin
 	);
 
 	Ref<ArrayMesh> mesh;
@@ -465,6 +469,14 @@ Ref<ShaderMaterial> VoxelMesherTransvoxel::get_default_lod_material() const {
 	return g_minimal_shader_material;
 }
 
+void VoxelMesherTransvoxel::set_edge_clamp_margin(float margin) {
+	_edge_clamp_margin = math::clamp(margin, 0.f, 0.5f);
+}
+
+float VoxelMesherTransvoxel::get_edge_clamp_margin() const {
+	return _edge_clamp_margin;
+}
+
 void VoxelMesherTransvoxel::_bind_methods() {
 	using Self = VoxelMesherTransvoxel;
 
@@ -493,6 +505,9 @@ void VoxelMesherTransvoxel::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("set_transitions_enabled", "enabled"), &Self::set_transitions_enabled);
 	ClassDB::bind_method(D_METHOD("get_transitions_enabled"), &Self::get_transitions_enabled);
+
+	ClassDB::bind_method(D_METHOD("get_edge_clamp_margin"), &Self::get_edge_clamp_margin);
+	ClassDB::bind_method(D_METHOD("set_edge_clamp_margin", "margin"), &Self::set_edge_clamp_margin);
 
 	ADD_PROPERTY(
 			PropertyInfo(Variant::INT, "texturing_mode", PROPERTY_HINT_ENUM, "None,4-blend over 16 textures (4 bits)"),
@@ -528,6 +543,8 @@ void VoxelMesherTransvoxel::_bind_methods() {
 	ADD_PROPERTY(
 			PropertyInfo(Variant::BOOL, "transitions_enabled"), "set_transitions_enabled", "get_transitions_enabled"
 	);
+
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "edge_clamp_margin"), "set_edge_clamp_margin", "get_edge_clamp_margin");
 
 	BIND_ENUM_CONSTANT(TEXTURES_NONE);
 	// TODO Rename MIXEL

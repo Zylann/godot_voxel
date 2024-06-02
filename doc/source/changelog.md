@@ -11,6 +11,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
 -----------------------------------------
 
 - Added project setting `voxel/ownership_checks` to turn off sanity checks done by certain virtual functions that pass an object (such as `_generate_block`). Relevant for C#, where the garbage collection model prevents such checks from working properly.
+- `VoxelMesherTransvoxel`:
+    - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
+    - reverted removal of degenerate triangles
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 - Fixes

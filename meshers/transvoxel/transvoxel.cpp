@@ -4,7 +4,6 @@
 #include "../../util/godot/core/sort_array.h"
 #include "../../util/math/conv.h"
 #include "../../util/math/funcs.h"
-#include "../../util/math/triangle.h"
 #include "../../util/profiling.h"
 #include "transvoxel_tables.cpp"
 
@@ -366,9 +365,12 @@ void build_regular_mesh(
 		Cache &cache,
 		MeshArrays &output,
 		const IDeepSDFSampler *deep_sdf_sampler,
-		StdVector<CellInfo> *cell_info
+		StdVector<CellInfo> *cell_info,
+		const float edge_clamp_margin
 ) {
 	ZN_PROFILE_SCOPE();
+
+	const float edge_clamp_margin_max = 1.f - edge_clamp_margin;
 
 	// This function has some comments as quotes from the Transvoxel paper.
 
@@ -552,7 +554,8 @@ void build_regular_mesh(
 					// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 					// positions  along  the  edge  when  both  endpoints  are included.
 					// const int t = (sample1 << 8) / (sample1 - sample0);
-					const float t = sample1 / (sample1 - sample0);
+					const float t =
+							math::clamp(sample1 / (sample1 - sample0), edge_clamp_margin, edge_clamp_margin_max);
 
 					const Vector3i p0 = corner_positions[v0];
 					const Vector3i p1 = corner_positions[v1];
@@ -740,7 +743,7 @@ void build_regular_mesh(
 
 				} // for each cell vertex
 
-				uint32_t effective_triangle_count = triangle_count;
+				const uint32_t effective_triangle_count = triangle_count;
 
 				for (int t = 0; t < triangle_count; ++t) {
 					const int t0 = t * 3;
@@ -780,13 +783,13 @@ void build_regular_mesh(
 						// About Jolt re-indexing meshes, see PR (abandoned?):
 						// https://github.com/godotengine/godot/pull/72868
 						//
-						const Vector3f p0 = output.vertices[i0];
-						const Vector3f p1 = output.vertices[i1];
-						const Vector3f p2 = output.vertices[i2];
-						if (math::is_triangle_degenerate_approx(p0, p1, p2, 0.000001f)) {
-							--effective_triangle_count;
-							continue;
-						}
+						// const Vector3f p0 = output.vertices[i0];
+						// const Vector3f p1 = output.vertices[i1];
+						// const Vector3f p2 = output.vertices[i2];
+						// if (math::is_triangle_degenerate_approx(p0, p1, p2, 0.000001f)) {
+						// 	--effective_triangle_count;
+						// 	continue;
+						// }
 					}
 
 					output.indices.push_back(i0);
@@ -915,10 +918,13 @@ void build_transition_mesh(
 		const int lod_index,
 		TexturingMode texturing_mode,
 		Cache &cache,
-		MeshArrays &output
+		MeshArrays &output,
+		const float edge_clamp_margin
 ) {
 	// From this point, we expect the buffer to contain allocated data.
 	// This function has some comments as quotes from the Transvoxel paper.
+
+	const float edge_clamp_margin_max = 1.f - edge_clamp_margin;
 
 	const Vector3i block_size_without_padding =
 			block_size_with_padding - Vector3iUtil::create(MIN_PADDING + MAX_PADDING);
@@ -1180,7 +1186,7 @@ void build_transition_mesh(
 				// We use an 8-bit fraction, allowing the new vertex to be located at one of 257 possible
 				// positions  along  the  edge  when  both  endpoints  are included.
 				// const int t = (sample_b << 8) / (sample_b - sample_a);
-				const float t = sample_b / (sample_b - sample_a);
+				const float t = math::clamp(sample_b / (sample_b - sample_a), edge_clamp_margin, edge_clamp_margin_max);
 
 				const float t0 = t; // static_cast<float>(t) / 256.f;
 				const float t1 = 1.f - t; // static_cast<float>(0x100 - t) / 256.f;
@@ -1486,7 +1492,8 @@ DefaultTextureIndicesData build_regular_mesh(
 		Cache &cache,
 		MeshArrays &output,
 		const IDeepSDFSampler *deep_sdf_sampler,
-		StdVector<CellInfo> *cell_infos
+		StdVector<CellInfo> *cell_infos,
+		const float edge_clamp_margin
 ) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1542,7 +1549,8 @@ DefaultTextureIndicesData build_regular_mesh(
 					cache,
 					output,
 					deep_sdf_sampler,
-					cell_infos
+					cell_infos,
+					edge_clamp_margin
 			);
 		} break;
 
@@ -1558,7 +1566,8 @@ DefaultTextureIndicesData build_regular_mesh(
 					cache,
 					output,
 					deep_sdf_sampler,
-					cell_infos
+					cell_infos,
+					edge_clamp_margin
 			);
 		} break;
 
@@ -1577,7 +1586,8 @@ DefaultTextureIndicesData build_regular_mesh(
 					cache,
 					output,
 					deep_sdf_sampler,
-					cell_infos
+					cell_infos,
+					edge_clamp_margin
 			);
 		} break;
 
@@ -1602,7 +1612,8 @@ void build_transition_mesh(
 		const TexturingMode texturing_mode,
 		Cache &cache,
 		MeshArrays &output,
-		DefaultTextureIndicesData default_texture_indices_data
+		DefaultTextureIndicesData default_texture_indices_data,
+		const float edge_clamp_margin
 ) {
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
@@ -1666,7 +1677,8 @@ void build_transition_mesh(
 					lod_index,
 					texturing_mode,
 					cache,
-					output
+					output,
+					edge_clamp_margin
 			);
 		} break;
 
@@ -1681,7 +1693,8 @@ void build_transition_mesh(
 					lod_index,
 					texturing_mode,
 					cache,
-					output
+					output,
+					edge_clamp_margin
 			);
 		} break;
 
@@ -1696,7 +1709,8 @@ void build_transition_mesh(
 					lod_index,
 					texturing_mode,
 					cache,
-					output
+					output,
+					edge_clamp_margin
 			);
 		} break;
 
