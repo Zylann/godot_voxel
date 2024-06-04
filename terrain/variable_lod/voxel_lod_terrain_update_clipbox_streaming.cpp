@@ -116,13 +116,13 @@ inline int get_lod_distance_in_mesh_chunks(const float lod_distance_in_voxels, c
 }
 
 // Compute distance in chunks relative to the current LOD, between the viewer and the end of that LOD
-Vector3i get_relative_lod_distance_in_chunks( //
-		const int lod_index, //
-		const int lod_count, //
-		const int lod0_distance_in_chunks, //
-		const int lodn_distance_in_chunks, //
-		const int lod_chunk_size, //
-		const Vector3i max_view_distance_voxels //
+Vector3i get_relative_lod_distance_in_chunks(
+		const int lod_index,
+		const int lod_count,
+		const int lod0_distance_in_chunks,
+		const int lodn_distance_in_chunks,
+		const int lod_chunk_size,
+		const Vector3i max_view_distance_voxels
 ) {
 	int ld;
 	if (lod_index == 0) {
@@ -445,11 +445,11 @@ void add_loading_block(
 	}
 }
 
-void unreference_data_block_from_loading_lists( //
-		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks, //
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
-		const Vector3i bpos, //
-		const unsigned int lod_index //
+void unreference_data_block_from_loading_lists(
+		StdUnorderedMap<Vector3i, VoxelLodTerrainUpdateData::LoadingDataBlock> &loading_blocks,
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		const Vector3i bpos,
+		const unsigned int lod_index
 ) {
 	auto loading_block_it = loading_blocks.find(bpos);
 	if (loading_block_it == loading_blocks.end()) {
@@ -485,15 +485,15 @@ void unreference_data_block_from_loading_lists( //
 	}
 }
 
-void process_data_blocks_sliding_box( //
-		VoxelLodTerrainUpdateData::State &state, //
-		VoxelData &data, //
-		StdVector<VoxelData::BlockToSave> *blocks_to_save, //
+void process_data_blocks_sliding_box(
+		VoxelLodTerrainUpdateData::State &state,
+		VoxelData &data,
+		StdVector<VoxelData::BlockToSave> *blocks_to_save,
 		// TODO We should be able to work in BOXES to load, it can help compressing network messages
-		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load, //
-		const VoxelLodTerrainUpdateData::Settings &settings, //
-		const int lod_count, //
-		const bool can_load //
+		StdVector<VoxelLodTerrainUpdateData::BlockToLoad> &data_blocks_to_load,
+		const VoxelLodTerrainUpdateData::Settings &settings,
+		const int lod_count,
+		const bool can_load
 ) {
 	ZN_PROFILE_SCOPE();
 	ZN_ASSERT_RETURN_MSG(data.is_streaming_enabled(), "This function is not meant to run in full load mode");
