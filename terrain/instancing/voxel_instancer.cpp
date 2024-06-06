@@ -2136,6 +2136,20 @@ void VoxelInstancer::get_configuration_warnings(PackedStringArray &warnings) con
 
 	} else {
 		zylann::godot::get_resource_configuration_warnings(**_library, warnings, []() { return "library: "; });
+
+		VoxelTerrain *vt = Object::cast_to<VoxelTerrain>(_parent);
+		if (vt != nullptr) {
+			_library->for_each_item([&warnings](int id, const VoxelInstanceLibraryItem &item) {
+				const int lod_index = item.get_lod_index();
+				if (lod_index > 0) {
+					warnings.append(
+							String(ZN_TTR("library: item {0}: LOD index is set to higher than 0 ({1}), but the parent "
+										  "terrain doesn't have LOD support. Instances will not be generated."))
+									.format(varray(id, lod_index))
+					);
+				}
+			});
+		}
 	}
 }
 
