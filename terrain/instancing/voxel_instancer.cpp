@@ -701,8 +701,12 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 
 		if (parent_vlt != nullptr) {
 			parent_vlt->get_meshed_block_positions_at_lod(layer.lod_index, positions);
+
 		} else if (parent_vt != nullptr) {
-			parent_vt->get_meshed_block_positions(positions);
+			// Only LOD 0 is supported
+			if (layer.lod_index == 0) {
+				parent_vt->get_meshed_block_positions(positions);
+			}
 		}
 
 		for (unsigned int i = 0; i < positions.size(); ++i) {
