@@ -46,7 +46,7 @@ void VoxelInstanceLibrary::add_item(int p_id, Ref<VoxelInstanceLibraryItem> item
 		}
 	}
 
-	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
+	notify_listeners(id, IInstanceLibraryItemListener::CHANGE_ADDED);
 	notify_property_list_changed();
 }
 
@@ -71,13 +71,13 @@ void VoxelInstanceLibrary::remove_item(int p_id) {
 		}
 	}
 
-	notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
+	notify_listeners(id, IInstanceLibraryItemListener::CHANGE_REMOVED);
 	notify_property_list_changed();
 }
 
 void VoxelInstanceLibrary::clear() {
 	for_each_item([this](int id, const VoxelInstanceLibraryItem &item) {
-		notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
+		notify_listeners(id, IInstanceLibraryItemListener::CHANGE_REMOVED);
 	});
 
 	_items.clear();
@@ -129,12 +129,12 @@ const VoxelInstanceLibraryItem *VoxelInstanceLibrary::get_item_const(int id) con
 	return nullptr;
 }
 
-void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) {
+void VoxelInstanceLibrary::on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) {
 	switch (change) {
 		// These changes will be reported after the resource is loaded and should be rare in-game, or occur in the
 		// editor, so we can do a simpler bulk update
-		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
-		case VoxelInstanceLibraryItem::CHANGE_LOD_INDEX:
+		case IInstanceLibraryItemListener::CHANGE_GENERATOR:
+		case IInstanceLibraryItemListener::CHANGE_LOD_INDEX:
 			update_packed_items();
 			break;
 		default:
@@ -144,19 +144,19 @@ void VoxelInstanceLibrary::on_library_item_changed(int id, VoxelInstanceLibraryI
 	notify_listeners(id, change);
 }
 
-void VoxelInstanceLibrary::notify_listeners(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
+void VoxelInstanceLibrary::notify_listeners(int item_id, IInstanceLibraryItemListener::ChangeType change) {
 	for (unsigned int i = 0; i < _listeners.size(); ++i) {
-		IListener *listener = _listeners[i];
+		IInstanceLibraryItemListener *listener = _listeners[i];
 		listener->on_library_item_changed(item_id, change);
 	}
 }
 
-void VoxelInstanceLibrary::add_listener(IListener *listener) {
+void VoxelInstanceLibrary::add_listener(IInstanceLibraryItemListener *listener) {
 	ERR_FAIL_COND(std::find(_listeners.begin(), _listeners.end(), listener) != _listeners.end());
 	_listeners.push_back(listener);
 }
 
-void VoxelInstanceLibrary::remove_listener(IListener *listener) {
+void VoxelInstanceLibrary::remove_listener(IInstanceLibraryItemListener *listener) {
 	auto it = std::find(_listeners.begin(), _listeners.end(), listener);
 	ERR_FAIL_COND(it == _listeners.end());
 	_listeners.erase(it);
@@ -227,12 +227,12 @@ void VoxelInstanceLibrary::set_item(int id, Ref<VoxelInstanceLibraryItem> item) 
 			Ref<VoxelInstanceLibraryItem> old_item = it->second;
 			if (old_item.is_valid()) {
 				old_item->remove_listener(this, id);
-				notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_REMOVED);
+				notify_listeners(id, IInstanceLibraryItemListener::CHANGE_REMOVED);
 			}
 			it->second = item;
 
 			item->add_listener(this, id);
-			notify_listeners(id, VoxelInstanceLibraryItem::CHANGE_ADDED);
+			notify_listeners(id, IInstanceLibraryItemListener::CHANGE_ADDED);
 		}
 	}
 }

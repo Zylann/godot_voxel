@@ -893,7 +893,7 @@ void VoxelInstancer::update_layer_scenes(int layer_id) {
 	}
 }
 
-void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) {
+void VoxelInstancer::on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) {
 	ERR_FAIL_COND(_library.is_null());
 
 	// TODO It's unclear yet if some code paths do the right thing in case instances got edited
@@ -903,7 +903,7 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 	// before assigning it to the instancer.
 
 	switch (change) {
-		case VoxelInstanceLibraryItem::CHANGE_ADDED: {
+		case IInstanceLibraryItemListener::CHANGE_ADDED: {
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 			add_layer(item_id, item->get_lod_index());
@@ -911,24 +911,24 @@ void VoxelInstancer::on_library_item_changed(int item_id, VoxelInstanceLibraryIt
 			update_configuration_warnings();
 		} break;
 
-		case VoxelInstanceLibraryItem::CHANGE_REMOVED:
+		case IInstanceLibraryItemListener::CHANGE_REMOVED:
 			remove_layer(item_id);
 			update_configuration_warnings();
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_GENERATOR:
+		case IInstanceLibraryItemListener::CHANGE_GENERATOR:
 			regenerate_layer(item_id, false);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_VISUAL:
+		case IInstanceLibraryItemListener::CHANGE_VISUAL:
 			update_layer_meshes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_SCENE:
+		case IInstanceLibraryItemListener::CHANGE_SCENE:
 			update_layer_scenes(item_id);
 			break;
 
-		case VoxelInstanceLibraryItem::CHANGE_LOD_INDEX: {
+		case IInstanceLibraryItemListener::CHANGE_LOD_INDEX: {
 			Ref<VoxelInstanceLibraryItem> item = _library->get_item(item_id);
 			ERR_FAIL_COND(item.is_null());
 

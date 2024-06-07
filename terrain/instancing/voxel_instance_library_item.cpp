@@ -20,7 +20,7 @@ void VoxelInstanceLibraryItem::set_lod_index(int lod) {
 		return;
 	}
 	_lod_index = lod;
-	notify_listeners(CHANGE_LOD_INDEX);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_LOD_INDEX);
 }
 
 int VoxelInstanceLibraryItem::get_lod_index() const {
@@ -44,7 +44,7 @@ void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generat
 				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
 		);
 	}
-	notify_listeners(CHANGE_GENERATOR);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
 }
 
 Ref<VoxelInstanceGenerator> VoxelInstanceLibraryItem::get_generator() const {
@@ -59,7 +59,7 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 	return _persistent;
 }
 
-void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
+void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
@@ -67,7 +67,7 @@ void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
 	_listeners.push_back(slot);
 }
 
-void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
+void VoxelInstanceLibraryItem::remove_listener(IInstanceLibraryItemListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
@@ -90,7 +90,7 @@ void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &war
 
 #endif
 
-void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
+void VoxelInstanceLibraryItem::notify_listeners(IInstanceLibraryItemListener::ChangeType change) {
 	for (unsigned int i = 0; i < _listeners.size(); ++i) {
 		ListenerSlot &slot = _listeners[i];
 		slot.listener->on_library_item_changed(slot.id, change);
@@ -98,7 +98,7 @@ void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
 }
 
 void VoxelInstanceLibraryItem::_on_generator_changed() {
-	notify_listeners(CHANGE_GENERATOR);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
 }
 
 void VoxelInstanceLibraryItem::_bind_methods() {
