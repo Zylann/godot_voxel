@@ -205,10 +205,9 @@ void VoxelInstanceLibrary::get_configuration_warnings(PackedStringArray &warning
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		Ref<VoxelInstanceLibraryItem> item = it->second;
 		ZN_ASSERT_CONTINUE(item.is_valid());
-		godot::get_resource_configuration_warnings(**item, warnings,
-				[&it]() { //
-					return String("Item {0} (\"{1}\"): ").format(varray(it->first, it->second->get_item_name()));
-				});
+		godot::get_resource_configuration_warnings(**item, warnings, [&it]() {
+			return String("Item {0} (\"{1}\"): ").format(varray(it->first, it->second->get_item_name()));
+		});
 	}
 }
 
@@ -266,8 +265,12 @@ bool VoxelInstanceLibrary::_get(const StringName &p_name, Variant &r_ret) const 
 void VoxelInstanceLibrary::_get_property_list(List<PropertyInfo> *p_list) const {
 	for (auto it = _items.begin(); it != _items.end(); ++it) {
 		const String property_name = "item_" + itos(it->first);
-		p_list->push_back(PropertyInfo(Variant::OBJECT, property_name, PROPERTY_HINT_RESOURCE_TYPE,
-				VoxelInstanceLibraryItem::get_class_static()));
+		p_list->push_back(PropertyInfo(
+				Variant::OBJECT,
+				property_name,
+				PROPERTY_HINT_RESOURCE_TYPE,
+				VoxelInstanceLibraryItem::get_class_static()
+		));
 	}
 }
 
