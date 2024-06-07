@@ -59,7 +59,8 @@ void VoxelBlockyTypeLibrary::bake() {
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
 		ZN_ASSERT_CONTINUE_MSG(
-				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i));
+				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i)
+		);
 
 		type->bake(baked_models, keys, material_indexer, nullptr, get_bake_tangents());
 
@@ -99,7 +100,8 @@ void VoxelBlockyTypeLibrary::bake() {
 
 	const uint64_t time_spent = Time::get_singleton()->get_ticks_usec() - time_before;
 	ZN_PRINT_VERBOSE(
-			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size()));
+			format("Took {} us to bake VoxelLibrary, indexed {} materials", time_spent, _indexed_materials.size())
+	);
 }
 
 void VoxelBlockyTypeLibrary::update_id_map() {
@@ -160,7 +162,8 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 	if (null_indices.size() > 0) {
 		const String null_indices_str = godot::join_comma_separated<unsigned int>(to_span(null_indices));
 		out_warnings.push_back(
-				String("{0} contains null items at indices {1}").format(varray(get_class(), null_indices_str)));
+				String("{0} contains null items at indices {1}").format(varray(get_class(), null_indices_str))
+		);
 	}
 
 	// Check duplicate names
@@ -248,19 +251,29 @@ int VoxelBlockyTypeLibrary::get_model_index_default(StringName type_name) const 
 namespace {
 
 bool parse_attribute_value(
-		const Variant &vv, const VoxelBlockyType &type, const StringName &attrib_name, uint8_t &out_attrib_value) {
+		const Variant &vv,
+		const VoxelBlockyType &type,
+		const StringName &attrib_name,
+		uint8_t &out_attrib_value
+) {
 	if (vv.get_type() == Variant::STRING_NAME) {
 		StringName value_name = vv;
 
 		Ref<VoxelBlockyAttribute> attrib = type.get_attribute_by_name(attrib_name);
-		ERR_FAIL_COND_V_MSG(attrib.is_null(), false,
+		ERR_FAIL_COND_V_MSG(
+				attrib.is_null(),
+				false,
 				String("{0} type '{1}' has no attribute named '{2}'")
-						.format(varray(VoxelBlockyType::get_class_static(), type.get_unique_name(), attrib_name)));
+						.format(varray(VoxelBlockyType::get_class_static(), type.get_unique_name(), attrib_name))
+		);
 
 		int attrib_value = attrib->get_value_from_name(value_name);
-		ERR_FAIL_COND_V_MSG(attrib_value == -1, false,
+		ERR_FAIL_COND_V_MSG(
+				attrib_value == -1,
+				false,
 				String("{0} ('{1}') has no value with name '{2}'")
-						.format(varray(attrib->get_class(), attrib->get_attribute_name(), value_name)));
+						.format(varray(attrib->get_class(), attrib->get_attribute_name(), value_name))
+		);
 
 		out_attrib_value = attrib_value;
 
@@ -274,8 +287,10 @@ bool parse_attribute_value(
 		out_attrib_value = boolean_value ? 1 : 0;
 
 	} else {
-		ZN_PRINT_ERROR(format("Failed to parse attribute value. Expected StringName, integer or boolean. Got {}",
-				Variant::get_type_name(vv.get_type())));
+		ZN_PRINT_ERROR(
+				format("Failed to parse attribute value. Expected StringName, integer or boolean. Got {}",
+					   Variant::get_type_name(vv.get_type()))
+		);
 		return false;
 	}
 
@@ -339,8 +354,8 @@ int VoxelBlockyTypeLibrary::get_model_index_with_attributes(StringName type_name
 		if (dict_key_type == Variant::STRING || dict_key_type == Variant::STRING_NAME) {
 			pair.first = dict_key;
 		} else {
-			ZN_PRINT_ERROR(
-					format("Attribute name must be a StringName. Got {}", Variant::get_type_name(dict_key_type)));
+			ZN_PRINT_ERROR(format("Attribute name must be a StringName. Got {}", Variant::get_type_name(dict_key_type))
+			);
 			return -1;
 		}
 
@@ -630,9 +645,12 @@ bool VoxelBlockyTypeLibrary::parse_voxel_id(const String &p_str, VoxelID &out_id
 bool VoxelBlockyTypeLibrary::load_id_map_from_string_array(PackedStringArray map_array) {
 	ZN_PROFILE_SCOPE();
 
-	ZN_ASSERT_RETURN_V_MSG(_id_map.size() == 0, false,
+	ZN_ASSERT_RETURN_V_MSG(
+			_id_map.size() == 0,
+			false,
 			"The current ID map isn't empty. Make sure you're not accidentally overwriting data, or clear the library "
-			"first.");
+			"first."
+	);
 
 	StdVector<VoxelID> id_map;
 	id_map.resize(map_array.size());
@@ -652,9 +670,12 @@ bool VoxelBlockyTypeLibrary::load_id_map_from_string_array(PackedStringArray map
 bool VoxelBlockyTypeLibrary::load_id_map_from_json(String json_string) {
 	ZN_PROFILE_SCOPE();
 
-	ZN_ASSERT_RETURN_V_MSG(_id_map.size() == 0, false,
+	ZN_ASSERT_RETURN_V_MSG(
+			_id_map.size() == 0,
+			false,
 			"The current ID map isn't empty. Make sure you're not accidentally overwriting data, or clear the library "
-			"first.");
+			"first."
+	);
 
 	Ref<JSON> json;
 	json.instantiate();
@@ -766,37 +787,51 @@ void VoxelBlockyTypeLibrary::_b_set_id_map(PackedStringArray sarray) {
 }
 
 void VoxelBlockyTypeLibrary::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_types"), &VoxelBlockyTypeLibrary::_b_get_types);
-	ClassDB::bind_method(D_METHOD("set_types"), &VoxelBlockyTypeLibrary::_b_set_types);
+	using Self = VoxelBlockyTypeLibrary;
 
+	ClassDB::bind_method(D_METHOD("get_types"), &Self::_b_get_types);
+	ClassDB::bind_method(D_METHOD("set_types"), &Self::_b_set_types);
+
+	ClassDB::bind_method(D_METHOD("get_model_index_default", "type_name"), &Self::get_model_index_default);
 	ClassDB::bind_method(
-			D_METHOD("get_model_index_default", "type_name"), &VoxelBlockyTypeLibrary::get_model_index_default);
-	ClassDB::bind_method(D_METHOD("get_model_index_single_attribute", "type_name", "attrib_value"),
-			&VoxelBlockyTypeLibrary::get_model_index_single_attribute);
-	ClassDB::bind_method(D_METHOD("get_model_index_with_attributes", "type_name", "attribs_dict"),
-			&VoxelBlockyTypeLibrary::get_model_index_with_attributes);
-	ClassDB::bind_method(D_METHOD("get_type_name_and_attributes_from_model_index", "model_index"),
-			&VoxelBlockyTypeLibrary::get_type_name_and_attributes_from_model_index);
-	ClassDB::bind_method(D_METHOD("load_id_map_from_json", "json"), &VoxelBlockyTypeLibrary::load_id_map_from_json);
-	ClassDB::bind_method(D_METHOD("serialize_id_map_to_json"), &VoxelBlockyTypeLibrary::serialize_id_map_to_json);
-	ClassDB::bind_method(D_METHOD("load_id_map_from_string_array", "str_array"),
-			&VoxelBlockyTypeLibrary::load_id_map_from_string_array);
+			D_METHOD("get_model_index_single_attribute", "type_name", "attrib_value"),
+			&Self::get_model_index_single_attribute
+	);
 	ClassDB::bind_method(
-			D_METHOD("serialize_id_map_to_string_array"), &VoxelBlockyTypeLibrary::_b_serialize_id_map_to_string_array);
+			D_METHOD("get_model_index_with_attributes", "type_name", "attribs_dict"),
+			&Self::get_model_index_with_attributes
+	);
+	ClassDB::bind_method(
+			D_METHOD("get_type_name_and_attributes_from_model_index", "model_index"),
+			&Self::get_type_name_and_attributes_from_model_index
+	);
+	ClassDB::bind_method(D_METHOD("load_id_map_from_json", "json"), &Self::load_id_map_from_json);
+	ClassDB::bind_method(D_METHOD("serialize_id_map_to_json"), &Self::serialize_id_map_to_json);
+	ClassDB::bind_method(D_METHOD("load_id_map_from_string_array", "str_array"), &Self::load_id_map_from_string_array);
+	ClassDB::bind_method(D_METHOD("serialize_id_map_to_string_array"), &Self::_b_serialize_id_map_to_string_array);
 
-	ClassDB::bind_method(D_METHOD("get_type_from_name", "type_name"), &VoxelBlockyTypeLibrary::get_type_from_name);
+	ClassDB::bind_method(D_METHOD("get_type_from_name", "type_name"), &Self::get_type_from_name);
 
-	ClassDB::bind_method(D_METHOD("_get_id_map_data"), &VoxelBlockyTypeLibrary::_b_get_id_map);
-	ClassDB::bind_method(D_METHOD("_set_id_map_data", "sarray"), &VoxelBlockyTypeLibrary::_b_set_id_map);
+	ClassDB::bind_method(D_METHOD("_get_id_map_data"), &Self::_b_get_id_map);
+	ClassDB::bind_method(D_METHOD("_set_id_map_data", "sarray"), &Self::_b_set_id_map);
 
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "types", PROPERTY_HINT_ARRAY_TYPE,
-						 MAKE_RESOURCE_TYPE_HINT(VoxelBlockyType::get_class_static())),
-			"set_types", "get_types");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::ARRAY,
+					"types",
+					PROPERTY_HINT_ARRAY_TYPE,
+					MAKE_RESOURCE_TYPE_HINT(VoxelBlockyType::get_class_static())
+			),
+			"set_types",
+			"get_types"
+	);
 
 	// Internal property
 	ADD_PROPERTY(
 			PropertyInfo(Variant::PACKED_STRING_ARRAY, "_id_map_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"_set_id_map_data", "_get_id_map_data");
+			"_set_id_map_data",
+			"_get_id_map_data"
+	);
 }
 
 } // namespace zylann::voxel
