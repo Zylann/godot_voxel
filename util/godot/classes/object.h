@@ -23,20 +23,6 @@ using namespace godot;
 
 namespace zylann::godot {
 
-// Get the name of a Godot class as a Godot String.
-#if defined(ZN_GODOT)
-template <typename T>
-inline String get_class_name_str() {
-	return T::get_class_static();
-}
-#elif defined(ZN_GODOT_EXTENSION)
-template <typename T>
-inline String get_class_name_str() {
-	// GodotCpp decided to use StringName instead
-	return String(T::get_class_static());
-}
-#endif
-
 // Turns out these functions are only used in editor for now.
 // They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
 #ifdef TOOLS_ENABLED

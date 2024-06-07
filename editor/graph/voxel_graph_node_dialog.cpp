@@ -370,7 +370,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
 		// Quick open function nodes
-		_function_quick_open_dialog->popup_dialog(godot::get_class_name_str<pg::VoxelGraphFunction>());
+		_function_quick_open_dialog->popup_dialog(pg::VoxelGraphFunction::get_class_static());
 #endif
 
 	} else {

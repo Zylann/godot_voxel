@@ -58,9 +58,7 @@ void VoxelBlockyTypeLibrary::bake() {
 
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
-		ZN_ASSERT_CONTINUE_MSG(
-				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i)
-		);
+		ZN_ASSERT_CONTINUE_MSG(type.is_valid(), format("{} at index {} is null", ZN_CLASS_NAME_C(VoxelBlockyType), i));
 
 		type->bake(baked_models, keys, material_indexer, nullptr, get_bake_tangents());
 
@@ -207,7 +205,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		String sname = String(type->get_unique_name()).strip_edges();
 		if (sname.length() == 0) {
 			out_warnings.push_back(String("{0} at index {1} has an empty name.")
-										   .format(varray(godot::get_class_name_str<VoxelBlockyType>(), type_index)));
+										   .format(varray(VoxelBlockyType::get_class_static(), type_index)));
 		}
 
 		type->get_configuration_warnings(out_warnings);

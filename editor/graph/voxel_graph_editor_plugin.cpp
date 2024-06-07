@@ -80,7 +80,7 @@ bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 	// Workaround for when we inspect nodes of the graph...
 	if (p_object == nullptr && _ignore_edit_null) {
-		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", get_class_name_str<VoxelGraphEditorPlugin>()));
+		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", ZN_CLASS_NAME_C(VoxelGraphEditorPlugin)));
 		return;
 	}
 
@@ -147,7 +147,7 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 	// Workaround for when we inspect nodes of the graph...
 	if (_ignore_make_visible) {
-		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", get_class_name_str<VoxelGraphEditorPlugin>(), visible));
+		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", ZN_CLASS_NAME_C(VoxelGraphEditorPlugin), visible));
 		return;
 	}
 
