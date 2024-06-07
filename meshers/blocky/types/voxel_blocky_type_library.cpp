@@ -92,6 +92,14 @@ void VoxelBlockyTypeLibrary::bake() {
 		keys.clear();
 	}
 
+	if (_baked_data.models.size() > MAX_MODELS) {
+		const int extra = _baked_data.models.size() - MAX_MODELS;
+		ZN_PRINT_ERROR(
+				format("Reached maximum supported models {}. {} extra models will not be used.", MAX_MODELS, extra)
+		);
+		_baked_data.models.resize(MAX_MODELS);
+	}
+
 	_baked_data.indexed_materials_count = _indexed_materials.size();
 
 	generate_side_culling_matrix(_baked_data);
@@ -766,7 +774,14 @@ TypedArray<VoxelBlockyType> VoxelBlockyTypeLibrary::_b_get_types() const {
 }
 
 void VoxelBlockyTypeLibrary::_b_set_types(TypedArray<VoxelBlockyType> types) {
-	godot::copy_to(_types, types);
+	unsigned int count = types.size();
+	if (count > MAX_TYPES) {
+		ZN_PRINT_ERROR(format(
+				"Cannot add more than {} types (received {}). Extra types will not be added.", MAX_TYPES, types.size()
+		));
+		count = MAX_TYPES;
+	}
+	godot::copy_range_to(_types, types, 0, count);
 	_needs_baking = true;
 }
 

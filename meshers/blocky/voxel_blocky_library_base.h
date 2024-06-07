@@ -16,7 +16,10 @@ class VoxelBlockyLibraryBase : public Resource {
 	GDCLASS(VoxelBlockyLibraryBase, Resource)
 
 public:
-	// Limit based on maximum supported by VoxelMesherBlocky
+	// Limit based on maximum supported by VoxelMesherBlocky.
+	// Supporting more requires to double the size of voxels (32-bit), but it's a suspicious situation. Minecraft block
+	// states don't even reach a quarter of that limit. Needing more sounds like it's not the
+	// right approach.
 	static constexpr unsigned int MAX_MODELS = 65536;
 
 	// Materials must be kept to a minimum. 256 is already a lot, but that only affects performance. This limit is
