@@ -32,16 +32,26 @@ void VoxelGraphEditorPlugin::init() {
 	// EditorInterface *ed = get_editor_interface();
 	_graph_editor = memnew(VoxelGraphEditor);
 	_graph_editor->set_custom_minimum_size(Size2(0, 300) * EDSCALE);
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODE_SELECTED,
-			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_node_selected));
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NOTHING_SELECTED,
-			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected));
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_NODES_DELETED,
-			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted));
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED,
-			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested));
-	_graph_editor->connect(VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED,
-			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested));
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_NODE_SELECTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_node_selected)
+	);
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_NOTHING_SELECTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nothing_selected)
+	);
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_NODES_DELETED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_nodes_deleted)
+	);
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_REGENERATE_REQUESTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_regenerate_requested)
+	);
+	_graph_editor->connect(
+			VoxelGraphEditor::SIGNAL_POPOUT_REQUESTED,
+			callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_popout_requested)
+	);
 	_bottom_panel_button = add_control_to_bottom_panel(_graph_editor, ZN_TTR("Voxel Graph"));
 	_bottom_panel_button->hide();
 
@@ -80,7 +90,7 @@ bool VoxelGraphEditorPlugin::_zn_handles(const Object *p_object) const {
 void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 	// Workaround for when we inspect nodes of the graph...
 	if (p_object == nullptr && _ignore_edit_null) {
-		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", get_class_name_str<VoxelGraphEditorPlugin>()));
+		ZN_PRINT_VERBOSE(format("{}: ignored edit(null)", ZN_CLASS_NAME_C(VoxelGraphEditorPlugin)));
 		return;
 	}
 
@@ -147,7 +157,7 @@ void VoxelGraphEditorPlugin::_zn_edit(Object *p_object) {
 void VoxelGraphEditorPlugin::_zn_make_visible(bool visible) {
 	// Workaround for when we inspect nodes of the graph...
 	if (_ignore_make_visible) {
-		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", get_class_name_str<VoxelGraphEditorPlugin>(), visible));
+		ZN_PRINT_VERBOSE(format("{}: ignored make_visible({})", ZN_CLASS_NAME_C(VoxelGraphEditorPlugin), visible));
 		return;
 	}
 
@@ -342,7 +352,8 @@ void VoxelGraphEditorPlugin::undock_graph_editor() {
 	update_graph_editor_window_title();
 	_graph_editor_window->add_child(_graph_editor);
 	_graph_editor_window->connect(
-			"close_requested", callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested));
+			"close_requested", callable_mp(this, &VoxelGraphEditorPlugin::_on_graph_editor_window_close_requested)
+	);
 
 	Node *base_control = get_editor_interface()->get_base_control();
 	base_control->add_child(_graph_editor_window);

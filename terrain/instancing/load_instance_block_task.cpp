@@ -22,7 +22,7 @@ LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		uint8_t lod_index, //
 		uint8_t instance_block_size, //
 		uint8_t data_block_size, //
-		uint8_t up_mode //
+		UpMode up_mode //
 		) :
 		//
 		_output_queue(output_queue), //

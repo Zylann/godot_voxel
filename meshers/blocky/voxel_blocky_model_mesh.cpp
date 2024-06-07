@@ -20,9 +20,7 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	{
 		Ref<PointMesh> point_mesh = mesh;
 		if (point_mesh.is_valid()) {
-			ZN_PRINT_ERROR(
-					format("PointMesh is not supported by {}.", godot::get_class_name_str<VoxelBlockyModelMesh>())
-			);
+			ZN_PRINT_ERROR(format("PointMesh is not supported by {}.", ZN_CLASS_NAME_C(VoxelBlockyModelMesh)));
 			return;
 		}
 	}

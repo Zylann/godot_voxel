@@ -20,7 +20,7 @@ void VoxelInstanceLibraryItem::set_lod_index(int lod) {
 		return;
 	}
 	_lod_index = lod;
-	notify_listeners(CHANGE_LOD_INDEX);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_LOD_INDEX);
 }
 
 int VoxelInstanceLibraryItem::get_lod_index() const {
@@ -32,15 +32,19 @@ void VoxelInstanceLibraryItem::set_generator(Ref<VoxelInstanceGenerator> generat
 		return;
 	}
 	if (_generator.is_valid()) {
-		_generator->disconnect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed));
+		_generator->disconnect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
+		);
 	}
 	_generator = generator;
 	if (_generator.is_valid()) {
-		_generator->connect(VoxelStringNames::get_singleton().changed,
-				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed));
+		_generator->connect(
+				VoxelStringNames::get_singleton().changed,
+				callable_mp(this, &VoxelInstanceLibraryItem::_on_generator_changed)
+		);
 	}
-	notify_listeners(CHANGE_GENERATOR);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
 }
 
 Ref<VoxelInstanceGenerator> VoxelInstanceLibraryItem::get_generator() const {
@@ -55,7 +59,7 @@ bool VoxelInstanceLibraryItem::is_persistent() const {
 	return _persistent;
 }
 
-void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
+void VoxelInstanceLibraryItem::add_listener(IInstanceLibraryItemListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
@@ -63,7 +67,7 @@ void VoxelInstanceLibraryItem::add_listener(IListener *listener, int id) {
 	_listeners.push_back(slot);
 }
 
-void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
+void VoxelInstanceLibraryItem::remove_listener(IInstanceLibraryItemListener *listener, int id) {
 	ListenerSlot slot;
 	slot.listener = listener;
 	slot.id = id;
@@ -77,7 +81,8 @@ void VoxelInstanceLibraryItem::remove_listener(IListener *listener, int id) {
 void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &warnings) const {
 	if (_generator.is_null()) {
 		warnings.append(
-				String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class()));
+				String("A {0} has no generator assigned, it is needed for instances to spawn.").format(get_class())
+		);
 	} else {
 		godot::get_resource_configuration_warnings(**_generator, warnings, []() { return "generator: "; });
 	}
@@ -85,7 +90,7 @@ void VoxelInstanceLibraryItem::get_configuration_warnings(PackedStringArray &war
 
 #endif
 
-void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
+void VoxelInstanceLibraryItem::notify_listeners(IInstanceLibraryItemListener::ChangeType change) {
 	for (unsigned int i = 0; i < _listeners.size(); ++i) {
 		ListenerSlot &slot = _listeners[i];
 		slot.listener->on_library_item_changed(slot.id, change);
@@ -93,7 +98,7 @@ void VoxelInstanceLibraryItem::notify_listeners(ChangeType change) {
 }
 
 void VoxelInstanceLibraryItem::_on_generator_changed() {
-	notify_listeners(CHANGE_GENERATOR);
+	notify_listeners(IInstanceLibraryItemListener::CHANGE_GENERATOR);
 }
 
 void VoxelInstanceLibraryItem::_bind_methods() {
@@ -112,9 +117,13 @@ void VoxelInstanceLibraryItem::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "name"), "set_item_name", "get_item_name");
 	ADD_PROPERTY(
-			PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index");
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
-			"set_generator", "get_generator");
+			PropertyInfo(Variant::INT, "lod_index", PROPERTY_HINT_RANGE, "0,8,1"), "set_lod_index", "get_lod_index"
+	);
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "generator", PROPERTY_HINT_RESOURCE_TYPE, "VoxelInstanceGenerator"),
+			"set_generator",
+			"get_generator"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "persistent"), "set_persistent", "is_persistent");
 }
 

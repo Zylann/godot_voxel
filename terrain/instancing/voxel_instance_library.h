@@ -8,22 +8,19 @@
 #include "../../util/godot/core/string.h"
 #include "../../util/godot/core/string_name.h"
 #include "../../util/thread/mutex.h"
-#include "voxel_instance_library_item.h"
+#include "instance_library_item_listener.h"
 
 namespace zylann::voxel {
 
+class VoxelInstanceLibraryItem;
+class VoxelInstanceGenerator;
+
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
-class VoxelInstanceLibrary : public Resource, public VoxelInstanceLibraryItem::IListener {
+class VoxelInstanceLibrary : public Resource, public IInstanceLibraryItemListener {
 	GDCLASS(VoxelInstanceLibrary, Resource)
 
 public:
 	static const int MAX_ID = 0xffff;
-
-	class IListener {
-	public:
-		virtual ~IListener() {}
-		virtual void on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) = 0;
-	};
 
 	~VoxelInstanceLibrary();
 
@@ -48,8 +45,8 @@ public:
 		}
 	}
 
-	void add_listener(IListener *listener);
-	void remove_listener(IListener *listener);
+	void add_listener(IInstanceLibraryItemListener *listener);
+	void remove_listener(IInstanceLibraryItemListener *listener);
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const;
@@ -74,8 +71,8 @@ protected:
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 private:
-	void on_library_item_changed(int id, VoxelInstanceLibraryItem::ChangeType change) override;
-	void notify_listeners(int item_id, VoxelInstanceLibraryItem::ChangeType change);
+	void on_library_item_changed(int id, IInstanceLibraryItemListener::ChangeType change) override;
+	void notify_listeners(int item_id, IInstanceLibraryItemListener::ChangeType change);
 
 	static void _bind_methods();
 
@@ -83,7 +80,7 @@ private:
 	// Using a map keeps items ordered, so the last item has highest ID
 	StdMap<int, Ref<VoxelInstanceLibraryItem>> _items;
 
-	StdVector<IListener *> _listeners;
+	StdVector<IInstanceLibraryItemListener *> _listeners;
 
 	struct PackedItems {
 		struct Lod {
