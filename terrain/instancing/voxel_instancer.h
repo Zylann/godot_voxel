@@ -13,7 +13,6 @@
 #include "../../util/memory/memory.h"
 #include "instance_library_item_listener.h"
 #include "voxel_instance_generator.h"
-#include "voxel_instance_library.h"
 #include "voxel_instance_library_multimesh_item.h"
 
 #ifdef TOOLS_ENABLED
@@ -34,6 +33,7 @@ namespace voxel {
 class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
+class VoxelInstanceLibrary;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
 class SaveBlockDataTask;

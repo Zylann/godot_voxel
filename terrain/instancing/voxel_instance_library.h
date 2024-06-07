@@ -9,9 +9,11 @@
 #include "../../util/godot/core/string_name.h"
 #include "../../util/thread/mutex.h"
 #include "instance_library_item_listener.h"
-#include "voxel_instance_library_item.h"
 
 namespace zylann::voxel {
+
+class VoxelInstanceLibraryItem;
+class VoxelInstanceGenerator;
 
 // Contains a list of items that can be used by VoxelInstancer, associated with a unique ID
 class VoxelInstanceLibrary : public Resource, public IInstanceLibraryItemListener {
