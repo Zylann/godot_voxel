@@ -5,6 +5,7 @@
 #include "../../util/godot/core/array.h"
 #include "../../util/math/vector3i.h"
 #include "../../util/tasks/threaded_task.h"
+#include "up_mode.h"
 #include "voxel_instance_library.h"
 #include "voxel_instancer_task_output_queue.h"
 #include <cstdint>
@@ -27,7 +28,7 @@ public:
 			uint8_t lod_index, //
 			uint8_t instance_block_size, //
 			uint8_t data_block_size, //
-			uint8_t up_mode //
+			UpMode up_mode //
 	);
 
 	const char *get_debug_name() const override {
@@ -46,7 +47,7 @@ private:
 	uint8_t _lod_index;
 	uint8_t _instance_block_size;
 	uint8_t _data_block_size;
-	uint8_t _up_mode;
+	UpMode _up_mode;
 };
 
 } // namespace zylann::voxel

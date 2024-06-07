@@ -21,6 +21,7 @@
 #include "../variable_lod/voxel_lod_terrain.h"
 #include "load_instance_block_task.h"
 #include "voxel_instance_component.h"
+#include "voxel_instance_generator.h"
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_quick_reloading_cache.h"
 #include "voxel_instancer_rigidbody.h"
@@ -639,7 +640,7 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 	}
 }
 
-VoxelInstancer::UpMode VoxelInstancer::get_up_mode() const {
+UpMode VoxelInstancer::get_up_mode() const {
 	return _up_mode;
 }
 
@@ -809,7 +810,7 @@ void VoxelInstancer::regenerate_layer(uint16_t layer_id, bool regenerate_blocks)
 				block.lod_index,
 				layer_id,
 				surface_arrays,
-				static_cast<VoxelInstanceGenerator::UpMode>(_up_mode),
+				_up_mode,
 				octant_mask,
 				lod_block_size
 		);
