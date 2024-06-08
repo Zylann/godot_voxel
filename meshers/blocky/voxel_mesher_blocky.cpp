@@ -584,9 +584,11 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	if (input.lod_index > 0) {
+		// TODO Scale collision mesh too
+
 		// Might not look good, but at least it's something
 		const float lod_scale = 1 << input.lod_index;
-		for (Arrays arrays : arrays_per_material) {
+		for (Arrays &arrays : arrays_per_material) {
 			for (Vector3f &p : arrays.positions) {
 				p = p * lod_scale;
 			}
