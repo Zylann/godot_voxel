@@ -1082,6 +1082,7 @@ bool all_children_loaded_and_active(
 }
 
 // Deactivates a block in the context of a merge, and removes it if nothing uses it.
+// Note, only goes recursive if there is a pending merge.
 void deactivate_or_remove_recursive(
 		const Vector3i bpos,
 		const unsigned int lod_index,
@@ -1347,8 +1348,8 @@ inline bool requires_meshes(const VoxelLodTerrainUpdateData::PairedViewer::State
 
 void process_viewer_mesh_blocks_sliding_box(
 		VoxelLodTerrainUpdateData::State &state,
-		const int mesh_block_size_po2,
-		const int lod_count,
+		const unsigned int mesh_block_size_po2,
+		const unsigned int lod_count,
 		const Box3i &volume_bounds_in_voxels,
 		const VoxelLodTerrainUpdateData::PairedViewer &paired_viewer,
 		const bool can_load,
@@ -1359,19 +1360,24 @@ void process_viewer_mesh_blocks_sliding_box(
 	ZN_PROFILE_SCOPE();
 
 #ifdef DEV_ENABLED
-	Box3i debug_parent_box;
+	Box3i debug_child_box;
 #endif
 
 	// TODO Optimize: when a viewer doesn't need visuals, we only need to build meshes for collisions up to a certain
 	// LOD (collision max LOD property). That would be an optimization for servers, NPCs and player hosts
 
-	// Iterating from big to small LOD so we can exit earlier if bounds don't intersect.
-	for (int lod_index = lod_count - 1; lod_index >= 0; --lod_index) {
+	// Note: we could iterate from LOD N to 0 and benefit from an early-exit if the area doesn't intersect bounds of the
+	// terrain, but when merging chunks and teleporting it causes issues where child LODs can't merge if their parent
+	// got removed first. That could have been worked around by allowing parents to be null in merging functions
+	// (leading to extra ifs), which worked in prototype, but that didn't feel right. So I decided to iterate from
+	// LOD 0 to N.
+
+	for (unsigned int lod_index = 0; lod_index < lod_count; ++lod_index) {
 		ZN_PROFILE_SCOPE();
 		VoxelLodTerrainUpdateData::Lod &lod = state.lods[lod_index];
 
-		const int lod_mesh_block_size_po2 = mesh_block_size_po2 + lod_index;
-		const int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
+		const unsigned int lod_mesh_block_size_po2 = mesh_block_size_po2 + lod_index;
+		const unsigned int lod_mesh_block_size = 1 << lod_mesh_block_size_po2;
 		// const Vector3i viewer_block_pos_within_lod = math::floor_to_int(p_viewer_pos) >> block_size_po2;
 
 		const Box3i bounds_in_mesh_blocks = volume_bounds_in_voxels.downscaled(lod_mesh_block_size);
@@ -1384,11 +1390,13 @@ void process_viewer_mesh_blocks_sliding_box(
 		const Box3i &prev_mesh_box = paired_viewer.prev_state.mesh_box_per_lod[lod_index];
 
 #ifdef DEV_ENABLED
-		if (lod_index + 1 != lod_count) {
-			const Box3i debug_parent_box_in_current_lod(debug_parent_box.position << 1, debug_parent_box.size << 1);
-			ZN_ASSERT(debug_parent_box_in_current_lod.contains(new_mesh_box));
+		if (lod_index > 0) {
+			// Sanity check.
+			// Note, this check depends on LOD iteration order.
+			const Box3i parent_box_in_child_lod(new_mesh_box.position << 1, new_mesh_box.size << 1);
+			ZN_ASSERT(parent_box_in_child_lod.contains(debug_child_box));
 		}
-		debug_parent_box = new_mesh_box;
+		debug_child_box = new_mesh_box;
 #endif
 
 		// const Box3i prev_mesh_box = get_lod_box_in_chunks(
@@ -1397,8 +1405,7 @@ void process_viewer_mesh_blocks_sliding_box(
 		// 									.clipped(bounds_in_mesh_blocks);
 
 		if (!new_mesh_box.intersects(bounds_in_mesh_blocks) && !prev_mesh_box.intersects(bounds_in_mesh_blocks)) {
-			// If this box doesn't intersect either now or before, there is no chance a smaller one will
-			break;
+			continue;
 		}
 
 		if (prev_mesh_box != new_mesh_box) {
