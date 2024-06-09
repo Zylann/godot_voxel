@@ -262,7 +262,7 @@ void op_buffer_buffer_f( //
 		case VoxelBuffer::DEPTH_8_BIT: {
 			Span<const int8_t> src_data;
 			Span<int8_t> dst_data;
-			ZN_ASSERT(src.get_channel_data(channel, src_data));
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
 			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
 			for (unsigned int i = 0; i < src_data.size(); ++i) {
 				const float a = s8_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_8_BITS_SCALE_INV;
@@ -274,7 +274,7 @@ void op_buffer_buffer_f( //
 		case VoxelBuffer::DEPTH_16_BIT: {
 			Span<const int16_t> src_data;
 			Span<int16_t> dst_data;
-			ZN_ASSERT(src.get_channel_data(channel, src_data));
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
 			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
 			for (unsigned int i = 0; i < src_data.size(); ++i) {
 				const float a = s16_to_snorm(dst_data[i]) * constants::QUANTIZED_SDF_16_BITS_SCALE_INV;
@@ -286,7 +286,7 @@ void op_buffer_buffer_f( //
 		case VoxelBuffer::DEPTH_32_BIT: {
 			Span<const float> src_data;
 			Span<float> dst_data;
-			ZN_ASSERT(src.get_channel_data(channel, src_data));
+			ZN_ASSERT(src.get_channel_data_read_only(channel, src_data));
 			ZN_ASSERT(dst.get_channel_data(channel, dst_data));
 			for (unsigned int i = 0; i < src_data.size(); ++i) {
 				dst_data[i] = f(dst_data[i], src_data[i]);
@@ -387,7 +387,7 @@ void VoxelBuffer::op_select_less_src_f_dst_i_values( //
 			dst.decompress_channel(dst_channel);
 
 			Span<const float> src_data;
-			src.get_channel_data(src_channel, src_data);
+			src.get_channel_data_read_only(src_channel, src_data);
 
 			Span<uint16_t> dst_data;
 			dst.get_channel_data(dst_channel, dst_data);
