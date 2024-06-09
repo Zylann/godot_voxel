@@ -162,8 +162,13 @@ void VoxelToolBuffer::paste(Vector3i p_pos, const VoxelBuffer &src, uint8_t chan
 	dst.copy_voxel_metadata_in_area(src, Box3i(Vector3i(), src.get_size()), p_pos);
 }
 
-void VoxelToolBuffer::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
-		uint8_t mask_channel, uint64_t mask_value) {
+void VoxelToolBuffer::paste_masked(
+		Vector3i p_pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value
+) {
 	ERR_FAIL_COND(_buffer.is_null());
 	ERR_FAIL_COND(p_voxels.is_null());
 
@@ -248,7 +253,8 @@ void VoxelToolBuffer::do_path(Span<const Vector3> positions, Span<const float> r
 					op.shape = shape;
 					op.texture_params = _texture_params;
 					dst.write_box_2_template<ops::TextureBlendOp<ops::SdfRoundCone>, uint16_t, uint16_t>(
-							local_box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i());
+							local_box, VoxelBuffer::CHANNEL_INDICES, VoxelBuffer::CHANNEL_WEIGHTS, op, Vector3i()
+					);
 				} break;
 
 				default:

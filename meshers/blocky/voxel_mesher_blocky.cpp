@@ -1171,7 +1171,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	Span<const uint8_t> raw_channel;
-	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -1327,6 +1327,14 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 		return Ref<Material>();
 	}
 	return lib->get_material_by_index(index);
+}
+
+unsigned int VoxelMesherBlocky::get_material_index_count() const {
+	Ref<VoxelBlockyLibraryBase> lib = get_library();
+	if (lib.is_null()) {
+		return 0;
+	}
+	return lib->get_material_index_count();
 }
 
 #ifdef TOOLS_ENABLED

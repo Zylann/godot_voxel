@@ -86,6 +86,7 @@ public:
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const;
+	unsigned int get_material_index_count() const;
 
 #ifdef TOOLS_ENABLED
 	virtual void get_configuration_warnings(PackedStringArray &out_warnings) const;

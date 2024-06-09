@@ -65,15 +65,25 @@ size_t get_metadata_size_in_bytes(const VoxelBuffer &buffer) {
 
 	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &voxel_metadata = buffer.get_voxel_metadata();
 	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = voxel_metadata.begin();
-			it != voxel_metadata.end(); ++it) {
+		 it != voxel_metadata.end();
+		 ++it) {
 		const Vector3i pos = it->key;
 
-		ERR_FAIL_COND_V_MSG(pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBuffer::MAX_SIZE, 0,
-				"Invalid voxel metadata X position");
-		ERR_FAIL_COND_V_MSG(pos.y < 0 || static_cast<uint32_t>(pos.y) >= VoxelBuffer::MAX_SIZE, 0,
-				"Invalid voxel metadata Y position");
-		ERR_FAIL_COND_V_MSG(pos.z < 0 || static_cast<uint32_t>(pos.z) >= VoxelBuffer::MAX_SIZE, 0,
-				"Invalid voxel metadata Z position");
+		ERR_FAIL_COND_V_MSG(
+				pos.x < 0 || static_cast<uint32_t>(pos.x) >= VoxelBuffer::MAX_SIZE,
+				0,
+				"Invalid voxel metadata X position"
+		);
+		ERR_FAIL_COND_V_MSG(
+				pos.y < 0 || static_cast<uint32_t>(pos.y) >= VoxelBuffer::MAX_SIZE,
+				0,
+				"Invalid voxel metadata Y position"
+		);
+		ERR_FAIL_COND_V_MSG(
+				pos.z < 0 || static_cast<uint32_t>(pos.z) >= VoxelBuffer::MAX_SIZE,
+				0,
+				"Invalid voxel metadata Z position"
+		);
 
 		size += 3 * sizeof(uint16_t); // Positions are stored as 3 unsigned shorts
 		size += get_metadata_size_in_bytes(it->value);
@@ -139,10 +149,13 @@ void serialize_metadata(Span<uint8_t> p_dst, const VoxelBuffer &buffer) {
 
 	const FlatMapMoveOnly<Vector3i, VoxelMetadata> &voxel_metadata = buffer.get_voxel_metadata();
 	for (FlatMapMoveOnly<Vector3i, VoxelMetadata>::ConstIterator it = voxel_metadata.begin();
-			it != voxel_metadata.end(); ++it) {
+		 it != voxel_metadata.end();
+		 ++it) {
 		// Serializing key as ushort because it's more than enough for a 3D dense array
-		static_assert(VoxelBuffer::MAX_SIZE <= std::numeric_limits<uint16_t>::max(),
-				"Maximum size exceeds serialization support");
+		static_assert(
+				VoxelBuffer::MAX_SIZE <= std::numeric_limits<uint16_t>::max(),
+				"Maximum size exceeds serialization support"
+		);
 		const Vector3i pos = it->key;
 		mw.store_16(pos.x);
 		mw.store_16(pos.y);
@@ -160,7 +173,7 @@ struct ClearOnExit {
 	}
 };
 
-//#define CLEAR_ON_EXIT(container) ClearOnExit<decltype(container)> clear_on_exit_##__LINE__;
+// #define CLEAR_ON_EXIT(container) ClearOnExit<decltype(container)> clear_on_exit_##__LINE__;
 
 bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 	const uint8_t type = mr.get_8();
@@ -177,7 +190,8 @@ bool deserialize_metadata(VoxelMetadata &meta, MemoryReader &mr) {
 			if (type >= VoxelMetadata::TYPE_CUSTOM_BEGIN) {
 				ICustomVoxelMetadata *custom = VoxelMetadataFactory::get_singleton().try_construct(type);
 				ZN_ASSERT_RETURN_V_MSG(
-						custom != nullptr, false, format("Could not deserialize custom metadata with type {}", type));
+						custom != nullptr, false, format("Could not deserialize custom metadata with type {}", type)
+				);
 
 				// Store in a temporary container so it auto-deletes in case of error
 				VoxelMetadata temp;
@@ -215,15 +229,18 @@ bool deserialize_metadata(Span<const uint8_t> p_src, VoxelBuffer &buffer) {
 		pos.y = mr.get_16();
 		pos.z = mr.get_16();
 
-		ZN_ASSERT_CONTINUE_MSG(buffer.is_position_valid(pos),
-				format("Invalid voxel metadata position {} for buffer of size {}", pos, buffer.get_size()));
+		ZN_ASSERT_CONTINUE_MSG(
+				buffer.is_position_valid(pos),
+				format("Invalid voxel metadata position {} for buffer of size {}", pos, buffer.get_size())
+		);
 
 		// VoxelMetadata &vmeta = buffer.get_or_create_voxel_metadata(pos);
 		tls_pairs.resize(tls_pairs.size() + 1);
 		Pair &p = tls_pairs.back();
 		p.key = pos;
 		ZN_ASSERT_RETURN_V_MSG(
-				deserialize_metadata(p.value, mr), false, format("Failed to deserialize voxel metadata {}", pos));
+				deserialize_metadata(p.value, mr), false, format("Failed to deserialize voxel metadata {}", pos)
+		);
 	}
 
 	// Set all metadata at once, FlatMap is faster to initialize this way
@@ -290,15 +307,18 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 	f.store_8(BLOCK_FORMAT_VERSION);
 
 	ERR_FAIL_COND_V(
-			voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
+			voxel_buffer.get_size().x > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false)
+	);
 	f.store_16(voxel_buffer.get_size().x);
 
 	ERR_FAIL_COND_V(
-			voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
+			voxel_buffer.get_size().y > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false)
+	);
 	f.store_16(voxel_buffer.get_size().y);
 
 	ERR_FAIL_COND_V(
-			voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false));
+			voxel_buffer.get_size().z > std::numeric_limits<uint16_t>().max(), SerializeResult(dst_data, false)
+	);
 	f.store_16(voxel_buffer.get_size().z);
 
 	for (unsigned int channel_index = 0; channel_index < VoxelBuffer::MAX_CHANNELS; ++channel_index) {
@@ -311,8 +331,11 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
-				Span<uint8_t> data;
-				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(dst_data, false));
+				Span<const uint8_t> data;
+				ERR_FAIL_COND_V(
+						!voxel_buffer.get_channel_as_bytes_read_only(channel_index, data),
+						SerializeResult(dst_data, false)
+				);
 				f.store_buffer(data);
 			} break;
 
@@ -419,7 +442,8 @@ bool migrate_v3_to_v4(Span<const uint8_t> p_data, StdVector<uint8_t> &dst) {
 				Variant src_meta;
 				size_t read_length;
 				const bool decode_success = zylann::godot::decode_variant(
-						Span<const uint8_t>(&mr.data[mr.pos], mr.data.size() - mr.pos), src_meta, read_length);
+						Span<const uint8_t>(&mr.data[mr.pos], mr.data.size() - mr.pos), src_meta, read_length
+				);
 				ZN_ASSERT_RETURN_V_MSG(decode_success, false, "Failed to deserialize v3 Variant metadata");
 				mr.pos += read_length;
 				ZN_ASSERT(mr.pos <= mr.data.size());
@@ -598,10 +622,16 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 		const uint8_t fmt = f.get_8();
 		const uint8_t compression_value = fmt & 0xf;
 		const uint8_t depth_value = (fmt >> 4) & 0xf;
-		ERR_FAIL_COND_V_MSG(compression_value >= VoxelBuffer::COMPRESSION_COUNT, false,
-				"At offset 0x" + String::num_int64(f.get_position() - 1, 16));
-		ERR_FAIL_COND_V_MSG(depth_value >= VoxelBuffer::DEPTH_COUNT, false,
-				"At offset 0x" + String::num_int64(f.get_position() - 1, 16));
+		ERR_FAIL_COND_V_MSG(
+				compression_value >= VoxelBuffer::COMPRESSION_COUNT,
+				false,
+				"At offset 0x" + String::num_int64(f.get_position() - 1, 16)
+		);
+		ERR_FAIL_COND_V_MSG(
+				depth_value >= VoxelBuffer::DEPTH_COUNT,
+				false,
+				"At offset 0x" + String::num_int64(f.get_position() - 1, 16)
+		);
 		VoxelBuffer::Compression compression = (VoxelBuffer::Compression)compression_value;
 		VoxelBuffer::Depth depth = (VoxelBuffer::Depth)depth_value;
 
@@ -612,7 +642,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 				out_voxel_buffer.decompress_channel(channel_index);
 
 				Span<uint8_t> buffer;
-				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
+				CRASH_COND(!out_voxel_buffer.get_channel_as_bytes(channel_index, buffer));
 
 				const size_t read_len = f.get_buffer(buffer);
 				if (read_len != buffer.size()) {
@@ -659,7 +689,8 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 
 	// Failure at this indicates file corruption
 	ERR_FAIL_COND_V_MSG(
-			f.get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f.get_position() - 4, 16));
+			f.get_32() != BLOCK_TRAILING_MAGIC, false, "At offset 0x" + String::num_int64(f.get_position() - 4, 16)
+	);
 	return true;
 }
 
@@ -673,7 +704,8 @@ SerializeResult serialize_and_compress(const VoxelBuffer &voxel_buffer) {
 	const StdVector<uint8_t> &data = res.data;
 
 	res.success = CompressedData::compress(
-			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, CompressedData::COMPRESSION_LZ4);
+			Span<const uint8_t>(data.data(), 0, data.size()), compressed_data, CompressedData::COMPRESSION_LZ4
+	);
 	ERR_FAIL_COND_V(!res.success, SerializeResult(compressed_data, false));
 
 	return SerializeResult(compressed_data, true);

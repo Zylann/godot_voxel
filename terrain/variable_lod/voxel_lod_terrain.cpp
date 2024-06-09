@@ -17,6 +17,7 @@
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/packed_scene.h"
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/scene_tree.h"
 #include "../../util/godot/classes/script.h"
@@ -262,15 +263,7 @@ void VoxelLodTerrain::set_material(Ref<Material> p_material) {
 					// No visuals loaded (collision only?)
 					return;
 				}
-				block.set_shader_material(Ref<ShaderMaterial>());
-
-				Ref<Mesh> mesh = block.get_mesh();
-				if (mesh.is_valid()) {
-					const int surface_count = mesh->get_surface_count();
-					for (int surface_index = 0; surface_index < surface_count; ++surface_index) {
-						mesh->surface_set_material(surface_index, p_material);
-					}
-				}
+				block.set_material_override(p_material);
 			});
 		}
 	}
@@ -1234,7 +1227,7 @@ void VoxelLodTerrain::process(float delta) {
 			VoxelLodTerrainUpdateData &update_data = *_update_data;
 			update_data.viewers.clear();
 			VoxelEngine::get_singleton().for_each_viewer(
-					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) {
+					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) { //
 						update_data.viewers.push_back({ id, viewer });
 					}
 			);
@@ -1834,21 +1827,29 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 
 	Ref<ArrayMesh> mesh;
 	if (ob.visual_was_required && visual_expected) {
+		// TODO Candidate for temp allocator
+		StdVector<uint16_t> material_indices;
 		if (ob.has_mesh_resource) {
 			// The mesh was already built as part of the threaded task
 			mesh = ob.mesh;
 			// It can be empty
-			if (mesh.is_valid()) {
-				const unsigned int surface_count = mesh->get_surface_count();
-				for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
-					mesh->surface_set_material(surface_index, _material);
-				}
-			}
+			material_indices = std::move(ob.mesh_material_indices);
 		} else {
 			// Can't build meshes in threads, do it here
 			mesh = build_mesh(
-					to_span_const(mesh_data.surfaces), mesh_data.primitive_type, mesh_data.mesh_flags, _material
+					to_span_const(ob.surfaces.surfaces),
+					mesh_data.primitive_type,
+					mesh_data.mesh_flags,
+					material_indices
 			);
+		}
+		if (mesh.is_valid()) {
+			const unsigned int surface_count = mesh->get_surface_count();
+			for (unsigned int surface_index = 0; surface_index < surface_count; ++surface_index) {
+				const unsigned int material_index = material_indices[surface_index];
+				Ref<Material> material = _mesher->get_material_by_index(material_index);
+				mesh->surface_set_material(surface_index, material);
+			}
 		}
 	}
 
@@ -1936,6 +1937,9 @@ void VoxelLodTerrain::apply_mesh_update(VoxelEngine::BlockMeshOutput &ob) {
 				// Set individual shader material, because each block can have dynamic parameters,
 				// used to smooth seams without re-uploading meshes and allow to implement LOD fading
 				block->set_shader_material(sm);
+
+			} else if (_material.is_valid()) {
+				block->set_material_override(_material);
 			}
 
 			block->set_transition_mask(transition_mask);
