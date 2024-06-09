@@ -39,15 +39,20 @@ void copy_from_chunked_storage( //
 						dst_buffer.set_channel_depth(channel, src_buffer->get_channel_depth(channel));
 						// Note: copy_from takes care of clamping the area if it's on an edge
 						dst_buffer.copy_channel_from(
-								*src_buffer, min_pos - src_block_origin, src_buffer->get_size(), Vector3i(), channel);
+								*src_buffer, min_pos - src_block_origin, src_buffer->get_size(), Vector3i(), channel
+						);
 					}
 
 				} else {
 					for (const uint8_t channel : channels) {
 						// For now, inexistent blocks default to hardcoded defaults, corresponding to "empty space".
 						// If we want to change this, we may have to add an API for that.
-						dst_buffer.fill_area(VoxelBuffer::get_default_value_static(channel), src_block_origin - min_pos,
-								src_block_origin - min_pos + block_size_v, channel);
+						dst_buffer.fill_area(
+								VoxelBuffer::get_default_value_static(channel),
+								src_block_origin - min_pos,
+								src_block_origin - min_pos + block_size_v,
+								channel
+						);
 					}
 				}
 			}
@@ -89,7 +94,8 @@ void paste_to_chunked_storage( //
 
 				if (use_mask) {
 					paste_src_masked(
-							to_span(channels), src_buffer, mask_channel, mask_value, *dst_buffer, dst_base_pos, true);
+							to_span(channels), src_buffer, mask_channel, mask_value, *dst_buffer, dst_base_pos, true
+					);
 
 				} else {
 					paste(to_span(channels), src_buffer, *dst_buffer, dst_base_pos, true);
@@ -118,8 +124,11 @@ bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarra
 	const int32_t max_supported_value = 65535;
 	// Validate
 	for (const int32_t i : indices) {
-		ZN_ASSERT_RETURN_V_MSG(i >= 0 && i <= max_supported_value, false,
-				format("Index {} is out of supported range 0..{}", i, max_supported_value));
+		ZN_ASSERT_RETURN_V_MSG(
+				i >= 0 && i <= max_supported_value,
+				false,
+				format("Index {} is out of supported range 0..{}", i, max_supported_value)
+		);
 		return false;
 	}
 #endif
@@ -146,12 +155,14 @@ Box3i get_round_cone_int_bounds(Vector3 p0, Vector3 p1, float r0, float r1) {
 	const Vector3 minp( //
 			math::min(p0.x - r0, p1.x - r1), //
 			math::min(p0.y - r0, p1.y - r1), //
-			math::min(p0.z - r0, p1.z - r1));
+			math::min(p0.z - r0, p1.z - r1)
+	);
 
 	const Vector3 maxp( //
 			math::max(p0.x + r0, p1.x + r1), //
 			math::max(p0.y + r0, p1.y + r1), //
-			math::max(p0.z + r0, p1.z + r1));
+			math::max(p0.z + r0, p1.z + r1)
+	);
 
 	return Box3i::from_min_max(to_vec3i(math::floor(minp)), to_vec3i(math::ceil(maxp)));
 }
@@ -282,7 +293,8 @@ void box_blur(const VoxelBuffer &src, VoxelBuffer &dst, int radius, Vector3f sph
 				for (dst_pos.y = 1; dst_pos.y < tmp_size.y; ++dst_pos.y) {
 					// Look 2*radius ahead because we sample from a buffer that's also bigger than tmp in Y
 					const float sd = src.get_voxel_f(
-							Vector3i(dst_pos.x, dst_pos.y + radius * 2, dst_pos.z), VoxelBuffer::CHANNEL_SDF);
+							Vector3i(dst_pos.x, dst_pos.y + radius * 2, dst_pos.z), VoxelBuffer::CHANNEL_SDF
+					);
 					// Remove sample exiting the window
 					sd_sum -= ring_buffer[rbr];
 					// Add sample entering the window

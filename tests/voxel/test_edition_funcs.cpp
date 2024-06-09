@@ -102,10 +102,18 @@ void test_run_blocky_random_tick() {
 	RandomPCG random;
 	random.seed(131183);
 	VoxelToolTerrain::run_blocky_random_tick_static(
-			data, voxel_box, **library, random, 1000, 4, &cb, [](void *self, Vector3i pos, int64_t val) {
+			data,
+			voxel_box,
+			**library,
+			random,
+			1000,
+			4,
+			&cb,
+			[](void *self, Vector3i pos, int64_t val) {
 				Callback *cb = (Callback *)self;
 				return cb->exec(pos, val);
-			});
+			}
+	);
 
 	ZN_TEST_ASSERT(cb.ok);
 
@@ -210,9 +218,11 @@ void test_discord_soakil_copypaste() {
 		graph->add_connection(n_box, 0, n_out_sdf, 0);
 
 		pg::CompilationResult compilation_result = generator->compile(false);
-		ZN_TEST_ASSERT_MSG(compilation_result.success,
+		ZN_TEST_ASSERT_MSG(
+				compilation_result.success,
 				String("Failed to compile graph: {0}: {1}")
-						.format(varray(compilation_result.node_id, compilation_result.message)));
+						.format(varray(compilation_result.node_id, compilation_result.message))
+		);
 	}
 
 	VoxelData voxel_data;
