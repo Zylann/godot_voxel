@@ -83,6 +83,9 @@ public:
 		return _shader_material;
 	}
 
+	// To be used only if the material override on the terrain is not a ShaderMaterial
+	void set_material_override(Ref<Material> material);
+
 	// Transform
 
 	void set_parent_transform(const Transform3D &parent_transform);
@@ -102,6 +105,7 @@ public:
 	}
 
 private:
+	void set_material_override_internal(Ref<Material> material);
 	void _set_visible(bool visible);
 
 	inline bool _is_transition_visible(unsigned int side) const {
