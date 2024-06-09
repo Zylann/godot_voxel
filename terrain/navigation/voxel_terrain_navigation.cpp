@@ -400,7 +400,7 @@ void VoxelTerrainNavigation::on_async_bake_complete_static(uint64_t p_object_id,
 #ifdef DEBUG_ENABLED
 		ZN_PRINT_VERBOSE(
 				format("Navmesh async baking finished, but {} was destroyed in the meantime.",
-					   zylann::godot::get_class_name_str<VoxelTerrainNavigation>())
+					   ZN_CLASS_NAME_C(VoxelTerrainNavigation))
 		);
 #endif
 		return;
