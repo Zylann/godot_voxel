@@ -436,9 +436,11 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		voxels_ptr->for_each_voxel_metadata_in_area(
 				rel_voxel_box,
 				[&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
-					Variant v = godot::get_as_variant(meta);
-					const Variant key = rel_pos + block_origin;
-					const Variant *args[2] = { &key, &v };
+					const Variant v = godot::get_as_variant(meta);
+					const Vector3i key = rel_pos + block_origin;
+#ifdef ZN_GODOT
+					const Variant key_v = key;
+					const Variant *args[2] = { &key_v, &v };
 					Callable::CallError err;
 					Variant retval; // We don't care about the return value, Callable API requires it
 					callback.callp(args, 2, retval, err);
@@ -447,10 +449,10 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 							err.error != Callable::CallError::CALL_OK,
 							String("Callable failed at {0}").format(varray(key))
 					);
-
-					// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
-					// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
-					// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
+#elif defined(ZN_GODOT_EXTENSION)
+					// TODO GDX: No way to detect or report errors when calling a Callable. Do I need to?
+					callback.call(key, v);
+#endif
 				}
 		);
 	});

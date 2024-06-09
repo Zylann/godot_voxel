@@ -4,8 +4,13 @@
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
+#include "../util/godot/core/random_pcg.h"
 #include "../util/profiling.h"
 #include "../util/string/format.h"
+
+#ifdef ZN_GODOT_EXTENSION
+using namespace godot;
+#endif
 
 namespace zylann::voxel {
 
@@ -257,6 +262,8 @@ void run_blocky_random_tick(
 			batch_count,
 			&cb_self,
 			[](void *self, Vector3i pos, int64_t val) {
+				const CallbackData *cd = reinterpret_cast<const CallbackData *>(self);
+#ifdef ZN_GODOT
 				const Variant vpos = pos;
 				const Variant vv = val;
 				const Variant *args[2];
@@ -264,12 +271,15 @@ void run_blocky_random_tick(
 				args[1] = &vv;
 				Callable::CallError error;
 				Variant retval; // We don't care about the return value, Callable API requires it
-				const CallbackData *cd = reinterpret_cast<const CallbackData *>(self);
 				cd->callable.callp(args, 2, retval, error);
 				// TODO I would really like to know what's the correct way to report such errors...
 				// Examples I found in the engine are inconsistent
 				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
-				// Return if it fails, we don't want an error spam
+		// Return if it fails, we don't want an error spam
+#elif ZN_GODOT_EXTENSION
+				// TODO GDX: No way to detect or report errors when calling a Callable. Do I need to?
+				cd->callable.call(pos, val);
+#endif
 				return true;
 			}
 	);

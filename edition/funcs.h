@@ -13,6 +13,7 @@
 #include "../util/profiling.h"
 
 ZN_GODOT_FORWARD_DECLARE(class Callable);
+ZN_GODOT_FORWARD_DECLARE(class RandomPCG);
 
 namespace zylann::voxel {
 
@@ -226,7 +227,6 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
 
 class VoxelData;
 class VoxelBlockyLibraryBase;
-// class RandomPCG;
 
 // For easier unit testing (the regular one needs a terrain setup etc, harder to test atm)
 // The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
