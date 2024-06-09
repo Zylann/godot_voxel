@@ -101,7 +101,7 @@ void test_run_blocky_random_tick() {
 
 	RandomPCG random;
 	random.seed(131183);
-	VoxelToolTerrain::run_blocky_random_tick_static(
+	zylann::voxel::run_blocky_random_tick(
 			data,
 			voxel_box,
 			**library,

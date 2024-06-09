@@ -6,10 +6,13 @@
 #include "../storage/voxel_data_grid.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/fixed_array.h"
+#include "../util/godot/macros.h"
 #include "../util/math/conv.h"
 #include "../util/math/sdf.h"
 #include "../util/math/transform_3d.h"
 #include "../util/profiling.h"
+
+ZN_GODOT_FORWARD_DECLARE(class Callable);
 
 namespace zylann::voxel {
 
@@ -220,6 +223,33 @@ void paste_to_chunked_storage_masked_writable_list( //
 }
 
 AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii);
+
+class VoxelData;
+class VoxelBlockyLibraryBase;
+// class RandomPCG;
+
+// For easier unit testing (the regular one needs a terrain setup etc, harder to test atm)
+// The `_static` suffix is because it otherwise conflicts with the non-static method when registering the class
+void run_blocky_random_tick(
+		VoxelData &data,
+		Box3i voxel_box,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)
+);
+
+void run_blocky_random_tick(
+		VoxelData &data,
+		AABB voxel_box_f,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		const Callable &callback
+);
 
 } // namespace zylann::voxel
 

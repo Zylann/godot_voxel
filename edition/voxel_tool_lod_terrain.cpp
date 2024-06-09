@@ -1,6 +1,7 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
 #include "../generators/graph/voxel_generator_graph.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
@@ -14,6 +15,7 @@
 #include "../util/godot/classes/timer.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
+#include "../util/string/format.h"
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
@@ -1113,6 +1115,40 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 	_post_edit(box);
 }
 
+void VoxelToolLodTerrain::run_blocky_random_tick(
+		const AABB voxel_area,
+		const int voxel_count,
+		const Callable &callback,
+		const int block_batch_count
+) {
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+
+	Ref<VoxelMesherBlocky> mesher = _terrain->get_mesher();
+	ZN_ASSERT_RETURN_MSG(
+			mesher.is_valid(),
+			format("This function requires a volume using {} with a valid library", ZN_CLASS_NAME_C(VoxelMesherBlocky))
+	);
+	Ref<VoxelBlockyLibraryBase> library = mesher->get_library();
+	ZN_ASSERT_RETURN_MSG(library.is_valid(), format("{} has no library assigned", ZN_CLASS_NAME_C(VoxelMesherBlocky)));
+
+	ZN_ASSERT_RETURN(callback.is_valid());
+	ZN_ASSERT_RETURN(block_batch_count > 0);
+	ZN_ASSERT_RETURN(voxel_count >= 0);
+	ZN_ASSERT_RETURN(math::is_valid_size(voxel_area.size));
+
+	if (voxel_count == 0) {
+		return;
+	}
+
+	VoxelData &data = _terrain->get_storage();
+
+	zylann::voxel::run_blocky_random_tick(
+			data, voxel_area, **library, _random, voxel_count, block_batch_count, callback
+	);
+}
+
 void VoxelToolLodTerrain::_bind_methods() {
 	using Self = VoxelToolLodTerrain;
 
@@ -1129,6 +1165,11 @@ void VoxelToolLodTerrain::_bind_methods() {
 			D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
 			&Self::do_hemisphere,
 			DEFVAL(0.0)
+	);
+	ClassDB::bind_method(
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			&Self::run_blocky_random_tick,
+			DEFVAL(16)
 	);
 }
 

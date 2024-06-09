@@ -1,4 +1,6 @@
 #include "funcs.h"
+#include "../meshers/blocky/voxel_blocky_library_base.h"
+#include "../storage/voxel_data.h"
 #include "../util/containers/dynamic_bitset.h"
 #include "../util/containers/span.h"
 #include "../util/containers/std_vector.h"
@@ -117,6 +119,160 @@ AABB get_path_aabb(Span<const Vector3> positions, Span<const float> radii) {
 	}
 
 	return aabb;
+}
+
+void run_blocky_random_tick(
+		VoxelData &data,
+		Box3i voxel_box,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)
+) {
+	ERR_FAIL_COND(batch_count <= 0);
+	ERR_FAIL_COND(voxel_count < 0);
+	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
+	ERR_FAIL_COND(callback == nullptr);
+
+	constexpr unsigned int lod_index = 0;
+
+	const unsigned int block_size = data.get_block_size();
+	const Box3i block_box = voxel_box.downscaled(block_size);
+
+	const int block_count = voxel_count / batch_count;
+	// const int bs_mask = map.get_block_size_mask();
+	const VoxelBuffer::ChannelId channel = VoxelBuffer::CHANNEL_TYPE;
+
+	struct Pick {
+		uint64_t value;
+		Vector3i rpos;
+	};
+	static thread_local StdVector<Pick> picks;
+	picks.reserve(batch_count);
+
+	const float block_volume = math::cubed(block_size);
+	CRASH_COND(block_volume < 0.1f);
+
+	struct L {
+		static inline int urand(RandomPCG &random, uint32_t max_value) {
+			return random.rand() % max_value;
+		}
+		static inline Vector3i urand_vec3i(RandomPCG &random, Vector3i s) {
+#ifdef DEBUG_ENABLED
+			CRASH_COND(s.x <= 0 || s.y <= 0 || s.z <= 0);
+#endif
+			return Vector3i(urand(random, s.x), urand(random, s.y), urand(random, s.z));
+		}
+	};
+
+	const VoxelBlockyLibraryBase::BakedData &lib_data = lib.get_baked_data();
+
+	// Choose blocks at random
+	for (int bi = 0; bi < block_count; ++bi) {
+		const Vector3i block_pos = block_box.position + L::urand_vec3i(random, block_box.size);
+
+		const Vector3i block_origin = data.block_to_voxel(block_pos);
+
+		picks.clear();
+
+		{
+			SpatialLock3D &spatial_lock = data.get_spatial_lock(lod_index);
+			SpatialLock3D::Read srlock(spatial_lock, BoxBounds3i::from_position(block_pos));
+
+			std::shared_ptr<VoxelBuffer> voxels_ptr = data.try_get_block_voxels(block_pos);
+
+			if (voxels_ptr != nullptr) {
+				// Doing ONLY reads here.
+				const VoxelBuffer &voxels = *voxels_ptr;
+
+				if (voxels.get_channel_compression(channel) == VoxelBuffer::COMPRESSION_UNIFORM) {
+					const uint64_t v = voxels.get_voxel(0, 0, 0, channel);
+					if (lib_data.has_model(v)) {
+						const VoxelBlockyModel::BakedData &vt = lib_data.models[v];
+						if (vt.is_random_tickable) {
+							// Skip whole block
+							continue;
+						}
+					}
+				}
+
+				const Box3i block_voxel_box(block_origin, Vector3iUtil::create(block_size));
+				Box3i local_voxel_box = voxel_box.clipped(block_voxel_box);
+				local_voxel_box.position -= block_origin;
+				const float volume_ratio = Vector3iUtil::get_volume(local_voxel_box.size) / block_volume;
+				const int local_batch_count = Math::ceil(batch_count * volume_ratio);
+
+				// Choose a bunch of voxels at random within the block.
+				// Batching this way improves performance a little by reducing block lookups.
+				for (int vi = 0; vi < local_batch_count; ++vi) {
+					const Vector3i rpos = local_voxel_box.position + L::urand_vec3i(random, local_voxel_box.size);
+
+					const uint64_t v = voxels.get_voxel(rpos, channel);
+					picks.push_back(Pick{ v, rpos });
+				}
+			}
+		}
+
+		// The following may or may not read AND write voxels randomly due to its exposition to scripts.
+		// However, we don't send the buffer directly, so it will go through an API taking care of locking.
+		// So we don't (and shouldn't) lock anything here.
+		for (size_t i = 0; i < picks.size(); ++i) {
+			const Pick pick = picks[i];
+
+			if (lib_data.has_model(pick.value)) {
+				const VoxelBlockyModel::BakedData &vt = lib_data.models[pick.value];
+
+				if (vt.is_random_tickable) {
+					ERR_FAIL_COND(!callback(callback_data, pick.rpos + block_origin, pick.value));
+				}
+			}
+		}
+	}
+}
+
+void run_blocky_random_tick(
+		VoxelData &data,
+		AABB voxel_box_f,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		const Callable &callback
+) {
+	struct CallbackData {
+		const Callable &callable;
+	};
+	CallbackData cb_self{ callback };
+
+	const Box3i voxel_box(math::floor_to_int(voxel_box_f.position), math::floor_to_int(voxel_box_f.size));
+
+	zylann::voxel::run_blocky_random_tick(
+			data,
+			voxel_box,
+			lib,
+			random,
+			voxel_count,
+			batch_count,
+			&cb_self,
+			[](void *self, Vector3i pos, int64_t val) {
+				const Variant vpos = pos;
+				const Variant vv = val;
+				const Variant *args[2];
+				args[0] = &vpos;
+				args[1] = &vv;
+				Callable::CallError error;
+				Variant retval; // We don't care about the return value, Callable API requires it
+				const CallbackData *cd = reinterpret_cast<const CallbackData *>(self);
+				cd->callable.callp(args, 2, retval, error);
+				// TODO I would really like to know what's the correct way to report such errors...
+				// Examples I found in the engine are inconsistent
+				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
+				// Return if it fails, we don't want an error spam
+				return true;
+			}
+	);
 }
 
 bool indices_to_bitarray_u16(Span<const int32_t> indices, DynamicBitset &bitarray) {
