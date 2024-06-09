@@ -24,7 +24,7 @@ public:
 
 	void bake(blocky::ModelBakingContext &ctx) const override;
 
-	Ref<Mesh> VoxelBlockyModelFluid::get_preview_mesh() const override;
+	Ref<Mesh> get_preview_mesh() const override;
 
 #ifdef TOOLS_ENABLED
 	void get_configuration_warnings(PackedStringArray &warnings) const override;
