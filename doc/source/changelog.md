@@ -11,6 +11,7 @@ Semver is not yet in place, so each version can have breaking changes, although 
 -----------------------------------------
 
 - Added project setting `voxel/ownership_checks` to turn off sanity checks done by certain virtual functions that pass an object (such as `_generate_block`). Relevant for C#, where the garbage collection model prevents such checks from working properly.
+- `VoxelMesherBlocky`: can be used with `VoxelLodTerrain`. Basic support: meshes scale with LOD and LOD>1 chunks have extra geometry to reduce cracks between LODs
 - `VoxelMesherTransvoxel`:
     - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
     - reverted removal of degenerate triangles
