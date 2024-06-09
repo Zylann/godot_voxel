@@ -338,7 +338,7 @@ void fill_zx_sdf_slice(
 		out_buffer.decompress_channel(channel);
 	}
 	Span<uint8_t> channel_bytes;
-	ERR_FAIL_COND(!out_buffer.get_channel_raw(channel, channel_bytes));
+	ERR_FAIL_COND(!out_buffer.get_channel_as_bytes(channel, channel_bytes));
 	const Vector3i buffer_size = out_buffer.get_size();
 	const unsigned int x_stride = Vector3iUtil::get_zxy_index(Vector3i(1, 0, 0), buffer_size) -
 			Vector3iUtil::get_zxy_index(Vector3i(0, 0, 0), buffer_size);
@@ -434,7 +434,7 @@ void fill_zx_integer_slice(
 		out_buffer.decompress_channel(channel);
 	}
 	Span<uint8_t> channel_bytes;
-	ERR_FAIL_COND(!out_buffer.get_channel_raw(channel, channel_bytes));
+	ERR_FAIL_COND(!out_buffer.get_channel_as_bytes(channel, channel_bytes));
 	const Vector3i buffer_size = out_buffer.get_size();
 	const unsigned int x_stride = Vector3iUtil::get_zxy_index(Vector3i(1, 0, 0), buffer_size) -
 			Vector3iUtil::get_zxy_index(Vector3i(0, 0, 0), buffer_size);

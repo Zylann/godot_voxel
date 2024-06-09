@@ -185,7 +185,7 @@ void extract_model_instances(const Data &vox_data, StdVector<ModelInstance> &out
 		voxels->decompress_channel(VoxelBuffer::CHANNEL_COLOR);
 
 		Span<uint8_t> dst_color_indices;
-		ERR_FAIL_COND(!voxels->get_channel_raw(VoxelBuffer::CHANNEL_COLOR, dst_color_indices));
+		ERR_FAIL_COND(!voxels->get_channel_as_bytes(VoxelBuffer::CHANNEL_COLOR, dst_color_indices));
 
 		CRASH_COND(src_color_indices.size() != dst_color_indices.size());
 		memcpy(dst_color_indices.data(), src_color_indices.data(), dst_color_indices.size() * sizeof(uint8_t));

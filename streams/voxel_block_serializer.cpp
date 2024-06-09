@@ -332,7 +332,9 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
 				Span<uint8_t> data;
-				ERR_FAIL_COND_V(!voxel_buffer.get_channel_raw(channel_index, data), SerializeResult(dst_data, false));
+				ERR_FAIL_COND_V(
+						!voxel_buffer.get_channel_as_bytes(channel_index, data), SerializeResult(dst_data, false)
+				);
 				f.store_buffer(data);
 			} break;
 
@@ -639,7 +641,7 @@ bool deserialize(Span<const uint8_t> p_data, VoxelBuffer &out_voxel_buffer) {
 				out_voxel_buffer.decompress_channel(channel_index);
 
 				Span<uint8_t> buffer;
-				CRASH_COND(!out_voxel_buffer.get_channel_raw(channel_index, buffer));
+				CRASH_COND(!out_voxel_buffer.get_channel_as_bytes(channel_index, buffer));
 
 				const size_t read_len = f.get_buffer(buffer);
 				if (read_len != buffer.size()) {

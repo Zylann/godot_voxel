@@ -723,7 +723,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	Span<const uint8_t> raw_channel;
-	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;

@@ -29,7 +29,7 @@ int /*Error*/ VoxelVoxLoader::load_from_file(
 	Span<uint8_t> dst_raw;
 	voxels.create(model.size);
 	voxels.decompress_channel(dst_channel);
-	CRASH_COND(!voxels.get_channel_raw(dst_channel, dst_raw));
+	CRASH_COND(!voxels.get_channel_as_bytes(dst_channel, dst_raw));
 
 	if (palette.is_valid()) {
 		for (size_t i = 0; i < src_palette.size(); ++i) {
