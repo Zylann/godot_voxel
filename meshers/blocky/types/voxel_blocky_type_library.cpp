@@ -60,9 +60,7 @@ void VoxelBlockyTypeLibrary::bake() {
 
 	for (size_t i = 0; i < _types.size(); ++i) {
 		Ref<VoxelBlockyType> type = _types[i];
-		ZN_ASSERT_CONTINUE_MSG(
-				type.is_valid(), format("{} at index {} is null", godot::get_class_name_str<VoxelBlockyType>(), i)
-		);
+		ZN_ASSERT_CONTINUE_MSG(type.is_valid(), format("{} at index {} is null", ZN_CLASS_NAME_C(VoxelBlockyType), i));
 
 		type->bake(
 				baked_models, keys, material_indexer, nullptr, get_bake_tangents(), indexed_fluids, _baked_data.fluids
@@ -96,6 +94,14 @@ void VoxelBlockyTypeLibrary::bake() {
 
 		baked_models.clear();
 		keys.clear();
+	}
+
+	if (_baked_data.models.size() > MAX_MODELS) {
+		const int extra = _baked_data.models.size() - MAX_MODELS;
+		ZN_PRINT_ERROR(
+				format("Reached maximum supported models {}. {} extra models will not be used.", MAX_MODELS, extra)
+		);
+		_baked_data.models.resize(MAX_MODELS);
 	}
 
 	for (unsigned int fluid_index = 0; fluid_index < indexed_fluids.size(); ++fluid_index) {
@@ -217,7 +223,7 @@ void VoxelBlockyTypeLibrary::get_configuration_warnings(PackedStringArray &out_w
 		String sname = String(type->get_unique_name()).strip_edges();
 		if (sname.length() == 0) {
 			out_warnings.push_back(String("{0} at index {1} has an empty name.")
-										   .format(varray(godot::get_class_name_str<VoxelBlockyType>(), type_index)));
+										   .format(varray(VoxelBlockyType::get_class_static(), type_index)));
 		}
 
 		type->get_configuration_warnings(out_warnings);
@@ -778,7 +784,14 @@ TypedArray<VoxelBlockyType> VoxelBlockyTypeLibrary::_b_get_types() const {
 }
 
 void VoxelBlockyTypeLibrary::_b_set_types(TypedArray<VoxelBlockyType> types) {
-	godot::copy_to(_types, types);
+	unsigned int count = types.size();
+	if (count > MAX_TYPES) {
+		ZN_PRINT_ERROR(format(
+				"Cannot add more than {} types (received {}). Extra types will not be added.", MAX_TYPES, types.size()
+		));
+		count = MAX_TYPES;
+	}
+	godot::copy_range_to(_types, types, 0, count);
 	_needs_baking = true;
 }
 

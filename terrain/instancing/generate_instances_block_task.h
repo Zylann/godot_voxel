@@ -4,6 +4,7 @@
 #include "../../util/containers/std_vector.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/tasks/threaded_task.h"
+#include "up_mode.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instancer_task_output_queue.h"
 
@@ -19,7 +20,7 @@ public:
 	uint16_t layer_id;
 	uint8_t lod_index;
 	uint8_t edited_mask;
-	uint8_t up_mode;
+	UpMode up_mode;
 	float mesh_block_size;
 	Array surface_arrays;
 	Ref<VoxelInstanceGenerator> generator;

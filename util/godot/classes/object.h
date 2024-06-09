@@ -23,29 +23,18 @@ using namespace godot;
 
 namespace zylann::godot {
 
-// Get the name of a Godot class as a Godot String.
-#if defined(ZN_GODOT)
-template <typename T>
-inline String get_class_name_str() {
-	return T::get_class_static();
-}
-#elif defined(ZN_GODOT_EXTENSION)
-template <typename T>
-inline String get_class_name_str() {
-	// GodotCpp decided to use StringName instead
-	return String(T::get_class_static());
-}
-#endif
-
 // Turns out these functions are only used in editor for now.
 // They are generic, but I have to wrap them, otherwise GCC throws warnings-as-errors for them being unused.
 #ifdef TOOLS_ENABLED
 
-// Gets a hash of a given object from its properties. If properties are objects too, they are recursively parsed.
-// Note that restricting to editable properties is important to avoid costly properties with objects such as textures or
-// meshes.
+// Gets a hash of a given object from its properties. If properties are objects too, they are recursively
+// parsed. Note that restricting to editable properties is important to avoid costly properties with objects
+// such as textures or meshes.
 uint64_t get_deep_hash(
-		const Object &obj, uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR, uint64_t hash = 0);
+		const Object &obj,
+		uint32_t property_usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
+		uint64_t hash = 0
+);
 
 // Getting property info in Godot modules and GDExtension has a different API, with the same information.
 struct PropertyInfoWrapper {

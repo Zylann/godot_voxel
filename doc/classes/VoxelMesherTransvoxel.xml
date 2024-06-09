@@ -19,6 +19,9 @@
 	<members>
 		<member name="deep_sampling_enabled" type="bool" setter="set_deep_sampling_enabled" getter="is_deep_sampling_enabled" default="false">
 		</member>
+		<member name="edge_clamp_margin" type="float" setter="set_edge_clamp_margin" getter="get_edge_clamp_margin" default="0.02">
+			When a marching cube cell is computed, vertices may be placed anywhere on edges of the cell, including very close to corners. This can lead to very thin or small triangles, which can be a problem notably for some physics engines. this margin is the minimum distance from corners, below which vertices will be clamped to it. Increasing this value might reduce quality of the mesh introducing small ridges. This property cannot be lower than 0 (in which case no clamping occurs), and cannot be higher than 0.5 (in which case no interpolation occurs as vertices always get placed in the middle of edges).
+		</member>
 		<member name="mesh_optimization_enabled" type="bool" setter="set_mesh_optimization_enabled" getter="is_mesh_optimization_enabled" default="false">
 		</member>
 		<member name="mesh_optimization_error_threshold" type="float" setter="set_mesh_optimization_error_threshold" getter="get_mesh_optimization_error_threshold" default="0.005">
