@@ -51,6 +51,7 @@
 #include "terrain/fixed_lod/voxel_terrain_multiplayer_synchronizer.h"
 #include "terrain/instancing/voxel_instance_component.h"
 #include "terrain/instancing/voxel_instance_library.h"
+#include "terrain/instancing/voxel_instance_library_multimesh_item.h"
 #include "terrain/instancing/voxel_instance_library_scene_item.h"
 #include "terrain/instancing/voxel_instancer.h"
 #include "terrain/instancing/voxel_instancer_rigidbody.h"

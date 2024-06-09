@@ -22,6 +22,7 @@
 #include "load_instance_block_task.h"
 #include "voxel_instance_component.h"
 #include "voxel_instance_generator.h"
+#include "voxel_instance_library_multimesh_item.h"
 #include "voxel_instance_library_scene_item.h"
 #include "voxel_instancer_quick_reloading_cache.h"
 #include "voxel_instancer_rigidbody.h"
@@ -1289,8 +1290,7 @@ void VoxelInstancer::update_block_from_transforms( //
 		}
 
 		// Update bodies
-		Span<const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> collision_shapes =
-				to_span(settings.collision_shapes);
+		Span<const CollisionShapeInfo> collision_shapes = to_span(settings.collision_shapes);
 		if (collision_shapes.size() > 0) {
 			ZN_PROFILE_SCOPE_NAMED("Update multimesh bodies");
 
@@ -1323,7 +1323,7 @@ void VoxelInstancer::update_block_from_transforms( //
 					body->set_collision_mask(settings.collision_mask);
 
 					for (unsigned int i = 0; i < collision_shapes.size(); ++i) {
-						const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &shape_info = collision_shapes[i];
+						const CollisionShapeInfo &shape_info = collision_shapes[i];
 						CollisionShape3D *cs = memnew(CollisionShape3D);
 						cs->set_shape(shape_info.shape);
 						cs->set_transform(shape_info.transform);

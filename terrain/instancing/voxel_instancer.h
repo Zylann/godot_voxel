@@ -13,7 +13,6 @@
 #include "../../util/memory/memory.h"
 #include "instance_library_item_listener.h"
 #include "up_mode.h"
-#include "voxel_instance_library_multimesh_item.h"
 
 #ifdef TOOLS_ENABLED
 #include "../../util/godot/core/version.h"
@@ -34,6 +33,7 @@ class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
 class VoxelInstanceLibrary;
+class VoxelInstanceLibraryItem;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
 class SaveBlockDataTask;
@@ -41,6 +41,7 @@ class BufferedTaskScheduler;
 struct InstanceBlockData;
 struct VoxelInstancerQuickReloadingCache;
 struct VoxelInstancerTaskOutputQueue;
+struct InstanceLibraryMultiMeshItemSettings;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
 // Even nodes like gridmaps could be rebuilt on top of this, if its concept of "grid" was decoupled.
@@ -220,7 +221,7 @@ private:
 
 	static void update_mesh_from_mesh_lod(
 			Block &block,
-			const VoxelInstanceLibraryMultiMeshItem::Settings &settings,
+			const InstanceLibraryMultiMeshItemSettings &settings,
 			bool hide_beyond_max_lod,
 			bool instancer_is_visible
 	);

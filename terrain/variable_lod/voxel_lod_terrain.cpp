@@ -17,6 +17,7 @@
 #include "../../util/godot/classes/engine.h"
 #include "../../util/godot/classes/mesh_instance_3d.h"
 #include "../../util/godot/classes/node.h"
+#include "../../util/godot/classes/packed_scene.h"
 #include "../../util/godot/classes/resource_saver.h"
 #include "../../util/godot/classes/scene_tree.h"
 #include "../../util/godot/classes/script.h"
@@ -1232,7 +1233,7 @@ void VoxelLodTerrain::process(float delta) {
 			VoxelLodTerrainUpdateData &update_data = *_update_data;
 			update_data.viewers.clear();
 			VoxelEngine::get_singleton().for_each_viewer(
-					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) {
+					[&update_data](ViewerID id, const VoxelEngine::Viewer &viewer) { //
 						update_data.viewers.push_back({ id, viewer });
 					}
 			);
