@@ -143,7 +143,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	description_label->set_custom_minimum_size(Size2(0, 70 * editor_scale));
 	description_label->set_use_bbcode(true);
 	description_label->connect(
-			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked));
+			"meta_clicked", callable_mp(this, &VoxelGraphNodeDialog::_on_description_label_meta_clicked)
+	);
 	vsplit_container->add_child(description_label);
 	_description_label = description_label;
 
@@ -159,7 +160,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 	_function_file_dialog->add_filter("*.tres", ZN_TTR("Text Resource"));
 	_function_file_dialog->add_filter("*.res", ZN_TTR("Binary Resource"));
 	_function_file_dialog->connect(
-			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected));
+			"file_selected", callable_mp(this, &VoxelGraphNodeDialog::_on_function_file_dialog_file_selected)
+	);
 	add_child(_function_file_dialog);
 
 	// TODO Replace QuickOpen with listing of project functions directly in the dialog
@@ -167,7 +169,8 @@ VoxelGraphNodeDialog::VoxelGraphNodeDialog() {
 #ifdef ZN_GODOT
 	_function_quick_open_dialog = memnew(EditorQuickOpen);
 	_function_quick_open_dialog->connect(
-			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open));
+			"quick_open", callable_mp(this, &VoxelGraphNodeDialog::_on_function_quick_open_dialog_quick_open)
+	);
 	add_child(_function_quick_open_dialog);
 #endif
 
@@ -251,8 +254,9 @@ void VoxelGraphNodeDialog::popup_at_screen_position(Vector2 screen_pos) {
 	// Seems we also have to do this after showing the window because Godot is unable to update its size
 	// without making it visible first...
 	// TODO Shouldn't we check for screen size instead of window?
-	const Rect2 window_rect = Rect2(
-			DisplayServer::get_singleton()->window_get_position(), DisplayServer::get_singleton()->window_get_size());
+	const Rect2 window_rect =
+			Rect2(DisplayServer::get_singleton()->window_get_position(),
+				  DisplayServer::get_singleton()->window_get_size());
 	const Rect2 dialog_rect = Rect2(dialog.get_position(), get_size());
 	const Vector2 difference = (dialog_rect.get_end() - window_rect.get_end()).max(Vector2());
 	dialog.set_position(dialog.get_position() - difference);
@@ -370,7 +374,7 @@ void VoxelGraphNodeDialog::_on_tree_item_activated() {
 	} else if (id == ID_FUNCTION_QUICK_OPEN) {
 #ifdef ZN_GODOT
 		// Quick open function nodes
-		_function_quick_open_dialog->popup_dialog(godot::get_class_name_str<pg::VoxelGraphFunction>());
+		_function_quick_open_dialog->popup_dialog(pg::VoxelGraphFunction::get_class_static());
 #endif
 
 	} else {

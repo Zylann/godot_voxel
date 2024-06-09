@@ -19,4 +19,19 @@
 // https://stackoverflow.com/questions/1597007/creating-c-macro-with-and-line-token-concatenation-with-positioning-macr
 #define ZN_CONCAT(x, y) ZN_INTERNAL_CONCAT(x, y)
 
+// Gets the name of a class as a C-string with static lifetime, and causes a compiling error if the class doesn't exist.
+#define ZN_CLASS_NAME_C(klass)                                                                                         \
+	[]() {                                                                                                             \
+		static_assert(sizeof(klass) > 0);                                                                              \
+		return #klass;                                                                                                 \
+	}()
+
+// Gets a method name as a C-string with static lifetime, and causes a compiling error if either the class or method
+// doesn't exist.
+#define ZN_METHOD_NAME_C(klass, method)                                                                                \
+	[]() {                                                                                                             \
+		static_assert(sizeof(&klass::method != nullptr));                                                              \
+		return #method;                                                                                                \
+	}()
+
 #endif // ZYLANN_MACROS_H

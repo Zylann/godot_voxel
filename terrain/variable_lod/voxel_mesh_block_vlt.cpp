@@ -49,8 +49,12 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 }
 
-void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_mesh(
+		Ref<Mesh> mesh,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask
+) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -140,8 +144,13 @@ void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_transition_mesh(
+		Ref<Mesh> mesh,
+		unsigned int side,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask
+) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -205,22 +214,37 @@ void VoxelMeshBlockVLT::_set_visible(bool visible) {
 void VoxelMeshBlockVLT::set_shader_material(Ref<ShaderMaterial> material) {
 	_shader_material = material;
 
-	if (_mesh_instance.is_valid()) {
-		_mesh_instance.set_material_override(_shader_material);
-
-		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
-			DirectMeshInstance &mi = _transition_mesh_instances[dir];
-			if (mi.is_valid()) {
-				mi.set_material_override(_shader_material);
-			}
-		}
-	}
+	set_material_override_internal(material);
 
 	if (_shader_material.is_valid()) {
 		const Transform3D local_transform(Basis(), _position_in_voxels);
 		const VoxelStringNames &sn = VoxelStringNames::get_singleton();
 		_shader_material->set_shader_parameter(sn.u_block_local_transform, local_transform);
 		_shader_material->set_shader_parameter(sn.u_voxel_virtual_texture_offset_scale, Vector4(0, 0, 0, 1));
+	}
+}
+
+void VoxelMeshBlockVLT::set_material_override(Ref<Material> material) {
+#ifdef DEBUG_ENABLED
+	Ref<ShaderMaterial> sm = material;
+	if (sm.is_valid()) {
+		ZN_PRINT_ERROR("Internal bug: should use set_shader_material instead of set_material_override");
+	}
+#endif
+	_shader_material = Ref<ShaderMaterial>();
+	set_material_override_internal(material);
+}
+
+void VoxelMeshBlockVLT::set_material_override_internal(Ref<Material> material) {
+	if (_mesh_instance.is_valid()) {
+		_mesh_instance.set_material_override(material);
+
+		for (int dir = 0; dir < Cube::SIDE_COUNT; ++dir) {
+			DirectMeshInstance &mi = _transition_mesh_instances[dir];
+			if (mi.is_valid()) {
+				mi.set_material_override(material);
+			}
+		}
 	}
 }
 
@@ -381,8 +405,12 @@ bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
 	return true;
 }
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		Ref<Material> material) {
+Ref<ArrayMesh> build_mesh(
+		Span<const VoxelMesher::Output::Surface> surfaces,
+		Mesh::PrimitiveType primitive,
+		int flags,
+		Ref<Material> material
+) {
 	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 

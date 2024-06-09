@@ -43,6 +43,17 @@ inline void copy_to(std::vector<Ref<T>, TAllocator> &dst, const TypedArray<T> &s
 	}
 }
 
+template <typename T, typename TAllocator>
+inline void copy_range_to(std::vector<Ref<T>, TAllocator> &dst, const TypedArray<T> &src, int from, int to) {
+	ZN_ASSERT(from >= 0 && from < src.size());
+	ZN_ASSERT(to >= 0 && to < src.size());
+	ZN_ASSERT(from <= to);
+	dst.resize(src.size());
+	for (int i = from; i < to; ++i) {
+		dst[i] = src[i];
+	}
+}
+
 template <typename T>
 inline TypedArray<T> to_typed_array(Span<const T> src) {
 	TypedArray<T> array;

@@ -104,21 +104,12 @@ VoxelGenerator::Result VoxelGeneratorFlat::generate_block(VoxelGenerator::VoxelQ
 	} else {
 		// Blocky
 
-		int gz = origin.z;
-		for (int z = 0; z < bs.z; ++z, gz += stride) {
-			int gx = origin.x;
-			for (int x = 0; x < bs.x; ++x, gx += stride) {
-				const float h = params.height - origin.y;
-				int ih = int(h);
-				if (ih > 0) {
-					if (ih > bs.y) {
-						ih = bs.y;
-					}
-					out_buffer.fill_area(params.voxel_type, Vector3i(x, 0, z), Vector3i(x + 1, ih, z + 1), channel);
-				}
-
-			} // for x
-		} // for z
+		const float rh_world = params.height - origin.y;
+		const int irh_world = static_cast<int>(rh_world);
+		if (irh_world > 0) {
+			const int irh_voxels = math::min(math::arithmetic_rshift(irh_world, input.lod), bs.y);
+			out_buffer.fill_area(params.voxel_type, Vector3i(0, 0, 0), Vector3i(bs.x, irh_voxels, bs.z), channel);
+		}
 	} // use_sdf
 
 	return result;
