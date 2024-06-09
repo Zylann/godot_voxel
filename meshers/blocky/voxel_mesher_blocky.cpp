@@ -528,15 +528,18 @@ void append_side_seams(
 
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
-			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
-			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+			const VoxelBlockyModel::BakedData &voxel_baked_data = library.models[nv4];
+			const VoxelBlockyModel::BakedData::Model &model = voxel_baked_data.model;
+
+			const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
+					&side_surfaces = model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 				const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
-				const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
-				const unsigned int vertex_count = side_surface.positions.size();
-
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
+
+				const VoxelBlockyModel::BakedData::SideSurface &side_surface = side_surfaces[side];
+				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
 				// We should put it in common once blocky mesher features are merged (blocky fluids, shadows occluders).
@@ -581,10 +584,8 @@ void append_side_seams(
 					const int append_index = arrays.colors.size();
 					arrays.colors.resize(arrays.colors.size() + vertex_count);
 					Color *w = arrays.colors.data() + append_index;
-					const Color modulate_color = voxel.color;
-
 					for (unsigned int i = 0; i < vertex_count; ++i) {
-						w[i] = modulate_color;
+						w[i] = voxel_baked_data.color;
 					}
 				}
 
