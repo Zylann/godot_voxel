@@ -45,6 +45,14 @@ public:
 		}
 	}
 
+	template <typename F>
+	void for_each_item(F f) const {
+		for (auto it = _items.begin(); it != _items.end(); ++it) {
+			ZN_ASSERT(it->second.is_valid());
+			f(it->first, **it->second);
+		}
+	}
+
 	void add_listener(IInstanceLibraryItemListener *listener);
 	void remove_listener(IInstanceLibraryItemListener *listener);
 

@@ -1,7 +1,7 @@
 #include "voxel_instance_library.h"
 #include "../../util/containers/container_funcs.h"
 #include "../../util/profiling.h"
-#include "voxel_instancer.h"
+#include "voxel_instance_library_item.h"
 #include <algorithm>
 #ifdef ZN_GODOT_EXTENSION
 #include "../../util/godot/core/array.h"

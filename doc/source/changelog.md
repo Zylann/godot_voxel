@@ -10,10 +10,14 @@ Semver is not yet in place, so each version can have breaking changes, although 
 1.3.dev - ongoing development - `master`
 -----------------------------------------
 
+Primarily developped with Godot 4.3.
+
 - Added project setting `voxel/ownership_checks` to turn off sanity checks done by certain virtual functions that pass an object (such as `_generate_block`). Relevant for C#, where the garbage collection model prevents such checks from working properly.
+- `VoxelMesherBlocky`: can be used with `VoxelLodTerrain`. Basic support: meshes scale with LOD and LOD>1 chunks have extra geometry to reduce cracks between LODs
 - `VoxelMesherTransvoxel`:
     - added `edge_clamp_margin` property to prevent triangles from becoming too small, at the cost of slightly lower fidelity
     - reverted removal of degenerate triangles
+- `VoxelToolLodTerrain`: added `run_blocky_random_tick`
 - `VoxelViewer`: added `view_distance_vertical_ratio` to use different vertical view distance proportionally to the horizontal distance
 
 - Fixes
@@ -21,6 +25,9 @@ Semver is not yet in place, so each version can have breaking changes, although 
         - Fixed `set_key_cache_enabled(true)` caused nothing to load
         - Fixed slow loading when the database path contains `res://` or `user://`
     - `VoxelInstancer`: Fixed instances with LOD > 0 were generated on `VoxelTerrain` even though LOD isn't supported (ending up in weird positions). No instances should generate.
+
+- Breaking changes
+    - `VoxelVoxLoader`: methods are now static, so no instance of the class need to be created
 
 
 1.2 - 20/04/2024 - branch `1.2` - tag `v1.2.0`

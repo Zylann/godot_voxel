@@ -14,10 +14,10 @@ const char *VoxelInstanceLibraryMultiMeshItem::SCENE_SETTINGS_GROUP_NAME = "Scen
 
 namespace {
 
-Array serialize_collision_shape_infos(const StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &infos) {
+Array serialize_collision_shape_infos(const StdVector<CollisionShapeInfo> &infos) {
 	Array a;
 	for (unsigned int i = 0; i < infos.size(); ++i) {
-		const VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo &info = infos[i];
+		const CollisionShapeInfo &info = infos[i];
 		ERR_FAIL_COND_V(info.shape.is_null(), Array());
 		// TODO Shape might or might not be shared, could have odd side-effects,
 		// but not sure how to properly fix these edge cases without convoluted code
@@ -27,14 +27,11 @@ Array serialize_collision_shape_infos(const StdVector<VoxelInstanceLibraryMultiM
 	return a;
 }
 
-bool deserialize_collision_shape_infos(
-		Array a,
-		StdVector<VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo> &out_infos
-) {
+bool deserialize_collision_shape_infos(Array a, StdVector<CollisionShapeInfo> &out_infos) {
 	ERR_FAIL_COND_V(a.size() % 2 != 0, false);
 
 	for (int i = 0; i < a.size(); i += 2) {
-		VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+		CollisionShapeInfo info;
 		info.shape = a[i];
 		info.transform = a[i + 1];
 
@@ -452,7 +449,7 @@ bool setup_from_template(Node *root, VoxelInstanceLibraryMultiMeshItem::Settings
 			CollisionShape3D *cs = Object::cast_to<CollisionShape3D>(physics_body->get_child(i));
 
 			if (cs != nullptr) {
-				VoxelInstanceLibraryMultiMeshItem::CollisionShapeInfo info;
+				CollisionShapeInfo info;
 				info.shape = cs->get_shape();
 				info.transform = cs->get_transform();
 

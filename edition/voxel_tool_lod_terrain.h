@@ -1,6 +1,7 @@
 #ifndef VOXEL_TOOL_LOD_TERRAIN_H
 #define VOXEL_TOOL_LOD_TERRAIN_H
 
+#include "../util/godot/core/random_pcg.h"
 #include "../util/macros.h"
 #include "voxel_tool.h"
 
@@ -44,6 +45,13 @@ public:
 	void stamp_sdf(Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale);
 	void do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D transform, Vector3 area_size);
 
+	void run_blocky_random_tick(
+			const AABB voxel_area,
+			const int voxel_count,
+			const Callable &callback,
+			const int block_batch_count
+	);
+
 protected:
 	uint64_t _get_voxel(Vector3i pos) const override;
 	float _get_voxel_f(Vector3i pos) const override;
@@ -56,6 +64,7 @@ private:
 
 	VoxelLodTerrain *_terrain = nullptr;
 	int _raycast_binary_search_iterations = 0;
+	RandomPCG _random;
 };
 
 } // namespace zylann::voxel

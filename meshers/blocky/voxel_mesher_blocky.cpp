@@ -8,6 +8,7 @@
 #include "../../util/math/conv.h"
 // TODO GDX: String has no `operator+=`
 #include "../../util/godot/core/string.h"
+#include "../../util/profiling.h"
 
 using namespace zylann::godot;
 
@@ -423,6 +424,202 @@ void generate_blocky_mesh( //
 	}
 }
 
+Vector3f side_to_block_coordinates(const Vector3f v, const VoxelBlockyModel::Side side) {
+	switch (side) {
+		case VoxelBlockyModel::SIDE_NEGATIVE_X:
+		case VoxelBlockyModel::SIDE_POSITIVE_X:
+			return v.zyx();
+		case VoxelBlockyModel::SIDE_NEGATIVE_Y:
+		case VoxelBlockyModel::SIDE_POSITIVE_Y:
+			// return v.zxy();
+			return v.yzx();
+		case VoxelBlockyModel::SIDE_NEGATIVE_Z:
+		case VoxelBlockyModel::SIDE_POSITIVE_Z:
+			return v;
+		default:
+			ZN_CRASH();
+			return v;
+	}
+}
+
+int get_side_sign(const VoxelBlockyModel::Side side) {
+	switch (side) {
+		case VoxelBlockyModel::SIDE_NEGATIVE_X:
+		case VoxelBlockyModel::SIDE_NEGATIVE_Y:
+		case VoxelBlockyModel::SIDE_NEGATIVE_Z:
+			return -1;
+		case VoxelBlockyModel::SIDE_POSITIVE_X:
+		case VoxelBlockyModel::SIDE_POSITIVE_Y:
+		case VoxelBlockyModel::SIDE_POSITIVE_Z:
+			return 1;
+		default:
+			ZN_CRASH();
+			return 1;
+	}
+}
+
+// Adds extra voxel side geometry on the sides of the chunk for every voxel exposed to air. This creates
+// "seams" that hide LOD cracks when meshes of different LOD are put next to each other.
+// This method doesn't require to access voxels of the child LOD. The downside is that it won't always hide all the
+// cracks, but the assumption is that it will do most of the time.
+// AO is not handled, and probably doesn't need to be
+template <typename TModelID>
+void append_side_seams(
+		Span<const TModelID> buffer,
+		const Vector3T<int> jump,
+		const int z, // Coordinate of the first or last voxel (not within the padded region)
+		const int size_x,
+		const int size_y,
+		const VoxelBlockyModel::Side side,
+		const VoxelBlockyLibraryBase::BakedData &library,
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material
+) {
+	constexpr TModelID AIR = 0;
+	constexpr int pad = 1;
+
+	const int z_base = z * jump.z;
+	const int side_sign = get_side_sign(side);
+
+	// Buffers sent to chunk meshing have outer and inner voxels.
+	// Inner voxels are those that are actually being meshed.
+	// Outer voxels are not made part of the final mesh, but they exist to know how to occlude sides of inner voxels
+	// touching them.
+
+	// For each outer voxel on the side of the chunk (using side-relative coordinates)
+	for (int x = pad; x < size_x - pad; ++x) {
+		for (int y = pad; y < size_y - pad; ++y) {
+			const int buffer_index = x * jump.x + y * jump.y + z_base;
+			const int v = buffer[buffer_index];
+
+			if (v == AIR) {
+				continue;
+			}
+
+			// Check if the voxel is exposed to air
+
+			const int nv0 = buffer[buffer_index - jump.x];
+			const int nv1 = buffer[buffer_index + jump.x];
+			const int nv2 = buffer[buffer_index - jump.y];
+			const int nv3 = buffer[buffer_index + jump.y];
+
+			if (nv0 != AIR && nv1 != AIR && nv2 != AIR && nv3 != AIR) {
+				continue;
+			}
+
+			// Check if the outer voxel occludes an inner voxel
+			// (this check is not actually accurate, maybe we'd have to do a full occlusion check using the library?)
+
+			const int nv4 = buffer[buffer_index - side_sign * jump.z];
+			if (nv4 == AIR) {
+				continue;
+			}
+
+			// If it does, add geometry for the side of that inner voxel
+
+			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
+
+			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
+			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+
+			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
+				const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+				const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
+				const unsigned int vertex_count = side_surface.positions.size();
+
+				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
+
+				// TODO The following code is pretty much the same as the main meshing function.
+				// We should put it in common once blocky mesher features are merged (blocky fluids, shadows occluders).
+				// The baked occlusion part should be separated to run on top of color modulate.
+				// Index offsets might not need a vector after all.
+
+				const unsigned int index_offset = arrays.positions.size();
+
+				{
+					const unsigned int append_index = arrays.positions.size();
+					arrays.positions.resize(arrays.positions.size() + vertex_count);
+					Vector3f *w = arrays.positions.data() + append_index;
+					for (unsigned int i = 0; i < vertex_count; ++i) {
+						w[i] = side_surface.positions[i] + pos;
+					}
+				}
+
+				{
+					const unsigned int append_index = arrays.uvs.size();
+					arrays.uvs.resize(arrays.uvs.size() + vertex_count);
+					memcpy(arrays.uvs.data() + append_index, side_surface.uvs.data(), vertex_count * sizeof(Vector2f));
+				}
+
+				if (side_surface.tangents.size() > 0) {
+					const unsigned int append_index = arrays.tangents.size();
+					arrays.tangents.resize(arrays.tangents.size() + vertex_count * 4);
+					memcpy(arrays.tangents.data() + append_index,
+						   side_surface.tangents.data(),
+						   (vertex_count * 4) * sizeof(float));
+				}
+
+				{
+					const int append_index = arrays.normals.size();
+					arrays.normals.resize(arrays.normals.size() + vertex_count);
+					Vector3f *w = arrays.normals.data() + append_index;
+					for (unsigned int i = 0; i < vertex_count; ++i) {
+						w[i] = to_vec3f(Cube::g_side_normals[side]);
+					}
+				}
+
+				{
+					const int append_index = arrays.colors.size();
+					arrays.colors.resize(arrays.colors.size() + vertex_count);
+					Color *w = arrays.colors.data() + append_index;
+					const Color modulate_color = voxel.color;
+
+					for (unsigned int i = 0; i < vertex_count; ++i) {
+						w[i] = modulate_color;
+					}
+				}
+
+				{
+					const unsigned int index_count = side_surface.indices.size();
+					unsigned int i = arrays.indices.size();
+					arrays.indices.resize(arrays.indices.size() + index_count);
+					int *w = arrays.indices.data();
+					for (unsigned int j = 0; j < index_count; ++j) {
+						w[i++] = index_offset + side_surface.indices[j];
+					}
+				}
+			}
+		}
+	}
+}
+
+template <typename TModelID>
+void append_seams(
+		Span<const TModelID> buffer,
+		const Vector3i size,
+		StdVector<VoxelMesherBlocky::Arrays> &out_arrays_per_material,
+		const VoxelBlockyLibraryBase::BakedData &library
+) {
+	ZN_PROFILE_SCOPE();
+
+	const Vector3T<int> jump(size.y, 1, size.x * size.y);
+
+	// Shortcuts
+	StdVector<VoxelMesherBlocky::Arrays> &out = out_arrays_per_material;
+	constexpr VoxelBlockyModel::Side NEGATIVE_X = VoxelBlockyModel::SIDE_NEGATIVE_X;
+	constexpr VoxelBlockyModel::Side POSITIVE_X = VoxelBlockyModel::SIDE_POSITIVE_X;
+	constexpr VoxelBlockyModel::Side NEGATIVE_Y = VoxelBlockyModel::SIDE_NEGATIVE_Y;
+	constexpr VoxelBlockyModel::Side POSITIVE_Y = VoxelBlockyModel::SIDE_POSITIVE_Y;
+	constexpr VoxelBlockyModel::Side NEGATIVE_Z = VoxelBlockyModel::SIDE_NEGATIVE_Z;
+	constexpr VoxelBlockyModel::Side POSITIVE_Z = VoxelBlockyModel::SIDE_POSITIVE_Z;
+
+	append_side_seams(buffer, jump.xyz(), 0, size.x, size.y, NEGATIVE_Z, library, out);
+	append_side_seams(buffer, jump.xyz(), (size.z - 1), size.x, size.y, POSITIVE_Z, library, out);
+	append_side_seams(buffer, jump.zyx(), 0, size.z, size.y, NEGATIVE_X, library, out);
+	append_side_seams(buffer, jump.zyx(), (size.x - 1), size.z, size.y, POSITIVE_X, library, out);
+	append_side_seams(buffer, jump.zxy(), 0, size.z, size.x, NEGATIVE_Y, library, out);
+	append_side_seams(buffer, jump.zxy(), (size.y - 1), size.z, size.x, POSITIVE_Y, library, out);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VoxelMesherBlocky::VoxelMesherBlocky() {
@@ -526,7 +723,7 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	}
 
 	Span<const uint8_t> raw_channel;
-	if (!voxels.get_channel_raw_read_only(channel, raw_channel)) {
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -563,19 +760,26 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 						params.bake_occlusion, //
 						baked_occlusion_darkness //
 				);
+				if (input.lod_index > 0) {
+					append_seams(raw_channel, block_size, arrays_per_material, library_baked_data);
+				}
 				break;
 
-			case VoxelBuffer::DEPTH_16_BIT:
-				generate_blocky_mesh( //
-						arrays_per_material, //
-						collision_surface, //
-						raw_channel.reinterpret_cast_to<const uint16_t>(), //
-						block_size, //
-						library_baked_data, //
-						params.bake_occlusion, //
-						baked_occlusion_darkness //
+			case VoxelBuffer::DEPTH_16_BIT: {
+				Span<const uint16_t> model_ids = raw_channel.reinterpret_cast_to<const uint16_t>();
+				generate_blocky_mesh(
+						arrays_per_material,
+						collision_surface,
+						model_ids,
+						block_size,
+						library_baked_data,
+						params.bake_occlusion,
+						baked_occlusion_darkness
 				);
-				break;
+				if (input.lod_index > 0) {
+					append_seams(model_ids, block_size, arrays_per_material, library_baked_data);
+				}
+			} break;
 
 			default:
 				ERR_PRINT("Unsupported voxel depth");
@@ -586,8 +790,13 @@ void VoxelMesherBlocky::build(VoxelMesher::Output &output, const VoxelMesher::In
 	if (input.lod_index > 0) {
 		// Might not look good, but at least it's something
 		const float lod_scale = 1 << input.lod_index;
-		for (Arrays arrays : arrays_per_material) {
+		for (Arrays &arrays : arrays_per_material) {
 			for (Vector3f &p : arrays.positions) {
+				p = p * lod_scale;
+			}
+		}
+		if (collision_surface != nullptr) {
+			for (Vector3f &p : collision_surface->positions) {
 				p = p * lod_scale;
 			}
 		}
@@ -670,6 +879,14 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 		return Ref<Material>();
 	}
 	return lib->get_material_by_index(index);
+}
+
+unsigned int VoxelMesherBlocky::get_material_index_count() const {
+	Ref<VoxelBlockyLibraryBase> lib = get_library();
+	if (lib.is_null()) {
+		return 0;
+	}
+	return lib->get_material_index_count();
 }
 
 #ifdef TOOLS_ENABLED
