@@ -120,7 +120,12 @@ public:
 
 	void copy_channel_from(Ref<VoxelBuffer> other, unsigned int channel);
 	void copy_channel_from_area(
-			Ref<VoxelBuffer> other, Vector3i src_min, Vector3i src_max, Vector3i dst_min, unsigned int channel);
+			Ref<VoxelBuffer> other,
+			Vector3i src_min,
+			Vector3i src_max,
+			Vector3i dst_min,
+			unsigned int channel
+	);
 
 	void fill(uint64_t defval, int channel_index = 0);
 	void fill_f(real_t value, int channel = 0);
@@ -165,7 +170,11 @@ public:
 	void for_each_voxel_metadata(const Callable &callback) const;
 	void for_each_voxel_metadata_in_area(const Callable &callback, Vector3i min_pos, Vector3i max_pos);
 	void copy_voxel_metadata_in_area(
-			Ref<VoxelBuffer> src_buffer, Vector3i src_min_pos, Vector3i src_max_pos, Vector3i dst_pos);
+			Ref<VoxelBuffer> src_buffer,
+			Vector3i src_min_pos,
+			Vector3i src_max_pos,
+			Vector3i dst_pos
+	);
 
 	void clear_voxel_metadata();
 	void clear_voxel_metadata_in_area(Vector3i min_pos, Vector3i max_pos);

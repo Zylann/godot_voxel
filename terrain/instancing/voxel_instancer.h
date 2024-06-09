@@ -11,8 +11,8 @@
 #include "../../util/godot/direct_multimesh_instance.h"
 #include "../../util/math/box3i.h"
 #include "../../util/memory/memory.h"
-#include "voxel_instance_generator.h"
-#include "voxel_instance_library.h"
+#include "instance_library_item_listener.h"
+#include "up_mode.h"
 #include "voxel_instance_library_multimesh_item.h"
 
 #ifdef TOOLS_ENABLED
@@ -33,6 +33,7 @@ namespace voxel {
 class VoxelNode;
 class VoxelInstancerRigidBody;
 class VoxelInstanceComponent;
+class VoxelInstanceLibrary;
 class VoxelInstanceLibrarySceneItem;
 class VoxelTool;
 class SaveBlockDataTask;
@@ -47,16 +48,10 @@ struct VoxelInstancerTaskOutputQueue;
 
 // Add-on to voxel nodes, allowing to spawn elements on the surface.
 // These elements are rendered with hardware instancing, can have collisions, and also be persistent.
-class VoxelInstancer : public Node3D, public VoxelInstanceLibrary::IListener {
+class VoxelInstancer : public Node3D, public IInstanceLibraryItemListener {
 	GDCLASS(VoxelInstancer, Node3D)
 public:
 	static const int MAX_LOD = 8;
-
-	enum UpMode {
-		UP_MODE_POSITIVE_Y = VoxelInstanceGenerator::UP_MODE_POSITIVE_Y,
-		UP_MODE_SPHERE = VoxelInstanceGenerator::UP_MODE_SPHERE,
-		UP_MODE_COUNT = VoxelInstanceGenerator::UP_MODE_COUNT
-	};
 
 	VoxelInstancer();
 	~VoxelInstancer();
@@ -197,7 +192,7 @@ private:
 			Vector3 block_local_position
 	);
 
-	void on_library_item_changed(int item_id, VoxelInstanceLibraryItem::ChangeType change) override;
+	void on_library_item_changed(int item_id, IInstanceLibraryItemListener::ChangeType change) override;
 
 	struct Block;
 
@@ -328,7 +323,7 @@ private:
 } // namespace voxel
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
+VARIANT_ENUM_CAST(zylann::voxel::UpMode);
 VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H

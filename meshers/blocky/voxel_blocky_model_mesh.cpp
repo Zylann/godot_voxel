@@ -4,6 +4,7 @@
 #include "../../util/godot/classes/array_mesh.h"
 #include "../../util/godot/classes/object.h"
 #include "../../util/godot/classes/point_mesh.h"
+#include "../../util/godot/classes/surface_tool.h"
 #include "../../util/godot/core/array.h"
 #include "../../util/godot/core/packed_arrays.h"
 #include "../../util/godot/core/string.h"
@@ -11,6 +12,7 @@
 #include "../../util/math/ortho_basis.h"
 #include "../../util/string/format.h"
 #include "voxel_blocky_library.h"
+#include "voxel_blocky_model_empty.h"
 
 namespace zylann::voxel {
 
@@ -18,9 +20,7 @@ void VoxelBlockyModelMesh::set_mesh(Ref<Mesh> mesh) {
 	{
 		Ref<PointMesh> point_mesh = mesh;
 		if (point_mesh.is_valid()) {
-			ZN_PRINT_ERROR(
-					format("PointMesh is not supported by {}.", godot::get_class_name_str<VoxelBlockyModelMesh>())
-			);
+			ZN_PRINT_ERROR(format("PointMesh is not supported by {}.", ZN_CLASS_NAME_C(VoxelBlockyModelMesh)));
 			return;
 		}
 	}
@@ -96,7 +96,7 @@ void add(PackedVector3Array &vectors, Vector3 rhs) {
 void rotate_mesh_arrays(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
+		PackedFloat32Array &tangents,
 		const Basis &basis
 ) {
 	Span<Vector3> vertices_w(vertices.ptrw(), vertices.size());
@@ -138,7 +138,7 @@ void rotate_mesh_arrays(
 void rotate_mesh_arrays_ortho(
 		PackedVector3Array &vertices,
 		PackedVector3Array &normals,
-		PackedFloat32Array tangents,
+		PackedFloat32Array &tangents,
 		unsigned int ortho_basis_index
 ) {
 	const math::OrthoBasis ortho_basis = math::get_ortho_basis_from_index(ortho_basis_index);
@@ -176,15 +176,34 @@ void bake_mesh_geometry(
 		ERR_CONTINUE(arrays.size() == 0);
 
 		PackedInt32Array indices = arrays[Mesh::ARRAY_INDEX];
-		ERR_CONTINUE_MSG(indices.size() == 0, "Mesh surface is empty or is missing an index buffer.");
-		ERR_CONTINUE_MSG(
-				indices.size() % 3 != 0,
-				String("Mesh surface has an invalid number of indices. "
-					   "Expected multiple of 3 (for triangles), found {0}")
-						.format(varray(indices.size()))
+		PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
+		if (indices.size() == 0) {
+			if (positions.size() == 0) {
+				ZN_PRINT_ERROR(
+						format("Mesh surface {} is empty (no vertices, no index buffer). If you want an empty "
+							   "model, use {}.",
+							   surface_index,
+							   ZN_CLASS_NAME_C(VoxelBlockyModelEmpty))
+				);
+				continue;
+			} else {
+				ZN_PRINT_ERROR(
+						format("Mesh surface {} is missing an index buffer. Indexed meshes are expected. If you're "
+							   "generating the mesh with {}, you may use the {}() method.",
+							   surface_index,
+							   ZN_CLASS_NAME_C(SurfaceTool),
+							   ZN_METHOD_NAME_C(SurfaceTool, index))
+				);
+				continue;
+			}
+		}
+		ZN_ASSERT_CONTINUE_MSG(
+				(indices.size() % 3) == 0,
+				format("Mesh surface has an invalid number of indices. "
+					   "Expected multiple of 3 (for triangles), found {}",
+					   indices.size())
 		);
 
-		PackedVector3Array positions = arrays[Mesh::ARRAY_VERTEX];
 		PackedVector3Array normals = arrays[Mesh::ARRAY_NORMAL];
 		PackedVector2Array uvs = arrays[Mesh::ARRAY_TEX_UV];
 		PackedFloat32Array tangents = arrays[Mesh::ARRAY_TANGENT];
@@ -256,7 +275,7 @@ void bake_mesh_geometry(
 						format("Voxel model is missing tangents and UVs. The model won't be "
 							   "baked. You should consider providing a mesh with tangents, or at least UVs and "
 							   "normals, or turn off tangents baking in {}.",
-							   godot::get_class_name_str<VoxelBlockyLibrary>())
+							   ZN_CLASS_NAME_C(VoxelBlockyLibrary))
 				);
 				continue;
 			}
@@ -264,7 +283,7 @@ void bake_mesh_geometry(
 					format("Voxel model does not have tangents. They will be generated."
 						   "You should consider providing a mesh with tangents, or at least UVs and normals, "
 						   "or turn off tangents baking in {}.",
-						   godot::get_class_name_str<VoxelBlockyLibrary>())
+						   ZN_CLASS_NAME_C(VoxelBlockyLibrary))
 			);
 
 			tangents = generate_tangents_from_uvs(positions, normals, uvs, indices);
@@ -376,10 +395,10 @@ void bake_mesh_geometry(
 void bake_mesh_geometry(
 		const VoxelBlockyModelMesh &config,
 		VoxelBlockyModel::BakedData &baked_data,
-		bool bake_tangents,
+		const bool bake_tangents,
 		VoxelBlockyModel::MaterialIndexer &material_indexer,
-		float side_vertex_tolerance,
-		bool side_cutout_enabled
+		const float side_vertex_tolerance,
+		const bool side_cutout_enabled
 ) {
 	Ref<Mesh> mesh = config.get_mesh();
 
@@ -392,15 +411,15 @@ void bake_mesh_geometry(
 
 	// TODO Merge surfaces if they are found to have the same material (but still print a warning if their material is
 	// different or is null)
-	if (mesh->get_surface_count() > int(VoxelBlockyModel::BakedData::Model::MAX_SURFACES)) {
+	const uint32_t src_surface_count = mesh->get_surface_count();
+	if (src_surface_count > VoxelBlockyModel::BakedData::Model::MAX_SURFACES) {
 		ZN_PRINT_WARNING(
 				format("Mesh has more than {} surfaces, extra surfaces will not be baked.",
 					   VoxelBlockyModel::BakedData::Model::MAX_SURFACES)
 		);
 	}
 
-	const unsigned int surface_count =
-			math::min(uint32_t(mesh->get_surface_count()), VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
+	const unsigned int surface_count = math::min(src_surface_count, VoxelBlockyModel::BakedData::Model::MAX_SURFACES);
 
 	StdVector<Ref<Material>> materials;
 	StdVector<Array> surfaces;
