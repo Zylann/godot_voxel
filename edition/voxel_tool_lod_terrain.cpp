@@ -1,6 +1,7 @@
 #include "voxel_tool_lod_terrain.h"
 #include "../constants/voxel_string_names.h"
 #include "../generators/graph/voxel_generator_graph.h"
+#include "../meshers/blocky/voxel_mesher_blocky.h"
 #include "../storage/voxel_buffer_gd.h"
 #include "../storage/voxel_data_grid.h"
 #include "../terrain/variable_lod/voxel_lod_terrain.h"
@@ -14,6 +15,7 @@
 #include "../util/godot/classes/timer.h"
 #include "../util/island_finder.h"
 #include "../util/math/conv.h"
+#include "../util/string/format.h"
 #include "../util/tasks/async_dependency_tracker.h"
 #include "../util/voxel_raycast.h"
 #include "funcs.h"
@@ -38,7 +40,12 @@ bool VoxelToolLodTerrain::is_area_editable(const Box3i &box) const {
 // The segment may be adjusted internally if it does not contain a zero-crossing of the
 template <typename Volume_F>
 float approximate_distance_to_isosurface_binary_search(
-		const Volume_F &f, Vector3 pos0, Vector3 dir, float d1, int iterations) {
+		const Volume_F &f,
+		Vector3 pos0,
+		Vector3 dir,
+		float d1,
+		int iterations
+) {
 	float d0 = 0.f;
 	float sdf0 = get_sdf_interpolated(f, pos0);
 	// The position given as argument may be a rough approximation coming from the middle-phase,
@@ -79,7 +86,11 @@ float approximate_distance_to_isosurface_binary_search(
 }
 
 Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
-		Vector3 pos, Vector3 dir, float max_distance, uint32_t collision_mask) {
+		Vector3 pos,
+		Vector3 dir,
+		float max_distance,
+		uint32_t collision_mask
+) {
 	// TODO Transform input if the terrain is rotated
 	// TODO Implement reverse raycast? (going from inside ground to air, could be useful for undigging)
 
@@ -145,8 +156,13 @@ Ref<VoxelRaycastResult> VoxelToolLodTerrain::raycast(
 
 			VolumeSampler sampler{ _terrain->get_storage() };
 			d = hit_distance_prev +
-					approximate_distance_to_isosurface_binary_search(sampler, pos + dir * hit_distance_prev, dir,
-							hit_distance - hit_distance_prev, _raycast_binary_search_iterations);
+					approximate_distance_to_isosurface_binary_search(
+							sampler,
+							pos + dir * hit_distance_prev,
+							dir,
+							hit_distance - hit_distance_prev,
+							_raycast_binary_search_iterations
+					);
 		}
 
 		res.instantiate();
@@ -359,7 +375,8 @@ float VoxelToolLodTerrain::get_voxel_f_interpolated(Vector3 position) const {
 				VoxelSingleValue value = data.get_voxel(ipos, channel, defval);
 				return value.f;
 			},
-			position);
+			position
+	);
 }
 
 uint64_t VoxelToolLodTerrain::_get_voxel(Vector3i pos) const {
@@ -498,8 +515,14 @@ void box_propagate_ccl(Span<uint8_t> cells, const Vector3i size) {
 // the source volume, and turned into a rigidbody.
 // This is one way of doing it, I don't know if it's the best way (there is rarely a best way)
 // so there are probably other approaches that could be explored in the future, if they have better performance
-Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *parent_node, Transform3D transform,
-		Ref<VoxelMesher> mesher, Array materials) {
+Array separate_floating_chunks(
+		VoxelTool &voxel_tool,
+		Box3i world_box,
+		Node *parent_node,
+		Transform3D transform,
+		Ref<VoxelMesher> mesher,
+		Array materials
+) {
 	ZN_PROFILE_SCOPE();
 
 	// Checks
@@ -536,7 +559,9 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 					// TODO Can be optimized further with direct access
 					return source_copy_buffer.get_voxel_f(pos.x, pos.y, pos.z, main_channel) < 0.f;
 				},
-				to_span(ccl_output), &label_count);
+				to_span(ccl_output),
+				&label_count
+		);
 	}
 
 	struct Bounds {
@@ -662,8 +687,10 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			voxel_tool.copy(world_pos, buffer, channels_mask);
 
 			// Cleanup padding borders
-			const Box3i inner_box(Vector3iUtil::create(min_padding),
-					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding));
+			const Box3i inner_box(
+					Vector3iUtil::create(min_padding),
+					buffer.get_size() - Vector3iUtil::create(min_padding + max_padding)
+			);
 			Box3i(Vector3i(), buffer.get_size()).difference(inner_box, [&buffer](Box3i box) {
 				buffer.fill_area_f(constants::SDF_FAR_OUTSIDE, box.position, box.position + box.size, main_channel);
 			});
@@ -677,9 +704,13 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 						const uint8_t label2 = ccl_output[ccl_index];
 
 						if (label2 != 0 && label != label2) {
-							buffer.set_voxel_f(constants::SDF_FAR_OUTSIDE, min_padding + x - local_bounds.min_pos.x,
-									min_padding + y - local_bounds.min_pos.y, min_padding + z - local_bounds.min_pos.z,
-									main_channel);
+							buffer.set_voxel_f(
+									constants::SDF_FAR_OUTSIDE,
+									min_padding + x - local_bounds.min_pos.x,
+									min_padding + y - local_bounds.min_pos.y,
+									min_padding + z - local_bounds.min_pos.z,
+									main_channel
+							);
 						}
 					}
 				}
@@ -713,8 +744,11 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 		StdVector<zylann::godot::ShaderParameterInfo> params;
 		const String u_block_local_transform = VoxelStringNames::get_singleton().u_block_local_transform;
 
-		ZN_ASSERT_RETURN_V_MSG(materials.size() < 32, Array(),
-				"Too many materials. If you need more, make a request or change the code.");
+		ZN_ASSERT_RETURN_V_MSG(
+				materials.size() < 32,
+				Array(),
+				"Too many materials. If you need more, make a request or change the code."
+		);
 
 		for (int material_index = 0; material_index < materials.size(); ++material_index) {
 			Ref<ShaderMaterial> sm = materials[material_index];
@@ -774,10 +808,12 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 			// 	print_line("//");
 			// }
 
-			const Transform3D local_transform(Basis(),
+			const Transform3D local_transform(
+					Basis(),
 					info.world_pos
 							// Undo min padding
-							+ Vector3i(1, 1, 1));
+							+ Vector3i(1, 1, 1)
+			);
 
 			for (int i = 0; i < materials.size(); ++i) {
 				if ((materials_to_instance_mask & (1 << i)) != 0) {
@@ -789,7 +825,8 @@ Array separate_floating_chunks(VoxelTool &voxel_tool, Box3i world_box, Node *par
 					// duplicate.
 					// TODO Try using per-instance parameters for scalar uniforms (Godot 4 doesn't support textures)
 					sm->set_shader_parameter(
-							VoxelStringNames::get_singleton().u_block_local_transform, local_transform);
+							VoxelStringNames::get_singleton().u_block_local_transform, local_transform
+					);
 					materials[i] = sm;
 				}
 			}
@@ -878,7 +915,8 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 	materials.append(_terrain->get_material());
 	const Box3i int_world_box(math::floor_to_int(world_box.position), math::ceil_to_int(world_box.size));
 	return zylann::voxel::separate_floating_chunks(
-			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials);
+			*this, int_world_box, parent_node, _terrain->get_global_transform(), mesher, materials
+	);
 }
 
 // Combines a precalculated SDF with the terrain at a specific position, rotation and scale.
@@ -892,7 +930,11 @@ Array VoxelToolLodTerrain::separate_floating_chunks(AABB world_box, Object *pare
 // if artifacts show up due to scaling used in terrain SDF.
 //
 void VoxelToolLodTerrain::stamp_sdf(
-		Ref<VoxelMeshSDF> mesh_sdf, Transform3D transform, float isolevel, float sdf_scale) {
+		Ref<VoxelMeshSDF> mesh_sdf,
+		Transform3D transform,
+		float isolevel,
+		float sdf_scale
+) {
 	// TODO Asynchronous version
 	ZN_PROFILE_SCOPE();
 
@@ -941,7 +983,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	op.shape.sdf_scale = sdf_scale;
 	// Note, the passed buffer must not be shared with another thread.
 	// buffer.decompress_channel(channel);
-	ZN_ASSERT_RETURN(buffer.get_channel_data(channel, op.shape.buffer));
+	ZN_ASSERT_RETURN(buffer.get_channel_data_read_only(channel, op.shape.buffer));
 
 	VoxelDataGrid grid;
 	data.get_blocks_grid(grid, voxel_box, 0);
@@ -961,9 +1003,10 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 
 	const Vector3 area_size = math::abs(transform.basis.xform(graph_base_size));
 
-	const Box3i box = Box3i::from_min_max( //
-			math::floor_to_int(transform.origin - 0.5 * area_size),
-			math::ceil_to_int(transform.origin + 0.5 * area_size))
+	const Box3i box = Box3i::from_min_max(
+							  math::floor_to_int(transform.origin - 0.5 * area_size),
+							  math::ceil_to_int(transform.origin + 0.5 * area_size)
+	)
 							  .padded(2)
 							  .clipped(_terrain->get_voxel_bounds());
 
@@ -1072,21 +1115,62 @@ void VoxelToolLodTerrain::do_graph(Ref<VoxelGeneratorGraph> graph, Transform3D t
 	_post_edit(box);
 }
 
+void VoxelToolLodTerrain::run_blocky_random_tick(
+		const AABB voxel_area,
+		const int voxel_count,
+		const Callable &callback,
+		const int block_batch_count
+) {
+	ZN_PROFILE_SCOPE();
+
+	ZN_ASSERT_RETURN(_terrain != nullptr);
+
+	Ref<VoxelMesherBlocky> mesher = _terrain->get_mesher();
+	ZN_ASSERT_RETURN_MSG(
+			mesher.is_valid(),
+			format("This function requires a volume using {} with a valid library", ZN_CLASS_NAME_C(VoxelMesherBlocky))
+	);
+	Ref<VoxelBlockyLibraryBase> library = mesher->get_library();
+	ZN_ASSERT_RETURN_MSG(library.is_valid(), format("{} has no library assigned", ZN_CLASS_NAME_C(VoxelMesherBlocky)));
+
+	ZN_ASSERT_RETURN(callback.is_valid());
+	ZN_ASSERT_RETURN(block_batch_count > 0);
+	ZN_ASSERT_RETURN(voxel_count >= 0);
+	ZN_ASSERT_RETURN(math::is_valid_size(voxel_area.size));
+
+	if (voxel_count == 0) {
+		return;
+	}
+
+	VoxelData &data = _terrain->get_storage();
+
+	zylann::voxel::run_blocky_random_tick(
+			data, voxel_area, **library, _random, voxel_count, block_batch_count, callback
+	);
+}
+
 void VoxelToolLodTerrain::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_raycast_binary_search_iterations", "iterations"),
-			&VoxelToolLodTerrain::set_raycast_binary_search_iterations);
-	ClassDB::bind_method(D_METHOD("get_raycast_binary_search_iterations"),
-			&VoxelToolLodTerrain::get_raycast_binary_search_iterations);
+	using Self = VoxelToolLodTerrain;
+
 	ClassDB::bind_method(
-			D_METHOD("get_voxel_f_interpolated", "position"), &VoxelToolLodTerrain::get_voxel_f_interpolated);
+			D_METHOD("set_raycast_binary_search_iterations", "iterations"), &Self::set_raycast_binary_search_iterations
+	);
+	ClassDB::bind_method(D_METHOD("get_raycast_binary_search_iterations"), &Self::get_raycast_binary_search_iterations);
+	ClassDB::bind_method(D_METHOD("get_voxel_f_interpolated", "position"), &Self::get_voxel_f_interpolated);
+	ClassDB::bind_method(D_METHOD("separate_floating_chunks", "box", "parent_node"), &Self::separate_floating_chunks);
+	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &Self::do_sphere_async);
+	ClassDB::bind_method(D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &Self::stamp_sdf);
+	ClassDB::bind_method(D_METHOD("do_graph", "graph", "transform", "area_size"), &Self::do_graph);
 	ClassDB::bind_method(
-			D_METHOD("separate_floating_chunks", "box", "parent_node"), &VoxelToolLodTerrain::separate_floating_chunks);
-	ClassDB::bind_method(D_METHOD("do_sphere_async", "center", "radius"), &VoxelToolLodTerrain::do_sphere_async);
+			D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
+			&Self::do_hemisphere,
+			DEFVAL(0.0)
+	);
 	ClassDB::bind_method(
-			D_METHOD("stamp_sdf", "mesh_sdf", "transform", "isolevel", "sdf_scale"), &VoxelToolLodTerrain::stamp_sdf);
-	ClassDB::bind_method(D_METHOD("do_graph", "graph", "transform", "area_size"), &VoxelToolLodTerrain::do_graph);
-	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
-			&VoxelToolLodTerrain::do_hemisphere, DEFVAL(0.0));
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			&Self::run_blocky_random_tick,
+			DEFVAL(16)
+	);
 }
 
 } // namespace zylann::voxel

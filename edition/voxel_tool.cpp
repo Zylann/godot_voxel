@@ -159,8 +159,10 @@ void VoxelTool::do_sphere(Vector3 center, float radius) {
 	ZN_PROFILE_SCOPE();
 	// Default, suboptimal implementation
 
-	const Box3i box(math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
-			Vector3iUtil::create(Math::ceil(radius) * 2));
+	const Box3i box(
+			math::floor_to_int(center) - Vector3iUtil::create(Math::floor(radius)),
+			Vector3iUtil::create(Math::ceil(radius) * 2)
+	);
 
 	if (_allow_out_of_bounds == false && !is_area_editable(box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -276,21 +278,26 @@ void VoxelTool::paste(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t 
 	paste(p_pos, p_voxels->get_buffer(), channels_mask);
 }
 
-void VoxelTool::paste_masked(Vector3i p_pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
-		uint8_t mask_channel, uint64_t mask_value) {
+void VoxelTool::paste_masked(
+		Vector3i p_pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value
+) {
 	ERR_FAIL_COND(p_voxels.is_null());
 	ERR_PRINT("Not implemented");
 	// Implemented in derived classes
 }
 
-void VoxelTool::paste_masked_writable_list( //
-		Vector3i pos, //
-		Ref<godot::VoxelBuffer> p_voxels, //
-		uint8_t channels_mask, //
-		uint8_t src_mask_channel, //
-		uint64_t src_mask_value, //
-		uint8_t dst_mask_channel, //
-		PackedInt32Array dst_writable_list //
+void VoxelTool::paste_masked_writable_list(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t src_mask_channel,
+		uint64_t src_mask_value,
+		uint8_t dst_mask_channel,
+		PackedInt32Array dst_writable_list
 ) {
 	ZN_PRINT_ERROR("Not implemented");
 	// Implemented in derived classes
@@ -303,7 +310,8 @@ void VoxelTool::smooth_sphere(Vector3 sphere_center, float sphere_radius, int bl
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
-			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius))
+	);
 
 	const Box3i padded_voxel_box = voxel_box.padded(blur_radius);
 
@@ -339,7 +347,8 @@ void VoxelTool::grow_sphere(Vector3 sphere_center, float sphere_radius, float st
 
 	const Box3i voxel_box = Box3i::from_min_max(
 			math::floor_to_int(sphere_center - Vector3(sphere_radius, sphere_radius, sphere_radius)),
-			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius)));
+			math::ceil_to_int(sphere_center + Vector3(sphere_radius, sphere_radius, sphere_radius))
+	);
 
 	if (_allow_out_of_bounds == false && !is_area_editable(voxel_box)) {
 		ZN_PRINT_VERBOSE("Area not editable");
@@ -431,7 +440,12 @@ void VoxelTool::_b_paste(Vector3i pos, Ref<godot::VoxelBuffer> voxels, int chann
 }
 
 void VoxelTool::_b_paste_masked(
-		Vector3i pos, Ref<godot::VoxelBuffer> voxels, int channels_mask, int mask_channel, int64_t mask_value) {
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> voxels,
+		int channels_mask,
+		int mask_channel,
+		int64_t mask_value
+) {
 	paste_masked(pos, voxels, channels_mask, mask_channel, mask_value);
 }
 
@@ -526,9 +540,11 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("do_path", "points", "radii"), &VoxelTool::_b_do_path);
 
 	ClassDB::bind_method(
-			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere);
+			D_METHOD("smooth_sphere", "sphere_center", "sphere_radius", "blur_radius"), &VoxelTool::smooth_sphere
+	);
 	ClassDB::bind_method(
-			D_METHOD("grow_sphere", "sphere_center", "sphere_radius", "strength"), &VoxelTool::grow_sphere);
+			D_METHOD("grow_sphere", "sphere_center", "sphere_radius", "strength"), &VoxelTool::grow_sphere
+	);
 
 	ClassDB::bind_method(D_METHOD("set_voxel_metadata", "pos", "meta"), &VoxelTool::_b_set_voxel_metadata);
 	ClassDB::bind_method(D_METHOD("get_voxel_metadata", "pos"), &VoxelTool::_b_get_voxel_metadata);
@@ -537,31 +553,53 @@ void VoxelTool::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("paste", "dst_pos", "src_buffer", "channels_mask"), &VoxelTool::_b_paste);
 	ClassDB::bind_method(
 			D_METHOD("paste_masked", "dst_pos", "src_buffer", "channels_mask", "mask_channel", "mask_value"),
-			&VoxelTool::_b_paste_masked);
-	ClassDB::bind_method(D_METHOD("paste_masked_writable_list", "position", "voxels", "channels_mask",
-								 "src_mask_channel", "src_mask_value", "dst_mask_channel", "dst_writable_list"),
-			&VoxelTool::paste_masked_writable_list);
+			&VoxelTool::_b_paste_masked
+	);
+	ClassDB::bind_method(
+			D_METHOD(
+					"paste_masked_writable_list",
+					"position",
+					"voxels",
+					"channels_mask",
+					"src_mask_channel",
+					"src_mask_value",
+					"dst_mask_channel",
+					"dst_writable_list"
+			),
+			&VoxelTool::paste_masked_writable_list
+	);
 
-	ClassDB::bind_method(D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
-			&VoxelTool::_b_raycast, DEFVAL(10.0), DEFVAL(0xffffffff));
+	ClassDB::bind_method(
+			D_METHOD("raycast", "origin", "direction", "max_distance", "collision_mask"),
+			&VoxelTool::_b_raycast,
+			DEFVAL(10.0),
+			DEFVAL(0xffffffff)
+	);
 
 	ClassDB::bind_method(D_METHOD("is_area_editable", "box"), &VoxelTool::_b_is_area_editable);
 
 	// Encoding helpers
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("color_to_u16", "color"), &_b_color_to_u16);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices);
+			VoxelTool::get_class_static(), D_METHOD("vec4i_to_u16_indices"), &_b_vec4i_to_u16_indices
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("color_to_u16_weights"), &_b_color_to_u16_weights);
+			VoxelTool::get_class_static(), D_METHOD("color_to_u16_weights"), &_b_color_to_u16_weights
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("u16_indices_to_vec4i"), &_b_u16_indices_to_vec4i);
+			VoxelTool::get_class_static(), D_METHOD("u16_indices_to_vec4i"), &_b_u16_indices_to_vec4i
+	);
 	ClassDB::bind_static_method(
-			VoxelTool::get_class_static(), D_METHOD("u16_weights_to_color"), &_b_u16_weights_to_color);
+			VoxelTool::get_class_static(), D_METHOD("u16_weights_to_color"), &_b_u16_weights_to_color
+	);
 	ClassDB::bind_static_method(VoxelTool::get_class_static(), D_METHOD("normalize_color"), &_b_normalize_color);
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "value"), "set_value", "get_value");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
-			"set_channel", "get_channel");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::INT, "channel", PROPERTY_HINT_ENUM, godot::VoxelBuffer::CHANNEL_ID_HINT_STRING),
+			"set_channel",
+			"get_channel"
+	);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "eraser_value"), "set_eraser_value", "get_eraser_value");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Add,Remove,Set"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "sdf_scale"), "set_sdf_scale", "get_sdf_scale");

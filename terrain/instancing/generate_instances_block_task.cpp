@@ -37,8 +37,8 @@ void GenerateInstancesBlockTask::run(ThreadedTaskContext &ctx) {
 
 	{
 		MutexLock mlock(output_queue->mutex);
-		output_queue->results.push_back(VoxelInstanceLoadingTaskOutput());
-		VoxelInstanceLoadingTaskOutput &o = output_queue->results.back();
+		output_queue->results.push_back(InstanceLoadingTaskOutput());
+		InstanceLoadingTaskOutput &o = output_queue->results.back();
 		o.layer_id = layer_id;
 		o.edited_mask = edited_mask;
 		o.render_block_position = mesh_block_grid_position;

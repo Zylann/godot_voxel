@@ -51,6 +51,10 @@ Ref<Material> VoxelBlockyLibraryBase::get_material_by_index(unsigned int index) 
 	return _indexed_materials[index];
 }
 
+unsigned int VoxelBlockyLibraryBase::get_material_index_count() const {
+	return _indexed_materials.size();
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelBlockyLibraryBase::get_configuration_warnings(PackedStringArray &out_warnings) const {

@@ -70,6 +70,7 @@ public:
 
 	void set_material_by_index(Materials id, Ref<Material> material);
 	Ref<Material> get_material_by_index(unsigned int i) const override;
+	unsigned int get_material_index_count() const override;
 
 	static Ref<Mesh> generate_mesh_from_image(Ref<Image> image, float voxel_size);
 
