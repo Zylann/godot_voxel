@@ -152,6 +152,11 @@ Ref<Material> VoxelMesher::get_material_by_index(unsigned int i) const {
 	return Ref<Material>();
 }
 
+unsigned int VoxelMesher::get_material_index_count() const {
+	// May be implemented in some meshers
+	return 0;
+}
+
 bool VoxelMesher::is_mesh_empty(const StdVector<Output::Surface> &surfaces) {
 	if (surfaces.size() == 0) {
 		return true;

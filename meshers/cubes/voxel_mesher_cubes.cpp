@@ -1126,6 +1126,10 @@ Ref<Material> VoxelMesherCubes::get_material_by_index(unsigned int i) const {
 	return _materials[i];
 }
 
+unsigned int VoxelMesherCubes::get_material_index_count() const {
+	return _materials.size();
+}
+
 void VoxelMesherCubes::_b_set_opaque_material(Ref<Material> material) {
 	set_material_by_index(MATERIAL_OPAQUE, material);
 }

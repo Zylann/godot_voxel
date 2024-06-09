@@ -881,6 +881,14 @@ Ref<Material> VoxelMesherBlocky::get_material_by_index(unsigned int index) const
 	return lib->get_material_by_index(index);
 }
 
+unsigned int VoxelMesherBlocky::get_material_index_count() const {
+	Ref<VoxelBlockyLibraryBase> lib = get_library();
+	if (lib.is_null()) {
+		return 0;
+	}
+	return lib->get_material_index_count();
+}
+
 #ifdef TOOLS_ENABLED
 
 void VoxelMesherBlocky::get_configuration_warnings(PackedStringArray &out_warnings) const {
