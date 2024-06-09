@@ -968,14 +968,14 @@ void append_side_seams(
 			const VoxelBlockyModel::BakedData &voxel_baked_data = library.models[nv4];
 			const VoxelBlockyModel::BakedData::Model &model = voxel_baked_data.model;
 
-			const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
-					&side_surfaces = model.sides_surfaces[side];
+			const FixedArray<VoxelBlockyModel::SideSurface, VoxelBlockyModel::MAX_SURFACES> &side_surfaces =
+					model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
-				const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
+				const VoxelBlockyModel::Surface &surface = model.surfaces[surface_index];
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
 
-				const VoxelBlockyModel::BakedData::SideSurface &side_surface = side_surfaces[side];
+				const VoxelBlockyModel::SideSurface &side_surface = side_surfaces[side];
 				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
