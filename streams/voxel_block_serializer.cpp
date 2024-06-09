@@ -331,9 +331,10 @@ SerializeResult serialize(const VoxelBuffer &voxel_buffer) {
 
 		switch (compression) {
 			case VoxelBuffer::COMPRESSION_NONE: {
-				Span<uint8_t> data;
+				Span<const uint8_t> data;
 				ERR_FAIL_COND_V(
-						!voxel_buffer.get_channel_as_bytes(channel_index, data), SerializeResult(dst_data, false)
+						!voxel_buffer.get_channel_as_bytes_read_only(channel_index, data),
+						SerializeResult(dst_data, false)
 				);
 				f.store_buffer(data);
 			} break;

@@ -716,7 +716,7 @@ void VoxelBuffer::move_to(VoxelBuffer &dst) {
 	}
 }
 
-bool VoxelBuffer::get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice) const {
+bool VoxelBuffer::get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice) {
 	const Channel &channel = _channels[channel_index];
 	if (channel.compression != COMPRESSION_UNIFORM) {
 #ifdef DEV_ENABLED
@@ -731,10 +731,17 @@ bool VoxelBuffer::get_channel_as_bytes(unsigned int channel_index, Span<uint8_t>
 }
 
 bool VoxelBuffer::get_channel_as_bytes_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const {
-	Span<uint8_t> slice_w;
-	const bool success = get_channel_as_bytes(channel_index, slice_w);
-	slice = slice_w;
-	return success;
+	const Channel &channel = _channels[channel_index];
+	if (channel.compression != COMPRESSION_UNIFORM) {
+#ifdef DEV_ENABLED
+		ZN_ASSERT(channel.data != nullptr);
+#endif
+		slice = Span<const uint8_t>(channel.data, 0, channel.size_in_bytes);
+		return true;
+	}
+	// TODO Could we just return `Span<uint8_t>(&channel.defval, 1)` alongside the `false` return?
+	slice = Span<const uint8_t>();
+	return false;
 }
 
 bool VoxelBuffer::create_channel(int i, uint64_t defval) {
@@ -1095,30 +1102,30 @@ void get_unscaled_sdf(const VoxelBuffer &voxels, Span<float> sdf) {
 
 	switch (depth) {
 		case VoxelBuffer::DEPTH_8_BIT: {
-			Span<int8_t> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			Span<const int8_t> raw;
+			ZN_ASSERT(voxels.get_channel_data_read_only(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
 				sdf[i] = s8_to_snorm(raw[i]);
 			}
 		} break;
 
 		case VoxelBuffer::DEPTH_16_BIT: {
-			Span<int16_t> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			Span<const int16_t> raw;
+			ZN_ASSERT(voxels.get_channel_data_read_only(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
 				sdf[i] = s16_to_snorm(raw[i]);
 			}
 		} break;
 
 		case VoxelBuffer::DEPTH_32_BIT: {
-			Span<float> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			Span<const float> raw;
+			ZN_ASSERT(voxels.get_channel_data_read_only(channel, raw));
 			memcpy(sdf.data(), raw.data(), sizeof(float) * sdf.size());
 		} break;
 
 		case VoxelBuffer::DEPTH_64_BIT: {
-			Span<double> raw;
-			ZN_ASSERT(voxels.get_channel_data(channel, raw));
+			Span<const double> raw;
+			ZN_ASSERT(voxels.get_channel_data_read_only(channel, raw));
 			for (unsigned int i = 0; i < sdf.size(); ++i) {
 				sdf[i] = raw[i];
 			}

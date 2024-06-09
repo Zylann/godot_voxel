@@ -76,7 +76,7 @@ inline uint8_t get_alpha_index(Color8 c) {
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_simple_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer,
+		const Span<const Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		Color_F color_func
 ) {
@@ -212,7 +212,7 @@ void build_voxel_mesh_as_simple_cubes(
 template <typename Voxel_T, typename Color_F>
 void build_voxel_mesh_as_greedy_cubes(
 		FixedArray<VoxelMesherCubes::Arrays, VoxelMesherCubes::MATERIAL_COUNT> &out_arrays_per_material,
-		const Span<Voxel_T> voxel_buffer,
+		const Span<const Voxel_T> voxel_buffer,
 		const Vector3i block_size,
 		StdVector<uint8_t> &mask_memory_pool,
 		Color_F color_func
@@ -775,8 +775,8 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 		return;
 	}
 
-	Span<uint8_t> raw_channel;
-	if (!voxels.get_channel_as_bytes(channel, raw_channel)) {
+	Span<const uint8_t> raw_channel;
+	if (!voxels.get_channel_as_bytes_read_only(channel, raw_channel)) {
 		// Case supposedly handled before...
 		ERR_PRINT("Something wrong happened");
 		return;
@@ -817,7 +817,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								Color8::from_u16
@@ -825,7 +825,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								Color8::from_u16
 						);
@@ -836,7 +836,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(),
+								raw_channel.reinterpret_cast_to<const uint32_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								Color8::from_u32
@@ -844,7 +844,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint32_t>(),
+								raw_channel.reinterpret_cast_to<const uint32_t>(),
 								block_size,
 								Color8::from_u32
 						);
@@ -905,7 +905,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								get_color_from_palette
@@ -913,7 +913,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								get_color_from_palette
 						);
@@ -959,7 +959,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					if (params.greedy_meshing) {
 						build_voxel_mesh_as_greedy_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								cache.mask_memory_pool,
 								get_index_from_palette
@@ -967,7 +967,7 @@ void VoxelMesherCubes::build(VoxelMesher::Output &output, const VoxelMesher::Inp
 					} else {
 						build_voxel_mesh_as_simple_cubes(
 								cache.arrays_per_material,
-								raw_channel.reinterpret_cast_to<uint16_t>(),
+								raw_channel.reinterpret_cast_to<const uint16_t>(),
 								block_size,
 								get_index_from_palette
 						);

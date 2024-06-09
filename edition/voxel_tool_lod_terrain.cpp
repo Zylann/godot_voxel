@@ -981,7 +981,7 @@ void VoxelToolLodTerrain::stamp_sdf(
 	op.shape.sdf_scale = sdf_scale;
 	// Note, the passed buffer must not be shared with another thread.
 	// buffer.decompress_channel(channel);
-	ZN_ASSERT_RETURN(buffer.get_channel_data(channel, op.shape.buffer));
+	ZN_ASSERT_RETURN(buffer.get_channel_data_read_only(channel, op.shape.buffer));
 
 	VoxelDataGrid grid;
 	data.get_blocks_grid(grid, voxel_box, 0);

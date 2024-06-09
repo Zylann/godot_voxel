@@ -388,7 +388,7 @@ std::shared_ptr<ComputeShaderResource> VoxelMeshSDF::get_gpu_resource() {
 		const VoxelBuffer &buffer = _voxel_buffer->get_buffer();
 
 		Span<const float> sdf_grid;
-		ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, sdf_grid), _gpu_resource);
+		ZN_ASSERT_RETURN_V(buffer.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, sdf_grid), _gpu_resource);
 
 		std::shared_ptr<ComputeShaderResource> resource = make_shared_instance<ComputeShaderResource>();
 		resource->create_texture_3d_zxy(sdf_grid, buffer.get_size());
@@ -405,7 +405,7 @@ Array VoxelMeshSDF::debug_check_sdf(Ref<Mesh> mesh) {
 	ZN_ASSERT(_voxel_buffer.is_valid());
 	const VoxelBuffer &buffer = _voxel_buffer->get_buffer();
 	Span<const float> sdf_grid;
-	ZN_ASSERT_RETURN_V(buffer.get_channel_data(VoxelBuffer::CHANNEL_SDF, sdf_grid), result);
+	ZN_ASSERT_RETURN_V(buffer.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, sdf_grid), result);
 
 	ZN_ASSERT_RETURN_V(mesh.is_valid(), result);
 	StdVector<mesh_sdf::Triangle> triangles;
@@ -449,7 +449,7 @@ Dictionary VoxelMeshSDF::_b_get_data() const {
 	PackedFloat32Array sdf_f32;
 	sdf_f32.resize(Vector3iUtil::get_volume(vb.get_size()));
 	Span<const float> channel;
-	ERR_FAIL_COND_V(!vb.get_channel_data(VoxelBuffer::CHANNEL_SDF, channel), Dictionary());
+	ERR_FAIL_COND_V(!vb.get_channel_data_read_only(VoxelBuffer::CHANNEL_SDF, channel), Dictionary());
 	memcpy(sdf_f32.ptrw(), channel.data(), channel.size() * sizeof(float));
 	d["sdf_f32"] = sdf_f32;
 
