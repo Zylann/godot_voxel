@@ -32,7 +32,11 @@ bool VoxelToolTerrain::is_area_editable(const Box3i &box) const {
 }
 
 Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
-		Vector3 p_pos, Vector3 p_dir, float p_max_distance, uint32_t p_collision_mask) {
+		Vector3 p_pos,
+		Vector3 p_dir,
+		float p_max_distance,
+		uint32_t p_collision_mask
+) {
 	// TODO Implement broad-phase on blocks to minimize locking and increase performance
 
 	// TODO Optimization: voxel raycast uses `get_voxel` which is the slowest, but could be made faster.
@@ -109,12 +113,16 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		if (library_ref.is_null()) {
 			return res;
 		}
-		RaycastPredicateBlocky predicate{ _terrain->get_storage(), library_ref->get_baked_data(), p_collision_mask,
-			local_pos, local_pos + local_dir * max_distance };
+		RaycastPredicateBlocky predicate{ _terrain->get_storage(),
+										  library_ref->get_baked_data(),
+										  p_collision_mask,
+										  local_pos,
+										  local_pos + local_dir * max_distance };
 		float hit_distance;
 		float hit_distance_prev;
-		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
-					hit_distance_prev)) {
+		if (zylann::voxel_raycast(
+					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
+			)) {
 			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
@@ -125,8 +133,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		RaycastPredicateColor predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
-					hit_distance_prev)) {
+		if (zylann::voxel_raycast(
+					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
+			)) {
 			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
@@ -137,8 +146,9 @@ Ref<VoxelRaycastResult> VoxelToolTerrain::raycast(
 		RaycastPredicateSDF predicate{ _terrain->get_storage() };
 		float hit_distance;
 		float hit_distance_prev;
-		if (zylann::voxel_raycast(local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance,
-					hit_distance_prev)) {
+		if (zylann::voxel_raycast(
+					local_pos, local_dir, predicate, max_distance, hit_pos, prev_pos, hit_distance, hit_distance_prev
+			)) {
 			res.instantiate();
 			res->position = hit_pos;
 			res->previous_position = prev_pos;
@@ -166,8 +176,13 @@ void VoxelToolTerrain::paste(Vector3i pos, const VoxelBuffer &src, uint8_t chann
 	_post_edit(Box3i(pos, src.get_size()));
 }
 
-void VoxelToolTerrain::paste_masked(Vector3i pos, Ref<godot::VoxelBuffer> p_voxels, uint8_t channels_mask,
-		uint8_t mask_channel, uint64_t mask_value) {
+void VoxelToolTerrain::paste_masked(
+		Vector3i pos,
+		Ref<godot::VoxelBuffer> p_voxels,
+		uint8_t channels_mask,
+		uint8_t mask_channel,
+		uint64_t mask_value
+) {
 	ERR_FAIL_COND(_terrain == nullptr);
 	ERR_FAIL_COND(p_voxels.is_null());
 	if (channels_mask == 0) {
@@ -351,9 +366,16 @@ Variant VoxelToolTerrain::get_voxel_metadata(Vector3i pos) const {
 	return data.get_voxel_metadata(pos);
 }
 
-void VoxelToolTerrain::run_blocky_random_tick_static(VoxelData &data, Box3i voxel_box,
-		const VoxelBlockyLibraryBase &lib, RandomPCG &random, int voxel_count, int batch_count, void *callback_data,
-		bool (*callback)(void *, Vector3i, int64_t)) {
+void VoxelToolTerrain::run_blocky_random_tick_static(
+		VoxelData &data,
+		Box3i voxel_box,
+		const VoxelBlockyLibraryBase &lib,
+		RandomPCG &random,
+		int voxel_count,
+		int batch_count,
+		void *callback_data,
+		bool (*callback)(void *, Vector3i, int64_t)
+) {
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
 	ERR_FAIL_COND(!math::is_valid_size(voxel_box.size));
@@ -467,13 +489,19 @@ Ref<VoxelBlockyLibraryBase> get_voxel_library(const VoxelTerrain &terrain) {
 // area. Executes a function on random voxels in the provided area, using the type channel. This allows to implement
 // slow "natural" cellular automata behavior, as can be seen in Minecraft.
 void VoxelToolTerrain::run_blocky_random_tick(
-		AABB voxel_area, int voxel_count, const Callable &callback, int batch_count) {
+		AABB voxel_area,
+		int voxel_count,
+		const Callable &callback,
+		int batch_count
+) {
 	ZN_PROFILE_SCOPE();
 
 	ERR_FAIL_COND(_terrain == nullptr);
-	ERR_FAIL_COND_MSG(get_voxel_library(*_terrain).is_null(),
+	ERR_FAIL_COND_MSG(
+			get_voxel_library(*_terrain).is_null(),
 			String("This function requires a volume using {0} with a valid library")
-					.format(varray(VoxelMesherBlocky::get_class_static())));
+					.format(varray(VoxelMesherBlocky::get_class_static()))
+	);
 	ERR_FAIL_COND(callback.is_null());
 	ERR_FAIL_COND(batch_count <= 0);
 	ERR_FAIL_COND(voxel_count < 0);
@@ -493,7 +521,14 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	const Box3i voxel_box(math::floor_to_int(voxel_area.position), math::floor_to_int(voxel_area.size));
 
 #if defined(ZN_GODOT)
-	run_blocky_random_tick_static(data, voxel_box, lib, _random, voxel_count, batch_count, &cb_self,
+	run_blocky_random_tick_static(
+			data,
+			voxel_box,
+			lib,
+			_random,
+			voxel_count,
+			batch_count,
+			&cb_self,
 			[](void *self, Vector3i pos, int64_t val) {
 				const Variant vpos = pos;
 				const Variant vv = val;
@@ -509,7 +544,8 @@ void VoxelToolTerrain::run_blocky_random_tick(
 				ERR_FAIL_COND_V(error.error != Callable::CallError::CALL_OK, false);
 				// Return if it fails, we don't want an error spam
 				return true;
-			});
+			}
+	);
 #elif defined(ZN_GODOT_EXTENSION)
 	// TODO GDX: Can't call Callables
 	ZN_PRINT_ERROR("VoxelToolTerrain::run_blocky_random_tick isn't supported in GDExtension, cannot call Callables");
@@ -543,7 +579,8 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 
 #if defined(ZN_GODOT)
 		voxels_ptr->for_each_voxel_metadata_in_area(
-				rel_voxel_box, [&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
+				rel_voxel_box,
+				[&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
 					Variant v = godot::get_as_variant(meta);
 					const Variant key = rel_pos + block_origin;
 					const Variant *args[2] = { &key, &v };
@@ -551,13 +588,16 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					Variant retval; // We don't care about the return value, Callable API requires it
 					callback.callp(args, 2, retval, err);
 
-					ERR_FAIL_COND_MSG(err.error != Callable::CallError::CALL_OK,
-							String("Callable failed at {0}").format(varray(key)));
+					ERR_FAIL_COND_MSG(
+							err.error != Callable::CallError::CALL_OK,
+							String("Callable failed at {0}").format(varray(key))
+					);
 
 					// TODO Can't provide detailed error because FuncRef doesn't give us access to the object
 					// ERR_FAIL_COND_MSG(err.error != Variant::CallError::CALL_OK, false,
 					// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
-				});
+				}
+		);
 #elif defined(ZN_GODOT_EXTENSION)
 		// TODO GDX: Can't call Callables
 		ZN_PRINT_ERROR("VoxelToolTerrain::for_each_voxel_metadata_in_area isn't supported in GDExtension, cannot call "
@@ -643,12 +683,20 @@ void VoxelToolTerrain::do_path(Span<const Vector3> positions, Span<const float> 
 }
 
 void VoxelToolTerrain::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
-			&VoxelToolTerrain::run_blocky_random_tick, DEFVAL(16));
-	ClassDB::bind_method(D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),
-			&VoxelToolTerrain::for_each_voxel_metadata_in_area);
-	ClassDB::bind_method(D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
-			&VoxelToolTerrain::do_hemisphere, DEFVAL(0.0));
+	ClassDB::bind_method(
+			D_METHOD("run_blocky_random_tick", "area", "voxel_count", "callback", "batch_count"),
+			&VoxelToolTerrain::run_blocky_random_tick,
+			DEFVAL(16)
+	);
+	ClassDB::bind_method(
+			D_METHOD("for_each_voxel_metadata_in_area", "voxel_area", "callback"),
+			&VoxelToolTerrain::for_each_voxel_metadata_in_area
+	);
+	ClassDB::bind_method(
+			D_METHOD("do_hemisphere", "center", "radius", "flat_direction", "smoothness"),
+			&VoxelToolTerrain::do_hemisphere,
+			DEFVAL(0.0)
+	);
 }
 
 } // namespace zylann::voxel

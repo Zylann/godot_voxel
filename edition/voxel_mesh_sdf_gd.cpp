@@ -21,7 +21,11 @@ namespace zylann::voxel {
 
 namespace {
 bool prepare_triangles(
-		Mesh &mesh, StdVector<mesh_sdf::Triangle> &triangles, Vector3f &out_min_pos, Vector3f &out_max_pos) {
+		Mesh &mesh,
+		StdVector<mesh_sdf::Triangle> &triangles,
+		Vector3f &out_min_pos,
+		Vector3f &out_max_pos
+) {
 	ZN_PROFILE_SCOPE();
 	ERR_FAIL_COND_V(mesh.get_surface_count() == 0, false);
 	if (mesh.get_surface_count() > 1) {
@@ -36,7 +40,8 @@ bool prepare_triangles(
 	PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
 	ERR_FAIL_COND_V(
 			!mesh_sdf::prepare_triangles(to_span(positions), to_span(indices), triangles, out_min_pos, out_max_pos),
-			false);
+			false
+	);
 	return true;
 }
 } // namespace
@@ -134,7 +139,8 @@ void VoxelMeshSDF::bake() {
 			break;
 		case BAKE_MODE_ACCURATE_PARTITIONED:
 			mesh_sdf::generate_mesh_sdf_partitioned(
-					sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos, _partition_subdiv);
+					sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos, _partition_subdiv
+			);
 			break;
 		case BAKE_MODE_APPROX_INTERP:
 			mesh_sdf::generate_mesh_sdf_approx_interp(sdf_grid, res, to_span(triangles), box_min_pos, box_max_pos);
@@ -144,7 +150,8 @@ void VoxelMeshSDF::bake() {
 			mesh_sdf::partition_triangles(_partition_subdiv, to_span(triangles), box_min_pos, box_max_pos, chunk_grid);
 			// mesh_sdf::compute_near_chunks(chunk_grid);
 			mesh_sdf::generate_mesh_sdf_approx_floodfill(
-					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix);
+					sdf_grid, res, to_span(triangles), chunk_grid, box_min_pos, box_max_pos, _boundary_sign_fix
+			);
 		} break;
 		default:
 			ZN_CRASH();
@@ -176,7 +183,8 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			vbgd.instantiate();
 			shared_data.buffer.move_to(vbgd->get_buffer());
 			obj.call_deferred(
-					"_on_bake_async_completed", vbgd, to_vec3(shared_data.min_pos), to_vec3(shared_data.max_pos));
+					"_on_bake_async_completed", vbgd, to_vec3(shared_data.min_pos), to_vec3(shared_data.max_pos)
+			);
 		}
 	};
 
@@ -217,7 +225,8 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 			PackedVector3Array positions = surface[Mesh::ARRAY_VERTEX];
 			PackedInt32Array indices = surface[Mesh::ARRAY_INDEX];
 			if (!mesh_sdf::prepare_triangles(
-						to_span(positions), to_span(indices), shared_data->triangles, min_pos, max_pos)) {
+						to_span(positions), to_span(indices), shared_data->triangles, min_pos, max_pos
+				)) {
 				ZN_PRINT_ERROR("Failed preparing triangles in threaded task");
 				report_error();
 				return;
@@ -245,8 +254,13 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 
 					const bool partitioned = bake_mode == BAKE_MODE_ACCURATE_PARTITIONED;
 					if (partitioned) {
-						mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
-								shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+						mesh_sdf::partition_triangles(
+								partition_subdiv,
+								to_span(shared_data->triangles),
+								shared_data->min_pos,
+								shared_data->max_pos,
+								shared_data->chunk_grid
+						);
 						mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 					}
 					shared_data->use_chunk_grid = partitioned;
@@ -273,7 +287,8 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
 					mesh_sdf::generate_mesh_sdf_approx_interp(
-							sdf_grid, res, to_span(shared_data->triangles), box_min_pos, box_max_pos);
+							sdf_grid, res, to_span(shared_data->triangles), box_min_pos, box_max_pos
+					);
 
 					if (boundary_sign_fix) {
 						mesh_sdf::fix_sdf_sign_from_boundary(sdf_grid, res, box_min_pos, box_max_pos);
@@ -287,13 +302,25 @@ void VoxelMeshSDF::bake_async(SceneTree *scene_tree) {
 					Span<float> sdf_grid;
 					ZN_ASSERT(buffer.get_channel_data(channel, sdf_grid));
 
-					mesh_sdf::partition_triangles(partition_subdiv, to_span(shared_data->triangles),
-							shared_data->min_pos, shared_data->max_pos, shared_data->chunk_grid);
+					mesh_sdf::partition_triangles(
+							partition_subdiv,
+							to_span(shared_data->triangles),
+							shared_data->min_pos,
+							shared_data->max_pos,
+							shared_data->chunk_grid
+					);
 
 					// mesh_sdf::compute_near_chunks(shared_data->chunk_grid);
 
-					mesh_sdf::generate_mesh_sdf_approx_floodfill(sdf_grid, res, to_span(shared_data->triangles),
-							shared_data->chunk_grid, box_min_pos, box_max_pos, boundary_sign_fix);
+					mesh_sdf::generate_mesh_sdf_approx_floodfill(
+							sdf_grid,
+							res,
+							to_span(shared_data->triangles),
+							shared_data->chunk_grid,
+							box_min_pos,
+							box_max_pos,
+							boundary_sign_fix
+					);
 
 					L::notify_on_complete(**obj_to_notify, *shared_data);
 				} break;
@@ -484,42 +511,82 @@ void VoxelMeshSDF::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("is_boundary_sign_fix_enabled"), &VoxelMeshSDF::is_boundary_sign_fix_enabled);
 	ClassDB::bind_method(
-			D_METHOD("set_boundary_sign_fix_enabled", "enable"), &VoxelMeshSDF::set_boundary_sign_fix_enabled);
+			D_METHOD("set_boundary_sign_fix_enabled", "enable"), &VoxelMeshSDF::set_boundary_sign_fix_enabled
+	);
 
 	ClassDB::bind_method(D_METHOD("get_voxel_buffer"), &VoxelMeshSDF::get_voxel_buffer);
 	ClassDB::bind_method(D_METHOD("get_aabb"), &VoxelMeshSDF::get_aabb);
 	ClassDB::bind_method(D_METHOD("debug_check_sdf", "mesh"), &VoxelMeshSDF::debug_check_sdf);
 
 	// Internal
-	ClassDB::bind_method(D_METHOD("_on_bake_async_completed", "buffer", "min_pos", "max_pos"),
-			&VoxelMeshSDF::_on_bake_async_completed);
+	ClassDB::bind_method(
+			D_METHOD("_on_bake_async_completed", "buffer", "min_pos", "max_pos"),
+			&VoxelMeshSDF::_on_bake_async_completed
+	);
 	ClassDB::bind_method(D_METHOD("_get_data"), &VoxelMeshSDF::_b_get_data);
 	ClassDB::bind_method(D_METHOD("_set_data", "d"), &VoxelMeshSDF::_b_set_data);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
-			"set_mesh", "get_mesh");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::OBJECT, "mesh", PROPERTY_HINT_RESOURCE_TYPE, Mesh::get_class_static()),
+			"set_mesh",
+			"get_mesh"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_count", PROPERTY_HINT_RANGE,
-						 String("{0},{1},1").format(varray(MIN_CELL_COUNT, MAX_CELL_COUNT))),
-			"set_cell_count", "get_cell_count");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"cell_count",
+					PROPERTY_HINT_RANGE,
+					String("{0},{1},1").format(varray(MIN_CELL_COUNT, MAX_CELL_COUNT))
+			),
+			"set_cell_count",
+			"get_cell_count"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "margin_ratio", PROPERTY_HINT_RANGE,
-						 String("{0},{1},0.01").format(varray(MIN_MARGIN_RATIO, MAX_MARGIN_RATIO))),
-			"set_margin_ratio", "get_margin_ratio");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::FLOAT,
+					"margin_ratio",
+					PROPERTY_HINT_RANGE,
+					String("{0},{1},0.01").format(varray(MIN_MARGIN_RATIO, MAX_MARGIN_RATIO))
+			),
+			"set_margin_ratio",
+			"get_margin_ratio"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "bake_mode", PROPERTY_HINT_ENUM,
-						 "AccurateNaive,AccuratePartitioned,ApproxInterp,FloodFill"),
-			"set_bake_mode", "get_bake_mode");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"bake_mode",
+					PROPERTY_HINT_ENUM,
+					"AccurateNaive,AccuratePartitioned,ApproxInterp,FloodFill"
+			),
+			"set_bake_mode",
+			"get_bake_mode"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "partition_subdiv", PROPERTY_HINT_RANGE,
-						 String("{0},{1},1").format(varray(MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV))),
-			"set_partition_subdiv", "get_partition_subdiv");
+	ADD_PROPERTY(
+			PropertyInfo(
+					Variant::INT,
+					"partition_subdiv",
+					PROPERTY_HINT_RANGE,
+					String("{0},{1},1").format(varray(MIN_PARTITION_SUBDIV, MAX_PARTITION_SUBDIV))
+			),
+			"set_partition_subdiv",
+			"get_partition_subdiv"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "boundary_sign_fix_enabled"), "set_boundary_sign_fix_enabled",
-			"is_boundary_sign_fix_enabled");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::BOOL, "boundary_sign_fix_enabled"),
+			"set_boundary_sign_fix_enabled",
+			"is_boundary_sign_fix_enabled"
+	);
 
-	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
-			"_set_data", "_get_data");
+	ADD_PROPERTY(
+			PropertyInfo(Variant::DICTIONARY, "_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE),
+			"_set_data",
+			"_get_data"
+	);
 
 	ADD_SIGNAL(MethodInfo("baked"));
 
