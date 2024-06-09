@@ -49,8 +49,12 @@ VoxelMeshBlockVLT::~VoxelMeshBlockVLT() {
 	}
 }
 
-void VoxelMeshBlockVLT::set_mesh(Ref<Mesh> mesh, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_mesh(
+		Ref<Mesh> mesh,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask
+) {
 	// TODO Don't add mesh instance to the world if it's not visible.
 	// I suspect Godot is trying to include invisible mesh instances into the culling process,
 	// which is killing performance when LOD is used (i.e many meshes are in pool but hidden)
@@ -140,8 +144,13 @@ void VoxelMeshBlockVLT::set_render_layers_mask(int mask) {
 	}
 }
 
-void VoxelMeshBlockVLT::set_transition_mesh(Ref<Mesh> mesh, unsigned int side, GeometryInstance3D::GIMode gi_mode,
-		RenderingServer::ShadowCastingSetting shadow_casting, int render_layers_mask) {
+void VoxelMeshBlockVLT::set_transition_mesh(
+		Ref<Mesh> mesh,
+		unsigned int side,
+		GeometryInstance3D::GIMode gi_mode,
+		RenderingServer::ShadowCastingSetting shadow_casting,
+		int render_layers_mask
+) {
 	DirectMeshInstance &mesh_instance = _transition_mesh_instances[side];
 
 	if (mesh.is_valid()) {
@@ -381,8 +390,12 @@ bool is_mesh_empty(Span<const VoxelMesher::Output::Surface> surfaces) {
 	return true;
 }
 
-Ref<ArrayMesh> build_mesh(Span<const VoxelMesher::Output::Surface> surfaces, Mesh::PrimitiveType primitive, int flags,
-		Ref<Material> material) {
+Ref<ArrayMesh> build_mesh(
+		Span<const VoxelMesher::Output::Surface> surfaces,
+		Mesh::PrimitiveType primitive,
+		int flags,
+		Ref<Material> material
+) {
 	ZN_PROFILE_SCOPE();
 	Ref<ArrayMesh> mesh;
 
