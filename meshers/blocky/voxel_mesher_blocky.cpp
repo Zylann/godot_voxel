@@ -935,8 +935,8 @@ void append_side_seams(
 	// For each outer voxel on the side of the chunk (using side-relative coordinates)
 	for (int x = pad; x < size_x - pad; ++x) {
 		for (int y = pad; y < size_y - pad; ++y) {
-			const int i = x * jump.x + y * jump.y + z_base;
-			const int v = buffer[i];
+			const int buffer_index = x * jump.x + y * jump.y + z_base;
+			const int v = buffer[buffer_index];
 
 			if (v == AIR) {
 				continue;
@@ -944,10 +944,10 @@ void append_side_seams(
 
 			// Check if the voxel is exposed to air
 
-			const int nv0 = buffer[i - jump.x];
-			const int nv1 = buffer[i + jump.x];
-			const int nv2 = buffer[i - jump.y];
-			const int nv3 = buffer[i + jump.y];
+			const int nv0 = buffer[buffer_index - jump.x];
+			const int nv1 = buffer[buffer_index + jump.x];
+			const int nv2 = buffer[buffer_index - jump.y];
+			const int nv3 = buffer[buffer_index + jump.y];
 
 			if (nv0 != AIR && nv1 != AIR && nv2 != AIR && nv3 != AIR) {
 				continue;
@@ -956,7 +956,7 @@ void append_side_seams(
 			// Check if the outer voxel occludes an inner voxel
 			// (this check is not actually accurate, maybe we'd have to do a full occlusion check using the library?)
 
-			const int nv4 = buffer[i - side_sign * jump.z];
+			const int nv4 = buffer[buffer_index - side_sign * jump.z];
 			if (nv4 == AIR) {
 				continue;
 			}
@@ -965,15 +965,18 @@ void append_side_seams(
 
 			const Vector3f pos = side_to_block_coordinates(Vector3f(x - pad, y - pad, z - (side_sign + 1)), side);
 
-			const VoxelBlockyModel::BakedData &voxel = library.models[nv4];
-			const VoxelBlockyModel::BakedData::Model &model = voxel.model;
+			const VoxelBlockyModel::BakedData &voxel_baked_data = library.models[nv4];
+			const VoxelBlockyModel::BakedData::Model &model = voxel_baked_data.model;
+
+			const FixedArray<VoxelBlockyModel::BakedData::SideSurface, VoxelBlockyModel::BakedData::Model::MAX_SURFACES>
+					&side_surfaces = model.sides_surfaces[side];
 
 			for (unsigned int surface_index = 0; surface_index < model.surface_count; ++surface_index) {
 				const VoxelBlockyModel::BakedData::Surface &surface = model.surfaces[surface_index];
-				const VoxelBlockyModel::BakedData::SideSurface &side_surface = surface.sides[side];
-				const unsigned int vertex_count = side_surface.positions.size();
-
 				VoxelMesherBlocky::Arrays &arrays = out_arrays_per_material[surface.material_id];
+
+				const VoxelBlockyModel::BakedData::SideSurface &side_surface = side_surfaces[side];
+				const unsigned int vertex_count = side_surface.positions.size();
 
 				// TODO The following code is pretty much the same as the main meshing function.
 				// We should put it in common once blocky mesher features are merged (blocky fluids, shadows occluders).
@@ -1018,10 +1021,8 @@ void append_side_seams(
 					const int append_index = arrays.colors.size();
 					arrays.colors.resize(arrays.colors.size() + vertex_count);
 					Color *w = arrays.colors.data() + append_index;
-					const Color modulate_color = voxel.color;
-
 					for (unsigned int i = 0; i < vertex_count; ++i) {
-						w[i] = modulate_color;
+						w[i] = voxel_baked_data.color;
 					}
 				}
 
