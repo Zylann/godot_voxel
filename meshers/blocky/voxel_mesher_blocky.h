@@ -60,6 +60,7 @@ public:
 	}
 
 	Ref<Material> get_material_by_index(unsigned int index) const override;
+	unsigned int get_material_index_count() const override;
 
 	// Using std::vector because they make this mesher twice as fast than Godot Vectors.
 	// See why: https://github.com/godotengine/godot/issues/24731

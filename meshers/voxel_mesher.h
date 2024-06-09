@@ -108,6 +108,8 @@ public:
 	// index does not have a material assigned. If not provided here, a default material may be used.
 	// An error can be produced if the index is out of bounds.
 	virtual Ref<Material> get_material_by_index(unsigned int i) const;
+	// Get the highest+1 material index
+	virtual unsigned int get_material_index_count() const;
 
 #ifdef TOOLS_ENABLED
 	// If the mesher has problems, messages may be returned by this method so they can be shown to the user.

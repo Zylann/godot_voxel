@@ -1372,8 +1372,8 @@ Span<const T> get_or_decompress_channel(const VoxelBuffer &voxels, StdVector<T> 
 		return to_span_const(backing_buffer);
 
 	} else {
-		Span<uint8_t> data_bytes;
-		ZN_ASSERT(voxels.get_channel_raw(channel, data_bytes) == true);
+		Span<const uint8_t> data_bytes;
+		ZN_ASSERT(voxels.get_channel_as_bytes_read_only(channel, data_bytes) == true);
 		return data_bytes.reinterpret_cast_to<const T>();
 	}
 }
@@ -1397,8 +1397,8 @@ TextureIndicesData get_texture_indices_data(
 		out_default_texture_indices_data.use = true;
 
 	} else {
-		Span<uint8_t> data_bytes;
-		ZN_ASSERT(voxels.get_channel_raw(channel, data_bytes) == true);
+		Span<const uint8_t> data_bytes;
+		ZN_ASSERT(voxels.get_channel_as_bytes_read_only(channel, data_bytes) == true);
 		data.buffer = data_bytes.reinterpret_cast_to<const uint16_t>();
 
 		out_default_texture_indices_data.use = false;
@@ -1498,8 +1498,8 @@ DefaultTextureIndicesData build_regular_mesh(
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	Span<uint8_t> sdf_data_raw;
-	ZN_ASSERT(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == true);
+	Span<const uint8_t> sdf_data_raw;
+	ZN_ASSERT(voxels.get_channel_as_bytes_read_only(sdf_channel, sdf_data_raw) == true);
 
 	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
 
@@ -1618,8 +1618,8 @@ void build_transition_mesh(
 	ZN_PROFILE_SCOPE();
 	// From this point, we expect the buffer to contain allocated data in the relevant channels.
 
-	Span<uint8_t> sdf_data_raw;
-	ZN_ASSERT(voxels.get_channel_raw(sdf_channel, sdf_data_raw) == true);
+	Span<const uint8_t> sdf_data_raw;
+	ZN_ASSERT(voxels.get_channel_as_bytes_read_only(sdf_channel, sdf_data_raw) == true);
 
 	const unsigned int voxels_count = Vector3iUtil::get_volume(voxels.get_size());
 
