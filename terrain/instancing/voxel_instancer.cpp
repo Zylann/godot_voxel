@@ -49,7 +49,7 @@ StdVector<Transform3f> &get_tls_transform_cache() {
 VoxelInstancer::VoxelInstancer() {
 	set_notify_transform(true);
 	set_process_internal(true);
-	_loading_results = make_shared_instance<VoxelInstancerTaskOutputQueue>();
+	_loading_results = make_shared_instance<InstancerTaskOutputQueue>();
 	fill(_mesh_lod_distances, 0.f);
 }
 
@@ -222,8 +222,8 @@ void VoxelInstancer::process() {
 
 void VoxelInstancer::process_task_results() {
 	ZN_PROFILE_SCOPE();
-	static thread_local StdVector<VoxelInstanceLoadingTaskOutput> tls_results;
-	StdVector<VoxelInstanceLoadingTaskOutput> &results = tls_results;
+	static thread_local StdVector<InstanceLoadingTaskOutput> tls_results;
+	StdVector<InstanceLoadingTaskOutput> &results = tls_results;
 #ifdef DEBUG_ENABLED
 	if (results.size()) {
 		ZN_PRINT_ERROR("Results were not cleaned up?");
@@ -232,7 +232,7 @@ void VoxelInstancer::process_task_results() {
 	{
 		MutexLock mlock(_loading_results->mutex);
 		// Copy results to temporary buffer
-		StdVector<VoxelInstanceLoadingTaskOutput> &src = _loading_results->results;
+		StdVector<InstanceLoadingTaskOutput> &src = _loading_results->results;
 		results.resize(src.size());
 		for (unsigned int i = 0; i < src.size(); ++i) {
 			results[i] = std::move(src[i]);
@@ -254,7 +254,7 @@ void VoxelInstancer::process_task_results() {
 	const int mesh_block_size_base = (1 << _parent_mesh_block_size_po2);
 	const int render_to_data_factor = mesh_block_size_base / data_block_size_base;
 
-	for (VoxelInstanceLoadingTaskOutput &output : results) {
+	for (InstanceLoadingTaskOutput &output : results) {
 		auto layer_it = _layers.find(output.layer_id);
 		if (layer_it == _layers.end()) {
 			// Layer was removed since?
@@ -1613,7 +1613,7 @@ SaveBlockDataTask *VoxelInstancer::save_block(
 		UniquePtr<InstanceBlockData> saving_cache = make_unique_instance<InstanceBlockData>();
 		block_data->copy_to(*saving_cache);
 		if (lod_mutable.quick_reload_cache == nullptr) {
-			lod_mutable.quick_reload_cache = make_shared_instance<VoxelInstancerQuickReloadingCache>();
+			lod_mutable.quick_reload_cache = make_shared_instance<InstancerQuickReloadingCache>();
 		}
 		{
 			MutexLock mlock(lod_mutable.quick_reload_cache->mutex);

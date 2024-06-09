@@ -39,8 +39,8 @@ class VoxelTool;
 class SaveBlockDataTask;
 class BufferedTaskScheduler;
 struct InstanceBlockData;
-struct VoxelInstancerQuickReloadingCache;
-struct VoxelInstancerTaskOutputQueue;
+struct InstancerQuickReloadingCache;
+struct InstancerTaskOutputQueue;
 struct InstanceLibraryMultiMeshItemSettings;
 
 // Note: a large part of this node could be made generic to support the sole idea of instancing within octants?
@@ -293,7 +293,7 @@ private:
 		// Keys follows the data block coordinate system.
 		StdUnorderedSet<Vector3i> edited_data_blocks;
 
-		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache;
+		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache;
 
 		// FixedArray<MeshLodDistances, VoxelInstanceLibraryMultiMeshItem::MAX_MESH_LODS> mesh_lod_distances;
 	};
@@ -318,7 +318,7 @@ private:
 	// float _mesh_lod_update_camera_threshold_distance = 8.f;
 	unsigned int _mesh_lod_time_sliced_block_index = 0;
 
-	std::shared_ptr<VoxelInstancerTaskOutputQueue> _loading_results;
+	std::shared_ptr<InstancerTaskOutputQueue> _loading_results;
 
 #ifdef TOOLS_ENABLED
 	zylann::godot::DebugRenderer _debug_renderer;

@@ -14,7 +14,7 @@ struct InstanceBlockData;
 // If chunks need to be loaded again before saving has completed or even started, they will be picked from this cache
 // instead. Without this, chunks could be reloaded before getting saved, leading to loss of data. As confusing as it
 // sounds, this can happen because saving and loading is multi-threaded.
-struct VoxelInstancerQuickReloadingCache {
+struct InstancerQuickReloadingCache {
 	StdUnorderedMap<Vector3i, UniquePtr<InstanceBlockData>> map;
 	Mutex mutex;
 };

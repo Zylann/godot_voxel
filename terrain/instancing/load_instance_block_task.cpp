@@ -13,9 +13,9 @@
 namespace zylann::voxel {
 
 LoadInstanceChunkTask::LoadInstanceChunkTask( //
-		std::shared_ptr<VoxelInstancerTaskOutputQueue> output_queue, //
+		std::shared_ptr<InstancerTaskOutputQueue> output_queue, //
 		Ref<VoxelStream> stream, //
-		std::shared_ptr<VoxelInstancerQuickReloadingCache> quick_reload_cache,
+		std::shared_ptr<InstancerQuickReloadingCache> quick_reload_cache,
 		Ref<VoxelInstanceLibrary> library, //
 		Array mesh_arrays, //
 		Vector3i grid_position, //
@@ -23,7 +23,7 @@ LoadInstanceChunkTask::LoadInstanceChunkTask( //
 		uint8_t instance_block_size, //
 		uint8_t data_block_size, //
 		UpMode up_mode //
-		) :
+) :
 		//
 		_output_queue(output_queue), //
 		_stream(stream), //
@@ -251,7 +251,7 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 
 	// Post results
 	for (Layer &layer : layers) {
-		VoxelInstanceLoadingTaskOutput o;
+		InstanceLoadingTaskOutput o;
 		o.layer_id = layer.id;
 		// Will normally be full
 		o.edited_mask = layer.edited_mask;

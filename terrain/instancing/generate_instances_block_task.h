@@ -26,7 +26,7 @@ public:
 	Ref<VoxelInstanceGenerator> generator;
 	// Can be pre-populated by edited transforms
 	StdVector<Transform3f> transforms;
-	std::shared_ptr<VoxelInstancerTaskOutputQueue> output_queue;
+	std::shared_ptr<InstancerTaskOutputQueue> output_queue;
 
 	const char *get_debug_name() const override {
 		return "GenerateInstancesBlock";
