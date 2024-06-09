@@ -80,7 +80,8 @@ int /*Error*/ VoxelVoxLoader::load_from_file(
 }
 
 void VoxelVoxLoader::_bind_methods() {
-	ClassDB::bind_method(
+	ClassDB::bind_static_method(
+			VoxelVoxLoader::get_class_static(),
 			D_METHOD("load_from_file", "fpath", "voxels", "palette", "dst_channel"),
 			&VoxelVoxLoader::load_from_file,
 			DEFVAL(godot::VoxelBuffer::CHANNEL_COLOR)
