@@ -520,7 +520,6 @@ void VoxelToolTerrain::run_blocky_random_tick(
 	VoxelData &data = _terrain->get_storage();
 	const Box3i voxel_box(math::floor_to_int(voxel_area.position), math::floor_to_int(voxel_area.size));
 
-#if defined(ZN_GODOT)
 	run_blocky_random_tick_static(
 			data,
 			voxel_box,
@@ -546,10 +545,6 @@ void VoxelToolTerrain::run_blocky_random_tick(
 				return true;
 			}
 	);
-#elif defined(ZN_GODOT_EXTENSION)
-	// TODO GDX: Can't call Callables
-	ZN_PRINT_ERROR("VoxelToolTerrain::run_blocky_random_tick isn't supported in GDExtension, cannot call Callables");
-#endif
 }
 
 void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Callable &callback) {
@@ -577,7 +572,6 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 		// For read or write? We'd have to specify as argument and trust the user... since metadata can contain
 		// reference types.
 
-#if defined(ZN_GODOT)
 		voxels_ptr->for_each_voxel_metadata_in_area(
 				rel_voxel_box,
 				[&callback, block_origin](Vector3i rel_pos, const VoxelMetadata &meta) {
@@ -598,11 +592,6 @@ void VoxelToolTerrain::for_each_voxel_metadata_in_area(AABB voxel_area, const Ca
 					// 		Variant::get_call_error_text(callback->get_object(), method_name, nullptr, 0, err));
 				}
 		);
-#elif defined(ZN_GODOT_EXTENSION)
-		// TODO GDX: Can't call Callables
-		ZN_PRINT_ERROR("VoxelToolTerrain::for_each_voxel_metadata_in_area isn't supported in GDExtension, cannot call "
-					   "Callables");
-#endif
 	});
 }
 
