@@ -435,14 +435,22 @@ public:
 		return Vector3iUtil::get_volume(_size);
 	}
 
-	bool get_channel_raw(unsigned int channel_index, Span<uint8_t> &slice) const;
-	bool get_channel_raw_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
+	bool get_channel_as_bytes(unsigned int channel_index, Span<uint8_t> &slice);
+	bool get_channel_as_bytes_read_only(unsigned int channel_index, Span<const uint8_t> &slice) const;
 
 	template <typename T>
-	bool get_channel_data(unsigned int channel_index, Span<T> &dst) const {
+	bool get_channel_data(unsigned int channel_index, Span<T> &dst) {
 		Span<uint8_t> dst8;
-		ZN_ASSERT_RETURN_V(get_channel_raw(channel_index, dst8), false);
+		ZN_ASSERT_RETURN_V(get_channel_as_bytes(channel_index, dst8), false);
 		dst = dst8.reinterpret_cast_to<T>();
+		return true;
+	}
+
+	template <typename T>
+	bool get_channel_data_read_only(unsigned int channel_index, Span<const T> &dst) const {
+		Span<const uint8_t> dst8;
+		ZN_ASSERT_RETURN_V(get_channel_as_bytes_read_only(channel_index, dst8), false);
+		dst = dst8.reinterpret_cast_to<const T>();
 		return true;
 	}
 
