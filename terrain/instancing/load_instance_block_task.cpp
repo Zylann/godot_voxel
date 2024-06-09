@@ -8,7 +8,7 @@
 #include "../../util/math/conv.h"
 #include "../../util/profiling.h"
 #include "generate_instances_block_task.h"
-#include "voxel_instancer_quick_reloading_cache.h"
+#include "instancer_quick_reloading_cache.h"
 
 namespace zylann::voxel {
 
@@ -152,8 +152,9 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 					const int layer_id = loaded_layer_data.id;
 					size_t layer_index;
 					// Not using a hashmap here, this array is usually small
-					if (!find(to_span_const(layers), layer_index,
-								[layer_id](const Layer &layer) { return layer.id == layer_id; })) {
+					if (!find(to_span_const(layers), layer_index, [layer_id](const Layer &layer) {
+							return layer.id == layer_id;
+						})) {
 						layer_index = layers.size();
 						Layer layer;
 						layer.id = layer_id;
@@ -207,8 +208,9 @@ void LoadInstanceChunkTask::run(ThreadedTaskContext &ctx) {
 					size_t layer_index;
 					// Not using a hashmap here, this array is usually small
 					const int layer_id = item.id;
-					if (!find(to_span_const(layers), layer_index,
-								[layer_id](const Layer &layer) { return layer.id == layer_id; })) {
+					if (!find(to_span_const(layers), layer_index, [layer_id](const Layer &layer) {
+							return layer.id == layer_id;
+						})) {
 						layer_index = layers.size();
 						layers.push_back(Layer());
 					}

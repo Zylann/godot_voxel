@@ -19,12 +19,12 @@
 #include "../../util/string/format.h"
 #include "../fixed_lod/voxel_terrain.h"
 #include "../variable_lod/voxel_lod_terrain.h"
+#include "instancer_quick_reloading_cache.h"
 #include "load_instance_block_task.h"
 #include "voxel_instance_component.h"
 #include "voxel_instance_generator.h"
 #include "voxel_instance_library_multimesh_item.h"
 #include "voxel_instance_library_scene_item.h"
-#include "voxel_instancer_quick_reloading_cache.h"
 #include "voxel_instancer_rigidbody.h"
 
 #ifdef TOOLS_ENABLED
