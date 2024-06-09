@@ -640,7 +640,7 @@ void VoxelInstancer::set_up_mode(UpMode mode) {
 	}
 }
 
-UpMode VoxelInstancer::get_up_mode() const {
+VoxelInstancer::UpMode VoxelInstancer::get_up_mode() const {
 	return _up_mode;
 }
 

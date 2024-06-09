@@ -53,6 +53,12 @@ class VoxelInstancer : public Node3D, public IInstanceLibraryItemListener {
 public:
 	static const int MAX_LOD = 8;
 
+	// I didn't want this enum to be here on the C++ side, because it prevents forward-declaring the class it is in.
+	// However Godot is forcing me to.
+	// `VARIANT_ENUM_CAST(ns1::ns2::Enum)` assumes the enum is in a class, so it generates its name as being `ns2.Enum`,
+	// which confuses docs and GDExtension dumps. There doesn't seem to be a way to register that enum as global either.
+	using UpMode = zylann::voxel::UpMode;
+
 	VoxelInstancer();
 	~VoxelInstancer();
 
@@ -323,7 +329,7 @@ private:
 } // namespace voxel
 } // namespace zylann
 
-VARIANT_ENUM_CAST(zylann::voxel::UpMode);
+VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::UpMode);
 VARIANT_ENUM_CAST(zylann::voxel::VoxelInstancer::DebugDrawFlag);
 
 #endif // VOXEL_INSTANCER_H
