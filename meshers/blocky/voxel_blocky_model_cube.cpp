@@ -214,7 +214,6 @@ void bake_cube_geometry(
 
 void VoxelBlockyModelCube::bake(blocky::ModelBakingContext &ctx) const {
 	VoxelBlockyModel::BakedData &baked_data = ctx.model;
-	blocky::MaterialIndexer &materials = ctx.material_indexer;
 
 	baked_data.clear();
 	bake_cube_geometry(*this, baked_data, _atlas_size_in_tiles, ctx.tangents_enabled);

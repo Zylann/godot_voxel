@@ -356,8 +356,6 @@ Ref<Mesh> VoxelBlockyModel::make_mesh_from_baked_data(
 	Ref<ArrayMesh> mesh;
 	mesh.instantiate();
 
-	const unsigned int surface_count = inner_surfaces.size();
-
 	for (unsigned int surface_index = 0; surface_index < inner_surfaces.size(); ++surface_index) {
 		const Surface &surface = inner_surfaces[surface_index];
 
